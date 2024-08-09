@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -57,10 +58,11 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    mesh_proto.OutboundInterface
-	Protocol    core_mesh.Protocol
-	ServiceName string
-	BackendRef  common_api.BackendRef
+	Outbound      mesh_proto.OutboundInterface
+	Protocol      core_mesh.Protocol
+	ServiceName   string
+	BackendRef    common_api.BackendRef
+	OwnerResource *core_rules.UniqueResourceIdentifier
 }
 
 func CollectServices(
@@ -117,6 +119,7 @@ func collectMeshService(
 			},
 			Port: &port.Port,
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(ms, port.Name)),
 	}
 }
 

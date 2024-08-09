@@ -46,9 +46,11 @@ func generateFromService(
 	}
 
 	resources.Add(&core_xds.Resource{
-		Name:     listener.GetName(),
-		Origin:   generator.OriginOutbound,
-		Resource: listener,
+		Name:           listener.GetName(),
+		Origin:         generator.OriginOutbound,
+		Resource:       listener,
+		ResourceOrigin: svc.OwnerResource,
+		Protocol:       protocol,
 	})
 	return resources, nil
 }

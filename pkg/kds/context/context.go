@@ -19,6 +19,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -83,10 +84,16 @@ func DefaultContext(
 			RemoveStatus()),
 		reconcile.If(
 			reconcile.And(
-				reconcile.ScopeIs(core_model.ScopeMesh),
 				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
 				// particular format to be able to reference them
 				reconcile.Not(reconcile.TypeIs(system.SecretType)),
+				// Zone CP expects secret names to be in particular format to be able to reference them
+				reconcile.Not(reconcile.TypeIs(system.GlobalSecretType)),
+				// Zone CP expects secret names to be in particular format to be able to reference them
+				reconcile.Not(reconcile.TypeIs(system.ConfigType)),
+				// Mesh name has to be the same. In multizone deployments it can only be applied on Global CP,
+				// so we won't hit conflicts.
+				reconcile.Not(reconcile.TypeIs(core_mesh.MeshType)),
 			),
 			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
@@ -95,6 +102,7 @@ func DefaultContext(
 		UpdateResourceMeta(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
+			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile.If(
@@ -105,14 +113,28 @@ func DefaultContext(
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
 
 	return &Context{
-		ZoneClientCtx:            ctx,
-		GlobalProvidedFilter:     GlobalProvidedFilter(manager, configs),
+		ZoneClientCtx: ctx,
+		GlobalProvidedFilter: CompositeResourceFilters(
+			GlobalProvidedFilter(manager, configs),
+			SkipUnsupportedHostnameGenerator,
+		),
 		ZoneProvidedFilter:       ZoneProvidedFilter,
 		Configs:                  configs,
 		GlobalResourceMapper:     CompositeResourceMapper(globalMappers...),
 		ZoneResourceMapper:       CompositeResourceMapper(zoneMappers...),
 		EnvoyAdminRPCs:           service.NewEnvoyAdminRPCs(),
 		CreateZoneOnFirstConnect: true,
+	}
+}
+
+func CompositeResourceFilters(filters ...reconcile.ResourceFilter) reconcile.ResourceFilter {
+	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
+		for _, filter := range filters {
+			if !filter(ctx, clusterID, features, r) {
+				return false
+			}
+		}
+		return true
 	}
 }
 
@@ -266,6 +288,18 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return core_model.IsLocallyOriginated(config_core.Global, r)
 		}
 	}
+}
+
+func SkipUnsupportedHostnameGenerator(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
+	if r.Descriptor().Name != hostnamegenerator_api.HostnameGeneratorType {
+		return true
+	}
+	if !features.HasFeature(kds.FeatureHostnameGeneratorMzSelector) {
+		if r.GetSpec().(*hostnamegenerator_api.HostnameGenerator).Selector.MeshMultiZoneService != nil {
+			return false
+		}
+	}
+	return true
 }
 
 func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r core_model.Resource) bool {

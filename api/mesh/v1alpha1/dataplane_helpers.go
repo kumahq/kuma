@@ -19,12 +19,20 @@ const (
 )
 
 const (
+	KubernetesEnvironment = "kubernetes"
+	UniversalEnvironment  = "universal"
+)
+
+const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 
 	// Locality related tags
 	ZoneTag = "kuma.io/zone"
+
+	// EnvTag defines whether a zone is universal or Kubernetes
+	EnvTag = "kuma.io/env"
 
 	MeshTag = "kuma.io/mesh"
 
@@ -66,6 +74,10 @@ const (
 
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
+
+	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
+	// universal, it's here to avoid import cycles
+	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
 )
 
 type ResourceOrigin string
