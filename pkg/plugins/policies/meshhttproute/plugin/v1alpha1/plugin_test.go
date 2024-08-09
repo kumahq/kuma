@@ -1287,6 +1287,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -1581,10 +1582,15 @@ oESyXXAeWPJX3e7ZgdjUHomwhAZpUmqIWribTioaHZTb1I6OpsD+eF6USSayxUaL
 
 func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", core_model.NoMesh))
+
+	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), builders.ZoneEgress().WithPort(10002).Build(), store.CreateByKey("zone-egress", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
@@ -1619,6 +1625,7 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 		)
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
+		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).
