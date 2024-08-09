@@ -215,7 +215,7 @@ func (c *UniversalCluster) GetKuma() ControlPlane {
 }
 
 func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
-	return c.apps[AppModeCP].mainApp.Out(), nil
+	return "stdout:\n" + c.apps[AppModeCP].mainApp.Out() + "\nstderr:\n" + c.apps[AppModeCP].mainApp.Err(), nil
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
