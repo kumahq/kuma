@@ -260,6 +260,10 @@ func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
 	return d.Overview.Descriptor().NewList()
 }
 
+func (d ResourceTypeDescriptor) IsInsight() bool {
+	return strings.HasSuffix(string(d.Name), "Insight")
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -309,6 +313,12 @@ func HasScope(scope ResourceScope) TypeFilter {
 func IsPolicy() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.IsPolicy
+	})
+}
+
+func IsInsight() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.IsInsight()
 	})
 }
 
