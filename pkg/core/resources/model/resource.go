@@ -450,8 +450,15 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
+	getMeshOrDefault := func() string {
+		if mesh := r.GetMeta().GetMesh(); mesh != "" {
+			return mesh
+		}
+		return DefaultMesh
+	}
+
 	if r.Descriptor().Scope == ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
+		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
