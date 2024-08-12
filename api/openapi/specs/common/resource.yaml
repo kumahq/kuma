@@ -174,9 +174,7 @@ components:
           x-go-type: 'interface{}'
         origin:
           type: array
-          description: |
-            The list of policies that contributed to the 'conf'. The order is important as it reflects
-            in what order confs were merged to get the resulting 'conf'.
+          description: The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
           items:
             $ref: '#/components/schemas/ResourceRuleOrigin'
     ResourceRuleOrigin:
