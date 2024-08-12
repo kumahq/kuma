@@ -49,9 +49,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 			}
 
 			proxy := &xds.Proxy{
+				Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 				Metadata: &xds.DataplaneMetadata{
 					AdminPort:    9901,
 					AdminAddress: given.adminAddress,
+					WorkDir:      "/tmp/kuma-sockets",
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -117,9 +119,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 		}
 
 		proxy := &xds.Proxy{
+			Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 			Metadata: &xds.DataplaneMetadata{
 				AdminPort:    9901,
 				AdminAddress: "192.168.0.1", // it's not allowed to use such address
+				WorkDir:      "/tmp/kuma-sockets",
 			},
 			EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 				CaPEM: []byte("caPEM"),

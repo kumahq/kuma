@@ -29,6 +29,10 @@ var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 
 var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
+		Path:        "/ready",
+		RewritePath: "/ready",
+	},
+	{
 		Path:        "/",
 		RewritePath: "/",
 	},
@@ -60,6 +64,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	// since it would allow a malicious user to manipulate that value and use Prometheus endpoint
 	// as a gateway to another host.
 	envoyAdminClusterName := envoy_names.GetEnvoyAdminClusterName()
+	dppReadinessClusterName := envoy_names.GetDPPReadinessClusterName()
 	adminAddress := proxy.Metadata.GetAdminAddress()
 	if _, ok := adminAddressAllowedValues[adminAddress]; !ok {
 		var allowedAddresses []string
@@ -74,12 +79,23 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	case "::":
 		adminAddress = "::1"
 	}
-	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
+
+	envoyAdminCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, envoyAdminClusterName).
 		Configure(envoy_clusters.ProvidedEndpointCluster(
 			govalidator.IsIPv6(adminAddress),
 			core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
+
+	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
+		Configure(envoy_clusters.ProvidedEndpointCluster(
+			govalidator.IsIPv6(adminAddress),
+			core_xds.Endpoint{
+				UnixDomainPath: core_xds.DppReadinessSocketName(proxy.Metadata.WorkDir, proxy.Id.ToResourceKey().Name),
+			})).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +103,16 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	resources := core_xds.NewResourceSet()
 
 	for _, se := range staticEndpointPaths {
-		se.ClusterName = envoyAdminClusterName
+		// we only have /ready for now, so assign it to the readiness cluster directly
+		se.ClusterName = dppReadinessClusterName
+	}
+	for _, se := range staticTlsEndpointPaths {
+		switch se.Path {
+		case "/ready":
+			se.ClusterName = dppReadinessClusterName
+		default:
+			se.ClusterName = envoyAdminClusterName
+		}
 	}
 
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
@@ -96,9 +121,6 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
 			),
-		}
-		for _, se := range staticTlsEndpointPaths {
-			se.ClusterName = envoyAdminClusterName
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).
@@ -122,9 +144,13 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	}
 
 	resources.Add(&core_xds.Resource{
-		Name:     cluster.GetName(),
+		Name:     envoyAdminCluster.GetName(),
 		Origin:   OriginAdmin,
-		Resource: cluster,
+		Resource: envoyAdminCluster,
+	}, &core_xds.Resource{
+		Name:     readinessCluster.GetName(),
+		Origin:   OriginAdmin,
+		Resource: readinessCluster,
 	})
 	return resources, nil
 }
