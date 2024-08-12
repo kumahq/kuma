@@ -24,6 +24,10 @@ func OpenTelemetrySocketName(workdir string, backendName string) string {
 	return socketName(filepath.Join(workdir, "kuma-otel-"+backendName))
 }
 
+func DppReadinessSocketName(tmpDir, name string) string {
+	return socketName(filepath.Join(tmpDir, "kuma-readiness-"+name))
+}
+
 func socketName(s string) string {
 	trimLen := len(s)
 	if trimLen > 98 {

@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
 	"os"
 	"path/filepath"
 	"time"
@@ -236,6 +237,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
 			components = append(components, observabilityComponents...)
+
+			readinessComponent := readiness.NewReporter(core_xds.DppReadinessSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name))
+			components = append(components, readinessComponent)
+
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
