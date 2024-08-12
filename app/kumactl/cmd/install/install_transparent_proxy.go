@@ -18,9 +18,8 @@ import (
 )
 
 func newInstallTransparentProxy() *cobra.Command {
-	var configFile string
-
 	cfg := config.DefaultConfig()
+	cfgLoader := core_config.NewLoader(&cfg).WithEnvVarsLoading("KUMA_TRANSPARENT_PROXY")
 
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -77,7 +76,7 @@ runuser -u kuma-dp -- \
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
 
-			if err := core_config.LoadWithOption(configFile, &cfg, false, true, false, "kuma_transparent_proxy"); err != nil {
+			if err := cfgLoader.Load(cmd.InOrStdin()); err != nil {
 				return err
 			}
 
@@ -191,10 +190,11 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Inbound.ExcludePortsForIPs, "exclude-inbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy inbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForIPs, "exclude-outbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy outbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 
+	cmd.Flags().StringVar(&cfgLoader.Content, "transparent-proxy-config", cfgLoader.Content, "transparent proxy configuration provided in YAML or JSON format")
+	cmd.Flags().StringVar(&cfgLoader.Filename, "transparent-proxy-config-file", cfgLoader.Filename, "path to the file containing the transparent proxy configuration in YAML or JSON format")
+
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
-
-	cmd.Flags().StringVar(&configFile, "transparent-proxy-config-file", configFile, "path to the transparent proxy configuration file")
 
 	return cmd
 }
