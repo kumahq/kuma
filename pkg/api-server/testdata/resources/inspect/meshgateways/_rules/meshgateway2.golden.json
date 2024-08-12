@@ -46,8 +46,7 @@
  "resource": {
   "labels": {
    "k8s.kuma.io/namespace": "kuma-demo",
-   "kuma.io/display-name": "gw-1",
-   "kuma.io/mesh": "default"
+   "kuma.io/display-name": "gw-1"
   },
   "mesh": "default",
   "name": "gw-1",
@@ -115,8 +114,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-1",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-1"
        },
        "mesh": "default",
        "name": "http-route-1",
@@ -125,8 +123,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-2",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-2"
        },
        "mesh": "default",
        "name": "http-route-2",
@@ -135,8 +132,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-3",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-3"
        },
        "mesh": "default",
        "name": "http-route-3",
@@ -181,8 +177,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-1",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-1"
        },
        "mesh": "default",
        "name": "http-route-1",
@@ -191,8 +186,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-2",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-2"
        },
        "mesh": "default",
        "name": "http-route-2",
@@ -201,8 +195,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "http-route-3",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "http-route-3"
        },
        "mesh": "default",
        "name": "http-route-3",

@@ -1,9 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": {
-   "kuma.io/mesh": "default"
-  },
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -30,17 +28,13 @@
        "matchers": [],
        "origin": [
         {
-         "labels": {
-          "kuma.io/mesh": "default"
-         },
+         "labels": {},
          "mesh": "default",
          "name": "default",
          "type": "MeshTimeout"
         },
         {
-         "labels": {
-          "kuma.io/mesh": "default"
-         },
+         "labels": {},
          "mesh": "default",
          "name": "override",
          "type": "MeshTimeout"
@@ -68,17 +62,13 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -102,17 +92,13 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -141,9 +127,7 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"

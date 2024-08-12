@@ -450,7 +450,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if isK8s && r.Descriptor().Scope == ScopeMesh {
+	if r.Descriptor().Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
 	}
 
