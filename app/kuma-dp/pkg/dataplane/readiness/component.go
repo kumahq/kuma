@@ -16,24 +16,26 @@ import (
 )
 
 const (
-	PathPrefixReady = "/ready"
+	pathPrefixReady  = "/ready"
+	stateReady       = "READY"
+	stateTerminating = "TERMINATING"
 )
 
-// reporter reports the health status of this Kuma Dataplane Proxy
-// it always responds with "READY" currently
-type reporter struct {
-	socketPath string
+// Reporter reports the health status of this Kuma Dataplane Proxy
+type Reporter struct {
+	socketPath    string
+	isTerminating bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(socketPath string) component.Component {
-	return &reporter{
+func NewReporter(socketPath string) *Reporter {
+	return &Reporter{
 		socketPath: socketPath,
 	}
 }
 
-func (r *reporter) Start(stop <-chan struct{}) error {
+func (r *Reporter) Start(stop <-chan struct{}) error {
 	_, err := os.Stat(r.socketPath)
 	if err == nil {
 		// File is accessible try to rename it to verify it is not open
@@ -62,7 +64,7 @@ func (r *reporter) Start(stop <-chan struct{}) error {
 	)
 
 	mux := http.NewServeMux()
-	mux.HandleFunc(PathPrefixReady, r.handleReadiness)
+	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
 	server := &http.Server{
 		ReadHeaderTimeout: time.Second,
 		Handler:           mux,
@@ -85,19 +87,30 @@ func (r *reporter) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *reporter) handleReadiness(writer http.ResponseWriter, _ *http.Request) {
-	readyBytes := []byte("READY")
+func (r *Reporter) Terminating() {
+	r.isTerminating = true
+}
+
+func (r *Reporter) handleReadiness(writer http.ResponseWriter, _ *http.Request) {
+	state := stateReady
+	stateHTTPStatus := http.StatusOK
+	if r.isTerminating {
+		state = stateTerminating
+		stateHTTPStatus = http.StatusServiceUnavailable
+	}
+
+	stateBytes := []byte(state)
 	writer.Header().Set("Content-Type", "text/plain")
-	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(readyBytes)))
-	writer.WriteHeader(http.StatusOK)
-	_, err := writer.Write(readyBytes)
+	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(stateBytes)))
+	writer.WriteHeader(stateHTTPStatus)
+	_, err := writer.Write(stateBytes)
 	if err != nil {
 		logger.Info("[WARNING] could not write response", "err", err)
 	}
 }
 
-func (r *reporter) NeedLeaderElection() bool {
+func (r *Reporter) NeedLeaderElection() bool {
 	return false
 }
 
-var _ component.Component = &reporter{}
+var _ component.Component = &Reporter{}
