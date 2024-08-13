@@ -40,7 +40,7 @@ type reconciler struct {
 	lock sync.Mutex
 }
 
-func (r *reconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
+func (r *reconciler) Clear(node *envoy_core.Node) error {
 	id := r.hasher.ID(node)
 	r.lock.Lock()
 	defer r.lock.Unlock()

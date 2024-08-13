@@ -95,7 +95,7 @@ var _ = Describe("MADS http service", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 		// when
 		respBody, err := io.ReadAll(resp.Body)
@@ -125,7 +125,7 @@ var _ = Describe("MADS http service", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
+		Expect(resp).To(HaveHTTPStatus(http.StatusNotModified))
 
 		// when
 		respBody, err = io.ReadAll(resp.Body)
@@ -244,7 +244,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
@@ -287,7 +287,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
+			Expect(resp).To(HaveHTTPStatus(http.StatusNotModified))
 
 			// when
 			respBody, err = io.ReadAll(resp.Body)
@@ -319,12 +319,10 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
-
-			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -356,7 +354,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err = io.ReadAll(resp.Body)
@@ -396,7 +394,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
@@ -444,7 +442,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp2.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp2).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err = io.ReadAll(resp2.Body)
@@ -530,7 +528,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
@@ -562,7 +560,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
+			Expect(resp).To(HaveHTTPStatus(http.StatusNotModified))
 		})
 
 		It("should allow synchronous requests", func() {
@@ -603,7 +601,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusOK))
+			Expect(resp).To(HaveHTTPStatus(http.StatusOK))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)
@@ -645,7 +643,7 @@ var _ = Describe("MADS http service", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+			Expect(resp).To(HaveHTTPStatus(http.StatusBadRequest))
 
 			// when
 			respBody, err := io.ReadAll(resp.Body)

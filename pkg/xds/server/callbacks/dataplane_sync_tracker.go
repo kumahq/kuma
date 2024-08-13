@@ -7,12 +7,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_xds_v3.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
@@ -43,14 +43,14 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-	stopCh := make(chan struct{})
-
+	ctx, cancel := context.WithCancel(context.Background())
 	t.watchdogs[dpKey] = func() {
 		dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-		close(stopCh)
+		cancel()
 	}
 	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-	go t.newDataplaneWatchdog(dpKey).Start(stopCh)
+	//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
+	go t.newDataplaneWatchdog(dpKey).Start(ctx)
 	return nil
 }
 

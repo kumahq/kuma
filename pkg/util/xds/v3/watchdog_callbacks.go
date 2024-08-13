@@ -7,11 +7,14 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
-type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (util_watchdog.Watchdog, error)
+// Watchdog used to run in the background and update at a fixed rhythm
+type Watchdog interface {
+	Start(ctx context.Context)
+}
+
+type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (Watchdog, error)
 
 func NewWatchdogCallbacks(newNodeWatchdog NewNodeWatchdogFunc) envoy_xds.Callbacks {
 	return &watchdogCallbacks{
@@ -56,6 +59,7 @@ func (cb *watchdogCallbacks) OnFetchRequest(ctx context.Context, req *envoy_disc
 	}
 	// TODO: could also register a TTL on the REST stream to clean it up if there is no activity over a certain period,
 	// 		 since it will currently never be closed once opened
+	//nolint:contextcheck // `OnStreamRequest` is a go-control-plane interface
 	return cb.OnStreamRequest(RestStreamID, req)
 }
 
@@ -98,21 +102,19 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
 
-	// create a stop channel even if there won't be an actual watchdog
-	stopCh := make(chan struct{})
-	watchdog.cancel = func() {
-		close(stopCh)
-	}
+	// The request context shouldn't influence watchdogs.
+	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context))
+	watchdog.cancel = cancel
 	cb.streams[streamID] = watchdog
 
-	runnable, err := cb.newNodeWatchdog(watchdog.context, req.Node, streamID)
+	runnable, err := cb.newNodeWatchdog(ctx, req.Node, streamID)
 	if err != nil {
 		return err
 	}
 
 	if runnable != nil {
 		// kick off watchdog for that stream
-		go runnable.Start(stopCh)
+		go runnable.Start(ctx)
 	}
 	return nil
 }
@@ -156,21 +158,18 @@ func (cb *watchdogCallbacks) OnStreamDeltaRequest(streamID int64, req *envoy_dis
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
 
-	// create a stop channel even if there won't be an actual watchdog
-	stopCh := make(chan struct{})
-	watchdog.cancel = func() {
-		close(stopCh)
-	}
+	ctx, cancel := context.WithCancel(context.WithoutCancel(watchdog.context))
+	watchdog.cancel = cancel
 	cb.streams[streamID] = watchdog
 
-	runnable, err := cb.newNodeWatchdog(watchdog.context, req.Node, streamID)
+	runnable, err := cb.newNodeWatchdog(ctx, req.Node, streamID)
 	if err != nil {
 		return err
 	}
 
 	if runnable != nil {
 		// kick off watchdog for that stream
-		go runnable.Start(stopCh)
+		go runnable.Start(ctx)
 	}
 	return nil
 }

@@ -64,13 +64,13 @@ func NewReconcilerRestCallbacks(reconciler mads_reconcile.Reconciler) util_xds.R
 }
 
 func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration, log logr.Logger) envoy_xds.Callbacks {
-	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v3.NewWatchdogCallbacks(func(_ context.Context, node *envoy_core.Node, streamID int64) (util_xds_v3.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
-			OnTick: func(context.Context) error {
+			OnTick: func(ctx context.Context) error {
 				log.V(1).Info("on tick")
 				return reconciler.Reconcile(ctx)
 			},

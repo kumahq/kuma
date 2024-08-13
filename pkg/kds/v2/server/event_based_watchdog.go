@@ -16,11 +16,9 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
 type EventBasedWatchdog struct {
-	Ctx                 context.Context
 	Node                *envoy_core.Node
 	EventBus            events.EventBus
 	Reconciler          reconcile.Reconciler
@@ -31,10 +29,8 @@ type EventBasedWatchdog struct {
 	NewFullResyncTicker func() *time.Ticker
 }
 
-var _ util_watchdog.Watchdog = &EventBasedWatchdog{}
-
-func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
-	tenantID, _ := multitenant.TenantFromCtx(e.Ctx)
+func (e *EventBasedWatchdog) Start(ctx context.Context) {
+	tenantID, _ := multitenant.TenantFromCtx(ctx)
 	listener := e.EventBus.Subscribe(func(event events.Event) bool {
 		switch ev := event.(type) {
 		case events.ResourceChangedEvent:
@@ -58,8 +54,8 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 
 	for {
 		select {
-		case <-stop:
-			if err := e.Reconciler.Clear(e.Ctx, e.Node); err != nil {
+		case <-ctx.Done():
+			if err := e.Reconciler.Clear(e.Node); err != nil {
 				e.Log.Error(err, "reconcile clear failed")
 			}
 			listener.Close()
@@ -71,7 +67,7 @@ func (e *EventBasedWatchdog) Start(stop <-chan struct{}) {
 			reason := strings.Join(util_maps.SortedKeys(reasons), "_and_")
 			e.Log.V(1).Info("reconcile", "changedTypes", changedTypes, "reason", reason)
 			start := core.Now()
-			err, changed := e.Reconciler.Reconcile(e.Ctx, e.Node, changedTypes, e.Log)
+			err, changed := e.Reconciler.Reconcile(ctx, e.Node, changedTypes, e.Log)
 			if err != nil && !errors.Is(err, context.Canceled) {
 				e.Log.Error(err, "reconcile failed", "changedTypes", changedTypes, "reason", reason)
 				e.Metrics.KdsGenerationErrors.Inc()
