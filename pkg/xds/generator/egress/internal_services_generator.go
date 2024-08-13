@@ -4,7 +4,9 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -29,14 +31,22 @@ func (g *InternalServicesGenerator) Generate(
 
 	availableServices := g.distinctAvailableServices(proxy.ZoneEgressProxy.ZoneIngresses, meshName, servicesMap)
 
+	testMeses := []*meshexternalservice_api.MeshExternalServiceResource{}
+	mess := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]
+	for _, mes := range mess.(*meshexternalservice_api.MeshExternalServiceResourceList).GetItems() {
+		if mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] != proxy.Zone {
+			testMeses = append(testMeses, mes.(*meshexternalservice_api.MeshExternalServiceResource))
+		}
+	}
 	destinations := zoneproxy.BuildMeshDestinations(
 		availableServices,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
-		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
+		testMeses,
+		nil,
 		"",
 	)
-
+	core.Log.Info("InternalServicesGenerator", "destinations", destinations, "availableServices", availableServices, "servicesMap", servicesMap)
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
 
 	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, OriginEgress)
@@ -45,6 +55,7 @@ func (g *InternalServicesGenerator) Generate(
 	}
 	resources.Add(cds...)
 
+	core.Log.Info("InternalServicesGenerator", "services", services, "meshResources.EndpointMap", meshResources.EndpointMap)
 	eds, err := zoneproxy.GenerateEDS(services, meshResources.EndpointMap, proxy.APIVersion, meshName, OriginEgress)
 	if err != nil {
 		return nil, err

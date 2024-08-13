@@ -4,6 +4,7 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -15,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
@@ -33,18 +35,28 @@ func (g *ExternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
+	testMeses := []*meshexternalservice_api.MeshExternalServiceResource{}
+	mess := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]
+	for _, mes := range mess.(*meshexternalservice_api.MeshExternalServiceResourceList).GetItems() {
+		if mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] == proxy.Zone {
+			testMeses = append(testMeses, mes.(*meshexternalservice_api.MeshExternalServiceResource))
+		}
+	}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 		nil,
+		testMeses,
 		nil,
 		"",
 	)
+	core.Log.Info("ExternalServicesGenerator", "endpointMap", endpointMap, "destinations", destinations, "xdsCtx.Mesh.Resources.MeshExternalServices().Items", meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems())
 	services := g.buildServices(endpointMap, zone, meshResources)
 
 	g.addFilterChains(
 		apiVersion,
 		destinations.KumaIoServices,
+		destinations.BackendRefs,
 		endpointMap,
 		meshResources,
 		listenerBuilder,
@@ -154,6 +166,7 @@ func (*ExternalServicesGenerator) buildServices(
 func (g *ExternalServicesGenerator) addFilterChains(
 	apiVersion core_xds.APIVersion,
 	destinationsPerService map[string][]tags.Tags,
+	backendRefs []zoneproxy.BackendRefDestination,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
@@ -167,11 +180,11 @@ func (g *ExternalServicesGenerator) addFilterChains(
 	for _, es := range meshResources.ExternalServices {
 		esNames = append(esNames, es.Spec.GetService())
 	}
-	if val, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
-		for _, mes := range val.GetItems() {
-			esNames = append(esNames, mes.GetMeta().GetName())
-		}
-	}
+	// if val, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
+	// 	for _, mes := range val.GetItems() {
+	// 		esNames = append(esNames, mes.GetMeta().GetName())
+	// 	}
+	// }
 
 	for _, esName := range esNames {
 		if !services[esName] {
@@ -270,6 +283,39 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
+	}
+	for _, refDest := range backendRefs {
+		clusterName := envoy_names.GetEgressMeshExternalServiceName(refDest.Mesh, refDest.DestinationName)
+
+		if _, ok := sniUsed[refDest.SNI]; ok {
+			continue
+		}
+		sniUsed[refDest.SNI] = true
+
+		// todo(jakubdyszkiewicz) support splits
+		relevantTags := envoy_tags.Tags{}
+
+		// Destination name usually equals to kuma.io/service so we will add already existing cluster which will be
+		// then deduplicated in later steps
+		cluster := envoy_common.NewCluster(
+			envoy_common.WithName(clusterName),
+			envoy_common.WithService(refDest.DestinationName),
+			envoy_common.WithTags(relevantTags),
+		)
+		cluster.SetMesh(refDest.Mesh)
+
+		filterChain := envoy_listeners.FilterChain(
+			envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
+				envoy_listeners.MatchTransportProtocol("tls"),
+				envoy_listeners.MatchServerNames(refDest.SNI),
+				envoy_listeners.TcpProxyDeprecatedWithMetadata(
+					clusterName,
+					cluster,
+				),
+			),
+		)
+
+		listenerBuilder.Configure(filterChain)
 	}
 }
 

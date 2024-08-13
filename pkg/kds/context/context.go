@@ -21,6 +21,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -79,7 +80,10 @@ func DefaultContext(
 			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		reconcile_v2.If(
-			reconcile_v2.TypeIs(meshservice_api.MeshServiceType),
+			reconcile_v2.Or(
+				reconcile_v2.TypeIs(meshservice_api.MeshServiceType),
+				reconcile_v2.TypeIs(meshexternalservice_api.MeshExternalServiceType),
+			),
 			RemoveStatus()),
 		reconcile_v2.If(
 			reconcile_v2.And(

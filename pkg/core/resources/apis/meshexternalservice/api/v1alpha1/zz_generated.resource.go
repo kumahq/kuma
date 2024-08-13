@@ -148,7 +148,7 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshExternalServiceResource(),
 	ResourceList:                 &MeshExternalServiceResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
 	WsPath:                       "meshexternalservices",
 	KumactlArg:                   "meshexternalservice",
 	KumactlListArg:               "meshexternalservices",

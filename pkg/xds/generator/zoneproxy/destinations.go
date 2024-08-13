@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -36,12 +37,13 @@ func BuildMeshDestinations(
 	availableServices []*mesh_proto.ZoneIngress_AvailableService, // available services for a single mesh
 	res xds_context.Resources,
 	meshServices []*meshservice_api.MeshServiceResource,
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
 	systemNamespace string,
 ) MeshDestinations {
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
-		BackendRefs:    append(buildMeshServiceDestinations(meshServices, systemNamespace), buildMeshMultiZoneServiceDestinations(meshMzSvc)...),
+		BackendRefs:    append(buildMeshServiceDestinations(meshServices, systemNamespace), append(buildMeshMultiZoneServiceDestinations(meshMzSvc), buildMeshExternalServiceDestinations(meshExternalServices)...)...),
 	}
 }
 
@@ -67,6 +69,26 @@ func buildMeshServiceDestinations(
 		}
 	}
 	return msDestinations
+}
+
+func buildMeshExternalServiceDestinations(
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+) []BackendRefDestination {
+	var mesDestinations []BackendRefDestination
+	for _, mes := range meshExternalServices {
+		mesDestinations = append(mesDestinations, BackendRefDestination{
+			Mesh:            mes.GetMeta().GetMesh(),
+			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
+			SNI: tls.SNIForResource(
+				core_model.GetDisplayName(mes.GetMeta()),
+				mes.GetMeta().GetMesh(),
+				meshexternalservice_api.MeshExternalServiceType,
+				uint32(mes.Spec.Match.Port),
+				nil,
+			),
+		})
+	}
+	return mesDestinations
 }
 
 func buildMeshMultiZoneServiceDestinations(

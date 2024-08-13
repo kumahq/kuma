@@ -8,6 +8,8 @@ import (
 	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -51,13 +53,17 @@ func (i IngressGenerator) Generate(
 		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
 		// we only want to expose local mesh services
 		localMs := localMeshServices(xdsCtx.ControlPlane.Zone, meshResources.MeshServices().Items)
+		localMes := localMeshExternalServices(xdsCtx.ControlPlane.Zone, meshResources.MeshExternalServices().Items)
 		dest := zoneproxy.BuildMeshDestinations(
 			availableSvcsByMesh[meshName],
 			meshResources,
 			localMs,
+			localMes,
 			meshResources.MeshMultiZoneServices().Items,
 			xdsCtx.ControlPlane.SystemNamespace,
 		)
+
+		core.Log.Info("TEST INGRESS GEN", "dest", dest)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 
@@ -98,6 +104,17 @@ func (i IngressGenerator) Generate(
 func localMeshServices(zone string, meshServices []*meshservice_api.MeshServiceResource) []*meshservice_api.MeshServiceResource {
 	var result []*meshservice_api.MeshServiceResource
 	for _, ms := range meshServices {
+		if labels := ms.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" && labels[mesh_proto.ZoneTag] != zone {
+			continue
+		}
+		result = append(result, ms)
+	}
+	return result
+}
+
+func localMeshExternalServices(zone string, meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource) []*meshexternalservice_api.MeshExternalServiceResource {
+	var result []*meshexternalservice_api.MeshExternalServiceResource
+	for _, ms := range meshExternalServices {
 		if labels := ms.GetMeta().GetLabels(); labels != nil && labels[mesh_proto.ZoneTag] != "" && labels[mesh_proto.ZoneTag] != zone {
 			continue
 		}

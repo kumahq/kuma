@@ -1,6 +1,8 @@
 package meshmultizoneservice
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -17,7 +19,16 @@ func Connectivity() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(YamlUniversal(`
+type: Mesh
+name: mzmsconnectivity
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+routing:
+  zoneEgress: true`)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
@@ -143,6 +154,8 @@ spec:
 		// given traffic to local zone only
 		Eventually(responseFromInstance(multizone.KubeZone1), "30s", "1s").
 			MustPassRepeatedly(5).Should(Equal("kube-test-server-1"))
+
+		time.Sleep(1 * time.Hour)
 
 		// when
 		err := ScaleApp(multizone.KubeZone1, "test-server", namespace, 0)
