@@ -19,6 +19,7 @@ import (
 )
 
 const (
+	flagHelp                       = "help"
 	flagTransparentProxyConfig     = "transparent-proxy-config"
 	flagTransparentProxyConfigFile = "transparent-proxy-config-file"
 )
@@ -81,24 +82,33 @@ runuser -u kuma-dp -- \
 		// Disable automatic flag parsing to ensure that our custom order of precedence
 		// for configuring the transparent proxy is preserved (we'll manually parse flags)
 		DisableFlagParsing: true,
-		PreRunE: func(cmd *cobra.Command, args []string) error {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
 
 			parseConfigFlags := func(flag *pflag.Flag, value string) error {
 				switch flag.Name {
-				case flagTransparentProxyConfig, flagTransparentProxyConfigFile:
+				case flagHelp, flagTransparentProxyConfig, flagTransparentProxyConfigFile:
 					return flag.Value.Set(value)
 				default:
 					return nil
 				}
 			}
 
-			// To maintain the correct order of precedence, we first need to parse
-			// the `--transparent-proxy-config` and `--transparent-proxy-config-file` flags
-			// if they are set
+			// To ensure the correct order of precedence, we first need to parse
+			// the `--transparent-proxy-config` and `--transparent-proxy-config-file` flags if they
+			// are set. Additionally, since `DisableFlagParsing` is set, we must handle the `--help`
+			// flag manually. During this parsing, if any unknown flag errors are encountered,
+			// we need to wrap the parsing logic with a usage message, as this isn't done automatically
+			// when `DisableFlagParsing` is set
 			if err := cmd.Flags().ParseAll(args, parseConfigFlags); err != nil {
-				return errors.Wrap(err, "failed to parse transparent proxy config flags")
+				return errors.Errorf("%s\n\n%s", err, cmd.UsageString())
+			}
+
+			// With `DisableFlagParsing` enabled, we are responsible for manually parsing all flags,
+			// including the `--help` flag
+			if ok, _ := cmd.Flags().GetBool(flagHelp); ok {
+				return cmd.Help()
 			}
 
 			// After parsing the config flags, we load the configuration, which involves parsing
@@ -110,7 +120,10 @@ runuser -u kuma-dp -- \
 			// Finally, we parse the remaining CLI flags, as they have the highest priority
 			// in our order of precedence
 			if err := cmd.Flags().Parse(args); err != nil {
-				return errors.Wrap(err, "failed to parse remaining CLI flags")
+				// Since unknown flag errors were handled earlier, we'll catch here other parsing
+				// errors for all other flags. We wrap the error with a usage message as
+				// `DisableFlagParsing` prevents the usage message from being automatically displayed
+				return errors.Errorf("%s\n\n%s", err, cmd.UsageString())
 			}
 
 			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
@@ -125,9 +138,6 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !cfg.DryRun && runtime.GOOS != "linux" {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
@@ -228,6 +238,10 @@ runuser -u kuma-dp -- \
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
+
+	// Manually define the `--help` flag since we are handling flag parsing ourselves due to
+	// `DisableFlagParsing` being set
+	_ = cmd.Flags().BoolP(flagHelp, "h", false, "show this help message")
 
 	return cmd
 }
