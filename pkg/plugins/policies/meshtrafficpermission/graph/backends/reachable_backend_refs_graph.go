@@ -19,31 +19,6 @@ type BackendKey struct {
 	Name string
 }
 
-type Graph struct {
-	rules map[BackendKey]core_rules.Rules
-}
-
-func NewGraph() *Graph {
-	return &Graph{
-		rules: map[BackendKey]core_rules.Rules{},
-	}
-}
-
-func (r *Graph) CanReachBackend(fromTags map[string]string, backendRef *mesh_proto.Dataplane_Networking_Outbound_BackendRef) bool {
-	if backendRef.Kind == "MeshExternalService" {
-		return true
-	}
-	rule := r.rules[BackendKey{
-		Kind: backendRef.Kind,
-		Name: backendRef.Name,
-	}].Compute(core_rules.SubsetFromTags(fromTags))
-	if rule == nil {
-		return false
-	}
-	action := rule.Conf.(mtp_api.Conf).Action
-	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
-}
-
 func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[BackendKey]core_rules.Rules {
 	rules := map[BackendKey]core_rules.Rules{}
 	for _, ms := range meshServices {

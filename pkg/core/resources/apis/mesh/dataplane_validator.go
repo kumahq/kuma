@@ -8,21 +8,16 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
-const (
-	meshServiceKind          = "MeshService"
-	meshExternalServiceKind  = "MeshExternalService"
-	meshMultiZoneServiceKind = "MeshMultiZoneService"
-)
-
 var allowedKinds = map[string]struct{}{
-	meshServiceKind:          {},
-	meshExternalServiceKind:  {},
-	meshMultiZoneServiceKind: {},
+	string(common_api.MeshService):          {},
+	string(common_api.MeshExternalService):  {},
+	string(common_api.MeshMultiZoneService): {},
 }
 
 func (d *DataplaneResource) Validate() error {
@@ -242,7 +237,7 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 			result.AddViolation("backendRef.name", "cannot be empty")
 		}
 		// for MeshExternalService the port does not matter because it's taken from endpoints
-		if outbound.BackendRef.Kind != meshExternalServiceKind {
+		if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
 			result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
 		}
 	case len(outbound.Tags) == 0:
@@ -269,7 +264,7 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 	if tp != nil && tp.ReachableBackends != nil {
 		for i, backendRef := range tp.ReachableBackends.Refs {
 			switch backendRef.Kind {
-			case meshMultiZoneServiceKind, meshServiceKind, meshExternalServiceKind:
+			case string(common_api.MeshMultiZoneService), string(common_api.MeshService), string(common_api.MeshExternalService):
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
@@ -278,9 +273,6 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			}
 			if backendRef.Name == "" && backendRef.Namespace != "" {
 				result.AddViolationAt(path.Index(i).Field("name"), "name is required, when namespace is defined")
-			}
-			if s := strings.Split(backendRef.Name, "."); len(s) > 1 {
-				result.AddViolationAt(path.Index(i).Field("name"), "name cannot contains namespace")
 			}
 			if (backendRef.Name != "" || backendRef.Namespace != "") && len(backendRef.Labels) > 0 {
 				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")

@@ -270,7 +270,7 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
-		// time.Sleep(1*time.Hour)
+
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				multizone.KubeZone1, "client-server", "external-service-reachable.extsvc.mesh.local",

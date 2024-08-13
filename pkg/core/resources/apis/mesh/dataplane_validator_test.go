@@ -1325,8 +1325,6 @@ var _ = Describe("Dataplane", func() {
                   message: labels cannot be defined when name is specified
                 - field: networking.transparentProxing.reachableBackends.refs[2].labels
                   message: labels cannot be defined when name is specified
-                - field: networking.transparentProxing.reachableBackends.refs[3].name
-                  message: name cannot contains namespace
                 - field: networking.transparentProxing.reachableBackends.refs[4].name
                   message: name or labels are required
                 - field: networking.transparentProxing.reachableBackends.refs[5].name
