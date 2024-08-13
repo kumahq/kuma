@@ -5806,6 +5806,7 @@ _kumactl_install_transparent-proxy()
     flags_with_completion=()
     flags_completion=()
 
+    flag_parsing_disabled=1
     flags+=("--disable-comments")
     local_nonpersistent_flags+=("--disable-comments")
     flags+=("--drop-invalid-packets")

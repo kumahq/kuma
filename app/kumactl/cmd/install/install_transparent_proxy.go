@@ -9,12 +9,18 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+)
+
+const (
+	flagTransparentProxyConfig     = "transparent-proxy-config"
+	flagTransparentProxyConfigFile = "transparent-proxy-config-file"
 )
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -72,12 +78,39 @@ runuser -u kuma-dp -- \
     --binary-path /usr/local/bin/envoy
 
 `,
-		PreRunE: func(cmd *cobra.Command, _ []string) error {
+		// Disable automatic flag parsing to ensure that our custom order of precedence
+		// for configuring the transparent proxy is preserved (we'll manually parse flags)
+		DisableFlagParsing: true,
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
 
+			parseConfigFlags := func(flag *pflag.Flag, value string) error {
+				switch flag.Name {
+				case flagTransparentProxyConfig, flagTransparentProxyConfigFile:
+					return flag.Value.Set(value)
+				default:
+					return nil
+				}
+			}
+
+			// To maintain the correct order of precedence, we first need to parse
+			// the `--transparent-proxy-config` and `--transparent-proxy-config-file` flags
+			// if they are set
+			if err := cmd.Flags().ParseAll(args, parseConfigFlags); err != nil {
+				return errors.Wrap(err, "failed to parse transparent proxy config flags")
+			}
+
+			// After parsing the config flags, we load the configuration, which involves parsing
+			// the provided YAML or JSON, and including environment variables if present
 			if err := cfgLoader.Load(cmd.InOrStdin()); err != nil {
-				return err
+				return errors.Wrap(err, "failed to load configuration from provided input")
+			}
+
+			// Finally, we parse the remaining CLI flags, as they have the highest priority
+			// in our order of precedence
+			if err := cmd.Flags().Parse(args); err != nil {
+				return errors.Wrap(err, "failed to parse remaining CLI flags")
 			}
 
 			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
@@ -88,7 +121,7 @@ runuser -u kuma-dp -- \
 			// here to ensure the proper user is set.
 			if !cfg.Owner.Changed() {
 				if err := cfg.Owner.Set(""); err != nil {
-					return err
+					return errors.Wrap(err, "failed to set default owner for transparent proxy")
 				}
 			}
 
@@ -190,8 +223,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Inbound.ExcludePortsForIPs, "exclude-inbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy inbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForIPs, "exclude-outbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy outbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 
-	cmd.Flags().StringVar(&cfgLoader.Content, "transparent-proxy-config", cfgLoader.Content, "transparent proxy configuration provided in YAML or JSON format")
-	cmd.Flags().StringVar(&cfgLoader.Filename, "transparent-proxy-config-file", cfgLoader.Filename, "path to the file containing the transparent proxy configuration in YAML or JSON format")
+	cmd.Flags().StringVar(&cfgLoader.Content, flagTransparentProxyConfig, cfgLoader.Content, "transparent proxy configuration provided in YAML or JSON format")
+	cmd.Flags().StringVar(&cfgLoader.Filename, flagTransparentProxyConfigFile, cfgLoader.Filename, "path to the file containing the transparent proxy configuration in YAML or JSON format")
 
 	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
