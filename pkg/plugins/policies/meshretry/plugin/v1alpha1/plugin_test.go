@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -37,6 +38,16 @@ import (
 )
 
 var _ = Describe("MeshRetry", func() {
+
+	externalMesIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "external",
+			Mesh:      "default",
+			Namespace: "kuma-system",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshExternalService",
+	}
 	type testCase struct {
 		resources        []core_xds.Resource
 		toRules          core_rules.ToRules
@@ -58,6 +69,7 @@ var _ = Describe("MeshRetry", func() {
 			AddServiceProtocol("tcp-service", core_mesh.ProtocolTCP).
 			AddServiceProtocol("grpc-service", core_mesh.ProtocolGRPC).
 			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+			AddServiceProtocol("external", core_mesh.ProtocolHTTP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -65,14 +77,15 @@ var _ = Describe("MeshRetry", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				AddOutboundsToServices("http-service", "grpc-service", "tcp-service").
+				AddOutboundsToServices("http-service", "grpc-service", "tcp-service", "external").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(xds_builders.EndpointMap().
 						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
 						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
-						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
+						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()).
+						AddEndpoint("external", xds_samples.HttpEndpointBuilder()),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
@@ -459,6 +472,102 @@ var _ = Describe("MeshRetry", func() {
 				},
 			},
 			goldenFilePrefix: "retry_per_http_route",
+		}),
+		Entry("http retry", testCase{
+			resources: []core_xds.Resource{{
+				Name:           "outbound",
+				Origin:         generator.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(10001),
+				ResourceOrigin: &externalMesIdentifier,
+				Protocol:       core_mesh.ProtocolHTTP,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					externalMesIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								HTTP: &api.HTTP{
+									NumRetries:    pointer.To[uint32](1),
+									PerTryTimeout: test.ParseDuration("2s"),
+									BackOff: &api.BackOff{
+										BaseInterval: test.ParseDuration("3s"),
+										MaxInterval:  test.ParseDuration("4s"),
+									},
+									RateLimitedBackOff: &api.RateLimitedBackOff{
+										MaxInterval: test.ParseDuration("5s"),
+										ResetHeaders: &[]api.ResetHeader{
+											{
+												Name:   "retry-after-http",
+												Format: "Seconds",
+											},
+											{
+												Name:   "x-retry-after-http",
+												Format: "UnixTimestamp",
+											},
+										},
+									},
+									RetryOn: &[]api.HTTPRetryOn{
+										api.All5xx,
+										api.GatewayError,
+										api.Reset,
+										api.Retriable4xx,
+										api.ConnectFailure,
+										api.EnvoyRatelimited,
+										api.RefusedStream,
+										api.Http3PostConnectFailure,
+										api.HttpMethodConnect,
+										api.HttpMethodDelete,
+										api.HttpMethodGet,
+										api.HttpMethodHead,
+										api.HttpMethodOptions,
+										api.HttpMethodPatch,
+										api.HttpMethodPost,
+										api.HttpMethodPut,
+										api.HttpMethodTrace,
+										"429",
+									},
+									RetriableResponseHeaders: &[]common_api.HeaderMatch{
+										{
+											Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+											Name:  "x-retry-regex",
+											Value: ".*",
+										},
+										{
+											Type:  pointer.To(common_api.HeaderMatchExact),
+											Name:  "x-retry-exact",
+											Value: "exact-value",
+										},
+									},
+									RetriableRequestHeaders: &[]common_api.HeaderMatch{
+										{
+											Type:  pointer.To(common_api.HeaderMatchPrefix),
+											Name:  "x-retry-prefix",
+											Value: "prefix-",
+										},
+									},
+									HostSelection: &[]api.Predicate{
+										{
+											PredicateType: "OmitPreviousHosts",
+										},
+										{
+											PredicateType:   "OmitPreviousPriorities",
+											UpdateFrequency: 2,
+										},
+										{
+											PredicateType: "OmitHostsWithTags",
+											Tags: map[string]string{
+												"test": "test",
+											},
+										},
+									},
+									HostSelectionMaxAttempts: pointer.To(int64(2)),
+								},
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "http-real-mesh-external-service",
 		}),
 	)
 
