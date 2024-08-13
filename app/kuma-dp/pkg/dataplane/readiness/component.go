@@ -91,7 +91,7 @@ func (r *Reporter) Terminating() {
 	r.isTerminating = true
 }
 
-func (r *Reporter) handleReadiness(writer http.ResponseWriter, _ *http.Request) {
+func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
 	state := stateReady
 	stateHTTPStatus := http.StatusOK
 	if r.isTerminating {
@@ -102,8 +102,11 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, _ *http.Request) 
 	stateBytes := []byte(state)
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(stateBytes)))
+	writer.Header().Set("Cache-Control", "no-cache, max-age=0")
+	writer.Header().Set("X-Readiness-Server", "kuma-dp")
 	writer.WriteHeader(stateHTTPStatus)
 	_, err := writer.Write(stateBytes)
+	logger.V(1).Info("responding readiness state", "state", state, "client", req.RemoteAddr)
 	if err != nil {
 		logger.Info("[WARNING] could not write response", "err", err)
 	}
