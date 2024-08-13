@@ -1310,7 +1310,7 @@ var _ = Describe("Dataplane", func() {
                     labels:
                       kuma.io/test: test
                   - kind: MeshService
-                    name: first.kuma
+                    name: first$-.kuma
                   - kind: MeshService
                   - kind: MeshService
                     namespace: xyz
@@ -1325,6 +1325,8 @@ var _ = Describe("Dataplane", func() {
                   message: labels cannot be defined when name is specified
                 - field: networking.transparentProxing.reachableBackends.refs[2].labels
                   message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackends.refs[3].name
+                  message: invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
                 - field: networking.transparentProxing.reachableBackends.refs[4].name
                   message: name or labels are required
                 - field: networking.transparentProxing.reachableBackends.refs[5].name

@@ -268,6 +268,9 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			default:
 				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 			}
+			if backendRef.Name != "" {
+				result.AddErrorAt(path.Index(i).Field("name"), validateIdentifier(backendRef.Name, identifierRegexp, identifierErrMsg))
+			}
 			if backendRef.Name == "" && backendRef.Namespace == "" && len(backendRef.Labels) == 0 {
 				result.AddViolationAt(path.Index(i).Field("name"), "name or labels are required")
 			}
