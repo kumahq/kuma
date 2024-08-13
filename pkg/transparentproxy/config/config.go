@@ -159,6 +159,8 @@ func (p *Ports) String() string {
 func (p *Ports) Type() string { return "uint16[,...]" }
 
 func (p *Ports) Set(s string) error {
+	*p = nil
+
 	if s = strings.TrimSpace(s); s == "" {
 		return nil
 	}
