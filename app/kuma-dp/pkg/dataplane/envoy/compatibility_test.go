@@ -61,7 +61,7 @@ var _ = Describe("Compatibility", func() {
 		Expect(r).To(BeTrue())
 	})
 	It("Works with actual build version", func() {
-		r, err := envoy.VersionCompatible("~"+version.Envoy, version.Envoy)
+		r, err := envoy.VersionCompatible(version.Envoy, version.Envoy)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(r).To(BeTrue())
 	}, test.LabelBuildCheck)
