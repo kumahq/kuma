@@ -25,7 +25,7 @@
          "requestTimeout": "5s"
         }
        },
-       "matchers": null,
+       "matchers": [],
        "origin": [
         {
          "labels": {},

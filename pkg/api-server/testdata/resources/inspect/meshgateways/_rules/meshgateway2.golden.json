@@ -243,7 +243,7 @@
        }
       ]
      },
-     "matchers": null,
+     "matchers": [],
      "origin": [
       {
        "labels": {
@@ -306,7 +306,7 @@
        "foo.com"
       ]
      },
-     "matchers": null,
+     "matchers": [],
      "origin": [
       {
        "labels": {

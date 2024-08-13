@@ -35,7 +35,7 @@ func ResourceMetaListToMetaList(resType core_model.ResourceType, in []core_model
 }
 
 func SubsetToRuleMatcher(subset core_rules.Subset) []api_common.RuleMatcher {
-	var matchers []api_common.RuleMatcher
+	matchers := []api_common.RuleMatcher{}
 	for _, m := range subset {
 		matchers = append(matchers, api_common.RuleMatcher{Key: m.Key, Value: m.Value, Not: m.Not})
 	}

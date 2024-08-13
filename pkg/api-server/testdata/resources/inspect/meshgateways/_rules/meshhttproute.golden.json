@@ -182,7 +182,7 @@
        }
       ]
      },
-     "matchers": null,
+     "matchers": [],
      "origin": [
       {
        "labels": {
@@ -210,7 +210,7 @@
   },
   {
    "fromRules": [],
-   "toResourceRules": null,
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {

@@ -915,7 +915,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 			}
-			var toResourceRules []api_common.ResourceRule
+			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
 					Conf:                resourceRuleItem.Conf,

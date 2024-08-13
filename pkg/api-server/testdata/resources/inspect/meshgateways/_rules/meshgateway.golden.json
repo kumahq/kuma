@@ -55,7 +55,7 @@
        "requestTimeout": "10s"
       }
      },
-     "matchers": null,
+     "matchers": [],
      "origin": [
       {
        "labels": {
@@ -97,7 +97,7 @@
      }
     ]
    },
-   "toResourceRules": null,
+   "toResourceRules": [],
    "toRules": [],
    "type": "MeshProxyPatch",
    "warnings": []
