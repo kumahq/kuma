@@ -13,12 +13,6 @@ resources:
                 address: example.com
                 portValue: 10000
           loadBalancingWeight: 1
-          metadata:
-            filterMetadata:
-              envoy.lb:
-                kuma.io/mesh: default
-              envoy.transport_socket_match:
-                kuma.io/mesh: default
     name: meshexternalservice_example
     type: STRICT_DNS
     typedExtensionProtocolOptions:

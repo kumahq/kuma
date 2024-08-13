@@ -3,7 +3,6 @@ package memory
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 	"sync"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -72,14 +70,7 @@ func (m memoryMeta) GetModificationTime() time.Time {
 }
 
 func (m memoryMeta) GetLabels() map[string]string {
-	l := maps.Clone(m.Labels)
-	if m.Mesh != "" {
-		if l == nil {
-			l = map[string]string{}
-		}
-		l[mesh_proto.MeshTag] = m.Mesh
-	}
-	return l
+	return m.Labels
 }
 
 type memoryVersion uint64
