@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
 	"os"
 	"path/filepath"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"

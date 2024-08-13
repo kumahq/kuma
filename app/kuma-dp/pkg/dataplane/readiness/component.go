@@ -3,12 +3,12 @@ package readiness
 import (
 	"context"
 	"fmt"
-	"github.com/bakito/go-log-logr-adapter/adapter"
 	"net"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/bakito/go-log-logr-adapter/adapter"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"

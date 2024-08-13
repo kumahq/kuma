@@ -86,6 +86,9 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			core_xds.Endpoint{Target: adminAddress, Port: adminPort})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
+	if err != nil {
+		return nil, err
+	}
 
 	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
 		Configure(envoy_clusters.ProvidedEndpointCluster(
@@ -95,7 +98,6 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			})).
 		Configure(envoy_clusters.DefaultTimeout()).
 		Build()
-
 	if err != nil {
 		return nil, err
 	}
