@@ -86,6 +86,8 @@ func FederateKubeZoneCPToKubeGlobal() {
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 			)
 			Expect(err).ToNot(HaveOccurred())
+			// wait for the mesh, that means KDS works
+			Expect(WaitForMesh("default", []Cluster{global, zone})).To(Succeed())
 		})
 
 		It("should sync data plane proxies to global cp", func() {
