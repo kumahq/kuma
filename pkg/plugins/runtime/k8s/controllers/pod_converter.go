@@ -42,13 +42,11 @@ func (p *PodConverter) PodToDataplane(
 	others []*mesh_k8s.Dataplane,
 ) error {
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
-
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
 	}
 	dataplane.SetSpec(dataplaneProto)
-
 	return nil
 }
 
