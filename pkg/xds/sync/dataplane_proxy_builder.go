@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -18,6 +19,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -113,6 +115,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
 		reachableServices[reachableService] = true
 	}
+	reachableBackends := meshContext.GetReachableBackends(dataplane)
 
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
@@ -122,7 +125,10 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
+		if outbound.BackendRef == nil {
+			if reachableBackends != nil && len(reachableServices) == 0 {
+				continue
+			}
 			service := outbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {
@@ -133,6 +139,32 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 			} else {
 				// static reachable services takes precedence over the graph
 				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
+					continue
+				}
+			}
+		} else {
+			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
+			// of the dataplane
+			if len(reachableServices) != 0 && reachableBackends == nil {
+				continue
+			}
+			if reachableBackends != nil {
+				backendKey := xds_context.BackendKey{
+					Kind: outbound.BackendRef.Kind,
+					Name: outbound.BackendRef.Name,
+					Port: outbound.BackendRef.Port,
+				}
+				// check if there is an entry with specific port or without port
+				if !pointer.Deref(reachableBackends)[backendKey] && !pointer.Deref(reachableBackends)[xds_context.BackendKey{Kind: outbound.BackendRef.Kind, Name: outbound.BackendRef.Name}] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+				// we don't support MeshTrafficPermission for MeshExternalService at the moment
+				// TODO: https://github.com/kumahq/kuma/issues/11077
+			} else if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
 					continue
 				}
 			}

@@ -1,0 +1,43 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/transparent-proxying: "enabled"
+    kuma.io/transparent-proxying-inbound-port: 15006
+    kuma.io/transparent-proxying-outbound-port: 15001
+    kuma.io/reachable-backends: |
+      refs:
+      - kind: MeshService
+        name: demo-app
+        namespace: kuma-demo
+        port: 5000
+      - kind: MeshService
+        name: redis
+        namespace: redis-system
+      - kind: MeshService
+        labels:
+          kuma.io/display-name: xyz
+          kuma.io/zone: east
+      - kind: MeshExternalService
+        name: demo-app
+        namespace: kuma-system
+      - kind: MeshExternalService
+        labels:
+          kuma.io/display-name: httpbin
+spec:
+  containers:
+    - ports: []
+      # when a 'targetPort' in a ServicePort is a number,
+      # it should not be mandatory to list container ports explicitly
+      #
+      # containerPort: 8080
+      # containerPort: 8443
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1
