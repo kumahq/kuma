@@ -25,12 +25,17 @@ func (w *SimpleWatchdog) Start(ctx context.Context) {
 			}
 		}
 		select {
+		case <-ctx.Done():
 		case <-ticker.C:
+		}
+		// cases are non prioritized so we first check is the context is done
+		select {
 		case <-ctx.Done():
 			if w.OnStop != nil {
 				w.OnStop()
 			}
 			return
+		default:
 		}
 	}
 }
