@@ -810,6 +810,23 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
+		Entry("40. application probe proxy: config - disabled, pod - enabled", testCase{
+			num: "40",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",
