@@ -133,32 +133,38 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 		return fmt.Sprintf("%d", port)
 	}
 
+	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
+	// vp   proxy    	result
+	// Y    Y      	     proxy
+	// Y    N            vp
+	// N    N      	     N
+	// N    Y - config   N
+	// N    Y - pod      proxy
+
 	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
 	// this is treated as deprecated though
-	appProbeProxyPort, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if err != nil {
+		return err
+	}
 	if vpEnabled, _, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation); !vpEnabled && !proxyPortAnnoExists {
 		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
 		return nil
 	}
-
-	if err != nil {
-		return err
+	appProbeProxyPort := defaultAppProbeProxyPort
+	if proxyPortAnnoExists {
+		appProbeProxyPort = proxyPortAnno
 	}
 	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
 	if gwExists {
-		if appProbeProxyPort > 0 {
+		if proxyPortAnnoExists && proxyPortAnno > 0 {
 			return errors.New("application probe proxies probes can't be enabled in gateway mode")
 		}
 		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
 		return nil
 	}
 
-	if proxyPortAnnoExists {
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
-	} else {
-		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(defaultAppProbeProxyPort)
-	}
-
+	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
 	// with application probe proxy enabled, we don't need virtual probes
 	if annotations[metadata.KumaApplicationProbeProxyPortAnnotation] != "0" {
 		delete(annotations, metadata.KumaVirtualProbesAnnotation)

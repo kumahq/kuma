@@ -128,6 +128,8 @@ const (
 var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
 	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
+	NewDeprecation(KumaVirtualProbesAnnotation, false),
+	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
@@ -143,6 +145,17 @@ func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
 	msg := fmt.Sprintf("'%s' is being replaced by: '%s'", old, new)
 	if removed {
 		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, use '%s' instead", old, new)
+	}
+	return Deprecation{
+		Key:     old,
+		Message: msg,
+	}
+}
+
+func NewDeprecation(old string, removed bool) Deprecation {
+	msg := fmt.Sprintf("'%s' will be removed in a future release", old)
+	if removed {
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, please see documentation on how to migrate", old)
 	}
 	return Deprecation{
 		Key:     old,
