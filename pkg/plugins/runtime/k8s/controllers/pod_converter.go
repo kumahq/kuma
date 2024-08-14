@@ -43,19 +43,9 @@ func (p *PodConverter) PodToDataplane(
 ) error {
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 
-	var exisingProbes *mesh_proto.Dataplane_Probes
-	if dpSpec, err := dataplane.GetSpec(); err == nil {
-		if existingProbe, ok := dpSpec.(*mesh_proto.Dataplane); ok {
-			exisingProbes = existingProbe.Probes
-		}
-	}
-
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
-	}
-	if exisingProbes != nil {
-		dataplaneProto.Probes = exisingProbes
 	}
 	dataplane.SetSpec(dataplaneProto)
 
@@ -200,6 +190,12 @@ func (p *PodConverter) dataplaneFor(
 		return nil, err
 	}
 	dataplane.Metrics = metrics
+
+	probes, err := ProbesFor(pod)
+	if err != nil {
+		return nil, err
+	}
+	dataplane.Probes = probes
 
 	adminPort, exist, err := annotations.GetUint32(metadata.KumaEnvoyAdminPort)
 	if err != nil {

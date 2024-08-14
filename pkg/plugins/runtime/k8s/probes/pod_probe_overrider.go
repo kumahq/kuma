@@ -11,6 +11,14 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
+func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
+	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if err != nil {
+		return false, err
+	}
+	return appProbeProxyPort == 0, nil
+}
+
 func SetupPodProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
@@ -123,6 +131,13 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, defaultAppProbeProxyPort uint32) error {
 	str := func(port uint32) string {
 		return fmt.Sprintf("%d", port)
+	}
+
+	// if disabled by "kuma.io/virtual-probes", we honor it
+	// this is treated as deprecated though
+	if vpEnabled, _, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation); !vpEnabled {
+		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
+		return nil
 	}
 
 	appProbeProxyPort, annoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)

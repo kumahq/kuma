@@ -63,7 +63,7 @@ func New(
 		proxyFactory: containers.NewDataplaneProxyFactory(
 			controlPlaneURL, caCert, envoyAdminPort, cfg.SidecarContainer.DataplaneContainer,
 			cfg.BuiltinDNS, cfg.SidecarContainer.WaitForDataplaneReady, sidecarContainersEnabled,
-			cfg.ApplicationProbeProxyPort,
+			cfg.VirtualProbesEnabled, cfg.ApplicationProbeProxyPort,
 		),
 		systemNamespace: systemNamespace,
 	}, nil
@@ -218,8 +218,18 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	if err := probes.SetupPodProbeProxies(pod, log); err != nil {
+	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
+	if err != nil {
 		return err
+	}
+	if !disabledAppProbeProxy {
+		if err := probes.SetupPodProbeProxies(pod, log); err != nil {
+			return err
+		}
+	} else {
+		if err := i.overrideHTTPProbes(pod); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -597,6 +607,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
 		annotations[metadata.KumaBuiltinDNSPort] = portVal
 		annotations[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(logging)
+	}
+
+	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, pod.Annotations, i.cfg.VirtualProbesEnabled); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
+	}
+	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
 	}
 
 	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, pod.Annotations, i.cfg.ApplicationProbeProxyPort); err != nil {
