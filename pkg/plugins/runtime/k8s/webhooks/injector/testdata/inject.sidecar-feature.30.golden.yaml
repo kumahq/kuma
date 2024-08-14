@@ -4,6 +4,7 @@ metadata:
   annotations:
     ignore-check.kube-linter.io/privileged-container: ebpf requires privileged-container
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -17,8 +18,6 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
     run: busybox
@@ -40,7 +39,7 @@ spec:
     - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
-    - "9000"
+    - ""
     - --exclude-outbound-ports
     - ""
     - --verbose
@@ -132,10 +131,6 @@ spec:
       value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_DNS_ENABLED
       value: "false"
-    - name: KUMA_VIRTUAL_PROBES_SERVER_ENABLED
-      value: "true"
-    - name: KUMA_VIRTUAL_PROBES_SERVER_PORT
-      value: "9000"
     - name: POD_NAME
       valueFrom:
         fieldRef:
