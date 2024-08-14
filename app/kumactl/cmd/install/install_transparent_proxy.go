@@ -82,6 +82,21 @@ runuser -u kuma-dp -- \
 		// Disable automatic flag parsing to ensure that our custom order of precedence
 		// for configuring the transparent proxy is preserved (we'll manually parse flags)
 		DisableFlagParsing: true,
+		// We want to display usage information only when the user provides unknown flags. Therefore,
+		// we manually handle these errors during flag parsing. Setting `SilenceUsage` to true
+		// prevents automatic usage display for other types of errors
+		SilenceUsage: true,
+		PreRun: func(cmd *cobra.Command, args []string) {
+			// This command does not use any of the global flags defined in the root `kumactl`
+			// command (--api-timeout, --config-file, --log-level, and --no-config). To avoid
+			// confusing users or creating false expectations that these flags would have an effect,
+			// we hide them from the flag list for this command
+			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
+				if cmd.LocalFlags().Lookup(flag.Name) == nil {
+					flag.Hidden = true
+				}
+			})
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
@@ -97,10 +112,10 @@ runuser -u kuma-dp -- \
 
 			// To ensure the correct order of precedence, we first need to parse
 			// the `--transparent-proxy-config` and `--transparent-proxy-config-file` flags if they
-			// are set. Additionally, since `DisableFlagParsing` is set, we must handle the `--help`
+			// are set. Additionally, since `DisableFlagParsing` is enabled, we must handle the `--help`
 			// flag manually. During this parsing, if any unknown flag errors are encountered,
-			// we need to wrap the parsing logic with a usage message, as this isn't done automatically
-			// when `DisableFlagParsing` is set
+			// we wrap the error with a usage message because the automatic usage display is disabled
+			// to prevent it from appearing for other types of errors
 			if err := cmd.Flags().ParseAll(args, parseConfigFlags); err != nil {
 				return errors.Errorf("%s\n\n%s", err, cmd.UsageString())
 			}
@@ -117,13 +132,11 @@ runuser -u kuma-dp -- \
 				return errors.Wrap(err, "failed to load configuration from provided input")
 			}
 
-			// Finally, we parse the remaining CLI flags, as they have the highest priority
-			// in our order of precedence
+			// Finally, we parse the remaining CLI flags, as they have the highest priority in our
+			// order of precedence. Since unknown flag errors were handled earlier, we'll catch here
+			// other parsing errors for all other flags
 			if err := cmd.Flags().Parse(args); err != nil {
-				// Since unknown flag errors were handled earlier, we'll catch here other parsing
-				// errors for all other flags. We wrap the error with a usage message as
-				// `DisableFlagParsing` prevents the usage message from being automatically displayed
-				return errors.Errorf("%s\n\n%s", err, cmd.UsageString())
+				return err
 			}
 
 			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified

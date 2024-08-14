@@ -147,8 +147,6 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
