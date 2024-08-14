@@ -2,6 +2,7 @@ package probes
 
 import (
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"

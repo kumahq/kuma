@@ -2,9 +2,10 @@ package probes
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"strconv"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
