@@ -20,8 +20,8 @@ import (
 
 const (
 	flagHelp                       = "help"
-	flagTransparentProxyConfig     = "transparent-proxy-config"
-	flagTransparentProxyConfigFile = "transparent-proxy-config-file"
+	flagTransparentProxyConfig     = "config"
+	flagTransparentProxyConfigFile = "config-file"
 )
 
 func newInstallTransparentProxy() *cobra.Command {
@@ -88,9 +88,9 @@ runuser -u kuma-dp -- \
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			// This command does not use any of the global flags defined in the root `kumactl`
-			// command (--api-timeout, --config-file, --log-level, and --no-config). To avoid
-			// confusing users or creating false expectations that these flags would have an effect,
-			// we hide them from the flag list for this command
+			// command (--api-timeout, --log-level, and --no-config). To avoid confusing users
+			// or creating false expectations that these flags would have an effect, we hide them
+			// from the flag list for this command
 			cmd.Flags().VisitAll(func(flag *pflag.Flag) {
 				if cmd.LocalFlags().Lookup(flag.Name) == nil {
 					flag.Hidden = true
