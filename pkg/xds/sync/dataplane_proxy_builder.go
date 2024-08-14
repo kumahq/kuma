@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -161,7 +162,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 				// we don't support MeshTrafficPermission for MeshExternalService at the moment
 				// TODO: https://github.com/kumahq/kuma/issues/11077
-			} else if outbound.BackendRef.Kind != "MeshExternalService" {
+			} else if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
 				// static reachable services takes precedence over the graph
 				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.BackendRef) {
 					continue

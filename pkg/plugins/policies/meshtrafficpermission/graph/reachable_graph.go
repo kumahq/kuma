@@ -1,6 +1,7 @@
 package graph
 
 import (
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -37,7 +38,7 @@ func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) b
 }
 
 func (r *Graph) CanReachBackend(fromTags map[string]string, backendRef *mesh_proto.Dataplane_Networking_Outbound_BackendRef) bool {
-	if backendRef.Kind == "MeshExternalService" {
+	if backendRef.Kind == string(common_api.MeshExternalService) {
 		return true
 	}
 	rule := r.backendRules[backends.BackendKey{

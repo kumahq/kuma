@@ -3,6 +3,7 @@ package backends
 import (
 	"golang.org/x/exp/maps"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -38,7 +39,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 			continue
 		}
 		rules[BackendKey{
-			Kind: "MeshService",
+			Kind: string(common_api.MeshService),
 			Name: ms.Meta.GetName(),
 		}] = rl
 	}
