@@ -182,12 +182,13 @@ Application workloads using Virtual Probes will be migrated to Application Probe
 
 Application Probe Proxy will by default listen on port `9000`, the same port that Virtual Probes Listener uses. If you'd customized the Virtual Probes port, you might also want to customize the port of Application Probe Proxy. You may do so using one of these methods:
 
-1. Configuring on the control plane: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
-1. Configuring for certain workloads: set the port using pod annotation `kuma.io/application-probe-proxy-port`
+1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
+1. Configuring on the control plane to apply on all dataplanes: set the port using environment variable `KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT` 
+1. Configuring for certain dataplanes: set the port using pod annotation `kuma.io/application-probe-proxy-port`
 
 By setting the port to `0`, Application Probe Proxy feature will be disabled.
 
-Before Virtual Probes is removed, when the Application Probe Proxy is disabled, Virtual Probes still works as usual.
+When the Application Probe Proxy is disabled, Virtual Probes still works as usual before Virtual Probes is removed.
 
 ### kumactl
 
