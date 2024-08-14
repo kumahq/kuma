@@ -22,7 +22,6 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/service"
@@ -33,7 +32,6 @@ import (
 var muxClientLog = core.Log.WithName("kds-mux-client")
 
 type client struct {
-	callbacks           Callbacks
 	globalToZoneCb      OnGlobalToZoneSyncStartedFunc
 	zoneToGlobalCb      OnZoneToGlobalSyncStartedFunc
 	globalURL           string
@@ -45,10 +43,9 @@ type client struct {
 	envoyAdminProcessor service.EnvoyAdminProcessor
 }
 
-func NewClient(ctx context.Context, globalURL string, clientID string, callbacks Callbacks, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
+func NewClient(ctx context.Context, globalURL string, clientID string, globalToZoneCb OnGlobalToZoneSyncStartedFunc, zoneToGlobalCb OnZoneToGlobalSyncStartedFunc, config multizone.KdsClientConfig, experimantalConfig config.ExperimentalConfig, metrics metrics.Metrics, envoyAdminProcessor service.EnvoyAdminProcessor) component.Component {
 	return &client{
 		ctx:                 ctx,
-		callbacks:           callbacks,
 		globalToZoneCb:      globalToZoneCb,
 		zoneToGlobalCb:      zoneToGlobalCb,
 		globalURL:           globalURL,
@@ -113,12 +110,8 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	go c.startXDSConfigs(withKDSCtx, log, conn, errorCh)
 	go c.startStats(withKDSCtx, log, conn, errorCh)
 	go c.startClusters(withKDSCtx, log, conn, errorCh)
-	if c.experimantalConfig.KDSDeltaEnabled {
-		go c.startGlobalToZoneSync(withKDSCtx, log, conn, errorCh)
-		go c.startZoneToGlobalSync(withKDSCtx, log, conn, errorCh)
-	} else {
-		go c.startKDSMultiplex(withKDSCtx, log, conn, errorCh)
-	}
+	go c.startGlobalToZoneSync(withKDSCtx, log, conn, errorCh)
+	go c.startZoneToGlobalSync(withKDSCtx, log, conn, errorCh)
 
 	select {
 	case <-stop:
@@ -128,34 +121,6 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		cancel()
 		return err
 	}
-}
-
-func (c *client) startKDSMultiplex(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
-	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
-	stream, err := muxClient.StreamMessage(ctx)
-	if err != nil {
-		errorCh <- err
-		return
-	}
-	bufferSize := len(registry.Global().ObjectTypes())
-	// nolint:contextcheck
-	session := NewSession("global", stream, uint32(bufferSize), c.config.MsgSendTimeout.Duration)
-	if err := c.callbacks.OnSessionStarted(session); err != nil {
-		log.Error(err, "closing KDS stream after callback error")
-		errorCh <- err
-		return
-	}
-	err = <-session.Error()
-	if errors.Is(err, context.Canceled) {
-		log.Info("KDS stream shutting down")
-	} else {
-		log.Error(err, "KDS stream failed prematurely, will restart in background")
-	}
-	if err := stream.CloseSend(); err != nil {
-		log.Error(err, "CloseSend returned an error")
-	}
-	errorCh <- err
 }
 
 func (c *client) startGlobalToZoneSync(ctx context.Context, log logr.Logger, conn *grpc.ClientConn, errorCh chan error) {
