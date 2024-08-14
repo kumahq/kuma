@@ -155,8 +155,14 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 
 	if annoExists {
 		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
-		return nil
+	} else {
+		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(defaultAppProbeProxyPort)
 	}
-	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(defaultAppProbeProxyPort)
+
+	// with application probe proxy enabled, we don't need virtual probes
+	if annotations[metadata.KumaApplicationProbeProxyPortAnnotation] != "0" {
+		delete(annotations, metadata.KumaVirtualProbesAnnotation)
+		delete(annotations, metadata.KumaVirtualProbesPortAnnotation)
+	}
 	return nil
 }
