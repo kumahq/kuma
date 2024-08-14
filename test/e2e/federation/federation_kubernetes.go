@@ -54,6 +54,11 @@ func FederateKubeZoneCPToKubeGlobal() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(global, "default", Config.KumaNamespace)
+		DebugKube(zone, "default", TestNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(zone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())
