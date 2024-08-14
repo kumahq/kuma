@@ -110,12 +110,12 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			// To ensure the correct order of precedence, we first need to parse
-			// the `--transparent-proxy-config` and `--transparent-proxy-config-file` flags if they
-			// are set. Additionally, since `DisableFlagParsing` is enabled, we must handle the `--help`
-			// flag manually. During this parsing, if any unknown flag errors are encountered,
-			// we wrap the error with a usage message because the automatic usage display is disabled
-			// to prevent it from appearing for other types of errors
+			// To ensure the correct order of precedence, we first need to parse the `--config` and
+			// `--config-file` flags if they are set. Additionally, since `DisableFlagParsing`
+			// is enabled, we must handle the `--help` flag manually. During this parsing, if any
+			// unknown flag errors are encountered, we wrap the error with a usage message because
+			// the automatic usage display is disabled to prevent it from appearing for other
+			// types of errors
 			if err := cmd.Flags().ParseAll(args, parseConfigFlags); err != nil {
 				return errors.Errorf("%s\n\n%s", err, cmd.UsageString())
 			}
