@@ -160,8 +160,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	result := []string{
-		"--config-file",
-		"/tmp/kumactl/config",
 		"--redirect-outbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortOutbound),
 		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
