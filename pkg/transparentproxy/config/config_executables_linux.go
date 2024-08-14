@@ -127,13 +127,14 @@ func (c InitializedExecutable) Exec(
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	run := func(c *exec.Cmd) error { return c.Run() }
-
+	var err error
 	if c.cniMode {
-		run = func(cmd *exec.Cmd) error { return c.runInSandbox(cmd) }
+		err = c.runInSandbox(cmd)
+	} else {
+		err = cmd.Run()
 	}
 
-	if err := run(cmd); err != nil {
+	if err != nil {
 		return nil, nil, handleRunError(err, &stderr)
 	}
 
