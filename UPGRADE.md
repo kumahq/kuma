@@ -174,6 +174,21 @@ Migration step:
 3. Deploy the gateway and verify if traffic works correctly.
 4. Remove the old resources.
 
+### Introduction to Application Probe Proxy and deprecation of Virtual Probes
+
+To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports HTTP Get, TCP Socket and gRPC application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
+
+Application workloads using Virtual Probes will be migrated to Application Probe Proxy automatically on next restart/redeploy on Kubernetes, without other operations. 
+
+Application Probe Proxy will by default listen on port `9000`, the same port that Virtual Probes Listener uses. If you'd customized the Virtual Probes port, you might also want to customize the port of Application Probe Proxy. You may do so using one of these methods:
+
+1. Configuring on the control plane: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
+1. Configuring for certain workloads: set the port using pod annotation `kuma.io/application-probe-proxy-port`
+
+By setting the port to `0`, Application Probe Proxy feature will be disabled.
+
+Before Virtual Probes is removed, when the Application Probe Proxy is disabled, Virtual Probes still works as usual.
+
 ### kumactl
 
 #### Default prometheus scrape config removes `service`
