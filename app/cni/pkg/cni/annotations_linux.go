@@ -7,8 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -18,8 +16,7 @@ const (
 	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
-	defaultVirtualProbeEnabled = "true"
-	defaultVirtualProbePorts   = "9000"
+	defaultAppProbeProxyPort   = "9000"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
@@ -40,8 +37,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
 	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
 	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
-	"virtualProbesEnabled":        {"kuma.io/virtual-probes", defaultVirtualProbeEnabled, alwaysValidFunc},
-	"virtualProbesPort":           {"kuma.io/virtual-probes-port", defaultVirtualProbePorts, validateSinglePort},
+	"applicationProbeProxyPort":   {"kuma.io/application-probe-proxy-port", defaultAppProbeProxyPort, validateSinglePort},
 }
 
 type IntermediateConfig struct {
@@ -194,8 +190,7 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
-	valTrue := "true"
-	valDefaultVirtualPort := defaultVirtualProbePorts
+	valDefaultProbeProxyPort := defaultAppProbeProxyPort
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -208,8 +203,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
-		"virtualProbesEnabled":        pointer.To(valTrue),
-		"virtualProbesPort":           &valDefaultVirtualPort,
+		"applicationProbeProxyPort":   &valDefaultProbeProxyPort,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
 		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
@@ -222,7 +216,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
-	excludeVirtualProbePort(allFields)
+	excludeAppProbeProxyPort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -235,23 +229,17 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	return nil
 }
 
-func excludeVirtualProbePort(allFields map[string]*string) {
+func excludeAppProbeProxyPort(allFields map[string]*string) {
 	inboundPortsToExclude := allFields["excludeInboundPorts"]
-	enabledPtr := allFields["virtualProbesEnabled"]
-	enabled, err := GetEnabled(*enabledPtr)
-	if err != nil {
-		enabled = true
-	}
-
-	if !enabled {
+	applicationProbeProxyPort := *allFields["applicationProbeProxyPort"]
+	if applicationProbeProxyPort == "0" {
 		return
 	}
 
-	virtualProbesPort := *allFields["virtualProbesPort"]
 	existingExcludes := *inboundPortsToExclude
 	if existingExcludes == "" {
-		*inboundPortsToExclude = virtualProbesPort
+		*inboundPortsToExclude = applicationProbeProxyPort
 	} else {
-		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, virtualProbesPort)
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, applicationProbeProxyPort)
 	}
 }

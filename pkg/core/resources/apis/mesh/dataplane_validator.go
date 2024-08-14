@@ -50,6 +50,7 @@ func (d *DataplaneResource) Validate() error {
 
 		err.AddErrorAt(net.Field("gateway"), validateGateway(d.Spec.GetNetworking().GetGateway()))
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.Add(validateProbes(d.Spec.GetProbes()))
 
 	case d.Spec.IsBuiltinGateway():
 		if len(d.Spec.GetNetworking().GetInbound()) > 0 {

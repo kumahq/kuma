@@ -38,10 +38,9 @@ var _ = Describe("NewIntermediateConfig", func() {
 		Expect(cfg.inboundPort).To(Equal("1234"))
 	})
 
-	It("should exclude virtual probe ports", func() {
+	It("should exclude application probe proxy ports", func() {
 		a := map[string]string{
-			"kuma.io/virtual-probes":                "true",
-			"kuma.io/virtual-probes-port":           "19988",
+			"kuma.io/application-probe-proxy-port":  "19988",
 			"traffic.kuma.io/exclude-inbound-ports": "3355",
 		}
 		cfg, err := NewIntermediateConfig(a)

@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 )
 
-var _ = Describe("KumaProbe", func() {
+var _ = Describe("ProxiedApplicationProbe", func() {
 	Describe("OverridingSupported", func() {
 		type testCase struct {
 			input             kube_core.Probe
@@ -18,7 +18,7 @@ var _ = Describe("KumaProbe", func() {
 
 		DescribeTable("should check if probe is supported to be overridden",
 			func(given testCase) {
-				virtual := probes.KumaProbe(given.input)
+				virtual := probes.ProxiedApplicationProbe(given.input)
 
 				Expect(virtual.OverridingSupported()).To(Equal(given.expectedSupported))
 			},
@@ -67,7 +67,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(virtual.Path()).To(Equal("/8080/c1/health/liveness"))
 			Expect(virtual.Port()).To(Equal(uint32(9000)))
@@ -90,7 +90,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(virtual.Path()).To(Equal("/8080/c1/healthz"))
@@ -112,7 +112,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			_, err = probes.KumaProbe(probe).ToVirtual(9000)
+			_, err = probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring("cannot override Pod's probes. Port for probe cannot be set " +
 				"to 9000. It is reserved for the dataplane that will serve pods without mTLS."))
@@ -130,7 +130,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(virtual.TCPSocket).To(BeNil())
@@ -151,7 +151,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(virtual.GRPC).To(BeNil())
@@ -174,7 +174,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.ProxiedApplicationProbe(probe).ToVirtual(9000)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(virtual.Path()).To(Equal("/8080/c1/hc"))
 			Expect(virtual.Port()).To(Equal(uint32(9000)))

@@ -55,6 +55,9 @@ const (
 	// KumaVirtualProbesPortAnnotation is an insecure port for listening virtual probes
 	KumaVirtualProbesPortAnnotation = "kuma.io/virtual-probes-port"
 
+	// KumaApplicationProbeProxyPortAnnotation is a port for proxying application probes
+	KumaApplicationProbeProxyPortAnnotation = "kuma.io/application-probe-proxy-port"
+
 	// KumaSidecarEnvVarsAnnotation is a ; separated list of env vars that will be applied on Kuma Sidecar
 	// Example value: TEST1=1;TEST2=2
 	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"

@@ -2,8 +2,6 @@ package probes
 
 import (
 	"fmt"
-	"strconv"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -13,21 +11,17 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func OverridePodProbes(pod *kube_core.Pod, log logr.Logger) error {
+func SetupPodProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
-	enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
 	}
-	if !enabled {
-		log.V(1).Info("skipping adding virtual probes, because it's disabled")
+	if appProbeProxyPort == 0 {
+		log.V(1).Info("skipping adding application probe proxies, because it's disabled")
 		return err
 	}
 
-	virtualProbesPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
-	if err != nil {
-		return err
-	}
 	var containersNeedingProbes []kube_core.Container
 
 	var initContainerComesAfterKumaSidecar bool
@@ -49,15 +43,15 @@ func OverridePodProbes(pod *kube_core.Pod, log logr.Logger) error {
 	}
 	for _, c := range containersNeedingProbes {
 		portResolver := namedPortResolver(c.Ports)
-		if err := overrideProbe(c.LivenessProbe, virtualProbesPort,
+		if err := overrideProbe(c.LivenessProbe, appProbeProxyPort,
 			portResolver, c.Name, "liveness", log); err != nil {
 			return err
 		}
-		if err := overrideProbe(c.ReadinessProbe, virtualProbesPort,
+		if err := overrideProbe(c.ReadinessProbe, appProbeProxyPort,
 			portResolver, c.Name, "readiness", log); err != nil {
 			return err
 		}
-		if err := overrideProbe(c.StartupProbe, virtualProbesPort,
+		if err := overrideProbe(c.StartupProbe, appProbeProxyPort,
 			portResolver, c.Name, "startup", log); err != nil {
 			return err
 		}
@@ -102,8 +96,8 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 		return nil
 	}
 
-	kumaProbe := KumaProbe(*probe)
-	if !kumaProbe.OverridingSupported() {
+	proxiedProbe := ProxiedApplicationProbe(*probe)
+	if !proxiedProbe.OverridingSupported() {
 		return nil
 	}
 
@@ -111,7 +105,7 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 
 	namedPortResolver(probe.ProbeHandler)
 
-	virtual, err := kumaProbe.ToVirtual(virtualPort)
+	virtual, err := proxiedProbe.ToVirtual(virtualPort)
 	if err != nil {
 		return err
 	}
@@ -126,40 +120,28 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 	return nil
 }
 
-func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, virtualProbesEnabled bool) error {
-	str := func(b bool) string {
-		if b {
-			return metadata.AnnotationEnabled
-		}
-		return metadata.AnnotationDisabled
+func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, defaultAppProbeProxyPort uint32) error {
+	str := func(port uint32) string {
+		return fmt.Sprintf("%d", port)
 	}
 
-	vpEnabled, vpExist, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	appProbeProxyPort, annoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
 	}
 	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
 	if gwExists {
-		if vpEnabled {
-			return errors.New("virtual probes can't be enabled in gateway mode")
+		if appProbeProxyPort > 0 {
+			return errors.New("application probe proxies probes can't be enabled in gateway mode")
 		}
-		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
+		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = "0"
 		return nil
 	}
 
-	if vpExist {
-		annotations[metadata.KumaVirtualProbesAnnotation] = str(vpEnabled)
+	if annoExists {
+		annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
 		return nil
 	}
-	annotations[metadata.KumaVirtualProbesAnnotation] = str(virtualProbesEnabled)
-	return nil
-}
-
-func SetVirtualProbesPortAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, defaultVirtualProbesPort uint32) error {
-	port, _, err := metadata.Annotations(podAnnotations).GetUint32WithDefault(defaultVirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
-	if err != nil {
-		return err
-	}
-	annotations[metadata.KumaVirtualProbesPortAnnotation] = strconv.Itoa(int(port))
+	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(defaultAppProbeProxyPort)
 	return nil
 }

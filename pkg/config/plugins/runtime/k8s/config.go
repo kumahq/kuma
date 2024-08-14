@@ -24,9 +24,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		ControlPlaneServiceName: "kuma-control-plane",
 		ServiceAccountName:      defaultServiceAccountName,
 		Injector: Injector{
-			CNIEnabled:           false,
-			VirtualProbesEnabled: true,
-			VirtualProbesPort:    9000,
+			CNIEnabled:                false,
+			VirtualProbesEnabled:      true,
+			VirtualProbesPort:         9000,
+			ApplicationProbeProxyPort: 9000,
 			SidecarContainer: SidecarContainer{
 				IpFamilyMode:         "dualstack",
 				RedirectPortInbound:  15006,
@@ -214,6 +215,8 @@ type Injector struct {
 	VirtualProbesEnabled bool `json:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS.
 	VirtualProbesPort uint32 `json:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
+	// ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS.
+	ApplicationProbeProxyPort uint32 `json:"applicationProbeProxyPort" envconfig:"kuma_runtime_kubernetes_application_probe_proxy_port"`
 	// SidecarTraffic is a configuration for traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `json:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection

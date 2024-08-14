@@ -47,9 +47,8 @@ var DefaultConfig = func() Config {
 			PrometheusPort:            19153,
 			CoreDNSLogging:            false,
 		},
-		VirtualProbesServer: VirtualProbesServer{
-			Enabled: false,
-			Port:    9000,
+		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
+			Port: 9000,
 		},
 	}
 }
@@ -63,8 +62,8 @@ type Config struct {
 	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 	DataplaneRuntime DataplaneRuntime `json:"dataplaneRuntime,omitempty"`
 	// DNS defines a configuration for builtin DNS in Kuma DP
-	DNS                 DNS                 `json:"dns,omitempty"`
-	VirtualProbesServer VirtualProbesServer `json:"virtualProbesServer,omitempty"`
+	DNS                         DNS                         `json:"dns,omitempty"`
+	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -390,19 +389,18 @@ func (d *DNS) Validate() error {
 	return nil
 }
 
-type VirtualProbesServer struct {
+type ApplicationProbeProxyServer struct {
 	config.BaseConfig
 
-	Enabled bool   `json:"enabled,omitempty" envconfig:"kuma_virtual_probes_server_enabled"`
-	Port    uint32 `json:"port,omitempty" envconfig:"kuma_virtual_probes_server_port"`
+	Port uint32 `json:"port,omitempty" envconfig:"kuma_application_probe_proxy_port"`
 }
 
-func (p *VirtualProbesServer) Validate() error {
-	if !p.Enabled {
+func (p *ApplicationProbeProxyServer) Validate() error {
+	if p.Port == 0 {
 		return nil
 	}
 	if p.Port > 65353 {
-		return errors.New(".CoreDNSPort has to be in [0, 65353] range")
+		return errors.New(".Port has to be in [0, 65353] range")
 	}
 	return nil
 }

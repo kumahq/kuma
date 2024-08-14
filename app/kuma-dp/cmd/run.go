@@ -241,8 +241,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			if opts.Config.VirtualProbesServer.Enabled {
-				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.VirtualProbesServer.Port)
+			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
+				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
 				if err := rootCtx.ComponentManager.Add(prober); err != nil {
 					return err
 				}

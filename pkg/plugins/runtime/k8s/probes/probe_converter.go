@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-// KumaProbe is a type which allows to manipulate Kubernetes HttpGet probes.
+// ProxiedApplicationProbe is a type which allows to manipulate Kubernetes HttpGet probes.
 // Probe can be either Virtual or Real.
 //
 // Real probe is a probe provided by user. The only constraint existing for Real
@@ -19,9 +19,9 @@ import (
 // Virtual probe is an automatically generated probe on the basis of the Real probe.
 // If probe's port equal to 'virtualPort' and the first segment of probe's path is an integer
 // then probe is a virtual probe.
-type KumaProbe kube_core.Probe
+type ProxiedApplicationProbe kube_core.Probe
 
-func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
+func (p ProxiedApplicationProbe) ToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
 	switch {
 	case p.ProbeHandler.HTTPGet != nil:
 		return p.httpProbeToVirtual(virtualPort)
@@ -30,14 +30,14 @@ func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
 	case p.ProbeHandler.GRPC != nil:
 		return p.grpcProbeToVirtual(virtualPort)
 	default:
-		return KumaProbe{}, errors.New("unsupported probe type")
+		return ProxiedApplicationProbe{}, errors.New("unsupported probe type")
 	}
 }
 
-func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
+func (p ProxiedApplicationProbe) httpProbeToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
 	appPort := uint32(p.HTTPGet.Port.IntValue())
 	if appPort == virtualPort {
-		return KumaProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
+		return ProxiedApplicationProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
 			"be set to %d. It is reserved for the dataplane that will serve pods without mTLS.", virtualPort)
 	}
 
@@ -68,7 +68,7 @@ func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		headers = append(headers, TimeoutHeader(p.TimeoutSeconds))
 	}
 
-	return KumaProbe{
+	return ProxiedApplicationProbe{
 		ProbeHandler: kube_core.ProbeHandler{
 			HTTPGet: &kube_core.HTTPGetAction{
 				Port:        intstr.FromInt32(int32(virtualPort)),
@@ -79,10 +79,10 @@ func (p KumaProbe) httpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 	}, nil
 }
 
-func (p KumaProbe) tcpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
+func (p ProxiedApplicationProbe) tcpProbeToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
 	appPort := uint32(p.TCPSocket.Port.IntValue())
 	if appPort == virtualPort {
-		return KumaProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
+		return ProxiedApplicationProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
 			"be set to %d. It is reserved for the dataplane that will serve pods without mTLS.", virtualPort)
 	}
 
@@ -92,7 +92,7 @@ func (p KumaProbe) tcpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		headers = append(headers, TimeoutHeader(p.TimeoutSeconds))
 	}
 
-	return KumaProbe{
+	return ProxiedApplicationProbe{
 		ProbeHandler: kube_core.ProbeHandler{
 			HTTPGet: &kube_core.HTTPGetAction{
 				Port:        intstr.FromInt32(int32(virtualPort)),
@@ -103,10 +103,10 @@ func (p KumaProbe) tcpProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 	}, nil
 }
 
-func (p KumaProbe) grpcProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
+func (p ProxiedApplicationProbe) grpcProbeToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
 	appPort := uint32(p.GRPC.Port)
 	if appPort == virtualPort {
-		return KumaProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
+		return ProxiedApplicationProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
 			"be set to %d. It is reserved for the dataplane that will serve pods without mTLS.", virtualPort)
 	}
 
@@ -120,7 +120,7 @@ func (p KumaProbe) grpcProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 		headers = append(headers, GRPCServiceHeader(*p.GRPC.Service))
 	}
 
-	return KumaProbe{
+	return ProxiedApplicationProbe{
 		ProbeHandler: kube_core.ProbeHandler{
 			HTTPGet: &kube_core.HTTPGetAction{
 				Port:        intstr.FromInt32(int32(virtualPort)),
@@ -131,7 +131,7 @@ func (p KumaProbe) grpcProbeToVirtual(virtualPort uint32) (KumaProbe, error) {
 	}, nil
 }
 
-func (p KumaProbe) Port() uint32 {
+func (p ProxiedApplicationProbe) Port() uint32 {
 	switch {
 	case p.ProbeHandler.HTTPGet != nil:
 		return uint32(p.HTTPGet.Port.IntValue())
@@ -144,15 +144,15 @@ func (p KumaProbe) Port() uint32 {
 	}
 }
 
-func (p KumaProbe) Path() string {
+func (p ProxiedApplicationProbe) Path() string {
 	return p.HTTPGet.Path
 }
 
-func (p KumaProbe) Headers() []kube_core.HTTPHeader {
+func (p ProxiedApplicationProbe) Headers() []kube_core.HTTPHeader {
 	return p.HTTPGet.HTTPHeaders
 }
 
-func (p KumaProbe) OverridingSupported() bool {
+func (p ProxiedApplicationProbe) OverridingSupported() bool {
 	switch {
 	case p.ProbeHandler.HTTPGet != nil:
 		return true
