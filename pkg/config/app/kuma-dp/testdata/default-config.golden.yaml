@@ -20,3 +20,5 @@ dns:
   enabled: true
   envoyDnsPort: 15054
   prometheusPort: 19153
+applicationProbeProxyServer:
+  port: 9000

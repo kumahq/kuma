@@ -124,7 +124,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	ctx := context.Background()
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
-		return errors.Wrap(err, "error parsing kuma-cni cmdAdd config")
+		return errorLogged(log, err, "error parsing kuma-cni cmdAdd config")
 	}
 
 	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel)
@@ -139,7 +139,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 	// Determine if running under k8s by checking the CNI args
 	k8sArgs := K8sArgs{}
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		return errors.Wrap(err, "error loading kuma-cni cmdAdd args")
+		return errorLogged(log, err, "error loading kuma-cni cmdAdd args")
 	}
 	logger := log.WithValues(
 		"pod", string(k8sArgs.K8S_POD_NAME),
@@ -162,7 +162,7 @@ func cmdAdd(args *skel.CmdArgs) error {
 
 	containerCount, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
 	if err != nil {
-		return errors.Wrap(err, "pod excluded - error getting pod info")
+		return errorLogged(logger, err, "pod excluded - error getting pod info")
 	}
 
 	if isInitContainerPresent(initContainersMap) {
@@ -184,10 +184,10 @@ func cmdAdd(args *skel.CmdArgs) error {
 	}
 
 	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-		return errors.Wrap(configErr, "pod excluded - pod intermediateConfig failed due to bad params")
+		return errorLogged(logger, configErr, "pod excluded - pod intermediateConfig failed due to bad params")
 	} else {
 		if err := Inject(ctx, args.Netns, intermediateConfig, logger); err != nil {
-			return errors.Wrap(err, "pod excluded - could not inject rules into namespace")
+			return errorLogged(logger, err, "pod excluded - could not inject rules into namespace")
 		}
 	}
 	logger.Info("successfully injected iptables rules")
@@ -206,6 +206,11 @@ func prepareResult(conf *PluginConf, logger logr.Logger) error {
 	}
 	logger.Info("result", "result", result)
 	return types.PrintResult(result, conf.CNIVersion)
+}
+
+func errorLogged(logger logr.Logger, err error, message string) error {
+	logger.Info(fmt.Sprintf("[WARNING] %s", message), "err", err)
+	return errors.Wrap(err, message)
 }
 
 func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {
