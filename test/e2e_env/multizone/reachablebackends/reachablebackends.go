@@ -107,10 +107,25 @@ spec:
         k8s.kuma.io/namespace: %s
 `, meshName, namespace)
 
+	meshWithEgress := fmt.Sprintf(`
+type: Mesh
+name: "%s"
+mtls:
+  enabledBackend: ca-1
+  backends:
+  - name: ca-1
+    type: builtin
+networking:
+  outbound:
+    passthrough: false
+routing:
+  zoneEgress: true
+`, meshName)
+
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(YamlUniversal(meshWithEgress)).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).
