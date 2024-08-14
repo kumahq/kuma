@@ -190,6 +190,16 @@ By setting the port to `0`, Application Probe Proxy feature will be disabled.
 
 When the Application Probe Proxy is disabled, Virtual Probes still works as usual before Virtual Probes is removed.
 
+Because of deprecation of Virtual Probes, the following items are considered deprecated:
+
+- Pod annotation `kuma.io/virtual-probes`
+- Pod annotation `kuma.io/virtual-probes-port`
+- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesEnabled`
+- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesPort`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- Data field `probes` on `Dataplane` objects
+
 ### kumactl
 
 #### Default prometheus scrape config removes `service`
