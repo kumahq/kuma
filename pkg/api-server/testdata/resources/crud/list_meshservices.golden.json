@@ -7,9 +7,6 @@
    "name": "redis-1",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "labels": {
-    "kuma.io/mesh": "default"
-   },
    "spec": {
     "selector": {
      "dataplaneTags": {
@@ -40,9 +37,6 @@
    "name": "redis-2",
    "creationTime": "0001-01-01T00:00:00Z",
    "modificationTime": "0001-01-01T00:00:00Z",
-   "labels": {
-    "kuma.io/mesh": "default"
-   },
    "spec": {
     "selector": {
      "dataplaneTags": {

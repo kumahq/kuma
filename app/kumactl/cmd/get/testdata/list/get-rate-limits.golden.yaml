@@ -5,8 +5,6 @@ items:
   - match:
       env: dev
       kuma.io/service: backend1
-  labels:
-    kuma.io/mesh: default
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: web1-to-backend1
@@ -21,8 +19,6 @@ items:
   - match:
       env: dev
       kuma.io/service: backend2
-  labels:
-    kuma.io/mesh: default
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: web2-to-backend2

@@ -3,8 +3,7 @@
   {
    "labels": {
     "k8s.kuma.io/namespace": "kuma-demo",
-    "kuma.io/display-name": "dp-1",
-    "kuma.io/mesh": "default"
+    "kuma.io/display-name": "dp-1"
    },
    "mesh": "default",
    "name": "dp-1",
@@ -13,8 +12,7 @@
   {
    "labels": {
     "k8s.kuma.io/namespace": "kuma-demo",
-    "kuma.io/display-name": "dp-2",
-    "kuma.io/mesh": "default"
+    "kuma.io/display-name": "dp-2"
    },
    "mesh": "default",
    "name": "dp-2",
@@ -23,8 +21,7 @@
   {
    "labels": {
     "k8s.kuma.io/namespace": "kuma-demo",
-    "kuma.io/display-name": "dp-3",
-    "kuma.io/mesh": "default"
+    "kuma.io/display-name": "dp-3"
    },
    "mesh": "default",
    "name": "dp-3",

@@ -29,9 +29,9 @@ import (
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	"github.com/kumahq/kuma/pkg/kds/mux"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
@@ -43,15 +43,14 @@ var log = core.Log.WithName("kds")
 
 type Context struct {
 	ZoneClientCtx         context.Context
-	GlobalProvidedFilter  reconcile.ResourceFilter
-	ZoneProvidedFilter    reconcile.ResourceFilter
-	GlobalServerFilters   []mux.Filter
+	GlobalProvidedFilter  reconcile_v2.ResourceFilter
+	ZoneProvidedFilter    reconcile_v2.ResourceFilter
 	GlobalServerFiltersV2 []mux.FilterV2
 	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 
-	GlobalResourceMapper reconcile.ResourceMapper
-	ZoneResourceMapper   reconcile.ResourceMapper
+	GlobalResourceMapper reconcile_v2.ResourceMapper
+	ZoneResourceMapper   reconcile_v2.ResourceMapper
 
 	EnvoyAdminRPCs           service.EnvoyAdminRPCs
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
@@ -68,45 +67,45 @@ func DefaultContext(
 		config_manager.ClusterIdConfigKey: true,
 	}
 
-	globalMappers := []reconcile.ResourceMapper{
+	globalMappers := []reconcile_v2.ResourceMapper{
 		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))),
-		reconcile.If(
-			reconcile.And(
-				reconcile.TypeIs(system.GlobalSecretType),
-				reconcile.NameHasPrefix(zone_tokens.SigningKeyPrefix),
+		reconcile_v2.If(
+			reconcile_v2.And(
+				reconcile_v2.TypeIs(system.GlobalSecretType),
+				reconcile_v2.NameHasPrefix(zone_tokens.SigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
-		reconcile.If(
-			reconcile.IsKubernetes(cfg.Store.Type),
+		reconcile_v2.If(
+			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
-		reconcile.If(
-			reconcile.TypeIs(meshservice_api.MeshServiceType),
+		reconcile_v2.If(
+			reconcile_v2.TypeIs(meshservice_api.MeshServiceType),
 			RemoveStatus()),
-		reconcile.If(
-			reconcile.And(
+		reconcile_v2.If(
+			reconcile_v2.And(
 				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
 				// particular format to be able to reference them
-				reconcile.Not(reconcile.TypeIs(system.SecretType)),
+				reconcile_v2.Not(reconcile_v2.TypeIs(system.SecretType)),
 				// Zone CP expects secret names to be in particular format to be able to reference them
-				reconcile.Not(reconcile.TypeIs(system.GlobalSecretType)),
+				reconcile_v2.Not(reconcile_v2.TypeIs(system.GlobalSecretType)),
 				// Zone CP expects secret names to be in particular format to be able to reference them
-				reconcile.Not(reconcile.TypeIs(system.ConfigType)),
+				reconcile_v2.Not(reconcile_v2.TypeIs(system.ConfigType)),
 				// Mesh name has to be the same. In multizone deployments it can only be applied on Global CP,
 				// so we won't hit conflicts.
-				reconcile.Not(reconcile.TypeIs(core_mesh.MeshType)),
+				reconcile_v2.Not(reconcile_v2.TypeIs(core_mesh.MeshType)),
 			),
 			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
-	zoneMappers := []reconcile.ResourceMapper{
+	zoneMappers := []reconcile_v2.ResourceMapper{
 		UpdateResourceMeta(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
 		),
 		MapInsightResourcesZeroGeneration,
-		reconcile.If(
-			reconcile.IsKubernetes(cfg.Store.Type),
+		reconcile_v2.If(
+			reconcile_v2.IsKubernetes(cfg.Store.Type),
 			RemoveK8sSystemNamespaceSuffixMapper(cfg.Store.Kubernetes.SystemNamespace)),
 		HashSuffixMapper(false, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag),
 	}
@@ -127,7 +126,7 @@ func DefaultContext(
 	}
 }
 
-func CompositeResourceFilters(filters ...reconcile.ResourceFilter) reconcile.ResourceFilter {
+func CompositeResourceFilters(filters ...reconcile_v2.ResourceFilter) reconcile_v2.ResourceFilter {
 	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
 		for _, filter := range filters {
 			if !filter(ctx, clusterID, features, r) {
@@ -141,7 +140,7 @@ func CompositeResourceFilters(filters ...reconcile.ResourceFilter) reconcile.Res
 // CompositeResourceMapper combines the given ResourceMappers into
 // a single ResourceMapper which calls each in order. If an error
 // occurs, the first one is returned and no further mappers are executed.
-func CompositeResourceMapper(mappers ...reconcile.ResourceMapper) reconcile.ResourceMapper {
+func CompositeResourceMapper(mappers ...reconcile_v2.ResourceMapper) reconcile_v2.ResourceMapper {
 	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		var err error
 		for _, mapper := range mappers {
@@ -214,7 +213,7 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 
 // RemoveK8sSystemNamespaceSuffixMapper is a mapper responsible for removing control plane system namespace suffixes
 // from names of resources if resources are stored in kubernetes.
-func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.ResourceMapper {
+func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile_v2.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		dotSuffix := fmt.Sprintf(".%s", k8sSystemNamespace)
 		newName := strings.TrimSuffix(r.GetMeta().GetName(), dotSuffix)
@@ -222,14 +221,14 @@ func RemoveK8sSystemNamespaceSuffixMapper(k8sSystemNamespace string) reconcile.R
 	}
 }
 
-func RemoveStatus() reconcile.ResourceMapper {
+func RemoveStatus() reconcile_v2.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		return util.CloneResource(r, util.WithoutStatus()), nil
 	}
 }
 
 // HashSuffixMapper returns mapper that adds a hash suffix to the name during KDS sync
-func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.ResourceMapper {
+func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile_v2.ResourceMapper {
 	return func(features kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		if checkKDSFeature && !features.HasFeature(kds.FeatureHashSuffix) {
 			return r, nil
@@ -248,7 +247,7 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 	}
 }
 
-func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
+func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
 		newRes := util.CloneResource(r)
 		newRes.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
@@ -256,7 +255,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMappe
 	}
 }
 
-func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile_v2.ResourceFilter {
 	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
 		resName := r.GetMeta().GetName()
 
@@ -268,6 +267,8 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				zone_tokens.SigningKeyPrefix,
 			}...)
 		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
+			// Reference: https://github.com/kumahq/kuma/issues/10952
 			zoneTag := util.ZoneTag(r)
 
 			if clusterID == zoneTag {
