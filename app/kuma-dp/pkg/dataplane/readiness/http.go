@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Source copied and modified from https://github.com/istio/istio/blob/release-1.23/pkg/http/get.go
+
 package readiness
 
 import (

@@ -2,11 +2,11 @@ package readiness
 
 import (
 	"context"
+	sys_errors "errors"
 	"fmt"
 	"net"
 	"net/http"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
@@ -25,25 +25,28 @@ const (
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	socketPath string
-	envoyProbe *EnvoyReadinessProbe
-	draining   atomic.Bool
+	socketPath     string
+	envoyProbe     *EnvoyReadinessProbe
+	cancelAndDrain context.CancelFunc
 }
 
 var logger = core.Log.WithName("readiness")
 
 func NewReporter(socketPath string, adminAddress string, adminPort uint32) *Reporter {
 	var envoyProbe *EnvoyReadinessProbe
+	drainCtx, cancel := context.WithCancel(context.Background())
 	if adminPort > 0 {
 		envoyProbe = &EnvoyReadinessProbe{
 			LocalHostAddr: adminAddress,
 			AdminPort:     uint16(adminPort),
+			Context:       drainCtx,
 		}
 	}
 
 	return &Reporter{
-		socketPath: socketPath,
-		envoyProbe: envoyProbe,
+		socketPath:     socketPath,
+		envoyProbe:     envoyProbe,
+		cancelAndDrain: cancel,
 	}
 }
 
@@ -100,7 +103,7 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 }
 
 func (r *Reporter) Draining() {
-	r.draining.Store(true)
+	r.cancelAndDrain()
 }
 
 func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
@@ -111,7 +114,8 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	if envoyReadinessErr == nil {
-		draining := r.draining.Load()
+		ctxErr := r.envoyProbe.Context.Err()
+		draining := ctxErr != nil && sys_errors.Is(ctxErr, context.Canceled)
 		if !draining {
 			state = stateReady
 		} else {
