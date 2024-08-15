@@ -17,22 +17,33 @@ import (
 )
 
 const (
-	pathPrefixReady  = "/ready"
-	stateReady       = "READY"
-	stateTerminating = "TERMINATING"
+	pathPrefixReady   = "/ready"
+	stateReady        = "READY"
+	stateInitializing = "INITIALIZING"
+	stateDraining     = "DRAINING"
 )
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	socketPath    string
-	isTerminating atomic.Bool
+	socketPath string
+	envoyProbe *EnvoyReadinessProbe
+	draining   atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
 
-func NewReporter(socketPath string) *Reporter {
+func NewReporter(socketPath string, adminAddress string, adminPort uint32) *Reporter {
+	var envoyProbe *EnvoyReadinessProbe
+	if adminPort > 0 {
+		envoyProbe = &EnvoyReadinessProbe{
+			LocalHostAddr: adminAddress,
+			AdminPort:     uint16(adminPort),
+		}
+	}
+
 	return &Reporter{
 		socketPath: socketPath,
+		envoyProbe: envoyProbe,
 	}
 }
 
@@ -88,23 +99,37 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (r *Reporter) Terminating() {
-	r.isTerminating.Store(true)
+func (r *Reporter) Draining() {
+	r.draining.Store(true)
 }
 
 func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
-	state := stateReady
-	stateHTTPStatus := http.StatusOK
-	if r.isTerminating.Load() {
-		state = stateTerminating
-		stateHTTPStatus = http.StatusServiceUnavailable
+	state := stateInitializing
+	var envoyReadinessErr error
+	if r.envoyProbe != nil {
+		envoyReadinessErr = r.envoyProbe.Check()
 	}
 
-	stateBytes := []byte(state)
+	if envoyReadinessErr == nil {
+		draining := r.draining.Load()
+		if !draining {
+			state = stateReady
+		} else {
+			state = stateDraining
+		}
+	} else {
+		logger.Info("[WARNING] Envoy is not ready", "err", envoyReadinessErr.Error())
+	}
+
+	stateBytes := []byte(state + "\n")
 	writer.Header().Set("Content-Type", "text/plain")
 	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(stateBytes)))
 	writer.Header().Set("Cache-Control", "no-cache, max-age=0")
 	writer.Header().Set("X-Readiness-Server", "kuma-dp")
+	stateHTTPStatus := http.StatusServiceUnavailable
+	if state == stateReady {
+		stateHTTPStatus = http.StatusOK
+	}
 	writer.WriteHeader(stateHTTPStatus)
 	_, err := writer.Write(stateBytes)
 	logger.V(1).Info("responding readiness state", "state", state, "client", req.RemoteAddr)

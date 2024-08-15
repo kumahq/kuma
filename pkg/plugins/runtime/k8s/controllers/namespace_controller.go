@@ -55,8 +55,8 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	if ns.Status.Phase == kube_core.NamespaceTerminating {
-		// we should not try to create or delete resources on namespace with Terminating state, it will result in errors
-		log.V(1).Info("namespace is Terminating")
+		// we should not try to create or delete resources on namespace with Draining state, it will result in errors
+		log.V(1).Info("namespace is Draining")
 		return kube_ctrl.Result{}, nil
 	}
 
