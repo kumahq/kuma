@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
@@ -24,7 +25,7 @@ const (
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
 	socketPath    string
-	isTerminating bool
+	isTerminating atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
@@ -88,13 +89,13 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 }
 
 func (r *Reporter) Terminating() {
-	r.isTerminating = true
+	r.isTerminating.Store(true)
 }
 
 func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request) {
 	state := stateReady
 	stateHTTPStatus := http.StatusOK
-	if r.isTerminating {
+	if r.isTerminating.Load() {
 		state = stateTerminating
 		stateHTTPStatus = http.StatusServiceUnavailable
 	}
