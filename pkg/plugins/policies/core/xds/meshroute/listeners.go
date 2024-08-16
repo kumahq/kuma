@@ -174,6 +174,7 @@ func collectMeshMultiZoneService(
 			},
 			Port: &port.Port,
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(svc, port.Name)),
 	}
 }
 
