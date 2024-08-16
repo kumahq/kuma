@@ -155,7 +155,7 @@ func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceReso
 						Port: port.Port,
 					},
 				}
-				outbounds = append(outbounds, &xds.Outbound{outbound})
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: outbound})
 			}
 		}
 		if len(svc.Status.VIPs) > 0 {
