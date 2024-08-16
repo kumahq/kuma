@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -238,6 +239,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
+			}
+
+			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
+				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
+				if err := rootCtx.ComponentManager.Add(prober); err != nil {
+					return err
+				}
 			}
 
 			stopComponents := make(chan struct{})
