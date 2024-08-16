@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -77,7 +78,7 @@ func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceRea
 	}
 
 	switch uri.ResourceType {
-	case meshservice_api.MeshServiceType:
+	case meshservice_api.MeshServiceType, meshmultizoneservice_api.MeshMultiZoneServiceType:
 		// find MeshService without the sectionName and compute rules for it
 		if uri.SectionName != "" {
 			uriWithoutSection := uri
@@ -88,7 +89,7 @@ func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceRea
 		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
 			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
-	case meshextenralservice_api.MeshExternalServiceType:
+	case meshexternalservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
 		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
 			return rr.Compute(UniqueKey(mesh, ""), reader)
@@ -210,9 +211,9 @@ func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionNa
 		default:
 			return false
 		}
-	case meshextenralservice_api.MeshExternalServiceType:
+	case meshexternalservice_api.MeshExternalServiceType:
 		switch r.Descriptor().Name {
-		case meshextenralservice_api.MeshExternalServiceType:
+		case meshexternalservice_api.MeshExternalServiceType:
 			return UniqueKey(policyItem.resource, "") == UniqueKey(r, "")
 		default:
 			return false
