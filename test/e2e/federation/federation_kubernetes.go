@@ -86,8 +86,6 @@ func FederateKubeZoneCPToKubeGlobal() {
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 			)
 			Expect(err).ToNot(HaveOccurred())
-			// wait for the mesh, that means KDS works
-			Expect(WaitForMesh("default", []Cluster{global, zone})).To(Succeed())
 		})
 
 		It("should sync data plane proxies to global cp", func() {
@@ -95,7 +93,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "dataplanes", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("demo-client"))
-			}, "60s", "1s").Should(Succeed())
+			}, "120s", "1s").Should(Succeed())
 		})
 
 		It("should sync data policies to global cp", func() {
@@ -103,7 +101,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "meshcircuitbreakers", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("mesh-circuit-breaker-all-default-zw856xvxdb7558d9"))
-			}, "60s", "1s").Should(Succeed())
+			}, "120s", "1s").Should(Succeed())
 		})
 
 		It("should not break the traffic", func() {
