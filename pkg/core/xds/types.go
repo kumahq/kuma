@@ -174,6 +174,7 @@ type Proxy struct {
 	Id                  ProxyId
 	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
+	Outbounds           Outbounds
 	Metadata            *DataplaneMetadata
 	Routing             Routing
 	Policies            MatchedPolicies
@@ -191,6 +192,34 @@ type Proxy struct {
 	RuntimeExtensions map[string]interface{}
 	// Zone the zone the proxy is in
 	Zone string
+}
+
+type Outbound struct {
+	// LegacyOutbound is an old way to define outbounds using 'kuma.io/service' tag
+	LegacyOutbound *mesh_proto.Dataplane_Networking_Outbound
+	// todo(lobkovilya): add ResourceIdentifier field for MeshService, MeshExternalService and MeshMutliZoneService references
+}
+
+type Outbounds []*Outbound
+
+func (os Outbounds) Filter(predicates ...func(o *Outbound) bool) Outbounds {
+	var result []*Outbound
+	for _, outbound := range os {
+		add := true
+		for _, p := range predicates {
+			if !p(outbound) {
+				add = false
+			}
+		}
+		if add {
+			result = append(result, outbound)
+		}
+	}
+	return result
+}
+
+func NonBackendRefFilter(o *Outbound) bool {
+	return o.LegacyOutbound != nil && o.LegacyOutbound.BackendRef == nil
 }
 
 type ServerSideMTLSCerts struct {
