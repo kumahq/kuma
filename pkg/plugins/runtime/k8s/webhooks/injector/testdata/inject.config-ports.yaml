@@ -33,6 +33,7 @@ initContainer:
   image: kuma/kuma-init:latest
 virtualProbesEnabled: true
 virtualProbesPort: 9000
+applicationProbeProxyPort: 0
 sidecarTraffic:
   excludeInboundPorts:
     - 1234
