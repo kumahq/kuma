@@ -83,6 +83,15 @@ or only the instances matched by `MeshService`.
 Thus we have to require `sectionName` to a port, in order to refer to
 `MeshServices` unambiguously.
 
+#### Port name
+
+We can't require users to add a `name` field to their existing `Services` or
+annotate their `Dataplanes` for universal, so we should
+set a canonical name for every port assuming one isn't set.
+
+Because the `port` field must be unique anyway, this could be a suitable,
+automatic `name`.
+
 ### Stats
 
 For the Kuma API it's important that we can derive the destination that corresponds
@@ -139,6 +148,9 @@ the listener for the ClusterIP.
   the `MeshService labels: {kuma.io/display-name: demo-app, kuma.io/namespace: kuma-demo}, port: 5000`.
   - we can drop this behavior when we drop `kuma.io/service` support
   - require `sectionName` to disambiguate
+  - automatically set `MeshService.spec.ports[].name` when generating these
+    resources
+    - on both k8s and universal, it should be the `port` field
 - For traffic:
   - don't generate MeshService by default
   - have a setting to disable using MeshServices
@@ -153,7 +165,7 @@ the listener for the ClusterIP.
 
 - Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService `{name: demo-app, namespace: kuma-demo, spec.ports[port == 5000]}`.
-  - in order to target `MeshService` only, `port` must be set
+  - in order to target `MeshService` only, `sectionName` must be set
   - For `MeshLoadBalancingStrategy`, only the `localZone` portion applies
 - When the feature is enabled, generate new clusters for `MeshServices`
   - the new behavior stays off by default, users must opt in
@@ -170,8 +182,10 @@ the listener for the ClusterIP.
   - `ReachableBackendRefs` to enable on a case-by-case basis by setting
      `reachableBackendRefs`:
         `reachableBackendRefs: { kind: MeshService, labels: {} }`
-  1. On K8s: if the consumer can reach a given local `MeshService`,
+  - **NOTE**: On k8s if the consumer can reach a given local `MeshService`,
     the Kubernetes IP has the behavior of `MeshService`
+  - **NOTE**: This change makes the *experimental* options `GENERATE_MESH_SERVICES` & `SKIP_PERSISTED_VIPS`
+    *obsolete*, these options *now do nothing*
 1. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
    depending on whether they need cross-zone
 1. Disable old cluster/VIP generation
