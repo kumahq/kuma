@@ -999,16 +999,19 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
 		WithOutbounds(core_xds.Outbounds{
-			{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-				Port: builders.FirstOutboundPort,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: "backend",
-				}},
+			{
+				LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+					},
+				},
 			},
-			{LegacyOutbound: builders.Outbound().
-				WithAddress("10.20.20.1").
-				WithPort(9090).
-				WithMeshExternalService("example", 9090).Build(),
+			{
+				LegacyOutbound: builders.Outbound().
+					WithAddress("10.20.20.1").
+					WithPort(9090).
+					WithMeshExternalService("example", 9090).Build(),
 			},
 		}).
 		WithMetadata(&core_xds.DataplaneMetadata{
