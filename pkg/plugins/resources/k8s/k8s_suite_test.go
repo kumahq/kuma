@@ -69,7 +69,6 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
 	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "demo"}})).To(Succeed())
-	Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "kuma-system"}})).To(Succeed())
 }))
 
 var _ = AfterSuite(func() {

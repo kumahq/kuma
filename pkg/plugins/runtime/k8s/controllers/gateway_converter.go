@@ -23,9 +23,6 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
-			Labels: map[string]string{
-				mesh_proto.KubeNamespaceTag: pod.Namespace,
-			},
 		},
 		Mesh: k8s_util.MeshOfByAnnotation(pod, ns),
 	}
