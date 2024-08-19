@@ -211,6 +211,8 @@ type Dataplane struct {
 	// See
 	// https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
 	// for more information.
+	// Deprecated: this feature will be removed for Universal; on Kubernetes, it's
+	// not needed anymore.
 	Probes *Dataplane_Probes `protobuf:"bytes,3,opt,name=probes,proto3" json:"probes,omitempty"`
 }
 
