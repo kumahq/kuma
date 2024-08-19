@@ -260,6 +260,10 @@ func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
 	return d.Overview.Descriptor().NewList()
 }
 
+func (d ResourceTypeDescriptor) IsInsight() bool {
+	return strings.HasSuffix(string(d.Name), "Insight")
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -309,6 +313,12 @@ func HasScope(scope ResourceScope) TypeFilter {
 func IsPolicy() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.IsPolicy
+	})
+}
+
+func IsInsight() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.IsInsight()
 	})
 }
 
@@ -457,14 +467,26 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if isK8s && r.Descriptor().Scope == ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
+	getMeshOrDefault := func() string {
+		if mesh := r.GetMeta().GetMesh(); mesh != "" {
+			return mesh
+		}
+		return DefaultMesh
+	}
+
+	if r.Descriptor().Scope == ScopeMesh {
+		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 			setIfNotExist(mesh_proto.ZoneTag, localZone)
+			env := mesh_proto.UniversalEnvironment
+			if isK8s {
+				env = mesh_proto.KubernetesEnvironment
+			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 

@@ -22,12 +22,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	kds_client "github.com/kumahq/kuma/pkg/kds/client"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
-	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	kds_client_v2 "github.com/kumahq/kuma/pkg/kds/v2/client"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
-	"github.com/kumahq/kuma/pkg/kds/zone"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
@@ -162,80 +159,6 @@ var _ = Describe("Zone Sync", func() {
 		}
 		Expect(actualNames).To(ConsistOf(expectedNames))
 	}
-
-	Context("StreamKumaResources", func() {
-		var zoneSyncer sync_store.ResourceSyncer
-		newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, configs map[string]bool) kds_client.KDSSink {
-			return kds_client.NewKDSSink(
-				core.Log.WithName("kds-sink"),
-				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-				kds_client.NewKDSStream(cs, zoneName, ""),
-				zone.Callbacks(configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
-			)
-		}
-
-		BeforeEach(func() {
-			globalStore = memory.NewStore()
-			wg := &sync.WaitGroup{}
-
-			cfg := kuma_cp.DefaultConfig()
-			cfg.Multizone.Zone.Name = "global"
-
-			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
-			srv, err := setup.NewKdsServerBuilder(globalStore).
-				WithKdsContext(kdsCtx).
-				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
-				Sotw()
-			Expect(err).ToNot(HaveOccurred())
-			serverStream := grpc.NewMockServerStream()
-			wg.Add(1)
-			go func() {
-				defer func() {
-					wg.Done()
-					GinkgoRecover()
-				}()
-				Expect(srv.StreamKumaResources(serverStream)).ToNot(HaveOccurred())
-			}()
-
-			stop := make(chan struct{})
-			clientStream := serverStream.ClientStream(stop)
-
-			zoneStore = memory.NewStore()
-			zoneSyncer = sync_store.NewResourceSyncer(core.Log.WithName("kds-syncer"), zoneStore)
-
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
-				_ = newPolicySink(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
-			}()
-			closeFunc = func() {
-				defer GinkgoRecover()
-				Expect(clientStream.CloseSend()).To(Succeed())
-				close(stop)
-				wg.Wait()
-			}
-		})
-
-		AfterEach(func() {
-			closeFunc()
-		})
-
-		It("should sync policies from global store to the local", func() {
-			VerifySyncResourcesFromGlobalToLocal()
-		})
-
-		It("should sync ingresses", func() {
-			VerifySyncOfIngressesFromGlobalToZone()
-		})
-
-		It("should have up to date list of consumed types", func() {
-			VerifyUpToDateListOfConsumedTypes()
-		})
-
-		It("should not delete predefined ConfigMaps in the Zone cluster", func() {
-			VerifySyncDoesntDeletePredefinedConfigMaps()
-		})
-	})
 
 	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer

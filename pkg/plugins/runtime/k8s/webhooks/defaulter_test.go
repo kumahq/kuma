@@ -273,6 +273,7 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/policy-role": "workload-owner",
                   "k8s.kuma.io/namespace": "example"
                 },
@@ -314,6 +315,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
@@ -399,6 +401,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
@@ -451,7 +454,8 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/mesh": "default",
+                  "kuma.io/mesh": "demo",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1"
                 },
