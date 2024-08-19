@@ -243,7 +243,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "18.services-for-pod.yaml",
 			dataplane:      "18.dataplane.yaml",
 		}),
-		Entry("19. Draining pod is unhealthy", testCase{
+		Entry("19. Terminating pod is unhealthy", testCase{
 			pod:            "19.pod.yaml",
 			servicesForPod: "19.services-for-pod.yaml",
 			dataplane:      "19.dataplane.yaml",
