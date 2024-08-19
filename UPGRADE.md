@@ -174,12 +174,42 @@ Migration step:
 3. Deploy the gateway and verify if traffic works correctly.
 4. Remove the old resources.
 
+### Introduction to Application Probe Proxy and deprecation of Virtual Probes
+
+To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports HTTP Get, TCP Socket and gRPC application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
+
+Application workloads using Virtual Probes will be migrated to Application Probe Proxy automatically on next restart/redeploy on Kubernetes, without other operations. 
+
+Application Probe Proxy will by default listen on port `9000`, the same port that Virtual Probes Listener uses. If you'd customized the Virtual Probes port, you might also want to customize the port of Application Probe Proxy. You may do so using one of these methods:
+
+1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
+1. Configuring on the control plane to apply on all dataplanes: set the port using environment variable `KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT` 
+1. Configuring for certain dataplanes: set the port using pod annotation `kuma.io/application-probe-proxy-port`
+
+By setting the port to `0`, Application Probe Proxy feature will be disabled.
+
+When the Application Probe Proxy is disabled, Virtual Probes still works as usual before Virtual Probes is removed.
+
+Because of deprecation of Virtual Probes, the following items are considered deprecated:
+
+- Pod annotation `kuma.io/virtual-probes`
+- Pod annotation `kuma.io/virtual-probes-port`
+- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesEnabled`
+- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesPort`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED`
+- Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
+- Data field `probes` on `Dataplane` objects
+
 ### kumactl
 
 #### Default prometheus scrape config removes `service`
 
 If you rely on a scrape config from previous version it's advised to remove the relabel config that was adding `service`.
 Indeed `service` is a very common label and metrics were sometimes coliding with Kuma metrics. If you want the label `kuma_io_service` is always the same as `service`.
+
+### Removal of KDS `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` configuration option
+
+In this release, KDS Delta is used by default and the CP environment variable `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` doesn't exist anymore.
 
 ## Upgrade to `2.8.x`
 

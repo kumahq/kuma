@@ -16,10 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/config/multizone"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/kds/util"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -29,19 +27,6 @@ const (
 )
 
 var muxServerLog = core.Log.WithName("kds-mux-server")
-
-type Filter interface {
-	InterceptSession(session Session) error
-}
-
-type Callbacks interface {
-	OnSessionStarted(session Session) error
-}
-type OnSessionStartedFunc func(session Session) error
-
-func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
-	return f(session)
-}
 
 type OnGlobalToZoneSyncStartedFunc func(session mesh_proto.KDSSyncService_GlobalToZoneSyncClient, errorCh chan error)
 
@@ -57,10 +42,8 @@ func (f OnZoneToGlobalSyncStartedFunc) OnZoneToGlobalSyncStarted(session mesh_pr
 
 type server struct {
 	config               multizone.KdsServerConfig
-	callbacks            Callbacks
 	CallbacksGlobal      OnGlobalToZoneSyncConnectFunc
 	CallbacksZone        OnZoneToGlobalSyncConnectFunc
-	filters              []Filter
 	metrics              core_metrics.Metrics
 	serviceServer        *service.GlobalKDSServiceServer
 	kdsSyncServiceServer *KDSSyncServiceServer
@@ -72,8 +55,6 @@ type server struct {
 var _ component.Component = &server{}
 
 func NewServer(
-	callbacks Callbacks,
-	filters []Filter,
 	streamInterceptors []grpc.StreamServerInterceptor,
 	unaryInterceptors []grpc.UnaryServerInterceptor,
 	config multizone.KdsServerConfig,
@@ -82,8 +63,6 @@ func NewServer(
 	kdsSyncServiceServer *KDSSyncServiceServer,
 ) component.Component {
 	return &server{
-		callbacks:            callbacks,
-		filters:              filters,
 		config:               config,
 		metrics:              metrics,
 		serviceServer:        serviceServer,
@@ -135,10 +114,6 @@ func (s *server) Start(stop <-chan struct{}) error {
 	)
 	grpcServer := grpc.NewServer(grpcOptions...)
 
-	// register services
-	if !s.config.DisableSOTW {
-		mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
-	}
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)
 	mesh_proto.RegisterKDSSyncServiceServer(grpcServer, s.kdsSyncServiceServer)
 	s.metrics.RegisterGRPC(grpcServer)
@@ -169,37 +144,6 @@ func (s *server) Start(stop <-chan struct{}) error {
 	case err := <-errChan:
 		return err
 	}
-}
-
-// StreamMessage handle Mux messages for KDS V1. It's not used in KDS V2
-func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageServer) error {
-	zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
-	if err != nil {
-		return err
-	}
-	log := muxServerLog.WithValues("client-id", zoneID)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
-	// The buffer size should be of a size of all inflight request, so we never write to a blocked buffer.
-	// The buffer is separate for each direction (send/receive) on each multiplexed stream (global acting as server/global acting as client)
-	// A CP never sends multiple DiscoveryRequests for one resource type.
-	// A CP never sends multiple DiscoveryResponses for one resource type (it waits until peer answers with ACK/NACK)
-	// Therefore the maximum number of inflight requests are number of synced resources.
-	// For the simplicity we just take all resources available in Kuma (.
-	bufferSize := len(registry.Global().ObjectTypes())
-	session := NewSession(zoneID, stream, uint32(bufferSize), s.config.MsgSendTimeout.Duration)
-	for _, filter := range s.filters {
-		if err := filter.InterceptSession(session); err != nil {
-			log.Error(err, "closing KDS stream following a callback error")
-			return err
-		}
-	}
-	if err := s.callbacks.OnSessionStarted(session); err != nil {
-		log.Error(err, "closing KDS stream following a callback error")
-		return err
-	}
-	err = <-session.Error()
-	log.Info("KDS stream is closed", "reason", err.Error())
-	return nil
 }
 
 func (s *server) NeedLeaderElection() bool {

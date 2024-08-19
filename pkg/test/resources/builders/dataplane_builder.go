@@ -324,6 +324,16 @@ func (b *OutboundBuilder) WithMeshExternalService(name string, port uint32) *Out
 	return b
 }
 
+func (b *OutboundBuilder) WithMeshMultiZoneService(name string, port uint32) *OutboundBuilder {
+	b.res.Tags = nil
+	b.res.BackendRef = &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+		Kind: "MeshMultiZoneService",
+		Name: name,
+		Port: port,
+	}
+	return b
+}
+
 func (b *OutboundBuilder) Build() *mesh_proto.Dataplane_Networking_Outbound {
 	return b.res
 }
