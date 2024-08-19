@@ -121,6 +121,9 @@ func (b BackendRef) ReferencesRealObject() bool {
 		return b.Port != nil
 	case MeshServiceSubset:
 		return false
+	// empty targetRef should not be treated as real object
+	case "":
+		return false
 	default:
 		return true
 	}
