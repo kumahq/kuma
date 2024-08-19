@@ -2,6 +2,7 @@ package webhooks
 
 import (
 	"context"
+	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"net/http"
 
 	v1 "k8s.io/api/admission/v1"
@@ -46,6 +47,7 @@ type validatingHandler struct {
 
 var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
 	meshtimeout.MeshTimeoutType: true,
+	meshretry.MeshRetryType:     true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
