@@ -566,7 +566,13 @@ webhooks:
           - UPDATE
         resources:
           - meshes
+          - dataplanes
           - meshgateways
+          - meshgatewayinstances
+          - zoneingresses
+          - zoneingressinsights
+          - zoneegresses
+          - zoneegressinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
