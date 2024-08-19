@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Source copied and modified from https://github.com/istio/istio/blob/release-1.23/pilot/cmd/pilot-agent/status/util/stats.go
-
 package readiness
 
 import (

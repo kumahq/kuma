@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Source copied and modified from https://github.com/istio/istio/blob/release-1.23/pilot/cmd/pilot-agent/status/ready/probe.go
-
 package readiness
 
 import (
@@ -40,23 +38,11 @@ var _ EnvoyProbe = &EnvoyReadinessProbe{}
 
 // Check executes the probe and returns an error if the probe fails.
 func (p *EnvoyReadinessProbe) Check() error {
-	var doCheck = func() error {
-		// First, check that Envoy has received a configuration update from Pilot.
-		if err := p.checkConfigStatus(); err != nil {
-			return err
-		}
-		return p.checkEnvoyReadiness()
+	// First, check that Envoy has received a configuration update from Pilot.
+	if err := p.checkConfigStatus(); err != nil {
+		return err
 	}
-
-	if p.Context == nil {
-		return doCheck()
-	}
-	select {
-	case <-p.Context.Done():
-		return fmt.Errorf("server is not live, current state is: %s", StateString(Draining))
-	default:
-		return doCheck()
-	}
+	return p.isEnvoyReady()
 }
 
 // checkConfigStatus checks to make sure initial configs have been received from Pilot.
@@ -85,7 +71,19 @@ func (p *EnvoyReadinessProbe) checkConfigStatus() error {
 	return fmt.Errorf("config not fully received from XDS server: %s", s.String())
 }
 
-// checkEnvoyReadiness checks to ensure that Envoy is in the LIVE state and workers have started.
+// isEnvoyReady checks to ensure that Envoy is in the LIVE state and workers have started.
+func (p *EnvoyReadinessProbe) isEnvoyReady() error {
+	if p.Context == nil {
+		return p.checkEnvoyReadiness()
+	}
+	select {
+	case <-p.Context.Done():
+		return fmt.Errorf("server is not live, current state is: %s", StateString(Draining))
+	default:
+		return p.checkEnvoyReadiness()
+	}
+}
+
 func (p *EnvoyReadinessProbe) checkEnvoyReadiness() error {
 	// If Envoy is ready at least once i.e. server state is LIVE and workers
 	// have started, they will not go back in the life time of Envoy process.
