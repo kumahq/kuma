@@ -14,9 +14,61 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
+
+type Version struct {
+	k8s_version.Version
+
+	Mode IptablesMode
+}
+
+func getIptablesVersion(ctx context.Context, path string) (Version, error) {
+	isVersionMissing := func(output string) bool {
+		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", FlagVersion))
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// #nosec G204
+	cmd := exec.CommandContext(ctx, path, FlagVersion)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
+	// flag. Depending on the version, this may result in:
+	//   - The command exiting with a non-zero code and a warning written to stderr
+	//   - The command exiting with code 0 but still outputting a warning to stderr
+	// In these cases, the function assumes the iptables mode is legacy
+	switch {
+	case err != nil && isVersionMissing(err.Error()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case err != nil:
+		return Version{}, err
+	}
+
+	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) < 2 {
+		return Version{}, errors.Errorf("unable to parse iptables version in: '%s'", stdout.String())
+	}
+
+	version, err := k8s_version.ParseGeneric(matched[1])
+	if err != nil {
+		return Version{}, errors.Wrapf(err, "invalid iptables version string: '%s'", matched[1])
+	}
+
+	if len(matched) < 3 {
+		return Version{Version: *version, Mode: IptablesModeLegacy}, nil
+	}
+
+	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
+}
 
 type Executable struct {
 	name string
@@ -29,75 +81,6 @@ type Executable struct {
 	// facilitates constructing the full executable names, generating temporary
 	// file names for iptables rules, and other related operations.
 	prefix string
-}
-
-// verifyIptablesMode checks if the provided 'path' corresponds to an iptables
-// executable operating in the expected mode.
-//
-// This function verifies the mode by:
-//  1. Executing the iptables command specified by 'path' with the `--version`
-//     argument to obtain the version output.
-//  2. Parsing the standard output using the `consts.IptablesModeRegex`.
-//     - The regex is designed to extract the mode string from the output (e.g.,
-//     "legacy" or "nf_tables").
-//     - If a match is found, the extracted mode is compared with the expected
-//     mode (`mode`) using the `consts.IptablesModeMap`.
-//  3. Returning:
-//     - `true` if the extracted mode matches the expected mode.
-//     - `false` if the command execution fails, parsing fails, or the extracted
-//     mode doesn't match the expected mode.
-//
-// Special Considerations:
-// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
-// flag and exhibit the following behaviors:
-//   - The command exits with a non-zero code and a warning is written to
-//     stderr.
-//   - A warning is written to stderr but the command exits with code 0.
-//
-// In these cases, the function assumes the iptables mode is legacy
-// (`consts.IptablesModeLegacy`) due to the age of these versions.
-func (c Executable) verifyIptablesMode(ctx context.Context, l Logger, cniMode bool, path string) bool {
-	isVersionMissing := func(output string) bool {
-		return strings.Contains(
-			output,
-			fmt.Sprintf("unrecognized option '%s'", FlagVersion),
-		)
-	}
-
-	stdout, stderr, err := execCmd(ctx, l, cniMode, c.NeedLock(), path, FlagVersion)
-	if err != nil {
-		return isVersionMissing(err.Error()) && c.mode == IptablesModeLegacy
-	}
-
-	if stderr != nil && stderr.Len() > 0 && isVersionMissing(stderr.String()) {
-		return c.mode == IptablesModeLegacy
-	}
-
-	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
-	if len(matched) == 2 {
-		return slices.Contains(IptablesModeMap[c.mode], matched[1])
-	}
-
-	return false
-}
-
-func (c Executable) NeedLock() bool {
-	// iptables-nft does not use the xtables lock, so no lock is needed for this
-	// mode
-	if c.mode == IptablesModeNft {
-		return false
-	}
-
-	// Only iptables and iptables-restore executables need a lock because they
-	// perform write operations
-	switch c.name {
-	case "", "restore":
-		return true
-	}
-
-	// For all other cases (such as iptables-save), no lock is needed as they
-	// don't perform write operations
-	return false
 }
 
 func (c Executable) Initialize(
@@ -116,29 +99,31 @@ func (c Executable) Initialize(
 
 	for _, path := range paths {
 		if found := findPath(path); found != "" {
-			if c.verifyIptablesMode(ctx, l, cniMode, path) {
+			if v, err := getIptablesVersion(ctx, path); err == nil && v.Mode == c.mode {
 				return InitializedExecutable{
-					Executable: c,
-					Path:       path,
-					logger:     l,
-					cniMode:    cniMode,
-					args:       args,
+					Path:    path,
+					logger:  l,
+					name:    c.name,
+					prefix:  c.prefix,
+					cniMode: cniMode,
+					version: v,
+					args:    args,
 				}, nil
 			}
 		}
 	}
 
-	return InitializedExecutable{}, errors.Errorf(
-		"failed to find executable %s",
-		nameWithMode,
-	)
+	return InitializedExecutable{}, errors.Errorf("failed to find executable %s", nameWithMode)
 }
 
 type InitializedExecutable struct {
-	Executable
-	Path    string
+	Path string
+
 	logger  Logger
+	name    string
+	prefix  string
 	cniMode bool
+	version Version
 
 	// args holds a set of default parameters or flags that are automatically
 	// added to every execution of this executable. These parameters are
@@ -148,11 +133,23 @@ type InitializedExecutable struct {
 	args []string
 }
 
-func (c InitializedExecutable) Exec(
-	ctx context.Context,
-	args ...string,
-) (*bytes.Buffer, *bytes.Buffer, error) {
-	return execCmd(ctx, c.logger, c.cniMode, c.NeedLock(), c.Path, append(c.args, args...)...)
+func (c InitializedExecutable) NeedLock() bool {
+	// iptables-nft does not use the xtables lock, so no lock is needed for this
+	// mode
+	if c.version.Mode == IptablesModeNft {
+		return false
+	}
+
+	// Only iptables and iptables-restore executables need a lock because they
+	// perform write operations
+	switch c.name {
+	case "", "restore":
+		return true
+	}
+
+	// For all other cases (such as iptables-save), no lock is needed as they
+	// don't perform write operations
+	return false
 }
 
 type ExecutablesIPvX struct {
