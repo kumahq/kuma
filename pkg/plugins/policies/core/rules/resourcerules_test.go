@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -297,6 +298,44 @@ var _ = Describe("Compute", func() {
 					Mesh: "mesh-1",
 				},
 				ResourceType: "MeshService",
+				SectionName:  "",
+			},
+			meshCtx,
+		)
+
+		// then
+		Expect(rule).ToNot(BeNil())
+		Expect(rule.Conf).To(Equal([]interface{}{"conf-2"}))
+	})
+
+	It("should return Mesh rule if MeshMultiZoneService is not found", func() {
+		// given
+		rr := core_rules.ResourceRules{
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       meshservice_api.MeshServiceType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
+			}: {Conf: []interface{}{"conf-1"}},
+			core_rules.UniqueResourceIdentifier{
+				ResourceType:       mesh.MeshType,
+				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
+			}: {Conf: []interface{}{"conf-2"}},
+		}
+		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+			mesh.MeshType: &mesh.MeshResourceList{
+				Items: []*mesh.MeshResource{
+					builders.Mesh().WithName("mesh-1").Build(),
+				},
+			},
+		}}
+
+		// when
+		rule := rr.Compute(
+			core_rules.UniqueResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name: "multi-backend",
+					Mesh: "mesh-1",
+				},
+				ResourceType: meshmultizoneservice_api.MeshMultiZoneServiceType,
 				SectionName:  "",
 			},
 			meshCtx,

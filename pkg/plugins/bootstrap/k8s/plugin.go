@@ -186,6 +186,11 @@ type kubeComponentManager struct {
 
 var _ component.Manager = &kubeComponentManager{}
 
+const (
+	// See https://github.com/kubernetes-sigs/controller-runtime/blob/785762383bc52f4b309dbc9d8f8e9239ff391198/pkg/manager/internal.go#L604
+	leaderElectionLost = "leader election lost"
+)
+
 func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	go func() {
@@ -196,6 +201,10 @@ func (cm *kubeComponentManager) Start(done <-chan struct{}) error {
 	defer cm.waitForDone()
 
 	if err := cm.Manager.Start(ctx); err != nil {
+		if err.Error() == leaderElectionLost {
+			cm.GetLogger().Info("leader election lost, stopping")
+			return nil
+		}
 		return errors.Wrap(err, "error running Kubernetes Manager")
 	}
 	return nil

@@ -132,13 +132,21 @@ func GenerateClusters(
 }
 
 func createResourceOrigin(ref common_api.BackendRef, meshCtx xds_context.MeshContext) *core_rules.UniqueResourceIdentifier {
-	if ref.Kind == common_api.MeshService && ref.ReferencesRealObject() {
+	switch {
+	case ref.Kind == common_api.MeshService && ref.ReferencesRealObject():
 		ms := meshCtx.MeshServiceByName[ref.Name]
 		port, ok := ms.FindPort(pointer.Deref(ref.Port))
 		if ok {
 			return pointer.To(core_rules.UniqueKey(ms, port.Name))
 		}
 		return pointer.To(core_rules.UniqueKey(ms, ""))
+	case ref.Kind == common_api.MeshMultiZoneService:
+		mzs := meshCtx.MeshMultiZoneServiceByName[ref.Name]
+		port, ok := mzs.FindPort(pointer.Deref(ref.Port))
+		if ok {
+			return pointer.To(core_rules.UniqueKey(mzs, port.Name))
+		}
+		return pointer.To(core_rules.UniqueKey(mzs, ""))
 	}
 	return nil
 }

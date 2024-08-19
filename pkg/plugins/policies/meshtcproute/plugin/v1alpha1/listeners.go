@@ -30,7 +30,7 @@ func generateFromService(
 	resources := core_xds.NewResourceSet()
 
 	serviceName := svc.ServiceName
-	protocol := meshCtx.GetServiceProtocol(serviceName)
+	protocol := svc.Protocol
 
 	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.BackendRef)
 	if len(backendRefs) == 0 {

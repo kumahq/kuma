@@ -21,6 +21,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -48,6 +49,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
+	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -213,6 +215,84 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
+		Entry("default-meshmultizoneservice", func() outboundsTestCase {
+			backendDP := samples.DataplaneWebBuilder().
+				AddInbound(builders.Inbound().
+					WithAddress("192.168.0.4").
+					WithPort(8084).
+					WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: core_mesh.ProtocolHTTP,
+						"app":                  "backend",
+					}),
+				).Build()
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  intstr.FromInt(8084),
+						AppProtocol: core_mesh.ProtocolHTTP,
+					}},
+					Identities: []meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "other-backend",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
+				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
+					Selector: meshmultizoneservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						AppProtocol: core_mesh.ProtocolHTTP,
+					}},
+				},
+				Status: &meshmultizoneservice_api.MeshMultiZoneServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.2",
+					}},
+					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
+						{
+							Name: "backend",
+						},
+					},
+				},
+			}
+
+			dp := samples.DataplaneWebBuilder().
+				AddOutbound(builders.Outbound().
+					WithAddress("10.0.0.2").
+					WithPort(80).
+					WithMeshMultiZoneService("multi-backend", 80),
+				).Build()
+			mc := meshContextWithResources(dp, backendDP, &meshSvc, &meshMZSvc)
+
+			builder := &sync.DataplaneProxyBuilder{
+				Zone:       "zone-1",
+				APIVersion: envoy.APIV3,
+			}
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, *mc)
+			Expect(err).ToNot(HaveOccurred())
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
 		Entry("default-meshexternalservice", func() outboundsTestCase {
 			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
@@ -237,7 +317,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -271,7 +352,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -308,7 +390,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -365,7 +448,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1580,20 +1664,16 @@ oESyXXAeWPJX3e7ZgdjUHomwhAZpUmqIWribTioaHZTb1I6OpsD+eF6USSayxUaL
 -----END CERTIFICATE-----
 `
 
-func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
+func meshContextWithResources(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
 
 	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
-	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
-	Expect(err).ToNot(HaveOccurred())
-
-	err = resourceStore.Create(context.Background(), builders.ZoneEgress().WithPort(10002).Build(), store.CreateByKey("zone-egress", core_model.NoMesh))
-	Expect(err).ToNot(HaveOccurred())
-
-	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
+	for _, res := range resources {
+		err = resourceStore.Create(context.Background(), res, store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+	}
 	Expect(err).ToNot(HaveOccurred())
 
 	lookupIPFunc := func(s string) ([]net.IP, error) {
