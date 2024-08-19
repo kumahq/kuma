@@ -95,7 +95,6 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		ctx,
 		meshContext.Resource,
 		matchedExternalServices,
-		meshContext.Resources.MeshExternalServices().Items,
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
