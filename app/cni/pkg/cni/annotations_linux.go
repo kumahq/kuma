@@ -16,7 +16,7 @@ const (
 	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
-	defaultAppProbeProxyPort   = "9000"
+	defaultAppProbeProxyPort   = "9001"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 

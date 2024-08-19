@@ -27,7 +27,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			CNIEnabled:                false,
 			VirtualProbesEnabled:      true,
 			VirtualProbesPort:         9000,
-			ApplicationProbeProxyPort: 9000,
+			ApplicationProbeProxyPort: 9001,
 			SidecarContainer: SidecarContainer{
 				IpFamilyMode:         "dualstack",
 				RedirectPortInbound:  15006,
