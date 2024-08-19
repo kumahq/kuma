@@ -209,7 +209,7 @@ var defaultConf = E2eConfig{
 	KumaZoneK8sCtlFlags:  map[string]string{},
 	SuiteConfig: SuiteConfig{
 		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "2.3.3",
+			HelmVersion: "2.6.10",
 		},
 	},
 	K8sType:                      KindK8sType,

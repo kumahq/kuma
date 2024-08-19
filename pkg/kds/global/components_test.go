@@ -17,8 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/global"
-	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	sync_store_v2 "github.com/kumahq/kuma/pkg/kds/v2/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -149,75 +147,6 @@ var _ = Describe("Global Sync", func() {
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
 		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
 	}
-
-	Context("KDS v1", func() {
-		var globalSyncer sync_store.ResourceSyncer
-
-		BeforeEach(func() {
-			const numOfZones = 2
-			const zoneName = "zone-%d"
-
-			// Start `numOfZones` Kuma CP Zone
-			serverStreams := []*grpc.MockServerStream{}
-			wg := &sync.WaitGroup{}
-			zoneStores = []store.ResourceStore{}
-			for i := 0; i < numOfZones; i++ {
-				zoneStore := memory.NewStore()
-				srv, err := kds_setup.NewKdsServerBuilder(zoneStore).AsZone(fmt.Sprintf(zoneName, i)).Sotw()
-				Expect(err).ToNot(HaveOccurred())
-				serverStream := grpc.NewMockServerStream()
-				wg.Add(1)
-				go func() {
-					defer func() {
-						wg.Done()
-						GinkgoRecover()
-					}()
-					Expect(srv.StreamKumaResources(serverStream)).To(Succeed())
-				}()
-
-				serverStreams = append(serverStreams, serverStream)
-				zoneStores = append(zoneStores, zoneStore)
-			}
-
-			// Start 1 Kuma CP Global
-			globalStore = memory.NewStore()
-			globalSyncer = sync_store.NewResourceSyncer(core.Log, globalStore)
-			stopCh := make(chan struct{})
-			clientStreams := []*grpc.MockClientStream{}
-			for _, ss := range serverStreams {
-				clientStreams = append(clientStreams, ss.ClientStream(stopCh))
-			}
-			kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, nil))
-
-			// Create Zone resources for each Kuma CP Zone
-			for i := 0; i < numOfZones; i++ {
-				zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: util_proto.Bool(true)}}
-				err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
-				Expect(err).ToNot(HaveOccurred())
-			}
-
-			closeFunc = func() {
-				close(stopCh)
-				wg.Wait()
-			}
-		})
-
-		It("should add resource to global store after adding it to Zone", func() {
-			VerifyResourcesWereSynchronizedToGlobal()
-		})
-
-		It("should sync resources independently for each Zone", func() {
-			VerifyResourcesWereSynchronizedIndependentlyForEachZone()
-		})
-
-		It("should support same dataplane names through clusters", func() {
-			VerifySupportForTheSameNameOfDataplanesInDifferentClusters()
-		})
-
-		It("should have up to date list of provided types", func() {
-			VerifyUpToDateListOfProvidedType()
-		})
-	})
 
 	Context("Delta KDS", func() {
 		var globalSyncer sync_store_v2.ResourceSyncer

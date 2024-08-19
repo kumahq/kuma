@@ -77,6 +77,7 @@ func (s *stream) DeltaDiscoveryRequest(resourceType core_model.ResourceType) err
 						Values: []*structpb.Value{
 							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureZoneToken}},
 							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureHashSuffix}},
+							{Kind: &structpb.Value_StringValue{StringValue: kds.FeatureHostnameGeneratorMzSelector}},
 						},
 					}}},
 				},

@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -171,7 +172,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return errors.Wrap(err, "failed to get Envoy version")
 			}
 
-			if envoyVersion.KumaDpCompatible, err = envoy.VersionCompatible("~"+kuma_version.Envoy, envoyVersion.Version); err != nil {
+			if envoyVersion.KumaDpCompatible, err = envoy.VersionCompatible(kuma_version.Envoy, envoyVersion.Version); err != nil {
 				runLog.Error(err, "cannot determine envoy version compatibility")
 			} else if !envoyVersion.KumaDpCompatible {
 				runLog.Info("Envoy version incompatible", "expected", kuma_version.Envoy, "current", envoyVersion.Version)
@@ -238,6 +239,13 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components = append(components, observabilityComponents...)
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
+			}
+
+			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
+				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
+				if err := rootCtx.ComponentManager.Add(prober); err != nil {
+					return err
+				}
 			}
 
 			stopComponents := make(chan struct{})

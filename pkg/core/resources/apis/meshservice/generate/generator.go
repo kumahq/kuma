@@ -249,6 +249,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
 			mesh_proto.ManagedByLabel:      managedByValue,
+			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 		})); err != nil {
 			log.Error(err, "couldn't create MeshService")

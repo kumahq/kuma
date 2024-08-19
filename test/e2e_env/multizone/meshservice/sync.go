@@ -251,23 +251,12 @@ spec:
 	})
 
 	It("should assign hostname to MeshMultiZoneService", func() {
-		Expect(multizone.Global.Install(YamlUniversal(`
-type: HostnameGenerator
-name: mz-msstatus
-spec:
-  template: '{{ .DisplayName }}.mssync'
-  selector:
-    meshMultiZoneService:
-      matchLabels:
-        test-name: mssync
-`))).To(Succeed())
-
 		Eventually(func(g Gomega) {
 			status, err := mzStatus(multizone.UniZone1, "backend")
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(status.Addresses).To(HaveLen(1))
-			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mssync"))
+			g.Expect(status.Addresses[0].Hostname).To(Equal("backend.mzsvc.mesh.local"))
 		}, "30s", "1s").Should(Succeed())
 	})
 }
