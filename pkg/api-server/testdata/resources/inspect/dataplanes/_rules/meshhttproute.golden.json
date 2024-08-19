@@ -21,6 +21,7 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -119,6 +120,7 @@
   },
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
