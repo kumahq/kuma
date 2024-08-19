@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	logger             = core.Log.WithName("virtual-probes")
+	logger             = core.Log.WithName("application-probe-proxy")
 	tcpGRPCPathPattern = regexp.MustCompile(`^/(tcp|grpc)/(?P<port>[0-9]+)(/.*)?$`)
 	httpPathPattern    = regexp.MustCompile(`^/(?P<port>[0-9]+)(?P<path>/.*)?$`)
 	errLimitReached    = errors.New("the read limit is reached")
@@ -63,10 +63,10 @@ func NewProber(podIPAddr string, listenPort uint32) *Prober {
 func (p *Prober) Start(stop <-chan struct{}) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", p.listenPort))
 	if err != nil {
-		return err_pkg.Wrap(err, "unable to listen for the virtual probes server")
+		return err_pkg.Wrap(err, "unable to listen for the Application Probe Proxy server")
 	}
 
-	logger.Info("starting Virtual Probes Server", "port", p.listenPort)
+	logger.Info("starting Application Probe Proxy server", "port", p.listenPort)
 
 	// routes:
 	// /tcp/<port>
@@ -93,7 +93,7 @@ func (p *Prober) Start(stop <-chan struct{}) error {
 	case err := <-errCh:
 		return err
 	case <-stop:
-		logger.Info("stopping Virtual Probes Server")
+		logger.Info("stopping Application Probe Proxy server")
 		return server.Shutdown(context.Background())
 	}
 }

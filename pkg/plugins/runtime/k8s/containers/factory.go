@@ -322,7 +322,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, podAnnotations, i.applicationProbeProxyPort); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
 	}
-	if appProbeProxyPort, _, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation); appProbeProxyPort > 0 {
+	if appProbeProxyPort, exists, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation); exists {
 		envVars["KUMA_APPLICATION_PROBE_PROXY_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_APPLICATION_PROBE_PROXY_PORT",
 			Value: strconv.Itoa(int(appProbeProxyPort)),

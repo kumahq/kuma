@@ -52,7 +52,7 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	b, err := readAtMost(res.Body, maxRespBodyLength)
 	if err != nil {
 		if errors.Is(err, errLimitReached) {
-			logger.V(1).Info("non fatal body truncation for %s, Response: %v", req.URL.String(), *res)
+			logger.V(1).Info("non fatal body truncation", "path", req.URL.String())
 		} else {
 			logger.V(1).Info("failed to read response body", "err", err)
 			writeProbeResult(writer, Unhealthy)
@@ -63,8 +63,8 @@ func (p *Prober) probeHTTP(writer http.ResponseWriter, req *http.Request) {
 	// from [200,400)
 	body := string(b)
 	if res.StatusCode >= http.StatusOK && res.StatusCode < http.StatusBadRequest {
-		logger.V(1).Info(fmt.Sprintf("probe succeeded for %s", upstreamReq.URL.Path),
-			"headers", upstreamReq.Header, "body", body)
+		logger.V(1).Info("probe succeeded",
+			"path", upstreamReq.URL.Path, "headers", upstreamReq.Header, "body", body)
 		writeProbeResult(writer, Healthy)
 		return
 	}
