@@ -403,10 +403,7 @@ func (m *mockApplication) checkReadiness(ctx context.Context, port uint32) {
 		}
 
 		err = conn.Close()
-		if err != nil {
-			return false
-		}
-		return true
+		return err == nil
 	}
 
 	nextPolling := time.After(100 * time.Millisecond)
@@ -449,6 +446,7 @@ func (m *mockApplication) startHTTPServer(ctx context.Context) error {
 	}
 
 	go m.checkReadiness(ctx, m.HTTP.ListenPort)
+	// nolint: contextcheck
 	return startServer(ctx, func() error {
 		GinkgoLogr.Info("starting mock HTTP Server", "address", server.Addr)
 		errCh := make(chan error)
@@ -511,7 +509,7 @@ func (m *mockApplication) startTCPServer(ctx context.Context) error {
 		config := &net.ListenConfig{}
 		addr := fmt.Sprintf(":%d", m.TCP.ListenPort)
 		GinkgoLogr.Info("starting the mock TCP server", "address", addr)
-		l, err := config.Listen(context.Background(), "tcp", addr)
+		l, err := config.Listen(ctx, "tcp", addr)
 		if err != nil {
 			return err
 		}
