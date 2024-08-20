@@ -1,6 +1,7 @@
 package v3
 
 import (
+	envoy_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -28,14 +29,26 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 				},
 			},
 			Name: envoy_common.AnonymousResource,
-			Action: &envoy_route.Route_Route{
+		}
+
+		if p.ClusterName != "" {
+			route.Action = &envoy_route.Route_Route{
 				Route: &envoy_route.RouteAction{
 					ClusterSpecifier: &envoy_route.RouteAction_Cluster{
 						Cluster: p.ClusterName,
 					},
 					PrefixRewrite: p.RewritePath,
 				},
-			},
+			}
+		} else if p.DirectResponse != nil {
+			route.Action = &envoy_route.Route_DirectResponse{
+				DirectResponse: &envoy_route.DirectResponseAction{
+					Status: p.DirectResponse.StatusCode,
+					Body: &envoy_core_v3.DataSource{
+						Specifier: &envoy_core_v3.DataSource_InlineString{InlineString: p.DirectResponse.Response},
+					},
+				},
+			}
 		}
 
 		if p.HeaderExactMatch != "" {

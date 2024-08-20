@@ -257,4 +257,11 @@ type StaticEndpointPath struct {
 	RewritePath      string
 	Header           string
 	HeaderExactMatch string
+
+	DirectResponse *StaticEndpointDirectResponse
+}
+
+type StaticEndpointDirectResponse struct {
+	StatusCode uint32
+	Response   string
 }
