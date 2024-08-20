@@ -7,5 +7,5 @@ import (
 )
 
 func TestVirtualProbes(t *testing.T) {
-	test.RunSpecs(t, "Virtual Probes Suite")
+	test.RunSpecs(t, "Application probe proxy suite")
 }
