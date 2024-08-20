@@ -43,6 +43,7 @@ func AutoReachableServices() {
 	})
 
 	E2EAfterAll(func() {
+		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteNamespace(esNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
