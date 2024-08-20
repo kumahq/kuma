@@ -18,6 +18,7 @@ import (
 	"github.com/vishvananda/netlink"
 
 	core_config "github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
@@ -515,7 +516,7 @@ type Retry struct {
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
-	SleepBetweenRetries time.Duration `split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
+	SleepBetweenRetries config_types.Duration `split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
 }
 
 // Comments struct contains the configuration for iptables rule comments.
@@ -907,7 +908,7 @@ func DefaultConfig() Config {
 			// Specifies the number of retries after the initial attempt,
 			// totaling 5 tries
 			MaxRetries:          4,
-			SleepBetweenRetries: 2 * time.Second,
+			SleepBetweenRetries: config_types.Duration{Duration: 2 * time.Second},
 		},
 		Executables: NewExecutablesNftLegacy(),
 		Comments: Comments{

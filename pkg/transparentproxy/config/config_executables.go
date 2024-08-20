@@ -269,7 +269,7 @@ func (c InitializedExecutablesIPvX) restore(
 				c.logger.InfoTry("will try again in", c.retry.SleepBetweenRetries)
 			}
 
-			time.Sleep(c.retry.SleepBetweenRetries)
+			time.Sleep(c.retry.SleepBetweenRetries.Duration)
 		}
 	}
 
