@@ -3,6 +3,8 @@ package consts
 import (
 	"regexp"
 	"strings"
+
+	k8s_version "k8s.io/apimachinery/pkg/util/version"
 )
 
 const (
@@ -151,15 +153,17 @@ const (
 
 // Regexp used to parse the result of `iptables --version` then used to map to
 // with IptablesMode
-var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables(?:.*?\((.*?)\))?`)
+var IptablesModeRegex = regexp.MustCompile(`(?m)^ip6?tables[\w-]*? v([0-9]+(?:\.[0-9]+)+)(?: \((.*?)\))?`)
+
+// IptablesVersionWithLockfileEnv represents the iptables version (1.8.6) where
+// the XTABLES_LOCKFILE environment variable was introduced
+var IptablesVersionWithLockfileEnv = k8s_version.MustParseGeneric("1.8.6")
 
 // Map IptablesMode to the mode taken from the result of `iptables --version`
-var IptablesModeMap = map[IptablesMode][]string{
-	IptablesModeLegacy: {
-		"legacy", // i.e. iptables v1.8.5 (legacy)
-		"",       // i.e. iptables v1.6.1
-	},
-	IptablesModeNft: {"nf_tables"}, // i.e. iptables v1.8.9 (nf_tables)
+var IptablesModeMap = map[string]IptablesMode{
+	"":          IptablesModeLegacy, // i.e. iptables v1.6.1
+	"legacy":    IptablesModeLegacy, // i.e. iptables v1.8.5 (legacy)
+	"nf_tables": IptablesModeNft,    // i.e. iptables v1.8.9 (nf_tables)
 }
 
 // FallbackExecutablesSearchLocations is a list of directories to search for

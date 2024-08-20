@@ -38,16 +38,17 @@ import (
 )
 
 var _ = Describe("MeshRetry", func() {
-
-	externalMesIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "external",
+			Name:      "backend",
 			Mesh:      "default",
-			Namespace: "kuma-system",
+			Namespace: "backend-ns",
 			Zone:      "zone-1",
 		},
-		ResourceType: "MeshExternalService",
+		ResourceType: "MeshService",
+		SectionName:  "",
 	}
+
 	type testCase struct {
 		resources        []core_xds.Resource
 		toRules          core_rules.ToRules
@@ -478,12 +479,12 @@ var _ = Describe("MeshRetry", func() {
 				Name:           "outbound",
 				Origin:         generator.OriginOutbound,
 				Resource:       httpListenerWithSimpleRoute(10001),
-				ResourceOrigin: &externalMesIdentifier,
+				ResourceOrigin: &backendMeshServiceIdentifier,
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
 				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
-					externalMesIdentifier: {
+					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
 								HTTP: &api.HTTP{
@@ -567,7 +568,7 @@ var _ = Describe("MeshRetry", func() {
 					},
 				},
 			},
-			goldenFilePrefix: "http-real-mesh-external-service",
+			goldenFilePrefix: "http-real-mesh-service",
 		}),
 	)
 

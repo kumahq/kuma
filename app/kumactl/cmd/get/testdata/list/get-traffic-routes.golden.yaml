@@ -8,8 +8,6 @@ items:
   destinations:
   - match:
       kuma.io/service: '*'
-  labels:
-    kuma.io/mesh: default
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: web-to-backend
@@ -26,8 +24,6 @@ items:
   destinations:
   - match:
       kuma.io/service: '*'
-  labels:
-    kuma.io/mesh: default
   mesh: default
   modificationTime: "0001-01-01T00:00:00Z"
   name: backend-to-db

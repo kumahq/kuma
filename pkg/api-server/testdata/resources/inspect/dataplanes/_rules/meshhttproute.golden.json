@@ -13,9 +13,7 @@
   }
  ],
  "resource": {
-  "labels": {
-   "kuma.io/mesh": "default"
-  },
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -23,6 +21,7 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -59,9 +58,7 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "the-http-route",
        "type": "MeshHTTPRoute"
@@ -110,9 +107,7 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "the-other-http-route",
        "type": "MeshHTTPRoute"
@@ -125,6 +120,7 @@
   },
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -146,17 +142,13 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "on-route",
        "type": "MeshTimeout"
       },
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "on-service",
        "type": "MeshTimeout"
@@ -183,9 +175,7 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "on-service",
        "type": "MeshTimeout"

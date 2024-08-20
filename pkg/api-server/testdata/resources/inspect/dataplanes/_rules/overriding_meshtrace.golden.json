@@ -1,9 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": {
-   "kuma.io/mesh": "default"
-  },
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -43,23 +41,20 @@
     },
     "origin": [
      {
-      "labels": {
-       "kuma.io/mesh": "default"
-      },
+      "labels": {},
       "mesh": "default",
       "name": "default",
       "type": "MeshTrace"
      },
      {
-      "labels": {
-       "kuma.io/mesh": "default"
-      },
+      "labels": {},
       "mesh": "default",
       "name": "override",
       "type": "MeshTrace"
      }
     ]
    },
+   "toResourceRules": [],
    "toRules": [],
    "type": "MeshTrace",
    "warnings": []

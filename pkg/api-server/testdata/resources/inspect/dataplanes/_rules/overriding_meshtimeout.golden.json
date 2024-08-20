@@ -1,9 +1,7 @@
 {
  "httpMatches": [],
  "resource": {
-  "labels": {
-   "kuma.io/mesh": "default"
-  },
+  "labels": {},
   "mesh": "default",
   "name": "dp-1",
   "type": "Dataplane"
@@ -30,17 +28,13 @@
        "matchers": [],
        "origin": [
         {
-         "labels": {
-          "kuma.io/mesh": "default"
-         },
+         "labels": {},
          "mesh": "default",
          "name": "default",
          "type": "MeshTimeout"
         },
         {
-         "labels": {
-          "kuma.io/mesh": "default"
-         },
+         "labels": {},
          "mesh": "default",
          "name": "override",
          "type": "MeshTimeout"
@@ -48,6 +42,37 @@
        ]
       }
      ]
+    }
+   ],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "connectionTimeout": "2s",
+       "idleTimeout": "20s",
+       "http": {
+        "requestTimeout": "10s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {},
+        "mesh": "default",
+        "name": "default",
+        "type": "Mesh"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {},
+      "mesh": "",
+      "name": "default",
+      "type": "Mesh"
+     },
+     "resourceSectionName": ""
     }
    ],
    "toRules": [
@@ -68,17 +93,13 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -102,17 +123,13 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"
       },
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "override",
        "type": "MeshTimeout"
@@ -141,9 +158,7 @@
      ],
      "origin": [
       {
-       "labels": {
-        "kuma.io/mesh": "default"
-       },
+       "labels": {},
        "mesh": "default",
        "name": "default",
        "type": "MeshTimeout"

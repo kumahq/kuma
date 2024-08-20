@@ -3,8 +3,7 @@
  "resource": {
   "labels": {
    "k8s.kuma.io/namespace": "kuma-demo",
-   "kuma.io/display-name": "the-gateway",
-   "kuma.io/mesh": "default"
+   "kuma.io/display-name": "the-gateway"
   },
   "mesh": "default",
   "name": "the-gateway",
@@ -13,6 +12,40 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "connectionTimeout": "2s",
+       "idleTimeout": "20s",
+       "http": {
+        "requestTimeout": "10s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {
+         "k8s.kuma.io/namespace": "kuma-demo",
+         "kuma.io/display-name": "mt-on-gateway"
+        },
+        "mesh": "default",
+        "name": "mt-on-gateway",
+        "type": "Mesh"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {},
+      "mesh": "",
+      "name": "default",
+      "type": "Mesh"
+     },
+     "resourceSectionName": ""
+    }
+   ],
    "toRules": [
     {
      "conf": {
@@ -27,8 +60,7 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "mt-on-gateway",
-        "kuma.io/mesh": "default"
+        "kuma.io/display-name": "mt-on-gateway"
        },
        "mesh": "default",
        "name": "mt-on-gateway",
@@ -57,8 +89,7 @@
      {
       "labels": {
        "k8s.kuma.io/namespace": "kuma-demo",
-       "kuma.io/display-name": "mpp-on-gateway",
-       "kuma.io/mesh": "default"
+       "kuma.io/display-name": "mpp-on-gateway"
       },
       "mesh": "default",
       "name": "mpp-on-gateway",
@@ -66,6 +97,7 @@
      }
     ]
    },
+   "toResourceRules": [],
    "toRules": [],
    "type": "MeshProxyPatch",
    "warnings": []

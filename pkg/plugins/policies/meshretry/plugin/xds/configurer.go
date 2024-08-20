@@ -33,6 +33,9 @@ const (
 		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
 
+// DeprecatedConfigurer should be only used for configuring old MeshService outbounds.
+// It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
+// Deprecated
 type DeprecatedConfigurer struct {
 	Subset   core_rules.Subset
 	Rules    core_rules.Rules
