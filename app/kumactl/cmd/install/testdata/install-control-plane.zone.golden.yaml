@@ -381,7 +381,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: b8a68f03b911b49f4f1e27ee993ef64d9e72991d76220487f3f30e34662090e6
+        checksum/tls-secrets: 957cda93437218ee64aacd5f4e9f7c5b326fa53ed8de4a286612dbdbaf717bd2
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -574,7 +574,6 @@ webhooks:
           - dataplanes
           - dataplaneinsights
           - meshgateways
-          - meshgatewayinstances
           - zoneingresses
           - zoneingressinsights
           - zoneegresses

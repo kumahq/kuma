@@ -569,7 +569,6 @@ webhooks:
           - dataplanes
           - dataplaneinsights
           - meshgateways
-          - meshgatewayinstances
           - zoneingresses
           - zoneingressinsights
           - zoneegresses
