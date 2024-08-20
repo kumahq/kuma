@@ -567,6 +567,7 @@ webhooks:
         resources:
           - meshes
           - dataplanes
+          - dataplaneinsights
           - meshgateways
           - meshgatewayinstances
           - zoneingresses
