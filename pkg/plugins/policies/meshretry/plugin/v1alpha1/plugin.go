@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -46,6 +47,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
+	err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -60,7 +66,7 @@ func applyToOutbounds(
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		configurer := plugin_xds.Configurer{
+		configurer := plugin_xds.DeprecatedConfigurer{
 			Subset:   core_rules.MeshService(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
@@ -107,7 +113,7 @@ func applyToGateway(
 		case mesh_proto.MeshGateway_Listener_TCP, mesh_proto.MeshGateway_Listener_TLS:
 			protocol = core_mesh.ProtocolTCP
 		}
-		configurer := plugin_xds.Configurer{
+		configurer := plugin_xds.DeprecatedConfigurer{
 			Rules:    toRules,
 			Protocol: protocol,
 			Subset:   core_rules.MeshSubset(),
@@ -129,5 +135,40 @@ func applyToGateway(
 		}
 	}
 
+	return nil
+}
+
+func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
+	for uri, resType := range rs.IndexByOrigin() {
+		conf := rules.Compute(uri, meshCtx.Resources)
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				err := configureListeners(resources, conf.Conf[0].(api.Conf))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func configureListeners(resources []*core_xds.Resource, conf api.Conf) error {
+	for _, resource := range resources {
+		configurer := plugin_xds.Configurer{
+			Conf:     conf,
+			Protocol: resource.Protocol,
+		}
+
+		err := configurer.ConfigureListener(resource.Resource.(*envoy_listener.Listener))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

@@ -45,6 +45,7 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -962,10 +963,14 @@ rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
 
 func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), builders.ZoneEgress().WithPort(10002).Build(), store.CreateByKey("zone-egress", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
@@ -1014,6 +1019,7 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 					WithMeshExternalService("example", 9090).Build(),
 			},
 		}).
+		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).

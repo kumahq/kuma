@@ -227,6 +227,10 @@ func (sa ServicesAccumulator) AddBackendRef(backendRef common_api.BackendRef, cl
 			backendRef: backendRef,
 		}
 	}
+	// prioritize backendRef pointing to real resource
+	if backendRef.ReferencesRealObject() && !sa.services[cluster.Service()].backendRef.ReferencesRealObject() {
+		sa.services[cluster.Service()].backendRef = backendRef
+	}
 	sa.services[cluster.Service()].Add(cluster)
 }
 

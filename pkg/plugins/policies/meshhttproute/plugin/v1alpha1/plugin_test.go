@@ -346,7 +346,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -380,7 +381,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -417,7 +419,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -474,7 +477,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextWithResources(dp.Build(), &meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -1506,6 +1510,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				xdsContext: *xdsContext,
 				proxy: xds_builders.Proxy().
 					WithDataplane(samples.GatewayDataplaneBuilder()).
+					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -1800,7 +1805,9 @@ oESyXXAeWPJX3e7ZgdjUHomwhAZpUmqIWribTioaHZTb1I6OpsD+eF6USSayxUaL
 
 func meshContextWithResources(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", core_model.NoMesh))
+
+	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	for _, res := range resources {
@@ -1848,6 +1855,7 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 				WithMeshExternalService("example", 9090).
 				Build()},
 		}).
+		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).
