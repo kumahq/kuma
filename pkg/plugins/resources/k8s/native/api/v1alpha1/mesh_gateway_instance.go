@@ -31,6 +31,7 @@ type MeshGatewayInstanceSpec struct {
 	// resource.
 	//
 	// +optional
+	// +kubebuilder:validation:MinLen=1
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
