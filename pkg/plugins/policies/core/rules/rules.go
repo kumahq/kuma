@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -260,9 +259,10 @@ func (ss Subset) IndexOfPositive() int {
 // then Subset represents a group of clients. When rule is an outbound (to) then Subset
 // represents destinations.
 type Rule struct {
-	Subset Subset
-	Conf   interface{}
-	Origin []core_model.ResourceMeta
+	Subset                Subset
+	Conf                  interface{}
+	Origin                []core_model.ResourceMeta
+	BackendRefOriginIndex BackendRefOriginIndex
 }
 
 type Rules []*Rule
@@ -559,7 +559,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			}
 			// 5. For each combination determine a configuration
 			confs := []interface{}{}
-			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+			var relevant []PolicyItemWithMeta
 			for i := 0; i < len(list); i++ {
 				item := list[i]
 				itemSubset, err := asSubset(item.GetTargetRef())
@@ -568,23 +568,26 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				}
 				if itemSubset.IsSubset(ss) {
 					confs = append(confs, item.GetDefault())
-					distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+					relevant = append(relevant, item)
 				}
 			}
-			merged, err := MergeConfs(confs)
-			if err != nil {
-				return nil, err
-			}
-			if merged != nil {
-				origins := maps.Values(distinctOrigins)
-				sort.Slice(origins, func(i, j int) bool {
-					return origins[i].GetName() < origins[j].GetName()
-				})
+
+			if len(relevant) > 0 {
+				merged, err := MergeConfs(confs)
+				if err != nil {
+					return nil, err
+				}
+				ruleOrigins, originIndex := origins(relevant)
+				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+				for _, o := range ruleOrigins {
+					resourceMetas = append(resourceMetas, o.Resource)
+				}
 				for _, mergedRule := range merged {
 					rules = append(rules, &Rule{
-						Subset: ss,
-						Conf:   mergedRule,
-						Origin: origins,
+						Subset:                ss,
+						Conf:                  mergedRule,
+						Origin:                resourceMetas,
+						BackendRefOriginIndex: originIndex,
 					})
 				}
 			}
