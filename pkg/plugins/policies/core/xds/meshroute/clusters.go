@@ -163,6 +163,10 @@ func sniForBackendRef(
 		ms := meshCtx.MeshServiceByName[backendRef.Name]
 		resource = ms
 		name = ms.SNIName(systemNamespace)
+	case common_api.MeshExternalService:
+		mes := meshCtx.MeshExternalServiceByName[backendRef.Name]
+		resource = mes
+		name = core_model.GetDisplayName(resource.GetMeta())
 	case common_api.MeshMultiZoneService:
 		resource = meshCtx.MeshMultiZoneServiceByName[backendRef.Name]
 		name = core_model.GetDisplayName(resource.GetMeta())
@@ -171,7 +175,7 @@ func sniForBackendRef(
 		name,
 		resource.GetMeta().GetMesh(),
 		resource.Descriptor().Name,
-		*backendRef.Port,
+		pointer.Deref(backendRef.Port),
 		nil,
 	)
 }
