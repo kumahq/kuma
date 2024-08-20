@@ -25,7 +25,7 @@ import (
 var _ json.Unmarshaler = &Owner{}
 
 type Owner struct {
-	UID string
+	UID string `json:"uid"`
 	// Indicates if the property was set. This replaces similar logic previously
 	// handled by Cobra library, as the value can now also be set in the config
 	// file.
@@ -226,14 +226,14 @@ type Exclusion struct {
 
 // TrafficFlow is a struct for Inbound/Outbound configuration
 type TrafficFlow struct {
-	Enabled             bool     // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_ENABLED, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_ENABLED
-	Port                Port     // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_PORT, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_PORT
-	ChainName           string   `split_words:"true"`                                            // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_CHAIN_NAME
-	RedirectChainName   string   `split_words:"true"`                                            // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_REDIRECT_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_REDIRECT_CHAIN_NAME
-	IncludePorts        Ports    `split_words:"true"`                                            // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INCLUDE_PORTS
-	ExcludePorts        Ports    `split_words:"true"`                                            // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS
-	ExcludePortsForUIDs []string `json:"excludePortsForUIDs" envconfig:"exclude_ports_for_uids"` // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_UIDS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_UIDS
-	ExcludePortsForIPs  []string `json:"excludePortsForIPs" envconfig:"exclude_ports_for_ips"`   // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_IPS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_IPS
+	Enabled             bool     `json:"enabled"`                                                          // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_ENABLED, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_ENABLED
+	Port                Port     `json:"port"`                                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_PORT, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_PORT
+	ChainName           string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_CHAIN_NAME
+	RedirectChainName   string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_REDIRECT_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_REDIRECT_CHAIN_NAME
+	IncludePorts        Ports    `json:"includePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INCLUDE_PORTS
+	ExcludePorts        Ports    `json:"excludePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS
+	ExcludePortsForUIDs []string `json:"excludePortsForUIDs,omitempty" envconfig:"exclude_ports_for_uids"` // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_UIDS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_UIDS
+	ExcludePortsForIPs  []string `json:"excludePortsForIPs,omitempty" envconfig:"exclude_ports_for_ips"`   // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_IPS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_IPS
 }
 
 func (c TrafficFlow) Initialize(
@@ -286,14 +286,14 @@ type InitializedTrafficFlow struct {
 }
 
 type DNS struct {
-	Enabled                bool   // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_ENABLED
-	Port                   Port   // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_PORT
-	CaptureAll             bool   `split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_CAPTURE_ALL
-	SkipConntrackZoneSplit bool   `split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_SKIP_CONNTRACK_ZONE_SPLIT
-	ResolvConfigPath       string `split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_RESOLV_CONFIG_PATH
+	Enabled                bool   `json:"enabled"`                                   // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_ENABLED
+	Port                   Port   `json:"port"`                                      // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_PORT
+	CaptureAll             bool   `json:"captureAll" split_words:"true"`             // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_CAPTURE_ALL
+	SkipConntrackZoneSplit bool   `json:"skipConntrackZoneSplit" split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_SKIP_CONNTRACK_ZONE_SPLIT
+	ResolvConfigPath       string `json:"resolvConfigPath" split_words:"true"`       // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_RESOLV_CONFIG_PATH
 	// The iptables chain where the upstream DNS requests should be directed to.
 	// It is only applied for IP V4. Use with care. (default "RETURN")
-	UpstreamTargetChain string `ignored:"true"`
+	UpstreamTargetChain string `json:"-" ignored:"true"`
 }
 
 type InitializedDNS struct {
@@ -373,7 +373,7 @@ type VNet struct {
 	// - "docker0:172.17.0.0/16"
 	// - "br+:172.18.0.0/16" (matches any interface starting with "br")
 	// - "iface:::1/64"
-	Networks []string // KUMA_TRANSPARENT_PROXY_REDIRECT_VNET_NETWORKS
+	Networks []string `json:"networks,omitempty"` // KUMA_TRANSPARENT_PROXY_REDIRECT_VNET_NETWORKS
 }
 
 // Initialize processes the virtual networks specified in the VNet struct and
@@ -433,11 +433,11 @@ type InitializedVNet struct {
 
 type Redirect struct {
 	// NamePrefix is a prefix which will be used go generate chains name
-	NamePrefix string `ignored:"true"`
-	Inbound    TrafficFlow
-	Outbound   TrafficFlow
-	DNS        DNS
-	VNet       VNet
+	NamePrefix string      `json:"-" ignored:"true"`
+	Inbound    TrafficFlow `json:"inbound"`
+	Outbound   TrafficFlow `json:"outbound"`
+	DNS        DNS         `json:"dns"`
+	VNet       VNet        `json:"vnet"`
 }
 
 type InitializedRedirect struct {
@@ -485,11 +485,11 @@ func (c Redirect) Initialize(
 }
 
 type Ebpf struct {
-	Enabled            bool   // KUMA_TRANSPARENT_PROXY_EBPF_ENABLED
-	InstanceIP         string `json:"instanceIP" envconfig:"instance_ip"` // KUMA_TRANSPARENT_PROXY_EBPF_INSTANCE_IP
-	BPFFSPath          string `json:"bpffsPath" envconfig:"bpffs_path"`   // KUMA_TRANSPARENT_PROXY_EBPF_BPFFS_PATH
-	CgroupPath         string `split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_EBPF_CGROUP_PATH
-	ProgramsSourcePath string `split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_EBPF_PROGRAM_SOURCE_PATH
+	Enabled            bool   `json:"enabled"`                               // KUMA_TRANSPARENT_PROXY_EBPF_ENABLED
+	InstanceIP         string `json:"instanceIP" envconfig:"instance_ip"`    // KUMA_TRANSPARENT_PROXY_EBPF_INSTANCE_IP
+	BPFFSPath          string `json:"bpffsPath" envconfig:"bpffs_path"`      // KUMA_TRANSPARENT_PROXY_EBPF_BPFFS_PATH
+	CgroupPath         string `json:"cgroupPath" split_words:"true"`         // KUMA_TRANSPARENT_PROXY_EBPF_CGROUP_PATH
+	ProgramsSourcePath string `json:"programsSourcePath" split_words:"true"` // KUMA_TRANSPARENT_PROXY_EBPF_PROGRAM_SOURCE_PATH
 	// The name of network interface which TC ebpf programs should bind to,
 	// when not provided, we'll try to automatically determine it
 	TCAttachIface string `json:"tcAttachIface" envconfig:"tc_attach_iface"` // KUMA_TRANSPARENT_PROXY_EBPF_TC_ATTACH_IFACE
@@ -499,30 +499,30 @@ type Log struct {
 	// Enabled determines whether iptables rules logging is activated. When
 	// true, each packet matching an iptables rule will have its details logged,
 	// aiding in diagnostics and monitoring of packet flows.
-	Enabled bool // KUMA_TRANSPARENT_PROXY_LOG_ENABLED
+	Enabled bool `json:"enabled"` // KUMA_TRANSPARENT_PROXY_LOG_ENABLED
 	// Level specifies the log level for iptables logging as defined by
 	// netfilter. This level controls the verbosity and detail of the log
 	// entries for matching packets. Higher values increase the verbosity.
 	// Commonly used levels are: 1 (alerts), 4 (warnings), 5 (notices),
 	// 7 (debugging). The exact behavior can depend on the system's syslog
 	// configuration.
-	Level uint16 // KUMA_TRANSPARENT_PROXY_LOG_LEVEL
+	Level uint16 `json:"level"` // KUMA_TRANSPARENT_PROXY_LOG_LEVEL
 }
 
 type Retry struct {
 	// MaxRetries specifies the number of retries after the initial attempt.
 	// A value of 0 means no retries, and only the initial attempt will be made.
-	MaxRetries int `split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
+	MaxRetries int `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
-	SleepBetweenRetries config_types.Duration `split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
+	SleepBetweenRetries config_types.Duration `json:"sleepBetweenRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
 }
 
 // Comments struct contains the configuration for iptables rule comments.
 // It includes an option to enable or disable comments.
 type Comments struct {
-	Disabled bool // KUMA_TRANSPARENT_PROXY_COMMENTS_DISABLED
+	Disabled bool `json:"disabled"` // KUMA_TRANSPARENT_PROXY_COMMENTS_DISABLED
 }
 
 // InitializedComments struct contains the processed configuration for iptables
@@ -554,9 +554,9 @@ var _ core_config.Config = Config{}
 type Config struct {
 	core_config.BaseConfig
 
-	Owner    Owner // KUMA_TRANSPARENT_PROXY_OWNER
-	Redirect Redirect
-	Ebpf     Ebpf
+	Owner    Owner    `json:"owner"` // KUMA_TRANSPARENT_PROXY_OWNER
+	Redirect Redirect `json:"redirect"`
+	Ebpf     Ebpf     `json:"ebpf"`
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
 	// packets that are considered invalid. This is useful in scenarios where
 	// out-of-order packets bypass DNAT by iptables and reach the application
@@ -572,59 +572,59 @@ type Config struct {
 	// performance before enabling this option.
 	//
 	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
-	DropInvalidPackets bool `split_words:"true"` // KUMA_TRANSPARENT_PROXY_DROP_INVALID_PACKETS
+	DropInvalidPackets bool `json:"dropInvalidPackets,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_DROP_INVALID_PACKETS
 	// RuntimeStdout is the place where Any debugging, runtime information
 	// will be placed (os.Stdout by default)
-	RuntimeStdout io.Writer
+	RuntimeStdout io.Writer `json:"-" ignored:"true"`
 	// RuntimeStderr is the place where error, runtime information will be
 	// placed (os.Stderr by default)
-	RuntimeStderr io.Writer
+	RuntimeStderr io.Writer `json:"-" ignored:"true"`
 	// Verbose when set will generate iptables configuration with longer
 	// argument/flag names, additional comments etc.
-	Verbose bool // KUMA_TRANSPARENT_PROXY_VERBOSE
+	Verbose bool `json:"verbose,omitempty"` // KUMA_TRANSPARENT_PROXY_VERBOSE
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
-	DryRun bool `split_words:"true"` // KUMA_TRANSPARENT_PROXY_DRY_RUN
+	DryRun bool `json:"dryRun,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_DRY_RUN
 	// Log configures logging for iptables rules using the LOG chain. When
 	// enabled, this setting causes the kernel to log details about packets that
 	// match the iptables rules, including IP/IPv6 headers. The logs are useful
 	// for debugging and can be accessed via tools like dmesg or syslog. The
 	// logging behavior is defined by the nested Log struct.
-	Log Log
+	Log Log `json:"log"`
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
 	// available within the specified time, the application will exit with
 	// an error. Default value *(0) means wait forever. To disable this behavior
 	// and exit immediately if the xtables lock is not available, set this to
 	// nil
-	Wait uint // KUMA_TRANSPARENT_PROXY_WAIT
+	Wait uint `json:"wait"` // KUMA_TRANSPARENT_PROXY_WAIT
 	// WaitInterval is the amount of time, in microseconds, that iptables should
 	// wait between each iteration of the lock acquisition loop. This can be
 	// useful if the xtables lock is being held by another application for
 	// a long time, and you want to reduce the amount of CPU that iptables uses
 	// while waiting for the lock
-	WaitInterval uint `split_words:"true"` // KUMA_TRANSPARENT_PROXY_WAIT_INTERVAL
+	WaitInterval uint `json:"waitInterval" split_words:"true"` // KUMA_TRANSPARENT_PROXY_WAIT_INTERVAL
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
-	Retry Retry
+	Retry Retry `json:"retry"`
 	// StoreFirewalld when set, configures firewalld to store the generated
 	// iptables rules.
-	StoreFirewalld bool `split_words:"true"` // KUMA_TRANSPARENT_PROXY_STORE_FIREWALLD
+	StoreFirewalld bool `json:"storeFirewalld,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_STORE_FIREWALLD
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
-	Executables ExecutablesNftLegacy
+	Executables ExecutablesNftLegacy `json:"-"`
 	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
-	Comments Comments
+	Comments Comments `json:"comments"`
 	// IPFamilyMode specifies the IP family mode to be used by the
 	// configuration. It determines whether the system operates in dualstack
 	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
 	// crucial for environments where both IP families are in use, ensuring that
 	// the correct iptables rules are applied for the specified IP family.
 	IPFamilyMode IPFamilyMode `json:"ipFamilyMode" envconfig:"ip_family_mode"` // KUMA_TRANSPARENT_PROXY_IP_FAMILY_MODE
-	CNIMode      bool         `json:"cniMode" envconfig:"cni_mode"`            // KUMA_TRANSPARENT_PROXY_CNI_MODE
+	CNIMode      bool         `json:"cniMode,omitempty" envconfig:"cni_mode"`  // KUMA_TRANSPARENT_PROXY_CNI_MODE
 }
 
 type IPFamilyMode string
