@@ -62,7 +62,7 @@ func MeshAccessLog(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshAccessLog
 metadata:
-  name: mal
+  name: mal-delagated
   namespace: %s
   labels:
     kuma.io/mesh: %s

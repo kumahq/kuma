@@ -21,7 +21,7 @@ func MeshHealthCheck(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshHealthCheck
 metadata:
-  name: mhc
+  name: mhc-delagated
   namespace: %s
   labels:
     kuma.io/mesh: %s

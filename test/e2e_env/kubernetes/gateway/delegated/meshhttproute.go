@@ -52,7 +52,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-  name: mhr
+  name: mhr-delagated
   namespace: %s
   labels:
     kuma.io/mesh: %[2]s
