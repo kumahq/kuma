@@ -97,39 +97,29 @@ var _ = Describe("MeshHealthCheck", func() {
 				AddServiceProtocol(splitHttpServiceTag, core_mesh.ProtocolHTTP).
 				Build()
 			proxy := xds_builders.Proxy().
-				WithDataplane(
-					samples.DataplaneBackendBuilder().
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  httpServiceTag,
-								mesh_proto.ProtocolTag: "http",
-							}),
-						).
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  tcpServiceTag,
-								mesh_proto.ProtocolTag: "tcp",
-							}),
-						).
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  grpcServiceTag,
-								mesh_proto.ProtocolTag: "grpc",
-							}),
-						).
-						AddOutbound(
-							builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  grpcServiceTag,
-								mesh_proto.ProtocolTag: "grpc",
-							}),
-						).
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27780).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  splitHttpServiceTag,
-								mesh_proto.ProtocolTag: "http",
-							}),
-						),
-				).
+				WithDataplane(samples.DataplaneBackendBuilder()).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  httpServiceTag,
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  tcpServiceTag,
+						mesh_proto.ProtocolTag: "tcp",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  grpcServiceTag,
+						mesh_proto.ProtocolTag: "grpc",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("240.0.0.1").WithPort(27779).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  grpcServiceTag,
+						mesh_proto.ProtocolTag: "grpc",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27780).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  splitHttpServiceTag,
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshHealthCheckType, given.toRules)).
 				WithRouting(
 					xds_builders.Routing().
