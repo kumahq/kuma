@@ -22,12 +22,22 @@ const OriginAdmin = "admin"
 
 var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
-		Path:        "/ready",
-		RewritePath: "/ready",
+		Path: "/ready",
+		DirectResponse: &envoy_common.StaticEndpointDirectResponse{
+			StatusCode: 200,
+			Response:   "READY",
+		},
 	},
 }
 
 var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
+	{
+		Path: "/ready",
+		DirectResponse: &envoy_common.StaticEndpointDirectResponse{
+			StatusCode: 200,
+			Response:   "READY",
+		},
+	},
 	{
 		Path:        "/",
 		RewritePath: "/",
@@ -86,10 +96,6 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 
 	resources := core_xds.NewResourceSet()
 
-	for _, se := range staticEndpointPaths {
-		se.ClusterName = envoyAdminClusterName
-	}
-
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if g.getAddress(proxy) != adminAddress {
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
@@ -98,7 +104,9 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			),
 		}
 		for _, se := range staticTlsEndpointPaths {
-			se.ClusterName = envoyAdminClusterName
+			if se.DirectResponse == nil {
+				se.ClusterName = envoyAdminClusterName
+			}
 		}
 		filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.MatchTransportProtocol("tls")).

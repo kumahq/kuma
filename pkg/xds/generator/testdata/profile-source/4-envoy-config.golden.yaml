@@ -308,11 +308,12 @@ resources:
               - '*'
               name: kuma:envoy:admin
               routes:
-              - match:
+              - directResponse:
+                  body:
+                    inlineString: READY
+                  status: 200
+                match:
                   prefix: /ready
-                route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /ready
           statPrefix: kuma_envoy_admin
     - filterChainMatch:
         transportProtocol: tls
@@ -331,6 +332,12 @@ resources:
               - '*'
               name: kuma:envoy:admin
               routes:
+              - directResponse:
+                  body:
+                    inlineString: READY
+                  status: 200
+                match:
+                  prefix: /ready
               - match:
                   prefix: /
                 route:
