@@ -249,6 +249,7 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-gateway-class-controller").
 		For(&gatewayapi.GatewayClass{}).
 		// When something changes with Gateways, we want to reconcile
 		// GatewayClasses
