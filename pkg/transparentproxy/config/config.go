@@ -554,9 +554,9 @@ var _ core_config.Config = Config{}
 type Config struct {
 	core_config.BaseConfig
 
-	Owner    Owner    `json:"owner"` // KUMA_TRANSPARENT_PROXY_OWNER
-	Redirect Redirect `json:"redirect"`
-	Ebpf     Ebpf     `json:"ebpf"`
+	KumaDPUser Owner    `json:"kumaDPUser" envconfig:"kuma_dp_user"` // KUMA_TRANSPARENT_PROXY_KUMA_DP_USER
+	Redirect   Redirect `json:"redirect"`
+	Ebpf       Ebpf     `json:"ebpf"`
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
 	// packets that are considered invalid. This is useful in scenarios where
 	// out-of-order packets bypass DNAT by iptables and reach the application
@@ -724,8 +724,8 @@ type InitializedConfigIPvX struct {
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
-	Comments InitializedComments
-	Owner    Owner
+	Comments   InitializedComments
+	KumaDPUser Owner
 
 	enabled bool
 }
@@ -778,7 +778,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
-			Owner:                  c.Owner,
+			KumaDPUser:             c.KumaDPUser,
 			enabled:                true,
 		},
 		DryRun: c.DryRun,
@@ -844,7 +844,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
 		Comments:               c.Comments.Initialize(e.IPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
-		Owner:                  c.Owner,
+		KumaDPUser:             c.KumaDPUser,
 		enabled:                true,
 	}
 
@@ -857,7 +857,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		Owner: Owner{UID: ""},
+		KumaDPUser: Owner{UID: ""},
 		Redirect: Redirect{
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
