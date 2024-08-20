@@ -9,11 +9,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: false
@@ -27,11 +22,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mtp
       type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
     Subset:
     - Key: kuma.io/service
       Not: false
@@ -40,11 +30,6 @@ Rules:
     Conf:
       action: Deny
     Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: mtp
-      type: MeshTrafficPermission
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"

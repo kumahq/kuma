@@ -9,11 +9,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: default-demo-app
       type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
@@ -27,11 +22,6 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: default-demo-app
       type: MeshTrafficPermission
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
@@ -40,11 +30,6 @@ Rules:
     Conf:
       action: Allow
     Origin:
-    - creationTime: "0001-01-01T00:00:00Z"
-      mesh: default
-      modificationTime: "0001-01-01T00:00:00Z"
-      name: default-demo-app
-      type: MeshTrafficPermission
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"

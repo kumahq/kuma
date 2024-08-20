@@ -577,7 +577,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				if err != nil {
 					return nil, err
 				}
-				ruleOrigins, originIndex := origins(relevant)
+				ruleOrigins, originIndex := origins(relevant, false)
 				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
 				for _, o := range ruleOrigins {
 					resourceMetas = append(resourceMetas, o.Resource)

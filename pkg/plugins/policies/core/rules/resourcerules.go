@@ -134,7 +134,7 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 			if err != nil {
 				return nil, err
 			}
-			ruleOrigins, originIndex := origins(relevant)
+			ruleOrigins, originIndex := origins(relevant, true)
 			rules[uri] = ResourceRule{
 				Resource:              resource.GetMeta(),
 				ResourceSectionName:   uri.SectionName,
@@ -164,7 +164,7 @@ func mergeConfs(items []PolicyItemWithMeta) ([]interface{}, error) {
 	return MergeConfs(confs)
 }
 
-func origins(items []PolicyItemWithMeta) ([]Origin, BackendRefOriginIndex) {
+func origins(items []PolicyItemWithMeta, withRuleIndex bool) ([]Origin, BackendRefOriginIndex) {
 	var rv []Origin
 
 	type keyType struct {
@@ -172,10 +172,13 @@ func origins(items []PolicyItemWithMeta) ([]Origin, BackendRefOriginIndex) {
 		ruleIndex int
 	}
 	key := func(policyItem PolicyItemWithMeta) keyType {
-		return keyType{
+		k := keyType{
 			ResourceKey: core_model.MetaToResourceKey(policyItem.ResourceMeta),
-			ruleIndex:   policyItem.RuleIndex,
 		}
+		if withRuleIndex {
+			k.ruleIndex = policyItem.RuleIndex
+		}
+		return k
 	}
 	set := map[keyType]struct{}{}
 	originIndex := BackendRefOriginIndex{}
