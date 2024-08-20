@@ -30,8 +30,7 @@ type MeshGatewayInstanceSpec struct {
 	// since is auto-generated, and should match exactly one Gateway
 	// resource.
 	//
-	// +required
-	// +kubebuilder:validation:MinLen=1
+	// +optional
 	Tags map[string]string `json:"tags,omitempty"`
 }
 
