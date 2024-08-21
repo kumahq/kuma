@@ -21,4 +21,28 @@ func Defaults() {
 			}, "30s", "1s").Should(Succeed())
 		}
 	})
+
+	It("should create default HostnameGenerators every zone", func() {
+		for _, zone := range multizone.Zones() {
+			Eventually(func(g Gomega) {
+				// when
+				out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("get", "hostnamegenerators")
+
+				// then
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(out).To(ContainSubstring("synced-"))
+			}, "30s", "1s").Should(Succeed())
+		}
+	})
+
+	It("should sync default zone HostnameGenerators to global for visibility", func() {
+		Eventually(func(g Gomega) {
+			// when
+			out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "hostnamegenerators")
+
+			// then
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring("local-"))
+		}, "30s", "1s").Should(Succeed())
+	})
 }

@@ -106,7 +106,9 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		)
 		return apiServer, store, stop
 	}
-	put := func(address string, mesh string, resType model.ResourceTypeDescriptor, name string, res rest.Resource) (*http.Response, error) {
+
+	mesh := "mesh-1"
+	put := func(address string, resType model.ResourceTypeDescriptor, name string, res rest.Resource) (*http.Response, error) {
 		GinkgoHelper()
 		jsonBytes, err := json.Marshal(res)
 		Expect(err).ToNot(HaveOccurred())
@@ -121,7 +123,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		return http.DefaultClient.Do(request)
 	}
 
-	createMesh := func(s core_store.ResourceStore, mesh string) {
+	createMesh := func(s core_store.ResourceStore) {
 		// create default mesh
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -131,13 +133,13 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		// given
 		apiServer, store, stop := createServer(true, true)
 		defer stop()
-		createMesh(store, "mesh-1")
+		createMesh(store)
 
 		// when
 		res := &rest_v1alpha1.Resource{
 			ResourceMeta: rest_v1alpha1.ResourceMeta{
 				Name: "mtp-1",
-				Mesh: "mesh-1",
+				Mesh: mesh,
 				Type: string(v1alpha1.MeshTrafficPermissionType),
 			},
 			Spec: builders.MeshTrafficPermission().
@@ -145,7 +147,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 				Build().Spec,
 		}
-		resp, err := put(apiServer.Address(), "mesh-1", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
+		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
 
 		// and then
 		Expect(err).ToNot(HaveOccurred())
@@ -155,12 +157,73 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onNoOriginLabel.golden.json")))
 	})
 
+	It("should return 400 when mesh label is different from resource mesh", func() {
+		// given
+		apiServer, store, stop := createServer(true, true)
+		defer stop()
+		createMesh(store)
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-1",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.MeshTag:             "some-other-mesh",
+					mesh_proto.ResourceOriginLabel: "zone",
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
+
+		// and then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
+		bytes, err := io.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(bytes).To(matchers.MatchGoldenJSON(path.Join("testdata", "resource_400onmeshlabeldiffer.golden.json")))
+	})
+
+	It("should not return 400 when mesh label is identical to resource mesh", func() {
+		// given
+		apiServer, store, stop := createServer(true, true)
+		defer stop()
+		createMesh(store)
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: "mtp-1",
+				Mesh: mesh,
+				Type: string(v1alpha1.MeshTrafficPermissionType),
+				Labels: map[string]string{
+					mesh_proto.MeshTag:             mesh,
+					mesh_proto.ResourceOriginLabel: "zone",
+				},
+			},
+			Spec: builders.MeshTrafficPermission().
+				WithTargetRef(builders.TargetRefMesh()).
+				AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+				Build().Spec,
+		}
+		resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
+
+		// and then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+	})
+
 	DescribeTable("should set origin label automatically when origin validation is disabled",
 		func(federatedZone bool) {
 			// given
 			apiServer, store, stop := createServer(federatedZone, false)
 			defer stop()
-			createMesh(store, "mesh-1")
+			createMesh(store)
 			zone := "default"
 			if federatedZone {
 				zone = "zone-1"
@@ -170,7 +233,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			res := &rest_v1alpha1.Resource{
 				ResourceMeta: rest_v1alpha1.ResourceMeta{
 					Name: "mtp-1",
-					Mesh: "mesh-1",
+					Mesh: mesh,
 					Type: string(v1alpha1.MeshTrafficPermissionType),
 				},
 				Spec: builders.MeshTrafficPermission().
@@ -178,17 +241,19 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
 					Build().Spec,
 			}
-			resp, err := put(apiServer.Address(), "mesh-1", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
+			resp, err := put(apiServer.Address(), v1alpha1.MeshTrafficPermissionResourceTypeDescriptor, "mtp-1", res)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 			// and then
 			actualMtp := v1alpha1.NewMeshTrafficPermissionResource()
-			Expect(store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", "mesh-1"))).To(Succeed())
+			Expect(store.Get(context.Background(), actualMtp, core_store.GetByKey("mtp-1", mesh))).To(Succeed())
 			Expect(actualMtp.Meta.GetLabels()).To(Equal(map[string]string{
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 				mesh_proto.ZoneTag:             zone,
+				mesh_proto.MeshTag:             mesh,
+				mesh_proto.EnvTag:              "universal",
 			}))
 		},
 		Entry("non-federated zone", false),
@@ -199,9 +264,8 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		// given
 		apiServer, store, stop := createServer(false, false)
 		defer stop()
-		createMesh(store, "mesh-1")
+		createMesh(store)
 		name := "dpp-1"
-		mesh := "mesh-1"
 
 		// when
 		res := &unversioned.Resource{
@@ -216,17 +280,19 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 				AddOutboundsToServices("redis", "elastic", "postgres").
 				Build().Spec,
 		}
-		resp, err := put(apiServer.Address(), mesh, core_mesh.DataplaneResourceTypeDescriptor, name, res)
+		resp, err := put(apiServer.Address(), core_mesh.DataplaneResourceTypeDescriptor, name, res)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
 		// and then
 		actualDpp := core_mesh.NewDataplaneResource()
-		Expect(store.Get(context.Background(), actualDpp, core_store.GetByKey("dpp-1", "mesh-1"))).To(Succeed())
+		Expect(store.Get(context.Background(), actualDpp, core_store.GetByKey("dpp-1", mesh))).To(Succeed())
 		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             mesh,
+			mesh_proto.EnvTag:              "universal",
 		}))
 	})
 })

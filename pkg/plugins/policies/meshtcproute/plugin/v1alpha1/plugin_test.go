@@ -45,6 +45,7 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -299,10 +300,31 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
-						samples.DataplaneWebBuilder().
-							AddOutboundToService("other-backend").
-							AddOutboundToService("externalservice"),
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 1,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "other-backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 2,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "externalservice",
+							},
+						}},
+					}).
 					WithRouting(
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets).
@@ -385,7 +407,18 @@ var _ = Describe("MeshTCPRoute", func() {
 					AddExternalService("externalservice").
 					Build(),
 				proxy: xds_builders.Proxy().
-					WithDataplane(samples.DataplaneWebBuilder()).
+					WithDataplane(builders.Dataplane().
+						WithName("web-01").
+						WithAddress("192.168.0.2").
+						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+					}).
 					WithRouting(
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets).
@@ -434,9 +467,25 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
-						samples.DataplaneWebBuilder().
-							AddOutboundToService("tcp-backend"),
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 1,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "tcp-backend",
+							},
+						}},
+					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshTCPRouteType, rules)).
 					Build(),
@@ -518,10 +567,31 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
-						samples.DataplaneWebBuilder().
-							AddOutboundToService("tcp-backend").
-							AddOutboundToService("http-backend"),
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 1,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "tcp-backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 2,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "http-backend",
+							},
+						}},
+					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -607,10 +677,31 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
-						samples.DataplaneWebBuilder().
-							AddOutboundToService("tcp-backend").
-							AddOutboundToService("http-backend"),
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 1,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "tcp-backend",
+							},
+						}},
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort + 2,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "http-backend",
+							},
+						}},
+					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
@@ -667,8 +758,19 @@ var _ = Describe("MeshTCPRoute", func() {
 					Build(),
 				proxy: xds_builders.Proxy().
 					WithDataplane(
-						samples.DataplaneWebBuilder(),
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "backend",
+							},
+						}},
+					}).
 					WithRouting(
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets),
@@ -861,10 +963,14 @@ rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
 
 func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
-	err := resourceStore.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("default", model.NoMesh))
+	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
+	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
+	Expect(err).ToNot(HaveOccurred())
+
+	err = resourceStore.Create(context.Background(), builders.ZoneEgress().WithPort(10002).Build(), store.CreateByKey("zone-egress", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
@@ -891,14 +997,29 @@ func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc
 }
 
 func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
-	dp := samples.DataplaneWebBuilder().
-		AddOutbound(builders.Outbound().
-			WithAddress("10.20.20.1").
-			WithPort(9090).
-			WithMeshExternalService("example", 9090),
-		)
+	dp := builders.Dataplane().
+		WithName("web-01").
+		WithAddress("192.168.0.2").
+		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
+		WithOutbounds(core_xds.Outbounds{
+			{
+				LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "backend",
+					},
+				},
+			},
+			{
+				LegacyOutbound: builders.Outbound().
+					WithAddress("10.20.20.1").
+					WithPort(9090).
+					WithMeshExternalService("example", 9090).Build(),
+			},
+		}).
+		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
 			SystemCaPath: "/tmp/ca-certs.crt",
 		}).

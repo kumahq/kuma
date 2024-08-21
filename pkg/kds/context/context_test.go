@@ -21,8 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -34,7 +34,7 @@ import (
 var _ = Describe("Context", func() {
 	Describe("ZoneResourceMapper", func() {
 		var rm manager.ResourceManager
-		var mapper reconcile.ResourceMapper
+		var mapper reconcile_v2.ResourceMapper
 
 		type testCase struct {
 			resource model.Resource
@@ -247,7 +247,7 @@ var _ = Describe("Context", func() {
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
-		var predicate reconcile.ResourceFilter
+		var predicate reconcile_v2.ResourceFilter
 
 		clusterID := "cluster-id"
 		configs := map[string]bool{
@@ -472,7 +472,7 @@ var _ = Describe("Context", func() {
 			var r model.Resource = core_mesh.NewCircuitBreakerResource()
 			switch given.scope {
 			case model.ScopeGlobal:
-				r = core_mesh.NewZoneIngressResource()
+				r = core_system.NewGlobalSecretResource()
 			}
 			if given.isResourcePluginOriginated {
 				r = v1alpha1.NewMeshCircuitBreakerResource()

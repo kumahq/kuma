@@ -17,9 +17,9 @@ func VIPOutbounds(
 	virtualOutboundView *vips.VirtualOutboundMeshView,
 	tldomain string,
 	vipPort uint32,
-) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+) ([]xds.VIPDomains, []*xds.Outbound) {
 	var vipDomains []xds.VIPDomains
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var outbounds []*xds.Outbound
 	for _, key := range virtualOutboundView.HostnameEntries() {
 		voutbound := virtualOutboundView.Get(key)
 		if voutbound.Address == "" {
@@ -36,20 +36,20 @@ func VIPOutbounds(
 			for _, ob := range voutbound.Outbounds {
 				seenGlobalVip = seenGlobalVip || ob.Port == vipPort
 				if ob.Port != 0 {
-					outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+					outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 						Address: voutbound.Address,
 						Port:    ob.Port,
 						Tags:    ob.TagSet,
-					})
+					}})
 				}
 			}
 			// TODO remove the `vips.Host` on the next major version it's there for backward compatibility
 			if key.Type == vips.Host && !seenGlobalVip && len(voutbound.Outbounds) > 0 && len(domain.Domains) > 0 {
-				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Address: voutbound.Address,
 					Port:    vipPort,
 					Tags:    voutbound.Outbounds[0].TagSet,
-				})
+				}})
 			}
 		case vips.Service:
 			ob := voutbound.Outbounds[0]
@@ -60,19 +60,19 @@ func VIPOutbounds(
 				domain.Domains = append(domain.Domains, cleanedDomain)
 			}
 			if ob.Port != 0 {
-				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Address: voutbound.Address,
 					Port:    ob.Port,
 					Tags:    ob.TagSet,
-				})
+				}})
 			}
 			// TODO this should be a else once we remove backward compatibility
 			if ob.Port != vipPort {
-				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Address: voutbound.Address,
 					Port:    vipPort,
 					Tags:    ob.TagSet,
-				})
+				}})
 			}
 			vipDomains = append(vipDomains, domain)
 		}
@@ -80,13 +80,13 @@ func VIPOutbounds(
 	return vipDomains, outbounds
 }
 
-func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) ([]xds.VIPDomains, []*xds.Outbound) {
+	var outbounds []*xds.Outbound
 	var vipDomains []xds.VIPDomains
 	for _, svc := range meshServices {
 		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
-				outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Address: vip.IP,
 					Port:    port.Port,
 					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
@@ -94,7 +94,7 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) (
 						Name: svc.Meta.GetName(),
 						Port: port.Port,
 					},
-				})
+				}})
 			}
 		}
 		if len(svc.Status.VIPs) > 0 {
@@ -111,9 +111,9 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) (
 	return vipDomains, outbounds
 }
 
-func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource) ([]xds.VIPDomains, []*xds.Outbound) {
 	var vipDomains []xds.VIPDomains
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var outbounds []*xds.Outbound
 
 	for _, meshExternalService := range meshExternalServices {
 		if meshExternalService.Status.VIP.IP != "" {
@@ -126,7 +126,7 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 					Port: uint32(meshExternalService.Spec.Match.Port),
 				},
 			}
-			outbounds = append(outbounds, outbound)
+			outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: outbound})
 
 			var domains []string
 			for _, address := range meshExternalService.Status.Addresses {
@@ -139,9 +139,9 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 	return vipDomains, outbounds
 }
 
-func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceResource) ([]xds.VIPDomains, []*mesh_proto.Dataplane_Networking_Outbound) {
+func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceResource) ([]xds.VIPDomains, []*xds.Outbound) {
 	var vipDomains []xds.VIPDomains
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var outbounds []*xds.Outbound
 
 	for _, svc := range services {
 		for _, vip := range svc.Status.VIPs {
@@ -155,7 +155,7 @@ func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceReso
 						Port: port.Port,
 					},
 				}
-				outbounds = append(outbounds, outbound)
+				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: outbound})
 			}
 		}
 		if len(svc.Status.VIPs) > 0 {

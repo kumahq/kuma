@@ -38,7 +38,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -46,7 +46,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				},
 				RuntimeStdout: io.Discard,
 				RuntimeStderr: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())
@@ -118,7 +118,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -126,7 +126,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				},
 				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())
@@ -196,8 +196,8 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports except excluded ones",
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						ExcludePorts: []uint16{excludedPort},
+						Port:         config.Port(serverPort),
+						ExcludePorts: config.Ports{config.Port(excludedPort)},
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -287,8 +287,8 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports except excluded ones",
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						ExcludePorts: []uint16{excludedPort},
+						Port:         config.Port(serverPort),
+						ExcludePorts: config.Ports{config.Port(excludedPort)},
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -379,9 +379,9 @@ var _ = Describe("Inbound IPv4 TCP traffic only from included ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						IncludePorts: []uint16{includedPort},
-						ExcludePorts: []uint16{includedPort},
+						Port:         config.Port(serverPort),
+						IncludePorts: config.Ports{config.Port(includedPort)},
+						ExcludePorts: config.Ports{config.Port(includedPort)},
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -472,9 +472,9 @@ var _ = Describe("Inbound IPv6 TCP traffic only from included ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						IncludePorts: []uint16{includedPort},
-						ExcludePorts: []uint16{includedPort},
+						Port:         config.Port(serverPort),
+						IncludePorts: config.Ports{config.Port(includedPort)},
+						ExcludePorts: config.Ports{config.Port(includedPort)},
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -568,7 +568,7 @@ var _ = Describe("Inbound IPv4 TCP traffic from any ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: false,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
@@ -644,7 +644,7 @@ var _ = Describe("Inbound IPv6 TCP traffic from any ports", func() {
 				Redirect: config.Redirect{
 					Inbound: config.TrafficFlow{
 						Enabled: false,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,

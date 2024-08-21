@@ -13,41 +13,40 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 )
 
-var k8sCluster Cluster
-
-var _ = E2EBeforeSuite(func() {
+func AutoReachableServices() {
+	var k8sCluster Cluster
 	esNamespace := "external-service"
-	k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+	BeforeAll(func() {
+		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
+		err := NewClusterSetup().
+			Install(Kuma(config_core.Zone,
+				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
+			)).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			Install(Namespace(esNamespace)).
+			Install(MTLSMeshKubernetes("default")).
+			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh("default"))).
+			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh("default"))).
+			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh("default"))).
+			Install(testserver.Install(
+				testserver.WithName("external-http-service"),
+				testserver.WithNamespace(esNamespace),
+				testserver.WithEchoArgs("echo", "--instance", "external-http-service"),
+			)).
+			Setup(k8sCluster)
 
-	err := NewClusterSetup().
-		Install(Kuma(config_core.Zone,
-			WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
-		)).
-		Install(NamespaceWithSidecarInjection(TestNamespace)).
-		Install(Namespace(esNamespace)).
-		Install(MTLSMeshKubernetes("default")).
-		Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh("default"))).
-		Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh("default"))).
-		Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh("default"))).
-		Install(testserver.Install(
-			testserver.WithName("external-http-service"),
-			testserver.WithNamespace(esNamespace),
-			testserver.WithEchoArgs("echo", "--instance", "external-http-service"),
-		)).
-		Setup(k8sCluster)
+		Expect(err).ToNot(HaveOccurred())
+	})
 
-	Expect(err).ToNot(HaveOccurred())
+	E2EAfterEach(func() {
+		Expect(DeleteMeshResources(k8sCluster, "default", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
+	})
 
-	E2EDeferCleanup(func() {
+	E2EAfterAll(func() {
+		Expect(k8sCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteNamespace(esNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
-	})
-})
-
-func AutoReachableServices() {
-	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(k8sCluster, "default", v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("should not connect to non auto reachable service", func() {

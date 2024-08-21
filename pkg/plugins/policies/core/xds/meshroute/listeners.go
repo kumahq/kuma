@@ -70,17 +70,17 @@ func CollectServices(
 	meshCtx xds_context.MeshContext,
 ) []DestinationService {
 	var dests []DestinationService
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
+	for _, outbound := range proxy.Outbounds {
 		var destinationService *DestinationService
-		switch outbound.GetBackendRef().GetKind() {
+		switch outbound.LegacyOutbound.GetBackendRef().GetKind() {
 		case string(common_api.MeshService):
-			destinationService = collectMeshService(outbound, proxy, meshCtx)
+			destinationService = collectMeshService(outbound.LegacyOutbound, proxy, meshCtx)
 		case string(common_api.MeshExternalService):
-			destinationService = collectMeshExternalService(outbound, proxy, meshCtx)
+			destinationService = collectMeshExternalService(outbound.LegacyOutbound, proxy, meshCtx)
 		case string(common_api.MeshMultiZoneService):
-			destinationService = collectMeshMultiZoneService(outbound, proxy, meshCtx)
+			destinationService = collectMeshMultiZoneService(outbound.LegacyOutbound, proxy, meshCtx)
 		default:
-			destinationService = collectServiceTagService(outbound, proxy, meshCtx)
+			destinationService = collectServiceTagService(outbound.LegacyOutbound, proxy, meshCtx)
 		}
 		if destinationService != nil {
 			dests = append(dests, *destinationService)
@@ -174,6 +174,7 @@ func collectMeshMultiZoneService(
 			},
 			Port: &port.Port,
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(svc, port.Name)),
 	}
 }
 
