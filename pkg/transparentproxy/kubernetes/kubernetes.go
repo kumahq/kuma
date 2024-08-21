@@ -174,8 +174,6 @@ func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	result := []string{
-		"--config-file",
-		"/tmp/kumactl/config",
 		"--redirect-outbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortOutbound),
 		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
