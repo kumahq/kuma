@@ -44,21 +44,12 @@ require (
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.52.2
 	github.com/sethvargo/go-retry v0.2.4
-<<<<<<< HEAD
 	github.com/shopspring/decimal v1.3.1
 	github.com/slok/go-http-metrics v0.11.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spiffe/go-spiffe/v2 v2.2.0
-	github.com/testcontainers/testcontainers-go v0.30.0
-	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2
-=======
-	github.com/shopspring/decimal v1.4.0
-	github.com/slok/go-http-metrics v0.12.0
-	github.com/spf13/cobra v1.8.1
-	github.com/spiffe/go-spiffe/v2 v2.3.0
 	github.com/testcontainers/testcontainers-go v0.32.0
-	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
->>>>>>> 4b6ba4f46 (chore(deps): bump github.com/testcontainers/testcontainers-go from 0.31.0 to 0.32.0 (#10827))
+	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2
 	github.com/vishvananda/netlink v1.2.1-beta.2
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.50.0
@@ -107,23 +98,17 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.3.2 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/Microsoft/hcsshim v0.12.0 // indirect
 	github.com/aws/aws-sdk-go v1.49.6 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
-<<<<<<< HEAD
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20231128003011-0fa0005c9caa // indirect
-	github.com/containerd/containerd v1.7.12 // indirect
-=======
-	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
 	github.com/containerd/containerd v1.7.18 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
->>>>>>> 4b6ba4f46 (chore(deps): bump github.com/testcontainers/testcontainers-go from 0.31.0 to 0.32.0 (#10827))
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
@@ -239,12 +224,8 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-<<<<<<< HEAD
-	gotest.tools/v3 v3.5.0 // indirect
-	k8s.io/component-base v0.29.3 // indirect
-=======
 	gotest.tools/v3 v3.5.1 // indirect
->>>>>>> 4b6ba4f46 (chore(deps): bump github.com/testcontainers/testcontainers-go from 0.31.0 to 0.32.0 (#10827))
+	k8s.io/component-base v0.29.3 // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
