@@ -14,7 +14,7 @@ var _ = Describe("VIPOutbounds", func() {
 	type outboundTestCase struct {
 		whenOutbounds map[vips.HostnameEntry]vips.VirtualOutbound
 		thenVips      []xds.VIPDomains
-		thenOutbounds []*mesh_proto.Dataplane_Networking_Outbound
+		thenOutbounds []*xds.Outbound
 	}
 	DescribeTable("compute outbounds",
 		func(tc outboundTestCase) {
@@ -41,9 +41,9 @@ var _ = Describe("VIPOutbounds", func() {
 			thenVips: []xds.VIPDomains{
 				{Address: "240.0.0.1", Domains: []string{"example.com"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}},
-				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}}},
 			},
 		}),
 		Entry("host port no backcompat when using port 80", outboundTestCase{
@@ -59,9 +59,9 @@ var _ = Describe("VIPOutbounds", func() {
 			thenVips: []xds.VIPDomains{
 				{Address: "240.0.0.1", Domains: []string{"example.com"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.1", Port: 81, Tags: map[string]string{mesh_proto.ServiceTag: "bar"}},
-				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 81, Tags: map[string]string{mesh_proto.ServiceTag: "bar"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "foo"}}},
 			},
 		}),
 		Entry("with no address doesn't generate vips or outbounds", outboundTestCase{
@@ -86,8 +86,8 @@ var _ = Describe("VIPOutbounds", func() {
 			thenVips: []xds.VIPDomains{
 				{Address: "240.0.0.1", Domains: []string{"example.mesh"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}}},
 			},
 		}),
 		Entry("service with port add backcompat", outboundTestCase{
@@ -102,9 +102,9 @@ var _ = Describe("VIPOutbounds", func() {
 			thenVips: []xds.VIPDomains{
 				{Address: "240.0.0.1", Domains: []string{"example.mesh"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
-				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "example"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example"}}},
 			},
 		}),
 		Entry("service normalizes hostnames", outboundTestCase{
@@ -119,8 +119,8 @@ var _ = Describe("VIPOutbounds", func() {
 			thenVips: []xds.VIPDomains{
 				{Address: "240.0.0.1", Domains: []string{"example_svc_80.mesh", "example.svc.80.mesh"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example_svc_80"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "example_svc_80"}}},
 			},
 		}),
 		Entry("multi outbounds work", outboundTestCase{
@@ -144,11 +144,11 @@ var _ = Describe("VIPOutbounds", func() {
 				{Address: "240.0.0.2", Domains: []string{"my-bar-service-generated.mesh"}},
 				{Address: "240.0.0.1", Domains: []string{"my-foo-service-generated.mesh"}},
 			},
-			thenOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
-				{Address: "240.0.0.2", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "bar", "version": "1"}},
-				{Address: "240.0.0.2", Port: 1235, Tags: map[string]string{mesh_proto.ServiceTag: "bar", "version": "2"}},
-				{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "foo", "version": "1"}},
-				{Address: "240.0.0.1", Port: 1235, Tags: map[string]string{mesh_proto.ServiceTag: "foo", "version": "2"}},
+			thenOutbounds: []*xds.Outbound{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.2", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "bar", "version": "1"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.2", Port: 1235, Tags: map[string]string{mesh_proto.ServiceTag: "bar", "version": "2"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 1234, Tags: map[string]string{mesh_proto.ServiceTag: "foo", "version": "1"}}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{Address: "240.0.0.1", Port: 1235, Tags: map[string]string{mesh_proto.ServiceTag: "foo", "version": "2"}}},
 			},
 		}),
 	)
