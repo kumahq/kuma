@@ -81,7 +81,6 @@ var _ = Describe("MeshRetry", func() {
 			AddServiceProtocol("tcp-service", core_mesh.ProtocolTCP).
 			AddServiceProtocol("grpc-service", core_mesh.ProtocolGRPC).
 			AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
-			AddServiceProtocol("external", core_mesh.ProtocolHTTP).
 			Build()
 
 		proxy := xds_builders.Proxy().
@@ -115,8 +114,7 @@ var _ = Describe("MeshRetry", func() {
 					WithOutboundTargets(xds_builders.EndpointMap().
 						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
 						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
-						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()).
-						AddEndpoint("external", xds_samples.HttpEndpointBuilder()),
+						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder())
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
