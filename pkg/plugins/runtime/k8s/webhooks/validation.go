@@ -18,6 +18,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtcproute "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -50,6 +51,7 @@ var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
 	meshtimeout.MeshTimeoutType:               true,
 	meshretry.MeshRetryType:                   true,
 	meshcircuitbreaker.MeshCircuitBreakerType: true,
+	meshtcproute.MeshTCPRouteType:             true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
