@@ -74,7 +74,7 @@ func (p *TcpUdpParameter) Negate() ParameterBuilder {
 	return p
 }
 
-func destinationPort(port uint16, negative bool) *TcpUdpParameter {
+func destinationPort[T ~uint16](port T, negative bool) *TcpUdpParameter {
 	return &TcpUdpParameter{
 		long:     "--destination-port",
 		short:    "--dport",
@@ -83,7 +83,7 @@ func destinationPort(port uint16, negative bool) *TcpUdpParameter {
 	}
 }
 
-func DestinationPort(port uint16) *TcpUdpParameter {
+func DestinationPort[T ~uint16](port T) *TcpUdpParameter {
 	return destinationPort(port, false)
 }
 
@@ -99,15 +99,15 @@ func DestinationPortRangeOrValue(exclusion config.Exclusion) *TcpUdpParameter {
 	}
 }
 
-func NotDestinationPort(port uint16) *TcpUdpParameter {
+func NotDestinationPort[T ~uint16](port T) *TcpUdpParameter {
 	return destinationPort(port, true)
 }
 
-func NotDestinationPortIf(predicate func() bool, port uint16) *TcpUdpParameter {
+func NotDestinationPortIf[T ~uint16](predicate func() bool, port T) *TcpUdpParameter {
 	return NotDestinationPortIfBool(predicate(), port)
 }
 
-func NotDestinationPortIfBool(condition bool, port uint16) *TcpUdpParameter {
+func NotDestinationPortIfBool[T ~uint16](condition bool, port T) *TcpUdpParameter {
 	if condition {
 		return destinationPort(port, true)
 	}
@@ -115,7 +115,7 @@ func NotDestinationPortIfBool(condition bool, port uint16) *TcpUdpParameter {
 	return nil
 }
 
-func sourcePort(port uint16, negative bool) *TcpUdpParameter {
+func sourcePort[T ~uint16](port T, negative bool) *TcpUdpParameter {
 	return &TcpUdpParameter{
 		long:     "--source-port",
 		short:    "--sport",
@@ -124,7 +124,7 @@ func sourcePort(port uint16, negative bool) *TcpUdpParameter {
 	}
 }
 
-func SourcePort(port uint16) *TcpUdpParameter {
+func SourcePort[T ~uint16](port T) *TcpUdpParameter {
 	return sourcePort(port, false)
 }
 

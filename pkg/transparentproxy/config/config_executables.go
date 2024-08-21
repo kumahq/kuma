@@ -229,7 +229,7 @@ type InitializedExecutablesIPvX struct {
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
 
-	retry  RetryConfig
+	retry  Retry
 	logger Logger
 }
 
@@ -266,10 +266,10 @@ func (c InitializedExecutablesIPvX) restore(
 
 		if i < c.retry.MaxRetries {
 			if !quiet {
-				c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+				c.logger.InfoTry("will try again in", c.retry.SleepBetweenRetries)
 			}
 
-			time.Sleep(c.retry.SleepBetweenReties)
+			time.Sleep(c.retry.SleepBetweenRetries.Duration)
 		}
 	}
 
