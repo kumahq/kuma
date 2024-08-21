@@ -16,6 +16,7 @@ import (
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
@@ -46,8 +47,9 @@ type validatingHandler struct {
 }
 
 var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
-	meshtimeout.MeshTimeoutType: true,
-	meshretry.MeshRetryType:     true,
+	meshtimeout.MeshTimeoutType:     true,
+	meshretry.MeshRetryType:         true,
+	meshhttproute.MeshHTTPRouteType: true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
