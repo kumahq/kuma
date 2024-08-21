@@ -638,13 +638,19 @@ var _ = Describe("MeshHTTPRoute", func() {
 						builders.Dataplane().
 							WithName("web-01").
 							WithAddress("192.168.0.2").
-							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
-							AddOutbound(
-								builders.Outbound().
-									WithPort(10001).
-									WithMeshService("backend", 80),
-							),
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{},
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "backend",
+								Port: 80,
+							},
+						}},
+					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
