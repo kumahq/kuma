@@ -71,7 +71,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
 metadata:
-  name: mtr
+  name: mtr-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %s

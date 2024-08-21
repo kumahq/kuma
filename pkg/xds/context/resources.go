@@ -4,6 +4,7 @@ import (
 	"hash/fnv"
 	"slices"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -52,7 +53,10 @@ func NewResources() Resources {
 func (r Resources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
 	// todo: we can probably optimize it by using indexing on ResourceIdentifier
 	list := r.ListOrEmpty(resourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { 
+		core.Log.Info("TEST GET", "core_model.NewResourceIdentifier(r)", core_model.NewResourceIdentifier(r), "ri", ri)
+		return core_model.NewResourceIdentifier(r) == ri 
+	}); i >= 0 {
 		return list[i]
 	}
 	return nil
