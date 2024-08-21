@@ -51,7 +51,7 @@ var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
 	meshtimeout.MeshTimeoutType:               true,
 	meshretry.MeshRetryType:                   true,
 	meshcircuitbreaker.MeshCircuitBreakerType: true,
-	meshhttproute.MeshHTTPRouteType: true,
+	meshhttproute.MeshHTTPRouteType:           true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
