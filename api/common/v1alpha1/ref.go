@@ -55,6 +55,15 @@ func (k TargetRefKind) IsRealResource() bool {
 	}
 }
 
+func (k TargetRefKind) IsOldKind() bool {
+	switch k {
+	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshGateway, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
+}
+
 func AllTargetRefKinds() []TargetRefKind {
 	keys := maps.Keys(order)
 	sort.Sort(TargetRefKindSlice(keys))
