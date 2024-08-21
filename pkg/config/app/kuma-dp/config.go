@@ -312,7 +312,7 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
-	if d.ReadinessPort < 1 || d.ReadinessPort > 65353 {
+	if d.ReadinessPort > 65353 {
 		return errors.New(".ReadinessPort has to be in [0, 65353] range")
 	}
 

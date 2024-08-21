@@ -54,7 +54,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 				Metadata: &xds.DataplaneMetadata{
 					AdminPort:     9901,
 					AdminAddress:  given.adminAddress,
-					WorkDir:       "/tmp/kuma-sockets",
 					ReadinessPort: given.readinessPort,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
@@ -138,7 +137,6 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Metadata: &xds.DataplaneMetadata{
 				AdminPort:    9901,
 				AdminAddress: "192.168.0.1", // it's not allowed to use such address
-				WorkDir:      "/tmp/kuma-sockets",
 			},
 			EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 				CaPEM: []byte("caPEM"),

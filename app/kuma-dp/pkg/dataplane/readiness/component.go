@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -25,8 +26,10 @@ type Reporter struct {
 	isTerminating   atomic.Bool
 }
 
-var logger = core.Log.WithName("readiness")
-var localIPAddr = "127.0.0.1"
+var (
+	logger      = core.Log.WithName("readiness")
+	localIPAddr = "127.0.0.1"
+)
 
 func NewReporter(localListenPort uint32) *Reporter {
 	return &Reporter{

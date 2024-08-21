@@ -156,7 +156,6 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 				core_xds.Endpoint{Target: "127.0.0.1", Port: readinessPort})).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
-
 		if err != nil {
 			return nil, err
 		}
