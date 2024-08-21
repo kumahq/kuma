@@ -65,6 +65,11 @@ func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuil
 	return p
 }
 
+func (p *ProxyBuilder) WithOutbounds(outbounds xds.Outbounds) *ProxyBuilder {
+	p.res.Outbounds = outbounds
+	return p
+}
+
 func (p *ProxyBuilder) WithRouting(routing *RoutingBuilder) *ProxyBuilder {
 	p.res.Routing = *routing.Build()
 	return p

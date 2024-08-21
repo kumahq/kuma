@@ -496,10 +496,19 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	rules := Rules{}
+	oldKindsItems := []PolicyItemWithMeta{}
+	for _, item := range list {
+		if item.PolicyItem.GetTargetRef().Kind.IsOldKind() {
+			oldKindsItems = append(oldKindsItems, item)
+		}
+	}
+	if len(oldKindsItems) == 0 {
+		return rules, nil
+	}
 
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
-	for _, item := range list {
+	for _, item := range oldKindsItems {
 		ss, err := asSubset(item.GetTargetRef())
 		if err != nil {
 			return nil, err
@@ -560,8 +569,8 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			// 5. For each combination determine a configuration
 			confs := []interface{}{}
 			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
-			for i := 0; i < len(list); i++ {
-				item := list[i]
+			for i := 0; i < len(oldKindsItems); i++ {
+				item := oldKindsItems[i]
 				itemSubset, err := asSubset(item.GetTargetRef())
 				if err != nil {
 					return nil, err

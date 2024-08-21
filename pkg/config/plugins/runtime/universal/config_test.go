@@ -53,6 +53,6 @@ var _ = Describe("Config", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal(`Invalid configuration: .DataplaneCleanupAge must be positive; .VIPRefreshInterval must be positive`))
+		Expect(err.Error()).To(Equal("parsing configuration from file 'testdata/invalid-config.input.yaml' failed: configuration validation failed: .DataplaneCleanupAge must be positive; .VIPRefreshInterval must be positive"))
 	})
 })

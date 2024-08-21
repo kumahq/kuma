@@ -75,8 +75,21 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				AddOutboundsToServices("other-service", "second-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithOutbounds(core_xds.Outbounds{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "other-service",
+					},
+				}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort + 1,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "second-service",
+					},
+				}},
+			}).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
