@@ -184,7 +184,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	}
 
 	var domains []xds.VIPDomains
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var outbounds []*xds.Outbound
 	if !m.skipPersistedVIPs {
 		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
 		if err != nil {

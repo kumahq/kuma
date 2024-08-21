@@ -49,7 +49,7 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
 		return err
 	}
 
@@ -95,10 +95,10 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	dataplane *core_mesh.DataplaneResource,
+	outbounds core_xds.Outbounds,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(
-		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outbounds.Filter(core_xds.NonBackendRefFilter),
 		outboundSplitClusters,
 		outboundClusters,
 	)
