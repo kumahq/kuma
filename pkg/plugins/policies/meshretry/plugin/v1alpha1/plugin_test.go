@@ -114,7 +114,7 @@ var _ = Describe("MeshRetry", func() {
 					WithOutboundTargets(xds_builders.EndpointMap().
 						AddEndpoint("http-service", xds_samples.HttpEndpointBuilder()).
 						AddEndpoint("tcp-service", xds_samples.TcpEndpointBuilder()).
-						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder())
+						AddEndpoint("grpc-service", xds_samples.GrpcEndpointBuilder()),
 					),
 			).
 			WithPolicies(xds_builders.MatchedPolicies().WithToPolicy(api.MeshRetryType, given.toRules)).
