@@ -96,8 +96,8 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 			// we only have /ready for now, so assign it to the readiness cluster directly
 			se.ClusterName = dppReadinessClusterName
 		} else {
-			// backward compatibility: we keep the previous behavior if readinessPort is not set
-			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata,
+			// we keep the previous behavior if readinessPort is not set
+			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata
 			se.ClusterName = envoyAdminClusterName
 		}
 	}

@@ -137,7 +137,7 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
-	// Port that exposes kuma-dp readiness status on localhost
+	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 }
 

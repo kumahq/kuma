@@ -240,8 +240,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
 			components = append(components, observabilityComponents...)
 
-			readinessReporter := readiness.NewReporter(cfg.Dataplane.ReadinessPort)
-			components = append(components, readinessReporter)
+			var readinessReporter *readiness.Reporter
+			if cfg.Dataplane.ReadinessPort > 0 {
+				readinessReporter = readiness.NewReporter(cfg.Dataplane.ReadinessPort)
+				components = append(components, readinessReporter)
+			}
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
@@ -267,7 +270,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 							continue
 						}
 						if !draining {
-							readinessReporter.Terminating()
+							if readinessReporter != nil {
+								readinessReporter.Terminating()
+							}
 							runLog.Info("draining Envoy connections")
 							if err := envoyComponent.DrainForever(); err != nil {
 								runLog.Error(err, "could not drain connections")
@@ -280,7 +285,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 						if draining {
 							runLog.Info("already drained, exit immediately")
 						} else {
-							readinessReporter.Terminating()
+							if readinessReporter != nil {
+								readinessReporter.Terminating()
+							}
 							runLog.Info("draining Envoy connections")
 							if err := envoyComponent.FailHealthchecks(); err != nil {
 								runLog.Error(err, "could not drain connections")
