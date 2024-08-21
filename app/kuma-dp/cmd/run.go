@@ -185,6 +185,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:       opts.Dataplane,
 				DNSPort:         cfg.DNS.EnvoyDNSPort,
+				ReadinessPort:   cfg.Dataplane.ReadinessPort,
 				EnvoyVersion:    *envoyVersion,
 				Workdir:         cfg.DataplaneRuntime.SocketDir,
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
@@ -239,7 +240,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
 			components = append(components, observabilityComponents...)
 
-			readinessReporter := readiness.NewReporter(core_xds.DppReadinessSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name))
+			readinessReporter := readiness.NewReporter(cfg.Dataplane.ReadinessPort)
 			components = append(components, readinessReporter)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {

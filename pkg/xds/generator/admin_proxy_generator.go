@@ -57,6 +57,7 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	}
 
 	adminPort := proxy.Metadata.GetAdminPort()
+	readinessPort := proxy.Metadata.GetReadinessPort()
 	// We assume that Admin API must be available on a loopback interface (while users
 	// can override the default value `127.0.0.1` in the Bootstrap Server section of `kuma-cp` config,
 	// the only reasonable alternatives are `::1`, `0.0.0.0` or `::`).
@@ -90,33 +91,30 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		return nil, err
 	}
 
-	readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
-		Configure(envoy_clusters.ProvidedEndpointCluster(
-			govalidator.IsIPv6(adminAddress),
-			core_xds.Endpoint{
-				UnixDomainPath: core_xds.DppReadinessSocketName(proxy.Metadata.WorkDir, proxy.Id.ToResourceKey().Name),
-			})).
-		Configure(envoy_clusters.DefaultTimeout()).
-		Build()
-	if err != nil {
-		return nil, err
+	assignReadinessPort := func(se *envoy_common.StaticEndpointPath) {
+		if readinessPort > 0 {
+			// we only have /ready for now, so assign it to the readiness cluster directly
+			se.ClusterName = dppReadinessClusterName
+		} else {
+			// backward compatibility: we keep the previous behavior if readinessPort is not set
+			// this can happen when an existing DPP is connecting to this CP, it does not have this metadata,
+			se.ClusterName = envoyAdminClusterName
+		}
 	}
 
-	resources := core_xds.NewResourceSet()
-
 	for _, se := range staticEndpointPaths {
-		// we only have /ready for now, so assign it to the readiness cluster directly
-		se.ClusterName = dppReadinessClusterName
+		assignReadinessPort(se)
 	}
 	for _, se := range staticTlsEndpointPaths {
 		switch se.Path {
 		case "/ready":
-			se.ClusterName = dppReadinessClusterName
+			assignReadinessPort(se)
 		default:
 			se.ClusterName = envoyAdminClusterName
 		}
 	}
 
+	resources := core_xds.NewResourceSet()
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if g.getAddress(proxy) != adminAddress {
 		filterChains := []envoy_listeners.ListenerBuilderOpt{
@@ -149,11 +147,27 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 		Name:     envoyAdminCluster.GetName(),
 		Origin:   OriginAdmin,
 		Resource: envoyAdminCluster,
-	}, &core_xds.Resource{
-		Name:     readinessCluster.GetName(),
-		Origin:   OriginAdmin,
-		Resource: readinessCluster,
 	})
+
+	if readinessPort > 0 {
+		readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
+			Configure(envoy_clusters.ProvidedEndpointCluster(
+				false,
+				core_xds.Endpoint{Target: "127.0.0.1", Port: readinessPort})).
+			Configure(envoy_clusters.DefaultTimeout()).
+			Build()
+
+		if err != nil {
+			return nil, err
+		}
+
+		resources.Add(&core_xds.Resource{
+			Name:     readinessCluster.GetName(),
+			Origin:   OriginAdmin,
+			Resource: readinessCluster,
+		})
+	}
+
 	return resources, nil
 }
 

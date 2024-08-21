@@ -5,13 +5,10 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"os"
 	"sync/atomic"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -24,34 +21,21 @@ const (
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
-	socketPath    string
-	isTerminating atomic.Bool
+	localListenPort uint32
+	isTerminating   atomic.Bool
 }
 
 var logger = core.Log.WithName("readiness")
+var localIPAddr = "127.0.0.1"
 
-func NewReporter(socketPath string) *Reporter {
+func NewReporter(localListenPort uint32) *Reporter {
 	return &Reporter{
-		socketPath: socketPath,
+		localListenPort: localListenPort,
 	}
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	_, err := os.Stat(r.socketPath)
-	if err == nil {
-		// File is accessible try to rename it to verify it is not open
-		newName := r.socketPath + ".bak"
-		err = os.Rename(r.socketPath, newName)
-		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", r.socketPath)
-		}
-		err = os.Remove(newName)
-		if err != nil {
-			return errors.Errorf("not able the delete the backup file %s", newName)
-		}
-	}
-
-	lis, err := net.Listen("unix", r.socketPath)
+	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", localIPAddr, r.localListenPort))
 	if err != nil {
 		return err
 	}
@@ -60,9 +44,7 @@ func (r *Reporter) Start(stop <-chan struct{}) error {
 		_ = lis.Close()
 	}()
 
-	logger.Info("starting readiness reporter",
-		"socketPath", fmt.Sprintf("unix://%s", r.socketPath),
-	)
+	logger.Info("starting readiness reporter", "addr", lis.Addr().String())
 
 	mux := http.NewServeMux()
 	mux.HandleFunc(pathPrefixReady, r.handleReadiness)
@@ -101,10 +83,10 @@ func (r *Reporter) handleReadiness(writer http.ResponseWriter, req *http.Request
 	}
 
 	stateBytes := []byte(state)
-	writer.Header().Set("Content-Type", "text/plain")
-	writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(stateBytes)))
-	writer.Header().Set("Cache-Control", "no-cache, max-age=0")
-	writer.Header().Set("X-Readiness-Server", "kuma-dp")
+	writer.Header().Set("content-type", "text/plain")
+	writer.Header().Set("content-length", fmt.Sprintf("%d", len(stateBytes)))
+	writer.Header().Set("cache-control", "no-cache, max-age=0")
+	writer.Header().Set("x-powered-by", "kuma-dp")
 	writer.WriteHeader(stateHTTPStatus)
 	_, err := writer.Write(stateBytes)
 	logger.V(1).Info("responding readiness state", "state", state, "client", req.RemoteAddr)
