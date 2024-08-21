@@ -573,6 +573,9 @@ webhooks:
           - zoneingressinsights
           - zoneegresses
           - zoneegressinsights
+          - serviceinsights
+          - zone
+          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections

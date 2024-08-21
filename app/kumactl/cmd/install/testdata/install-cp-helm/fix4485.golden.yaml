@@ -403,7 +403,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 7b41e8a9da33dc9e358692ac3f4ad52a5c12dd968ea1a40a747780989dd3f77c
+        checksum/tls-secrets: 16d36f23796f1dcbe5b1b2ec01107fc071d5b9bbd1a0875246b10654240a3f2b
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -604,6 +604,9 @@ webhooks:
           - zoneingressinsights
           - zoneegresses
           - zoneegressinsights
+          - serviceinsights
+          - zone
+          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections

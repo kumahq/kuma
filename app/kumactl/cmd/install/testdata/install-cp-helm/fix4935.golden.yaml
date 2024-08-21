@@ -665,7 +665,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 957cda93437218ee64aacd5f4e9f7c5b326fa53ed8de4a286612dbdbaf717bd2
+        checksum/tls-secrets: 3b813951677e245f8650908b2f85ecc8a35edd56300ab354b17f81555ba43993
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -1162,6 +1162,9 @@ webhooks:
           - zoneingressinsights
           - zoneegresses
           - zoneegressinsights
+          - serviceinsights
+          - zone
+          - zoneinsights
           - meshaccesslogs
           - meshcircuitbreakers
           - meshfaultinjections
