@@ -79,18 +79,18 @@ func (c *Owner) UnmarshalJSON(bs []byte) error {
 		return err
 	}
 
-	switch typedValue := jsonValue.(type) {
+	switch jsonValue.(type) {
 	case string, float64:
 		return c.Set(fmt.Sprint(jsonValue))
-	case map[string]interface{}:
-		for mapKey, mapValue := range typedValue {
-			if strings.ToLower(mapKey) == "uid" {
-				return c.Set(fmt.Sprint(mapValue))
-			}
-		}
 	}
 
-	return c.Set(string(bs))
+	return errors.Errorf("invalid type for provided value '%s'; expected string or numeric value for UID or username", string(bs))
+}
+
+// Using a value receiver here is intentional, as we are working with the Owner value itself,
+// not a pointer, for JSON marshaling
+func (c Owner) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.UID)
 }
 
 // ValueOrRangeList is a format acceptable by iptables in which

@@ -20,9 +20,6 @@ type Loader struct {
 	includeEnv    bool
 	validate      bool
 	envVarsPrefix string
-
-	Filename string
-	Content  string
 }
 
 func NewLoader(cfg Config) *Loader {
@@ -48,14 +45,14 @@ func (l *Loader) WithValidation() *Loader {
 	return l
 }
 
-func (l *Loader) Load(stdin io.Reader) error {
-	switch l.Filename {
+func (l *Loader) Load(stdin io.Reader, content []byte, filename string) error {
+	switch filename {
 	case "-":
 		return l.LoadReader(stdin)
 	case "":
-		return l.LoadBytes([]byte(l.Content))
+		return l.LoadBytes(content)
 	default:
-		return l.LoadFile(l.Filename)
+		return l.LoadFile(filename)
 	}
 }
 
