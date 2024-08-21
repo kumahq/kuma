@@ -6,7 +6,6 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -39,7 +38,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 
 	listeners := xds.GatherListeners(rs)
 	routes := xds.GatherRoutes(rs)
-	core.Log.Info("TESTLOG", "listeners", listeners, "routes", routes)
 
 	if err := applyToOutbounds(policies.ToRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane, ctx.Mesh); err != nil {
 		return err
@@ -141,21 +139,15 @@ func applyToGateway(
 }
 
 func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
-	core.Log.Info("applyToRealResources", "rs.IndexByOrigin()", rs.IndexByOrigin(), "rules", rules)
 	for uri, resType := range rs.IndexByOrigin() {
-		core.Log.Info("TESTLOG", "uri", uri, "resType", resType)
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
-			core.Log.Info("TESTLOG CONF NIL")
 			continue
 		}
-
-		core.Log.Info("TESTLOG conf", "conf", conf)
 
 		for typ, resources := range resType {
 			switch typ {
 			case envoy_resource.ListenerType:
-				core.Log.Info("TESTLOG", "resources", resources, "typ", typ)
 				err := configureListeners(resources, conf.Conf[0].(api.Conf))
 				if err != nil {
 					return err

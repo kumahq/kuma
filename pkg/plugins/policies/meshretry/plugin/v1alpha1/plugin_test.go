@@ -600,7 +600,7 @@ var _ = Describe("MeshRetry", func() {
 			},
 			goldenFilePrefix: "http-real-mesh-service",
 		}),
-		FEntry("http retry mesh external service", testCase{
+		Entry("http retry mesh external service", testCase{
 			resources: []core_xds.Resource{{
 				Name:           "outbound",
 				Origin:         generator.OriginOutbound,

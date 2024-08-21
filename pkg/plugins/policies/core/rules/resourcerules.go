@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -74,11 +73,7 @@ func WithSectionName(sectionName string) ComputeOptsFn {
 }
 
 func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceReader) *ResourceRule {
-	for v, k := range rr {
-		core.Log.Info("rr", "v", v, "k", k)
-	}
 	if rule, ok := rr[uri]; ok {
-		core.Log.Info("Compute", "rule", rule)
 		return &rule
 	}
 
@@ -96,9 +91,7 @@ func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceRea
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
-		core.Log.Info("Compute", "uri", uri)
 		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
-			core.Log.Info("Compute", "uri", uri, "mesh", mesh, "~rr.Compute(UniqueKey(mesh, ), reader)", rr.Compute(UniqueKey(mesh, ""), reader))
 			return rr.Compute(UniqueKey(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:

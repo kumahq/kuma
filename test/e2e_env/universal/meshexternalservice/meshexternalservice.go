@@ -3,7 +3,6 @@ package meshexternalservice
 import (
 	"encoding/base64"
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -11,6 +10,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -197,7 +197,14 @@ routing:
 	}
 
 	Context("MeshExternalService with MeshRetry", func() {
-		FIt("should retry on error", func() {
+		E2EAfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshretry_api.MeshRetryResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should retry on error", func() {
 			meshExternalService := fmt.Sprintf(`
 type: MeshExternalService
 name: mes-retry
@@ -215,14 +222,48 @@ spec:
     - address: %s
       port: 80
 `, meshNameNoDefaults, esHttpsContainerName, esHttpContainerName)
-			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
-			time.Sleep(1*time.Hour)
-			// when access the first external service with .mesh
-			checkSuccessfulRequest("mes-retry.extsvc.mesh.local", "mes-demo-client-no-defaults",
-				And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http")))
 
-			// checkSuccessfulRequest("ext-srv-2.extsvc.mesh.local", clientName,
-			// 	And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http-2")))
+			meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
+mesh: %s
+name: meshretry-mes-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-retry
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// we have 2 endpoints, one http and another https so some requests should fail
+			By("Check some errors happen")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+					client.NoFail(),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "10s", "100ms").Should(Succeed())
+
+			By("Apply a MeshRetry policy")
+			Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+			By("Eventually all requests succeed consistently")
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	})
 
