@@ -644,8 +644,6 @@ func asSubset(tr common_api.TargetRef) (Subset, error) {
 			ss = append(ss, Tag{Key: k, Value: v})
 		}
 		return ss, nil
-	case common_api.MeshExternalService:
-		return Subset{}, nil
 	default:
 		return nil, errors.Errorf("can't represent %s as tags", tr.Kind)
 	}
