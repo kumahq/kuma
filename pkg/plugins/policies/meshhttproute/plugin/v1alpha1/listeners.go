@@ -24,7 +24,14 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-func generateFromService(meshCtx xds_context.MeshContext, proxy *core_xds.Proxy, clusterCache map[common_api.BackendRefHash]string, servicesAcc envoy_common.ServicesAccumulator, rules rules.ToRules, svc meshroute_xds.DestinationService) (*core_xds.ResourceSet, error) {
+func generateFromService(
+	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	rules rules.ToRules,
+	svc meshroute_xds.DestinationService,
+) (*core_xds.ResourceSet, error) {
 	tags := svc.BackendRef.Tags
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
@@ -111,7 +118,12 @@ func generateFromService(meshCtx xds_context.MeshContext, proxy *core_xds.Proxy,
 	return resources, nil
 }
 
-func generateListeners(proxy *core_xds.Proxy, rules rules.ToRules, servicesAcc envoy_common.ServicesAccumulator, meshCtx xds_context.MeshContext) (*core_xds.ResourceSet, error) {
+func generateListeners(
+	proxy *core_xds.Proxy,
+	rules rules.ToRules,
+	servicesAcc envoy_common.ServicesAccumulator,
+	meshCtx xds_context.MeshContext,
+) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
 	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of clusters.
 	// For one outbound we pick one traffic route so LB and Timeout are the same.
@@ -136,7 +148,7 @@ func generateListeners(proxy *core_xds.Proxy, rules rules.ToRules, servicesAcc e
 	return resources, nil
 }
 
-func computeConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *api.PolicyDefault {
+func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *api.PolicyDefault {
 	// compute for old MeshService
 	conf := rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshService(svc.ServiceName))
 	switch svc.BackendRef.Kind {
@@ -155,7 +167,7 @@ func computeConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, me
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
-	conf := computeConf(toRules, svc, meshCtx)
+	conf := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {
