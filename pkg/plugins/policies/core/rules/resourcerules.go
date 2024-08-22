@@ -14,10 +14,16 @@ import (
 )
 
 type ResourceRule struct {
-	Resource              core_model.ResourceMeta
-	ResourceSectionName   string
-	Conf                  []interface{}
-	Origin                []Origin
+	Resource            core_model.ResourceMeta
+	ResourceSectionName string
+	Conf                []interface{}
+	Origin              []Origin
+
+	// BackendRefOriginIndex is a mapping from the rule to the origin of the BackendRefs in the rule.
+	// Some policies have BackendRefs in their confs, and it's important to know what was the original policy
+	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
+	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
+	// then key is an empty string "".
 	BackendRefOriginIndex BackendRefOriginIndex
 }
 

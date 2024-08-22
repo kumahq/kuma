@@ -259,9 +259,15 @@ func (ss Subset) IndexOfPositive() int {
 // then Subset represents a group of clients. When rule is an outbound (to) then Subset
 // represents destinations.
 type Rule struct {
-	Subset                Subset
-	Conf                  interface{}
-	Origin                []core_model.ResourceMeta
+	Subset Subset
+	Conf   interface{}
+	Origin []core_model.ResourceMeta
+
+	// BackendRefOriginIndex is a mapping from the rule to the origin of the BackendRefs in the rule.
+	// Some policies have BackendRefs in their confs, and it's important to know what was the original policy
+	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
+	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
+	// then key is an empty string "".
 	BackendRefOriginIndex BackendRefOriginIndex
 }
 
