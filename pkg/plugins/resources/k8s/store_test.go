@@ -14,8 +14,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
-	meshtimeout_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	v1alpha1_k8s "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/k8s/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -77,7 +75,6 @@ var _ = Describe("KubernetesStore", func() {
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRoute{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&mesh_proto.Mesh{}, &mesh_k8s.Mesh{})).To(Succeed())
 		Expect(kubeTypes.RegisterObjectType(&v1alpha1.MeshTrace{}, &v1alpha1_k8s.MeshTrace{})).To(Succeed())
-		Expect(kubeTypes.RegisterObjectType(&meshtimeout_api.MeshTimeout{}, &meshtimeout_k8s.MeshTimeout{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.TrafficRoute{}, &mesh_k8s.TrafficRouteList{})).To(Succeed())
 		Expect(kubeTypes.RegisterListType(&mesh_proto.Mesh{}, &mesh_k8s.MeshList{})).To(Succeed())
 
