@@ -55,6 +55,17 @@ func (k TargetRefKind) IsRealResource() bool {
 	}
 }
 
+// These are the kinds that can be used in Kuma policies before support for
+// actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
+func (k TargetRefKind) IsOldKind() bool {
+	switch k {
+	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshGateway, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
+}
+
 func AllTargetRefKinds() []TargetRefKind {
 	keys := maps.Keys(order)
 	sort.Sort(TargetRefKindSlice(keys))

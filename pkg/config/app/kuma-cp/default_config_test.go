@@ -34,7 +34,7 @@ var _ = Describe("Default config", func() {
 
 	It("kuma-cp.defaults.yaml should not have extra keys", func() {
 		cfg := kuma_cp.Config{}
-		err := config.LoadWithOption("kuma-cp.defaults.yaml", &cfg, true, false, false)
+		err := config.NewLoader(&cfg).WithStrictParsing().LoadFile("kuma-cp.defaults.yaml")
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

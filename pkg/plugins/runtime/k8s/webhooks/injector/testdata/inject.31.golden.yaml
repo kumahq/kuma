@@ -129,8 +129,6 @@ spec:
     securityContext:
       runAsUser: 5678
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
