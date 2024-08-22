@@ -44,3 +44,9 @@ func (d *Duration) Decode(value string) error {
 	}
 	return nil
 }
+
+func (d *Duration) Type() string { return "duration" }
+
+func (d *Duration) Set(s string) error {
+	return d.UnmarshalJSON([]byte(s))
+}
