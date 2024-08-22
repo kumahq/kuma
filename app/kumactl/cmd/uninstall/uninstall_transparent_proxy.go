@@ -23,13 +23,17 @@ func newUninstallTransparentProxy() *cobra.Command {
 		Short: "Uninstall Transparent Proxy pre-requisites on the host",
 		Long: "Uninstall Transparent Proxy by restoring the hosts iptables " +
 			"and /etc/resolv.conf or removing leftover ebpf objects",
-		PreRun: func(cmd *cobra.Command, _ []string) {
+		RunE: func(cmd *cobra.Command, _ []string) error {
 			cfg.RuntimeStdout = cmd.OutOrStdout()
 			cfg.RuntimeStderr = cmd.ErrOrStderr()
-		},
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			if !cfg.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
+
+			switch {
+			case runtime.GOOS != "linux" && !cfg.DryRun:
+				return errors.New("transparent proxy is supported only on Linux systems")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && !cfg.DryRun:
+				return errors.New("you need to have root privileges to run this command")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && cfg.DryRun:
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] [dry-run]: running this command as a non-root user may lead to unpredictable results")
 			}
 
 			initializedConfig, err := cfg.Initialize(cmd.Context())

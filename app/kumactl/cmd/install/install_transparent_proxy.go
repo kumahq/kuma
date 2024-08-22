@@ -5,6 +5,7 @@ package install
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ import (
 
 const (
 	flagHelp                       = "help"
+	flagDryRun                     = "dry-run"
 	flagTransparentProxyConfig     = "config"
 	flagTransparentProxyConfigFile = "config-file"
 )
@@ -106,7 +108,7 @@ runuser -u kuma-dp -- \
 
 			parseConfigFlags := func(flag *pflag.Flag, value string) error {
 				switch flag.Name {
-				case flagHelp, flagTransparentProxyConfig, flagTransparentProxyConfigFile:
+				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile:
 					return flag.Value.Set(value)
 				default:
 					return nil
@@ -127,6 +129,15 @@ runuser -u kuma-dp -- \
 			// including the `--help` flag
 			if ok, _ := cmd.Flags().GetBool(flagHelp); ok {
 				return cmd.Help()
+			}
+
+			switch {
+			case runtime.GOOS != "linux" && !cfg.DryRun:
+				return errors.New("transparent proxy is supported only on Linux systems")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && !cfg.DryRun:
+				return errors.New("you need to have root privileges to run this command")
+			case runtime.GOOS == "linux" && os.Geteuid() != 0 && cfg.DryRun:
+				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] [dry-run]: running this command as a non-root user may lead to unpredictable results")
 			}
 
 			if configValue == "-" && configFile == "" {
@@ -160,10 +171,6 @@ runuser -u kuma-dp -- \
 				if err := cfg.KumaDPUser.Set(""); err != nil {
 					return errors.Wrap(err, "failed to set default owner for transparent proxy")
 				}
-			}
-
-			if !cfg.DryRun && runtime.GOOS != "linux" {
-				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
 			if cfg.Redirect.DNS.CaptureAll && cfg.Redirect.DNS.Enabled {
