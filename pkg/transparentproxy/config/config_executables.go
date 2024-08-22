@@ -500,20 +500,13 @@ func (c ExecutablesNftLegacy) Initialize(
 	}
 
 	switch {
-	// Dry-run mode when no valid iptables executables are found.
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("[dry-run]: no valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables")
+		l.Warn("[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables")
 		return InitializedExecutables{}, nil
-	// Regular mode when no vaild iptables executables are found
 	case len(errs) == 2:
-		return InitializedExecutables{}, errors.Wrap(
-			std_errors.Join(errs...),
-			"failed to find valid nft or legacy executables",
-		)
-	// No valid legacy executables
+		return InitializedExecutables{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
 	case legacyErr != nil:
 		return nft, nil
-	// No valid nft executables
 	case nftErr != nil:
 		return legacy, nil
 	case nft.hasExistingRules() && legacy.hasExistingRules():
