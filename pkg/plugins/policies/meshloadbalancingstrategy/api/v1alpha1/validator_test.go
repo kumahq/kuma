@@ -51,6 +51,12 @@ to:
       name: svc-2
       tags:
         version: v1
+  - targetRef:
+      kind: MeshService
+      name: real-mesh-service
+      sectionName: http
+      default:
+        crossZone: {}
 `),
 		ErrorCases(
 			"ringHash error",
