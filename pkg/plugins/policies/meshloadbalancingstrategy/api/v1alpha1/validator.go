@@ -45,25 +45,29 @@ func validateTo(to []To) validators.ValidationError {
 				common_api.MeshService,
 			},
 		}))
-		verr.AddErrorAt(path.Field("default"), validateDefault(toItem.Default))
+		verr.AddErrorAt(path.Field("default"), validateConf(toItem.Default, toItem))
 	}
 	return verr
 }
 
-func validateDefault(conf Conf) validators.ValidationError {
+func validateConf(conf Conf, to To) validators.ValidationError {
 	var verr validators.ValidationError
 	verr.AddError("loadBalancer", validateLoadBalancer(conf.LoadBalancer))
-	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness))
+	verr.AddError("localityAwareness", validateLocalityAwareness(conf.LocalityAwareness, to))
 	return verr
 }
 
-func validateLocalityAwareness(localityAwareness *LocalityAwareness) validators.ValidationError {
+func validateLocalityAwareness(localityAwareness *LocalityAwareness, to To) validators.ValidationError {
 	var verr validators.ValidationError
 	if localityAwareness == nil {
 		return verr
 	}
 	verr.AddError("localZone", validateLocalZone(localityAwareness.LocalZone))
-	verr.AddError("crossZone", validateCrossZone(localityAwareness.CrossZone))
+	if to.TargetRef.Kind == common_api.MeshService && (to.TargetRef.SectionName != "" || len(to.TargetRef.Labels) > 0) {
+		verr.AddViolationAt(validators.RootedAt("crossZone"), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
+	} else {
+		verr.AddError("crossZone", validateCrossZone(localityAwareness.CrossZone))
+	}
 	return verr
 }
 
