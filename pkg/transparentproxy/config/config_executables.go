@@ -465,6 +465,11 @@ func (c InitializedExecutables) hasDockerOutputChain() bool {
 		c.IPv6.Functionality.Chains.DockerOutput
 }
 
+func (c InitializedExecutables) hasExistingRules() bool {
+	return c.IPv4.Functionality.Rules.ExistingRules ||
+		c.IPv6.Functionality.Rules.ExistingRules
+}
+
 type ExecutablesNftLegacy struct {
 	Nft    Executables
 	Legacy Executables
@@ -511,12 +516,19 @@ func (c ExecutablesNftLegacy) Initialize(
 	// No valid nft executables
 	case nftErr != nil:
 		return legacy, nil
-	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
-	// table. We are prioritizing nft
-	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		l.Warn("conflicting iptables modes detected. Two iptables versions (iptables-nft and iptables-legacy) were found. Both contain a nat table with a chain named 'DOCKER_OUTPUT'. To avoid potential conflicts, iptables-legacy will be ignored and iptables-nft will be used")
-		return nft, nil
-	case legacy.hasDockerOutputChain():
+	case nft.hasExistingRules() && legacy.hasExistingRules():
+		switch {
+		case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
+			fallthrough
+		case !nft.hasDockerOutputChain() && !legacy.hasDockerOutputChain():
+			l.Warn("conflicting iptables modes detected; both iptables-nft and iptables-legacy have existing rules and/or custom chains. To avoid potential conflicts, iptables-legacy will be ignored, and iptables-nft will be used")
+			return nft, nil
+		case legacy.hasDockerOutputChain():
+			return legacy, nil
+		default:
+			return nft, nil
+		}
+	case legacy.hasExistingRules():
 		return legacy, nil
 	default:
 		return nft, nil
