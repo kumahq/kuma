@@ -272,9 +272,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 							continue
 						}
 						if !draining {
-							if readinessReporter != nil {
-								readinessReporter.Terminating()
-							}
 							runLog.Info("draining Envoy connections")
 							if err := envoyComponent.DrainForever(); err != nil {
 								runLog.Error(err, "could not drain connections")

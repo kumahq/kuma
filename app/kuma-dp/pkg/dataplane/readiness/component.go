@@ -3,9 +3,9 @@ package readiness
 import (
 	"context"
 	"fmt"
+	"github.com/asaskevich/govalidator"
 	"net"
 	"net/http"
-	"strings"
 	"sync/atomic"
 	"time"
 
@@ -40,7 +40,7 @@ func NewReporter(localIPAddr string, localListenPort uint32) *Reporter {
 func (r *Reporter) Start(stop <-chan struct{}) error {
 	protocol := "tcp"
 	addr := r.localListenAddr
-	if strings.Contains(addr, ":") {
+	if govalidator.IsIPv6(addr) {
 		protocol = "tcp6"
 		addr = fmt.Sprintf("[%s]", addr)
 	}
