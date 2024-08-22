@@ -52,11 +52,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-<<<<<<< HEAD
   name: mhr-delagated
-=======
-  name: mhr-delegated
->>>>>>> 7e6788f5b (test(e2e): rename ES resource name (#11164))
   namespace: %s
   labels:
     kuma.io/mesh: %[2]s
