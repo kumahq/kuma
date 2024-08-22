@@ -150,10 +150,11 @@ func (g AdminProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceS
 	})
 
 	if readinessPort > 0 {
+		adminAddr := proxy.Metadata.GetAdminAddress()
 		readinessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion, dppReadinessClusterName).
 			Configure(envoy_clusters.ProvidedEndpointCluster(
-				false,
-				core_xds.Endpoint{Target: "127.0.0.1", Port: readinessPort})).
+				govalidator.IsIPv6(adminAddr),
+				core_xds.Endpoint{Target: adminAddr, Port: readinessPort})).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -22,23 +23,28 @@ const (
 
 // Reporter reports the health status of this Kuma Dataplane Proxy
 type Reporter struct {
+	localListenAddr string
 	localListenPort uint32
 	isTerminating   atomic.Bool
 }
 
-var (
-	logger      = core.Log.WithName("readiness")
-	localIPAddr = "127.0.0.1"
-)
+var logger = core.Log.WithName("readiness")
 
-func NewReporter(localListenPort uint32) *Reporter {
+func NewReporter(localIPAddr string, localListenPort uint32) *Reporter {
 	return &Reporter{
 		localListenPort: localListenPort,
+		localListenAddr: localIPAddr,
 	}
 }
 
 func (r *Reporter) Start(stop <-chan struct{}) error {
-	lis, err := net.Listen("tcp", fmt.Sprintf("%s:%d", localIPAddr, r.localListenPort))
+	protocol := "tcp"
+	addr := r.localListenAddr
+	if strings.Contains(addr, ":") {
+		protocol = "tcp6"
+		addr = fmt.Sprintf("[%s]", addr)
+	}
+	lis, err := net.Listen(protocol, fmt.Sprintf("%s:%d", addr, r.localListenPort))
 	if err != nil {
 		return err
 	}

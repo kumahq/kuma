@@ -27,7 +27,7 @@ resources:
         - endpoint:
             address:
               socketAddress:
-                address: 127.0.0.1
+                address: ::1
                 portValue: 9400
     name: kuma:readiness
     type: STATIC

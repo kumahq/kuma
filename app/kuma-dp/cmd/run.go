@@ -242,7 +242,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			var readinessReporter *readiness.Reporter
 			if cfg.Dataplane.ReadinessPort > 0 {
-				readinessReporter = readiness.NewReporter(cfg.Dataplane.ReadinessPort)
+				readinessReporter = readiness.NewReporter(
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+					cfg.Dataplane.ReadinessPort)
 				components = append(components, readinessReporter)
 			}
 
