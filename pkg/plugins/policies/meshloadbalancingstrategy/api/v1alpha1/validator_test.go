@@ -37,6 +37,9 @@ to: []
 			[]validators.Violation{{
 				Field:   "spec.to[0].targetRef.kind",
 				Message: "value is not supported",
+			}, {
+				Field:   "spec.to[1].default.localityAwareness.crossZone",
+				Message: "must not be set: MeshService traffic is local",
 			}},
 			`
 type: MeshLoadBalancingStrategy
@@ -55,7 +58,8 @@ to:
       kind: MeshService
       name: real-mesh-service
       sectionName: http
-      default:
+    default:
+      localityAwareness:
         crossZone: {}
 `),
 		ErrorCases(
