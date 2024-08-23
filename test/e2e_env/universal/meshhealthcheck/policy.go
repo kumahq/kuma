@@ -97,7 +97,7 @@ spec:
 	}, Ordered)
 
 	Describe("HTTP to real MeshService", func() {
-		meshName := "meshhealthcheck-http"
+		meshName := "meshhealthcheck-http-ms"
 		healthCheck := func(mesh, method, status string) string {
 			return fmt.Sprintf(`
 type: MeshHealthCheck
