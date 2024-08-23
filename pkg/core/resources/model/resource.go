@@ -720,3 +720,50 @@ func (r ResourceIdentifier) String() string {
 	}
 	return strings.Join(pairs, ":")
 }
+
+type TypedResourceIdentifier struct {
+	ResourceIdentifier
+
+	ResourceType ResourceType
+	SectionName  string
+}
+
+type ResolvedBackendRef struct {
+	LegacyBackendRef *common_api.BackendRef
+	Resource         *TypedResourceIdentifier
+}
+
+type NewTypedResourceIdentifierFunc func(id *TypedResourceIdentifier)
+
+func WithSectionName(sectionName string) NewTypedResourceIdentifierFunc {
+	return func(id *TypedResourceIdentifier) {
+		id.SectionName = sectionName
+	}
+}
+
+func NewTypedResourceIdentifier(r Resource, opts ...NewTypedResourceIdentifierFunc) TypedResourceIdentifier {
+	tri := TypedResourceIdentifier{
+		ResourceType:       r.Descriptor().Name,
+		ResourceIdentifier: NewResourceIdentifier(r),
+	}
+	for _, opt := range opts {
+		opt(&tri)
+	}
+	return tri
+}
+
+func (ri TypedResourceIdentifier) MarshalText() ([]byte, error) {
+	return []byte(ri.String()), nil
+}
+
+func (ri TypedResourceIdentifier) String() string {
+	var pairs []string
+	if ri.ResourceType != "" {
+		pairs = append(pairs, strings.ToLower(string(ri.ResourceType)))
+	}
+	pairs = append(pairs, ri.ResourceIdentifier.String())
+	if ri.SectionName != "" {
+		pairs = append(pairs, fmt.Sprintf("section/%s", ri.SectionName))
+	}
+	return strings.Join(pairs, ":")
+}

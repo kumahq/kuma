@@ -21,6 +21,18 @@ func (m *MeshServiceResource) FindPort(port uint32) (Port, bool) {
 	return Port{}, false
 }
 
+func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
+	for _, p := range m.Spec.Ports {
+		if p.Name == name {
+			return p, true
+		}
+		if fmt.Sprintf("%d", p.Port) == name {
+			return p, true
+		}
+	}
+	return Port{}, false
+}
+
 func (m *MeshServiceResource) IsLocalMeshService(localZone string) bool {
 	if len(m.GetMeta().GetLabels()) == 0 {
 		return true // no labels mean that it's a local resource
@@ -76,4 +88,11 @@ func (t *MeshServiceResource) Default() error {
 		t.Spec.State = StateUnavailable
 	}
 	return nil
+}
+
+func (p *Port) GetName() string {
+	if p.Name != "" {
+		return p.Name
+	}
+	return fmt.Sprintf("%d", p.Port)
 }

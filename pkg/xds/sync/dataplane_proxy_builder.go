@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -15,6 +16,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -111,7 +113,25 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
 		newOutbounds := []*core_xds.Outbound{}
 		for _, o := range dataplane.Spec.Networking.Outbound {
-			newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: o})
+			if o.BackendRef != nil {
+				newOutbounds = append(newOutbounds, &core_xds.Outbound{
+					Address: o.Address,
+					Port:    o.Port,
+					Resource: &core_model.TypedResourceIdentifier{
+						ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
+							dataplane.GetMeta(),
+							common_api.TargetRef{
+								Kind:        common_api.MeshService,
+								Name:        o.BackendRef.Name,
+								SectionName: fmt.Sprintf("%d", o.BackendRef.Port),
+								// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
+							}),
+						ResourceType: meshservice_api.MeshServiceType,
+					},
+				})
+			} else {
+				newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: o})
+			}
 		}
 		return newOutbounds
 	}
@@ -130,7 +150,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	var newOutbounds []*core_xds.Outbound
 	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.LegacyOutbound.BackendRef == nil {
+		if outbound.LegacyOutbound != nil {
 			if reachableBackends != nil && len(reachableServices) == 0 {
 				continue
 			}
@@ -154,13 +174,12 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				continue
 			}
 			if reachableBackends != nil {
-				backendKey := xds_context.BackendKey{
-					Kind: outbound.LegacyOutbound.BackendRef.Kind,
-					Name: outbound.LegacyOutbound.BackendRef.Name,
-					Port: outbound.LegacyOutbound.BackendRef.Port,
-				}
 				// check if there is an entry with specific port or without port
-				if !pointer.Deref(reachableBackends)[backendKey] && !pointer.Deref(reachableBackends)[xds_context.BackendKey{Kind: outbound.LegacyOutbound.BackendRef.Kind, Name: outbound.LegacyOutbound.BackendRef.Name}] {
+				noPort := core_model.TypedResourceIdentifier{
+					ResourceIdentifier: outbound.Resource.ResourceIdentifier,
+					ResourceType:       outbound.Resource.ResourceType,
+				}
+				if !pointer.Deref(reachableBackends)[pointer.Deref(outbound.Resource)] && !pointer.Deref(reachableBackends)[noPort] {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
 					continue

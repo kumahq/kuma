@@ -33,6 +33,18 @@ func (m *MeshMultiZoneServiceResource) FindPort(port uint32) (meshservice_api.Po
 	return meshservice_api.Port{}, false
 }
 
+func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (meshservice_api.Port, bool) {
+	for _, p := range m.Spec.Ports {
+		if p.Name == name {
+			return p, true
+		}
+		if fmt.Sprintf("%d", p.Port) == name {
+			return p, true
+		}
+	}
+	return meshservice_api.Port{}, false
+}
+
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
 	return fmt.Sprintf("%s_mzsvc_%d", strings.ReplaceAll(m.GetMeta().GetName(), ".", "_"), port)
 }

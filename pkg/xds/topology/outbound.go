@@ -21,6 +21,7 @@ import (
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -77,7 +78,7 @@ func BuildEgressEndpointMap(
 func BuildIngressEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -95,7 +96,7 @@ func BuildIngressEndpointMap(
 func BuildEdsEndpointMap(
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -137,13 +138,19 @@ func BuildEdsEndpointMap(
 
 func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
-	meshServicesByName map[string]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	localZone string,
 ) {
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
-			ms, ok := meshServicesByName[matchedMs.Name]
+			ri := model.ResourceIdentifier{
+				Name:      matchedMs.Name,
+				Namespace: matchedMs.Namespace,
+				Zone:      matchedMs.Zone,
+				Mesh:      matchedMs.Mesh,
+			}
+			ms, ok := meshServicesByName[ri]
 			if !ok {
 				continue
 			}

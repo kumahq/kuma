@@ -38,7 +38,7 @@ import (
 )
 
 var _ = Describe("MeshTimeout", func() {
-	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -451,7 +451,7 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{

@@ -56,12 +56,12 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 }
 
 func GatherTargetedClusters(
-	outbounds []*core_xds.Outbound,
+	outbounds core_xds.Outbounds,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 ) map[*envoy_cluster.Cluster]string {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
-	for _, outbound := range outbounds {
+	for _, outbound := range outbounds.Filter(core_xds.NonBackendRefFilter) {
 		serviceName := outbound.LegacyOutbound.GetService()
 		for _, splitCluster := range outboundSplitClusters[serviceName] {
 			targetedClusters[splitCluster] = serviceName

@@ -9,8 +9,10 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func VIPOutbounds(
@@ -86,15 +88,11 @@ func MeshServiceOutbounds(meshServices []*meshservice_api.MeshServiceResource) (
 	for _, svc := range meshServices {
 		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
-				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-					Address: vip.IP,
-					Port:    port.Port,
-					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-						Kind: string(meshservice_api.MeshServiceType),
-						Name: svc.Meta.GetName(),
-						Port: port.Port,
-					},
-				}})
+				outbounds = append(outbounds, &xds.Outbound{
+					Address:  vip.IP,
+					Port:     port.Port,
+					Resource: pointer.To(model.NewTypedResourceIdentifier(svc, model.WithSectionName(port.GetName()))),
+				})
 			}
 		}
 		if len(svc.Status.VIPs) > 0 {
@@ -117,17 +115,11 @@ func MeshExternalServiceOutbounds(meshExternalServices []*meshexternalservice_ap
 
 	for _, meshExternalService := range meshExternalServices {
 		if meshExternalService.Status.VIP.IP != "" {
-			outbound := &mesh_proto.Dataplane_Networking_Outbound{
-				Address: meshExternalService.Status.VIP.IP,
-				Port:    uint32(meshExternalService.Spec.Match.Port),
-				BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-					Kind: string(meshexternalservice_api.MeshExternalServiceType),
-					Name: meshExternalService.Meta.GetName(),
-					Port: uint32(meshExternalService.Spec.Match.Port),
-				},
-			}
-			outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: outbound})
-
+			outbounds = append(outbounds, &xds.Outbound{
+				Address:  meshExternalService.Status.VIP.IP,
+				Port:     uint32(meshExternalService.Spec.Match.Port),
+				Resource: pointer.To(model.NewTypedResourceIdentifier(meshExternalService)),
+			})
 			var domains []string
 			for _, address := range meshExternalService.Status.Addresses {
 				domains = append(domains, address.Hostname)
@@ -146,16 +138,11 @@ func MeshMultiZoneServiceOutbounds(services []*v1alpha1.MeshMultiZoneServiceReso
 	for _, svc := range services {
 		for _, vip := range svc.Status.VIPs {
 			for _, port := range svc.Spec.Ports {
-				outbound := &mesh_proto.Dataplane_Networking_Outbound{
-					Address: vip.IP,
-					Port:    port.Port,
-					BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-						Kind: string(v1alpha1.MeshMultiZoneServiceType),
-						Name: svc.Meta.GetName(),
-						Port: port.Port,
-					},
-				}
-				outbounds = append(outbounds, &xds.Outbound{LegacyOutbound: outbound})
+				outbounds = append(outbounds, &xds.Outbound{
+					Address:  vip.IP,
+					Port:     port.Port,
+					Resource: pointer.To(model.NewTypedResourceIdentifier(svc, model.WithSectionName(port.GetName()))),
+				})
 			}
 		}
 		if len(svc.Status.VIPs) > 0 {

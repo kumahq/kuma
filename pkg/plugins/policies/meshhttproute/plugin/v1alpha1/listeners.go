@@ -8,6 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -33,7 +34,7 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	tags := svc.BackendRef.Tags
-	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
 
@@ -63,7 +64,7 @@ func generateFromService(
 				// we need to create a split for the mirror backend
 				_ = meshroute_xds.MakeHTTPSplit(
 					clusterCache, servicesAcc,
-					[]common_api.BackendRef{filter.RequestMirror.BackendRef},
+					[]core_model.ResolvedBackendRef{{LegacyBackendRef: &filter.RequestMirror.BackendRef}},
 					meshCtx,
 				)
 			}
@@ -111,7 +112,7 @@ func generateFromService(
 			Name:           listener.GetName(),
 			Origin:         generator.OriginOutbound,
 			Resource:       listener,
-			ResourceOrigin: svc.OwnerResource,
+			ResourceOrigin: svc.Outbound.Resource,
 			Protocol:       svc.Protocol,
 		})
 
@@ -206,7 +207,10 @@ func prepareRoutes(
 		if len(route.BackendRefs) == 0 {
 			defaultBackend := svc.BackendRef
 			defaultBackend.Weight = pointer.To(uint(100))
-			route.BackendRefs = []common_api.BackendRef{defaultBackend}
+			route.BackendRefs = []core_model.ResolvedBackendRef{{
+				LegacyBackendRef: &defaultBackend,
+				Resource:         svc.Outbound.Resource,
+			}}
 		}
 	}
 

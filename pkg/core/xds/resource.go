@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -20,7 +20,7 @@ type Resource struct {
 	Name           string
 	Origin         string
 	Resource       ResourcePayload
-	ResourceOrigin *rules.UniqueResourceIdentifier
+	ResourceOrigin *core_model.TypedResourceIdentifier
 	Protocol       core_mesh.Protocol
 }
 
@@ -173,8 +173,8 @@ func (s *ResourceSet) List() ResourceList {
 	return list
 }
 
-func (s *ResourceSet) IndexByOrigin() map[rules.UniqueResourceIdentifier]map[string][]*Resource {
-	byOwner := map[rules.UniqueResourceIdentifier]map[string][]*Resource{}
+func (s *ResourceSet) IndexByOrigin() map[core_model.TypedResourceIdentifier]map[string][]*Resource {
+	byOwner := map[core_model.TypedResourceIdentifier]map[string][]*Resource{}
 	for typ, nameToRes := range s.typeToNamesIndex {
 		for _, resource := range nameToRes {
 			if resource.ResourceOrigin == nil {

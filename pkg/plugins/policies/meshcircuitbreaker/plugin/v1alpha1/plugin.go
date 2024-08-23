@@ -103,7 +103,7 @@ func applyToOutbounds(
 	outbounds core_xds.Outbounds,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds.Filter(core_xds.NonBackendRefFilter),
+		outbounds,
 		outboundSplitClusters,
 		outboundClusters,
 	)

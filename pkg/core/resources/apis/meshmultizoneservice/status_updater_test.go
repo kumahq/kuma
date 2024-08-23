@@ -67,7 +67,11 @@ var _ = Describe("Updater", func() {
 
 			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{{Name: "backend"}}))
+			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{{
+				Name: "backend",
+				Zone: "east",
+				Mesh: "default",
+			}}))
 		}, "10s", "100ms").Should(Succeed())
 
 		// when new service is added
@@ -89,8 +93,8 @@ var _ = Describe("Updater", func() {
 			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{
-				{Name: "backend"},
-				{Name: "backend-syncedhash"},
+				{Name: "backend", Zone: "east", Mesh: "default"},
+				{Name: "backend", Zone: "west", Mesh: "default"},
 			}))
 		}, "10s", "100ms").Should(Succeed())
 	})

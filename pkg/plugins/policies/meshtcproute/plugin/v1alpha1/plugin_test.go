@@ -175,7 +175,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					},
 				},
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{},
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{},
 			},
 		}),
 	)
@@ -367,7 +367,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			mc := meshContextForMeshExternalService(dp, meshExtSvc)
 
 			return outboundsTestCase{
@@ -999,7 +999,7 @@ func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc
 	return &mc
 }
 
-func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
+func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceResource) (*builders.DataplaneBuilder, *core_xds.Proxy) {
 	dp := builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
@@ -1016,10 +1016,9 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 				},
 			},
 			{
-				LegacyOutbound: builders.Outbound().
-					WithAddress("10.20.20.1").
-					WithPort(9090).
-					WithMeshExternalService("example", 9090).Build(),
+				Address:  "10.20.20.1",
+				Port:     9090,
+				Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),
 			},
 		}).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).

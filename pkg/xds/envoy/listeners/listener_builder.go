@@ -47,6 +47,9 @@ func NewOutboundListenerBuilder(
 	port uint32,
 	protocol core_xds.SocketAddressProtocol,
 ) *ListenerBuilder {
+	if address == "" {
+		address = "127.0.0.1"
+	}
 	listenerName := envoy_names.GetOutboundListenerName(address, port)
 
 	return NewListenerBuilder(apiVersion, listenerName).

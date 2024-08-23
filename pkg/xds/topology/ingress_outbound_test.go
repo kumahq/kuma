@@ -28,9 +28,9 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(given.meshServices))
+				meshServicesByName := make(map[model.ResourceIdentifier]*v1alpha1.MeshServiceResource, len(given.meshServices))
 				for _, ms := range given.meshServices {
-					meshServicesByName[ms.Meta.GetName()] = ms
+					meshServicesByName[model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := topology.BuildIngressEndpointMap(
 					given.mesh,

@@ -2,7 +2,9 @@ package context
 
 import (
 	"encoding/base64"
+	"fmt"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -10,8 +12,8 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -65,8 +67,7 @@ type LabelValue struct {
 	Value string
 }
 type (
-	ServiceName                  string
-	LabelsToValuesToServiceNames map[LabelValue]map[ServiceName]bool
+	LabelsToValuesToServiceNames map[LabelValue]map[core_model.ResourceIdentifier]bool
 )
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
@@ -78,11 +79,11 @@ type MeshContext struct {
 	Resource                                *core_mesh.MeshResource
 	Resources                               Resources
 	DataplanesByName                        map[string]*core_mesh.DataplaneResource
-	MeshServiceByName                       map[string]*meshservice_api.MeshServiceResource
+	MeshServiceByName                       map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource
 	MeshServiceNamesByLabelByValue          LabelsToValuesToServiceNames
-	MeshExternalServiceByName               map[string]*meshexternalservice_api.MeshExternalServiceResource
+	MeshExternalServiceByName               map[core_model.ResourceIdentifier]*meshexternalservice_api.MeshExternalServiceResource
 	MeshExternalServiceNamesByLabelByValue  LabelsToValuesToServiceNames
-	MeshMultiZoneServiceByName              map[string]*meshmzservice_api.MeshMultiZoneServiceResource
+	MeshMultiZoneServiceByName              map[core_model.ResourceIdentifier]*meshmzservice_api.MeshMultiZoneServiceResource
 	MeshMultiZoneServiceNamesByLabelByValue LabelsToValuesToServiceNames
 	EndpointMap                             xds.EndpointMap
 	IngressEndpointMap                      xds.EndpointMap
@@ -107,7 +108,7 @@ type BackendKey struct {
 	Port uint32
 }
 
-type ReachableBackends map[BackendKey]bool
+type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
 	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
@@ -115,56 +116,52 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 	}
 	reachableBackends := ReachableBackends{}
 	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
-		key := BackendKey{Kind: reachableBackend.Kind}
-		name := ""
-		if reachableBackend.Name != "" {
-			name = reachableBackend.Name
-		}
-		if reachableBackend.Namespace != "" {
-			name = k8s.K8sNamespacedNameToCoreName(name, reachableBackend.Namespace)
-		}
-		key.Name = name
-		if reachableBackend.Port != nil {
-			key.Port = reachableBackend.Port.GetValue()
-		}
 		if len(reachableBackend.Labels) > 0 {
 			reachable := mc.getResourceNamesForLabels(reachableBackend.Kind, reachableBackend.Labels)
-			for name, count := range reachable {
+			for ri, count := range reachable {
+				tri := core_model.TypedResourceIdentifier{
+					ResourceType:       core_model.ResourceType(reachableBackend.Kind),
+					ResourceIdentifier: ri,
+				}
 				if count == len(reachableBackend.Labels) {
-					reachableBackends[BackendKey{
-						Kind: reachableBackend.Kind,
-						Name: name,
-					}] = true
+					reachableBackends[tri] = true
 				}
 			}
-		}
-		if name != "" {
+		} else {
+			key := core_model.TypedResourceIdentifier{
+				ResourceType: core_model.ResourceType(reachableBackend.Kind),
+				ResourceIdentifier: core_model.TargetRefToResourceIdentifier(dataplane.GetMeta(), common_api.TargetRef{
+					Name:      reachableBackend.Name,
+					Namespace: reachableBackend.Namespace,
+				}),
+				SectionName: fmt.Sprintf("%d", reachableBackend.Port.GetValue()),
+			}
 			reachableBackends[key] = true
 		}
 	}
 	return &reachableBackends
 }
 
-func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[string]int {
-	reachable := map[string]int{}
+func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[core_model.ResourceIdentifier]int {
+	reachable := map[core_model.ResourceIdentifier]int{}
 	for label, value := range labels {
 		key := LabelValue{
 			Label: label,
 			Value: value,
 		}
-		var matchedServiceNames map[ServiceName]bool
+		var matchedResourceIdentifiers map[core_model.ResourceIdentifier]bool
 		var found bool
 		switch kind {
 		case string(meshexternalservice_api.MeshExternalServiceType):
-			matchedServiceNames, found = mc.MeshExternalServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshExternalServiceNamesByLabelByValue[key]
 		case string(meshservice_api.MeshServiceType):
-			matchedServiceNames, found = mc.MeshServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshServiceNamesByLabelByValue[key]
 		case string(meshmzservice_api.MeshMultiZoneServiceType):
-			matchedServiceNames, found = mc.MeshMultiZoneServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshMultiZoneServiceNamesByLabelByValue[key]
 		}
 		if found {
-			for serviceName := range matchedServiceNames {
-				reachable[string(serviceName)]++
+			for ri := range matchedResourceIdentifiers {
+				reachable[ri]++
 			}
 		}
 	}

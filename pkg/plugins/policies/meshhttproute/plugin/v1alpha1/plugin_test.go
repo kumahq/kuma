@@ -10,6 +10,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/format"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
@@ -62,6 +63,7 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshHTTPRoute", func() {
+	format.MaxLength = 0
 	type outboundsTestCase struct {
 		proxy      *core_xds.Proxy
 		xdsContext xds_context.Context
@@ -234,11 +236,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 								mesh_proto.ServiceTag: "backend",
 							},
 						}},
-						{LegacyOutbound: builders.Outbound().
-							WithAddress("10.0.0.1").
-							WithPort(80).
-							WithMeshService("backend", 80).
-							Build()},
+						//{LegacyOutbound: builders.Outbound().
+						//	WithAddress("10.0.0.1").
+						//	WithPort(80).
+						//	WithMeshService("backend", 80).
+						//	Build()},
+						{
+							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("80"))),
+							Address:  "10.0.0.1",
+							Port:     80,
+						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					Build(),
@@ -297,12 +304,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 					MeshServices: []meshmultizoneservice_api.MatchedMeshService{
 						{
 							Name: "backend",
+							Mesh: "default",
 						},
 					},
 				},
 			}
 
-			dp := samples.DataplaneWebBuilder().
+			dp := builders.Dataplane().
+				WithName("web-01").
+				WithAddress("192.168.0.2").
+				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
 				AddOutbound(builders.Outbound().
 					WithAddress("10.0.0.2").
 					WithPort(80).
@@ -316,6 +327,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, *mc)
 			Expect(err).ToNot(HaveOccurred())
+
+			proxy.Outbounds = core_xds.Outbounds{{
+				Address:  "10.0.0.2",
+				Port:     80,
+				Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshMZSvc, core_model.WithSectionName("80"))),
+			}}
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -345,7 +362,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
@@ -380,7 +397,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
@@ -418,7 +435,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
@@ -476,7 +493,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			egress := builders.ZoneEgress().WithPort(10002).Build()
 			mc := meshContextWithResources(dp.Build(), &meshExtSvc, egress)
 
@@ -1835,7 +1852,7 @@ func meshContextWithResources(resources ...core_model.Resource) *xds_context.Mes
 	return &mc
 }
 
-func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
+func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceResource) (*builders.DataplaneBuilder, *core_xds.Proxy) {
 	dp := builders.Dataplane().
 		WithName("web-01").
 		WithAddress("192.168.0.2").
@@ -1849,11 +1866,11 @@ func dppForMeshExternalService() (*builders.DataplaneBuilder, *core_xds.Proxy) {
 					mesh_proto.ServiceTag: "backend",
 				},
 			}},
-			{LegacyOutbound: builders.Outbound().
-				WithAddress("10.20.20.1").
-				WithPort(9090).
-				WithMeshExternalService("example", 9090).
-				Build()},
+			{
+				Address:  "10.20.20.1",
+				Port:     9090,
+				Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),
+			},
 		}).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
 		WithMetadata(&core_xds.DataplaneMetadata{
