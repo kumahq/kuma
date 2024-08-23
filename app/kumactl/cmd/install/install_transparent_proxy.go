@@ -26,6 +26,10 @@ const (
 	flagTransparentProxyConfigFile = "config-file"
 )
 
+const (
+	WarningDryRunRunningAsNonRoot = "# [WARNING] [dry-run]: running this command as a non-root user may lead to unpredictable results"
+)
+
 func newInstallTransparentProxy() *cobra.Command {
 	var configValue string
 	var configFile string
@@ -137,7 +141,7 @@ runuser -u kuma-dp -- \
 			case runtime.GOOS == "linux" && os.Geteuid() != 0 && !cfg.DryRun:
 				return errors.New("you need to have root privileges to run this command")
 			case runtime.GOOS == "linux" && os.Geteuid() != 0 && cfg.DryRun:
-				fmt.Fprintln(cfg.RuntimeStderr, "# [WARNING] [dry-run]: running this command as a non-root user may lead to unpredictable results")
+				fmt.Fprintln(cfg.RuntimeStderr, WarningDryRunRunningAsNonRoot)
 			}
 
 			if configValue == "-" && configFile == "" {

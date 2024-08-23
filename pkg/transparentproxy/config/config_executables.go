@@ -19,6 +19,10 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+const (
+	WarningDryRunNoValidIptablesFound = "[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables"
+)
+
 type Version struct {
 	k8s_version.Version
 
@@ -501,7 +505,7 @@ func (c ExecutablesNftLegacy) Initialize(
 
 	switch {
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables")
+		l.Warn(WarningDryRunNoValidIptablesFound)
 		return InitializedExecutables{}, nil
 	case len(errs) == 2:
 		return InitializedExecutables{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
