@@ -247,12 +247,7 @@ properties:
                       - Unknown
                     type: string
                   type:
-                    description: |-
-                      type of condition in CamelCase or in foo.example.com/CamelCase.
-                      ---
-                      Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                      useful (see .node.status.conditions), the ability to deconflict is important.
-                      The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                    description: type of condition in CamelCase or in foo.example.com/CamelCase.
                     maxLength: 316
                     pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                     type: string
