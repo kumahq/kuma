@@ -3,12 +3,12 @@ package readiness
 import (
 	"context"
 	"fmt"
-	"github.com/asaskevich/govalidator"
 	"net"
 	"net/http"
 	"sync/atomic"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/bakito/go-log-logr-adapter/adapter"
 
 	"github.com/kumahq/kuma/pkg/core"
