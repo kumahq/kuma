@@ -8,7 +8,7 @@ command -v jq >/dev/null 2>&1 || { echo >&2 "jq not installed!"; exit 1; }
 SCRIPT_PATH="${BASH_SOURCE[0]:-$0}";
 SCRIPT_DIR="$(dirname -- "$SCRIPT_PATH")"
 
-for dep in $(osv-scanner "$OSV_SCANNER_ADDITIONAL_OPTS" --lockfile=go.mod --json | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
+for dep in $(osv-scanner "${OSV_SCANNER_ADDITIONAL_OPTS[@]}" --lockfile=go.mod --json | jq -c '.results[].packages[] | .package.name as $vulnerablePackage | {
   name: $vulnerablePackage,
   current: .package.version,
   fixedVersions: [.vulnerabilities[].affected[] | select(.package.name == $vulnerablePackage) | .ranges[].events |
