@@ -10,8 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/install"
 	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 var _ = Context("kumactl install transparent proxy", func() {
@@ -27,10 +29,8 @@ var _ = Context("kumactl install transparent proxy", func() {
 			slices.DeleteFunc(
 				strings.Split(stderr.String(), "\n"),
 				func(line string) bool {
-					return strings.Contains(
-						line,
-						"no valid iptables executables found",
-					)
+					return strings.Contains(line, config.WarningDryRunNoValidIptablesFound) ||
+						strings.Contains(line, install.WarningDryRunRunningAsNonRoot)
 				},
 			),
 			"\n",
