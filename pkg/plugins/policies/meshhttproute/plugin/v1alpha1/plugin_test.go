@@ -236,11 +236,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 								mesh_proto.ServiceTag: "backend",
 							},
 						}},
-						//{LegacyOutbound: builders.Outbound().
-						//	WithAddress("10.0.0.1").
-						//	WithPort(80).
-						//	WithMeshService("backend", 80).
-						//	Build()},
 						{
 							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("80"))),
 							Address:  "10.0.0.1",
