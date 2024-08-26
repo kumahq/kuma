@@ -16,6 +16,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -144,7 +145,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {
-		generatedVips[ob.LegacyOutbound.Address] = true
+		generatedVips[ob.GetAddress()] = true
 	}
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
 	var newOutbounds []*core_xds.Outbound
@@ -186,27 +187,22 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 				// we don't support MeshTrafficPermission for MeshExternalService at the moment
 				// TODO: https://github.com/kumahq/kuma/issues/11077
-			} else if outbound.LegacyOutbound.BackendRef.Kind != string(common_api.MeshExternalService) {
+			} else if outbound.Resource.ResourceType != meshextenralservice_api.MeshExternalServiceType {
 				// static reachable services takes precedence over the graph
-				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.LegacyOutbound.BackendRef) {
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, *outbound.Resource) {
 					continue
 				}
 			}
 		}
-		if dataplane.UsesInboundInterface(net.ParseIP(outbound.LegacyOutbound.Address), outbound.LegacyOutbound.Port) {
+		if dataplane.UsesInboundInterface(net.ParseIP(outbound.GetAddress()), outbound.GetPort()) {
 			// Skip overlapping outbound interface with inbound.
 			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 			continue
 		}
-		legacyOutbounds = append(legacyOutbounds, outbound.LegacyOutbound)
-		newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: outbound.LegacyOutbound})
-	}
-	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
-		if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
-			continue
+		if outbound.LegacyOutbound != nil {
+			legacyOutbounds = append(legacyOutbounds, outbound.LegacyOutbound)
 		}
-		legacyOutbounds = append(legacyOutbounds, outbound)
-		newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: outbound})
+		newOutbounds = append(newOutbounds, outbound)
 	}
 	// we still set legacy outbounds for the dataplane to not break old policies that rely on this field
 	dataplane.Spec.Networking.Outbound = legacyOutbounds

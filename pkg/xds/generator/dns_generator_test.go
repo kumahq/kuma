@@ -66,6 +66,10 @@ var _ = Describe("DNSGenerator", func() {
 				},
 			}
 
+			for _, dppOutbound := range dataplane.GetNetworking().GetOutbound() {
+				proxy.Outbounds = append(proxy.Outbounds, &model.Outbound{LegacyOutbound: dppOutbound})
+			}
+
 			// when
 			rs, err := gen.Generate(context.Background(), nil, ctx, proxy)
 

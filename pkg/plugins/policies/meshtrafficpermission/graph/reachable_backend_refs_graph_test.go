@@ -7,6 +7,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
@@ -57,10 +58,7 @@ var _ = Describe("Reachable Backends Graph", func() {
 					_, conn := given.expectedConnections[from.Meta.GetName()][to.Meta.GetName()]
 					Expect(g.CanReachBackend(
 						map[string]string{"app": from.Meta.GetName()},
-						&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-							Kind: "MeshService",
-							Name: to.Meta.GetName(),
-						},
+						model.NewTypedResourceIdentifier(to),
 					)).To(Equal(fromAll || conn))
 				}
 			}
@@ -235,16 +233,22 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "b", "version": "v1"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeFalse())
 	})
@@ -272,23 +276,32 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "east"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "west"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeFalse())
 		Expect(g.CanReachBackend(
 			map[string]string{"othertag": "other"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeFalse())
 	})
@@ -322,16 +335,22 @@ var _ = Describe("Reachable Backends Graph", func() {
 			// then
 			Expect(g.CanReachBackend(
 				map[string]string{"app": "b"},
-				&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-					Kind: "MeshService",
-					Name: "a",
+				model.TypedResourceIdentifier{
+					ResourceType: meshservice_api.MeshServiceType,
+					ResourceIdentifier: model.ResourceIdentifier{
+						Name: "a",
+						Mesh: "default",
+					},
 				},
 			)).To(BeTrue())
 			Expect(g.CanReachBackend(
 				map[string]string{"app": "a"},
-				&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-					Kind: "MeshService",
-					Name: "b",
+				model.TypedResourceIdentifier{
+					ResourceType: meshservice_api.MeshServiceType,
+					ResourceIdentifier: model.ResourceIdentifier{
+						Name: "b",
+						Mesh: "default",
+					},
 				},
 			)).To(BeFalse()) // it's not selected by top-level target ref
 		},
@@ -372,16 +391,22 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "b"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "a",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "a",
+					Mesh: "default",
+				},
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "a"},
-			&mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-				Kind: "MeshService",
-				Name: "b",
+			model.TypedResourceIdentifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				ResourceIdentifier: model.ResourceIdentifier{
+					Name: "b",
+					Mesh: "default",
+				},
 			},
 		)).To(BeFalse())
 	})
