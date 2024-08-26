@@ -1,4 +1,5 @@
 mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
   Conf:
   - http:
       backOff:
@@ -27,6 +28,7 @@ mesh:name/mesh-1:
     type: Mesh
   ResourceSectionName: ""
 meshexternalservice:mesh/mesh-1:name/external:
+  BackendRefOriginIndex: {}
   Conf:
   - http:
       backOff:
