@@ -20,9 +20,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:
@@ -54,9 +56,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:
@@ -86,9 +90,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:
