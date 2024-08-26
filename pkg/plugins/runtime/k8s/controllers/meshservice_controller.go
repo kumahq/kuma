@@ -371,8 +371,12 @@ func (r *MeshServiceReconciler) manageMeshService(
 				unsupportedPorts = append(unsupportedPorts, portName)
 				continue
 			}
+			portName := port.Name
+			if portName == "" {
+				portName = strconv.Itoa(int(port.Port))
+			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:        port.Name,
+				Name:        portName,
 				Port:        uint32(port.Port),
 				TargetPort:  port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),

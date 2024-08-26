@@ -1,6 +1,7 @@
 FromRules:
   127.0.0.1:8080:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       backends:
       - file:
           path: /from-gateway
@@ -13,7 +14,8 @@ FromRules:
       type: MeshAccessLog
     Subset: []
   127.0.0.1:8081:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       backends:
       - file:
           path: /from-gateway
@@ -26,7 +28,8 @@ FromRules:
       type: MeshAccessLog
     Subset: []
   127.0.0.1:8082:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       backends:
       - file:
           path: /from-gateway
@@ -41,12 +44,18 @@ FromRules:
 ToRules:
   ByListener:
     127.0.0.1:8080:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /gateway-listener
           type: File
       Origin:
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mesh
+        type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
@@ -57,14 +66,10 @@ ToRules:
         modificationTime: "0001-01-01T00:00:00Z"
         name: gatewaylistener
         type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
       Subset: []
     127.0.0.1:8081:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /servicesubset
@@ -73,12 +78,12 @@ ToRules:
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
+        name: mesh
         type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
+        name: gateway
         type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
@@ -87,7 +92,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8082:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /to-gateway
@@ -96,22 +102,28 @@ ToRules:
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
+        name: mesh
         type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
+        name: gateway
         type: MeshAccessLog
       Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /gateway-listener
           type: File
       Origin:
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mesh
+        type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
@@ -122,24 +134,15 @@ ToRules:
         modificationTime: "0001-01-01T00:00:00Z"
         name: gatewaylistener
         type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
       Subset: []
     127.0.0.1:8081:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /to-gateway
           type: File
       Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
-        type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
@@ -150,9 +153,15 @@ ToRules:
         modificationTime: "0001-01-01T00:00:00Z"
         name: servicesubset
         type: MeshAccessLog
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: gateway
+        type: MeshAccessLog
       Subset: []
     127.0.0.1:8082:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /to-gateway
@@ -161,11 +170,11 @@ ToRules:
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: gateway
+        name: mesh
         type: MeshAccessLog
       - creationTime: "0001-01-01T00:00:00Z"
         mesh: mesh-1
         modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
+        name: gateway
         type: MeshAccessLog
       Subset: []

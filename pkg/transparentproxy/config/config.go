@@ -613,7 +613,7 @@ type Config struct {
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
-	Executables ExecutablesNftLegacy `json:"-"`
+	Executables Executables `json:"-"`
 	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
@@ -771,48 +771,41 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
 	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
 
+	loopbackInterfaceName, err := getLoopbackInterfaceName()
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+	}
+
+	initializedExecutablesIPv4, executablesIPv6, err := c.Executables.InitializeIPv4(ctx, l, c)
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize Executables configuration")
+	}
+
+	redirectIPv4, err := c.Redirect.Initialize(loggerIPv4, initializedExecutablesIPv4, false)
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 Redirect configuration")
+	}
+
 	initialized := InitializedConfig{
 		Logger: l,
+		DryRun: c.DryRun,
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
 			Logger:                 loggerIPv4,
+			Executables:            initializedExecutablesIPv4,
+			LoopbackInterfaceName:  loopbackInterfaceName,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			Comments:               c.Comments.Initialize(initializedExecutablesIPv4),
+			DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv4.Functionality.Tables.Mangle,
 			KumaDPUser:             c.KumaDPUser,
+			Redirect:               redirectIPv4,
 			enabled:                true,
 		},
-		DryRun: c.DryRun,
 	}
 
-	e, err := c.Executables.Initialize(ctx, l, c)
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize Executables configuration",
-		)
-	}
-	initialized.IPv4.Executables = e.IPv4
-
-	ipv4Redirect, err := c.Redirect.Initialize(loggerIPv4, e.IPv4, false)
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize IPv4 Redirect configuration",
-		)
-	}
-	initialized.IPv4.Redirect = ipv4Redirect
-
-	loopbackInterfaceName, err := getLoopbackInterfaceName()
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize LoopbackInterfaceName",
-		)
-	}
-	initialized.IPv4.LoopbackInterfaceName = loopbackInterfaceName
-
-	initialized.IPv4.Comments = c.Comments.Initialize(e.IPv4)
-	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
+	// If IPv6 initialization fails at any point, the process will continue
+	// Instead of terminating, a warning will be logged, and IPv6 will be ignored
 
 	if c.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
@@ -827,29 +820,35 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 	if err := configureIPv6OutboundAddress(); err != nil {
 		if c.Verbose {
-			loggerIPv6.Warn(
-				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
-				err,
-			)
+			loggerIPv6.Warn("failed to configure IPv6 outbound address. IPv6 rules will be skipped:", err)
 		}
+		return initialized, nil
+	}
+
+	initializedExecutablesIPv6, err := executablesIPv6.Initialize(ctx, loggerIPv6, c)
+	if err != nil {
+		loggerIPv6.Warn("failed to initialize IPv6 executables:", err)
+		return initialized, nil
+	}
+
+	redirectIPv6, err := c.Redirect.Initialize(loggerIPv6, initializedExecutablesIPv6, true)
+	if err != nil {
+		loggerIPv6.Warn("failed to initialize IPv6 Redirect configuration:", err)
 		return initialized, nil
 	}
 
 	initialized.IPv6 = InitializedConfigIPvX{
 		Config:                 c,
 		Logger:                 loggerIPv6,
-		Executables:            e.IPv6,
+		Executables:            initializedExecutablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
 		LocalhostCIDR:          LocalhostCIDRIPv6,
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-		Comments:               c.Comments.Initialize(e.IPv6),
-		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
+		Comments:               c.Comments.Initialize(initializedExecutablesIPv6),
+		DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv6.Functionality.Tables.Mangle,
 		KumaDPUser:             c.KumaDPUser,
+		Redirect:               redirectIPv6,
 		enabled:                true,
-	}
-
-	if initialized.IPv6.Redirect, err = c.Redirect.Initialize(loggerIPv6, e.IPv6, true); err != nil {
-		return initialized, errors.Wrap(err, "unable to initialize IPv6 Redirect configuration")
 	}
 
 	return initialized, nil
@@ -910,7 +909,7 @@ func DefaultConfig() Config {
 			MaxRetries:          4,
 			SleepBetweenRetries: config_types.Duration{Duration: 2 * time.Second},
 		},
-		Executables: NewExecutablesNftLegacy(),
+		Executables: NewExecutables(),
 		Comments: Comments{
 			Disabled: false,
 		},
