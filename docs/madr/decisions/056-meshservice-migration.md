@@ -124,7 +124,7 @@ On Kubernetes we also have
 not affect the VIP generation. So we now have:
 
 - `<kuma.io/service>.mesh` -> Kuma VIP -> local-zone cluster
-- `name_namespace_svc_port` -> ClusterIP -> local-zone cluster
+- `name.namespace.svc.cluster.local` -> ClusterIP -> local-zone cluster
 - `HostnameGenerator` DNS name for the `MeshService` -> New Kuma VIP -> local-zone cluster
   - note that this includes synced `MeshServices`
 
@@ -157,7 +157,7 @@ the listener for the ClusterIP.
   - change the default behavior of MeshService from single-zone load balancing to cross-zone.
     Users would need to manually switch over to local zone load-balancing after having
     potentially migrated cross-zone services to `MeshMultiZoneService`.
-  - instead of changing the behavior of MeshService, instead also generate
+  - instead of changing the behavior of MeshService, also generate
     MeshMultiZoneService by default, which would reintroduce the cross-zone load balancing behavior.
   - generate new clusters for MeshService and preserve the old behavior
 
@@ -282,7 +282,13 @@ Instead of `MeshService` taking over cluster generation, generate separate clust
   - this includes synced `MeshServices`
 - `name.namespace.svc.cluster.local` -> ClusterIP -> depends
 
-For example, we could have two formats like `name_namespace_svc_port` and `name_namespace_msvc_port`.
+The new format is:
+
+```
+<name>_<namespace>_<zone>_<mesh>_msvc_<port>
+```
+
+where `<namespace>` is empty for universal.
 
 This means increasing the number of synced clusters when **not using reachable
 services**, during the migration period where both kinds of VIPs are in use and
