@@ -140,6 +140,9 @@ func createResourceOrigin(ref common_api.BackendRef, meshCtx xds_context.MeshCon
 			return pointer.To(core_rules.UniqueKey(ms, port.Name))
 		}
 		return pointer.To(core_rules.UniqueKey(ms, ""))
+	case ref.Kind == common_api.MeshExternalService:
+		mes := meshCtx.MeshExternalServiceByName[ref.Name]
+		return pointer.To(core_rules.UniqueKey(mes, ""))
 	case ref.Kind == common_api.MeshMultiZoneService:
 		mzs := meshCtx.MeshMultiZoneServiceByName[ref.Name]
 		port, ok := mzs.FindPort(pointer.Deref(ref.Port))
