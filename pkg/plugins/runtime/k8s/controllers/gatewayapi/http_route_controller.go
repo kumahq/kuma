@@ -410,6 +410,7 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return err
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-http-route-controller").
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
 			&gatewayapi.Gateway{},

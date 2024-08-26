@@ -182,8 +182,79 @@ routing:
 		})
 	}
 
+	Context("MeshExternalService with MeshRetry", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshretry_api.MeshRetryResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should retry on error", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-retry
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpsContainerName, esHttpContainerName)
+
+			meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
+mesh: %s
+name: meshretry-mes-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-retry
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// we have 2 endpoints, one http and another https so some requests should fail
+			By("Check some errors happen")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+					client.NoFail(),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "10s", "100ms").Should(Succeed())
+
+			By("Apply a MeshRetry policy")
+			Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+			By("Eventually all requests succeed consistently")
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
 	Context("MeshExternalService with MeshTimeout", func() {
-		E2EAfterAll(func() {
+		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
