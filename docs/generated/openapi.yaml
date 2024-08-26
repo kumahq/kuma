@@ -2753,6 +2753,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -2838,6 +2839,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -3086,6 +3088,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3672,6 +3675,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3757,6 +3761,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4294,6 +4299,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4528,6 +4534,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4613,6 +4620,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4796,6 +4804,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4926,6 +4935,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5273,6 +5283,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -5403,6 +5414,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5511,6 +5523,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -5662,6 +5675,7 @@ components:
                                               - MeshGateway
                                               - MeshService
                                               - MeshExternalService
+                                              - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                             type: string
@@ -6067,6 +6081,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -6195,6 +6210,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -6814,6 +6830,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -7143,6 +7160,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -7318,6 +7336,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8024,6 +8043,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8290,6 +8310,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8375,6 +8396,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8595,6 +8617,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8725,6 +8748,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9231,6 +9255,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9361,6 +9386,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9457,6 +9483,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -9559,6 +9586,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9777,6 +9805,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9862,6 +9891,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10028,6 +10058,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10375,6 +10406,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10521,6 +10553,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10606,6 +10639,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string

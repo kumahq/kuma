@@ -143,6 +143,7 @@ func collectMeshExternalService(
 			},
 			Port: pointer.To(uint32(mes.Spec.Match.Port)),
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 }
 

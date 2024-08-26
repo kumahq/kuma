@@ -81,7 +81,7 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
