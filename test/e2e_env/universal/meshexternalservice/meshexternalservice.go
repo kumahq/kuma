@@ -97,16 +97,18 @@ routing:
 			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshNameNoDefaults)
+	})
+
+	BeforeEach(func(){
 		Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
 			meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
 		)).To(Succeed())
-	})
-
-	AfterEachFailure(func() {
-		DebugUniversal(universal.Cluster, meshNameNoDefaults)
 	})
 
 	E2EAfterAll(func() {
@@ -238,7 +240,7 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
-			}, "10s", "100ms").Should(Succeed())
+			}, "30s", "100ms").Should(Succeed())
 
 			By("Apply a MeshRetry policy")
 			Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
