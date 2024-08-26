@@ -34,7 +34,7 @@ func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 
 func TargetRefMeshService(name, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
-		Kind:        "MeshService",
+		Kind:        common_api.MeshService,
 		Name:        name,
 		SectionName: sectionName,
 	}

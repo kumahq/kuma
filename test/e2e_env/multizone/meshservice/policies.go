@@ -81,7 +81,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-  name: route-3
+  name: http-to-real-meshservice
   namespace: %s
   labels:
     kuma.io/mesh: %s
