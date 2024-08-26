@@ -51,7 +51,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.3.0
 	github.com/testcontainers/testcontainers-go v0.33.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
-	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netlink v1.3.0
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.54.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.54.0
