@@ -174,21 +174,21 @@ the listener for the ClusterIP.
 ### Migration
 
 1. Upgrade to new version
-  If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
-1. On `Mesh`, users have the option `meshServices`:
-  - `Disabled` is the default
-  - `Everywhere` syncs `MeshService` outbounds to all data plane proxies
-  - `Exclusive` disables `kuma.io/service` outbounds
-  - `ReachableBackendRefs` to enable on a case-by-case basis by setting
-     `reachableBackendRefs`:
-        `reachableBackendRefs: { kind: MeshService, labels: {} }`
+  - If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
+  - On `Mesh`, users have the option `meshServices` with `Disabled` being the
+    default value
+2. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
+   depending on whether they need cross-zone
+3. Users can enable behavior by setting
+    - `meshServices: Everywhere` syncs `MeshService` outbounds to all data plane proxies
+    - `meshServices: ReachableBackendRefs` to enable on a case-by-case basis by setting
+       `reachableBackendRefs`:
+          `reachableBackendRefs: { kind: MeshService, labels: {} }`
   - **NOTE**: On k8s if the consumer can reach a given local `MeshService`,
     the Kubernetes IP has the behavior of `MeshService`
   - **NOTE**: This change makes the *experimental* options `GENERATE_MESH_SERVICES` & `SKIP_PERSISTED_VIPS`
     *obsolete*, these options *now do nothing*
-1. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
-   depending on whether they need cross-zone
-1. Disable old cluster/VIP generation
+4. Set `meshServices: Exclusive` to disable old behavior and config generation
 
 ## Pros and Cons of the Options
 
