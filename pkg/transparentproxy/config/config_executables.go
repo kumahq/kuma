@@ -404,15 +404,15 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 	return stdout.String(), nil
 }
 
-type ExecutablesNftLegacy struct {
+type Executables struct {
 	NftIPv4    ExecutablesIPvX
 	NftIPv6    ExecutablesIPvX
 	LegacyIPv4 ExecutablesIPvX
 	LegacyIPv6 ExecutablesIPvX
 }
 
-func NewExecutablesNftLegacy() ExecutablesNftLegacy {
-	return ExecutablesNftLegacy{
+func NewExecutables() Executables {
+	return Executables{
 		NftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
 		NftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
 		LegacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
@@ -420,7 +420,7 @@ func NewExecutablesNftLegacy() ExecutablesNftLegacy {
 	}
 }
 
-func (c ExecutablesNftLegacy) InitializeIPv4(
+func (c Executables) InitializeIPv4(
 	ctx context.Context,
 	l Logger,
 	cfg Config,

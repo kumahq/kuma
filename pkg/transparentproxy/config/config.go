@@ -613,7 +613,7 @@ type Config struct {
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
-	Executables ExecutablesNftLegacy `json:"-"`
+	Executables Executables `json:"-"`
 	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
@@ -909,7 +909,7 @@ func DefaultConfig() Config {
 			MaxRetries:          4,
 			SleepBetweenRetries: config_types.Duration{Duration: 2 * time.Second},
 		},
-		Executables: NewExecutablesNftLegacy(),
+		Executables: NewExecutables(),
 		Comments: Comments{
 			Disabled: false,
 		},
