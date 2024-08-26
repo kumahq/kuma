@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -34,6 +35,17 @@ import (
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
+	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
 	type sidecarTestCase struct {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
@@ -95,9 +107,22 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithName("backend").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						AddOutboundsToServices("other-service", "second-service").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
 				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "other-service",
+						},
+					}},
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort + 1,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "second-service",
+						},
+					}},
+				}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
 				).
@@ -386,6 +411,29 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				"outbound_split_cluster_connection_limits_outlier_detection.golden.yaml",
 				"outbound_split_cluster_0_connection_limits_outlier_detection.golden.yaml",
 			},
+		}),
+		Entry("basic outbound cluster with connection limits targeting real MeshService", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("backend"),
+					ResourceOrigin: &backendMeshServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(false),
+							},
+						},
+					},
+				},
+			},
+			expectedCluster: []string{"outbound_cluster_connection_limits_real_resource.golden.yaml"},
 		}),
 	)
 

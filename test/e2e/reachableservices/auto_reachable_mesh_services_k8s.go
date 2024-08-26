@@ -52,15 +52,16 @@ spec:
 			Setup(k8sCluster)
 
 		Expect(err).ToNot(HaveOccurred())
-
-		E2EDeferCleanup(func() {
-			Expect(k8sCluster.DeleteKuma()).To(Succeed())
-			Expect(k8sCluster.DismissCluster()).To(Succeed())
-		})
 	})
 
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(k8sCluster, meshName, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
+	})
+
+	E2EAfterAll(func() {
+		Expect(k8sCluster.DeleteNamespace(namespace)).To(Succeed())
+		Expect(k8sCluster.DeleteKuma()).To(Succeed())
+		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should not connect to non auto reachable service", func() {

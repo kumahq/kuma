@@ -37,7 +37,7 @@ import (
 var _ = Describe("MeshAccessLog", func() {
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		outbounds         []*builders.OutboundBuilder
+		outbounds         core_xds.Outbounds
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
@@ -65,14 +65,14 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777),
-						).
-						AddOutbound(builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777),
-						).
-						AddOutbounds(given.outbounds),
+						),
 				).
+				WithOutbounds(append(given.outbounds, &core_xds.Outbound{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				})).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
@@ -439,15 +439,15 @@ var _ = Describe("MeshAccessLog", func() {
 						)),
 					)).MustBuild(),
 			}},
-			outbounds: []*builders.OutboundBuilder{
-				builders.Outbound().
+			outbounds: core_xds.Outbounds{
+				{LegacyOutbound: builders.Outbound().
 					WithService("foo-service").
 					WithAddress("127.0.0.1").
-					WithPort(27778),
-				builders.Outbound().
+					WithPort(27778).Build()},
+				{LegacyOutbound: builders.Outbound().
 					WithService("bar-service").
 					WithAddress("127.0.0.1").
-					WithPort(27779),
+					WithPort(27779).Build()},
 			},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{

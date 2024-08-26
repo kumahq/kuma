@@ -925,8 +925,20 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 			}
+			toResourceRules := []api_common.ResourceRule{}
+			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+				toResourceRules = append(toResourceRules, api_common.ResourceRule{
+					Conf:                resourceRuleItem.Conf,
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(itemIdentifier.ResourceType, resourceRuleItem.Origin),
+					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+				})
+			}
+			sort.Slice(toResourceRules, func(i, j int) bool {
+				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
+			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -935,11 +947,12 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				warnings = []string{}
 			}
 			rules = append(rules, api_common.InspectRule{
-				Type:      string(res.Type),
-				ToRules:   &toRules,
-				FromRules: &fromRules,
-				ProxyRule: proxyRule,
-				Warnings:  &warnings,
+				Type:            string(res.Type),
+				ToRules:         &toRules,
+				ToResourceRules: &toResourceRules,
+				FromRules:       &fromRules,
+				ProxyRule:       proxyRule,
+				Warnings:        &warnings,
 			})
 		}
 		httpMatches := []api_common.HttpMatch{}

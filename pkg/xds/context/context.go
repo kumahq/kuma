@@ -89,7 +89,7 @@ type MeshContext struct {
 	ExternalServicesEndpointMap             xds.EndpointMap
 	CrossMeshEndpoints                      map[xds.MeshName]xds.EndpointMap
 	VIPDomains                              []xds.VIPDomains
-	VIPOutbounds                            []*mesh_proto.Dataplane_Networking_Outbound
+	VIPOutbounds                            xds.Outbounds
 	ServicesInformation                     map[string]*ServiceInformation
 	DataSourceLoader                        datasource.Loader
 	ReachableServicesGraph                  ReachableServicesGraph

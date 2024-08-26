@@ -1,0 +1,5 @@
+resources:
+- name: multi-backend_mzsvc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: multi-backend_mzsvc_80

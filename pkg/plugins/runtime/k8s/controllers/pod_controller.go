@@ -422,6 +422,7 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 
 func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentReconciles int) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-pod-controller").
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
