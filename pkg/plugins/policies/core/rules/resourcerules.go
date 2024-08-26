@@ -189,7 +189,7 @@ func UniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifi
 
 // isRelevant returns true if the policyItem is relevant to the resource or section of the resource
 func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionName string) bool {
-	switch policyItem.resource.Descriptor().Name {
+	switch itemDescriptorName := policyItem.resource.Descriptor().Name; itemDescriptorName {
 	case core_mesh.MeshType:
 		switch r.Descriptor().Name {
 		case core_mesh.MeshType:
@@ -197,27 +197,23 @@ func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionNa
 		default:
 			return policyItem.resource.GetMeta().GetName() == r.GetMeta().GetMesh()
 		}
-	case meshservice_api.MeshServiceType:
-		switch r.Descriptor().Name {
-		case meshservice_api.MeshServiceType:
-			switch {
-			case UniqueKey(policyItem.resource, policyItem.sectionName()) == UniqueKey(r, sectionName):
-				return true
-			case UniqueKey(policyItem.resource, "") == UniqueKey(r, "") && policyItem.sectionName() == "" && sectionName != "":
-				return true
-			default:
-				return false
-			}
+	case meshservice_api.MeshServiceType, meshmultizoneservice_api.MeshMultiZoneServiceType:
+		if r.Descriptor().Name != itemDescriptorName {
+			return false
+		}
+		switch {
+		case UniqueKey(policyItem.resource, policyItem.sectionName()) == UniqueKey(r, sectionName):
+			return true
+		case UniqueKey(policyItem.resource, "") == UniqueKey(r, "") && policyItem.sectionName() == "" && sectionName != "":
+			return true
 		default:
 			return false
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
-		switch r.Descriptor().Name {
-		case meshexternalservice_api.MeshExternalServiceType:
-			return UniqueKey(policyItem.resource, "") == UniqueKey(r, "")
-		default:
+		if r.Descriptor().Name != itemDescriptorName {
 			return false
 		}
+		return UniqueKey(policyItem.resource, "") == UniqueKey(r, "")
 	default:
 		return false
 	}
