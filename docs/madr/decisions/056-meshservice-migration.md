@@ -54,7 +54,7 @@ We can always convert the above to an additional entry:
       labels:
         kuma.io/display-name: demo-app
         kuma.io/namespace: kuma-demo
-      port: 5000
+      sectionName: 5000
 ```
 
 Potentially we could offer a tool to convert these refs from old-style to
@@ -145,7 +145,7 @@ the listener for the ClusterIP.
 ## Considered Options
 
 - Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
-  the `MeshService labels: {kuma.io/display-name: demo-app, kuma.io/namespace: kuma-demo}, port: 5000`.
+  the `MeshService labels: {kuma.io/display-name: demo-app, kuma.io/namespace: kuma-demo}, sectionName: "5000"`.
   - we can drop this behavior when we drop `kuma.io/service` support
   - require `sectionName` to disambiguate
   - automatically set `MeshService.spec.ports[].name` when generating these
