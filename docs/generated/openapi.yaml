@@ -2753,6 +2753,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -2838,6 +2839,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -3086,6 +3088,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3672,6 +3675,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3757,6 +3761,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4294,6 +4299,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4528,6 +4534,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4613,6 +4620,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4796,6 +4804,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4926,6 +4935,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5273,6 +5283,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -5403,6 +5414,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5511,6 +5523,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -5650,7 +5663,9 @@ components:
                                   requestMirror:
                                     properties:
                                       backendRef:
-                                        description: TODO forbid weight
+                                        description: >-
+                                          BackendRef defines where to forward
+                                          traffic.
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
@@ -5660,6 +5675,7 @@ components:
                                               - MeshGateway
                                               - MeshService
                                               - MeshExternalService
+                                              - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                             type: string
@@ -5762,7 +5778,6 @@ components:
                                           hostname with 1 notable exception that
 
                                           numeric IP addresses are not allowed.
-
 
 
                                           Note that as per RFC1035 and RFC1123, a
@@ -6066,6 +6081,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -6194,6 +6210,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -6813,6 +6830,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -7142,6 +7160,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -7317,6 +7336,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -7489,7 +7509,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7513,7 +7532,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7610,7 +7628,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7634,7 +7651,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7719,7 +7735,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7743,7 +7758,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7844,7 +7858,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7868,7 +7881,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7955,7 +7967,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7979,7 +7990,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -8033,6 +8043,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8299,6 +8310,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8384,6 +8396,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8604,6 +8617,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8734,6 +8748,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9240,6 +9255,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9370,6 +9386,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9466,6 +9483,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -9568,6 +9586,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9786,6 +9805,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9871,6 +9891,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10037,6 +10058,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10384,6 +10406,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10530,6 +10553,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10615,6 +10639,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -11054,18 +11079,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
@@ -11255,18 +11268,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
@@ -11500,18 +11501,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$

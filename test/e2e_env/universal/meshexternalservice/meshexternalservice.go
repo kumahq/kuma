@@ -10,6 +10,10 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
@@ -92,6 +96,12 @@ routing:
 			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+			meshretry_api.MeshRetryResourceTypeDescriptor,
+			meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
+			meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
+		)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -168,8 +178,94 @@ routing:
 				// then accessing the secured external service succeeds
 				checkSuccessfulRequest("http://ext-srv-tls.extsvc.mesh.local", clientName, Not(ContainSubstring("HTTPS")))
 			})
+
+			It("should route to mesh-external-service with same hostname but different ports", func() {
+				err := universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-1", esHttpContainerName, meshName, 80, false, nil)))
+				Expect(err).ToNot(HaveOccurred())
+
+				err = universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-2", esHttp2ContainerName, meshName, 81, false, nil)))
+				Expect(err).ToNot(HaveOccurred())
+
+				// when access the first external service with .mesh
+				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName,
+					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http")))
+
+				checkSuccessfulRequest("ext-srv-2.extsvc.mesh.local", clientName,
+					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http-2")))
+			})
 		})
 	}
+
+	Context("MeshExternalService with MeshRetry", func() {
+		E2EAfterAll(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshretry_api.MeshRetryResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should retry on error", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-retry
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpsContainerName, esHttpContainerName)
+
+			meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
+mesh: %s
+name: meshretry-mes-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-retry
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// we have 2 endpoints, one http and another https so some requests should fail
+			By("Check some errors happen")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+					client.NoFail(),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "10s", "100ms").Should(Succeed())
+
+			By("Apply a MeshRetry policy")
+			Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+			By("Eventually all requests succeed consistently")
+			Eventually(func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-retry.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
 
 	contextFor("without default policies", meshNameNoDefaults, "mes-demo-client-no-defaults")
 }
