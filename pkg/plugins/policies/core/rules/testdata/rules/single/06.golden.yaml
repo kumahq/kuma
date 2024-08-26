@@ -1,5 +1,6 @@
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     backends:
     - type: Zipkin
       zipkin:
