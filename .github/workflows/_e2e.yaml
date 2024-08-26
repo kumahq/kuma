@@ -134,3 +134,9 @@ jobs:
           path: |
             /tmp/e2e-debug/
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        if: ${{ failure() }}
+        with:
+          limit-access-to-actor: true
+          wait-timeout-minutes: 20
