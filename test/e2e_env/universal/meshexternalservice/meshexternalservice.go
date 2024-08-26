@@ -103,7 +103,7 @@ routing:
 		DebugUniversal(universal.Cluster, meshNameNoDefaults)
 	})
 
-	BeforeEach(func(){
+	BeforeEach(func() {
 		Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
