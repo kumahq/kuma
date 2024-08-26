@@ -1,0 +1,72 @@
+# MeshHTTPRoute with backendRefs to real MeshServices
+type: MeshHTTPRoute
+name: matched-for-rules-http-route-1
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /split-ninety-ten
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend
+                weight: 90
+              - kind: MeshService
+                name: backend-v1
+                weight: 10
+---
+type: MeshHTTPRoute
+name: matched-for-rules-http-route-2
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /all-to-v1
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend-v1
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: MeshService
+name: backend-v1
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+      version: v1
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: Mesh
+name: mesh-1

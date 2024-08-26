@@ -181,6 +181,9 @@ var _ = Describe("MeshTCPRoute", func() {
 								Name: "route-2",
 							},
 						},
+						BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+							core_rules.EmptyMatches: 1,
+						},
 					},
 				},
 				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{},

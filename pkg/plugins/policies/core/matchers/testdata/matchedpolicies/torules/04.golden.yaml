@@ -1,6 +1,7 @@
 ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 3s
       streamIdleTimeout: 5s

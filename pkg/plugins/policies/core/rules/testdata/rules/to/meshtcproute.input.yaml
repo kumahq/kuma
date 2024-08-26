@@ -1,0 +1,43 @@
+# MeshTCPRoute with backendRefs
+type: MeshTCPRoute
+name: split-90-10
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend_kuma-demo_svc_8080
+      rules:
+        - default:
+            backendRefs:
+              - kind: MeshService
+                name: backend-v1
+                weight: 90
+              - kind: MeshService
+                name: backend-v2
+                weight: 10
+---
+type: MeshTCPRoute
+name: split-40-40-20
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      team: mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend_kuma-demo_svc_8080
+      rules:
+        - default:
+            backendRefs:
+              - kind: MeshService
+                name: backend-v1
+                weight: 40
+              - kind: MeshService
+                name: backend-v2
+                weight: 40
+              - kind: MeshService
+                name: backend-v3
+                weight: 20
