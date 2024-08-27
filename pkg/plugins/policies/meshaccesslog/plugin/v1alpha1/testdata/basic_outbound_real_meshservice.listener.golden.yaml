@@ -1,0 +1,42 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 27777
+filterChains:
+- filters:
+  - name: envoy.filters.network.http_connection_manager
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+      accessLog:
+      - name: envoy.access_loggers.file
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+          logFormat:
+            textFormatSource:
+              inlineString: |
+                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "backend" "127.0.0.1" "%UPSTREAM_HOST%"
+          path: /tmp/log
+      httpFilters:
+      - name: envoy.filters.http.router
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+      routeConfig:
+        name: outbound:backend
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/service=web&'
+        validateClusters: false
+        virtualHosts:
+        - domains:
+          - '*'
+          name: backend
+          routes:
+          - match:
+              prefix: /
+            route:
+              cluster: backend
+              timeout: 0s
+      statPrefix: "127_0_0_1_27777"
+name: outbound:127.0.0.1:27777
+trafficDirection: OUTBOUND

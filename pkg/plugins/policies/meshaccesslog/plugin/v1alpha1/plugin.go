@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -59,6 +60,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToGateway(policies.GatewayRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy, endpoints, accessLogSocketPath); err != nil {
+		return err
+	}
+	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh, proxy.Dataplane, endpoints, accessLogSocketPath); err != nil {
 		return err
 	}
 
@@ -294,5 +298,49 @@ func configureOutbound(
 		}
 	}
 
+	return nil
+}
+
+func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, backendsAcc *plugin_xds.EndpointAccumulator, accessLogSocketPath string) error {
+	for uri, resType := range rs.IndexByOrigin() {
+		conf := rules.Compute(uri, meshCtx.Resources)
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				err := configureListeners(resources, conf.Conf[0].(api.Conf), dataplane, backendsAcc, accessLogSocketPath)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func configureListeners(resources []*core_xds.Resource, conf api.Conf, dataplane *core_mesh.DataplaneResource, backendsAcc *plugin_xds.EndpointAccumulator, accessLogSocketPath string) error {
+	sourceService := dataplane.Spec.GetIdentifyingService()
+	for _, backend := range pointer.Deref(conf.Backends) {
+		for _, resource := range resources {
+			configurer := plugin_xds.Configurer{
+				Mesh:                dataplane.GetMeta().GetMesh(),
+				TrafficDirection:    envoy.TrafficDirectionOutbound,
+				SourceService:       sourceService,
+				DestinationService:  resource.ResourceOrigin.Name,
+				Backend:             backend,
+				Dataplane:           dataplane,
+				AccessLogSocketPath: accessLogSocketPath,
+			}
+
+			for _, chain := range resource.Resource.(*envoy_listener.Listener).FilterChains {
+				if err := configurer.Configure(chain, backendsAcc); err != nil {
+					return err
+				}
+			}
+		}
+	}
 	return nil
 }
