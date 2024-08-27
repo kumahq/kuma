@@ -54,7 +54,7 @@ type TlsCiphers []TlsCipher
 type Mode string
 
 const (
-	ModeStrict Mode = "Strict"
+	ModeStrict     Mode = "Strict"
 	ModePermissive Mode = "Permissive"
 )
 
@@ -67,8 +67,6 @@ type Conf struct {
 	// TlsCiphers section for providing ciphers specification.
 	TlsCiphers TlsCiphers `json:"tlsCiphers,omitempty"`
 
-	// Mode defines the behaviour of inbound listeners with regard to traffic encryption.
+	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
 	Mode *Mode `json:"mode,omitempty"`
 }
-
-

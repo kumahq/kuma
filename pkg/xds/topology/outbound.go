@@ -2,7 +2,6 @@ package topology
 
 import (
 	"context"
-	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"maps"
 	"net"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"

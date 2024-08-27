@@ -88,7 +88,6 @@ type Tls struct {
 	Verification *Verification `json:"verification,omitempty"`
 }
 
-
 // +kubebuilder:validation:Enum=SkipSAN;SkipCA;Secured;SkipAll
 type VerificationMode string
 

@@ -1,11 +1,12 @@
 package v1alpha1
 
 import (
+	"slices"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"slices"
 )
 
 func (r *MeshTLSResource) validate() error {

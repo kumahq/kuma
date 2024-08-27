@@ -2,13 +2,13 @@ package v1alpha1
 
 import (
 	"fmt"
-	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"math"
 	"slices"
 	"strings"
 
 	"github.com/asaskevich/govalidator"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
