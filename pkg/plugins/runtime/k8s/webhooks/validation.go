@@ -16,6 +16,7 @@ import (
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -56,6 +57,7 @@ var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
 	meshhealthcheck.MeshHealthCheckType:       true,
 	meshhttproute.MeshHTTPRouteType:           true,
 	meshtcproute.MeshTCPRouteType:             true,
+	meshaccesslog.MeshAccessLogType:           true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
