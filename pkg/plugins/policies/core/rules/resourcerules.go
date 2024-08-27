@@ -265,7 +265,7 @@ func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolve
 
 	var implicitPort uint32
 	implicitLabels := map[string]string{}
-	if item.GetTargetRef().Kind == common_api.MeshService {
+	if item.GetTargetRef().Kind == common_api.MeshService && item.GetTargetRef().SectionName == "" {
 		if name, namespace, port, err := parseService(item.GetTargetRef().Name); err == nil {
 			implicitLabels[mesh_proto.KubeNamespaceTag] = namespace
 			implicitLabels[mesh_proto.DisplayName] = name
