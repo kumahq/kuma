@@ -102,7 +102,7 @@ type Route struct {
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
 // We treat RegularExpression matches, which are implementation-specific, the
 // same as prefix matches, the longer length match has priority.
-func SortRules(rules []Rule) []Route {
+func SortRules(rules []Rule, backendRefToOrigin map[string]core_model.ResourceMeta) []Route {
 	type keyed struct {
 		sortKey Match
 		rule    Rule
@@ -123,7 +123,11 @@ func SortRules(rules []Rule) []Route {
 	for _, key := range keys {
 		var backendRefs []core_model.ResolvedBackendRef
 		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
-			backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
+			if origin, ok := backendRefToOrigin[HashMatches(key.rule.Matches)]; ok {
+				backendRefs = append(backendRefs, core_model.ResolveBackendRef(origin, br))
+			} else {
+				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
+			}
 		}
 		out = append(out, Route{
 			Hash:        HashMatches(key.rule.Matches),

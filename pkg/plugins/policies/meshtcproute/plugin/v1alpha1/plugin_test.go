@@ -442,7 +442,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 		}()),
 
-		FEntry("basic-real-meshservice", func() outboundsTestCase {
+		Entry("basic-real-meshservice", func() outboundsTestCase {
 			meshSvc := meshservice_api.MeshServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 				Spec: &meshservice_api.MeshService{

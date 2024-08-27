@@ -149,26 +149,38 @@ func generateListeners(
 	return resources, nil
 }
 
-func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *api.PolicyDefault {
+func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[string]core_model.ResourceMeta) {
 	// compute for old MeshService
-	conf := rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshService(svc.ServiceName))
-	switch svc.BackendRef.Kind {
-	case common_api.MeshExternalService:
-		conf = rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshExternalService(svc.ServiceName))
+	var conf *api.PolicyDefault
+	backendRefOrigin := map[string]core_model.ResourceMeta{}
+
+	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
+	if ruleHTTP != nil {
+		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
+		for hash := range ruleHTTP.BackendRefOriginIndex {
+			if origin, ok := ruleHTTP.GetBackendRefOrigin(hash); ok {
+				backendRefOrigin[string(hash)] = origin
+			}
+		}
 	}
 	// check if there is configuration for real MeshService and prioritize it
 	if svc.Outbound.Resource != nil {
 		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
+			for hash := range resourceConf.BackendRefOriginIndex {
+				if origin, ok := resourceConf.GetBackendRefOrigin(hash); ok {
+					backendRefOrigin[string(hash)] = origin
+				}
+			}
 		}
 	}
-	return conf
+	return conf, backendRefOrigin
 }
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
-	conf := ComputeHTTPRouteConf(toRules, svc, meshCtx)
+	conf, backendRefToOrigin := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {
@@ -184,7 +196,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	}
 
 	// sort rules before we add default prefix matches etc
-	routes := api.SortRules(apiRules)
+	routes := api.SortRules(apiRules, backendRefToOrigin)
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
 	catchAllMatch := api.Match{

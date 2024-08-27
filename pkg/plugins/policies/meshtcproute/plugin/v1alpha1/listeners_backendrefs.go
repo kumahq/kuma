@@ -1,9 +1,6 @@
 package v1alpha1
 
 import (
-	"fmt"
-
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -82,7 +79,7 @@ func getBackendRefs(
 	if tcpConf != nil {
 		for _, br := range tcpConf.Default.BackendRefs {
 			if backendRefOrigin != nil {
-				backendRefs = append(backendRefs, resolveBackendRef(backendRefOrigin, br))
+				backendRefs = append(backendRefs, core_model.ResolveBackendRef(backendRefOrigin, br))
 			} else {
 				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
 			}
@@ -92,23 +89,4 @@ func getBackendRefs(
 	}
 
 	return backendRefs
-}
-
-func resolveBackendRef(meta core_model.ResourceMeta, br common_api.BackendRef) core_model.ResolvedBackendRef {
-	resolved := core_model.ResolvedBackendRef{LegacyBackendRef: &br}
-
-	switch {
-	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
-	case br.Kind == common_api.MeshExternalService:
-	case br.Kind == common_api.MeshMultiZoneService:
-	default:
-		return resolved
-	}
-
-	resolved.Resource = &core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.TargetRefToResourceIdentifier(meta, br.TargetRef),
-		ResourceType:       core_model.ResourceType(br.Kind),
-		SectionName:        fmt.Sprintf("%d", br.Port),
-	}
-	return resolved
 }

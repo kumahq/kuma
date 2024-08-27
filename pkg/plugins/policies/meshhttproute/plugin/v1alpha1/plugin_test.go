@@ -316,11 +316,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				WithName("web-01").
 				WithAddress("192.168.0.2").
 				WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http").
-				AddOutbound(builders.Outbound().
-					WithAddress("10.0.0.2").
-					WithPort(80).
-					WithMeshMultiZoneService("multi-backend", 80),
-				).Build()
+				Build()
 			mc := meshContextWithResources(dp, backendDP, &meshSvc, &meshMZSvc)
 
 			builder := &sync.DataplaneProxyBuilder{
@@ -651,15 +647,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
 					WithOutbounds(core_xds.Outbounds{
-						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
-							Port: builders.FirstOutboundPort,
-							Tags: map[string]string{},
-							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
-								Kind: "MeshService",
-								Name: "backend",
-								Port: 80,
-							},
-						}},
+						{
+							Port:     builders.FirstOutboundPort,
+							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
@@ -667,6 +658,17 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 									backendMeshServiceIdentifier: {
+										Origin: []core_rules.Origin{
+											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
+										},
+										BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+											core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 0,
+											core_rules.MatchesHash(api.HashMatches([]api.Match{
+												{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}},
+												{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v3"}},
+											})): 0,
+											core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v4"}}})): 0,
+										},
 										Conf: []interface{}{
 											api.PolicyDefault{
 												Rules: []api.Rule{{

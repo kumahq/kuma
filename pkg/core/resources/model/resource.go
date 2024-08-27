@@ -704,6 +704,26 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 	}
 }
 
+func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBackendRef {
+	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
+
+	switch {
+	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
+	case br.Kind == common_api.MeshExternalService:
+	case br.Kind == common_api.MeshMultiZoneService:
+	default:
+		return resolved
+	}
+
+	resolved.Resource = &TypedResourceIdentifier{
+		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
+		ResourceType:       ResourceType(br.Kind),
+		SectionName:        fmt.Sprintf("%d", br.Port),
+	}
+
+	return resolved
+}
+
 func (r ResourceIdentifier) String() string {
 	var pairs []string
 	if r.Mesh != "" {
