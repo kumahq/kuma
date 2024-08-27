@@ -10,11 +10,11 @@ import (
 	"github.com/onsi/gomega/types"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -42,8 +42,8 @@ routing:
 `, meshName))
 	}
 
-	meshExternalService := func(service, host, meshName string, port int, tls bool, caCert []byte) *v1alpha1.MeshExternalServiceResource {
-		mes := &v1alpha1.MeshExternalServiceResource{
+	meshExternalService := func(service, host, meshName string, port int, tls bool, caCert []byte) *meshexternalservice_api.MeshExternalServiceResource {
+		mes := &meshexternalservice_api.MeshExternalServiceResource{
 			Meta: &test_model.ResourceMeta{
 				Mesh: meshName,
 				Name: service,
@@ -51,24 +51,24 @@ routing:
 					"kuma.io/origin": "zone",
 				},
 			},
-			Spec: &v1alpha1.MeshExternalService{
-				Match: v1alpha1.Match{
-					Type:     pointer.To(v1alpha1.HostnameGeneratorType),
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 					Port:     80,
-					Protocol: v1alpha1.HttpProtocol,
+					Protocol: meshexternalservice_api.HttpProtocol,
 				},
-				Endpoints: []v1alpha1.Endpoint{{
+				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
-					Port:    pointer.To(v1alpha1.Port(port)),
+					Port:    pointer.To(meshexternalservice_api.Port(port)),
 				}},
 			},
-			Status: &v1alpha1.MeshExternalServiceStatus{},
+			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
 		}
 
 		if tls {
-			mes.Spec.Tls = &v1alpha1.Tls{
+			mes.Spec.Tls = &meshexternalservice_api.Tls{
 				Enabled: true,
-				Verification: &v1alpha1.Verification{
+				Verification: &meshexternalservice_api.Verification{
 					CaCert: &common_api.DataSource{Inline: &caCert},
 				},
 			}
@@ -411,6 +411,92 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(resp.Instance).To(Equal("mes-http-2"))
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
+	Context("MeshExternalService with MeshTCPRoute", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshtcproute_api.MeshTCPRouteResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should route to other backend", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-tcp-route
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+
+			meshExternalService2 := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-tcp-2-route
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: tcp
+  endpoints:
+    - address: %s
+      port: 81
+`, meshNameNoDefaults, esHttp2ContainerName)
+
+			meshTcpRoute := fmt.Sprintf(`
+type: MeshTCPRoute
+name: mes-tcp-route-1
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-tcp-route
+      rules:
+        - default:
+            backendRefs:
+              - kind: MeshExternalService
+                name: mes-tcp-2-route
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService2))).To(Succeed())
+
+			By("Check response arrives to mes-http")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-tcp-route.extsvc.mesh.local",
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("mes-http"))
+			}, "30s", "1s").Should(Succeed())
+
+			By("Apply a MeshTCPRoute policy")
+			Expect(universal.Cluster.Install(YamlUniversal(meshTcpRoute))).To(Succeed())
+
+			By("Eventually all arrives to mes-http-2")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-tcp-route.extsvc.mesh.local",
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("mes-http-2"))
 			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	})
