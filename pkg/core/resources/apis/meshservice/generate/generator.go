@@ -5,6 +5,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -81,7 +82,12 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		if !hasProtocol {
 			appProtocol = core_mesh.ProtocolTCP
 		}
+		portName := inbound.Name
+		if portName == "" {
+			portName = strconv.Itoa(int(inbound.Port))
+		}
 		port := meshservice_api.Port{
+			Name:        portName,
 			Port:        inbound.Port,
 			TargetPort:  intstr.FromInt(int(inbound.Port)),
 			AppProtocol: core_mesh.Protocol(appProtocol),

@@ -53,6 +53,7 @@ spec:
         cpu: 20m
         memory: 20M
     securityContext:
+      allowPrivilegeEscalation: false
       capabilities:
         drop:
         - ALL

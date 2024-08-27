@@ -10,6 +10,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 )
 
 type ResourceRule struct {
@@ -17,7 +18,38 @@ type ResourceRule struct {
 	ResourceSectionName string
 	Conf                []interface{}
 	Origin              []Origin
+
+	// BackendRefOriginIndex is a mapping from the rule to the origin of the BackendRefs in the rule.
+	// Some policies have BackendRefs in their confs, and it's important to know what was the original policy
+	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
+	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
+	// then key is an empty string "".
+	BackendRefOriginIndex BackendRefOriginIndex
 }
+
+type BackendRefOriginIndex map[MatchesHash]int
+
+func (originIndex BackendRefOriginIndex) Update(conf interface{}, newIndex int) {
+	switch conf := conf.(type) {
+	case meshtcproute_api.Rule:
+		if conf.Default.BackendRefs != nil {
+			originIndex[EmptyMatches] = newIndex
+		}
+	case meshhttproute_api.PolicyDefault:
+		for _, rule := range conf.Rules {
+			if rule.Default.BackendRefs != nil {
+				hash := meshhttproute_api.HashMatches(rule.Matches)
+				originIndex[MatchesHash(hash)] = newIndex
+			}
+		}
+	default:
+		return
+	}
+}
+
+type MatchesHash string
+
+var EmptyMatches MatchesHash = ""
 
 type Origin struct {
 	Resource core_model.ResourceMeta
@@ -51,26 +83,6 @@ func (ri UniqueResourceIdentifier) String() string {
 }
 
 type ResourceRules map[UniqueResourceIdentifier]ResourceRule
-
-type ComputeOpts struct {
-	sectionName string
-}
-
-func NewComputeOpts(fn ...ComputeOptsFn) *ComputeOpts {
-	opts := &ComputeOpts{}
-	for _, f := range fn {
-		f(opts)
-	}
-	return opts
-}
-
-type ComputeOptsFn func(*ComputeOpts)
-
-func WithSectionName(sectionName string) ComputeOptsFn {
-	return func(opts *ComputeOpts) {
-		opts.sectionName = sectionName
-	}
-}
 
 func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceReader) *ResourceRule {
 	if rule, ok := rr[uri]; ok {
@@ -115,10 +127,10 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 	// that are part of the policy to reduce the size of the ResourceRules
 	for uri, resource := range indexResources(resolvedItems) {
 		// take only policy items that have isRelevant conf for the resource
-		var relevant []*resolvedPolicyItem
+		var relevant []PolicyItemWithMeta
 		for _, policyItem := range resolvedItems {
 			if isRelevant(policyItem, resource, uri.SectionName) {
-				relevant = append(relevant, policyItem)
+				relevant = append(relevant, policyItem.item)
 			}
 		}
 
@@ -128,11 +140,13 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 			if err != nil {
 				return nil, err
 			}
+			ruleOrigins, originIndex := origins(relevant, true)
 			rules[uri] = ResourceRule{
-				Resource:            resource.GetMeta(),
-				ResourceSectionName: uri.SectionName,
-				Conf:                merged,
-				Origin:              origins(relevant),
+				Resource:              resource.GetMeta(),
+				ResourceSectionName:   uri.SectionName,
+				Conf:                  merged,
+				Origin:                ruleOrigins,
+				BackendRefOriginIndex: originIndex,
 			}
 		}
 	}
@@ -148,15 +162,15 @@ func indexResources(ri []*resolvedPolicyItem) map[UniqueResourceIdentifier]core_
 	return index
 }
 
-func mergeConfs(ri []*resolvedPolicyItem) ([]interface{}, error) {
+func mergeConfs(items []PolicyItemWithMeta) ([]interface{}, error) {
 	var confs []interface{}
-	for _, i := range ri {
-		confs = append(confs, i.item.GetDefault())
+	for _, item := range items {
+		confs = append(confs, item.GetDefault())
 	}
 	return MergeConfs(confs)
 }
 
-func origins(ri []*resolvedPolicyItem) []Origin {
+func origins(items []PolicyItemWithMeta, withRuleIndex bool) ([]Origin, BackendRefOriginIndex) {
 	var rv []Origin
 
 	type keyType struct {
@@ -164,19 +178,24 @@ func origins(ri []*resolvedPolicyItem) []Origin {
 		ruleIndex int
 	}
 	key := func(policyItem PolicyItemWithMeta) keyType {
-		return keyType{
+		k := keyType{
 			ResourceKey: core_model.MetaToResourceKey(policyItem.ResourceMeta),
-			ruleIndex:   policyItem.RuleIndex,
 		}
+		if withRuleIndex {
+			k.ruleIndex = policyItem.RuleIndex
+		}
+		return k
 	}
 	set := map[keyType]struct{}{}
-	for _, i := range ri {
-		if _, ok := set[key(i.item)]; !ok {
-			rv = append(rv, Origin{Resource: i.item.ResourceMeta, RuleIndex: i.item.RuleIndex})
-			set[key(i.item)] = struct{}{}
+	originIndex := BackendRefOriginIndex{}
+	for _, item := range items {
+		if _, ok := set[key(item)]; !ok {
+			originIndex.Update(item.GetDefault(), len(rv))
+			rv = append(rv, Origin{Resource: item.ResourceMeta, RuleIndex: item.RuleIndex})
+			set[key(item)] = struct{}{}
 		}
 	}
-	return rv
+	return rv, originIndex
 }
 
 func UniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifier {

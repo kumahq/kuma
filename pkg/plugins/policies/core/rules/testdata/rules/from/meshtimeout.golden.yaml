@@ -1,6 +1,7 @@
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       connectionTimeout: 20s
       http:
         requestTimeout: 5s
