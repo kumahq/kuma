@@ -102,12 +102,6 @@ type ServiceInformation struct {
 	IsExternalService bool
 }
 
-type BackendKey struct {
-	Kind string
-	Name string
-	Port uint32
-}
-
 type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
@@ -134,8 +128,14 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 					Name:      reachableBackend.Name,
 					Namespace: reachableBackend.Namespace,
 				}),
-				SectionName: fmt.Sprintf("%d", reachableBackend.Port.GetValue()),
 			}
+			if key.Zone == "" {
+				fmt.Println("DEBUG", "zone is not set", dataplane.GetMeta().GetLabels(), dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetName())
+			}
+			if port := reachableBackend.Port; port != nil {
+				key.SectionName = fmt.Sprintf("%d", port.GetValue())
+			}
+			fmt.Println("DEBUG", key)
 			reachableBackends[key] = true
 		}
 	}
