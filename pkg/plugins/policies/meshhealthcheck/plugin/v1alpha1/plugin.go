@@ -32,7 +32,11 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	return matchers.EgressMatchedPolicies(api.MeshHealthCheckType, tags, resources, opts...)
+	t, err := matchers.EgressMatchedPolicies(api.MeshHealthCheckType, tags, resources, opts...)
+	if err != nil {
+		return t, err
+	}
+	return t, err
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
@@ -166,7 +170,6 @@ func configure(
 }
 
 func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	indexed := rs.IndexByOrigin()
 	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshExternalServices := resource.Resources[meshexternalservice_api.MeshExternalServiceType]
 		for _, mes := range meshExternalServices.GetItems() {
@@ -178,7 +181,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			for uri, resType := range indexed {
+			for uri, resType := range rs.IndexByOrigin() {
 				conf := mhc.ToRules.ResourceRules.Compute(uri, resource)
 				if conf == nil {
 					continue

@@ -93,11 +93,12 @@ func (*ExternalServicesGenerator) generateCDS(
 		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
 
 		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
+		isMes := isMeshExternalService(endpoints)
 
-		if isMeshExternalService(endpoints) {
+		if isMes {
 			clusterBuilder.WithName(envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName))
 			clusterBuilder.
-				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
+				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMes, endpoints...)).
 				Configure(
 					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
 				)
@@ -124,11 +125,18 @@ func (*ExternalServicesGenerator) generateCDS(
 			return nil, err
 		}
 
-		resources = append(resources, &core_xds.Resource{
+		resource := &core_xds.Resource{
 			Name:     serviceName,
 			Origin:   OriginEgress,
 			Resource: cluster,
-		})
+		}
+
+		if isMes {
+			resource.ResourceOrigin = endpoints[0].ExternalService.OwnerResource
+			resource.Protocol = endpoints[0].ExternalService.Protocol
+		}
+
+		resources = append(resources, resource)
 	}
 
 	return resources, nil

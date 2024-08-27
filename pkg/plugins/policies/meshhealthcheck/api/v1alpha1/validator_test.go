@@ -82,6 +82,18 @@ to:
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
 `),
+			Entry("to level MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: mes
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
 		)
 
 		type testCase struct {
@@ -270,6 +282,29 @@ violations:
     message: must be in inclusive range [100, 599]
   - field: spec.to[0].default.http.expectedStatuses[1]
     message: must be in inclusive range [100, 599]`,
+			}),
+			Entry("status codes out of range in expectedStatuses", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: backend
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http:
+        path: /health
+        expectedStatuses: [200, 204]
+`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.kind
+    message: kind MeshExternalService is only allowed with targetRef.kind: Mesh`,
 			}),
 		)
 	})

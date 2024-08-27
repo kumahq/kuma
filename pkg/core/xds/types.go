@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
@@ -77,6 +78,7 @@ type ExternalService struct {
 	SANs                     []SAN
 	MinTlsVersion            *TlsVersion
 	MaxTlsVersion            *TlsVersion
+	OwnerResource            *core_rules.UniqueResourceIdentifier
 }
 
 type MatchType string
@@ -354,7 +356,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.Protocol != ""
+	return e.ExternalService != nil && e.ExternalService.OwnerResource != nil
 }
 
 func (e Endpoint) LocalityString() string {
