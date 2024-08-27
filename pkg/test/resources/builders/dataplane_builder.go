@@ -249,6 +249,11 @@ func (b *InboundBuilder) WithPort(port uint32) *InboundBuilder {
 	return b
 }
 
+func (b *InboundBuilder) WithName(name string) *InboundBuilder {
+	b.res.Name = name
+	return b
+}
+
 func (b *InboundBuilder) WithServicePort(port uint32) *InboundBuilder {
 	b.res.ServicePort = port
 	return b

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/simple"
 	"gonum.org/v1/gonum/graph/topo"
@@ -263,6 +262,13 @@ type Rule struct {
 	Subset Subset
 	Conf   interface{}
 	Origin []core_model.ResourceMeta
+
+	// BackendRefOriginIndex is a mapping from the rule to the origin of the BackendRefs in the rule.
+	// Some policies have BackendRefs in their confs, and it's important to know what was the original policy
+	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
+	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
+	// then key is an empty string "".
+	BackendRefOriginIndex BackendRefOriginIndex
 }
 
 type Rules []*Rule
@@ -568,7 +574,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			}
 			// 5. For each combination determine a configuration
 			confs := []interface{}{}
-			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+			var relevant []PolicyItemWithMeta
 			for i := 0; i < len(oldKindsItems); i++ {
 				item := oldKindsItems[i]
 				itemSubset, err := asSubset(item.GetTargetRef())
@@ -577,23 +583,26 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 				}
 				if itemSubset.IsSubset(ss) {
 					confs = append(confs, item.GetDefault())
-					distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+					relevant = append(relevant, item)
 				}
 			}
-			merged, err := MergeConfs(confs)
-			if err != nil {
-				return nil, err
-			}
-			if merged != nil {
-				origins := maps.Values(distinctOrigins)
-				sort.Slice(origins, func(i, j int) bool {
-					return origins[i].GetName() < origins[j].GetName()
-				})
+
+			if len(relevant) > 0 {
+				merged, err := MergeConfs(confs)
+				if err != nil {
+					return nil, err
+				}
+				ruleOrigins, originIndex := origins(relevant, false)
+				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+				for _, o := range ruleOrigins {
+					resourceMetas = append(resourceMetas, o.Resource)
+				}
 				for _, mergedRule := range merged {
 					rules = append(rules, &Rule{
-						Subset: ss,
-						Conf:   mergedRule,
-						Origin: origins,
+						Subset:                ss,
+						Conf:                  mergedRule,
+						Origin:                resourceMetas,
+						BackendRefOriginIndex: originIndex,
 					})
 				}
 			}

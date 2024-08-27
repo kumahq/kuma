@@ -5,6 +5,7 @@ import (
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
@@ -78,40 +79,13 @@ type Tls struct {
 	// +kubebuilder:default=false
 	Enabled bool `json:"enabled,omitempty"`
 	// Version section for providing version specification.
-	Version *Version `json:"version,omitempty"`
+	Version *common_tls.Version `json:"version,omitempty"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
 	// Setting this to true is not recommended for security reasons.
 	// +kubebuilder:default=false
 	AllowRenegotiation bool `json:"allowRenegotiation,omitempty"`
 	// Verification section for providing TLS verification details.
 	Verification *Verification `json:"verification,omitempty"`
-}
-
-// +kubebuilder:validation:Enum=TLSAuto;TLS10;TLS11;TLS12;TLS13
-type TlsVersion string
-
-const (
-	TLSVersionAuto TlsVersion = "TLSAuto"
-	TLSVersion10   TlsVersion = "TLS10"
-	TLSVersion11   TlsVersion = "TLS11"
-	TLSVersion12   TlsVersion = "TLS12"
-	TLSVersion13   TlsVersion = "TLS13"
-)
-
-var tlsVersionOrder = map[TlsVersion]int{
-	TLSVersion10: 0,
-	TLSVersion11: 1,
-	TLSVersion12: 2,
-	TLSVersion13: 3,
-}
-
-type Version struct {
-	// Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
-	// +kubebuilder:default=TLSAuto
-	Min *TlsVersion `json:"min,omitempty"`
-	// Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
-	// +kubebuilder:default=TLSAuto
-	Max *TlsVersion `json:"max,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=SkipSAN;SkipCA;Secured;SkipAll

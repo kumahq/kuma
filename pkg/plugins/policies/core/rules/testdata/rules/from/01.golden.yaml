@@ -1,6 +1,7 @@
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -15,7 +16,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -30,7 +32,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -48,7 +51,8 @@ Rules:
     - Key: zone
       Not: false
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -63,7 +67,8 @@ Rules:
     - Key: zone
       Not: true
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -78,7 +83,8 @@ Rules:
     - Key: zone
       Not: true
       Value: us-east
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"

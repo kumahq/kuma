@@ -495,7 +495,8 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 					"ALL",
 				},
 			},
-			ReadOnlyRootFilesystem: pointer.To(true),
+			ReadOnlyRootFilesystem:   pointer.To(true),
+			AllowPrivilegeEscalation: pointer.To(false),
 		},
 		Resources: kube_core.ResourceRequirements{
 			Limits: kube_core.ResourceList{

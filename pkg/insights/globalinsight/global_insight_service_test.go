@@ -80,6 +80,8 @@ func createMeshInsight(name string, rs store.ResourceStore) error {
 		WithDelegatedGatewayDataplaneStats(2, 1, 0, 3).
 		AddPolicyStats("MeshTimeout", 2).
 		AddPolicyStats("MeshRetry", 1).
+		AddResourceStats("MeshTimeout", 2).
+		AddResourceStats("MeshRetry", 1).
 		Create(rs)
 }
 

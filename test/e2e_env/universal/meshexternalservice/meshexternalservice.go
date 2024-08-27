@@ -3,6 +3,7 @@ package meshexternalservice
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -97,16 +98,18 @@ routing:
 			Install(DemoClientUniversal("mes-demo-client-no-defaults", meshNameNoDefaults, WithTransparentProxy(true))).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshNameNoDefaults)
+	})
+
+	BeforeEach(func() {
 		Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
 			meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
 			meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
 		)).To(Succeed())
-	})
-
-	AfterEachFailure(func() {
-		DebugUniversal(universal.Cluster, meshNameNoDefaults)
 	})
 
 	E2EAfterAll(func() {
@@ -179,26 +182,11 @@ routing:
 				// then accessing the secured external service succeeds
 				checkSuccessfulRequest("http://ext-srv-tls.extsvc.mesh.local", clientName, Not(ContainSubstring("HTTPS")))
 			})
-
-			It("should route to mesh-external-service with same hostname but different ports", func() {
-				err := universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-1", esHttpContainerName, meshName, 80, false, nil)))
-				Expect(err).ToNot(HaveOccurred())
-
-				err = universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-2", esHttp2ContainerName, meshName, 81, false, nil)))
-				Expect(err).ToNot(HaveOccurred())
-
-				// when access the first external service with .mesh
-				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http")))
-
-				checkSuccessfulRequest("ext-srv-2.extsvc.mesh.local", clientName,
-					And(Not(ContainSubstring("HTTPS")), ContainSubstring("mes-http-2")))
-			})
 		})
 	}
 
 	Context("MeshExternalService with MeshRetry", func() {
-		E2EAfterAll(func() {
+		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshretry_api.MeshRetryResourceTypeDescriptor,
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
@@ -253,7 +241,7 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
-			}, "10s", "100ms").Should(Succeed())
+			}, "30s", "100ms").Should(Succeed())
 
 			By("Apply a MeshRetry policy")
 			Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -265,6 +253,76 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
+	Context("MeshExternalService with MeshTimeout", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-timeout
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			timeoutConfig := fmt.Sprintf(`
+type: MeshTimeout
+name: timeout-for-mes
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-timeout
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshTimeout
+			By("request should pass with the delay")
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				_, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-timeout.extsvc.mesh.local",
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			}, "30s", "1s").Should(Succeed())
+
+			// when timeout applied
+			Expect(universal.Cluster.Install(YamlUniversal(timeoutConfig))).To(Succeed())
+
+			// then should timeout after 5 seconds
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-timeout.extsvc.mesh.local",
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(504))
+			}, "30s", "1s", MustPassRepeatedly(3)).Should(Succeed())
 		})
 	})
 

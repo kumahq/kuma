@@ -1,23 +1,25 @@
 Rules:
   1.1.1.1:8080:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
-      name: rule-a
+      name: rule-b
       type: MeshTrafficPermission
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: default
       modificationTime: "0001-01-01T00:00:00Z"
-      name: rule-b
+      name: rule-a
       type: MeshTrafficPermission
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-payment
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -29,7 +31,8 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
