@@ -181,7 +181,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	exportFilePath := filepath.Join(Config.DebugDir, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
 	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-	Expect(errorSeen).To(BeTrue(), "some debug commands failed")
+	Expect(errorSeen).NotTo(BeTrue(), "some debug commands failed")
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
 }
 
