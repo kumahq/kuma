@@ -3,7 +3,7 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/common/tls"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 )
 
 // MeshTLS
@@ -62,10 +62,10 @@ var allModes = []string{string(ModeStrict), string(ModePermissive)}
 
 type Conf struct {
 	// Version section for providing version specification.
-	TlsVersion *tls.Version `json:"tlsVersion,omitempty"`
+	TlsVersion *common_tls.Version `json:"tlsVersion,omitempty"`
 
 	// TlsCiphers section for providing ciphers specification.
-	TlsCiphers *TlsCiphers `json:"tlsCiphers,omitempty"`
+	TlsCiphers TlsCiphers `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behaviour of inbound listeners with regard to traffic encryption.
 	Mode *Mode `json:"mode,omitempty"`

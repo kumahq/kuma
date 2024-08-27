@@ -1,3 +1,4 @@
+// +kubebuilder:object:generate=true
 package tls
 
 import (

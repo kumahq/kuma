@@ -2,6 +2,7 @@ package topology
 
 import (
 	"context"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"maps"
 	"net"
 	"strconv"
@@ -748,17 +749,17 @@ func createMeshExternalServiceEndpoint(
 	return nil
 }
 
-func toTlsVersion(version *meshexternalservice_api.TlsVersion) core_xds.TlsVersion {
+func toTlsVersion(version *common_tls.TlsVersion) core_xds.TlsVersion {
 	switch *version {
-	case meshexternalservice_api.TLSVersion13:
+	case common_tls.TLSVersion13:
 		return core_xds.TLSVersion13
-	case meshexternalservice_api.TLSVersion12:
+	case common_tls.TLSVersion12:
 		return core_xds.TLSVersion12
-	case meshexternalservice_api.TLSVersion11:
+	case common_tls.TLSVersion11:
 		return core_xds.TLSVersion11
-	case meshexternalservice_api.TLSVersion10:
+	case common_tls.TLSVersion10:
 		return core_xds.TLSVersion10
-	case meshexternalservice_api.TLSVersionAuto:
+	case common_tls.TLSVersionAuto:
 		fallthrough
 	default:
 		return core_xds.TLSVersionAuto

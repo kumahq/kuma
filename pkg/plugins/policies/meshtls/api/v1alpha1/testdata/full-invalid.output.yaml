@@ -1,29 +1,11 @@
 violations:
-- field: spec.match.type
-  message: unrecognized type 'UnknownMatchType' - only 'HostnameGenerator' is supported
-- field: spec.match.port
-  message: port must be a valid (1-65535)
-- field: spec.match.protocol
-  message: '"protocol" must be one of ["tcp", "grpc", "http", "http2"]'
-- field: spec.endpoints[0].port
-  message: must be defined when endpoint is an IP
-- field: spec.endpoints[1].port
-  message: port must be a valid (1-65535)
-- field: spec.endpoints[2].port
-  message: must be defined when endpoint is a hostname
-- field: spec.endpoints[3].port
-  message: must not be defined when endpoint is a unix path
-- field: spec.endpoints[4].address
-  message: address has to be a valid IP or hostname or a unix path
-- field: spec.tls.version.min
+- field: spec.from[0].default.mode
+  message: '"mode" must be one of ["Strict", "Permissive"]'
+- field: spec.from[0].default.tlsCiphers
+  message: '"tlsCiphers" must be one of ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384",
+    "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-RSA-AES256-GCM-SHA384",
+    "ECDHE-RSA-CHACHA20-POLY1305"]'
+- field: spec.from[0].default.version.min
   message: '"min" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
-- field: spec.tls.version.max
+- field: spec.from[0].default.version.max
   message: '"max" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
-- field: spec.tls.verification.serverName
-  message: must be a valid DNS name
-- field: spec.tls.verification.mode
-  message: '"mode" must be one of ["SkipSAN", "SkipCA", "SkipAll", "Secured"]'
-- field: spec.tls.verification.subjectAltNames[0].type
-  message: '"type" must be one of ["Prefix", "Exact"]'
-- field: spec.tls.verification.clientKey
-  message: must be defined when clientCert is defined

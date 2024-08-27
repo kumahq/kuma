@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/common/tls"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"slices"
@@ -30,7 +30,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 
 func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
-	fromPath := validators.RootedAt("from")
+	fromPath := validators.Root()
 
 	for idx, fromItem := range from {
 		path := fromPath.Index(idx)
@@ -50,14 +50,12 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		}
 	}
 
-	if conf.TlsCiphers != nil {
-		if !containsAll(allCiphers, *conf.TlsCiphers) {
-			verr.AddErrorAt(path.Field("tlsCiphers"), validators.MakeFieldMustBeOneOfErr("tlsCiphers", allCiphers...))
-		}
+	if !containsAll(allCiphers, conf.TlsCiphers) {
+		verr.AddErrorAt(path.Field("tlsCiphers"), validators.MakeFieldMustBeOneOfErr("tlsCiphers", allCiphers...))
 	}
 
 	if conf.TlsVersion != nil {
-		verr.AddError(validators.RootedAt("version").String(), tls.ValidateVersion(conf.TlsVersion))
+		verr.AddErrorAt(path.Field("version"), common_tls.ValidateVersion(conf.TlsVersion))
 	}
 
 	return verr

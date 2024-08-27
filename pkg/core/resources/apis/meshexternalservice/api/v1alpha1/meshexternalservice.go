@@ -2,10 +2,10 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/core/resources/apis/common/tls"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 )
 
@@ -79,7 +79,7 @@ type Tls struct {
 	// +kubebuilder:default=false
 	Enabled bool `json:"enabled,omitempty"`
 	// Version section for providing version specification.
-	Version *tls.Version `json:"version,omitempty"`
+	Version *common_tls.Version `json:"version,omitempty"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
 	// Setting this to true is not recommended for security reasons.
 	// +kubebuilder:default=false
