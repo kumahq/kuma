@@ -1,6 +1,7 @@
 Rules:
   :0:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       connectionTimeout: 33s
       http:
         requestTimeout: 33s
@@ -8,11 +9,11 @@ Rules:
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: mt-1
+      name: mt-2
       type: MeshTimeout
     - creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
       modificationTime: "0001-01-01T00:00:00Z"
-      name: mt-2
+      name: mt-1
       type: MeshTimeout
     Subset: []

@@ -2,7 +2,6 @@ package builder
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 
@@ -13,44 +12,31 @@ import (
 )
 
 // BuildIPTablesForRestore constructs the complete set of iptables rules for
-// restoring, based on the provided configuration and IP version.
+// restoring based on the provided configuration.
 //
 // This function performs the following steps:
-//  1. Builds the NAT table rules by calling `buildNatTable`. If this step
-//     fails, it returns an error indicating the failure to build the NAT table.
-//  2. Builds the rules for the raw, NAT, and mangle tables using the
-//     `BuildRulesForRestore` function.
-//  3. Filters out any empty rule sets from the results.
-//  4. Joins the remaining rules with a separator based on the verbosity setting
-//     from the configuration.
-//  5. Returns the joined rules as a single string.
+//  1. Builds the rules for the raw, nat, and mangle tables using the
+//     `BuildRulesForRestore` function, and filters out any empty rule sets.
+//  2. Determines the separator based on the verbosity setting from the
+//     configuration.
+//  3. Joins the remaining rules with the determined separator and returns
+//     the result.
 //
 // Args:
 //
-//	cfg (config.InitializedConfig): The configuration used to initialize the
-//	  iptables rules.
-//	ipv6 (bool): A boolean indicating whether to build rules for IPv6.
+//   - cfg (config.InitializedConfigIPvX): The configuration used to initialize
+//     the iptables rules.
 //
 // Returns:
 //
-//	string: The complete set of iptables rules as a single string.
-//	error: An error if the NAT table rules cannot be built.
-func BuildIPTablesForRestore(
-	cfg config.InitializedConfig,
-	ipv6 bool,
-) (string, error) {
-	// Attempt to build the NAT table rules.
-	natTable, err := buildNatTable(cfg, ipv6)
-	if err != nil {
-		return "", fmt.Errorf("failed to build NAT table: %w", err)
-	}
-
+//   - string: The complete set of iptables rules as a single string.
+func BuildIPTablesForRestore(cfg config.InitializedConfigIPvX) string {
 	// Build the rules for raw, NAT, and mangle tables, filtering out any empty
 	// sets.
 	result := slices.DeleteFunc([]string{
-		tables.BuildRulesForRestore(cfg, ipv6, buildRawTable(cfg, ipv6)),
-		tables.BuildRulesForRestore(cfg, ipv6, natTable),
-		tables.BuildRulesForRestore(cfg, ipv6, buildMangleTable(cfg, ipv6)),
+		tables.BuildRulesForRestore(cfg, buildRawTable(cfg)),
+		tables.BuildRulesForRestore(cfg, buildNatTable(cfg)),
+		tables.BuildRulesForRestore(cfg, buildMangleTable(cfg)),
 	}, func(s string) bool { return s == "" })
 
 	// Determine the separator based on verbosity setting.
@@ -60,39 +46,33 @@ func BuildIPTablesForRestore(
 	}
 
 	// Join the rules with the determined separator and return.
-	return strings.Join(result, separator) + "\n", nil
+	return strings.Join(result, separator) + "\n"
 }
 
 func RestoreIPTables(ctx context.Context, cfg config.InitializedConfig) (string, error) {
-	cfg.Logger.Info("kumactl is about to apply the iptables rules that " +
-		"will enable transparent proxying on the machine. The SSH connection " +
-		"may drop. If that happens, just reconnect again.")
+	cfg.Logger.Info("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again")
 
-	rules, err := BuildIPTablesForRestore(cfg, false)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to build iptables rules")
-	}
-
-	output, err := cfg.Executables.IPv4.Restore(ctx, rules)
+	output, err := cfg.IPv4.Executables.Restore(
+		ctx,
+		BuildIPTablesForRestore(cfg.IPv4),
+		false,
+	)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to restore iptables rules")
 	}
 
-	if cfg.IPv6 {
-		rules, err := BuildIPTablesForRestore(cfg, true)
-		if err != nil {
-			return "", errors.Wrap(err, "unable to build ip6tables rules")
-		}
-
-		ipv6Output, err := cfg.Executables.IPv6.Restore(ctx, rules)
+	if cfg.IPv6.Enabled() {
+		ipv6Output, err := cfg.IPv6.Executables.Restore(
+			ctx,
+			BuildIPTablesForRestore(cfg.IPv6),
+			false,
+		)
 		if err != nil {
 			return "", errors.Wrap(err, "unable to restore ip6tables rules")
 		}
 
 		output += ipv6Output
 	}
-
-	cfg.Logger.Info("iptables set to divert the traffic to Envoy")
 
 	return output, nil
 }

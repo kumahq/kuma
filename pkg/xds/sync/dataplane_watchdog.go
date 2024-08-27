@@ -61,7 +61,7 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.R
 	return &DataplaneWatchdog{
 		DataplaneWatchdogDependencies: deps,
 		key:                           dpKey,
-		log:                           core.Log.WithValues("key", dpKey),
+		log:                           core.Log.WithName("xds").WithValues("key", dpKey),
 		proxyTypeSettled:              false,
 	}
 }

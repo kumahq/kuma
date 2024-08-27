@@ -56,7 +56,7 @@ func GetFileInode(path string) (uint64, error) {
 	return stat.Ino, nil
 }
 
-func Setup(cfg config.InitializedConfig) (string, error) {
+func Setup(cfg config.InitializedConfigIPvX) (string, error) {
 	if os.Getuid() != 0 {
 		return "", fmt.Errorf("root user in required for this process or container")
 	}
@@ -102,9 +102,8 @@ func Setup(cfg config.InitializedConfig) (string, error) {
 	// exclude inbound ports
 
 	excludeInboundPorts := [MaxItemLen]uint16{
-		cfg.Redirect.Inbound.Port,
-		cfg.Redirect.Inbound.PortIPv6,
-		cfg.Redirect.Outbound.Port,
+		uint16(cfg.Redirect.Inbound.Port),
+		uint16(cfg.Redirect.Outbound.Port),
 	}
 
 	allowedAmountOfExcludeInPorts := MaxItemLen - len(excludeInboundPorts)

@@ -4,6 +4,7 @@ items:
     labels:
       k8s.kuma.io/is-headless-service: "false"
       k8s.kuma.io/service-name: example
+      kuma.io/env: kubernetes
       kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: example
@@ -28,6 +29,7 @@ items:
       dataplaneTags:
         k8s.kuma.io/namespace: demo
   status:
+    dataplaneProxies: {}
     tls: {}
     vips:
     - ip: 192.168.0.1

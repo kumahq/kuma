@@ -244,12 +244,14 @@ runtime:
         labels:
           openshift.io/build.name: "*"
           openshift.io/deployer-pod-for.name: "*"
-      # VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
-      #	serves on sub-path of insecure port 'virtualProbesPort',
+      # (Deprecated, set ApplicationProbeProxyPort to 0 to disable probe proxying) VirtualProbesEnabled enables automatic converting HttpGet probes to virtual.
+      #	Virtual probe serves on sub-path of insecure port 'virtualProbesPort',
       #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
       virtualProbesEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
-      # VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
+      # (Deprecated, use ApplicationProbeProxyPort instead) VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
       virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
+      # ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS. By setting to 0, probe proxying will be disabled.
+      applicationProbeProxyPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
       caCertFile: # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
       # SidecarContainer defines configuration of the Kuma sidecar container.
@@ -258,9 +260,6 @@ runtime:
         image: kuma/kuma-dp:latest # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
         # Redirect port for inbound traffic.
         redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
-        # Redirect port for inbound traffic.
-        # Deprecated: Use redirectPortInbound or ipFamilyMode instead.
-        redirectPortInboundV6: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6
         # IP family mode enabled for traffic redirection, can be 'dualstack' or 'ipv4'
         ipFamilyMode: dualstack # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IP_FAMILY_MODE
         # Redirect port for outbound traffic.
@@ -337,6 +336,14 @@ runtime:
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        # List of inbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeInboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_IPS
+        # List of outbound IP addresses that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-outbound-ips annotation is specified on the Pod.
+        # IP addresses can be specified with or without CIDR notation, and multiple addresses can be separated by commas.
+        excludeOutboundIPs: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_IPS
       builtinDNS:
         # Use the built-in DNS
         enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
@@ -410,6 +417,8 @@ defaults:
   skipTenantResources: false # ENV: KUMA_DEFAULTS_SKIP_TENANT_RESOURCES
   # If true, it creates the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh
   createMeshRoutingResources: false # ENV: KUMA_DEFAULTS_CREATE_MESH_ROUTING_RESOURCES
+  # If true, it skips creating default hostname generators
+  skipHostnameGenerators: false # ENV: KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS
 # Metrics configuration
 metrics:
   dataplane:
@@ -504,8 +513,6 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
-      # DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
-      disableSOTW: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
@@ -734,8 +741,6 @@ experimental:
   # you need to first disable this flag and redeploy cp, after config is rewritten to default
   # format you can downgrade your cp
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
-  # If true, KDS will sync using incremental xDS updates
-  kdsDeltaEnabled: true # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
   # This can trim the size of the ZoneIngress object significantly.
   # The drawback is that you cannot use filtered out tags for traffic routing.
@@ -818,3 +823,8 @@ ipam:
     cidr: 243.0.0.0/8 # ENV: KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR
   # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
   allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL
+meshService:
+  # How often we check whether MeshServices need to be generated from Dataplanes
+  generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL
+  # How long we wait before deleting a MeshService if all Dataplanes are gone
+  deletionGracePeriod: 1h # ENV: KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD

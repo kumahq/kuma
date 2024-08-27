@@ -260,6 +260,10 @@ func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
 	return d.Overview.Descriptor().NewList()
 }
 
+func (d ResourceTypeDescriptor) IsInsight() bool {
+	return strings.HasSuffix(string(d.Name), "Insight")
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -309,6 +313,12 @@ func HasScope(scope ResourceScope) TypeFilter {
 func IsPolicy() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.IsPolicy
+	})
+}
+
+func IsInsight() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.IsInsight()
 	})
 }
 
@@ -450,14 +460,26 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if isK8s && r.Descriptor().Scope == ScopeMesh {
-		setIfNotExist(metadata.KumaMeshLabel, DefaultMesh)
+	getMeshOrDefault := func() string {
+		if mesh := r.GetMeta().GetMesh(); mesh != "" {
+			return mesh
+		}
+		return DefaultMesh
+	}
+
+	if r.Descriptor().Scope == ScopeMesh {
+		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
 		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 			setIfNotExist(mesh_proto.ZoneTag, localZone)
+			env := mesh_proto.UniversalEnvironment
+			if isK8s {
+				env = mesh_proto.KubernetesEnvironment
+			}
+			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 
@@ -626,4 +648,75 @@ type PolicyWithFromList interface {
 type PolicyWithSingleItem interface {
 	Policy
 	GetPolicyItem() PolicyItem
+}
+
+func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
+	indexedResources := make(map[ResourceKey]T)
+	for _, resource := range resources {
+		key := MetaToResourceKey(resource.GetMeta())
+		indexedResources[key] = resource
+	}
+	return indexedResources
+}
+
+// Resource can implement defaulter to provide static default fields.
+// Kubernetes Webhook and Resource Manager will make sure that Default() is called before Create/Update
+type Defaulter interface {
+	Resource
+	Default() error
+}
+
+type ResourceIdentifier struct {
+	Name      string
+	Mesh      string
+	Namespace string
+	Zone      string
+}
+
+func NewResourceIdentifier(r Resource) ResourceIdentifier {
+	return ResourceIdentifier{
+		Name:      GetDisplayName(r.GetMeta()),
+		Mesh:      r.GetMeta().GetMesh(),
+		Namespace: r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
+		Zone:      r.GetMeta().GetLabels()[mesh_proto.ZoneTag],
+	}
+}
+
+func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) ResourceIdentifier {
+	switch tr.Kind {
+	case common_api.Mesh:
+		return ResourceIdentifier{
+			Name: meta.GetMesh(),
+		}
+	default:
+		var namespace string
+		if tr.Namespace != "" {
+			namespace = tr.Namespace
+		} else {
+			namespace = meta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		}
+		return ResourceIdentifier{
+			Mesh:      meta.GetMesh(),
+			Zone:      meta.GetLabels()[mesh_proto.ZoneTag],
+			Namespace: namespace,
+			Name:      tr.Name,
+		}
+	}
+}
+
+func (r ResourceIdentifier) String() string {
+	var pairs []string
+	if r.Mesh != "" {
+		pairs = append(pairs, fmt.Sprintf("mesh/%s", r.Mesh))
+	}
+	if r.Zone != "" {
+		pairs = append(pairs, fmt.Sprintf("zone/%s", r.Zone))
+	}
+	if r.Namespace != "" {
+		pairs = append(pairs, fmt.Sprintf("namespace/%s", r.Namespace))
+	}
+	if r.Name != "" {
+		pairs = append(pairs, fmt.Sprintf("name/%s", r.Name))
+	}
+	return strings.Join(pairs, ":")
 }

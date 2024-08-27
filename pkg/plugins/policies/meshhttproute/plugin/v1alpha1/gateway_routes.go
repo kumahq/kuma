@@ -4,6 +4,7 @@ import (
 	"slices"
 	"strings"
 
+	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -36,7 +37,20 @@ func sortRulesToHosts(
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
-	for _, hostnameTag := range sublisteners {
+	// Iterate over the listeners in order
+	sublistenersByHostname := map[string]meshroute.Sublistener{}
+	for _, sublistener := range sublisteners {
+		sublistenersByHostname[sublistener.Hostname] = sublistener
+	}
+
+	// Keep track of which hostnames we've seen at the listener level
+	// so we can track which matches can't be matched at a different listener
+	// Very important for the HTTP listeners where every virtual host ends up
+	// under the same route config
+	var observedHostnames []string
+
+	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(sublistenersByHostname)) {
+		hostnameTag := sublistenersByHostname[hostname]
 		inboundListener := rules.NewInboundListenerHostname(
 			address,
 			port,
@@ -104,6 +118,15 @@ func sortRulesToHosts(
 				}
 				rules = append(rules, hostnameRules...)
 			}
+			// As mentioned above we shouldn't add rules if this hostname match
+			// can't match because of a listener hostname
+			var hostnameMatchUnmatchable bool
+			for _, observedHostname := range observedHostnames {
+				hostnameMatchUnmatchable = hostnameMatchUnmatchable || match.Contains(observedHostname, hostnameMatch)
+			}
+			if hostnameMatchUnmatchable {
+				continue
+			}
 			// Create an info for every hostname match
 			// We may end up duplicating info more than once so we copy it here
 			host := plugin_gateway.GatewayHost{
@@ -131,6 +154,7 @@ func sortRulesToHosts(
 				hostInfo,
 			)
 		}
+		observedHostnames = append(observedHostnames, hostname)
 	}
 
 	return meshroute.SortByHostname(hostInfosByHostname)
@@ -193,7 +217,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		}
 		target := route.Destination{
 			Destination:   dest,
-			Weight:        uint32(*b.Weight),
+			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolHTTP,
 		}

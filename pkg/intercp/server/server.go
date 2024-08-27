@@ -11,10 +11,12 @@ import (
 
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc/filters"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/keepalive"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/intercp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
@@ -78,7 +80,10 @@ func New(
 
 	grpcOptions = append(grpcOptions, grpc.Creds(credentials.NewTLS(tlsCfg)))
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
-	grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
+	grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler(
+		otelgrpc.WithFilter(filters.Not(filters.ServiceName(system_proto.InterCpPingService_ServiceDesc.ServiceName))),
+	)))
+
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	return &InterCpServer{

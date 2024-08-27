@@ -9,7 +9,7 @@ import (
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
-var xdsServerLog = core.Log.WithName("xds-server")
+var xdsServerLog = core.Log.WithName("xds").WithName("server")
 
 func DefaultDataplaneProxyBuilder(
 	config kuma_cp.Config,

@@ -16,6 +16,7 @@ import (
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/client"
+	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/api-server/mappers"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -39,6 +40,11 @@ var _ = Describe("kumactl export", func() {
 		defs := registry.Global().ObjectDescriptors()
 		rootCtx, err := test_kumactl.MakeRootContext(rootTime, store, defs...)
 		Expect(err).ToNot(HaveOccurred())
+		res := test_kumactl.DummyIndexResponse
+		res.Version = "0.0.0-testversion"
+		rootCtx.Runtime.NewAPIServerClient = func(client util_http.Client) resources.ApiServerClient {
+			return resources.NewStaticApiServiceClient(res)
+		}
 		rootCtx.Runtime.NewKubernetesResourcesClient = func(client util_http.Client) client.KubernetesResourcesClient {
 			return fileBasedKubernetesResourcesClient{}
 		}
@@ -51,73 +57,79 @@ var _ = Describe("kumactl export", func() {
 		rootCmd.SetOut(buf)
 	})
 
-	It("should export resources in universal format", func() {
-		// given
-		resources := []model.Resource{
-			samples.MeshDefault(),
-			samples.SampleSigningKeyGlobalSecret(),
-			samples.SampleSigningKeySecret(),
-			samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
-			samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
-			samples.ServiceInsight().WithMesh("another-mesh").Build(),
-			samples.SampleGlobalSecretAdminCa(),
-		}
-		for _, res := range resources {
-			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		args := []string{
-			"--config-file",
-			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"export",
-		}
-		rootCmd.SetArgs(args)
-
-		// when
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", "export.golden.yaml"))
-	})
-
-	It("should export resources in kubernetes format", func() {
-		// given
-		resources := []model.Resource{
-			samples.MeshDefault(),
-			samples.SampleSigningKeyGlobalSecret(),
-			samples.MeshAccessLogWithFileBackend(),
-			samples.Retry(),
-		}
-		for _, res := range resources {
-			err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
-			Expect(err).ToNot(HaveOccurred())
-		}
-
-		args := []string{
-			"--config-file",
-			filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-			"export",
-			"--format=kubernetes",
-			"--profile", "all",
-		}
-		rootCmd.SetArgs(args)
-
-		// when
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-		Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", "export-kube.golden.yaml"))
-	})
-
 	type testCase struct {
+		args       []string
+		goldenFile string
+		resources  []model.Resource
+	}
+	DescribeTable("should succeed",
+		func(given testCase) {
+			for _, res := range given.resources {
+				err := store.Create(context.Background(), res, core_store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			args := append([]string{
+				"--config-file",
+				filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+				"export",
+			}, given.args...)
+			rootCmd.SetArgs(args)
+
+			// when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(buf.String()).To(matchers.MatchGoldenEqual("testdata", given.goldenFile))
+		},
+		Entry("no args", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.SampleSigningKeySecret(),
+				samples.MeshDefaultBuilder().WithName("another-mesh").Build(),
+				samples.SampleSigningKeySecretBuilder().WithMesh("another-mesh").Build(),
+				samples.ServiceInsight().WithMesh("another-mesh").Build(),
+				samples.SampleGlobalSecretAdminCa(),
+			},
+			goldenFile: "export.golden.yaml",
+		}),
+		Entry("kubernetes profile=all", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.MeshAccessLogWithFileBackend(),
+				samples.Retry(),
+			},
+			args: []string{
+				"--format=kubernetes",
+				"--profile", "all",
+				"-a",
+			},
+			goldenFile: "export-kube.golden.yaml",
+		}),
+		Entry("kubernetes profile=no-dataplanes without secrets", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.MeshAccessLogWithFileBackend(),
+				samples.Retry(),
+				samples.DataplaneBackend(),
+			},
+			args: []string{
+				"--profile", "no-dataplanes",
+			},
+			goldenFile: "export-no-dp.golden.yaml",
+		}),
+	)
+
+	type invalidTestCase struct {
 		args []string
 		err  string
 	}
 	DescribeTable("should fail on invalid resource",
-		func(given testCase) {
+		func(given invalidTestCase) {
 			// given
 			args := []string{
 				"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
@@ -133,11 +145,11 @@ var _ = Describe("kumactl export", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(ContainSubstring(given.err))
 		},
-		Entry("invalid profile", testCase{
+		Entry("invalid profile", invalidTestCase{
 			args: []string{"--profile", "something"},
 			err:  "invalid profile",
 		}),
-		Entry("invalid format", testCase{
+		Entry("invalid format", invalidTestCase{
 			args: []string{"--format", "something"},
 			err:  "invalid format",
 		}),

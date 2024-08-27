@@ -89,7 +89,6 @@ func CollectListenerInfos(
 			ctx,
 			meshCtx.Resource,
 			matchedExternalServices,
-			meshCtx.Resources.MeshExternalServices().Items,
 			meshCtx.DataSourceLoader,
 			proxy.Zone,
 		)
@@ -135,22 +134,16 @@ func AddToListenerByHostname(
 	listenerTls *mesh_proto.MeshGateway_TLS_Conf,
 	hostInfos ...plugin_gateway.GatewayHostInfo,
 ) {
-	// This is the key by which we partition route rules, which is only
-	// necessary/possible when using HTTPS + listener hostnames
-	listenerKey := "*"
-	switch listenerProtocol {
-	case mesh_proto.MeshGateway_Listener_HTTPS, mesh_proto.MeshGateway_Listener_TLS:
-		listenerKey = listenerHostname
-	}
-	listenerEntry, ok := acc[listenerKey]
+	listenerEntry, ok := acc[listenerHostname]
 	if !ok {
 		listenerEntry = plugin_gateway.GatewayListenerHostname{
-			Hostname: listenerKey,
+			Hostname: listenerHostname,
+			Protocol: listenerProtocol,
 			TLS:      listenerTls,
 		}
 	}
 	listenerEntry.HostInfos = append(listenerEntry.HostInfos, hostInfos...)
-	acc[listenerKey] = listenerEntry
+	acc[listenerHostname] = listenerEntry
 }
 
 func SortByHostname(listenersByHostname map[string]plugin_gateway.GatewayListenerHostname) []plugin_gateway.GatewayListenerHostname {

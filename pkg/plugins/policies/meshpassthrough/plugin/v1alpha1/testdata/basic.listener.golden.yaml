@@ -125,7 +125,7 @@ resources:
               name: 192.168.19.1
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_192.168.19.1_10000
             - domains:
@@ -162,7 +162,7 @@ resources:
               name: example.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_example.com_8080
             - domains:
@@ -170,7 +170,7 @@ resources:
               name: http2.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_http2.com_8080
             - domains:
@@ -178,7 +178,7 @@ resources:
               name: other.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_other.com_8080
             - domains:
@@ -219,7 +219,7 @@ resources:
               name: grpcdomain.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_grpcdomain.com_19000
             - domains:
@@ -398,7 +398,7 @@ resources:
               name: example.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_example.com_8080
             - domains:
@@ -406,7 +406,7 @@ resources:
               name: http2.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_http2.com_8080
             - domains:
@@ -414,7 +414,7 @@ resources:
               name: other.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_other.com_8080
             - domains:
@@ -455,7 +455,7 @@ resources:
               name: grpcdomain.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_grpcdomain.com_19000
             - domains:

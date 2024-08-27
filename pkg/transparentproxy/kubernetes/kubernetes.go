@@ -37,7 +37,6 @@ type PodRedirect struct {
 	RedirectInbound                          bool
 	ExcludeInboundPorts                      string
 	RedirectPortInbound                      uint32
-	RedirectPortInboundV6                    uint32
 	IpFamilyMode                             string
 	UID                                      string
 	TransparentProxyEnableEbpf               bool
@@ -49,6 +48,8 @@ type PodRedirect struct {
 	ExcludeOutboundPortsForUIDs              []string
 	DropInvalidPackets                       bool
 	IptablesLogs                             bool
+	ExcludeInboundIPs                        string
+	ExcludeOutboundIPs                       string
 }
 
 func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
@@ -71,20 +72,6 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.ExcludeOutboundPortsForUIDs = strings.Split(excludeOutboundPortsForUIDs, ";")
 	}
 
-	excludeOutboundTCPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundTCPPortsForUIDs)
-	if exists {
-		for _, v := range strings.Split(excludeOutboundTCPPortsForUIDs, ";") {
-			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("tcp:%s", v))
-		}
-	}
-
-	excludeOutboundUDPPortsForUIDs, exists := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundUDPPortsForUIDs)
-	if exists {
-		for _, v := range strings.Split(excludeOutboundUDPPortsForUIDs, ";") {
-			podRedirect.ExcludeOutboundPortsForUIDs = append(podRedirect.ExcludeOutboundPortsForUIDs, fmt.Sprintf("udp:%s", v))
-		}
-	}
-
 	podRedirect.RedirectPortOutbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
 	if err != nil {
 		return nil, err
@@ -99,14 +86,8 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.RedirectInbound = false
 	}
 
-	podRedirect.ExcludeInboundPorts, _ = metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
-
+	podRedirect.ExcludeInboundPorts = excludeApplicationProbeProxyPort(pod.Annotations)
 	podRedirect.RedirectPortInbound, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
-	if err != nil {
-		return nil, err
-	}
-
-	podRedirect.RedirectPortInboundV6, _, err = metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotationV6)
 	if err != nil {
 		return nil, err
 	}
@@ -145,25 +126,68 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		podRedirect.TransparentProxyEbpfProgramsSourcePath = value
 	}
 
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(
+		metadata.KumaTrafficExcludeInboundIPs,
+	); exists {
+		var addresses []string
+
+		for _, address := range strings.Split(value, ",") {
+			if trimmed := strings.TrimSpace(address); trimmed != "" {
+				addresses = append(addresses, trimmed)
+			}
+		}
+
+		podRedirect.ExcludeInboundIPs = strings.Join(addresses, ",")
+	}
+
+	if value, exists := metadata.Annotations(pod.Annotations).GetString(
+		metadata.KumaTrafficExcludeOutboundIPs,
+	); exists {
+		var addresses []string
+
+		for _, address := range strings.Split(value, ",") {
+			if trimmed := strings.TrimSpace(address); trimmed != "" {
+				addresses = append(addresses, trimmed)
+			}
+		}
+
+		podRedirect.ExcludeOutboundIPs = strings.Join(addresses, ",")
+	}
+
 	return podRedirect, nil
+}
+
+func excludeApplicationProbeProxyPort(annotations map[string]string) string {
+	// the annotations are validated/defaulted in a previous step in injector.NewAnnotations, so we can safely ignore the errors here
+	inboundPortsToExclude, _ := metadata.Annotations(annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
+	appProbeProxyPort, _ := metadata.Annotations(annotations).GetString(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if appProbeProxyPort == "0" || appProbeProxyPort == "" {
+		return inboundPortsToExclude
+	}
+
+	if inboundPortsToExclude == "" {
+		return appProbeProxyPort
+	}
+
+	return fmt.Sprintf("%s,%s", inboundPortsToExclude, appProbeProxyPort)
 }
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	result := []string{
-		"--config-file",
-		"/tmp/kumactl/config",
 		"--redirect-outbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortOutbound),
 		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
 		"--redirect-inbound-port",
 		fmt.Sprintf("%d", pr.RedirectPortInbound),
-		"--kuma-dp-uid",
+		"--kuma-dp-user",
 		pr.UID,
 		"--exclude-inbound-ports",
 		pr.ExcludeInboundPorts,
 		"--exclude-outbound-ports",
 		pr.ExcludeOutboundPorts,
 		"--verbose",
+		"--ip-family-mode",
+		pr.IpFamilyMode,
 	}
 
 	for _, exclusion := range pr.ExcludeOutboundPortsForUIDs {
@@ -177,15 +201,6 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
 		)
-	}
-
-	result = append(result, "--ip-family-mode", pr.IpFamilyMode)
-	if pr.IpFamilyMode != metadata.IpFamilyModeIPv4 &&
-		pr.RedirectPortInboundV6 > 0 &&
-		pr.RedirectPortInboundV6 != pr.RedirectPortInbound {
-		result = append(result,
-			"--redirect-inbound-port-v6",
-			fmt.Sprintf("%d", pr.RedirectPortInboundV6))
 	}
 
 	if pr.TransparentProxyEnableEbpf {
@@ -220,6 +235,14 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 
 	if pr.IptablesLogs {
 		result = append(result, "--iptables-logs")
+	}
+
+	if pr.ExcludeOutboundIPs != "" {
+		result = append(result, "--exclude-outbound-ips", pr.ExcludeOutboundIPs)
+	}
+
+	if pr.ExcludeInboundIPs != "" {
+		result = append(result, "--exclude-inbound-ips", pr.ExcludeInboundIPs)
 	}
 
 	return result

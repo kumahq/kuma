@@ -49,10 +49,22 @@ func (r *resourcesManager) List(ctx context.Context, list model.ResourceList, fs
 }
 
 func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, fs ...store.CreateOptionsFunc) error {
+	opts := store.NewCreateOptions(fs...)
+
+	// Create temporary meta so validation can see the meta that the store will set
+	existingMeta := resource.GetMeta()
+	if existingMeta == nil {
+		resource.SetMeta(metaFromCreateOpts(resource.Descriptor(), *opts))
+	}
+	if defaulter, ok := resource.(model.Defaulter); ok {
+		if err := defaulter.Default(); err != nil {
+			return err
+		}
+	}
 	if err := model.Validate(resource); err != nil {
 		return err
 	}
-	opts := store.NewCreateOptions(fs...)
+	resource.SetMeta(existingMeta)
 
 	var owner model.Resource
 	if resource.Descriptor().Scope == model.ScopeMesh {
@@ -68,7 +80,9 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 		}
 	}
 
-	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner))...)
+	allOpts := []store.CreateOptionsFunc{store.CreatedAt(core.Now()), store.CreateWithOwner(owner)}
+	allOpts = append(allOpts, fs...)
+	return r.Store.Create(ctx, resource, allOpts...)
 }
 
 func (r *resourcesManager) Delete(ctx context.Context, resource model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -93,6 +107,11 @@ func DeleteAllResources(manager ResourceManager, ctx context.Context, list model
 }
 
 func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, fs ...store.UpdateOptionsFunc) error {
+	if defaulter, ok := resource.(model.Defaulter); ok {
+		if err := defaulter.Default(); err != nil {
+			return err
+		}
+	}
 	if err := model.Validate(resource); err != nil {
 		return err
 	}

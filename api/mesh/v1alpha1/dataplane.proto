@@ -255,10 +255,10 @@ message Dataplane {
       // operation, use it only if needed.
       repeated string direct_access_services = 3;
 
-      // Port on which all IPv6 inbound traffic is being transparently
-      // redirected.
-      uint32 redirect_port_inbound_v6 = 4
-          [ (validate.rules).uint32 = {lte : 65535} ];
+      // `redirect_port_inbound_v6` has been removed since both IPv4 and IPv6
+      // now use the same port for inbound redirection.
+      reserved 4;
+      reserved "redirect_port_inbound_v6";
 
       // List of reachable services (represented by the value of
       // `kuma.io/service`) via transparent proxying. Setting an explicit list
@@ -268,6 +268,30 @@ message Dataplane {
 
       // The IP family mode to enable for. Can be "IPv4" or "DualStack".
       IpFamilyMode ip_family_mode = 6;
+      message ReachableBackendRef {
+        // Type of the backend: MeshService or MeshExternalService
+        //  +required
+        string kind = 1;
+        // Name of the backend.
+        //  +optional
+        string name = 2;
+        // Namespace of the backend. Might be empty
+        //  +optional
+        string namespace = 3;
+        // Port of the backend.
+        //  +optional
+        google.protobuf.UInt32Value port = 4;
+        // Labels used to select backends
+        //  +optional
+        map<string, string> labels = 5;
+      }
+
+      message ReachableBackends { repeated ReachableBackendRef refs = 1; }
+      // Reachable backend via transparent proxy when running with
+      // MeshExternalService, MeshService and MeshMultiZoneService. Setting an
+      // explicit list of refs can dramatically improve the performance of the
+      // mesh. If not specified, all services in the mesh are reachable.
+      ReachableBackends reachable_backends = 7;
     }
 
     // Gateway describes a configuration of the gateway of the data plane proxy.
@@ -338,5 +362,7 @@ message Dataplane {
   // See
   // https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
   // for more information.
+  // Deprecated: this feature will be removed for Universal; on Kubernetes, it's
+  // not needed anymore.
   Probes probes = 3;
 }

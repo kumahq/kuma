@@ -55,6 +55,9 @@ const (
 	// KumaVirtualProbesPortAnnotation is an insecure port for listening virtual probes
 	KumaVirtualProbesPortAnnotation = "kuma.io/virtual-probes-port"
 
+	// KumaApplicationProbeProxyPortAnnotation is a port for proxying application probes
+	KumaApplicationProbeProxyPortAnnotation = "kuma.io/application-probe-proxy-port"
+
 	// KumaSidecarEnvVarsAnnotation is a ; separated list of env vars that will be applied on Kuma Sidecar
 	// Example value: TEST1=1;TEST2=2
 	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"
@@ -76,13 +79,13 @@ const (
 	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
 	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
-	KumaTrafficExcludeInboundPorts            = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts           = "traffic.kuma.io/exclude-outbound-ports"
-	KumaTrafficExcludeOutboundPortsForUIDs    = "traffic.kuma.io/exclude-outbound-ports-for-uids"
-	KumaTrafficExcludeOutboundTCPPortsForUIDs = "traffic.kuma.io/exclude-outbound-tcp-ports-for-uids"
-	KumaTrafficExcludeOutboundUDPPortsForUIDs = "traffic.kuma.io/exclude-outbound-udp-ports-for-uids"
-	KumaTrafficDropInvalidPackets             = "traffic.kuma.io/drop-invalid-packets"
-	KumaTrafficIptablesLogs                   = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundPorts         = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts        = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs = "traffic.kuma.io/exclude-outbound-ports-for-uids"
+	KumaTrafficDropInvalidPackets          = "traffic.kuma.io/drop-invalid-packets"
+	KumaTrafficIptablesLogs                = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs           = "traffic.kuma.io/exclude-inbound-ips"
+	KumaTrafficExcludeOutboundIPs          = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"
@@ -115,10 +118,6 @@ const (
 	// KumaWaitForDataplaneReady allows to specify if the application sidecar should be hold until Envoy is ready
 	KumaWaitForDataplaneReady = "kuma.io/wait-for-dataplane-ready"
 
-	// ManagedBy points to the Service that a MeshService is derived from. If
-	// it's converted from a Kubernetes Service, it has the value
-	// "k8s-controller"
-	ManagedBy = "kuma.io/managed-by"
 	// KumaServiceName points to the Service that a MeshService is derived from
 	KumaServiceName = "k8s.kuma.io/service-name"
 
@@ -129,6 +128,8 @@ const (
 var PodAnnotationDeprecations = []Deprecation{
 	NewReplaceByDeprecation("kuma.io/builtindns", KumaBuiltinDNS, true),
 	NewReplaceByDeprecation("kuma.io/builtindnsport", KumaBuiltinDNSPort, true),
+	NewDeprecation(KumaVirtualProbesAnnotation, false),
+	NewReplaceByDeprecation(KumaVirtualProbesPortAnnotation, KumaApplicationProbeProxyPortAnnotation, false),
 	{
 		Key:     KumaSidecarInjectionAnnotation,
 		Message: "WARNING: you are using kuma.io/sidecar-injection as annotation. This is not supported you should use it as a label instead",
@@ -151,6 +152,17 @@ func NewReplaceByDeprecation(old, new string, removed bool) Deprecation {
 	}
 }
 
+func NewDeprecation(old string, removed bool) Deprecation {
+	msg := fmt.Sprintf("'%s' will be removed in a future release", old)
+	if removed {
+		msg = fmt.Sprintf("'%s' is no longer supported and it will be ignored, please see documentation on how to migrate", old)
+	}
+	return Deprecation{
+		Key:     old,
+		Message: msg,
+	}
+}
+
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
 	KumaSidecarInjectedAnnotation                      = "kuma.io/sidecar-injected"
@@ -159,10 +171,10 @@ const (
 	KumaEnvoyAdminPort                                 = "kuma.io/envoy-admin-port"
 	KumaTransparentProxyingAnnotation                  = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingInboundPortAnnotation       = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingInboundPortAnnotationV6     = "kuma.io/transparent-proxying-inbound-v6-port"
 	KumaTransparentProxyingIPFamilyMode                = "kuma.io/transparent-proxying-ip-family-mode"
 	KumaTransparentProxyingOutboundPortAnnotation      = "kuma.io/transparent-proxying-outbound-port"
 	KumaTransparentProxyingReachableServicesAnnotation = "kuma.io/transparent-proxying-reachable-services"
+	KumaReachableBackends                              = "kuma.io/reachable-backends"
 	CNCFNetworkAnnotation                              = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI                                            = "kuma-cni"
 	KumaTransparentProxyingEbpf                        = "kuma.io/transparent-proxying-ebpf"

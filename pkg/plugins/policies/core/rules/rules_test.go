@@ -1,7 +1,6 @@
 package rules_test
 
 import (
-	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -9,13 +8,12 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
 var _ = Describe("Rules", func() {
@@ -307,18 +305,7 @@ var _ = Describe("Rules", func() {
 	Describe("BuildRules", func() {
 		buildRulesTestTemplate := func(inputFile string, fn func(policies []core_model.Resource) (interface{}, error)) {
 			// given
-			inputs, err := os.ReadFile(inputFile)
-			Expect(err).NotTo(HaveOccurred())
-			parts := strings.SplitN(string(inputs), "\n", 2)
-			Expect(parts[0]).To(HavePrefix("#"), "is not a comment which explains the test")
-			policiesBytesList := util_yaml.SplitYAML(string(inputs))
-
-			var policies []core_model.Resource
-			for _, policyBytes := range policiesBytesList {
-				policy, err := rest.YAML.UnmarshalCore([]byte(policyBytes))
-				Expect(err).ToNot(HaveOccurred())
-				policies = append(policies, policy)
-			}
+			policies := readInputFile(inputFile)
 			// when
 			rules, err := fn(policies)
 			Expect(err).ToNot(HaveOccurred())
@@ -351,16 +338,18 @@ var _ = Describe("Rules", func() {
 			func(inputFile string) {
 				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
 					actualPolicies := []core_model.Resource{}
-					var httpRoutes []core_model.Resource
+					var httpRoutes []*v1alpha1.MeshHTTPRouteResource
 					for _, policy := range policies {
 						switch policy.Descriptor().Name {
 						case v1alpha1.MeshHTTPRouteType:
-							httpRoutes = append(httpRoutes, policy)
+							httpRoutes = append(httpRoutes, policy.(*v1alpha1.MeshHTTPRouteResource))
 						default:
 							actualPolicies = append(actualPolicies, policy)
 						}
 					}
-					return core_rules.BuildToRules(actualPolicies, httpRoutes)
+					return core_rules.BuildToRules(actualPolicies, context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
+						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{Items: httpRoutes},
+					}})
 				})
 			},
 			test.EntriesForFolder("rules/to"),

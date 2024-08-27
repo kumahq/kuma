@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -62,21 +63,6 @@ func PodIPOfApp(cluster Cluster, name string, namespace string) (string, error) 
 		return "", errors.Errorf("expected %d pods, got %d", 1, len(pods))
 	}
 	return pods[0].Status.PodIP, nil
-}
-
-func ServiceIP(cluster Cluster, name string, namespace string) (string, error) {
-	clusterIP, err := k8s.RunKubectlAndGetOutputE(
-		cluster.GetTesting(),
-		cluster.GetKubectlOptions(namespace),
-		"get", "service", name, "-ojsonpath={.spec.clusterIP}",
-	)
-	if err != nil {
-		return "", err
-	}
-	if clusterIP == "" {
-		return "", errors.Errorf("expected not empty ClusterIP for service: %s namespace: %s", name, namespace)
-	}
-	return clusterIP, nil
 }
 
 func GatewayAPICRDs(cluster Cluster) error {
@@ -371,4 +357,18 @@ func RestartCount(pods []v1.Pod) int {
 		}
 	}
 	return restartCount
+}
+
+func ScaleApp(cluster Cluster, app, namespace string, replicas int) error {
+	if err := k8s.RunKubectlE(
+		cluster.GetTesting(),
+		cluster.GetKubectlOptions(namespace),
+		"scale", "deployment", app, "--replicas", strconv.Itoa(replicas),
+	); err != nil {
+		return errors.Wrap(err, "could not scale")
+	}
+	if err := WaitNumPods(namespace, replicas, app)(cluster); err != nil {
+		return errors.Wrap(err, "could not wait until app is scaled")
+	}
+	return nil
 }

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -173,14 +172,13 @@ func AddFilterChains(
 		}
 	}
 
-	for _, ms := range meshDestinations.MeshServices {
-		clusterName := envoy_names.GetMeshClusterName(ms.Mesh, ms.DestinationName)
+	for _, refDest := range meshDestinations.BackendRefs {
+		clusterName := envoy_names.GetMeshClusterName(refDest.Mesh, refDest.DestinationName)
 
-		sni := tls.SNIForResource(ms.Name, ms.Mesh, v1alpha1.MeshServiceType, ms.Port, nil)
-		if _, ok := sniUsed[sni]; ok {
+		if _, ok := sniUsed[refDest.SNI]; ok {
 			continue
 		}
-		sniUsed[sni] = struct{}{}
+		sniUsed[refDest.SNI] = struct{}{}
 
 		// todo(jakubdyszkiewicz) support splits
 		relevantTags := envoy_tags.Tags{}
@@ -189,15 +187,15 @@ func AddFilterChains(
 		// then deduplicated in later steps
 		cluster := envoy_common.NewCluster(
 			envoy_common.WithName(clusterName),
-			envoy_common.WithService(ms.DestinationName),
+			envoy_common.WithService(refDest.DestinationName),
 			envoy_common.WithTags(relevantTags),
 		)
-		cluster.SetMesh(ms.Mesh)
+		cluster.SetMesh(refDest.Mesh)
 
 		filterChain := envoy_listeners.FilterChain(
 			envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
 				envoy_listeners.MatchTransportProtocol("tls"),
-				envoy_listeners.MatchServerNames(sni),
+				envoy_listeners.MatchServerNames(refDest.SNI),
 				envoy_listeners.TcpProxyDeprecatedWithMetadata(
 					clusterName,
 					cluster,

@@ -4,6 +4,9 @@ on:
       FULL_MATRIX:
         required: true
         type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
 permissions:
   contents: read
 env:
@@ -20,7 +23,7 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
@@ -39,7 +42,6 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
-      runners: ${{ steps.assign-e2e-runners.outputs.runners }}
     steps:
       - id: generate-matrix
         name: Generate matrix
@@ -96,48 +98,6 @@ jobs:
           echo "matrix<<EOF" >> $GITHUB_OUTPUT
           echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-      - id: assign-e2e-runners
-        name: Assign runners for E2E tests
-        env:
-          IS_TRUSTED_BUILD: ${{ github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository }}
-          ALL_RUNNERS: |-
-            {
-              "trusted_builds": {
-                "amd64": [
-                  "ubuntu-latest"
-                ],
-                "arm64": [
-                  "ubuntu-latest-arm64-kong"
-                ]
-              },
-              "untrusted_builds": {
-                "amd64": [
-                  "ubuntu-latest"
-                ],
-                "arm64": []
-              }
-            }
-        run: |-
-          ALL_RUNNERS='${{ env.ALL_RUNNERS }}'
-          if [[ "${{ env.IS_TRUSTED_BUILD }}" == "true" ]]; then
-            ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.trusted_builds')
-          else
-            ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r '.untrusted_builds')
-          fi
-
-          for ARCH in amd64 arm64; do
-            COUNT=$(echo $ALL_RUNNERS | jq -r ".$ARCH | length")
-            if [[ $COUNT -eq 0 ]]; then
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=\"\"")
-            else
-              ALL_RUNNERS=$(echo $ALL_RUNNERS | jq -r ".$ARCH=.$ARCH[0]")
-            fi
-          done
-
-          echo "final runners: $ALL_RUNNERS"
-          echo "runners<<EOF" >> $GITHUB_OUTPUT
-          echo "$ALL_RUNNERS" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
   test_e2e:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
@@ -148,7 +108,7 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
@@ -160,5 +120,5 @@ jobs:
     uses: ./.github/workflows/_e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ needs.gen_e2e_matrix.outputs.runners }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
     secrets: inherit

@@ -20,7 +20,7 @@ import (
 const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
-	nameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
+	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
@@ -36,6 +36,7 @@ type (
 type ValidateTagsOpts struct {
 	RequireAtLeastOneTag    bool
 	RequireService          bool
+	ForbidService           bool
 	ExtraTagsValidators     []TagsValidatorFunc
 	ExtraTagKeyValidators   []TagKeyValidatorFunc
 	ExtraTagValueValidators []TagValueValidatorFunc
@@ -135,6 +136,9 @@ func validateTagKeyValues(path validators.PathBuilder, keyValues map[string]stri
 		}
 	}
 	_, defined := keyValues[mesh_proto.ServiceTag]
+	if opts.ForbidService && defined {
+		err.AddViolationAt(path, fmt.Sprintf("%q must not be defined", mesh_proto.ServiceTag))
+	}
 	if opts.RequireService && !defined {
 		err.AddViolationAt(path, fmt.Sprintf("mandatory tag %q is missing", mesh_proto.ServiceTag))
 	}
@@ -408,7 +412,7 @@ func ValidateTargetRef(
 func validateName(value string, allowedInvalidNames []string) validators.ValidationError {
 	var err validators.ValidationError
 
-	if !slices.Contains(allowedInvalidNames, value) && !nameCharacterSet.MatchString(value) {
+	if !slices.Contains(allowedInvalidNames, value) && !NameCharacterSet.MatchString(value) {
 		err.AddViolation(
 			"name",
 			"invalid characters: must consist of lower case alphanumeric characters, '-', '.' and '_'.",

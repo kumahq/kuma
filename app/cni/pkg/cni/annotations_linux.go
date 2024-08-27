@@ -2,6 +2,7 @@ package cni
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -12,11 +13,10 @@ const (
 	defaultProxyStatusPort     = "9901"
 	defaultOutboundPort        = "15001"
 	defaultInboundPort         = "15006"
-	defaultInboundPortV6       = "15010"
-	zeroInboundPortV6          = "0"
-	defaultIPFamilyMode        = "unspecified"
+	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
+	defaultAppProbeProxyPort   = "9000"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
@@ -26,7 +26,6 @@ var annotationRegistry = map[string]*annotationParam{
 	"excludeInboundPorts":         {"traffic.kuma.io/exclude-inbound-ports", defaultRedirectExcludePort, validatePortList},
 	"excludeOutboundPorts":        {"traffic.kuma.io/exclude-outbound-ports", defaultRedirectExcludePort, validatePortList},
 	"inboundPort":                 {"kuma.io/transparent-proxying-inbound-port", defaultInboundPort, validatePortList},
-	"inboundPortV6":               {"kuma.io/transparent-proxying-inbound-v6-port", defaultInboundPortV6, validatePortList},
 	"ipFamilyMode":                {"kuma.io/transparent-proxying-ip-family-mode", defaultIPFamilyMode, validateIpFamilyMode},
 	"outboundPort":                {"kuma.io/transparent-proxying-outbound-port", defaultOutboundPort, validatePortList},
 	"isGateway":                   {"kuma.io/gateway", "false", alwaysValidFunc},
@@ -36,6 +35,9 @@ var annotationRegistry = map[string]*annotationParam{
 	"noRedirectUID":               {"kuma.io/sidecar-uid", defaultNoRedirectUID, alwaysValidFunc},
 	"dropInvalidPackets":          {"traffic.kuma.io/drop-invalid-packets", "false", alwaysValidFunc},
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
+	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
+	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
+	"applicationProbeProxyPort":   {"kuma.io/application-probe-proxy-port", defaultAppProbeProxyPort, validateSinglePort},
 }
 
 type IntermediateConfig struct {
@@ -44,7 +46,6 @@ type IntermediateConfig struct {
 
 	targetPort                  string
 	inboundPort                 string
-	inboundPortV6               string
 	ipFamilyMode                string
 	noRedirectUID               string
 	excludeInboundPorts         string
@@ -55,6 +56,8 @@ type IntermediateConfig struct {
 	builtinDNSPort              string
 	dropInvalidPackets          string
 	iptablesLogs                string
+	excludeInboundIPs           string
+	excludeOutboundIPs          string
 }
 
 type annotationValidationFunc func(value string) error
@@ -96,9 +99,60 @@ func parsePorts(portsString string) ([]int, error) {
 	return ports, nil
 }
 
+// validateIPs checks if the input string contains valid IP addresses or CIDR
+// notations. It accepts a comma-separated string of IP addresses and/or CIDR
+// blocks, trims any surrounding whitespace, and validates each entry.
+//
+// Args:
+//   - addresses (string): A comma-separated string of IP addresses or CIDR
+//     blocks.
+//
+// Returns:
+//   - error: An error if the input string is empty or if any of the IP
+//     addresses or CIDR blocks are invalid.
+func validateIPs(addresses string) error {
+	addresses = strings.TrimSpace(addresses)
+
+	if addresses == "" {
+		return errors.New("IPs cannot be empty")
+	}
+
+	// Split the string into individual addresses based on commas.
+	for _, address := range strings.Split(addresses, ",") {
+		address = strings.TrimSpace(address)
+
+		// Check if the address is a valid CIDR block.
+		if _, _, err := net.ParseCIDR(address); err == nil {
+			continue
+		}
+
+		// Check if the address is a valid IP address.
+		if ip := net.ParseIP(address); ip != nil {
+			continue
+		}
+
+		// If the address is neither a valid IP nor a valid CIDR block, return
+		// an error.
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> "+
+				"(e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		)
+	}
+
+	return nil
+}
+
 func validatePortList(ports string) error {
 	if _, err := parsePorts(ports); err != nil {
 		return errors.Wrapf(err, "portList %q", ports)
+	}
+	return nil
+}
+
+func validateSinglePort(portString string) error {
+	if _, err := parsePort(portString); err != nil {
+		return err
 	}
 	return nil
 }
@@ -136,12 +190,12 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
+	valDefaultProbeProxyPort := defaultAppProbeProxyPort
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
 		"inboundPort":                 &intermediateConfig.inboundPort,
 		"ipFamilyMode":                &intermediateConfig.ipFamilyMode,
-		"inboundPortV6":               &intermediateConfig.inboundPortV6,
 		"excludeInboundPorts":         &intermediateConfig.excludeInboundPorts,
 		"excludeOutboundPorts":        &intermediateConfig.excludeOutboundPorts,
 		"isGateway":                   &intermediateConfig.isGateway,
@@ -149,8 +203,11 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"applicationProbeProxyPort":   &valDefaultProbeProxyPort,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
+		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
+		"excludeOutboundIPs":          &intermediateConfig.excludeOutboundIPs,
 	}
 
 	for fieldName, fieldPointer := range allFields {
@@ -159,8 +216,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
-	// defaults to the ipv4 port if ipv6 port is not set
-	assignIPv6InboundRedirectPort(allFields)
+	excludeAppProbeProxyPort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -173,22 +229,17 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	return nil
 }
 
-func assignIPv6InboundRedirectPort(allFields map[string]*string) {
-	v6PortFieldPointer := allFields["inboundPortV6"]
-	ipFamilyModeAnno := allFields["ipFamilyMode"]
-
-	if *ipFamilyModeAnno == defaultIPFamilyMode {
-		defaultIpMode := "dualstack"
-		// an existing pod can disable ipv6 by setting inboundPortV6 to 0, and they don't have ipFamilyMode set
-		if *v6PortFieldPointer == zeroInboundPortV6 {
-			defaultIpMode = "ipv4"
-		}
-		*ipFamilyModeAnno = defaultIpMode
+func excludeAppProbeProxyPort(allFields map[string]*string) {
+	inboundPortsToExclude := allFields["excludeInboundPorts"]
+	applicationProbeProxyPort := *allFields["applicationProbeProxyPort"]
+	if applicationProbeProxyPort == "0" {
+		return
 	}
 
-	if *ipFamilyModeAnno == "ipv4" {
-		*v6PortFieldPointer = "0"
-	} else if *v6PortFieldPointer == defaultInboundPortV6 {
-		*v6PortFieldPointer = *allFields["inboundPort"]
+	existingExcludes := *inboundPortsToExclude
+	if existingExcludes == "" {
+		*inboundPortsToExclude = applicationProbeProxyPort
+	} else {
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, applicationProbeProxyPort)
 	}
 }

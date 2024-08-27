@@ -1027,6 +1027,34 @@ func (c *K8sCluster) DeleteMesh(mesh string) error {
 	return err
 }
 
+func (c *K8sCluster) GetClusterIP(serviceName, namespace string) (string, error) {
+	service, err := k8s.GetServiceE(
+		c.t,
+		c.GetKubectlOptions(namespace),
+		serviceName,
+	)
+	if err != nil {
+		return "", err
+	}
+	return service.Spec.ClusterIP, nil
+}
+
+func (c *K8sCluster) GetLBIngressIP(serviceName, namespace string) (string, error) {
+	service, err := k8s.GetServiceE(
+		c.t,
+		c.GetKubectlOptions(namespace),
+		serviceName,
+	)
+	if err != nil {
+		return "", err
+	}
+	ingress := service.Status.LoadBalancer.Ingress
+	if len(ingress) == 0 {
+		return "", errors.Errorf("ingress information not found on the load balancer service '%s'", serviceName)
+	}
+	return ingress[0].IP, nil
+}
+
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
 	var opts appDeploymentOptions
 

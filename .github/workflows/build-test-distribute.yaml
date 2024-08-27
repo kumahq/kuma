@@ -44,11 +44,11 @@ jobs:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@cdcb36043654635271a94b9a6d1392de5bb323a7 # v5.0.1
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
           cache: false
-      - uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64 # v6.0.1
+      - uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
         with:
           args: --fix=false --verbose
           version: v1.59.0
@@ -66,7 +66,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
+        uses: Kong/public-shared-actions/security-actions/sca@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
         with:
           dir: .
           config: .syft.yaml
@@ -84,6 +84,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:
@@ -180,3 +181,4 @@ jobs:
           name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
           summary: "SLSA security artifacts for ${{ github.repository }}"
           description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
+          use-executable: "false"

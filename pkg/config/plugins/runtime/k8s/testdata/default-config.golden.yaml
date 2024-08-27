@@ -9,6 +9,7 @@ controlPlaneServiceName: kuma-control-plane
 controllersConcurrency:
   podController: 10
 injector:
+  applicationProbeProxyPort: 9000
   builtinDNS:
     enabled: true
     port: 15053
@@ -50,7 +51,6 @@ injector:
       successThreshold: 1
       timeoutSeconds: 3
     redirectPortInbound: 15006
-    redirectPortInboundV6: 15006
     redirectPortOutbound: 15001
     resources:
       limits:
@@ -67,7 +67,9 @@ injector:
     uid: 5678
     waitForDataplaneReady: false
   sidecarTraffic:
+    excludeInboundIPs: []
     excludeInboundPorts: []
+    excludeOutboundIPs: []
     excludeOutboundPorts: []
   virtualProbesEnabled: true
   virtualProbesPort: 9000

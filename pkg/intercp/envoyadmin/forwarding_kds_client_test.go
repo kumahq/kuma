@@ -2,6 +2,7 @@ package envoyadmin_test
 
 import (
 	"context"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -19,11 +20,13 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/runtime"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Forwarding KDS Client", func() {
 	const thisInstanceID = "instance-1"
 	const otherInstanceID = "instance-2"
+	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 
 	var forwardClient *countingForwardClient
 	var adminClient *runtime.DummyEnvoyAdminClient
@@ -61,13 +64,22 @@ var _ = Describe("Forwarding KDS Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createZoneInsightConnectedToGlobal := func(insight string, globalInstanceID string) {
+	createZoneInsightConnectedToGlobal := func(insight string, globalInstanceID string, offline bool) {
 		zoneInsight := system.NewZoneInsightResource()
 		zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{
 			ConfigDumpGlobalInstanceId: globalInstanceID,
 			StatsGlobalInstanceId:      globalInstanceID,
 			ClustersGlobalInstanceId:   globalInstanceID,
 		}
+		subscription := &system_proto.KDSSubscription{
+			Id:               "1",
+			GlobalInstanceId: globalInstanceID,
+			ConnectTime:      util_proto.MustTimestampProto(t1),
+		}
+		if offline {
+			subscription.DisconnectTime = util_proto.MustTimestampProto(t1.Add(1 * time.Hour))
+		}
+		zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, subscription)
 		err := resManager.Create(context.Background(), zoneInsight, core_store.CreateByKey(insight, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	}
@@ -81,7 +93,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 	DescribeTable("when request for config dump is executed",
 		func(given testCase) {
 			// given
-			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
+			createZoneInsightConnectedToGlobal("east", given.globalInstanceID, false)
 
 			// when
 			_, err := forwardingClient.ConfigDump(context.Background(), dp, false)
@@ -106,7 +118,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 	DescribeTable("when request for stats is executed",
 		func(given testCase) {
 			// given
-			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
+			createZoneInsightConnectedToGlobal("east", given.globalInstanceID, false)
 
 			// when
 			_, err := forwardingClient.Stats(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
@@ -131,7 +143,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 	DescribeTable("when request for clusters is executed",
 		func(given testCase) {
 			// given
-			createZoneInsightConnectedToGlobal("east", given.globalInstanceID)
+			createZoneInsightConnectedToGlobal("east", given.globalInstanceID, false)
 
 			// when
 			_, err := forwardingClient.Clusters(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
@@ -152,6 +164,18 @@ var _ = Describe("Forwarding KDS Client", func() {
 			executedRequests:  1,
 		}),
 	)
+
+	It("should return an error when zone is offline", func() {
+		// given
+		createZoneInsightConnectedToGlobal("east", thisInstanceID, true)
+
+		// when
+		_, err := forwardingClient.Clusters(context.Background(), dp, mesh_proto.AdminOutputFormat_TEXT)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("couldn't execute Clusters operation, zone is oflline"))
+	})
 })
 
 type countingForwardClient struct {

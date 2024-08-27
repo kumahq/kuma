@@ -54,7 +54,6 @@ var _ = Describe("Index Endpoints", func() {
 		expected := fmt.Sprintf(`
 		{
 			"hostname": "%s",
-			"tagline": "Kuma",
 			"product": "Kuma",
 			"version": "1.2.3",
 			"instanceId": "instance-id",

@@ -3,9 +3,11 @@ package defaults_test
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -19,13 +21,9 @@ var _ = Describe("Envoy Admin CA defaults", func() {
 		// given
 		store := resources_memory.NewStore()
 		manager := core_manager.NewResourceManager(store)
-		component := defaults.EnvoyAdminCaDefaultComponent{
-			ResManager: manager,
-			Extensions: context.Background(),
-		}
 
 		// when
-		err := component.Start(nil)
+		err := defaults.EnsureEnvoyAdminCaExists(context.Background(), manager, logr.Discard(), kuma_cp.Config{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

@@ -11,6 +11,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: exact-query-match-36212e4e8ec491f1
       perConnectionBufferLimitBytes: 32768
@@ -35,6 +36,7 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
+          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: regex-query-match-2c070f45017d23a5
       perConnectionBufferLimitBytes: 32768
@@ -130,6 +132,7 @@ Listeners:
             rds:
               configSource:
                 ads: {}
+                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s

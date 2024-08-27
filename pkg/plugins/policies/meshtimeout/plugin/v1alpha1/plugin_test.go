@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -37,6 +38,28 @@ import (
 )
 
 var _ = Describe("MeshTimeout", func() {
+	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
+	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshExternalService",
+		SectionName:  "",
+	}
+
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
 		toRules           core_rules.ToRules
@@ -63,8 +86,21 @@ var _ = Describe("MeshTimeout", func() {
 				WithName("backend").
 				WithMesh("default").
 				WithAddress("127.0.0.1").
-				AddOutboundsToServices("other-service", "second-service").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
+			WithOutbounds(core_xds.Outbounds{
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "other-service",
+					},
+				}},
+				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort + 1,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "second-service",
+					},
+				}},
+			}).
 			WithRouting(
 				xds_builders.Routing().
 					WithOutboundTargets(
@@ -407,6 +443,82 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			expectedListeners: []string{"outbound_listener_with_different_timeouts_per_route.yaml"},
+		}),
+		Entry("targeting real MeshService", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       httpOutboundListener(),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshServiceIdentifier,
+				},
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("backend"),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("5s"),
+									StreamIdleTimeout:     test.ParseDuration("1s"),
+									MaxStreamDuration:     test.ParseDuration("10m"),
+									MaxConnectionDuration: test.ParseDuration("10m"),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"real_mesh_service.listener.golden.yaml"},
+			expectedClusters:  []string{"real_mesh_service.cluster.golden.yaml"},
+		}),
+		Entry("targeting real MeshExternalService", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       httpOutboundListener(),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				},
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("backend"),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("99s"),
+									StreamIdleTimeout:     test.ParseDuration("9s"),
+									MaxStreamDuration:     test.ParseDuration("7m"),
+									MaxConnectionDuration: test.ParseDuration("18m"),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"real_mesh_external_service.listener.golden.yaml"},
+			expectedClusters:  []string{"real_mesh_external_service.cluster.golden.yaml"},
 		}),
 	)
 

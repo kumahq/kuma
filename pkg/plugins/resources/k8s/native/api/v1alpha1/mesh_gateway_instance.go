@@ -26,11 +26,11 @@ type MeshGatewayInstanceSpec struct {
 	MeshGatewayCommonConfig `json:",inline"`
 
 	// Tags specifies the Kuma tags that are propagated to the managed
-	// dataplane proxies. These tags should include exactly one
-	// `kuma.io/service` tag, and should match exactly one Gateway
+	// dataplane proxies. These tags should not include `kuma.io/service` tag
+	// since is auto-generated, and should match exactly one Gateway
 	// resource.
 	//
-	// +required
+	// +optional
 	// +kubebuilder:validation:MinLen=1
 	Tags map[string]string `json:"tags,omitempty"`
 }

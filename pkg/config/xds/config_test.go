@@ -90,6 +90,6 @@ var _ = Describe("XdsServerConfig", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err).To(MatchError(`Invalid configuration: DataplaneConfigurationRefreshInterval must be positive`))
+		Expect(err).To(MatchError("parsing configuration from file 'testdata/invalid-config.input.yaml' failed: configuration validation failed: DataplaneConfigurationRefreshInterval must be positive"))
 	})
 })

@@ -23,16 +23,16 @@ func convertToUint16(field string, value string) (uint16, error) {
 	return uint16(converted), nil
 }
 
-func convertCommaSeparatedString(list string) ([]uint16, error) {
+func convertCommaSeparatedString(list string) (config.Ports, error) {
 	split := strings.Split(list, ",")
-	mapped := make([]uint16, len(split))
+	mapped := make(config.Ports, len(split))
 
 	for i, value := range split {
 		converted, err := convertToUint16(strconv.Itoa(i), value)
 		if err != nil {
 			return nil, err
 		}
-		mapped[i] = converted
+		mapped[i] = config.Port(converted)
 	}
 
 	return mapped, nil
@@ -76,10 +76,6 @@ func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateC
 func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 
-	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
-	if err != nil {
-		return nil, err
-	}
 	excludePorts, err := convertCommaSeparatedString(intermediateConfig.excludeOutboundPorts)
 	if err != nil {
 		return nil, err
@@ -90,13 +86,21 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		excludePortsForUIDs = strings.Split(intermediateConfig.excludeOutboundPortsForUIDs, ";")
 	}
 
+	cfg.CNIMode = true
 	cfg.Verbose = true
 	cfg.RuntimeStdout = logWriter
-	cfg.Owner.UID = intermediateConfig.noRedirectUID
+	cfg.KumaDPUser.UID = intermediateConfig.noRedirectUID
 	cfg.Redirect.Outbound.Enabled = true
-	cfg.Redirect.Outbound.Port = port
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
 	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDs
+
+	if err := cfg.Redirect.Outbound.Port.Set(intermediateConfig.targetPort); err != nil {
+		return nil, errors.Wrapf(err, "failed to set outbound port to '%s'", intermediateConfig.targetPort)
+	}
+
+	if intermediateConfig.excludeOutboundIPs != "" {
+		cfg.Redirect.Outbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeOutboundIPs, ",")
+	}
 
 	cfg.DropInvalidPackets, err = GetEnabled(intermediateConfig.dropInvalidPackets)
 	if err != nil {
@@ -113,26 +117,14 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 
-	var inboundPortV6 uint16
-	if intermediateConfig.ipFamilyMode == "ipv4" {
-		inboundPortV6 = 0
-	} else {
-		inboundPortV6, err = convertToUint16("inbound port ipv6", intermediateConfig.inboundPortV6)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	cfg.IPv6, err = transparentproxy.ShouldEnableIPv6(inboundPortV6)
-	if err != nil {
+	if err := cfg.IPFamilyMode.Set(intermediateConfig.ipFamilyMode); err != nil {
 		return nil, err
 	}
 
 	cfg.Redirect.Inbound.Enabled = !isGateway
 	if cfg.Redirect.Inbound.Enabled {
-		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
-		if err != nil {
-			return nil, err
+		if err := cfg.Redirect.Inbound.Port.Set(intermediateConfig.inboundPort); err != nil {
+			return nil, errors.Wrapf(err, "failed to set inbound port to '%s'", intermediateConfig.inboundPort)
 		}
 
 		excludedPorts, err := convertCommaSeparatedString(intermediateConfig.excludeInboundPorts)
@@ -140,9 +132,11 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 			return nil, err
 		}
 
-		cfg.Redirect.Inbound.Port = inboundPort
-		cfg.Redirect.Inbound.PortIPv6 = inboundPortV6
 		cfg.Redirect.Inbound.ExcludePorts = excludedPorts
+
+		if intermediateConfig.excludeInboundIPs != "" {
+			cfg.Redirect.Inbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeInboundIPs, ",")
+		}
 	}
 
 	cfg.Redirect.DNS.Enabled, err = GetEnabled(intermediateConfig.builtinDNS)
@@ -150,14 +144,12 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 	if cfg.Redirect.DNS.Enabled {
-		builtinDnsPort, err := convertToUint16("builtin dns port", intermediateConfig.builtinDNSPort)
-		if err != nil {
-			return nil, err
+		if err := cfg.Redirect.DNS.Port.Set(intermediateConfig.builtinDNSPort); err != nil {
+			return nil, errors.Wrapf(err, "failed to set builtin dns port to '%s'", intermediateConfig.builtinDNSPort)
 		}
 
-		cfg.Redirect.DNS.Port = builtinDnsPort
 		cfg.Redirect.DNS.CaptureAll = true
-		cfg.Redirect.DNS.ConntrackZoneSplit = true
+		cfg.Redirect.DNS.SkipConntrackZoneSplit = false
 	}
 
 	return &cfg, nil

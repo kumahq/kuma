@@ -60,11 +60,36 @@ type GlobalInsight struct {
 	// Policies Policies statistics
 	Policies PoliciesStats `json:"policies"`
 
+	// Resources A map of resource names to their corresponding statistics
+	Resources map[string]ResourceStats `json:"resources"`
+
 	// Services Mesh services statistics
 	Services ServicesStats `json:"services"`
 
 	// Zones Zones statistics
 	Zones ZonesStats `json:"zones"`
+}
+
+// Index Some metadata about the service
+type Index struct {
+	// BasedOnKuma In case of an alternative distribution of Kuma the Kuma version this release is based on
+	BasedOnKuma *string `json:"basedOnKuma,omitempty"`
+
+	// ClusterId A unique id to identify the cluster being connected to
+	ClusterId string `json:"clusterId"`
+
+	// Gui The path to the GUI
+	Gui      string `json:"gui"`
+	Hostname string `json:"hostname"`
+
+	// InstanceId A unique id to identify the instance requested
+	InstanceId string `json:"instanceId"`
+
+	// Product The product line (Kuma for OSS, different for other distributions)
+	Product string `json:"product"`
+
+	// Version The semantic version of the server running
+	Version string `json:"version"`
 }
 
 // InspectDataplanesConfig defines model for InspectDataplanesConfig.
@@ -100,6 +125,12 @@ type MeshesStats struct {
 // PoliciesStats Policies statistics
 type PoliciesStats struct {
 	// Total Number of policies
+	Total int `json:"total"`
+}
+
+// ResourceStats Resource statistics
+type ResourceStats struct {
+	// Total Number of resources
 	Total int `json:"total"`
 }
 
@@ -142,6 +173,9 @@ type BadRequest = externalRef0.Error
 
 // GlobalInsightResponse Global Insight contains statistics for all main resources
 type GlobalInsightResponse = GlobalInsight
+
+// IndexResponse Some metadata about the service
+type IndexResponse = Index
 
 // InspectDataplanesConfigResponse defines model for InspectDataplanesConfigResponse.
 type InspectDataplanesConfigResponse = InspectDataplanesConfig

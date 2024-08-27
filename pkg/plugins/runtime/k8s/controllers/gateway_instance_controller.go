@@ -69,11 +69,6 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
 	}
 
-	if len(gatewayInstance.Spec.Tags) > 0 && gatewayInstance.Spec.Tags[mesh_proto.ServiceTag] != "" {
-		r.Log.Info("WARNING: Setting kuma.io/service tag is deprecated for this object kind, control-plane creates a name based on the resource name and namespace",
-			"name", gatewayInstance.GetName(), "namespace", gatewayInstance.GetNamespace(), "kind", gatewayInstance.GetObjectKind().GroupVersionKind().Kind)
-	}
-
 	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gatewayInstance, &ns)
 
 	orig := gatewayInstance.DeepCopy()
@@ -106,7 +101,7 @@ func k8sSelector(name string) map[string]string {
 	return map[string]string{"app": name}
 }
 
-func (_ *GatewayInstanceReconciler) gatewayInstanceTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) map[string]string {
+func (*GatewayInstanceReconciler) gatewayInstanceTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) map[string]string {
 	tags := maps.Clone(gatewayInstance.Spec.Tags)
 	if tags == nil {
 		tags = map[string]string{}
@@ -420,9 +415,7 @@ func updateStatus(
 	)
 }
 
-const serviceKey string = ".metadata.service"
-
-// GatewayToInstanceMapper maps a Gateway object to MeshGatewayInstance objects by
+// GatewayToInstanceMapper maps a MeshGateway object to MeshGatewayInstance objects by
 // using the service tag to list GatewayInstances with a matching index.
 // The index is set up on MeshGatewayInstance in SetupWithManager and holds the service
 // tag from the MeshGatewayInstance tags.
@@ -447,22 +440,6 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_hand
 
 		var req []kube_reconcile.Request
 		for _, serviceName := range serviceNames {
-			// TODO: remove in version 2.9.x
-			// get MeshGatewayInstance by kuma.io/service name and map to requests
-			instances := &mesh_k8s.MeshGatewayInstanceList{}
-			err := client.List(ctx, instances, kube_client.MatchingFields{serviceKey: serviceName})
-			if err != nil && !kube_apierrs.IsNotFound(err) {
-				l.Error(err, "failed to fetch GatewayInstances")
-			}
-			if len(instances.Items) > 0 {
-				for _, instance := range instances.Items {
-					req = append(req, kube_reconcile.Request{
-						NamespacedName: kube_types.NamespacedName{Namespace: instance.Namespace, Name: instance.Name},
-					})
-				}
-				continue
-			}
-
 			// map generated kuma.io/service to namespaced name
 			name, err := k8s_util.NamespacesNameFromServiceTag(serviceName)
 			if err != nil {
@@ -492,18 +469,8 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 		return err
 	}
 
-	// TODO: remove in version 2.9.x
-	if err := mgr.GetFieldIndexer().IndexField(context.Background(), &mesh_k8s.MeshGatewayInstance{}, serviceKey, func(obj kube_client.Object) []string {
-		instance := obj.(*mesh_k8s.MeshGatewayInstance)
-
-		serviceName := instance.Spec.Tags[mesh_proto.ServiceTag]
-
-		return []string{serviceName}
-	}); err != nil {
-		return err
-	}
-
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-gateway-instance-controller").
 		For(&mesh_k8s.MeshGatewayInstance{}).
 		Owns(&kube_core.Service{}).
 		Owns(&kube_apps.Deployment{}).

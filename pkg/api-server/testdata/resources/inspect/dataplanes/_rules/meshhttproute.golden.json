@@ -21,6 +21,7 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -119,6 +120,7 @@
   },
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -142,13 +144,13 @@
       {
        "labels": {},
        "mesh": "default",
-       "name": "on-route",
+       "name": "on-service",
        "type": "MeshTimeout"
       },
       {
        "labels": {},
        "mesh": "default",
-       "name": "on-service",
+       "name": "on-route",
        "type": "MeshTimeout"
       }
      ]

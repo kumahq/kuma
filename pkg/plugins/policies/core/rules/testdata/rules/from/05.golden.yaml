@@ -1,6 +1,7 @@
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       backends:
       - tcp:
           address: logging:8080

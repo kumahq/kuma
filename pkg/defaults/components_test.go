@@ -23,12 +23,16 @@ var _ = Describe("Defaults Component", func() {
 		var manager core_manager.ResourceManager
 
 		BeforeEach(func() {
-			cfg := &kuma_cp.Defaults{
-				SkipMeshCreation: false,
-			}
+			cfg := kuma_cp.DefaultConfig()
+			cfg.Defaults.SkipMeshCreation = false
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, manager, store, context.Background())
+			component = &defaults.DefaultComponent{
+				Extensions: context.Background(),
+				Funcs:      []defaults.EnsureDefaultFunc{defaults.EnsureDefaultMeshExists},
+				ResManager: manager,
+				CpConfig:   cfg,
+			}
 		})
 
 		It("should create default mesh", func() {
@@ -76,12 +80,16 @@ var _ = Describe("Defaults Component", func() {
 		var manager core_manager.ResourceManager
 
 		BeforeEach(func() {
-			cfg := &kuma_cp.Defaults{
-				SkipMeshCreation: true,
-			}
+			cfg := kuma_cp.DefaultConfig()
+			cfg.Defaults.SkipMeshCreation = true
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, manager, store, context.Background())
+			component = &defaults.DefaultComponent{
+				Extensions: context.Background(),
+				Funcs:      []defaults.EnsureDefaultFunc{defaults.EnsureDefaultMeshExists},
+				ResManager: manager,
+				CpConfig:   cfg,
+			}
 		})
 
 		It("should not create default mesh", func() {

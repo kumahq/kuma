@@ -42,7 +42,7 @@ func ToUserDefinedChain(chainName string) *JumpParameter {
 	return &JumpParameter{parameters: []string{chainName}}
 }
 
-func ToPort(port uint16) *JumpParameter {
+func ToPort[T ~uint16](port T) *JumpParameter {
 	return &JumpParameter{parameters: []string{
 		"REDIRECT",
 		"--to-ports",

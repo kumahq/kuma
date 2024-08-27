@@ -23,7 +23,7 @@ import (
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
-var outboundLog = core.Log.WithName("outbound-proxy-generator")
+var outboundLog = core.Log.WithName("xds").WithName("outbound-proxy-generator")
 
 // OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginOutbound = "outbound"
