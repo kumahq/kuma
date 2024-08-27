@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -20,6 +21,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -62,6 +64,15 @@ func getResource(
 }
 
 var _ = Describe("MeshTCPRoute", func() {
+	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name: "backend",
+			Mesh: "default",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -426,6 +437,90 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.Routing().
 							WithOutboundTargets(outboundTargets).
 							WithExternalServiceOutboundTargets(externalServiceOutboundTargets),
+					).
+					Build(),
+			}
+		}()),
+
+		Entry("basic-real-meshservice", func() outboundsTestCase {
+			meshSvc := meshservice_api.MeshServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Spec: &meshservice_api.MeshService{
+					Selector: meshservice_api.Selector{},
+					Ports: []meshservice_api.Port{{
+						Port:        80,
+						TargetPort:  intstr.FromInt(8084),
+						AppProtocol: core_mesh.ProtocolHTTP,
+						Name:        "test-port",
+					}},
+					Identities: []meshservice_api.MeshServiceIdentity{
+						{
+							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+							Value: "backend",
+						},
+					},
+				},
+				Status: &meshservice_api.MeshServiceStatus{
+					VIPs: []meshservice_api.VIP{{
+						IP: "10.0.0.1",
+					}},
+				},
+			}
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+			}
+			outboundTargets := xds_builders.EndpointMap().
+				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
+					WithTarget("192.168.0.4").
+					WithPort(8084).
+					WithWeight(1).
+					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "app", "backend"))
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
+					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					WithResources(resources).
+					Build(),
+				proxy: xds_builders.Proxy().
+					WithDataplane(
+						builders.Dataplane().
+							WithName("web-01").
+							WithAddress("192.168.0.2").
+							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
+					).
+					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithOutbounds(core_xds.Outbounds{
+						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+							Port: builders.FirstOutboundPort,
+							Tags: map[string]string{},
+							BackendRef: &mesh_proto.Dataplane_Networking_Outbound_BackendRef{
+								Kind: "MeshService",
+								Name: "backend",
+								Port: 80,
+							},
+						}},
+					}).
+					WithPolicies(
+						xds_builders.MatchedPolicies().
+							WithToPolicy(api.MeshTCPRouteType, core_rules.ToRules{
+								ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+									backendMeshServiceIdentifier: {
+										Conf: []interface{}{
+											api.Rule{
+												Default: api.RuleConf{
+													BackendRefs: []common_api.BackendRef{
+														{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+															Port:      pointer.To(uint32(80)),
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							}),
 					).
 					Build(),
 			}
