@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -45,6 +46,7 @@ type UniversalCluster struct {
 	apps           map[string]*UniversalApp
 	verbose        bool
 	deployments    map[string]Deployment
+	dataplanes     []string
 	defaultTimeout time.Duration
 	defaultRetries int
 	opts           kumaDeploymentOptions
@@ -249,6 +251,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, t
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, app.dpEnv)
+	c.dataplanes = append(c.dataplanes, name)
 	return app.dpApp.Start()
 }
 
@@ -391,6 +394,10 @@ func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
 	return c.apps[appName]
 }
 
+func (c *UniversalCluster) GetDataplanes() []string {
+	return c.dataplanes
+}
+
 func (c *UniversalCluster) DeleteApp(appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {
@@ -400,6 +407,9 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 		return err
 	}
 	delete(c.apps, appname)
+	c.dataplanes = slices.DeleteFunc(c.dataplanes, func(s string) bool {
+		return s == appname
+	})
 	return nil
 }
 
