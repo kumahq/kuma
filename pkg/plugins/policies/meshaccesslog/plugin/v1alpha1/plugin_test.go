@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
