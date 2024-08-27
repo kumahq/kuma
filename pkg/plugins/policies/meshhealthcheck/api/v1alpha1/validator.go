@@ -40,7 +40,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			},
 		}))
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only possible with targetRef.kind: Mesh")
+			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh")
 		}
 		verr.AddErrorAt(path, validateDefault(toItem.Default))
 	}
