@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+//go:embed schema.yaml
 var rawSchema []byte
 
 func init() {
@@ -137,9 +138,9 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ResourceList:                 &MeshTLSResourceList{},
 	Scope:                        model.ScopeMesh,
 	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
-	WsPath:                       "meshtlss",
+	WsPath:                       "meshtlses",
 	KumactlArg:                   "meshtls",
-	KumactlListArg:               "meshtlss",
+	KumactlListArg:               "meshtlses",
 	AllowToInspect:               true,
 	IsPolicy:                     true,
 	IsExperimental:               false,
