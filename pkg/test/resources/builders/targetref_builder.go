@@ -39,3 +39,10 @@ func TargetRefMeshService(name, sectionName string) common_api.TargetRef {
 		SectionName: sectionName,
 	}
 }
+
+func TargetRefMeshExternalService(name string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind: common_api.MeshExternalService,
+		Name: name,
+	}
+}
