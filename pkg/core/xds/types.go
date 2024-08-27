@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -9,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
@@ -266,6 +268,27 @@ type MeshResources struct {
 	// todo(lobkovilya): change "service -> pluginName -> policies" to "pluginName -> service -> policies"
 	Dynamic   ExternalServiceDynamicPolicies
 	Resources map[core_model.ResourceType]core_model.ResourceList
+}
+
+func (r MeshResources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
+	// todo: we can probably optimize it by using indexing on ResourceIdentifier
+	list := r.ListOrEmpty(resourceType).GetItems()
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+		return list[i]
+	}
+	return nil
+}
+
+func (r MeshResources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
+	list, ok := r.Resources[resourceType]
+	if !ok {
+		list, err := registry.Global().NewList(resourceType)
+		if err != nil {
+			panic(err)
+		}
+		return list
+	}
+	return list
 }
 
 type ZoneEgressProxy struct {

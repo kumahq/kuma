@@ -9,7 +9,9 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	mhc_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -105,4 +107,25 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "torules")))
+
+	DescribeTable("should return egress toRules for the given mesh external service",
+		func(given testCase) {
+			// given policies
+			resources, _ := readPolicies(given.policiesFile)
+
+			// given MeshExternalService resource
+			mes := readMES(given.mesFile)
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+			}
+
+			// when
+			policies, err := matchers.EgressMatchedPolicies(mhc_api.MeshHealthCheckType, map[string]string{}, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(policies.ToRules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "meshexternalservice", "torules")))
 })
