@@ -14,10 +14,12 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -1462,6 +1464,13 @@ var _ = Describe("TrafficRoute", func() {
 							ExternalService: &core_xds.ExternalService{
 								Protocol:   core_mesh.ProtocolTCP,
 								TLSEnabled: false,
+								OwnerResource: &rules.UniqueResourceIdentifier{
+									ResourceType: "MeshExternalService",
+									ResourceIdentifier: core_model.ResourceIdentifier{
+										Name: "another-mes",
+										Mesh: "default",
+									},
+								},
 							},
 						},
 					},
@@ -1733,8 +1742,18 @@ var _ = Describe("TrafficRoute", func() {
 								Tags: map[string]string{
 									"mesh": "default",
 								},
-								Weight:          1,
-								ExternalService: &core_xds.ExternalService{TLSEnabled: false, Protocol: core_mesh.ProtocolTCP},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									TLSEnabled: false,
+									Protocol:   core_mesh.ProtocolTCP,
+									OwnerResource: &rules.UniqueResourceIdentifier{
+										ResourceType: "MeshExternalService",
+										ResourceIdentifier: core_model.ResourceIdentifier{
+											Name: "example",
+											Mesh: "default",
+										},
+									},
+								},
 							},
 						},
 					},

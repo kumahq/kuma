@@ -368,9 +368,9 @@ spec:
         noTrafficInterval: 1s
         healthyPanicThreshold: 0
         reuseConnection: true
-        http: 
+        http:
           path: /test
-          expectedStatuses: 
+          expectedStatuses:
           - 500`, meshNameNoDefaults)
 
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())

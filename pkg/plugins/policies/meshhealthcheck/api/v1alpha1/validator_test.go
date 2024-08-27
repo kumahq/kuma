@@ -304,7 +304,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: kind MeshExternalService is only allowed with targetRef.kind: Mesh`,
+    message: 'kind MeshExternalService is only allowed with targetRef.kind: Mesh'`,
 			}),
 		)
 	})
