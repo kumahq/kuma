@@ -1,0 +1,44 @@
+resources:
+- name: external-default
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - maxConnectionPools: 1111
+        maxConnections: 2222
+        maxPendingRequests: 3333
+        maxRequests: 4444
+        maxRetries: 5555
+    name: external
+    outlierDetection:
+      baseEjectionTime: 8s
+      consecutive5xx: 12
+      consecutiveGatewayFailure: 91
+      consecutiveLocalOriginFailure: 3
+      enforcingConsecutive5xx: 100
+      enforcingConsecutiveGatewayFailure: 100
+      enforcingConsecutiveLocalOriginFailure: 100
+      enforcingFailurePercentage: 100
+      enforcingFailurePercentageLocalOrigin: 100
+      enforcingLocalOriginSuccessRate: 100
+      enforcingSuccessRate: 100
+      failurePercentageMinimumHosts: 32
+      failurePercentageRequestVolume: 182
+      failurePercentageThreshold: 80
+      interval: 10s
+      maxEjectionPercent: 88
+      splitExternalLocalOriginErrors: true
+      successRateMinimumHosts: 33
+      successRateRequestVolume: 99
+      successRateStdevFactor: 1900
+- name: external-mesh2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - maxConnectionPools: 1111
+        maxConnections: 2222
+        maxPendingRequests: 3333
+        maxRequests: 4444
+        maxRetries: 5555
+    name: external

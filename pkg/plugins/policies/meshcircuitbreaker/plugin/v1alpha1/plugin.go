@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -18,7 +19,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -34,11 +35,18 @@ func (p plugin) MatchedPolicies(
 	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshCircuitBreakerType, tags, resources, opts...)
+}
+
 func (p plugin) Apply(
 	rs *core_xds.ResourceSet,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
+	if proxy.ZoneEgressProxy != nil {
+		return applyToEgressRealResources(rs, proxy)
+	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
@@ -169,6 +177,39 @@ func configure(
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
+	return nil
+}
+
+func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshExternalServices := resource.Resources[meshexternalservice_api.MeshExternalServiceType]
+		for _, mes := range meshExternalServices.GetItems() {
+			policies, ok := resource.Dynamic[mes.GetMeta().GetName()]
+			if !ok {
+				continue
+			}
+			mhc, ok := policies[api.MeshCircuitBreakerType]
+			if !ok {
+				continue
+			}
+			for uri, resType := range rs.IndexByOrigin() {
+				conf := mhc.ToRules.ResourceRules.Compute(uri, resource)
+				if conf == nil {
+					continue
+				}
+
+				for typ, resources := range resType {
+					switch typ {
+					case envoy_resource.ClusterType:
+						err := configureClusters(resources, conf.Conf[0].(api.Conf))
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
