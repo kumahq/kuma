@@ -13,6 +13,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	policy "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -95,4 +96,20 @@ func (l *MeshTLSList) GetItems() []model.KubernetesObject {
 		result[i] = &l.Items[i]
 	}
 	return result
+}
+
+func init() {
+	SchemeBuilder.Register(&MeshTLS{}, &MeshTLSList{})
+	registry.RegisterObjectType(&policy.MeshTLS{}, &MeshTLS{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshTLS",
+		},
+	})
+	registry.RegisterListType(&policy.MeshTLS{}, &MeshTLSList{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: GroupVersion.String(),
+			Kind:       "MeshTLSList",
+		},
+	})
 }

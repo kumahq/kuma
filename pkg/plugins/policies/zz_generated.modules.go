@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshretry"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshtls"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrace"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission"
 )
@@ -35,6 +36,7 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshretries":                 {InitFn: meshretry.InitPlugin, Initialized: false},
 	"meshtcproutes":               {InitFn: meshtcproute.InitPlugin, Initialized: false},
 	"meshtimeouts":                {InitFn: meshtimeout.InitPlugin, Initialized: false},
+	"meshtlses":                   {InitFn: meshtls.InitPlugin, Initialized: false},
 	"meshtraces":                  {InitFn: meshtrace.InitPlugin, Initialized: false},
 	"meshtrafficpermissions":      {InitFn: meshtrafficpermission.InitPlugin, Initialized: false},
 }
