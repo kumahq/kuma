@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -322,6 +323,95 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(504))
 			}, "30s", "1s", MustPassRepeatedly(3)).Should(Succeed())
+		})
+	})
+
+	Context("MeshExternalService with MeshHTTPRoute", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should route to other endpoint", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-http-route
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+
+			meshExternalService2 := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-http-2-route
+mesh: %s
+labels:
+  kuma.io/origin: zone
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 81
+`, meshNameNoDefaults, esHttp2ContainerName)
+
+			meshHttpRoutePolicy := fmt.Sprintf(`
+type: MeshHTTPRoute
+mesh: %s
+name: mes-http-route-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-http-route
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshExternalService
+                name: mes-http-2-route
+                weight: 100
+`, meshNameNoDefaults)
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService2))).To(Succeed())
+
+			By("Check response arrives to mes-http")
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-http-route.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("mes-http"))
+			}, "30s", "1s").Should(Succeed())
+
+			By("Apply a MeshHTTPRoute policy")
+			Expect(universal.Cluster.Install(YamlUniversal(meshHttpRoutePolicy))).To(Succeed())
+
+			By("Eventually all arrives to mes-http-2")
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-http-route.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("mes-http-2"))
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	})
 
