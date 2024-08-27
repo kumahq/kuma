@@ -32,11 +32,7 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 }
 
 func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
-	t, err := matchers.EgressMatchedPolicies(api.MeshHealthCheckType, tags, resources, opts...)
-	if err != nil {
-		return t, err
-	}
-	return t, err
+	return matchers.EgressMatchedPolicies(api.MeshHealthCheckType, tags, resources, opts...)
 }
 
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
