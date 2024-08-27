@@ -49,6 +49,17 @@ var _ = Describe("MeshTimeout", func() {
 		SectionName:  "",
 	}
 
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshExternalService",
+		SectionName:  "",
+	}
+
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
 		toRules           core_rules.ToRules
@@ -470,6 +481,44 @@ var _ = Describe("MeshTimeout", func() {
 			},
 			expectedListeners: []string{"real_mesh_service.listener.golden.yaml"},
 			expectedClusters:  []string{"real_mesh_service.cluster.golden.yaml"},
+		}),
+		Entry("targeting real MeshExternalService", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       httpOutboundListener(),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				},
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("backend"),
+					Protocol:       core_mesh.ProtocolHTTP,
+					ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionTimeout: test.ParseDuration("10s"),
+								IdleTimeout:       test.ParseDuration("1h"),
+								Http: &api.Http{
+									RequestTimeout:        test.ParseDuration("99s"),
+									StreamIdleTimeout:     test.ParseDuration("9s"),
+									MaxStreamDuration:     test.ParseDuration("7m"),
+									MaxConnectionDuration: test.ParseDuration("18m"),
+								},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"real_mesh_external_service.listener.golden.yaml"},
+			expectedClusters:  []string{"real_mesh_external_service.cluster.golden.yaml"},
 		}),
 	)
 

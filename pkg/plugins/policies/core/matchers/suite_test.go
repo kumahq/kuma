@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/test"
@@ -67,4 +68,13 @@ func readES(file string) *core_mesh.ExternalServiceResource {
 	dpp, err := rest.YAML.UnmarshalCore(dppYaml)
 	Expect(err).ToNot(HaveOccurred())
 	return dpp.(*core_mesh.ExternalServiceResource)
+}
+
+func readMES(file string) *meshexternalservice_api.MeshExternalServiceResource {
+	mesYaml, err := os.ReadFile(file)
+	Expect(err).ToNot(HaveOccurred())
+
+	mes, err := rest.YAML.UnmarshalCore(mesYaml)
+	Expect(err).ToNot(HaveOccurred())
+	return mes.(*meshexternalservice_api.MeshExternalServiceResource)
 }

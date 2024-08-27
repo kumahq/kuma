@@ -22,11 +22,10 @@ func generateFromService(
 	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAccumulator envoy_common.ServicesAccumulator,
-	toRulesTCP rules.Rules,
+	toRulesTCP rules.ToRules,
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
-	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
-		ToRules.Rules
+	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
 
 	resources := core_xds.NewResourceSet()
 
@@ -37,7 +36,7 @@ func generateFromService(
 		LegacyBackendRef: &svc.BackendRef,
 		Resource:         svc.Outbound.Resource,
 	}
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, fallbackBackendRef)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, fallbackBackendRef, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
@@ -62,7 +61,7 @@ func generateFromService(
 
 func generateListeners(
 	proxy *core_xds.Proxy,
-	toRulesTCP rules.Rules,
+	toRulesTCP rules.ToRules,
 	servicesAccumulator envoy_common.ServicesAccumulator,
 	meshCtx xds_context.MeshContext,
 ) (*core_xds.ResourceSet, error) {

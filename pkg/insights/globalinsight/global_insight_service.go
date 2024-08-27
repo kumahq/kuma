@@ -38,6 +38,7 @@ func (gis *defaultGlobalInsightService) GetGlobalInsight(ctx context.Context) (*
 
 	gis.aggregateDataplanes(meshInsights, globalInsights)
 	gis.aggregatePolicies(meshInsights, globalInsights)
+	gis.aggregateResources(meshInsights, globalInsights)
 
 	if err := gis.aggregateServices(ctx, globalInsights); err != nil {
 		return nil, err
@@ -94,6 +95,23 @@ func (gis *defaultGlobalInsightService) aggregatePolicies(
 
 		for _, policy := range policies {
 			globalInsight.Policies.Total += int(policy.GetTotal())
+		}
+	}
+}
+
+func (gis *defaultGlobalInsightService) aggregateResources(
+	meshInsights *mesh.MeshInsightResourceList,
+	globalInsight *api_types.GlobalInsight,
+) {
+	globalInsight.Resources = map[string]api_types.ResourceStats{}
+	for _, meshInsight := range meshInsights.GetItems() {
+		for resName, resStat := range meshInsight.GetSpec().(*mesh_proto.MeshInsight).Resources {
+			stats, ok := globalInsight.Resources[resName]
+			if !ok {
+				stats = api_types.ResourceStats{}
+			}
+			stats.Total += int(resStat.Total)
+			globalInsight.Resources[resName] = stats
 		}
 	}
 }

@@ -49,6 +49,17 @@ var _ = Describe("MeshRetry", func() {
 		SectionName:  "",
 	}
 
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "kuma-system",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshExternalService",
+		SectionName:  "",
+	}
+
 	type testCase struct {
 		resources        []core_xds.Resource
 		toRules          core_rules.ToRules
@@ -586,6 +597,102 @@ var _ = Describe("MeshRetry", func() {
 				},
 			},
 			goldenFilePrefix: "http-real-mesh-service",
+		}),
+		Entry("http retry mesh external service", testCase{
+			resources: []core_xds.Resource{{
+				Name:           "outbound",
+				Origin:         generator.OriginOutbound,
+				Resource:       httpListenerWithSimpleRoute(10001),
+				ResourceOrigin: &backendMeshExternalServiceIdentifier,
+				Protocol:       core_mesh.ProtocolHTTP,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								HTTP: &api.HTTP{
+									NumRetries:    pointer.To[uint32](1),
+									PerTryTimeout: test.ParseDuration("2s"),
+									BackOff: &api.BackOff{
+										BaseInterval: test.ParseDuration("3s"),
+										MaxInterval:  test.ParseDuration("4s"),
+									},
+									RateLimitedBackOff: &api.RateLimitedBackOff{
+										MaxInterval: test.ParseDuration("5s"),
+										ResetHeaders: &[]api.ResetHeader{
+											{
+												Name:   "retry-after-http",
+												Format: "Seconds",
+											},
+											{
+												Name:   "x-retry-after-http",
+												Format: "UnixTimestamp",
+											},
+										},
+									},
+									RetryOn: &[]api.HTTPRetryOn{
+										api.All5xx,
+										api.GatewayError,
+										api.Reset,
+										api.Retriable4xx,
+										api.ConnectFailure,
+										api.EnvoyRatelimited,
+										api.RefusedStream,
+										api.Http3PostConnectFailure,
+										api.HttpMethodConnect,
+										api.HttpMethodDelete,
+										api.HttpMethodGet,
+										api.HttpMethodHead,
+										api.HttpMethodOptions,
+										api.HttpMethodPatch,
+										api.HttpMethodPost,
+										api.HttpMethodPut,
+										api.HttpMethodTrace,
+										"429",
+									},
+									RetriableResponseHeaders: &[]common_api.HeaderMatch{
+										{
+											Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+											Name:  "x-retry-regex",
+											Value: ".*",
+										},
+										{
+											Type:  pointer.To(common_api.HeaderMatchExact),
+											Name:  "x-retry-exact",
+											Value: "exact-value",
+										},
+									},
+									RetriableRequestHeaders: &[]common_api.HeaderMatch{
+										{
+											Type:  pointer.To(common_api.HeaderMatchPrefix),
+											Name:  "x-retry-prefix",
+											Value: "prefix-",
+										},
+									},
+									HostSelection: &[]api.Predicate{
+										{
+											PredicateType: "OmitPreviousHosts",
+										},
+										{
+											PredicateType:   "OmitPreviousPriorities",
+											UpdateFrequency: 2,
+										},
+										{
+											PredicateType: "OmitHostsWithTags",
+											Tags: map[string]string{
+												"test": "test",
+											},
+										},
+									},
+									HostSelectionMaxAttempts: pointer.To(int64(2)),
+								},
+							},
+						},
+					},
+				},
+			},
+			goldenFilePrefix: "http-real-mesh-external-service",
 		}),
 	)
 

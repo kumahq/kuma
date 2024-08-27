@@ -60,6 +60,9 @@ type GlobalInsight struct {
 	// Policies Policies statistics
 	Policies PoliciesStats `json:"policies"`
 
+	// Resources A map of resource names to their corresponding statistics
+	Resources map[string]ResourceStats `json:"resources"`
+
 	// Services Mesh services statistics
 	Services ServicesStats `json:"services"`
 
@@ -122,6 +125,12 @@ type MeshesStats struct {
 // PoliciesStats Policies statistics
 type PoliciesStats struct {
 	// Total Number of policies
+	Total int `json:"total"`
+}
+
+// ResourceStats Resource statistics
+type ResourceStats struct {
+	// Total Number of resources
 	Total int `json:"total"`
 }
 

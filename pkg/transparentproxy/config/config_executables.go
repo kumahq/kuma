@@ -19,6 +19,10 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+const (
+	WarningDryRunNoValidIptablesFound = "[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables"
+)
+
 type Version struct {
 	k8s_version.Version
 
@@ -401,130 +405,64 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 }
 
 type Executables struct {
-	IPv4 ExecutablesIPvX
-	IPv6 ExecutablesIPvX
-	Mode IptablesMode
+	NftIPv4    ExecutablesIPvX
+	NftIPv6    ExecutablesIPvX
+	LegacyIPv4 ExecutablesIPvX
+	LegacyIPv6 ExecutablesIPvX
 }
 
-func NewExecutables(mode IptablesMode) Executables {
+func NewExecutables() Executables {
 	return Executables{
-		IPv4: NewExecutablesIPvX(false, mode),
-		IPv6: NewExecutablesIPvX(true, mode),
-		Mode: mode,
+		NftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
+		NftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
+		LegacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
+		LegacyIPv6: NewExecutablesIPvX(true, IptablesModeLegacy),
 	}
 }
 
-// Initialize attempts to initialize both IPv4 and IPv6 executables within the
-// given context. It ensures proper configuration for IPv6 if necessary.
-//
-// This method performs the following steps:
-//  1. Attempts to initialize the IPv4 executables with the provided context,
-//     Config, and Logger. If an error occurs, it returns an error indicating
-//     the failure to initialize IPv4 executables.
-//  2. If IPv6 is enabled in the configuration, it attempts to initialize the
-//     IPv6 executables with the provided context, Config, and Logger. If an
-//     error occurs, it returns an error indicating the failure to initialize
-//     IPv6 executables.
-//  3. If IPv6 initialization is successful, it attempts to configure the IPv6
-//     outbound address. If this configuration fails, a warning is logged, and
-//     IPv6 rules will be skipped.
-func (c Executables) Initialize(
+func (c Executables) InitializeIPv4(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutables, error) {
-	var err error
-	var initialized InitializedExecutables
-
-	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
-
-	if initialized.IPv4, err = c.IPv4.Initialize(ctx, loggerIPv4, cfg); err != nil {
-		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv4 executables")
-	}
-
-	if cfg.IPFamilyMode == IPFamilyModeIPv4 {
-		return initialized, nil
-	}
-
-	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
-
-	if initialized.IPv6, err = c.IPv6.Initialize(ctx, loggerIPv6, cfg); err != nil {
-		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv6 executables")
-	}
-
-	return initialized, nil
-}
-
-type InitializedExecutables struct {
-	IPv4 InitializedExecutablesIPvX
-	IPv6 InitializedExecutablesIPvX
-}
-
-func (c InitializedExecutables) hasDockerOutputChain() bool {
-	return c.IPv4.Functionality.Chains.DockerOutput ||
-		c.IPv6.Functionality.Chains.DockerOutput
-}
-
-func (c InitializedExecutables) hasExistingRules() bool {
-	return c.IPv4.Functionality.Rules.ExistingRules ||
-		c.IPv6.Functionality.Rules.ExistingRules
-}
-
-type ExecutablesNftLegacy struct {
-	Nft    Executables
-	Legacy Executables
-}
-
-func NewExecutablesNftLegacy() ExecutablesNftLegacy {
-	return ExecutablesNftLegacy{
-		Nft:    NewExecutables(IptablesModeNft),
-		Legacy: NewExecutables(IptablesModeLegacy),
-	}
-}
-
-func (c ExecutablesNftLegacy) Initialize(
-	ctx context.Context,
-	l Logger,
-	cfg Config,
-) (InitializedExecutables, error) {
+) (InitializedExecutablesIPvX, ExecutablesIPvX, error) {
 	var errs []error
 
-	nft, nftErr := c.Nft.Initialize(ctx, l, cfg)
+	nft, nftErr := c.NftIPv4.Initialize(ctx, l, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
 	}
 
-	legacy, legacyErr := c.Legacy.Initialize(ctx, l, cfg)
+	legacy, legacyErr := c.LegacyIPv4.Initialize(ctx, l, cfg)
 	if legacyErr != nil {
 		errs = append(errs, legacyErr)
 	}
 
 	switch {
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables")
-		return InitializedExecutables{}, nil
+		l.Warn(WarningDryRunNoValidIptablesFound)
+		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, nil
 	case len(errs) == 2:
-		return InitializedExecutables{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
+		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
 	case legacyErr != nil:
-		return nft, nil
+		return nft, c.NftIPv6, nil
 	case nftErr != nil:
-		return legacy, nil
-	case nft.hasExistingRules() && legacy.hasExistingRules():
+		return legacy, c.LegacyIPv6, nil
+	case nft.Functionality.Rules.ExistingRules && legacy.Functionality.Rules.ExistingRules:
 		switch {
-		case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
+		case nft.Functionality.Chains.DockerOutput && legacy.Functionality.Chains.DockerOutput:
 			fallthrough
-		case !nft.hasDockerOutputChain() && !legacy.hasDockerOutputChain():
+		case !nft.Functionality.Chains.DockerOutput && !legacy.Functionality.Chains.DockerOutput:
 			l.Warn("conflicting iptables modes detected; both iptables-nft and iptables-legacy have existing rules and/or custom chains. To avoid potential conflicts, iptables-legacy will be ignored, and iptables-nft will be used")
-			return nft, nil
-		case legacy.hasDockerOutputChain():
-			return legacy, nil
+			return nft, c.NftIPv6, nil
+		case legacy.Functionality.Chains.DockerOutput:
+			return legacy, c.LegacyIPv6, nil
 		default:
-			return nft, nil
+			return nft, c.NftIPv6, nil
 		}
-	case legacy.hasExistingRules():
-		return legacy, nil
+	case legacy.Functionality.Rules.ExistingRules:
+		return legacy, c.LegacyIPv6, nil
 	default:
-		return nft, nil
+		return nft, c.NftIPv6, nil
 	}
 }
 
