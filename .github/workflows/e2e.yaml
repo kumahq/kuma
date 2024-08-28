@@ -108,14 +108,3 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-<<<<<<< HEAD:.github/workflows/e2e.yaml
-=======
-      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
-        if: always()
-        with:
-          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}
-          if-no-files-found: ignore
-          path: |
-            /tmp/e2e-debug/
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107)):.github/workflows/_e2e.yaml

@@ -26,11 +26,11 @@ type AggregateMetricsConfig struct {
 }
 
 type configParameters struct {
-<<<<<<< HEAD
 	Id                  string
 	Service             string
 	AdminAddress        string
 	AdminPort           uint32
+	ReadinessPort       uint32
 	AdminAccessLogPath  string
 	XdsHost             string
 	XdsPort             uint32
@@ -53,31 +53,4 @@ type configParameters struct {
 	Features            []string
 	IsGatewayDataplane  bool
 	Resources           types.ProxyResources
-=======
-	Id                 string
-	Service            string
-	AdminAddress       string
-	AdminPort          uint32
-	ReadinessPort      uint32
-	AdminAccessLogPath string
-	XdsHost            string
-	XdsPort            uint32
-	XdsConnectTimeout  time.Duration
-	Workdir            string
-	MetricsCertPath    string
-	MetricsKeyPath     string
-	DataplaneToken     string
-	DataplaneTokenPath string
-	DataplaneResource  string
-	CertBytes          []byte
-	Version            *mesh_proto.Version
-	HdsEnabled         bool
-	DynamicMetadata    map[string]string
-	DNSPort            uint32
-	ProxyType          string
-	Features           []string
-	IsGatewayDataplane bool
-	Resources          types.ProxyResources
-	SystemCaPath       string
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 }

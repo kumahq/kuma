@@ -114,9 +114,9 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 				KumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
 			},
 		},
-<<<<<<< HEAD
 		DynamicMetadata:     request.DynamicMetadata,
 		DNSPort:             request.DNSPort,
+		ReadinessPort:       request.ReadinessPort,
 		EmptyDNSPort:        request.EmptyDNSPort,
 		ProxyType:           request.ProxyType,
 		Features:            request.Features,
@@ -126,18 +126,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsSocketPath:   metricsSocketPath,
 		MetricsCertPath:     request.MetricsResources.CertPath,
 		MetricsKeyPath:      request.MetricsResources.KeyPath,
-=======
-		DynamicMetadata: request.DynamicMetadata,
-		DNSPort:         request.DNSPort,
-		ReadinessPort:   request.ReadinessPort,
-		ProxyType:       request.ProxyType,
-		Features:        request.Features,
-		Resources:       request.Resources,
-		Workdir:         request.Workdir,
-		MetricsCertPath: request.MetricsResources.CertPath,
-		MetricsKeyPath:  request.MetricsResources.KeyPath,
-		SystemCaPath:    request.SystemCaPath,
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
