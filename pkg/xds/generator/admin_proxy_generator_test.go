@@ -26,6 +26,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		dataplaneFile string
 		expected      string
 		adminAddress  string
+		readinessPort uint32
 	}
 
 	DescribeTable("should generate envoy config",
@@ -49,9 +50,11 @@ var _ = Describe("AdminProxyGenerator", func() {
 			}
 
 			proxy := &xds.Proxy{
+				Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 				Metadata: &xds.DataplaneMetadata{
-					AdminPort:    9901,
-					AdminAddress: given.adminAddress,
+					AdminPort:     9901,
+					AdminAddress:  given.adminAddress,
+					ReadinessPort: given.readinessPort,
 				},
 				EnvoyAdminMTLSCerts: xds.ServerSideMTLSCerts{
 					CaPEM: []byte("caPEM"),
@@ -93,15 +96,28 @@ var _ = Describe("AdminProxyGenerator", func() {
 			expected:      "03.envoy-config.golden.yaml",
 			adminAddress:  "::1",
 		}),
-		Entry("should generate admin resources, unspecified IPv4", testCase{
+		Entry("should generate admin resources, unspecified IPv4, readiness port 0", testCase{
 			dataplaneFile: "04.dataplane.input.yaml",
 			expected:      "04.envoy-config.golden.yaml",
 			adminAddress:  "0.0.0.0",
+			readinessPort: 0,
 		}),
 		Entry("should generate admin resources, unspecified IPv6", testCase{
 			dataplaneFile: "05.dataplane.input.yaml",
 			expected:      "05.envoy-config.golden.yaml",
 			adminAddress:  "::",
+		}),
+		Entry("should generate admin resources, IPv4 with readiness port 9902", testCase{
+			dataplaneFile: "04.dataplane.input.yaml",
+			expected:      "06.envoy-config.golden.yaml",
+			adminAddress:  "127.0.0.1",
+			readinessPort: 9902,
+		}),
+		Entry("should generate admin resources, IPv6 with readiness port 9400", testCase{
+			dataplaneFile: "05.dataplane.input.yaml",
+			expected:      "07.envoy-config.golden.yaml",
+			adminAddress:  "::1",
+			readinessPort: 9400,
 		}),
 	)
 
@@ -117,6 +133,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 		}
 
 		proxy := &xds.Proxy{
+			Id: *xds.BuildProxyId("default", "test-admin-dpp"),
 			Metadata: &xds.DataplaneMetadata{
 				AdminPort:    9901,
 				AdminAddress: "192.168.0.1", // it's not allowed to use such address

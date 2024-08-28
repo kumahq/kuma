@@ -69,6 +69,37 @@ func GetMetricsHijackerClusterName() string {
 	return Join("kuma", "metrics", "hijacker")
 }
 
+<<<<<<< HEAD
+=======
+func GetDPPReadinessClusterName() string {
+	return Join("kuma", "readiness")
+}
+
+func GetInternalClusterNamePrefix() string {
+	return "_"
+}
+
+func GetAdsClusterName() string {
+	return "ads_cluster"
+}
+
+func GetAccessLogSinkClusterName() string {
+	return "access_log_sink"
+}
+
+func GetOpenTelemetryListenerName(backendName string) string {
+	return Join("_kuma", "metrics", "opentelemetry", backendName)
+}
+
+func GetOpenTelemetryClusterPrefix() string {
+	return Join("_kuma", "metrics", "opentelemetry")
+}
+
+func GetOpenTelemetryClusterName(backendName string) string {
+	return Join(GetOpenTelemetryClusterPrefix(), backendName)
+}
+
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 func GetPrometheusListenerName() string {
 	return Join("kuma", "metrics", "prometheus")
 }
