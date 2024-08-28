@@ -5,11 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-<<<<<<< HEAD
-=======
-	"strings"
 	"syscall"
->>>>>>> c18de01f3 (test(e2e/universal): copy container logs during e2e universal debug (#11245))
 
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -215,22 +211,6 @@ func prepareDebugDir() string {
 
 	return path
 }
-<<<<<<< HEAD
-=======
-
-func CpRestarted(cluster Cluster) bool {
-	switch cluster.(type) {
-	case *UniversalCluster:
-		// CP does not recover restart on universal. If it crashed, we can just check if the process is still running.
-		out, _, _ := cluster.Exec("", "", AppModeCP, "ps", "aux")
-		return !strings.Contains(out, "kuma-cp run")
-	case *K8sCluster:
-		restartCount := RestartCount(cluster.GetKuma().(*K8sControlPlane).GetKumaCPPods())
-		return restartCount > 0
-	default:
-		return false
-	}
-}
 
 // When we'll update our package to Go 1.23, below helper functions are can be replaced with
 // err = os.CopyFS(destDir, os.DirFS(srcDir))
@@ -342,4 +322,3 @@ func CopySymLink(source, dest string) error {
 	}
 	return os.Symlink(link, dest)
 }
->>>>>>> c18de01f3 (test(e2e/universal): copy container logs during e2e universal debug (#11245))
