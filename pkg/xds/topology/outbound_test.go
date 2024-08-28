@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -1207,7 +1206,7 @@ var _ = Describe("TrafficRoute", func() {
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
 										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
-										Port:        8080,
+										Port:        80,
 										ServicePort: 18080,
 									},
 									{
@@ -1221,69 +1220,22 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				meshServices: []*meshservice_api.MeshServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "kong.kong-system",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneTags: map[string]string{
-									"app": "kong",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:        80,
-									TargetPort:  intstr.FromInt(8080),
-									AppProtocol: "http",
-								},
-								{
-									Port:        8081,
-									TargetPort:  intstr.FromInt(8081),
-									AppProtocol: "http",
-								},
-							},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "redis",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneTags: map[string]string{
-									mesh_proto.ServiceTag: "redis_svc_6379",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:       6379,
-									TargetPort: intstr.FromInt(6379),
-								},
-							},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "redis-0",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneRef: &meshservice_api.DataplaneRef{
-									Name: "redis-0",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:       6379,
-									TargetPort: intstr.FromInt(6379),
-								},
-							},
-						},
-					},
+					builders.MeshService().
+						WithName("kong.kong-system").
+						WithDataplaneTagsSelectorKV("app", "kong").
+						AddIntPort(8080, 80, "http").
+						AddIntPort(8081, 8001, "http").
+						Build(),
+					builders.MeshService().
+						WithName("redis").
+						WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "redis_svc_6379").
+						AddIntPort(6379, 6379, "tcp").
+						Build(),
+					builders.MeshService().
+						WithName("redis-0").
+						WithDataplaneRefNameSelector("redis-0").
+						AddIntPort(6379, 6379, "tcp").
+						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
@@ -1308,13 +1260,31 @@ var _ = Describe("TrafficRoute", func() {
 					"kong_kong-system_svc_80": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
-							Port:     8080,
+							Port:     80,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_svc_8080": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     80,
 							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
 							Locality: nil,
 							Weight:   1,
 						},
 					},
 					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8001,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_svc_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
