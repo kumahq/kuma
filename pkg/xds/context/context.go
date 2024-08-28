@@ -129,13 +129,9 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 					Namespace: reachableBackend.Namespace,
 				}),
 			}
-			if key.Zone == "" {
-				fmt.Println("DEBUG", "zone is not set", dataplane.GetMeta().GetLabels(), dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetName())
-			}
 			if port := reachableBackend.Port; port != nil {
 				key.SectionName = fmt.Sprintf("%d", port.GetValue())
 			}
-			fmt.Println("DEBUG", key)
 			reachableBackends[key] = true
 		}
 	}
