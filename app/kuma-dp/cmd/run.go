@@ -14,11 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
-<<<<<<< HEAD
-=======
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -171,45 +167,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				OnFinish:  cancelComponents,
 			}
 
-<<<<<<< HEAD
-=======
-			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
-			if err != nil {
-				return errors.Wrap(err, "failed to get Envoy version")
-			}
-
-			if envoyVersion.KumaDpCompatible, err = envoy.VersionCompatible(kuma_version.Envoy, envoyVersion.Version); err != nil {
-				runLog.Error(err, "cannot determine envoy version compatibility")
-			} else if !envoyVersion.KumaDpCompatible {
-				runLog.Info("Envoy version incompatible", "expected", kuma_version.Envoy, "current", envoyVersion.Version)
-			}
-
-			runLog.Info("fetched Envoy version", "version", envoyVersion)
-
-			runLog.Info("generating bootstrap configuration")
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:       opts.Dataplane,
-				DNSPort:         cfg.DNS.EnvoyDNSPort,
-				ReadinessPort:   cfg.Dataplane.ReadinessPort,
-				EnvoyVersion:    *envoyVersion,
-				Workdir:         cfg.DataplaneRuntime.SocketDir,
-				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
-				MetricsCertPath: cfg.DataplaneRuntime.Metrics.CertPath,
-				MetricsKeyPath:  cfg.DataplaneRuntime.Metrics.KeyPath,
-				SystemCaPath:    cfg.DataplaneRuntime.SystemCaPath,
-			})
-			if err != nil {
-				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
-			}
-			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
-
-			opts.BootstrapConfig, err = proto.ToYAML(bootstrap)
-			if err != nil {
-				return errors.Errorf("could not convert to yaml. %v", err)
-			}
-			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
-
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -251,6 +208,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:           opts.Dataplane,
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
+				ReadinessPort:       cfg.Dataplane.ReadinessPort,
 				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
 				AccessLogSocketPath: accessLogSocketPath,
@@ -276,16 +234,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			components = append(components, envoyComponent)
 
-<<<<<<< HEAD
 			metricsServer := metrics.New(
 				metricsSocketPath,
 				getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()),
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
 			components = append(components, metricsServer)
-=======
-			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
-			components = append(components, observabilityComponents...)
 
 			var readinessReporter *readiness.Reporter
 			if cfg.Dataplane.ReadinessPort > 0 {
@@ -295,7 +249,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				components = append(components, readinessReporter)
 			}
 
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
@@ -308,42 +261,14 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					if err := envoyComponent.DrainConnections(); err != nil {
 						runLog.Error(err, "could not drain connections")
 					} else {
+						if readinessReporter != nil {
+							readinessReporter.Terminating()
+						}
 						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
 						select {
 						case <-time.After(cfg.Dataplane.DrainTime.Duration):
 						case <-ctx.Done():
 						}
-<<<<<<< HEAD
-=======
-						if !draining {
-							runLog.Info("draining Envoy connections")
-							if err := envoyComponent.DrainForever(); err != nil {
-								runLog.Error(err, "could not drain connections")
-							}
-						}
-						draining = true
-						continue
-					case <-gracefulCtx.Done():
-						runLog.Info("Kuma DP caught an exit signal")
-						if draining {
-							runLog.Info("already drained, exit immediately")
-						} else {
-							if readinessReporter != nil {
-								readinessReporter.Terminating()
-							}
-							runLog.Info("draining Envoy connections")
-							if err := envoyComponent.FailHealthchecks(); err != nil {
-								runLog.Error(err, "could not drain connections")
-							} else {
-								runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
-								select {
-								case <-time.After(cfg.Dataplane.DrainTime.Duration):
-								case <-ctx.Done():
-								}
-							}
-						}
-					case <-componentCtx.Done():
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 					}
 				case <-componentCtx.Done():
 				}
