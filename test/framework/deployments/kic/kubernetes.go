@@ -37,7 +37,6 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 		"--namespace", t.ingressNamespace,
 		"--mesh", t.mesh,
 	)
-
 	if err != nil {
 		return err
 	}
