@@ -3,6 +3,8 @@ package meshexternalservice
 import (
 	"encoding/base64"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -11,6 +13,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -24,6 +27,7 @@ import (
 )
 
 func MeshExternalService() {
+	var tcpSinkDockerName string
 	meshNameNoDefaults := "mesh-external-service-no-default-policy"
 	meshDefaulMtlsOn := func(meshName string) InstallFunc {
 		return YamlUniversal(fmt.Sprintf(`
@@ -86,12 +90,15 @@ routing:
 		esHttpsName := "mes-https"
 		esHttp2Name := "mes-http-2"
 
+		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, AppModeTcpSink)
+
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
 		esHttpsContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpsName)
 		esHttp2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttp2Name)
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
+			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
@@ -498,6 +505,88 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(Equal("mes-http-2"))
 			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
+	})
+
+	Context("MeshExternalService with MeshAccessLog", func() {
+		expectTrafficLogged := func(makeRequest func(g Gomega)) (string, string) {
+			var src, dst string
+
+			Eventually(func(g Gomega) {
+				makeRequest(g)
+
+				stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
+				g.Expect(err).ToNot(HaveOccurred())
+				parts := strings.Split(stdout, ",")
+				g.Expect(parts).To(HaveLen(3))
+
+				startTimeInt, err := strconv.Atoi(strings.TrimSpace(parts[0]))
+				Expect(err).ToNot(HaveOccurred())
+				startTime := time.Unix(int64(startTimeInt), 0)
+				Expect(startTime).To(BeTemporally("~", time.Now(), time.Hour))
+
+				src, dst = parts[1], parts[2]
+			}, "30s", "1s").Should(Succeed())
+
+			return strings.TrimSpace(src), strings.TrimSpace(dst)
+		}
+
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshaccesslog_api.MeshAccessLogResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should log outgoing traffic to MeshExternalService", func() {
+			trafficLogFormat := "%START_TIME(%s)%,%KUMA_SOURCE_SERVICE%,%KUMA_DESTINATION_SERVICE%"
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-access-log
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			meshAccessLog := fmt.Sprintf(`
+type: MeshAccessLog
+name: mes-access-log-policy
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-access-log
+      default:
+        backends:
+          - type: Tcp
+            tcp:
+              format:
+                type: Plain
+                plain: '%s'
+              address: "%s:9999"`, meshNameNoDefaults, trafficLogFormat, tcpSinkDockerName)
+
+			makeRequest := func(g Gomega) {
+				_, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-access-log.extsvc.mesh.local",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+			}
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(meshAccessLog))).To(Succeed())
+
+			// then should timeout after 5 seconds
+			src, dst := expectTrafficLogged(makeRequest)
+			Expect(src).To(Equal("mes-demo-client-no-defaults"))
+			Expect(dst).To(Equal("mes-access-log"))
 		})
 	})
 
