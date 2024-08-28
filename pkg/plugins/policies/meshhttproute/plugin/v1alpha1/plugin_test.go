@@ -71,7 +71,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 		ResourceType: "MeshService",
 		SectionName:  "",
 	}
-	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name: "example",
 			Mesh: "default",
@@ -400,15 +400,21 @@ var _ = Describe("MeshHTTPRoute", func() {
 				},
 			}
 
-			dp, proxy := dppForMeshExternalService()
+			dp, proxy := dppForMeshExternalService(&meshExtSvc)
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
 			}
 			proxy.Policies.Dynamic[api.MeshHTTPRouteType] = xds.TypedMatchingPolicies{
 				Type: api.MeshHTTPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
+							Origin: []core_rules.Origin{
+								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
+							},
+							BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+								core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 0,
+							},
 							Conf: []interface{}{
 								api.PolicyDefault{
 									Rules: []api.Rule{

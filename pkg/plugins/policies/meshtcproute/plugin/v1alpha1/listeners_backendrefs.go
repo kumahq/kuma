@@ -54,7 +54,7 @@ func getBackendRefs(
 		// If we have an >= HTTP service, don't manage routing with
 		// MeshTCPRoutes if we either don't have any MeshTCPRoutes or we have
 		// MeshHTTPRoutes
-		httpConf := meshhttproute.ComputeHTTPRouteConf(toRulesHTTP, svc, meshCtx)
+		httpConf, _ := meshhttproute.ComputeHTTPRouteConf(toRulesHTTP, svc, meshCtx)
 		if tcpConf == nil || httpConf != nil {
 			return nil
 		}

@@ -46,7 +46,7 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "example",
 			Mesh:      "default",
@@ -223,7 +223,7 @@ var _ = Describe("MeshAccessLog", func() {
 				ResourceOrigin: &backendMeshExternalServiceIdentifier,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
