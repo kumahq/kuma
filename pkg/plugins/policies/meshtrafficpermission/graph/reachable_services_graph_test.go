@@ -282,6 +282,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 					mesh_proto.KubeServiceTag:   "a",
 					mesh_proto.KubePortTag:      "1234",
+					mesh_proto.ServiceTag:       "a_kuma-demo_svc_1234",
 				},
 				"b": map[string]string{},
 			}
@@ -311,6 +312,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(mesh_proto.KubeNamespaceTag, "kuma-demo")),
 		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(mesh_proto.KubeServiceTag, "a")),
 		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(mesh_proto.KubePortTag, "1234")),
+		Entry("MeshSubset by kuma.io/service", builders.TargetRefMeshSubset(mesh_proto.ServiceTag, "a_kuma-demo_svc_1234")),
 		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeNamespaceTag, "kuma-demo")),
 		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeServiceTag, "a")),
 		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubePortTag, "1234")),
@@ -384,12 +386,23 @@ var _ = Describe("Reachable Services Graph", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.KubeServiceTag:   "a",
 				mesh_proto.KubePortTag:      "1234",
+				mesh_proto.ServiceTag:       "a_kuma-demo_svc_1234",
 			},
-			"b":    map[string]string{},
-			"c":    map[string]string{},
-			"d":    map[string]string{},
-			"e":    map[string]string{},
-			"es-1": map[string]string{},
+			"b": map[string]string{
+				mesh_proto.ServiceTag: "b",
+			},
+			"c": map[string]string{
+				mesh_proto.ServiceTag: "c",
+			},
+			"d": map[string]string{
+				mesh_proto.ServiceTag: "d",
+			},
+			"e": map[string]string{
+				mesh_proto.ServiceTag: "e",
+			},
+			"es-1": map[string]string{
+				mesh_proto.ServiceTag: "es-1",
+			},
 		}))
 	})
 })

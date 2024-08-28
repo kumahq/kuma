@@ -267,7 +267,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
 										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
-										Port:        8080,
+										Port:        80,
 										ServicePort: 18080,
 									},
 									{
@@ -284,8 +284,8 @@ var _ = Describe("IngressTrafficRoute", func() {
 					builders.MeshService().
 						WithName("kong.kong-system").
 						WithDataplaneTagsSelectorKV("app", "kong").
-						AddIntPort(80, 8080, "http").
-						AddIntPort(81, 8081, "http").
+						AddIntPort(8080, 80, "http").
+						AddIntPort(8081, 8001, "http").
 						Build(),
 					builders.MeshService().
 						WithName("redis").
@@ -303,7 +303,21 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",
-							Port:           8080,
+							Port:           80,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_80",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"kong_kong-system_svc_8080": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           80,
 							Tags: map[string]string{
 								"kuma.io/service": "kong_kong-system_svc_80",
 								"app":             "kong",
@@ -335,6 +349,20 @@ var _ = Describe("IngressTrafficRoute", func() {
 						},
 					},
 					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           8001,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_8001",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"kong_kong-system_svc_8081": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",

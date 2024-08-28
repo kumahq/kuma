@@ -5,7 +5,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -36,20 +36,6 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	return tcpConf, origin
 }
 
-func computeForHTTPRoute(toRulesHTTP core_xds.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *meshhttproute_api.PolicyDefault {
-	httpConf := core_xds.ComputeConf[meshhttproute_api.PolicyDefault](
-		toRulesHTTP.Rules,
-		core_xds.MeshService(svc.ServiceName),
-	)
-	if svc.Outbound.Resource != nil {
-		resourceConf := toRulesHTTP.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
-		if resourceConf != nil && len(resourceConf.Conf) != 0 {
-			httpConf = pointer.To(resourceConf.Conf[0].(meshhttproute_api.PolicyDefault))
-		}
-	}
-	return httpConf
-}
-
 func getBackendRefs(
 	toRulesTCP core_xds.ToRules,
 	toRulesHTTP core_xds.ToRules,
@@ -68,7 +54,7 @@ func getBackendRefs(
 		// If we have an >= HTTP service, don't manage routing with
 		// MeshTCPRoutes if we either don't have any MeshTCPRoutes or we have
 		// MeshHTTPRoutes
-		httpConf := computeForHTTPRoute(toRulesHTTP, svc, meshCtx)
+		httpConf := meshhttproute.ComputeHTTPRouteConf(toRulesHTTP, svc, meshCtx)
 		if tcpConf == nil || httpConf != nil {
 			return nil
 		}
