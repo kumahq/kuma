@@ -1,0 +1,18 @@
+targetRef:
+  kind: MeshService
+  name: svc-1
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      tlsVersion:
+        min: TLS11
+        max: TLS12
+      tlsCiphers:
+        - "ECDHE-ECDSA-AES128-GCM-SHA256"
+        - "ECDHE-ECDSA-AES256-GCM-SHA384"
+        - "ECDHE-ECDSA-CHACHA20-POLY1305"
+        - "ECDHE-RSA-AES128-GCM-SHA256"
+        - "ECDHE-RSA-AES256-GCM-SHA384"
+        - "ECDHE-RSA-CHACHA20-POLY1305"
+      mode: Strict

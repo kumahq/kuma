@@ -368,6 +368,17 @@ components:
           type: integer
           description: Number of policies
           example: 30
+    ResourceStats:
+      type: object
+      title: Resource Stats
+      description: Resource statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of resources
+          example: 30
     MeshesStats:
       type: object
       title: Meshes Stats
@@ -390,6 +401,7 @@ components:
         - dataplanes
         - policies
         - meshes
+        - resources
       properties:
         createdAt:
           type: string
@@ -416,6 +428,11 @@ components:
           description: Mesh statistics
           allOf:
             - $ref: "#/components/schemas/MeshesStats"
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceStats'
+          description: A map of resource names to their corresponding statistics
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -503,6 +520,11 @@ components:
             total: 100
           meshes:
             total: 3
+          resources:
+            MeshTrafficPermission:
+              total: 42
+            MeshService:
+              total: 84
     InspectDataplanesForPolicyExample:
       value:
         total: 100
