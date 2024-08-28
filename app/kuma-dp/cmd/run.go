@@ -17,11 +17,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
-<<<<<<< HEAD
-=======
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
->>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
