@@ -8,6 +8,7 @@ controlPlane:
 dataplane:
   drainTime: 30s
   proxyType: dataplane
+  readinessPort: 9902
 dataplaneRuntime:
   binaryPath: envoy
   metrics: {}
