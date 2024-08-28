@@ -126,12 +126,6 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
-        if: ${{ failure() }}
-        with:
-          limit-access-to-actor: true
-          wait-timeout-minutes: 20
       - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         if: always()
         with:
