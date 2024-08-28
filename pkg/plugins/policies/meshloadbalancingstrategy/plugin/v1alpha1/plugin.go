@@ -6,12 +6,14 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -232,9 +234,9 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	endpoints := policies_xds.GatherEgressEndpoints(rs)
 	clusters := policies_xds.GatherClusters(rs)
 
-	for _, mr := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for serviceName, dynamic := range mr.Dynamic {
-			meshName := mr.Mesh.GetMeta().GetName()
+	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
+		for serviceName, dynamic := range resource.Dynamic {
+			meshName := resource.Mesh.GetMeta().GetName()
 			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
 			if !ok {
 				continue
@@ -250,6 +252,46 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
 			if err != nil {
 				return err
+			}
+		}
+
+		meshExternalServices := resource.Resources[meshexternalservice_api.MeshExternalServiceType]
+		if meshExternalServices == nil {
+			continue
+		}
+		for _, mes := range meshExternalServices.GetItems() {
+			policies, ok := resource.Dynamic[mes.GetMeta().GetName()]
+			if !ok {
+				continue
+			}
+			mlbs, ok := policies[api.MeshLoadBalancingStrategyType]
+			if !ok {
+				continue
+			}
+			for uri, resType := range rs.IndexByOrigin() {
+				conf := mlbs.ToRules.ResourceRules.Compute(uri, resource)
+				if conf == nil {
+					continue
+				}
+
+				for typ, resources := range resType {
+					switch typ {
+					case envoy_resource.ClusterType:
+						for _, cluster := range resources {
+							err := p.configureCluster(cluster.Resource.(*envoy_cluster.Cluster), conf.Conf[0].(api.Conf))
+							if err != nil {
+								return err
+							}
+						}
+					case envoy_resource.ListenerType:
+						for _, listener := range resources {
+							err := p.configureListener(listener.Resource.(*envoy_listener.Listener), nil, conf.Conf[0].(*api.Conf))
+							if err != nil {
+								return err
+							}
+						}
+					}
+				}
 			}
 		}
 	}
