@@ -21,6 +21,7 @@ const (
 	// Supported Envoy node metadata fields.
 	FieldDataplaneAdminPort         = "dataplane.admin.port"
 	FieldDataplaneAdminAddress      = "dataplane.admin.address"
+	FieldDataplaneReadinessPort     = "dataplane.readinessReporter.port"
 	FieldDataplaneDNSPort           = "dataplane.dns.port"
 	FieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	FieldDataplaneDataplaneResource = "dataplane.resource"
@@ -51,6 +52,7 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
+<<<<<<< HEAD
 	Resource            model.Resource
 	AdminPort           uint32
 	AdminAddress        string
@@ -65,6 +67,21 @@ type DataplaneMetadata struct {
 	MetricsSocketPath   string
 	MetricsCertPath     string
 	MetricsKeyPath      string
+=======
+	Resource        model.Resource
+	AdminPort       uint32
+	AdminAddress    string
+	ReadinessPort   uint32
+	DNSPort         uint32
+	DynamicMetadata map[string]string
+	ProxyType       mesh_proto.ProxyType
+	Version         *mesh_proto.Version
+	Features        Features
+	WorkDir         string
+	MetricsCertPath string
+	MetricsKeyPath  string
+	SystemCaPath    string
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -117,6 +134,13 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
+func (m *DataplaneMetadata) GetReadinessPort() uint32 {
+	if m == nil {
+		return 0
+	}
+	return m.ReadinessPort
+}
+
 func (m *DataplaneMetadata) GetAdminAddress() string {
 	if m == nil {
 		return ""
@@ -165,6 +189,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct, tmpDir strin
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
+	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
 	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSEmptyPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {

@@ -54,7 +54,16 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "8000",
 						},
 					},
+<<<<<<< HEAD
 					"dataplane.dns.empty.port": {
+=======
+					"dataplane.readinessReporter.port": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "9300",
+						},
+					},
+					"systemCaPath": {
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 						Kind: &structpb.Value_StringValue{
 							StringValue: "8001",
 						},
@@ -72,11 +81,18 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
+<<<<<<< HEAD
 				AdminPort:           1234,
 				DNSPort:             8000,
 				EmptyDNSPort:        8001,
 				AccessLogSocketPath: "/tmp/logs",
 				MetricsSocketPath:   "/tmp/metrics",
+=======
+				AdminPort:     1234,
+				DNSPort:       8000,
+				SystemCaPath:  "/etc/certs/cert.pem",
+				ReadinessPort: 9300,
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{

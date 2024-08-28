@@ -338,8 +338,13 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	if parameters.DNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.DNSPort)))
 	}
+<<<<<<< HEAD
 	if parameters.EmptyDNSPort != 0 {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneDNSEmptyPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.EmptyDNSPort)))
+=======
+	if parameters.ReadinessPort != 0 {
+		res.Node.Metadata.Fields[core_xds.FieldDataplaneReadinessPort] = util_proto.MustNewValueForStruct(strconv.Itoa(int(parameters.ReadinessPort)))
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 	}
 	if parameters.ProxyType != "" {
 		res.Node.Metadata.Fields[core_xds.FieldDataplaneProxyType] = util_proto.MustNewValueForStruct(parameters.ProxyType)
