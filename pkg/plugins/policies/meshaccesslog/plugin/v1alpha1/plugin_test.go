@@ -46,6 +46,16 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
+	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "example",
+			Mesh:      "default",
+			Namespace: "",
+			Zone:      "",
+		},
+		ResourceType: "MeshExternalService",
+	}
+
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
 		outbounds         core_xds.Outbounds
@@ -185,6 +195,49 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedListeners: []string{"basic_outbound_real_meshservice.listener.golden.yaml"},
+		}),
+		Entry("basic outbound route from real MeshExternalService", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(
+							HttpOutboundRoute(
+								"example",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("example"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshExternalServiceIdentifier,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_real_meshexternalservice.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{

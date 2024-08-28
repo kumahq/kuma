@@ -1,0 +1,17 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend
+- name: meshexternalservice_example2
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: meshexternalservice_example2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 127.0.0.1
+              portValue: 10002
+        loadBalancingWeight: 1

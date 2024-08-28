@@ -8,16 +8,19 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -1345,9 +1348,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
@@ -1462,6 +1465,13 @@ var _ = Describe("TrafficRoute", func() {
 							ExternalService: &core_xds.ExternalService{
 								Protocol:   core_mesh.ProtocolTCP,
 								TLSEnabled: false,
+								OwnerResource: &rules.UniqueResourceIdentifier{
+									ResourceType: "MeshExternalService",
+									ResourceIdentifier: core_model.ResourceIdentifier{
+										Name: "another-mes",
+										Mesh: "default",
+									},
+								},
 							},
 						},
 					},
@@ -1512,9 +1522,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
@@ -1733,8 +1743,18 @@ var _ = Describe("TrafficRoute", func() {
 								Tags: map[string]string{
 									"mesh": "default",
 								},
-								Weight:          1,
-								ExternalService: &core_xds.ExternalService{TLSEnabled: false, Protocol: core_mesh.ProtocolTCP},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									TLSEnabled: false,
+									Protocol:   core_mesh.ProtocolTCP,
+									OwnerResource: &rules.UniqueResourceIdentifier{
+										ResourceType: "MeshExternalService",
+										ResourceIdentifier: core_model.ResourceIdentifier{
+											Name: "example",
+											Mesh: "default",
+										},
+									},
+								},
 							},
 						},
 					},

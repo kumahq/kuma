@@ -283,7 +283,7 @@ violations:
   - field: spec.to[0].default.http.expectedStatuses[1]
     message: must be in inclusive range [100, 599]`,
 			}),
-			Entry("status codes out of range in expectedStatuses", testCase{
+			Entry("cannot use MeshExternalService with other type than Mesh", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -304,7 +304,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: kind MeshExternalService is only allowed with targetRef.kind: Mesh`,
+    message: 'kind MeshExternalService is only allowed with targetRef.kind: Mesh'`,
 			}),
 		)
 	})

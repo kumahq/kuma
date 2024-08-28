@@ -21,6 +21,7 @@ const (
 	// Supported Envoy node metadata fields.
 	FieldDataplaneAdminPort         = "dataplane.admin.port"
 	FieldDataplaneAdminAddress      = "dataplane.admin.address"
+	FieldDataplaneReadinessPort     = "dataplane.readinessReporter.port"
 	FieldDataplaneDNSPort           = "dataplane.dns.port"
 	FieldDataplaneDataplaneResource = "dataplane.resource"
 	FieldDynamicMetadata            = "dynamicMetadata"
@@ -52,6 +53,7 @@ type DataplaneMetadata struct {
 	Resource        model.Resource
 	AdminPort       uint32
 	AdminAddress    string
+	ReadinessPort   uint32
 	DNSPort         uint32
 	DynamicMetadata map[string]string
 	ProxyType       mesh_proto.ProxyType
@@ -113,6 +115,13 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
+func (m *DataplaneMetadata) GetReadinessPort() uint32 {
+	if m == nil {
+		return 0
+	}
+	return m.ReadinessPort
+}
+
 func (m *DataplaneMetadata) GetAdminAddress() string {
 	if m == nil {
 		return ""
@@ -154,6 +163,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
+	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
