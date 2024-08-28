@@ -197,6 +197,7 @@ rules:
       - meshretries
       - meshtcproutes
       - meshtimeouts
+      - meshtlses
       - meshtraces
       - meshtrafficpermissions
       - hostnamegenerators
@@ -397,7 +398,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 2a84a7cc2a2b85f287088eb783e06d01299acf9e477025ccb7de1c73a981f7f7
+        checksum/tls-secrets: 3f504197020387c7b596d30b443b70aa5d3c0b238e6eb80654a790ffe1a0ea2b
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -458,7 +459,7 @@ spec:
             - name: KUMA_MODE
               value: "global"
             - name: KUMA_PLUGIN_POLICIES_ENABLED
-              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtraces,meshtrafficpermissions"
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
@@ -596,6 +597,7 @@ webhooks:
           - meshretries
           - meshtcproutes
           - meshtimeouts
+          - meshtlses
           - meshtraces
           - meshtrafficpermissions
           - hostnamegenerators
@@ -653,6 +655,7 @@ webhooks:
           - meshretries
           - meshtcproutes
           - meshtimeouts
+          - meshtlses
           - meshtraces
           - meshtrafficpermissions
           - hostnamegenerators
@@ -729,6 +732,7 @@ webhooks:
           - meshretries
           - meshtcproutes
           - meshtimeouts
+          - meshtlses
           - meshtraces
           - meshtrafficpermissions
           - hostnamegenerators

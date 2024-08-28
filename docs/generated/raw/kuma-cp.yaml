@@ -796,6 +796,7 @@ policies:
     - meshretries
     - meshtcproutes
     - meshtimeouts
+    - meshtlses
     - meshtraces
     - meshtrafficpermissions
 coreResources:
