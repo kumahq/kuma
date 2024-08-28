@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -1347,9 +1348,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
@@ -1521,9 +1522,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
