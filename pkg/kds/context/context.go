@@ -286,7 +286,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 			return zone.Spec.IsEnabled()
 		default:
-			return core_model.IsLocallyOriginated(config_core.Global, r)
+			return core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
 		}
 	}
 }
@@ -312,5 +312,5 @@ func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r c
 		// todo: remove in 2 releases after 2.6.x
 		return !zi.IsRemoteIngress(localZone)
 	}
-	return core_model.IsLocallyOriginated(config_core.Zone, r) || r.Descriptor().KDSFlags == core_model.ZoneToGlobalFlag
+	return core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels()) || r.Descriptor().KDSFlags == core_model.ZoneToGlobalFlag
 }
