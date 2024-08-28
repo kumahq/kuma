@@ -1465,13 +1465,6 @@ var _ = Describe("TrafficRoute", func() {
 							ExternalService: &core_xds.ExternalService{
 								Protocol:   core_mesh.ProtocolTCP,
 								TLSEnabled: false,
-								OwnerResource: &rules.UniqueResourceIdentifier{
-									ResourceType: "MeshExternalService",
-									ResourceIdentifier: core_model.ResourceIdentifier{
-										Name: "another-mes",
-										Mesh: "default",
-									},
-								},
 							},
 						},
 					},
