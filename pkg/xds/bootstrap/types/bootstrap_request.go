@@ -10,6 +10,7 @@ type BootstrapRequest struct {
 	Host               string  `json:"-"`
 	Version            Version `json:"version"`
 	// CaCert is a PEM-encoded CA cert that DP uses to verify CP
+<<<<<<< HEAD
 	CaCert              string            `json:"caCert"`
 	DynamicMetadata     map[string]string `json:"dynamicMetadata"`
 	DNSPort             uint32            `json:"dnsPort,omitempty"`
@@ -20,6 +21,18 @@ type BootstrapRequest struct {
 	Workdir             string            `json:"workdir"`
 	AccessLogSocketPath string            `json:"accessLogSocketPath"`
 	MetricsResources    MetricsResources  `json:"metricsResources"`
+=======
+	CaCert           string            `json:"caCert"`
+	DynamicMetadata  map[string]string `json:"dynamicMetadata"`
+	DNSPort          uint32            `json:"dnsPort,omitempty"`
+	ReadinessPort    uint32            `json:"readinessPort,omitempty"`
+	OperatingSystem  string            `json:"operatingSystem"`
+	Features         []string          `json:"features"`
+	Resources        ProxyResources    `json:"resources"`
+	Workdir          string            `json:"workdir"`
+	MetricsResources MetricsResources  `json:"metricsResources"`
+	SystemCaPath     string            `json:"systemCaPath"`
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 }
 
 type Version struct {

@@ -177,6 +177,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 				KumaDpCompatible: params.EnvoyVersion.KumaDpCompatible,
 			},
 		},
+<<<<<<< HEAD
 		DynamicMetadata:     params.DynamicMetadata,
 		DNSPort:             params.DNSPort,
 		EmptyDNSPort:        params.EmptyDNSPort,
@@ -185,6 +186,15 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		Resources:           resources,
 		Workdir:             params.Workdir,
 		AccessLogSocketPath: params.AccessLogSocketPath,
+=======
+		DynamicMetadata: params.DynamicMetadata,
+		DNSPort:         params.DNSPort,
+		ReadinessPort:   params.ReadinessPort,
+		OperatingSystem: b.operatingSystem,
+		Features:        b.features,
+		Resources:       resources,
+		Workdir:         params.Workdir,
+>>>>>>> 20208eb60 (feat(kuma-dp): add a separate component to handle kuma-sidecar readiness probes (#11107))
 		MetricsResources: types.MetricsResources{
 			SocketPath: params.MetricsSocketPath,
 			CertPath:   params.MetricsCertPath,
