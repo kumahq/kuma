@@ -25,6 +25,12 @@ const (
 type ProbeProxyGenerator struct{}
 
 func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	// if app probe proxy is enabled for this DP, Virtual Probes are not needed
+	appProbeProxyEnabled := proxy.Metadata.GetAppProbeProxyEnabled()
+	if appProbeProxyEnabled {
+		return nil, nil
+	}
+
 	probes := proxy.Dataplane.Spec.Probes
 	if probes == nil {
 		return nil, nil

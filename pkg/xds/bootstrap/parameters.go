@@ -26,29 +26,30 @@ type AggregateMetricsConfig struct {
 }
 
 type configParameters struct {
-	Id                 string
-	Service            string
-	AdminAddress       string
-	AdminPort          uint32
-	ReadinessPort      uint32
-	AdminAccessLogPath string
-	XdsHost            string
-	XdsPort            uint32
-	XdsConnectTimeout  time.Duration
-	Workdir            string
-	MetricsCertPath    string
-	MetricsKeyPath     string
-	DataplaneToken     string
-	DataplaneTokenPath string
-	DataplaneResource  string
-	CertBytes          []byte
-	Version            *mesh_proto.Version
-	HdsEnabled         bool
-	DynamicMetadata    map[string]string
-	DNSPort            uint32
-	ProxyType          string
-	Features           []string
-	IsGatewayDataplane bool
-	Resources          types.ProxyResources
-	SystemCaPath       string
+	Id                   string
+	Service              string
+	AdminAddress         string
+	AdminPort            uint32
+	ReadinessPort        uint32
+	AppProbeProxyEnabled bool
+	AdminAccessLogPath   string
+	XdsHost              string
+	XdsPort              uint32
+	XdsConnectTimeout    time.Duration
+	Workdir              string
+	MetricsCertPath      string
+	MetricsKeyPath       string
+	DataplaneToken       string
+	DataplaneTokenPath   string
+	DataplaneResource    string
+	CertBytes            []byte
+	Version              *mesh_proto.Version
+	HdsEnabled           bool
+	DynamicMetadata      map[string]string
+	DNSPort              uint32
+	ProxyType            string
+	Features             []string
+	IsGatewayDataplane   bool
+	Resources            types.ProxyResources
+	SystemCaPath         string
 }

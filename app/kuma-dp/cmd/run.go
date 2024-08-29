@@ -182,16 +182,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
 			runLog.Info("generating bootstrap configuration")
+			appProbeProxyEnabled := opts.Config.ApplicationProbeProxyServer.Port > 0
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:       opts.Dataplane,
-				DNSPort:         cfg.DNS.EnvoyDNSPort,
-				ReadinessPort:   cfg.Dataplane.ReadinessPort,
-				EnvoyVersion:    *envoyVersion,
-				Workdir:         cfg.DataplaneRuntime.SocketDir,
-				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
-				MetricsCertPath: cfg.DataplaneRuntime.Metrics.CertPath,
-				MetricsKeyPath:  cfg.DataplaneRuntime.Metrics.KeyPath,
-				SystemCaPath:    cfg.DataplaneRuntime.SystemCaPath,
+				Dataplane:            opts.Dataplane,
+				DNSPort:              cfg.DNS.EnvoyDNSPort,
+				ReadinessPort:        cfg.Dataplane.ReadinessPort,
+				AppProbeProxyEnabled: appProbeProxyEnabled,
+				EnvoyVersion:         *envoyVersion,
+				Workdir:              cfg.DataplaneRuntime.SocketDir,
+				DynamicMetadata:      rootCtx.BootstrapDynamicMetadata,
+				MetricsCertPath:      cfg.DataplaneRuntime.Metrics.CertPath,
+				MetricsKeyPath:       cfg.DataplaneRuntime.Metrics.KeyPath,
+				SystemCaPath:         cfg.DataplaneRuntime.SystemCaPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -252,7 +254,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
+			if appProbeProxyEnabled {
 				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
 				if err := rootCtx.ComponentManager.Add(prober); err != nil {
 					return err
