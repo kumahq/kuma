@@ -540,7 +540,7 @@ to:
         leastRequest:
           activeRequestBias: "1.3"
 `),
-Entry(
+		Entry(
 			"to MeshExternalService",
 			`
 type: MeshLoadBalancingStrategy

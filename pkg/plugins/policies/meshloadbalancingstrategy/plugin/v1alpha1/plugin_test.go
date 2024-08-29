@@ -48,7 +48,7 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-	externalMeshExternalServiceIdentifier :=  &core_rules.UniqueResourceIdentifier{
+	externalMeshExternalServiceIdentifier := &core_rules.UniqueResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "external",
 			Mesh:      "mesh-1",
@@ -393,7 +393,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(clusters.EdsCluster()).
 						MustBuild(),
 					ResourceOrigin: externalMeshExternalServiceIdentifier,
-					Protocol: core_mesh.ProtocolTCP,
+					Protocol:       core_mesh.ProtocolTCP,
 				},
 				{
 					Name:   "mesh-2:static-cluster",
@@ -403,6 +403,27 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							false,
 							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
 							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
+						)).MustBuild(),
+				},
+				{
+					Name:   "egress-listener",
+					Origin: egress.OriginEgress,
+					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(MatchTransportProtocol("tls")).
+							Configure(MatchServerNames("external{mesh=mesh-1}")).
+							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+							Configure(
+								HttpInboundRoutes(
+									"external",
+									envoy_common.Routes{{
+										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+											envoy_common.WithService("external"),
+											envoy_common.WithWeight(100),
+										)},
+									}},
+								),
+							),
 						)).MustBuild(),
 				},
 			},
@@ -415,32 +436,33 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							Mesh: builders.Mesh().WithName("mesh-1").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
 								"external": {
-								v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
-									ToRules: core_rules.ToRules{
-										ResourceRules: core_rules.ResourceRules{
-											*externalMeshExternalServiceIdentifier: {
-												Conf: []interface{}{
-													v1alpha1.Conf{
-														LoadBalancer: &v1alpha1.LoadBalancer{
-															Type: v1alpha1.RingHashType,
-															RingHash: &v1alpha1.RingHash{
-																MinRingSize:  pointer.To[uint32](100),
-																MaxRingSize:  pointer.To[uint32](1000),
-																HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-																HashPolicies: &[]v1alpha1.HashPolicy{
-																	{
-																		Type: v1alpha1.QueryParameterType,
-																		QueryParameter: &v1alpha1.QueryParameter{
-																			Name: "queryparam",
+									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
+										ToRules: core_rules.ToRules{
+											ResourceRules: core_rules.ResourceRules{
+												*externalMeshExternalServiceIdentifier: {
+													Conf: []interface{}{
+														v1alpha1.Conf{
+															LoadBalancer: &v1alpha1.LoadBalancer{
+																Type: v1alpha1.RingHashType,
+																RingHash: &v1alpha1.RingHash{
+																	MinRingSize:  pointer.To[uint32](100),
+																	MaxRingSize:  pointer.To[uint32](1000),
+																	HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
+																	HashPolicies: &[]v1alpha1.HashPolicy{
+																		{
+																			Type: v1alpha1.QueryParameterType,
+																			QueryParameter: &v1alpha1.QueryParameter{
+																				Name: "queryparam",
+																			},
+																			Terminal: pointer.To(true),
 																		},
-																		Terminal: pointer.To(true),
-																	},
-																	{
-																		Type: v1alpha1.ConnectionType,
-																		Connection: &v1alpha1.Connection{
-																			SourceIP: pointer.To(true),
+																		{
+																			Type: v1alpha1.ConnectionType,
+																			Connection: &v1alpha1.Connection{
+																				SourceIP: pointer.To(true),
+																			},
+																			Terminal: pointer.To(false),
 																		},
-																		Terminal: pointer.To(false),
 																	},
 																},
 															},
@@ -451,8 +473,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 								},
-							},
-							},
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
 								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 									Items: []*meshexternalservice_api.MeshExternalServiceResource{

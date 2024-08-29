@@ -757,8 +757,8 @@ spec:
 				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
 			)).To(Succeed())
 		})
-		// Configuring Route in listener is missing, might be more complicated
-		XIt("should target real MeshExternalService resource", func() {
+
+		It("should target real MeshExternalService resource", func() {
 			meshExternalService := fmt.Sprintf(`
 type: MeshExternalService
 name: mes-load-balancing
@@ -794,22 +794,7 @@ spec:
                 header:
                   name: x-header`, meshNameNoDefaults)
 
-			timeout := fmt.Sprintf(`
-type: MeshTimeout
-name: mes-tcp-timeout-egress
-mesh: %s
-spec:
-  targetRef:
-    kind: Mesh
-  to:
-  - targetRef:
-      kind: MeshExternalService
-      name: mes-load-balancing
-    default:
-      idleTimeout: 20s`, meshNameNoDefaults)
-
 			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
-			Expect(universal.Cluster.Install(YamlUniversal(timeout))).To(Succeed())
 
 			// given no MeshLoadBalancingStrategy
 			By("check if responses comes from 2 endpoints")

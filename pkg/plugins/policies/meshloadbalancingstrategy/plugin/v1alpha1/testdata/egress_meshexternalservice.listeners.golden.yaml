@@ -1,1 +1,46 @@
-{}
+resources:
+- name: egress-listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10002
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - external{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: inbound:external
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: external
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: external
+                  hashPolicy:
+                  - queryParameter:
+                      name: queryparam
+                    terminal: true
+                  - connectionProperties:
+                      sourceIp: true
+                  timeout: 0s
+          statPrefix: "127_0_0_1_10002"
+    name: inbound:127.0.0.1:10002
+    trafficDirection: INBOUND
