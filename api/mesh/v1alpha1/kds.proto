@@ -8,11 +8,6 @@ import "envoy/service/discovery/v3/discovery.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/duration.proto";
 
-service KumaDiscoveryService {
-  rpc StreamKumaResources(stream envoy.service.discovery.v3.DiscoveryRequest)
-      returns (stream envoy.service.discovery.v3.DiscoveryResponse);
-}
-
 message KumaResource {
   message Meta {
     string name = 1;

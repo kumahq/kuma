@@ -15,6 +15,7 @@ import (
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	meshtrace_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 )
@@ -37,6 +38,7 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshretry_api.MeshRetryResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshmetric_api.MeshMetricResourceTypeDescriptor.KumactlArg),
+	plugins.PluginName(meshtls_api.MeshTLSResourceTypeDescriptor.KumactlArg),
 	// MeshProxyPatch comes after all others
 	plugins.PluginName(meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor.KumactlArg),
 }

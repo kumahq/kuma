@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -133,8 +134,6 @@ spec:
     name: init
     resources: {}
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true

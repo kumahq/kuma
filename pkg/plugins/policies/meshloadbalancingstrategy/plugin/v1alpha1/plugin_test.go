@@ -124,25 +124,21 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.ZoneTag:    "zone-1",
 					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "frontend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
 					Build(),
+				Outbounds: core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27779).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "frontend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				},
 				Policies: *xds_builders.MatchedPolicies().
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
@@ -430,19 +426,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							"k8s.io/node":         "node1",
 							"k8s.io/az":           "test",
 							"k8s.io/region":       "test",
-						}).
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  "backend",
-								mesh_proto.ProtocolTag: "http",
-							}),
-						).
-						AddOutbound(
-							builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-								mesh_proto.ServiceTag:  "payment",
-								mesh_proto.ProtocolTag: "http",
-							}),
-						)).
+						}),
+				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
@@ -613,19 +608,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/node":         "node1",
 						"k8s.io/az":           "test",
 						"k8s.io/region":       "test",
-					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					)).
+					}),
+				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
@@ -798,19 +792,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/node":         "node1",
 						"k8s.io/az":           "test",
 						"k8s.io/region":       "test",
-					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					)).
+					}),
+				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
@@ -929,19 +922,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/node":         "node1",
 						"k8s.io/az":           "test",
 						"k8s.io/region":       "test",
-					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					)).
+					}),
+				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().
@@ -1112,19 +1104,18 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/node":         "node1",
 						"k8s.io/az":           "test",
 						"k8s.io/region":       "test",
-					}).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "backend",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					).
-					AddOutbound(
-						builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
-							mesh_proto.ServiceTag:  "payment",
-							mesh_proto.ProtocolTag: "http",
-						}),
-					)).
+					}),
+				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "backend",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27778).WithTags(map[string]string{
+						mesh_proto.ServiceTag:  "payment",
+						mesh_proto.ProtocolTag: "http",
+					}).Build()},
+				}).
 				WithRouting(paymentsAndBackendRouting()).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{

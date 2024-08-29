@@ -1,0 +1,55 @@
+mesh:name/mesh-1:
+  BackendRefOriginIndex:
+    9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=: 0
+  Conf:
+  - hostnames:
+    - kuma.io
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: backend
+          weight: 90
+        - kind: MeshService
+          name: backend-v1
+          weight: 10
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+  - hostnames:
+    - example.com
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: backend
+          weight: 90
+        - kind: MeshService
+          name: backend-v1
+          weight: 10
+      matches:
+      - path:
+          type: PathPrefix
+          value: /
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-http-route-1
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-k8s
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-http-route-1-v66bdcc28fbfc5c6
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+  ResourceSectionName: ""

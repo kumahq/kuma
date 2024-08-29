@@ -355,6 +355,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 		ms.ObjectMeta.Labels[mesh_proto.MeshTag] = mesh
 		ms.ObjectMeta.Labels[metadata.KumaServiceName] = svc.GetName()
 		ms.ObjectMeta.Labels[mesh_proto.ManagedByLabel] = "k8s-controller"
+		ms.ObjectMeta.Labels[mesh_proto.EnvTag] = mesh_proto.KubernetesEnvironment
 
 		if ms.Spec == nil {
 			ms.Spec = &meshservice_api.MeshService{}
@@ -370,8 +371,12 @@ func (r *MeshServiceReconciler) manageMeshService(
 				unsupportedPorts = append(unsupportedPorts, portName)
 				continue
 			}
+			portName := port.Name
+			if portName == "" {
+				portName = strconv.Itoa(int(port.Port))
+			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:        port.Name,
+				Name:        portName,
 				Port:        uint32(port.Port),
 				TargetPort:  port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
@@ -407,6 +412,7 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-mesh-service-controller").
 		For(&kube_core.Service{}).
 		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
 		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).

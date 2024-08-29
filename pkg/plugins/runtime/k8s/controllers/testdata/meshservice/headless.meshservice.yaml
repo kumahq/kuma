@@ -5,6 +5,7 @@ items:
       apps.kubernetes.io/pod-index: "1"
       k8s.kuma.io/is-headless-service: "true"
       k8s.kuma.io/service-name: example
+      kuma.io/env: kubernetes
       kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
       statefulset.kubernetes.io/pod-name: example-1
@@ -19,9 +20,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:
@@ -38,6 +41,7 @@ items:
       apps.kubernetes.io/pod-index: "2"
       k8s.kuma.io/is-headless-service: "true"
       k8s.kuma.io/service-name: example
+      kuma.io/env: kubernetes
       kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
       statefulset.kubernetes.io/pod-name: example-2
@@ -52,9 +56,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:
@@ -70,6 +76,7 @@ items:
     labels:
       k8s.kuma.io/is-headless-service: "true"
       k8s.kuma.io/service-name: example
+      kuma.io/env: kubernetes
       kuma.io/managed-by: k8s-controller
       kuma.io/mesh: default
     name: very-long-very-long-very-long-very-long-very-long-v-87ff74c98
@@ -83,9 +90,11 @@ items:
   spec:
     ports:
     - appProtocol: http
+      name: "80"
       port: 80
       targetPort: 8080
     - appProtocol: tcp
+      name: "443"
       port: 443
       targetPort: 8443
     selector:

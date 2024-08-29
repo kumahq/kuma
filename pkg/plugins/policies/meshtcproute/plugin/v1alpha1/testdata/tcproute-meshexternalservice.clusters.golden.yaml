@@ -1,0 +1,74 @@
+resources:
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        initialFetchTimeout: 0s
+        resourceApiVersion: V3
+    name: backend
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/backend
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: backend{mesh=default}
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+- name: meshexternalservice_example2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        initialFetchTimeout: 0s
+        resourceApiVersion: V3
+    name: meshexternalservice_example2
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/zone-egress
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: example2{mesh=default}
+    type: EDS

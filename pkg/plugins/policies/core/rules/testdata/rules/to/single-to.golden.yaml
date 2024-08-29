@@ -1,5 +1,7 @@
+ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       numRetries: 10
       perTryTimeout: 20s
@@ -15,7 +17,8 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: backend
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       perTryTimeout: 20s
     tcp:

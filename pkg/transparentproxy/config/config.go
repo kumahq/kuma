@@ -2,6 +2,7 @@ package config
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net"
@@ -16,11 +17,23 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
 
+	core_config "github.com/kumahq/kuma/pkg/config"
+	config_types "github.com/kumahq/kuma/pkg/config/types"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
+var _ json.Unmarshaler = &Owner{}
+
 type Owner struct {
-	UID string
+	UID string `json:"uid"`
+	// Indicates if the property was set. This replaces similar logic previously
+	// handled by Cobra library, as the value can now also be set in the config
+	// file.
+	changed bool
+}
+
+func (c *Owner) Changed() bool {
+	return c.changed
 }
 
 func (c *Owner) String() string {
@@ -33,6 +46,8 @@ func (c *Owner) Type() string {
 
 func (c *Owner) Set(s string) error {
 	var ok bool
+
+	c.changed = true
 
 	if s != "" {
 		if c.UID, ok = findUserUID(s); ok {
@@ -55,6 +70,27 @@ func (c *Owner) Set(s string) error {
 		OwnerDefaultUID,
 		OwnerDefaultUsername,
 	)
+}
+
+func (c *Owner) UnmarshalJSON(bs []byte) error {
+	var jsonValue interface{}
+
+	if err := json.Unmarshal(bs, &jsonValue); err != nil {
+		return err
+	}
+
+	switch jsonValue.(type) {
+	case string, float64:
+		return c.Set(fmt.Sprint(jsonValue))
+	}
+
+	return errors.Errorf("invalid type for provided value '%s'; expected string or numeric value for UID or username", string(bs))
+}
+
+// Using a value receiver here is intentional, as we are working with the Owner value itself,
+// not a pointer, for JSON marshaling
+func (c Owner) MarshalJSON() ([]byte, error) {
+	return json.Marshal(c.UID)
 }
 
 // ValueOrRangeList is a format acceptable by iptables in which
@@ -89,6 +125,98 @@ func NewValueOrRangeList[T ~[]uint16 | ~uint16 | ~string](v T) ValueOrRangeList 
 	}
 }
 
+var _ json.Unmarshaler = (*Port)(nil)
+
+type Port uint16
+
+func (p *Port) String() string { return strconv.Itoa(int(*p)) }
+
+func (p *Port) Type() string { return "uint16" }
+
+func (p *Port) Set(s string) error {
+	var err error
+
+	if *p, err = parsePort(s); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p *Port) UnmarshalJSON(bs []byte) error { return p.Set(string(bs)) }
+
+var _ json.Unmarshaler = &Ports{}
+
+type Ports []Port
+
+func (p *Ports) String() string {
+	var ports []string
+	for _, port := range *p {
+		ports = append(ports, strconv.Itoa(int(port)))
+	}
+	return strings.Join(ports, ",")
+}
+
+func (p *Ports) Type() string { return "uint16[,...]" }
+
+func (p *Ports) Set(s string) error {
+	*p = nil
+
+	if s = strings.TrimSpace(s); s == "" {
+		return nil
+	}
+
+	for _, port := range strings.Split(s, ",") {
+		trimmedPort := strings.TrimSpace(port)
+		if trimmedPort == "" {
+			continue
+		}
+
+		parsedPort, err := parsePort(trimmedPort)
+		if err != nil {
+			return err
+		}
+
+		*p = append(*p, parsedPort)
+	}
+
+	return nil
+}
+
+func parsePort(s string) (Port, error) {
+	u, err := parseUint16(s)
+
+	if err != nil || u == 0 {
+		return 0, errors.Errorf("value '%s' is not a valid port (uint16 in the range [1, 65535])", s)
+	}
+
+	return Port(u), nil
+}
+
+func (p *Ports) UnmarshalJSON(bs []byte) error {
+	var jsonValue interface{}
+
+	if err := json.Unmarshal(bs, &jsonValue); err != nil {
+		return err
+	}
+
+	switch typedValue := jsonValue.(type) {
+	case []interface{}:
+		var values []string
+		for _, item := range typedValue {
+			switch i := item.(type) {
+			case string, float64:
+				values = append(values, fmt.Sprint(i))
+			}
+		}
+		return p.Set(strings.Join(values, ","))
+	case string, float64:
+		return p.Set(fmt.Sprint(typedValue))
+	}
+
+	return p.Set(string(bs))
+}
+
 type Exclusion struct {
 	Protocol ProtocolL4
 	Address  string
@@ -98,14 +226,14 @@ type Exclusion struct {
 
 // TrafficFlow is a struct for Inbound/Outbound configuration
 type TrafficFlow struct {
-	Enabled             bool
-	Port                uint16
-	ChainName           string
-	RedirectChainName   string
-	ExcludePorts        []uint16
-	ExcludePortsForUIDs []string
-	ExcludePortsForIPs  []string
-	IncludePorts        []uint16
+	Enabled             bool     `json:"enabled"`                                                          // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_ENABLED, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_ENABLED
+	Port                Port     `json:"port"`                                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_PORT, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_PORT
+	ChainName           string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_CHAIN_NAME
+	RedirectChainName   string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_REDIRECT_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_REDIRECT_CHAIN_NAME
+	IncludePorts        Ports    `json:"includePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INCLUDE_PORTS
+	ExcludePorts        Ports    `json:"excludePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS
+	ExcludePortsForUIDs []string `json:"excludePortsForUIDs,omitempty" envconfig:"exclude_ports_for_uids"` // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_UIDS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_UIDS
+	ExcludePortsForIPs  []string `json:"excludePortsForIPs,omitempty" envconfig:"exclude_ports_for_ips"`   // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_IPS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_IPS
 }
 
 func (c TrafficFlow) Initialize(
@@ -152,20 +280,20 @@ func (c TrafficFlow) Initialize(
 type InitializedTrafficFlow struct {
 	TrafficFlow
 	Exclusions        []Exclusion
-	Port              uint16
+	Port              Port
 	ChainName         string
 	RedirectChainName string
 }
 
 type DNS struct {
-	Enabled    bool
-	CaptureAll bool
-	Port       uint16
+	Enabled                bool   `json:"enabled"`                                   // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_ENABLED
+	Port                   Port   `json:"port"`                                      // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_PORT
+	CaptureAll             bool   `json:"captureAll" split_words:"true"`             // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_CAPTURE_ALL
+	SkipConntrackZoneSplit bool   `json:"skipConntrackZoneSplit" split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_SKIP_CONNTRACK_ZONE_SPLIT
+	ResolvConfigPath       string `json:"resolvConfigPath" split_words:"true"`       // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_RESOLV_CONFIG_PATH
 	// The iptables chain where the upstream DNS requests should be directed to.
 	// It is only applied for IP V4. Use with care. (default "RETURN")
-	UpstreamTargetChain string
-	ConntrackZoneSplit  bool
-	ResolvConfigPath    string
+	UpstreamTargetChain string `json:"-" ignored:"true"`
 }
 
 type InitializedDNS struct {
@@ -191,7 +319,7 @@ func (c DNS) Initialize(
 		return initialized, nil
 	}
 
-	if c.ConntrackZoneSplit {
+	if !c.SkipConntrackZoneSplit {
 		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
 		if !initialized.ConntrackZoneSplit {
 			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
@@ -245,7 +373,7 @@ type VNet struct {
 	// - "docker0:172.17.0.0/16"
 	// - "br+:172.18.0.0/16" (matches any interface starting with "br")
 	// - "iface:::1/64"
-	Networks []string
+	Networks []string `json:"networks,omitempty"` // KUMA_TRANSPARENT_PROXY_REDIRECT_VNET_NETWORKS
 }
 
 // Initialize processes the virtual networks specified in the VNet struct and
@@ -305,11 +433,11 @@ type InitializedVNet struct {
 
 type Redirect struct {
 	// NamePrefix is a prefix which will be used go generate chains name
-	NamePrefix string
-	Inbound    TrafficFlow
-	Outbound   TrafficFlow
-	DNS        DNS
-	VNet       VNet
+	NamePrefix string      `json:"-" ignored:"true"`
+	Inbound    TrafficFlow `json:"inbound"`
+	Outbound   TrafficFlow `json:"outbound"`
+	DNS        DNS         `json:"dns"`
+	VNet       VNet        `json:"vnet"`
 }
 
 type InitializedRedirect struct {
@@ -357,50 +485,50 @@ func (c Redirect) Initialize(
 }
 
 type Ebpf struct {
-	Enabled    bool
-	InstanceIP string
-	BPFFSPath  string
-	CgroupPath string
+	Enabled            bool   `json:"enabled"`                               // KUMA_TRANSPARENT_PROXY_EBPF_ENABLED
+	InstanceIP         string `json:"instanceIP" envconfig:"instance_ip"`    // KUMA_TRANSPARENT_PROXY_EBPF_INSTANCE_IP
+	BPFFSPath          string `json:"bpffsPath" envconfig:"bpffs_path"`      // KUMA_TRANSPARENT_PROXY_EBPF_BPFFS_PATH
+	CgroupPath         string `json:"cgroupPath" split_words:"true"`         // KUMA_TRANSPARENT_PROXY_EBPF_CGROUP_PATH
+	ProgramsSourcePath string `json:"programsSourcePath" split_words:"true"` // KUMA_TRANSPARENT_PROXY_EBPF_PROGRAM_SOURCE_PATH
 	// The name of network interface which TC ebpf programs should bind to,
 	// when not provided, we'll try to automatically determine it
-	TCAttachIface      string
-	ProgramsSourcePath string
+	TCAttachIface string `json:"tcAttachIface" envconfig:"tc_attach_iface"` // KUMA_TRANSPARENT_PROXY_EBPF_TC_ATTACH_IFACE
 }
 
-type LogConfig struct {
+type Log struct {
 	// Enabled determines whether iptables rules logging is activated. When
 	// true, each packet matching an iptables rule will have its details logged,
 	// aiding in diagnostics and monitoring of packet flows.
-	Enabled bool
+	Enabled bool `json:"enabled"` // KUMA_TRANSPARENT_PROXY_LOG_ENABLED
 	// Level specifies the log level for iptables logging as defined by
 	// netfilter. This level controls the verbosity and detail of the log
 	// entries for matching packets. Higher values increase the verbosity.
 	// Commonly used levels are: 1 (alerts), 4 (warnings), 5 (notices),
 	// 7 (debugging). The exact behavior can depend on the system's syslog
 	// configuration.
-	Level uint16
+	Level uint16 `json:"level"` // KUMA_TRANSPARENT_PROXY_LOG_LEVEL
 }
 
-type RetryConfig struct {
+type Retry struct {
 	// MaxRetries specifies the number of retries after the initial attempt.
 	// A value of 0 means no retries, and only the initial attempt will be made.
-	MaxRetries int
+	MaxRetries int `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
-	SleepBetweenReties time.Duration
+	SleepBetweenRetries config_types.Duration `json:"sleepBetweenRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
 }
 
-// Comment struct contains the configuration for iptables rule comments.
+// Comments struct contains the configuration for iptables rule comments.
 // It includes an option to enable or disable comments.
-type Comment struct {
-	Disabled bool
+type Comments struct {
+	Disabled bool `json:"disabled"` // KUMA_TRANSPARENT_PROXY_COMMENTS_DISABLED
 }
 
-// InitializedComment struct contains the processed configuration for iptables
+// InitializedComments struct contains the processed configuration for iptables
 // rule comments. It indicates whether comments are enabled and the prefix to
 // use for comment text.
-type InitializedComment struct {
+type InitializedComments struct {
 	// Enabled indicates whether iptables rule comments are enabled based on
 	// the initial configuration and system capabilities.
 	Enabled bool
@@ -410,21 +538,25 @@ type InitializedComment struct {
 	Prefix string
 }
 
-// Initialize processes the Comment configuration and determines whether
+// Initialize processes the Comments configuration and determines whether
 // iptables rule comments should be enabled. It checks the system's
 // functionality to see if the comment module is available and returns
-// an InitializedComment struct with the result.
-func (c Comment) Initialize(e InitializedExecutablesIPvX) InitializedComment {
-	return InitializedComment{
+// an InitializedComments struct with the result.
+func (c Comments) Initialize(e InitializedExecutablesIPvX) InitializedComments {
+	return InitializedComments{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
 		Prefix:  IptablesRuleCommentPrefix,
 	}
 }
 
+var _ core_config.Config = Config{}
+
 type Config struct {
-	Owner    Owner
-	Redirect Redirect
-	Ebpf     Ebpf
+	core_config.BaseConfig
+
+	KumaDPUser Owner    `json:"kumaDPUser" envconfig:"kuma_dp_user"` // KUMA_TRANSPARENT_PROXY_KUMA_DP_USER
+	Redirect   Redirect `json:"redirect"`
+	Ebpf       Ebpf     `json:"ebpf"`
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
 	// packets that are considered invalid. This is useful in scenarios where
 	// out-of-order packets bypass DNAT by iptables and reach the application
@@ -440,61 +572,76 @@ type Config struct {
 	// performance before enabling this option.
 	//
 	// See also: https://kubernetes.io/blog/2019/03/29/kube-proxy-subtleties-debugging-an-intermittent-connection-reset/
-	DropInvalidPackets bool
+	DropInvalidPackets bool `json:"dropInvalidPackets,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_DROP_INVALID_PACKETS
 	// RuntimeStdout is the place where Any debugging, runtime information
 	// will be placed (os.Stdout by default)
-	RuntimeStdout io.Writer
+	RuntimeStdout io.Writer `json:"-" ignored:"true"`
 	// RuntimeStderr is the place where error, runtime information will be
 	// placed (os.Stderr by default)
-	RuntimeStderr io.Writer
+	RuntimeStderr io.Writer `json:"-" ignored:"true"`
 	// Verbose when set will generate iptables configuration with longer
 	// argument/flag names, additional comments etc.
-	Verbose bool
+	Verbose bool `json:"verbose,omitempty"` // KUMA_TRANSPARENT_PROXY_VERBOSE
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
-	DryRun bool
+	DryRun bool `json:"dryRun,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_DRY_RUN
 	// Log configures logging for iptables rules using the LOG chain. When
 	// enabled, this setting causes the kernel to log details about packets that
 	// match the iptables rules, including IP/IPv6 headers. The logs are useful
 	// for debugging and can be accessed via tools like dmesg or syslog. The
-	// logging behavior is defined by the nested LogConfig struct.
-	Log LogConfig
+	// logging behavior is defined by the nested Log struct.
+	Log Log `json:"log"`
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
 	// available within the specified time, the application will exit with
 	// an error. Default value *(0) means wait forever. To disable this behavior
 	// and exit immediately if the xtables lock is not available, set this to
 	// nil
-	Wait uint
+	Wait uint `json:"wait"` // KUMA_TRANSPARENT_PROXY_WAIT
 	// WaitInterval is the amount of time, in microseconds, that iptables should
 	// wait between each iteration of the lock acquisition loop. This can be
 	// useful if the xtables lock is being held by another application for
 	// a long time, and you want to reduce the amount of CPU that iptables uses
 	// while waiting for the lock
-	WaitInterval uint
+	WaitInterval uint `json:"waitInterval" split_words:"true"` // KUMA_TRANSPARENT_PROXY_WAIT_INTERVAL
 	// Retry allows you to configure the number of times that the system should
 	// retry an installation if it fails
-	Retry RetryConfig
+	Retry Retry `json:"retry"`
 	// StoreFirewalld when set, configures firewalld to store the generated
 	// iptables rules.
-	StoreFirewalld bool
+	StoreFirewalld bool `json:"storeFirewalld,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_STORE_FIREWALLD
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
-	Executables ExecutablesNftLegacy
-	// Comment configures the prefix and enable/disable status for iptables rule
+	Executables Executables `json:"-"`
+	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug.
-	Comment Comment
+	Comments Comments `json:"comments"`
 	// IPFamilyMode specifies the IP family mode to be used by the
 	// configuration. It determines whether the system operates in dualstack
 	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
 	// crucial for environments where both IP families are in use, ensuring that
 	// the correct iptables rules are applied for the specified IP family.
-	IPFamilyMode IPFamilyMode
+	IPFamilyMode IPFamilyMode `json:"ipFamilyMode" envconfig:"ip_family_mode"` // KUMA_TRANSPARENT_PROXY_IP_FAMILY_MODE
+	CNIMode      bool         `json:"cniMode,omitempty" envconfig:"cni_mode"`  // KUMA_TRANSPARENT_PROXY_CNI_MODE
 }
 
 type IPFamilyMode string
+
+func (e *IPFamilyMode) UnmarshalJSON(bs []byte) error {
+	var value string
+
+	if err := json.Unmarshal(bs, &value); err != nil {
+		return errors.Wrapf(err, "value '%s' is not a valid IPFamilyMode", bs)
+	}
+
+	if err := e.Set(value); err != nil {
+		return errors.Wrapf(err, "value '%s' is not a valid IPFamilyMode", value)
+	}
+
+	return nil
+}
 
 const (
 	IPFamilyModeDualStack IPFamilyMode = "dualstack"
@@ -524,7 +671,7 @@ func (e *IPFamilyMode) Set(v string) error {
 		*e = IPFamilyMode(v)
 	default:
 		return errors.Errorf(
-			"must be one of %q or %q",
+			"must be one of '%s' or '%s'",
 			IPFamilyModeDualStack,
 			IPFamilyModeIPv4,
 		)
@@ -573,12 +720,12 @@ type InitializedConfigIPvX struct {
 	// address used for inbound passthrough traffic. This is used to construct
 	// rules allowing specific traffic to bypass normal proxying.
 	InboundPassthroughCIDR string
-	// Comment holds the processed configuration for iptables rule comments,
+	// Comments holds the processed configuration for iptables rule comments,
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug.
-	Comment InitializedComment
-	Owner   Owner
+	Comments   InitializedComments
+	KumaDPUser Owner
 
 	enabled bool
 }
@@ -624,48 +771,41 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
 	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
 
+	loopbackInterfaceName, err := getLoopbackInterfaceName()
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+	}
+
+	initializedExecutablesIPv4, executablesIPv6, err := c.Executables.InitializeIPv4(ctx, l, c)
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize Executables configuration")
+	}
+
+	redirectIPv4, err := c.Redirect.Initialize(loggerIPv4, initializedExecutablesIPv4, false)
+	if err != nil {
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 Redirect configuration")
+	}
+
 	initialized := InitializedConfig{
 		Logger: l,
+		DryRun: c.DryRun,
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
 			Logger:                 loggerIPv4,
+			Executables:            initializedExecutablesIPv4,
+			LoopbackInterfaceName:  loopbackInterfaceName,
 			LocalhostCIDR:          LocalhostCIDRIPv4,
 			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
-			Owner:                  c.Owner,
+			Comments:               c.Comments.Initialize(initializedExecutablesIPv4),
+			DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv4.Functionality.Tables.Mangle,
+			KumaDPUser:             c.KumaDPUser,
+			Redirect:               redirectIPv4,
 			enabled:                true,
 		},
-		DryRun: c.DryRun,
 	}
 
-	e, err := c.Executables.Initialize(ctx, l, c)
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize Executables configuration",
-		)
-	}
-	initialized.IPv4.Executables = e.IPv4
-
-	ipv4Redirect, err := c.Redirect.Initialize(loggerIPv4, e.IPv4, false)
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize IPv4 Redirect configuration",
-		)
-	}
-	initialized.IPv4.Redirect = ipv4Redirect
-
-	loopbackInterfaceName, err := getLoopbackInterfaceName()
-	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"unable to initialize LoopbackInterfaceName",
-		)
-	}
-	initialized.IPv4.LoopbackInterfaceName = loopbackInterfaceName
-
-	initialized.IPv4.Comment = c.Comment.Initialize(e.IPv4)
-	initialized.IPv4.DropInvalidPackets = c.DropInvalidPackets && e.IPv4.Functionality.Tables.Mangle
+	// If IPv6 initialization fails at any point, the process will continue
+	// Instead of terminating, a warning will be logged, and IPv6 will be ignored
 
 	if c.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
@@ -680,29 +820,35 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 	if err := configureIPv6OutboundAddress(); err != nil {
 		if c.Verbose {
-			loggerIPv6.Warn(
-				"failed to configure IPv6 outbound address. IPv6 rules will be skipped:",
-				err,
-			)
+			loggerIPv6.Warn("failed to configure IPv6 outbound address. IPv6 rules will be skipped:", err)
 		}
+		return initialized, nil
+	}
+
+	initializedExecutablesIPv6, err := executablesIPv6.Initialize(ctx, loggerIPv6, c)
+	if err != nil {
+		loggerIPv6.Warn("failed to initialize IPv6 executables:", err)
+		return initialized, nil
+	}
+
+	redirectIPv6, err := c.Redirect.Initialize(loggerIPv6, initializedExecutablesIPv6, true)
+	if err != nil {
+		loggerIPv6.Warn("failed to initialize IPv6 Redirect configuration:", err)
 		return initialized, nil
 	}
 
 	initialized.IPv6 = InitializedConfigIPvX{
 		Config:                 c,
 		Logger:                 loggerIPv6,
-		Executables:            e.IPv6,
+		Executables:            initializedExecutablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
 		LocalhostCIDR:          LocalhostCIDRIPv6,
 		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-		Comment:                c.Comment.Initialize(e.IPv6),
-		DropInvalidPackets:     c.DropInvalidPackets && e.IPv6.Functionality.Tables.Mangle,
-		Owner:                  c.Owner,
+		Comments:               c.Comments.Initialize(initializedExecutablesIPv6),
+		DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv6.Functionality.Tables.Mangle,
+		KumaDPUser:             c.KumaDPUser,
+		Redirect:               redirectIPv6,
 		enabled:                true,
-	}
-
-	if initialized.IPv6.Redirect, err = c.Redirect.Initialize(loggerIPv6, e.IPv6, true); err != nil {
-		return initialized, errors.Wrap(err, "unable to initialize IPv6 Redirect configuration")
 	}
 
 	return initialized, nil
@@ -710,30 +856,31 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
+		KumaDPUser: Owner{UID: ""},
 		Redirect: Redirect{
 			NamePrefix: IptablesChainsPrefix,
 			Inbound: TrafficFlow{
 				Enabled:           true,
-				Port:              DefaultRedirectInbountPort,
+				Port:              Port(DefaultRedirectInbountPort),
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
-				ExcludePorts:      []uint16{},
-				IncludePorts:      []uint16{},
+				ExcludePorts:      Ports{},
+				IncludePorts:      Ports{},
 			},
 			Outbound: TrafficFlow{
 				Enabled:           true,
-				Port:              DefaultRedirectOutboundPort,
+				Port:              Port(DefaultRedirectOutboundPort),
 				ChainName:         "OUTBOUND",
 				RedirectChainName: "OUTBOUND_REDIRECT",
-				ExcludePorts:      []uint16{},
-				IncludePorts:      []uint16{},
+				ExcludePorts:      Ports{},
+				IncludePorts:      Ports{},
 			},
 			DNS: DNS{
-				Port:               DefaultRedirectDNSPort,
-				Enabled:            false,
-				CaptureAll:         false,
-				ConntrackZoneSplit: true,
-				ResolvConfigPath:   "/etc/resolv.conf",
+				Port:                   Port(DefaultRedirectDNSPort),
+				Enabled:                false,
+				CaptureAll:             false,
+				SkipConntrackZoneSplit: false,
+				ResolvConfigPath:       "/etc/resolv.conf",
 			},
 			VNet: VNet{
 				Networks: []string{},
@@ -750,23 +897,25 @@ func DefaultConfig() Config {
 		RuntimeStderr:      os.Stderr,
 		Verbose:            false,
 		DryRun:             false,
-		Log: LogConfig{
+		Log: Log{
 			Enabled: false,
 			Level:   LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,
-		Retry: RetryConfig{
+		Retry: Retry{
 			// Specifies the number of retries after the initial attempt,
 			// totaling 5 tries
-			MaxRetries:         4,
-			SleepBetweenReties: 2 * time.Second,
+			MaxRetries:          4,
+			SleepBetweenRetries: config_types.Duration{Duration: 2 * time.Second},
 		},
-		Executables: NewExecutablesNftLegacy(),
-		Comment: Comment{
+		Executables: NewExecutables(),
+		Comments: Comments{
 			Disabled: false,
 		},
-		IPFamilyMode: IPFamilyModeDualStack,
+		IPFamilyMode:   IPFamilyModeDualStack,
+		StoreFirewalld: false,
+		CNIMode:        false,
 	}
 }
 
@@ -966,7 +1115,7 @@ func validateIP(address string, ipv6 bool) (error, bool) {
 func parseUint16(port string) (uint16, error) {
 	parsedPort, err := strconv.ParseUint(port, 10, 16)
 	if err != nil {
-		return 0, fmt.Errorf("invalid uint16 value: '%s'", port)
+		return 0, errors.Errorf("invalid uint16 value: '%s'", port)
 	}
 
 	return uint16(parsedPort), nil

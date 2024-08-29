@@ -251,6 +251,9 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	if len(k.opts.ReachableServices) > 0 {
 		spec.ObjectMeta.Annotations["kuma.io/transparent-proxying-reachable-services"] = strings.Join(k.opts.ReachableServices, ",")
 	}
+	if k.opts.ReachableBackends != "" {
+		spec.ObjectMeta.Annotations["kuma.io/reachable-backends"] = k.opts.ReachableBackends
+	}
 	return spec
 }
 

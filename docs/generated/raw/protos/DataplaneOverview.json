@@ -33,7 +33,7 @@
                 "probes": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
                     "additionalProperties": true,
-                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information."
+                    "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information. Deprecated: this feature will be removed for Universal; on Kubernetes, it's not needed anymore."
                 }
             },
             "additionalProperties": true,
@@ -325,12 +325,61 @@
                         }
                     ],
                     "title": "Ip Family Mode"
+                },
+                "reachable_backends": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends",
+                    "additionalProperties": true,
+                    "description": "Reachable backend via transparent proxy when running with MeshExternalService, MeshService and MeshMultiZoneService. Setting an explicit list of refs can dramatically improve the performance of the mesh. If not specified, all services in the mesh are reachable."
                 }
             },
             "additionalProperties": true,
             "type": "object",
             "title": "Transparent Proxying",
             "description": "TransparentProxying describes configuration for transparent proxying."
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef": {
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "description": "Type of the backend: MeshService or MeshExternalService  +required"
+                },
+                "name": {
+                    "type": "string",
+                    "description": "Name of the backend.  +optional"
+                },
+                "namespace": {
+                    "type": "string",
+                    "description": "Namespace of the backend. Might be empty  +optional"
+                },
+                "port": {
+                    "additionalProperties": true,
+                    "type": "integer",
+                    "description": "Port of the backend.  +optional"
+                },
+                "labels": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Labels used to select backends  +optional"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Reachable Backend Ref"
+        },
+        "kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackends": {
+            "properties": {
+                "refs": {
+                    "items": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Networking.TransparentProxying.ReachableBackendRef"
+                    },
+                    "type": "array"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Reachable Backends"
         },
         "kuma.mesh.v1alpha1.Dataplane.Probes": {
             "properties": {

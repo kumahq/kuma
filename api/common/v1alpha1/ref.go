@@ -46,6 +46,26 @@ func (k TargetRefKind) Compare(o TargetRefKind) int {
 	return order[k] - order[o]
 }
 
+func (k TargetRefKind) IsRealResource() bool {
+	switch k {
+	case MeshSubset, MeshServiceSubset:
+		return false
+	default:
+		return true
+	}
+}
+
+// These are the kinds that can be used in Kuma policies before support for
+// actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
+func (k TargetRefKind) IsOldKind() bool {
+	switch k {
+	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshGateway, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
+}
+
 func AllTargetRefKinds() []TargetRefKind {
 	keys := maps.Keys(order)
 	sort.Sort(TargetRefKindSlice(keys))
@@ -61,7 +81,7 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
@@ -111,6 +131,9 @@ func (b BackendRef) ReferencesRealObject() bool {
 	case MeshService:
 		return b.Port != nil
 	case MeshServiceSubset:
+		return false
+	// empty targetRef should not be treated as real object
+	case "":
 		return false
 	default:
 		return true

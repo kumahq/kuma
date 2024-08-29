@@ -6,7 +6,8 @@ FromRules:
 ToRules:
   ByListener:
     127.0.0.1:8080:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -24,7 +25,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8081:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -42,7 +44,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8082:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -60,7 +63,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8083:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /applied-only-to-hostname
@@ -84,7 +88,8 @@ ToRules:
       Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -102,7 +107,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8081:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -120,7 +126,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8082:*:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset
@@ -138,7 +145,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8083:four-hostname-1:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /applied-only-to-hostname
@@ -161,7 +169,8 @@ ToRules:
         type: MeshAccessLog
       Subset: []
     127.0.0.1:8083:four-hostname-2:
-    - Conf:
+    - BackendRefOriginIndex: {}
+      Conf:
         backends:
         - file:
             path: /meshsubset

@@ -46,7 +46,7 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 	if err := applyToInbounds(policies.SingleItemRules, listeners.Inbound, proxy.Dataplane); err != nil {
 		return err
 	}
-	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.SingleItemRules, listeners.Outbound, proxy.Outbounds, proxy.Dataplane); err != nil {
 		return err
 	}
 	if err := applyToClusters(policies.SingleItemRules, rs, proxy); err != nil {
@@ -112,16 +112,21 @@ func applyToInbounds(rules core_rules.SingleItemRules, inboundListeners map[core
 	return nil
 }
 
-func applyToOutbounds(rules core_rules.SingleItemRules, outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource) error {
-	for _, outbound := range dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter) {
-		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound)
+func applyToOutbounds(
+	rules core_rules.SingleItemRules,
+	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
+	outbounds xds.Outbounds,
+	dataplane *core_mesh.DataplaneResource,
+) error {
+	for _, outbound := range outbounds.Filter(xds.NonBackendRefFilter) {
+		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 
 		listener, ok := outboundListeners[oface]
 		if !ok {
 			continue
 		}
 
-		serviceName := outbound.GetService()
+		serviceName := outbound.LegacyOutbound.GetService()
 
 		if err := configureListener(rules, dataplane, listener, serviceName); err != nil {
 			return err

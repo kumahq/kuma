@@ -41,7 +41,7 @@ resources:
               name: api.example.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_api.example.com_80
             - domains:
@@ -95,7 +95,7 @@ resources:
               name: api.example.com
               routes:
               - match:
-                  path: /
+                  prefix: /
                 route:
                   cluster: meshpassthrough_api.example.com_80
             - domains:

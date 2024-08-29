@@ -24,7 +24,7 @@ func MeshPassthrough(config *Config) func() {
 
 		// we cannot test in a stable way first doing a successful request, because once connection is estabilished we don't break it after applying the policy (similar case to egress) the connection exists and works.
 		It("should control traffic to domains and IPs", func() {
-			esIP, err := framework.ServiceIP(kubernetes.Cluster, "external-service", config.NamespaceOutsideMesh)
+			esIP, err := kubernetes.Cluster.GetClusterIP("external-service", config.NamespaceOutsideMesh)
 			Expect(err).ToNot(HaveOccurred())
 
 			// given

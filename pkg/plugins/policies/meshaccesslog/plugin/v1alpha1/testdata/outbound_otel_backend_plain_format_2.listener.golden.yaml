@@ -1,0 +1,28 @@
+address:
+  socketAddress:
+    address: 127.0.0.1
+    portValue: 27777
+filterChains:
+- filters:
+  - name: envoy.filters.network.tcp_proxy
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+      accessLog:
+      - name: envoy.access_loggers.open_telemetry
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
+          attributes: {}
+          body:
+            stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service)
+              took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED%
+              bytes'
+          commonConfig:
+            grpcService:
+              envoyGrpc:
+                clusterName: meshaccesslog:opentelemetry:0
+            logName: MeshAccessLog
+            transportApiVersion: V3
+      cluster: other-service
+      statPrefix: "127_0_0_1_27777"
+name: outbound:127.0.0.1:27777
+trafficDirection: OUTBOUND

@@ -27,7 +27,8 @@ func MeshInsight() *MeshInsightBuilder {
 					GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
 					GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 				},
-				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{},
+				Policies:  map[string]*mesh_proto.MeshInsight_PolicyStat{},
+				Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 			},
 		},
 	}
@@ -91,5 +92,10 @@ func (mi *MeshInsightBuilder) WithDelegatedGatewayDataplaneStats(
 
 func (mi *MeshInsightBuilder) AddPolicyStats(policy string, total uint32) *MeshInsightBuilder {
 	mi.res.Spec.Policies[policy] = &mesh_proto.MeshInsight_PolicyStat{Total: total}
+	return mi
+}
+
+func (mi *MeshInsightBuilder) AddResourceStats(resource string, total uint32) *MeshInsightBuilder {
+	mi.res.Spec.Resources[resource] = &mesh_proto.MeshInsight_ResourceStat{Total: total}
 	return mi
 }

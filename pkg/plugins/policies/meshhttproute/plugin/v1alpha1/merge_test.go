@@ -141,8 +141,13 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-2",
 					},
 				},
+				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 1,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}}})): 1,
+				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{},
 	},
 }), Entry("tie-breaking", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -226,15 +231,19 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				Origin: []core_model.ResourceMeta{
 					&test_model.ResourceMeta{
 						Mesh: "default",
-						Name: "a-route",
+						Name: "b-route",
 					},
 					&test_model.ResourceMeta{
 						Mesh: "default",
-						Name: "b-route",
+						Name: "a-route",
 					},
+				},
+				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 1,
 				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{},
 	},
 }), Entry("ordering", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -474,15 +483,24 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				Origin: []core_model.ResourceMeta{
 					&test_model.ResourceMeta{
 						Mesh: "default",
-						Name: "a-route",
+						Name: "b-route",
 					},
 					&test_model.ResourceMeta{
 						Mesh: "default",
-						Name: "b-route",
+						Name: "a-route",
 					},
+				},
+				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-first-prefix"}}})):                 1,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-second-prefix"}}})):                1,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-first-prefix"}}})):                 0,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-second-prefix"}}})):                0,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-first-shared-prefix"}}})):  1,
+					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-second-shared-prefix"}}})): 1,
 				},
 			},
 		},
+		ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{},
 	},
 }),
 )

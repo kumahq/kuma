@@ -16,6 +16,13 @@ import (
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhealthcheck "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
+	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	meshtcproute "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
@@ -41,6 +48,16 @@ type validatingHandler struct {
 	k8sRegistry  k8s_registry.TypeRegistry
 	converter    k8s_common.Converter
 	decoder      admission.Decoder
+}
+
+var meshServiceSupportImplemented = map[core_model.ResourceType]bool{
+	meshtimeout.MeshTimeoutType:               true,
+	meshretry.MeshRetryType:                   true,
+	meshcircuitbreaker.MeshCircuitBreakerType: true,
+	meshhealthcheck.MeshHealthCheckType:       true,
+	meshhttproute.MeshHTTPRouteType:           true,
+	meshtcproute.MeshTCPRouteType:             true,
+	meshaccesslog.MeshAccessLogType:           true,
 }
 
 func (h *validatingHandler) InjectDecoder(d admission.Decoder) {
@@ -134,6 +151,9 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 
 func (h *validatingHandler) validateNoTargetRefMeshService(r core_model.Resource) validators.ValidationError {
 	var verr validators.ValidationError
+	if meshServiceSupportImplemented[r.Descriptor().Name] {
+		return verr
+	}
 	if pt, ok := r.GetSpec().(core_model.PolicyWithToList); ok {
 		specField := validators.Root().Field("spec")
 		for i, toItem := range pt.GetToList() {

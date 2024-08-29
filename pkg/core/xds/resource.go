@@ -7,6 +7,9 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	protov1 "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -14,9 +17,11 @@ type ResourcePayload = envoy_types.Resource
 
 // Resource represents a generic xDS resource with name and version.
 type Resource struct {
-	Name     string
-	Origin   string
-	Resource ResourcePayload
+	Name           string
+	Origin         string
+	Resource       ResourcePayload
+	ResourceOrigin *rules.UniqueResourceIdentifier
+	Protocol       core_mesh.Protocol
 }
 
 // ResourceList represents a list of generic xDS resources.
@@ -166,4 +171,21 @@ func (s *ResourceSet) List() ResourceList {
 	}
 
 	return list
+}
+
+func (s *ResourceSet) IndexByOrigin() map[rules.UniqueResourceIdentifier]map[string][]*Resource {
+	byOwner := map[rules.UniqueResourceIdentifier]map[string][]*Resource{}
+	for typ, nameToRes := range s.typeToNamesIndex {
+		for _, resource := range nameToRes {
+			if resource.ResourceOrigin == nil {
+				continue
+			}
+			resOwner := *resource.ResourceOrigin
+			if byOwner[resOwner] == nil {
+				byOwner[resOwner] = map[string][]*Resource{}
+			}
+			byOwner[resOwner][typ] = append(byOwner[resOwner][typ], resource)
+		}
+	}
+	return byOwner
 }

@@ -88,7 +88,7 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create From rules: %s", err.Error()))
 	}
 
-	tr, err := core_rules.BuildToRules(dpPolicies, resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
+	tr, err := core_rules.BuildToRules(dpPolicies, resources)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
@@ -96,7 +96,7 @@ func MatchedPolicies(
 	gr, err := core_rules.BuildGatewayRules(
 		matchedPoliciesByInbound,
 		matchedPoliciesByGatewayListener,
-		resources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems(),
+		resources,
 	)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
@@ -250,7 +250,9 @@ func SortByTargetRef(rs []core_model.Resource) {
 			return less
 		}
 
-		if less := originToNumber(r1) - originToNumber(r2); less != 0 {
+		o1, _ := core_model.ResourceOrigin(r1.GetMeta())
+		o2, _ := core_model.ResourceOrigin(r2.GetMeta())
+		if less := o1.Compare(o2); less != 0 {
 			return less
 		}
 
@@ -260,48 +262,10 @@ func SortByTargetRef(rs []core_model.Resource) {
 			}
 		}
 
-		if less := roleToNumber(r1) - roleToNumber(r2); less != 0 {
+		if less := core_model.PolicyRole(r1.GetMeta()).Compare(core_model.PolicyRole(r2.GetMeta())); less != 0 {
 			return less
 		}
 
-		// TODO(lobkovilya): when producer policies are supported, check here "producer is less than consumer"
-
 		return cmp.Compare(core_model.GetDisplayName(r2.GetMeta()), core_model.GetDisplayName(r1.GetMeta()))
 	})
-}
-
-func roleToNumber(r core_model.Resource) int {
-	switch core_model.PolicyRole(r.GetMeta()) {
-	case mesh_proto.SystemPolicyRole:
-		return -1
-	case mesh_proto.ProducerPolicyRole:
-		return 0
-	default:
-		return 1
-	}
-}
-
-// The logic of this method is to recreate the following comparison table:
-
-// origin_1 | origin_2 | has_more_priority
-// ---------|----------|-------------
-// Global   | Zone     | origin_2
-// Global   | Unknown  | origin_2
-// Zone     | Global   | origin_1
-// Zone     | Unknown  | origin_1
-// Unknown  | Global   | origin_1
-// Unknown  | Zone     | origin_2
-//
-// If we assign numbers to origins like Global=-1, Zone=1, Unknown=0, then we can compare them as numbers
-// and get the same result as in the table above.
-func originToNumber(r core_model.Resource) int {
-	origin, _ := core_model.ResourceOrigin(r.GetMeta())
-	switch origin {
-	case mesh_proto.GlobalResourceOrigin:
-		return -1
-	case mesh_proto.ZoneResourceOrigin:
-		return 1
-	default:
-		return 0
-	}
 }

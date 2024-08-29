@@ -325,6 +325,20 @@
   },
   {
    "includeInFederation": true,
+   "name": "MeshTLS",
+   "path": "meshtlses",
+   "pluralDisplayName": "Mesh T L Ss",
+   "policy": {
+    "hasFromTargetRef": true,
+    "hasToTargetRef": false,
+    "isTargetRef": true
+   },
+   "readOnly": false,
+   "scope": "Mesh",
+   "singularDisplayName": "Mesh T L S"
+  },
+  {
+   "includeInFederation": true,
    "name": "MeshTimeout",
    "path": "meshtimeouts",
    "pluralDisplayName": "Mesh Timeouts",

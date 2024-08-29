@@ -32,15 +32,19 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 			case <-ctx.Done():
 			}
 		}()
+
+		select {
+		case <-stop:
+		default:
+			if err := w.onTick(ctx); err != nil && !errors.Is(err, context.Canceled) {
+				w.OnError(err)
+			}
+		}
+		cancel()
+
 		select {
 		case <-ticker.C:
-			select {
-			case <-stop:
-			default:
-				if err := w.onTick(ctx); err != nil && !errors.Is(err, context.Canceled) {
-					w.OnError(err)
-				}
-			}
+			continue
 		case <-stop:
 			if w.OnStop != nil {
 				w.OnStop()
@@ -48,7 +52,6 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 			// cancel will be called by the above goroutine
 			return
 		}
-		cancel()
 	}
 }
 

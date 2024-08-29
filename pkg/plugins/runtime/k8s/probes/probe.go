@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -70,4 +72,37 @@ func (p KumaProbe) Port() uint32 {
 
 func (p KumaProbe) Path() string {
 	return p.HTTPGet.Path
+}
+
+func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, cfgVirtualProbesEnabled bool) error {
+	str := func(b bool) string {
+		if b {
+			return metadata.AnnotationEnabled
+		}
+		return metadata.AnnotationDisabled
+	}
+
+	vpEnabled, vpExist, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	if err != nil {
+		return err
+	}
+	gwEnabled, _, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return err
+	}
+
+	if gwEnabled {
+		if vpEnabled {
+			return errors.New("virtual probes can't be enabled in gateway mode")
+		}
+		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
+		return nil
+	}
+
+	if vpExist {
+		annotations[metadata.KumaVirtualProbesAnnotation] = str(vpEnabled)
+		return nil
+	}
+	annotations[metadata.KumaVirtualProbesAnnotation] = str(cfgVirtualProbesEnabled)
+	return nil
 }

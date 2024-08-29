@@ -2,6 +2,7 @@ package context
 
 import (
 	"hash/fnv"
+	"slices"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -46,6 +47,15 @@ func NewResources() Resources {
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{},
 		CrossMeshResources: map[xds.MeshName]ResourceMap{},
 	}
+}
+
+func (r Resources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
+	// todo: we can probably optimize it by using indexing on ResourceIdentifier
+	list := r.ListOrEmpty(resourceType).GetItems()
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+		return list[i]
+	}
+	return nil
 }
 
 func (r Resources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {

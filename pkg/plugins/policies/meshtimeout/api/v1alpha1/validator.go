@@ -82,11 +82,14 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 		case common_api.MeshHTTPRoute, common_api.MeshGateway:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
+				common_api.MeshExternalService,
 			}
 		default:
 			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			}
 		}
 

@@ -149,24 +149,24 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(cfg.LocalhostCIDR),
-					Match(Owner(Uid(cfg.Owner.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.RedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, cfg.LocalhostCIDR, cfg.Owner.UID, cfg.Redirect.Inbound.RedirectChainName),
+				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", DNSPort, cfg.LocalhostCIDR, cfg.KumaDPUser.UID, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
 				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
-					Match(Owner(NotUid(cfg.Owner.UID))),
+					Match(Owner(NotUid(cfg.KumaDPUser.UID))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, cfg.Owner.UID),
+				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", DNSPort, cfg.KumaDPUser.UID),
 			rules.
 				NewAppendRule(
-					Match(Owner(Uid(cfg.Owner.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.Owner.UID),
+				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.KumaDPUser.UID),
 		)
 
 	if cfg.Redirect.DNS.Enabled {
@@ -282,7 +282,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 			rules.
 				NewInsertRule(
 					Protocol(Udp(DestinationPort(DNSPort))),
-					Match(Owner(Uid(cfg.Owner.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					JumpConditional(
 						cfg.Executables.Functionality.Chains.DockerOutput, // if DOCKER_OUTPUT should be targeted
 						ToUserDefinedChain(ChainDockerOutput),             // --jump DOCKER_OUTPUT

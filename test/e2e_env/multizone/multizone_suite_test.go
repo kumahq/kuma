@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/reachablebackends"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/resilience"
 	multizone_sync "github.com/kumahq/kuma/test/e2e_env/multizone/sync"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/trafficpermission"
@@ -58,7 +59,6 @@ var (
 	_ = Describe("Connectivity", connectivity.Connectivity, Ordered)
 	_ = Describe("Connectivity Gateway IPV6 CNI V2", connectivity.GatewayIPV6CNIV2, Ordered)
 	_ = Describe("Sync", multizone_sync.Sync, Ordered)
-	_ = Describe("Sync V2", multizone_sync.SyncLegacy, Ordered)
 	_ = Describe("MeshTrafficPermission", meshtrafficpermission.MeshTrafficPermission, Ordered)
 	_ = Describe("Zone Disable", zonedisable.ZoneDisable, Ordered)
 	_ = Describe("External Services", externalservices.ExternalServicesOnMultizoneUniversal, Ordered)
@@ -74,6 +74,8 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
+	_ = Describe("Targeting real MeshService in policies", meshservice.MeshServiceTargeting, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
+	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 )

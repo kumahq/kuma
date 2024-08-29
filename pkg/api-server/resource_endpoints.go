@@ -32,6 +32,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -124,9 +125,10 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 			Returns(200, "OK", nil).
 			Returns(404, "Not found", nil))
 		if r.mode == config_core.Global {
-			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed("")).
-				Doc("Not allowed on Global CP.").
-				Returns(http.StatusMethodNotAllowed, "Not allowed on Global CP.", restful.ServiceError{}))
+			msg := "Not allowed on global CP"
+			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.methodNotAllowed(msg)).
+				Doc(msg).
+				Returns(http.StatusMethodNotAllowed, msg, restful.ServiceError{}))
 		} else {
 			ws.Route(ws.GET(pathPrefix+"/{name}/_config").To(r.configForProxy()).
 				Doc(fmt.Sprintf("Get proxy config%s", r.descriptor.Name)).
@@ -137,9 +139,14 @@ func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix s
 	}
 }
 
-func (r *resourceEndpoints) methodNotAllowed(title string) func(request *restful.Request, response *restful.Response) {
+func (r *resourceEndpoints) methodNotAllowed(detail string) func(request *restful.Request, response *restful.Response) {
 	return func(request *restful.Request, response *restful.Response) {
-		rest_errors.HandleError(request.Request.Context(), response, &rest_errors.MethodNotAllowed{}, title)
+		err := &types.Error{
+			Status: 405,
+			Title:  "Method not allowed",
+			Detail: detail,
+		}
+		rest_errors.HandleError(request.Request.Context(), response, err, "")
 	}
 }
 
@@ -538,6 +545,9 @@ func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.Va
 			if ok && zoneTag != r.zoneName {
 				err.AddViolationAt(validators.Root().Key(mesh_proto.ZoneTag), fmt.Sprintf("%s label should have %s value", mesh_proto.ZoneTag, r.zoneName))
 			}
+			if meshLabelValue, ok := resource.GetMeta().GetLabels()[mesh_proto.MeshTag]; ok && meshLabelValue != resource.GetMeta().GetMesh() {
+				err.AddViolationAt(validators.Root().Key(mesh_proto.MeshTag), fmt.Sprintf("%s label must not differ from mesh set on resource", mesh_proto.MeshTag))
+			}
 		}
 	}
 
@@ -915,8 +925,20 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 			}
+			toResourceRules := []api_common.ResourceRule{}
+			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+				toResourceRules = append(toResourceRules, api_common.ResourceRule{
+					Conf:                resourceRuleItem.Conf,
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(itemIdentifier.ResourceType, resourceRuleItem.Origin),
+					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+				})
+			}
+			sort.Slice(toResourceRules, func(i, j int) bool {
+				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
+			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -925,11 +947,12 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				warnings = []string{}
 			}
 			rules = append(rules, api_common.InspectRule{
-				Type:      string(res.Type),
-				ToRules:   &toRules,
-				FromRules: &fromRules,
-				ProxyRule: proxyRule,
-				Warnings:  &warnings,
+				Type:            string(res.Type),
+				ToRules:         &toRules,
+				ToResourceRules: &toResourceRules,
+				FromRules:       &fromRules,
+				ProxyRule:       proxyRule,
+				Warnings:        &warnings,
 			})
 		}
 		httpMatches := []api_common.HttpMatch{}

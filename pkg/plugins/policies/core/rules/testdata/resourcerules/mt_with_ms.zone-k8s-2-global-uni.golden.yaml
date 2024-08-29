@@ -1,0 +1,78 @@
+mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 1m41s
+    http:
+      requestTimeout: 1m42s
+    idleTimeout: 1m40s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-k8s
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-25x7vw24b48f4v96
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+  ResourceSectionName: ""
+meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 11s
+    http:
+      requestTimeout: 12s
+    idleTimeout: 10s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-k8s
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-25x7vw24b48f4v96
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-aaaaaa
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: zone
+        kuma.io/zone: zone-k8s
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-aaaaaa-wxx42d7xz229f8wx
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: backend
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: zone
+      kuma.io/zone: zone-k8s
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-z7f47x24v9f5x2b4
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""

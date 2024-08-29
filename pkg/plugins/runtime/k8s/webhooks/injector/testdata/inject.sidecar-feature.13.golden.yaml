@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -12,8 +13,6 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
     run: busybox
@@ -41,8 +40,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
@@ -51,7 +48,7 @@ spec:
     - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
-    - ""
+    - "9000"
     - --exclude-outbound-ports
     - ""
     - --verbose
@@ -97,6 +94,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----

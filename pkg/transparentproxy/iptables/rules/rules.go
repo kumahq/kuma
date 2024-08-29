@@ -143,11 +143,11 @@ func (r *Rule) BuildForRestore(cfg config.InitializedConfigIPvX) string {
 
 	var params parameters.Parameters
 
-	if cfg.Comment.Enabled && r.comment != "" {
+	if cfg.Comments.Enabled && r.comment != "" {
 		params = append(
 			params,
 			parameters.Match(
-				parameters.Comment(cfg.Comment.Prefix, r.comment),
+				parameters.Comment(cfg.Comments.Prefix, r.comment),
 			),
 		)
 	}

@@ -12,6 +12,7 @@ import (
 	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -32,13 +33,12 @@ func BuildExternalServicesEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	externalServices []*core_mesh.ExternalServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	loader datasource.Loader,
 	zone string,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	if !mesh.ZoneEgressEnabled() {
-		fillExternalServicesOutbounds(ctx, outbound, externalServices, meshExternalServices, mesh, loader, zone)
+		fillExternalServicesOutbounds(ctx, outbound, externalServices, mesh, loader, zone)
 	}
 	return outbound
 }
@@ -625,20 +625,12 @@ func fillExternalServicesOutbounds(
 	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
-	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	mesh *core_mesh.MeshResource,
 	loader datasource.Loader,
 	zone string,
 ) {
 	for _, externalService := range externalServices {
 		createExternalServiceEndpoint(ctx, outbound, externalService, mesh, loader, zone)
-	}
-
-	for _, mes := range meshExternalServices {
-		err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
-		if err != nil {
-			outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
-		}
 	}
 }
 
@@ -757,17 +749,17 @@ func createMeshExternalServiceEndpoint(
 	return nil
 }
 
-func toTlsVersion(version *meshexternalservice_api.TlsVersion) core_xds.TlsVersion {
+func toTlsVersion(version *common_tls.TlsVersion) core_xds.TlsVersion {
 	switch *version {
-	case meshexternalservice_api.TLSVersion13:
+	case common_tls.TLSVersion13:
 		return core_xds.TLSVersion13
-	case meshexternalservice_api.TLSVersion12:
+	case common_tls.TLSVersion12:
 		return core_xds.TLSVersion12
-	case meshexternalservice_api.TLSVersion11:
+	case common_tls.TLSVersion11:
 		return core_xds.TLSVersion11
-	case meshexternalservice_api.TLSVersion10:
+	case common_tls.TLSVersion10:
 		return core_xds.TLSVersion10
-	case meshexternalservice_api.TLSVersionAuto:
+	case common_tls.TLSVersionAuto:
 		fallthrough
 	default:
 		return core_xds.TLSVersionAuto

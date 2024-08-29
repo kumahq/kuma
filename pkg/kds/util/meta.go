@@ -34,6 +34,12 @@ func WithLabel(key, value string) CloneResourceMetaOpt {
 	}
 }
 
+func WithoutLabel(key string) CloneResourceMetaOpt {
+	return func(m *resourceMeta) {
+		delete(m.labels, key)
+	}
+}
+
 func CloneResourceMeta(m model.ResourceMeta, fs ...CloneResourceMetaOpt) model.ResourceMeta {
 	labels := maps.Clone(m.GetLabels())
 	if labels == nil {

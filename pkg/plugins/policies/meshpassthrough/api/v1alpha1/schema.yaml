@@ -78,6 +78,7 @@ properties:
               - MeshGateway
               - MeshService
               - MeshExternalService
+              - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
             type: string

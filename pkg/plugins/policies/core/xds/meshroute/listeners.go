@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -57,10 +58,11 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    mesh_proto.OutboundInterface
-	Protocol    core_mesh.Protocol
-	ServiceName string
-	BackendRef  common_api.BackendRef
+	Outbound      mesh_proto.OutboundInterface
+	Protocol      core_mesh.Protocol
+	ServiceName   string
+	BackendRef    common_api.BackendRef
+	OwnerResource *core_rules.UniqueResourceIdentifier
 }
 
 func CollectServices(
@@ -68,17 +70,17 @@ func CollectServices(
 	meshCtx xds_context.MeshContext,
 ) []DestinationService {
 	var dests []DestinationService
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbounds() {
+	for _, outbound := range proxy.Outbounds {
 		var destinationService *DestinationService
-		switch outbound.GetBackendRef().GetKind() {
+		switch outbound.LegacyOutbound.GetBackendRef().GetKind() {
 		case string(common_api.MeshService):
-			destinationService = collectMeshService(outbound, proxy, meshCtx)
+			destinationService = collectMeshService(outbound.LegacyOutbound, proxy, meshCtx)
 		case string(common_api.MeshExternalService):
-			destinationService = collectMeshExternalService(outbound, proxy, meshCtx)
+			destinationService = collectMeshExternalService(outbound.LegacyOutbound, proxy, meshCtx)
 		case string(common_api.MeshMultiZoneService):
-			destinationService = collectMeshMultiZoneService(outbound, proxy, meshCtx)
+			destinationService = collectMeshMultiZoneService(outbound.LegacyOutbound, proxy, meshCtx)
 		default:
-			destinationService = collectServiceTagService(outbound, proxy, meshCtx)
+			destinationService = collectServiceTagService(outbound.LegacyOutbound, proxy, meshCtx)
 		}
 		if destinationService != nil {
 			dests = append(dests, *destinationService)
@@ -117,6 +119,7 @@ func collectMeshService(
 			},
 			Port: &port.Port,
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(ms, port.Name)),
 	}
 }
 
@@ -140,6 +143,7 @@ func collectMeshExternalService(
 			},
 			Port: pointer.To(uint32(mes.Spec.Match.Port)),
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 }
 
@@ -171,6 +175,7 @@ func collectMeshMultiZoneService(
 			},
 			Port: &port.Port,
 		},
+		OwnerResource: pointer.To(core_rules.UniqueKey(svc, port.Name)),
 	}
 }
 

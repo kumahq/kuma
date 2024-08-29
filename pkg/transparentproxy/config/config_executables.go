@@ -14,9 +14,65 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
+
+const (
+	WarningDryRunNoValidIptablesFound = "[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables"
+)
+
+type Version struct {
+	k8s_version.Version
+
+	Mode IptablesMode
+}
+
+func getIptablesVersion(ctx context.Context, path string) (Version, error) {
+	isVersionMissing := func(output string) bool {
+		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", FlagVersion))
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// #nosec G204
+	cmd := exec.CommandContext(ctx, path, FlagVersion)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
+	// flag. Depending on the version, this may result in:
+	//   - The command exiting with a non-zero code and a warning written to stderr
+	//   - The command exiting with code 0 but still outputting a warning to stderr
+	// In these cases, the function assumes the iptables mode is legacy
+	switch {
+	case err != nil && isVersionMissing(err.Error()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case err != nil:
+		return Version{}, err
+	}
+
+	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) < 2 {
+		return Version{}, errors.Errorf("unable to parse iptables version in: '%s'", stdout.String())
+	}
+
+	version, err := k8s_version.ParseGeneric(matched[1])
+	if err != nil {
+		return Version{}, errors.Wrapf(err, "invalid iptables version string: '%s'", matched[1])
+	}
+
+	if len(matched) < 3 {
+		return Version{Version: *version, Mode: IptablesModeLegacy}, nil
+	}
+
+	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
+}
 
 type Executable struct {
 	name string
@@ -33,6 +89,8 @@ type Executable struct {
 
 func (c Executable) Initialize(
 	ctx context.Context,
+	l Logger,
+	cniMode bool,
 	args []string,
 ) (InitializedExecutable, error) {
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
@@ -45,25 +103,31 @@ func (c Executable) Initialize(
 
 	for _, path := range paths {
 		if found := findPath(path); found != "" {
-			if verifyIptablesMode(ctx, path, c.mode) {
+			if v, err := getIptablesVersion(ctx, path); err == nil && v.Mode == c.mode {
 				return InitializedExecutable{
-					Executable: c,
-					Path:       path,
-					args:       args,
+					Path:    path,
+					logger:  l,
+					name:    c.name,
+					prefix:  c.prefix,
+					cniMode: cniMode,
+					version: v,
+					args:    args,
 				}, nil
 			}
 		}
 	}
 
-	return InitializedExecutable{}, errors.Errorf(
-		"failed to find executable %s",
-		nameWithMode,
-	)
+	return InitializedExecutable{}, errors.Errorf("failed to find executable %s", nameWithMode)
 }
 
 type InitializedExecutable struct {
-	Executable
 	Path string
+
+	logger  Logger
+	name    string
+	prefix  string
+	cniMode bool
+	version Version
 
 	// args holds a set of default parameters or flags that are automatically
 	// added to every execution of this executable. These parameters are
@@ -73,11 +137,23 @@ type InitializedExecutable struct {
 	args []string
 }
 
-func (c InitializedExecutable) Exec(
-	ctx context.Context,
-	args ...string,
-) (*bytes.Buffer, *bytes.Buffer, error) {
-	return execCmd(ctx, c.Path, append(c.args, args...)...)
+func (c InitializedExecutable) NeedLock() bool {
+	// iptables-nft does not use the xtables lock, so no lock is needed for this
+	// mode
+	if c.version.Mode == IptablesModeNft {
+		return false
+	}
+
+	// Only iptables and iptables-restore executables need a lock because they
+	// perform write operations
+	switch c.name {
+	case "", "restore":
+		return true
+	}
+
+	// For all other cases (such as iptables-save), no lock is needed as they
+	// don't perform write operations
+	return false
 }
 
 type ExecutablesIPvX struct {
@@ -109,18 +185,18 @@ func (c ExecutablesIPvX) Initialize(
 ) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
-	iptables, err := c.Iptables.Initialize(ctx, nil)
+	iptables, err := c.Iptables.Initialize(ctx, l, cfg.CNIMode, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
-	iptablesSave, err := c.IptablesSave.Initialize(ctx, nil)
+	iptablesSave, err := c.IptablesSave.Initialize(ctx, l, cfg.CNIMode, nil)
 	if err != nil {
 		errs = append(errs, err)
 	}
 
 	restoreArgs := buildRestoreArgs(cfg, c.IptablesRestore.mode)
-	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, restoreArgs)
+	iptablesRestore, err := c.IptablesRestore.Initialize(ctx, l, cfg.CNIMode, restoreArgs)
 	if err != nil {
 		errs = append(errs, err)
 	}
@@ -157,7 +233,7 @@ type InitializedExecutablesIPvX struct {
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
 
-	retry  RetryConfig
+	retry  Retry
 	logger Logger
 }
 
@@ -194,10 +270,10 @@ func (c InitializedExecutablesIPvX) restore(
 
 		if i < c.retry.MaxRetries {
 			if !quiet {
-				c.logger.InfoTry("will try again in", c.retry.SleepBetweenReties)
+				c.logger.InfoTry("will try again in", c.retry.SleepBetweenRetries)
 			}
 
-			time.Sleep(c.retry.SleepBetweenReties)
+			time.Sleep(c.retry.SleepBetweenRetries.Duration)
 		}
 	}
 
@@ -329,125 +405,64 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 }
 
 type Executables struct {
-	IPv4 ExecutablesIPvX
-	IPv6 ExecutablesIPvX
-	Mode IptablesMode
+	NftIPv4    ExecutablesIPvX
+	NftIPv6    ExecutablesIPvX
+	LegacyIPv4 ExecutablesIPvX
+	LegacyIPv6 ExecutablesIPvX
 }
 
-func NewExecutables(mode IptablesMode) Executables {
+func NewExecutables() Executables {
 	return Executables{
-		IPv4: NewExecutablesIPvX(false, mode),
-		IPv6: NewExecutablesIPvX(true, mode),
-		Mode: mode,
+		NftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
+		NftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
+		LegacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
+		LegacyIPv6: NewExecutablesIPvX(true, IptablesModeLegacy),
 	}
 }
 
-// Initialize attempts to initialize both IPv4 and IPv6 executables within the
-// given context. It ensures proper configuration for IPv6 if necessary.
-//
-// This method performs the following steps:
-//  1. Attempts to initialize the IPv4 executables with the provided context,
-//     Config, and Logger. If an error occurs, it returns an error indicating
-//     the failure to initialize IPv4 executables.
-//  2. If IPv6 is enabled in the configuration, it attempts to initialize the
-//     IPv6 executables with the provided context, Config, and Logger. If an
-//     error occurs, it returns an error indicating the failure to initialize
-//     IPv6 executables.
-//  3. If IPv6 initialization is successful, it attempts to configure the IPv6
-//     outbound address. If this configuration fails, a warning is logged, and
-//     IPv6 rules will be skipped.
-func (c Executables) Initialize(
+func (c Executables) InitializeIPv4(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutables, error) {
-	var err error
-	var initialized InitializedExecutables
-
-	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
-
-	if initialized.IPv4, err = c.IPv4.Initialize(ctx, loggerIPv4, cfg); err != nil {
-		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv4 executables")
-	}
-
-	if cfg.IPFamilyMode == IPFamilyModeIPv4 {
-		return initialized, nil
-	}
-
-	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
-
-	if initialized.IPv6, err = c.IPv6.Initialize(ctx, loggerIPv6, cfg); err != nil {
-		return InitializedExecutables{}, errors.Wrap(err, "failed to initialize IPv6 executables")
-	}
-
-	return initialized, nil
-}
-
-type InitializedExecutables struct {
-	IPv4 InitializedExecutablesIPvX
-	IPv6 InitializedExecutablesIPvX
-}
-
-func (c InitializedExecutables) hasDockerOutputChain() bool {
-	return c.IPv4.Functionality.Chains.DockerOutput ||
-		c.IPv6.Functionality.Chains.DockerOutput
-}
-
-type ExecutablesNftLegacy struct {
-	Nft    Executables
-	Legacy Executables
-}
-
-func NewExecutablesNftLegacy() ExecutablesNftLegacy {
-	return ExecutablesNftLegacy{
-		Nft:    NewExecutables(IptablesModeNft),
-		Legacy: NewExecutables(IptablesModeLegacy),
-	}
-}
-
-func (c ExecutablesNftLegacy) Initialize(
-	ctx context.Context,
-	l Logger,
-	cfg Config,
-) (InitializedExecutables, error) {
+) (InitializedExecutablesIPvX, ExecutablesIPvX, error) {
 	var errs []error
 
-	nft, nftErr := c.Nft.Initialize(ctx, l, cfg)
+	nft, nftErr := c.NftIPv4.Initialize(ctx, l, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
 	}
 
-	legacy, legacyErr := c.Legacy.Initialize(ctx, l, cfg)
+	legacy, legacyErr := c.LegacyIPv4.Initialize(ctx, l, cfg)
 	if legacyErr != nil {
 		errs = append(errs, legacyErr)
 	}
 
 	switch {
-	// Dry-run mode when no valid iptables executables are found.
 	case len(errs) == 2 && cfg.DryRun:
-		l.Warn("[dry-run]: no valid iptables executables found. The generated iptables rules may differ from those generated in an environment with valid iptables executables")
-		return InitializedExecutables{}, nil
-	// Regular mode when no vaild iptables executables are found
+		l.Warn(WarningDryRunNoValidIptablesFound)
+		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, nil
 	case len(errs) == 2:
-		return InitializedExecutables{}, errors.Wrap(
-			std_errors.Join(errs...),
-			"failed to find valid nft or legacy executables",
-		)
-	// No valid legacy executables
+		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
 	case legacyErr != nil:
-		return nft, nil
-	// No valid nft executables
+		return nft, c.NftIPv6, nil
 	case nftErr != nil:
-		return legacy, nil
-	// Both types of executables contain custom DOCKER_OUTPUT chain in nat
-	// table. We are prioritizing nft
-	case nft.hasDockerOutputChain() && legacy.hasDockerOutputChain():
-		l.Warn("conflicting iptables modes detected. Two iptables versions (iptables-nft and iptables-legacy) were found. Both contain a nat table with a chain named 'DOCKER_OUTPUT'. To avoid potential conflicts, iptables-legacy will be ignored and iptables-nft will be used")
-		return nft, nil
-	case legacy.hasDockerOutputChain():
-		return legacy, nil
+		return legacy, c.LegacyIPv6, nil
+	case nft.Functionality.Rules.ExistingRules && legacy.Functionality.Rules.ExistingRules:
+		switch {
+		case nft.Functionality.Chains.DockerOutput && legacy.Functionality.Chains.DockerOutput:
+			fallthrough
+		case !nft.Functionality.Chains.DockerOutput && !legacy.Functionality.Chains.DockerOutput:
+			l.Warn("conflicting iptables modes detected; both iptables-nft and iptables-legacy have existing rules and/or custom chains. To avoid potential conflicts, iptables-legacy will be ignored, and iptables-nft will be used")
+			return nft, c.NftIPv6, nil
+		case legacy.Functionality.Chains.DockerOutput:
+			return legacy, c.LegacyIPv6, nil
+		default:
+			return nft, c.NftIPv6, nil
+		}
+	case legacy.Functionality.Rules.ExistingRules:
+		return legacy, c.LegacyIPv6, nil
 	default:
-		return nft, nil
+		return nft, c.NftIPv6, nil
 	}
 }
 
@@ -480,60 +495,6 @@ func buildRestoreArgs(cfg Config, mode IptablesMode) []string {
 	}
 
 	return flags
-}
-
-// verifyIptablesMode checks if the provided 'path' corresponds to an iptables
-// executable operating in the expected mode.
-//
-// This function verifies the mode by:
-//  1. Executing the iptables command specified by 'path' with the `--version`
-//     argument to obtain the version output.
-//  2. Parsing the standard output using the `consts.IptablesModeRegex`.
-//     - The regex is designed to extract the mode string from the output (e.g.,
-//     "legacy" or "nf_tables").
-//     - If a match is found, the extracted mode is compared with the expected
-//     mode (`mode`) using the `consts.IptablesModeMap`.
-//  3. Returning:
-//     - `true` if the extracted mode matches the expected mode.
-//     - `false` if the command execution fails, parsing fails, or the extracted
-//     mode doesn't match the expected mode.
-//
-// Special Considerations:
-// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
-// flag and exhibit the following behaviors:
-//   - The command exits with a non-zero code and a warning is written to
-//     stderr.
-//   - A warning is written to stderr but the command exits with code 0.
-//
-// In these cases, the function assumes the iptables mode is legacy
-// (`consts.IptablesModeLegacy`) due to the age of these versions.
-func verifyIptablesMode(
-	ctx context.Context,
-	path string,
-	mode IptablesMode,
-) bool {
-	isVersionMissing := func(output string) bool {
-		return strings.Contains(
-			output,
-			fmt.Sprintf("unrecognized option '%s'", FlagVersion),
-		)
-	}
-
-	stdout, stderr, err := execCmd(ctx, path, FlagVersion)
-	if err != nil {
-		return isVersionMissing(err.Error()) && mode == IptablesModeLegacy
-	}
-
-	if stderr != nil && stderr.Len() > 0 && isVersionMissing(stderr.String()) {
-		return mode == IptablesModeLegacy
-	}
-
-	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
-	if len(matched) == 2 {
-		return slices.Contains(IptablesModeMap[mode], matched[1])
-	}
-
-	return false
 }
 
 // getPathsToSearchForExecutable generates a list of potential paths for the
@@ -632,44 +593,6 @@ func joinNonEmptyWithHyphen(elems ...string) string {
 	)
 }
 
-// execCmd executes a command specified by 'path' and its arguments ('args')
-// within the provided context ('ctx').
-//   - Success: If the command executes successfully, the captured standard
-//     output is returned as a bytes.Buffer and nil error.
-//   - Error with stderr output: If the command execution encounters an error
-//     and there's content captured in the standard error buffer, the error
-//     includes the stderr content. The original error is wrapped with a
-//     formatted stderr message and a nil buffer is returned.
-//   - Error without stderr output: If the command execution encounters an error
-//     but there's no captured standard error, the original error is simply
-//     returned with a nil buffer.
-func execCmd(
-	ctx context.Context,
-	path string,
-	args ...string,
-) (*bytes.Buffer, *bytes.Buffer, error) {
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	// #nosec G204
-	cmd := exec.CommandContext(ctx, path, args...)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		if stderr.Len() > 0 {
-			stderrTrimmed := strings.TrimSpace(stderr.String())
-			stderrLines := strings.Split(stderrTrimmed, "\n")
-			stderrFormated := strings.Join(stderrLines, ", ")
-
-			return nil, nil, errors.Errorf("%s: %s", err, stderrFormated)
-		}
-
-		return nil, nil, err
-	}
-
-	return &stdout, &stderr, nil
-}
-
 // createBackupFile generates a backup file with a specified prefix and a
 // timestamp suffix. The file is created in the system's temporary directory and
 // is used to store iptables rules for backup purposes.
@@ -732,4 +655,16 @@ func writeToFile(content string, f *os.File) error {
 	}
 
 	return nil
+}
+
+func handleRunError(err error, stderr *bytes.Buffer) error {
+	if stderr.Len() > 0 {
+		stderrTrimmed := strings.TrimSpace(stderr.String())
+		stderrLines := strings.Split(stderrTrimmed, "\n")
+		stderrFormated := strings.Join(stderrLines, ", ")
+
+		return errors.Errorf("%s: %s", err, stderrFormated)
+	}
+
+	return err
 }

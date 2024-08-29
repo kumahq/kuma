@@ -56,7 +56,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	cfg.Logger.Infof(
 		"starting cleanup of existing transparent proxy rules. Any rule found in chains with names starting with %q or containing comments starting with %q will be deleted",
 		cfg.Redirect.NamePrefix,
-		cfg.Comment.Prefix,
+		cfg.Comments.Prefix,
 	)
 
 	// Execute iptables-save to retrieve current rules.
@@ -67,7 +67,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 
 	output := stdout.String()
 	containsTProxyRules := strings.Contains(output, cfg.Redirect.NamePrefix)
-	containsTProxyComments := strings.Contains(output, cfg.Comment.Prefix)
+	containsTProxyComments := strings.Contains(output, cfg.Comments.Prefix)
 
 	switch {
 	case !containsTProxyRules && !containsTProxyComments:
@@ -86,7 +86,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 		lines,
 		func(line string) bool {
 			return strings.HasPrefix(line, "#") ||
-				strings.Contains(line, cfg.Comment.Prefix) ||
+				strings.Contains(line, cfg.Comments.Prefix) ||
 				strings.Contains(line, cfg.Redirect.NamePrefix)
 		},
 	)

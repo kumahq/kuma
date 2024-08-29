@@ -1,6 +1,7 @@
 Rules:
   127.0.0.1:80:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -12,7 +13,8 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: c
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -24,7 +26,8 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: b
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -36,7 +39,8 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: a
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       action: AllowWithShadowDeny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"

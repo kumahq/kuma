@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -13,6 +14,7 @@ import (
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -25,13 +27,15 @@ func (a EnvVarsByName) Less(i, j int) bool {
 }
 
 type DataplaneProxyFactory struct {
-	ControlPlaneURL          string
-	ControlPlaneCACert       string
-	DefaultAdminPort         uint32
-	ContainerConfig          runtime_k8s.DataplaneContainer
-	BuiltinDNS               runtime_k8s.BuiltinDNS
-	WaitForDataplane         bool
-	sidecarContainersEnabled bool
+	ControlPlaneURL           string
+	ControlPlaneCACert        string
+	DefaultAdminPort          uint32
+	ContainerConfig           runtime_k8s.DataplaneContainer
+	BuiltinDNS                runtime_k8s.BuiltinDNS
+	WaitForDataplane          bool
+	sidecarContainersEnabled  bool
+	virtualProbesEnabled      bool
+	applicationProbeProxyPort uint32
 }
 
 func NewDataplaneProxyFactory(
@@ -42,15 +46,19 @@ func NewDataplaneProxyFactory(
 	builtinDNS runtime_k8s.BuiltinDNS,
 	waitForDataplane bool,
 	sidecarContainersEnabled bool,
+	virtualProbesEnabled bool,
+	applicationProbeProxyPort uint32,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
-		ControlPlaneURL:          controlPlaneURL,
-		ControlPlaneCACert:       controlPlaneCACert,
-		DefaultAdminPort:         defaultAdminPort,
-		ContainerConfig:          containerConfig,
-		BuiltinDNS:               builtinDNS,
-		WaitForDataplane:         waitForDataplane,
-		sidecarContainersEnabled: sidecarContainersEnabled,
+		ControlPlaneURL:           controlPlaneURL,
+		ControlPlaneCACert:        controlPlaneCACert,
+		DefaultAdminPort:          defaultAdminPort,
+		ContainerConfig:           containerConfig,
+		BuiltinDNS:                builtinDNS,
+		WaitForDataplane:          waitForDataplane,
+		sidecarContainersEnabled:  sidecarContainersEnabled,
+		virtualProbesEnabled:      virtualProbesEnabled,
+		applicationProbeProxyPort: applicationProbeProxyPort,
 	}
 }
 
@@ -293,6 +301,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: "false",
 		}
 	}
+
 	if logLevel, exist := metadata.Annotations(podAnnotations).GetString(metadata.KumaEnvoyLogLevel); exist {
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL",
@@ -303,6 +312,20 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 		envVars["KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL"] = kube_core.EnvVar{
 			Name:  "KUMA_DATAPLANE_RUNTIME_ENVOY_COMPONENT_LOG_LEVEL",
 			Value: complogLevel,
+		}
+	}
+
+	annotations := make(map[string]string)
+	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, podAnnotations, i.virtualProbesEnabled); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
+	}
+	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, podAnnotations, i.applicationProbeProxyPort); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
+	}
+	if appProbeProxyPort, _, _ := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation); appProbeProxyPort > 0 {
+		envVars["KUMA_APPLICATION_PROBE_PROXY_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_APPLICATION_PROBE_PROXY_PORT",
+			Value: strconv.Itoa(int(appProbeProxyPort)),
 		}
 	}
 

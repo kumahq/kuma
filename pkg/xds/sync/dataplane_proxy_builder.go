@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -18,6 +19,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
@@ -36,7 +38,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
 	}
 
-	routing, destinations := p.resolveRouting(ctx, meshContext, dp)
+	routing, destinations, outbounds := p.resolveRouting(ctx, meshContext, dp)
 
 	matchedPolicies, err := p.matchPolicies(meshContext, dp, destinations)
 	if err != nil {
@@ -58,6 +60,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Id:                core_xds.FromResourceKey(key),
 		APIVersion:        p.APIVersion,
 		Dataplane:         dp,
+		Outbounds:         outbounds,
 		Routing:           *routing,
 		Policies:          *matchedPolicies,
 		SecretsTracker:    secretsTracker,
@@ -78,10 +81,10 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
-) (*core_xds.Routing, core_xds.DestinationMap) {
+) (*core_xds.Routing, core_xds.DestinationMap, []*core_xds.Outbound) {
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
-	p.resolveVIPOutbounds(meshContext, dataplane)
+	outbounds := p.resolveVIPOutbounds(meshContext, dataplane)
 
 	// pick a single the most specific route for each outbound interface
 	routes := xds_topology.BuildRouteMap(dataplane, meshContext.Resources.TrafficRoutes().Items)
@@ -93,7 +96,6 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		ctx,
 		meshContext.Resource,
 		matchedExternalServices,
-		meshContext.Resources.MeshExternalServices().Items,
 		meshContext.DataSourceLoader,
 		p.Zone,
 	)
@@ -102,28 +104,37 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		OutboundTargets:                meshContext.EndpointMap,
 		ExternalServiceOutboundTargets: endpointMap,
 	}
-	return routing, destinations
+	return routing, destinations, outbounds
 }
 
-func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) {
+func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) []*core_xds.Outbound {
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
-		return
+		newOutbounds := []*core_xds.Outbound{}
+		for _, o := range dataplane.Spec.Networking.Outbound {
+			newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: o})
+		}
+		return newOutbounds
 	}
 	reachableServices := map[string]bool{}
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
 		reachableServices[reachableService] = true
 	}
+	reachableBackends := meshContext.GetReachableBackends(dataplane)
 
 	// Update the outbound of the dataplane with the generatedVips
 	generatedVips := map[string]bool{}
 	for _, ob := range meshContext.VIPOutbounds {
-		generatedVips[ob.Address] = true
+		generatedVips[ob.LegacyOutbound.Address] = true
 	}
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
-	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+	var newOutbounds []*core_xds.Outbound
+	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
-		if outbound.BackendRef == nil { // reachable services does not work with backend ref yet.
-			service := outbound.GetService()
+		if outbound.LegacyOutbound.BackendRef == nil {
+			if reachableBackends != nil && len(reachableServices) == 0 {
+				continue
+			}
+			service := outbound.LegacyOutbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {
 					// ignore VIP outbound if reachableServices is defined and not specified
@@ -132,25 +143,55 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 				}
 			} else {
 				// static reachable services takes precedence over the graph
-				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.Tags) {
+				if !xds_context.CanReachFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.LegacyOutbound.Tags) {
+					continue
+				}
+			}
+		} else {
+			// we need to verify if the user has already reachableServices defined, and to don't send additional clusters and ruin the performance
+			// of the dataplane
+			if len(reachableServices) != 0 && reachableBackends == nil {
+				continue
+			}
+			if reachableBackends != nil {
+				backendKey := xds_context.BackendKey{
+					Kind: outbound.LegacyOutbound.BackendRef.Kind,
+					Name: outbound.LegacyOutbound.BackendRef.Name,
+					Port: outbound.LegacyOutbound.BackendRef.Port,
+				}
+				// check if there is an entry with specific port or without port
+				if !pointer.Deref(reachableBackends)[backendKey] && !pointer.Deref(reachableBackends)[xds_context.BackendKey{Kind: outbound.LegacyOutbound.BackendRef.Kind, Name: outbound.LegacyOutbound.BackendRef.Name}] {
+					// ignore VIP outbound if reachableServices is defined and not specified
+					// Reachable services takes precedence over reachable services graph.
+					continue
+				}
+				// we don't support MeshTrafficPermission for MeshExternalService at the moment
+				// TODO: https://github.com/kumahq/kuma/issues/11077
+			} else if outbound.LegacyOutbound.BackendRef.Kind != string(common_api.MeshExternalService) {
+				// static reachable services takes precedence over the graph
+				if !xds_context.CanReachBackendFromAny(meshContext.ReachableServicesGraph, dpTagSets, outbound.LegacyOutbound.BackendRef) {
 					continue
 				}
 			}
 		}
-		if dataplane.UsesInboundInterface(net.ParseIP(outbound.Address), outbound.Port) {
+		if dataplane.UsesInboundInterface(net.ParseIP(outbound.LegacyOutbound.Address), outbound.LegacyOutbound.Port) {
 			// Skip overlapping outbound interface with inbound.
 			// This may happen for example with Headless service on Kubernetes (outbound is a PodIP not ClusterIP, so it's the same as inbound).
 			continue
 		}
-		outbounds = append(outbounds, outbound)
+		legacyOutbounds = append(legacyOutbounds, outbound.LegacyOutbound)
+		newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: outbound.LegacyOutbound})
 	}
 	for _, outbound := range dataplane.Spec.Networking.GetOutbound() {
 		if generatedVips[outbound.Address] { // Useful while we still have resources with computed vip outbounds
 			continue
 		}
-		outbounds = append(outbounds, outbound)
+		legacyOutbounds = append(legacyOutbounds, outbound)
+		newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: outbound})
 	}
-	dataplane.Spec.Networking.Outbound = outbounds
+	// we still set legacy outbounds for the dataplane to not break old policies that rely on this field
+	dataplane.Spec.Networking.Outbound = legacyOutbounds
+	return newOutbounds
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors core_xds.DestinationMap) (*core_xds.MatchedPolicies, error) {

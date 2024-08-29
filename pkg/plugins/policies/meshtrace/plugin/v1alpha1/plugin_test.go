@@ -74,12 +74,14 @@ var _ = Describe("MeshTrace", func() {
 						AddInbound(builders.Inbound().
 							WithService("backend").
 							WithAddress("127.0.0.1").
-							WithPort(17777)).
-						AddOutbound(builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777)),
+							WithPort(17777)),
 				).
+				WithOutbounds(core_xds.Outbounds{
+					{LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build()},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)

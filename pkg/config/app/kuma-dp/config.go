@@ -25,10 +25,11 @@ var DefaultConfig = func() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:      "",
-			Name:      "", // Dataplane name must be set explicitly
-			DrainTime: config_types.Duration{Duration: 30 * time.Second},
-			ProxyType: "dataplane",
+			Mesh:          "",
+			Name:          "", // Dataplane name must be set explicitly
+			DrainTime:     config_types.Duration{Duration: 30 * time.Second},
+			ProxyType:     "dataplane",
+			ReadinessPort: 9902,
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
@@ -47,6 +48,9 @@ var DefaultConfig = func() Config {
 			PrometheusPort:            19153,
 			CoreDNSLogging:            false,
 		},
+		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
+			Port: 9000,
+		},
 	}
 }
 
@@ -59,7 +63,8 @@ type Config struct {
 	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 	DataplaneRuntime DataplaneRuntime `json:"dataplaneRuntime,omitempty"`
 	// DNS defines a configuration for builtin DNS in Kuma DP
-	DNS DNS `json:"dns,omitempty"`
+	DNS                         DNS                         `json:"dns,omitempty"`
+	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -132,6 +137,8 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
+	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 }
 
 func (d *Dataplane) PostProcess() error {
@@ -307,6 +314,10 @@ func (d *Dataplane) Validate() error {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
 
+	if d.ReadinessPort > 65353 {
+		return errors.New(".ReadinessPort has to be in [0, 65353] range")
+	}
+
 	return errs
 }
 
@@ -383,6 +394,22 @@ func (d *DNS) Validate() error {
 	}
 	if d.CoreDNSBinaryPath == "" {
 		return errors.New(".CoreDNSBinaryPath cannot be empty")
+	}
+	return nil
+}
+
+type ApplicationProbeProxyServer struct {
+	config.BaseConfig
+
+	Port uint32 `json:"port,omitempty" envconfig:"kuma_application_probe_proxy_port"`
+}
+
+func (p *ApplicationProbeProxyServer) Validate() error {
+	if p.Port == 0 {
+		return nil
+	}
+	if p.Port > 65353 {
+		return errors.New(".Port has to be in [0, 65353] range")
 	}
 	return nil
 }

@@ -20,12 +20,50 @@ func MeshCircuitBreaker() {
 	namespace := "meshcircuitbreaker-namespace"
 	mesh := "meshcircuitbreaker"
 
+	kubeMeshServiceYAML := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshService
+metadata:
+  name: test-server
+  namespace: %s
+  labels:
+    kuma.io/origin: zone
+    kuma.io/mesh: %s
+    kuma.io/managed-by: k8s-controller
+    k8s.kuma.io/is-headless-service: "false"
+spec:
+  selector:
+    dataplaneTags:
+      app: test-server
+      k8s.kuma.io/namespace: %s
+  ports:
+  - port: 80
+    name: main
+    targetPort: main
+    appProtocol: http
+`, namespace, mesh, namespace)
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
+			Install(YamlK8s(kubeMeshServiceYAML)).
+			Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: HostnameGenerator
+metadata:
+  name: circuitbreaker-connectivity
+  namespace: %s
+spec:
+  template: '{{ .DisplayName }}.{{ .Namespace }}.{{ .Zone }}.meshcircuitbreaker'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/managed-by: k8s-controller
+`, Config.KumaNamespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -145,4 +183,66 @@ spec:
           maxRetries: 1
 `, Config.KumaNamespace, mesh)),
 	)
+
+	It("should configure circuit breaker limits and outlier detectors for connections", func() {
+		// given no MeshCircuitBreaker
+		mcbs, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshcircuitbreakers", mesh)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(mcbs).To(BeEmpty())
+
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				kubernetes.Cluster,
+				"demo-client",
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithNumberOfRequests(10),
+			)
+		}, "30s", "1s").Should(And(
+			HaveLen(10),
+			HaveEach(HaveField("ResponseCode", 200)),
+		))
+
+		// when
+		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshCircuitBreaker
+metadata:
+  name: mcb-outbound
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+        namespace: %s
+      default:
+        connectionLimits:
+          maxConnectionPools: 1
+          maxConnections: 1
+          maxPendingRequests: 1
+          maxRequests: 1
+          maxRetries: 1`, namespace, mesh, namespace)))).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				kubernetes.Cluster,
+				"demo-client",
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+				client.WithNumberOfRequests(10),
+				// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
+				client.WithHeader("x-set-response-delay-ms", "1000"),
+				client.WithoutRetries(),
+			)
+		}, "30s", "1s").Should(And(
+			HaveLen(10),
+			ContainElement(HaveField("ResponseCode", 503)),
+		))
+	})
 }

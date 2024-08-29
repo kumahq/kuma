@@ -1,5 +1,7 @@
+ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 15s
   Origin:

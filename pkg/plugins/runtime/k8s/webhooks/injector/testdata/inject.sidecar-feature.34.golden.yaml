@@ -4,6 +4,7 @@ metadata:
   annotations:
     k8s.v1.cni.cncf.io/networks: kuma-cni
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/init-first: "true"
     kuma.io/mesh: default
@@ -52,6 +53,7 @@ spec:
         cpu: 20m
         memory: 20M
     securityContext:
+      allowPrivilegeEscalation: false
       capabilities:
         drop:
         - ALL

@@ -1,0 +1,46 @@
+# MeshTimeout with targetRef to the real MeshService resource
+type: MeshTimeout
+name: matched-for-rules-mt-aaaaaa
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      default:
+        idleTimeout: 10s
+        connectionTimeout: 11s
+        http:
+          requestTimeout: 12s
+---
+type: MeshTimeout
+name: matched-for-rules-mt-bbbbbb
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 100s
+        connectionTimeout: 101s
+        http:
+          requestTimeout: 102s
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: Mesh
+name: mesh-1

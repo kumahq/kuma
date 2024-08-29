@@ -19,12 +19,20 @@ const (
 )
 
 const (
+	KubernetesEnvironment = "kubernetes"
+	UniversalEnvironment  = "universal"
+)
+
+const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 
 	// Locality related tags
 	ZoneTag = "kuma.io/zone"
+
+	// EnvTag defines whether a zone is universal or Kubernetes
+	EnvTag = "kuma.io/env"
 
 	MeshTag = "kuma.io/mesh"
 
@@ -66,23 +74,42 @@ const (
 
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
+
+	// DeletionGracePeriodStartedLabel is used when generating MeshServices on
+	// universal, it's here to avoid import cycles
+	DeletionGracePeriodStartedLabel string = "kuma.io/deletion-grace-period-started-at"
 )
 
 type ResourceOrigin string
 
 const (
-	GlobalResourceOrigin ResourceOrigin = "global"
-	ZoneResourceOrigin   ResourceOrigin = "zone"
+	UnknownResourceOrigin ResourceOrigin = ""
+	GlobalResourceOrigin  ResourceOrigin = "global"
+	ZoneResourceOrigin    ResourceOrigin = "zone"
 )
 
-type PolicyRole string
+var originOrder = map[ResourceOrigin]int{
+	GlobalResourceOrigin:  1,
+	UnknownResourceOrigin: 2,
+	ZoneResourceOrigin:    3,
+}
 
-const (
-	ProducerPolicyRole      PolicyRole = "producer"
-	ConsumerPolicyRole      PolicyRole = "consumer"
-	SystemPolicyRole        PolicyRole = "system"
-	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
-)
+// Compare recreates the following comparison table:
+//
+// origin_1 | origin_2 | has_more_priority
+// ---------|----------|-------------
+// Global   | Zone     | origin_2
+// Global   | Unknown  | origin_2
+// Zone     | Global   | origin_1
+// Zone     | Unknown  | origin_1
+// Unknown  | Global   | origin_1
+// Unknown  | Zone     | origin_2
+//
+// If we assign numbers to origins like Global=1, Zone=3, Unknown=2, then we can compare them as numbers
+// and get the same result as in the table above.
+func (o ResourceOrigin) Compare(other ResourceOrigin) int {
+	return originOrder[o] - originOrder[other]
+}
 
 func (o ResourceOrigin) IsValid() error {
 	switch o {
@@ -91,6 +118,26 @@ func (o ResourceOrigin) IsValid() error {
 	default:
 		return errors.Errorf("unknown resource origin %q", o)
 	}
+}
+
+type PolicyRole string
+
+const (
+	SystemPolicyRole        PolicyRole = "system"
+	ProducerPolicyRole      PolicyRole = "producer"
+	ConsumerPolicyRole      PolicyRole = "consumer"
+	WorkloadOwnerPolicyRole PolicyRole = "workload-owner"
+)
+
+var roleOrder = map[PolicyRole]int{
+	SystemPolicyRole:        1,
+	ProducerPolicyRole:      2,
+	ConsumerPolicyRole:      3,
+	WorkloadOwnerPolicyRole: 4,
+}
+
+func (r PolicyRole) Compare(o PolicyRole) int {
+	return roleOrder[r] - roleOrder[o]
 }
 
 type ProxyType string

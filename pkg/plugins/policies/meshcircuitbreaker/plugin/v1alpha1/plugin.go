@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -49,11 +50,15 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Dataplane); err != nil {
+	if err := applyToOutbounds(policies.ToRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds); err != nil {
 		return err
 	}
 
 	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, proxy); err != nil {
+		return err
+	}
+
+	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh); err != nil {
 		return err
 	}
 
@@ -95,10 +100,10 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	dataplane *core_mesh.DataplaneResource,
+	outbounds core_xds.Outbounds,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(
-		dataplane.Spec.Networking.GetOutbounds(mesh_proto.NonBackendRefFilter),
+		outbounds.Filter(core_xds.NonBackendRefFilter),
 		outboundSplitClusters,
 		outboundClusters,
 	)
@@ -164,5 +169,38 @@ func configure(
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
+	return nil
+}
+
+func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
+	for uri, resType := range rs.IndexByOrigin() {
+		conf := rules.Compute(uri, meshCtx.Resources)
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ClusterType:
+				err := configureClusters(resources, conf.Conf[0].(api.Conf))
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func configureClusters(resources []*core_xds.Resource, conf api.Conf) error {
+	for _, resource := range resources {
+		configurer := plugin_xds.Configurer{
+			Conf: conf,
+		}
+		err := configurer.ConfigureCluster(resource.Resource.(*envoy_cluster.Cluster))
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }

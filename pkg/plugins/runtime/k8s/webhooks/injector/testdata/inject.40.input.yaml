@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: busybox
+  labels:
+    run: busybox
+  annotations:
+    kuma.io/application-probe-proxy-port: "9000"
+spec:
+  volumes:
+    - name: default-token-w7dxf
+      secret:
+        secretName: default-token-w7dxf
+  containers:
+    - name: busybox
+      image: busybox
+      resources: {}
+      readinessProbe:
+        httpGet:
+          path: /metrics
+          port: 3001
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      livenessProbe:
+        grpc:
+          service: grpc-service
+          port: 3333
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      startupProbe:
+        tcpSocket:
+          port: 8081
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      volumeMounts:
+        - name: default-token-w7dxf
+          readOnly: true
+          mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"

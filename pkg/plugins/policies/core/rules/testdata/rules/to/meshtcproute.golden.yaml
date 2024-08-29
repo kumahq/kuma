@@ -1,0 +1,29 @@
+ResourceRules: {}
+Rules:
+- BackendRefOriginIndex:
+    "": 1
+  Conf:
+    default:
+      backendRefs:
+      - kind: MeshService
+        name: backend-v1
+        weight: 40
+      - kind: MeshService
+        name: backend-v2
+        weight: 40
+      - kind: MeshService
+        name: backend-v3
+        weight: 20
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: split-90-10
+    type: MeshTCPRoute
+  - creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: split-40-40-20
+    type: MeshTCPRoute
+  Subset:
+  - Key: kuma.io/service
+    Not: false
+    Value: backend_kuma-demo_svc_8080

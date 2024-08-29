@@ -71,7 +71,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -128,7 +128,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -136,7 +136,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -167,14 +167,14 @@ jobs:
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      - uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+      - uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
@@ -184,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -253,7 +253,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4.3.4
+        uses: actions/upload-artifact@834a144ee995460fba8ed112a2fc961b36a5ec5a # v4.3.6
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}

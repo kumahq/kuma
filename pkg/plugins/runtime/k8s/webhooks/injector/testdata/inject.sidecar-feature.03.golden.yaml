@@ -3,6 +3,7 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: coredns
+    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
@@ -12,8 +13,6 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
-    kuma.io/virtual-probes: enabled
-    kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   generateName: coredns-fb8b8dccf-
   labels:
@@ -36,9 +35,15 @@ spec:
     livenessProbe:
       failureThreshold: 5
       httpGet:
-        path: /8080/health
+        httpHeaders:
+        - name: x-custom-header
+          value: custom-value
+        - name: X-Kuma-Probes-Scheme
+          value: HTTPS
+        - name: X-Kuma-Probes-Timeout
+          value: "5"
+        path: /9999/health
         port: 9000
-        scheme: HTTP
       initialDelaySeconds: 60
       periodSeconds: 10
       successThreshold: 1
@@ -57,9 +62,8 @@ spec:
     readinessProbe:
       failureThreshold: 3
       httpGet:
-        path: /8080/health
+        path: /tcp/1433
         port: 9000
-        scheme: HTTP
       periodSeconds: 10
       successThreshold: 1
       timeoutSeconds: 1
@@ -78,6 +82,20 @@ spec:
         - all
       procMount: Default
       readOnlyRootFilesystem: true
+    startupProbe:
+      failureThreshold: 5
+      httpGet:
+        httpHeaders:
+        - name: X-Kuma-Probes-Timeout
+          value: "5"
+        - name: X-Kuma-Probes-GRPC-Service
+          value: /startup
+        path: /grpc/5678
+        port: 9000
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      successThreshold: 1
+      timeoutSeconds: 5
     terminationMessagePath: /dev/termination-log
     terminationMessagePolicy: File
     volumeMounts:
@@ -91,8 +109,6 @@ spec:
   enableServiceLinks: true
   initContainers:
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true
@@ -101,7 +117,7 @@ spec:
     - --kuma-dp-user
     - "5678"
     - --exclude-inbound-ports
-    - ""
+    - "9000"
     - --exclude-outbound-ports
     - ""
     - --verbose
@@ -147,6 +163,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----

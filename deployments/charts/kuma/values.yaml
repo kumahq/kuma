@@ -703,8 +703,6 @@ experimental:
     tcAttachIface: ""
     # -- Path where compiled eBPF programs which will be installed can be found
     programsSourcePath: /tmp/kuma-ebpf
-  # -- If false, it uses legacy API for resource synchronization
-  deltaKds: true
   # -- If true, enable native Kubernetes sidecars. This requires at least
   # Kubernetes v1.29
   sidecarContainers: false
@@ -752,5 +750,6 @@ plugins:
     meshretries: true
     meshtcproutes: true
     meshtimeouts: true
+    meshtlses: true
     meshtraces: true
     meshtrafficpermissions: true

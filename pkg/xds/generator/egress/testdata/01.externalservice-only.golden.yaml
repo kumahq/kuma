@@ -153,7 +153,13 @@ resources:
           - name: envoy.filters.http.rbac
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC
-              rules: {}
+              rules:
+                policies:
+                  MeshTrafficPermission:
+                    permissions:
+                    - any: true
+                    principals:
+                    - any: true
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router

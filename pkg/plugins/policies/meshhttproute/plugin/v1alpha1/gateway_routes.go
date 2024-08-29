@@ -217,7 +217,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		}
 		target := route.Destination{
 			Destination:   dest,
-			Weight:        uint32(*b.Weight),
+			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolHTTP,
 		}

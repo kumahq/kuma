@@ -1,0 +1,79 @@
+mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
+  Conf:
+  - http:
+      backOff:
+        baseInterval: 55s
+      numRetries: 99
+      retryOn:
+      - 5xx
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-bbbbbb
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-bbbbbb-vccfcczv444dc65f.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mr-bbbbbb-vccfcczv444dc65f
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+  ResourceSectionName: ""
+meshexternalservice:mesh/mesh-1:name/external:
+  BackendRefOriginIndex: {}
+  Conf:
+  - http:
+      backOff:
+        baseInterval: 15s
+        maxInterval: 20m0s
+      numRetries: 10
+      retryOn:
+      - 5xx
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-bbbbbb
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-bbbbbb-vccfcczv444dc65f.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mr-bbbbbb-vccfcczv444dc65f
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-aaaaaa
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-aaaaaa-64xb72db84644z74.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mr-aaaaaa-64xb72db84644z74
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: external
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: external-c746d484w5bzbdz9.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: external-c746d484w5bzbdz9
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  ResourceSectionName: ""

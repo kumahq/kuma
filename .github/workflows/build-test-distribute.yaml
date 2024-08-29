@@ -48,7 +48,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: golangci/golangci-lint-action@a4f60bb28d35aeee14e6880718e0c85ff1882e64 # v6.0.1
+      - uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
         with:
           args: --fix=false --verbose
           version: v1.59.0
@@ -66,7 +66,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@62643b74f79f6a697b9add1a2f9c069bf9ca1250 # v2.3.0
+        uses: Kong/public-shared-actions/security-actions/sca@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
         with:
           dir: .
           config: .syft.yaml

@@ -1,6 +1,7 @@
 Rules:
   :0:
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       localityAwareness:
         disabled: false
     Origin:
@@ -21,7 +22,8 @@ Rules:
     - Key: version
       Not: false
       Value: v2
-  - Conf:
+  - BackendRefOriginIndex: {}
+    Conf:
       localityAwareness:
         disabled: true
     Origin:

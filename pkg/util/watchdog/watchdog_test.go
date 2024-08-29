@@ -51,11 +51,7 @@ var _ = Describe("SimpleWatchdog", func() {
 			close(doneCh)
 		}()
 
-		By("simulating 1st tick")
-		// when
-		timeTicks <- time.Time{}
-
-		// then
+		// then first tick happens "immediately"
 		<-onTickCalls
 
 		By("simulating 2nd tick")
@@ -98,11 +94,7 @@ var _ = Describe("SimpleWatchdog", func() {
 			close(doneCh)
 		}()
 
-		By("simulating 1st tick")
-		// when
-		timeTicks <- time.Time{}
-
-		// then
+		// then first tick happens "immediately"
 		actualErr := <-onErrorCalls
 		Expect(actualErr).To(MatchError(expectedErr))
 
@@ -135,7 +127,6 @@ var _ = Describe("SimpleWatchdog", func() {
 			watchdog.Start(stopCh)
 			close(doneCh)
 		}()
-		timeTicks <- time.Time{}
 
 		// then watchdog returned an error
 		Expect(<-onErrorCalls).To(HaveOccurred())

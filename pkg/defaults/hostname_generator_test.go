@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -22,6 +23,7 @@ var _ = Describe("Ensure Hostname Generators", func() {
 	type testCase struct {
 		cpConfig         kuma_cp.Config
 		expectedGenNames []string
+		expectedLabels   map[string]string
 	}
 
 	DescribeTable("should create default generators",
@@ -45,6 +47,7 @@ var _ = Describe("Ensure Hostname Generators", func() {
 			var createdNames []string
 			for _, gen := range generators.Items {
 				createdNames = append(createdNames, gen.GetMeta().GetName())
+				Expect(gen.GetMeta().GetLabels()).To(Equal(given.expectedLabels))
 			}
 			slices.Sort(createdNames)
 			Expect(createdNames).To(Equal(given.expectedGenNames))
@@ -104,6 +107,9 @@ var _ = Describe("Ensure Hostname Generators", func() {
 			expectedGenNames: []string{
 				"local-mesh-external-service.kuma-system",
 			},
+			expectedLabels: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			},
 		}),
 		Entry("zone universal", testCase{
 			cpConfig: kuma_cp.Config{
@@ -114,6 +120,9 @@ var _ = Describe("Ensure Hostname Generators", func() {
 			expectedGenNames: []string{
 				"local-mesh-external-service",
 				"local-universal-mesh-service",
+			},
+			expectedLabels: map[string]string{
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 			},
 		}),
 	)

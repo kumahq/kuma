@@ -16,6 +16,7 @@ const (
 	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
+	defaultAppProbeProxyPort   = "9000"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
@@ -36,6 +37,7 @@ var annotationRegistry = map[string]*annotationParam{
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
 	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
 	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
+	"applicationProbeProxyPort":   {"kuma.io/application-probe-proxy-port", defaultAppProbeProxyPort, validateSinglePort},
 }
 
 type IntermediateConfig struct {
@@ -148,6 +150,13 @@ func validatePortList(ports string) error {
 	return nil
 }
 
+func validateSinglePort(portString string) error {
+	if _, err := parsePort(portString); err != nil {
+		return err
+	}
+	return nil
+}
+
 func validateIpFamilyMode(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
@@ -181,6 +190,7 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
+	valDefaultProbeProxyPort := defaultAppProbeProxyPort
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -193,6 +203,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"applicationProbeProxyPort":   &valDefaultProbeProxyPort,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
 		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
@@ -205,6 +216,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
+	excludeAppProbeProxyPort(allFields)
 	return intermediateConfig, nil
 }
 
@@ -215,4 +227,19 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	}
 	*field = val
 	return nil
+}
+
+func excludeAppProbeProxyPort(allFields map[string]*string) {
+	inboundPortsToExclude := allFields["excludeInboundPorts"]
+	applicationProbeProxyPort := *allFields["applicationProbeProxyPort"]
+	if applicationProbeProxyPort == "0" {
+		return
+	}
+
+	existingExcludes := *inboundPortsToExclude
+	if existingExcludes == "" {
+		*inboundPortsToExclude = applicationProbeProxyPort
+	} else {
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, applicationProbeProxyPort)
+	}
 }

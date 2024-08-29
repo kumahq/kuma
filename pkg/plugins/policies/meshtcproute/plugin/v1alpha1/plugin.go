@@ -72,7 +72,7 @@ func ApplyToOutbounds(
 	tlsReady := ctx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, policies.ToRules.Rules, servicesAccumulator, ctx.Mesh)
+	listeners, err := generateListeners(proxy, policies.ToRules, servicesAccumulator, ctx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}

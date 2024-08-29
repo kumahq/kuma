@@ -1,0 +1,13 @@
+targetRef:
+  kind: MeshService
+  name: svc-1
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      tlsVersion:
+        min: TLS15
+        max: TLS16
+      tlsCiphers:
+        - "NotExistingCipher"
+      mode: NotExistingMode

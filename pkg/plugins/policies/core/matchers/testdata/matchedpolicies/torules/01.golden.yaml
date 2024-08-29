@@ -1,5 +1,7 @@
+ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 3s
   Origin:
@@ -15,7 +17,8 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: another-test-server
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 3s
   Origin:

@@ -29,7 +29,7 @@ func generateFromService(
 	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	rules rules.Rules,
+	rules rules.ToRules,
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	tags := svc.BackendRef.Tags
@@ -53,7 +53,7 @@ func generateFromService(
 		}))
 
 	var routes []xds.OutboundRoute
-	for _, route := range prepareRoutes(rules, svc) {
+	for _, route := range prepareRoutes(rules, svc, meshCtx) {
 		split := meshroute_xds.MakeHTTPSplit(clusterCache, servicesAcc, route.BackendRefs, meshCtx)
 		if split == nil {
 			continue
@@ -108,9 +108,11 @@ func generateFromService(
 
 	resources := core_xds.NewResourceSet().Add(
 		&core_xds.Resource{
-			Name:     listener.GetName(),
-			Origin:   generator.OriginOutbound,
-			Resource: listener,
+			Name:           listener.GetName(),
+			Origin:         generator.OriginOutbound,
+			Resource:       listener,
+			ResourceOrigin: svc.OwnerResource,
+			Protocol:       svc.Protocol,
 		})
 
 	return resources, nil
@@ -118,7 +120,7 @@ func generateFromService(
 
 func generateListeners(
 	proxy *core_xds.Proxy,
-	rules rules.Rules,
+	rules rules.ToRules,
 	servicesAcc envoy_common.ServicesAccumulator,
 	meshCtx xds_context.MeshContext,
 ) (*core_xds.ResourceSet, error) {
@@ -146,17 +148,26 @@ func generateListeners(
 	return resources, nil
 }
 
-// prepareRoutes handles the always present, catch all default route
-func prepareRoutes(
-	toRules rules.Rules,
-	svc meshroute_xds.DestinationService,
-) []api.Route {
-	// policy matching for real MeshService is not yet ready
-	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(svc.ServiceName))
+func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *api.PolicyDefault {
+	// compute for old MeshService
+	conf := rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshService(svc.ServiceName))
 	switch svc.BackendRef.Kind {
 	case common_api.MeshExternalService:
-		conf = rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshExternalService(svc.ServiceName))
+		conf = rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshExternalService(svc.ServiceName))
 	}
+	// check if there is configuration for real MeshService and prioritize it
+	if svc.OwnerResource != nil {
+		resourceConf := toRules.ResourceRules.Compute(*svc.OwnerResource, meshCtx.Resources)
+		if resourceConf != nil && len(resourceConf.Conf) != 0 {
+			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
+		}
+	}
+	return conf
+}
+
+// prepareRoutes handles the always present, catch all default route
+func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
+	conf := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {

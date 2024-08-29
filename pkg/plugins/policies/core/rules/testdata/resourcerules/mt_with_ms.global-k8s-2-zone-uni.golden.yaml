@@ -1,0 +1,74 @@
+mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 1m41s
+    http:
+      requestTimeout: 1m42s
+    idleTimeout: 1m40s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-485z48vw7dffvb45
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+  ResourceSectionName: ""
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 11s
+    http:
+      requestTimeout: 12s
+    idleTimeout: 10s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-bbbbbb
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-bbbbbb-485z48vw7dffvb45
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-aaaaaa
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-aaaaaa-7499v4cv9w42wb84
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: backend
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-xdc9b75d4z2w5b6d
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""
