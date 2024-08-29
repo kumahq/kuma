@@ -127,8 +127,8 @@ mtls:
 				universal.Cluster, "demo-client", "http://localhost:9901/stats",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("cluster.backend_svc_80.ssl.handshake"))
-			g.Expect(stdout).ToNot(ContainSubstring("cluster.backend_svc_80.ssl.handshake: 0"))
+			g.Expect(stdout).To(ContainSubstring("cluster.backend_msvc_80.ssl.handshake"))
+			g.Expect(stdout).ToNot(ContainSubstring("cluster.backend_msvc_80.ssl.handshake: 0"))
 		}, "30s", "1s").Should(Succeed())
 		Expect(reqError.Load()).To(BeNil())
 
