@@ -10,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -96,12 +97,12 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundListeners map[mesh_proto.OutboundInterface]*envoy_listener.Listener,
-	outbounds core_xds.Outbounds,
+	outbounds xds_types.Outbounds,
 	dataplane *core_mesh.DataplaneResource,
 	backends *plugin_xds.EndpointAccumulator,
 	path string,
 ) error {
-	for _, outbound := range outbounds.Filter(core_xds.NonBackendRefFilter) {
+	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 
 		listener, ok := outboundListeners[oface]

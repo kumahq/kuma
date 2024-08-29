@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
@@ -89,7 +90,7 @@ var _ = Describe("MeshRetry", func() {
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithOutbounds(core_xds.Outbounds{
+			WithOutbounds(xds_types.Outbounds{
 				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Port: builders.FirstOutboundPort,
 					Tags: map[string]string{

@@ -14,6 +14,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
@@ -76,7 +77,7 @@ var _ = Describe("MeshTrace", func() {
 							WithAddress("127.0.0.1").
 							WithPort(17777)),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().
 						WithService("other-service").
 						WithAddress("127.0.0.1").

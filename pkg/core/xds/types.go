@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
@@ -174,7 +175,7 @@ type Proxy struct {
 	Id                  ProxyId
 	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
-	Outbounds           Outbounds
+	Outbounds           xds_types.Outbounds
 	Metadata            *DataplaneMetadata
 	Routing             Routing
 	Policies            MatchedPolicies
@@ -194,50 +195,50 @@ type Proxy struct {
 	Zone string
 }
 
-type Outbound struct {
-	// LegacyOutbound is an old way to define outbounds using 'kuma.io/service' tag
-	LegacyOutbound *mesh_proto.Dataplane_Networking_Outbound
-
-	Address  string
-	Port     uint32
-	Resource *core_model.TypedResourceIdentifier
-}
-
-func (o *Outbound) GetAddress() string {
-	if o.LegacyOutbound != nil {
-		return o.LegacyOutbound.Address
-	}
-	return o.Address
-}
-
-func (o *Outbound) GetPort() uint32 {
-	if o.LegacyOutbound != nil {
-		return o.LegacyOutbound.Port
-	}
-	return o.Port
-}
-
-type Outbounds []*Outbound
-
-func (os Outbounds) Filter(predicates ...func(o *Outbound) bool) Outbounds {
-	var result []*Outbound
-	for _, outbound := range os {
-		add := true
-		for _, p := range predicates {
-			if !p(outbound) {
-				add = false
-			}
-		}
-		if add {
-			result = append(result, outbound)
-		}
-	}
-	return result
-}
-
-func NonBackendRefFilter(o *Outbound) bool {
-	return o.LegacyOutbound != nil && o.LegacyOutbound.BackendRef == nil
-}
+//type Outbound struct {
+//	// LegacyOutbound is an old way to define outbounds using 'kuma.io/service' tag
+//	LegacyOutbound *mesh_proto.Dataplane_Networking_Outbound
+//
+//	Address  string
+//	Port     uint32
+//	Resource *core_model.TypedResourceIdentifier
+//}
+//
+//func (o *Outbound) GetAddress() string {
+//	if o.LegacyOutbound != nil {
+//		return o.LegacyOutbound.Address
+//	}
+//	return o.Address
+//}
+//
+//func (o *Outbound) GetPort() uint32 {
+//	if o.LegacyOutbound != nil {
+//		return o.LegacyOutbound.Port
+//	}
+//	return o.Port
+//}
+//
+//type Outbounds []*Outbound
+//
+//func (os Outbounds) Filter(predicates ...func(o *Outbound) bool) Outbounds {
+//	var result []*Outbound
+//	for _, outbound := range os {
+//		add := true
+//		for _, p := range predicates {
+//			if !p(outbound) {
+//				add = false
+//			}
+//		}
+//		if add {
+//			result = append(result, outbound)
+//		}
+//	}
+//	return result
+//}
+//
+//func NonBackendRefFilter(o *Outbound) bool {
+//	return o.LegacyOutbound != nil && o.LegacyOutbound.BackendRef == nil
+//}
 
 type ServerSideMTLSCerts struct {
 	CaPEM      []byte
@@ -302,10 +303,10 @@ type ZoneIngressProxy struct {
 	MeshResourceList    []*MeshIngressResources
 }
 
-type VIPDomains struct {
-	Address string
-	Domains []string
-}
+//type VIPDomains struct {
+//	Address string
+//	Domains []string
+//}
 
 type Routing struct {
 	TrafficRoutes   RouteMap

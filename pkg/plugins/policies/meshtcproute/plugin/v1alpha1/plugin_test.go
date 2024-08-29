@@ -30,6 +30,7 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -327,7 +328,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -533,7 +534,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -597,7 +598,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
 							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
@@ -679,7 +680,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -779,7 +780,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -889,7 +890,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -970,7 +971,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1200,7 +1201,7 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 }
 
 func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalServiceResource) (*builders.DataplaneBuilder, *core_xds.Proxy) {
-	outbounds := core_xds.Outbounds{
+	outbounds := xds_types.Outbounds{
 		{
 			LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 				Port: builders.FirstOutboundPort,
@@ -1211,7 +1212,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		},
 	}
 	for _, mes := range mesList {
-		outbounds = append(outbounds, &core_xds.Outbound{
+		outbounds = append(outbounds, &xds_types.Outbound{
 			Address:  mes.Status.VIP.IP,
 			Port:     uint32(mes.Spec.Match.Port),
 			Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),

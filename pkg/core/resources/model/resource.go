@@ -732,7 +732,10 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBack
 	resolved.Resource = &TypedResourceIdentifier{
 		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
 		ResourceType:       ResourceType(br.Kind),
-		SectionName:        fmt.Sprintf("%d", br.Port),
+	}
+
+	if br.Port != nil {
+		resolved.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
 	}
 
 	return resolved

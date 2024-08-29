@@ -31,6 +31,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -143,7 +144,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -180,7 +181,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: builders.Outbound().
 							WithPort(builders.FirstOutboundPort).
 							WithTags(map[string]string{
@@ -244,7 +245,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -334,7 +335,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, *mc)
 			Expect(err).ToNot(HaveOccurred())
 
-			proxy.Outbounds = core_xds.Outbounds{{
+			proxy.Outbounds = xds_types.Outbounds{{
 				Address:  "10.0.0.2",
 				Port:     80,
 				Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshMZSvc, core_model.WithSectionName("80"))),
@@ -601,7 +602,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -725,7 +726,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithAddress("192.168.0.2").
 							WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http"),
 					).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
 							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
@@ -827,7 +828,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -905,7 +906,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -956,7 +957,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1025,7 +1026,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1091,7 +1092,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1147,7 +1148,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1205,7 +1206,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1268,7 +1269,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -1328,7 +1329,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						WithName("web-01").
 						WithAddress("192.168.0.2").
 						WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")).
-					WithOutbounds(core_xds.Outbounds{
+					WithOutbounds(xds_types.Outbounds{
 						{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 							Port: builders.FirstOutboundPort,
 							Tags: map[string]string{
@@ -2073,7 +2074,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 		WithInboundOfTags(mesh_proto.ServiceTag, "web", mesh_proto.ProtocolTag, "http")
 	proxy := xds_builders.Proxy().
 		WithDataplane(dp).
-		WithOutbounds(core_xds.Outbounds{
+		WithOutbounds(xds_types.Outbounds{
 			{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 				Port: builders.FirstOutboundPort,
 				Tags: map[string]string{

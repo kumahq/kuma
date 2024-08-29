@@ -13,6 +13,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -77,7 +78,7 @@ func (p plugin) configureDPP(
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
-	for _, outbound := range proxy.Outbounds.Filter(core_xds.NonBackendRefFilter) {
+	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
 

@@ -21,6 +21,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/ordered"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -84,7 +85,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
-) (*core_xds.Routing, core_xds.DestinationMap, []*core_xds.Outbound) {
+) (*core_xds.Routing, core_xds.DestinationMap, []*xds_types.Outbound) {
 	matchedExternalServices := permissions.MatchExternalServicesTrafficPermissions(dataplane, meshContext.Resources.ExternalServices(), meshContext.Resources.TrafficPermissions())
 
 	outbounds := p.resolveVIPOutbounds(meshContext, dataplane)
@@ -110,12 +111,12 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, outbounds
 }
 
-func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) []*core_xds.Outbound {
+func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) []*xds_types.Outbound {
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
-		newOutbounds := []*core_xds.Outbound{}
+		newOutbounds := []*xds_types.Outbound{}
 		for _, o := range dataplane.Spec.Networking.Outbound {
 			if o.BackendRef != nil {
-				newOutbounds = append(newOutbounds, &core_xds.Outbound{
+				newOutbounds = append(newOutbounds, &xds_types.Outbound{
 					Address: o.Address,
 					Port:    o.Port,
 					Resource: &core_model.TypedResourceIdentifier{
@@ -131,7 +132,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 					},
 				})
 			} else {
-				newOutbounds = append(newOutbounds, &core_xds.Outbound{LegacyOutbound: o})
+				newOutbounds = append(newOutbounds, &xds_types.Outbound{LegacyOutbound: o})
 			}
 		}
 		return newOutbounds
@@ -148,7 +149,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 		generatedVips[ob.GetAddress()] = true
 	}
 	dpTagSets := dataplane.Spec.SingleValueTagSets()
-	var newOutbounds []*core_xds.Outbound
+	var newOutbounds []*xds_types.Outbound
 	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.LegacyOutbound != nil {

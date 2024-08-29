@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
@@ -58,7 +59,7 @@ var _ = Describe("MeshAccessLog", func() {
 
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		outbounds         core_xds.Outbounds
+		outbounds         xds_types.Outbounds
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
@@ -89,7 +90,7 @@ var _ = Describe("MeshAccessLog", func() {
 							WithPort(17777),
 						),
 				).
-				WithOutbounds(append(given.outbounds, &core_xds.Outbound{
+				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
 					LegacyOutbound: builders.Outbound().
 						WithService("other-service").
 						WithAddress("127.0.0.1").
@@ -413,7 +414,7 @@ var _ = Describe("MeshAccessLog", func() {
 						)),
 					)).MustBuild(),
 			}},
-			outbounds: core_xds.Outbounds{
+			outbounds: xds_types.Outbounds{
 				{LegacyOutbound: builders.Outbound().
 					WithService("foo-service").
 					WithAddress("127.0.0.1").

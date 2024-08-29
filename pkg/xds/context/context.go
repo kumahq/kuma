@@ -14,6 +14,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/secrets"
 )
@@ -67,7 +68,7 @@ type LabelValue struct {
 	Value string
 }
 type (
-	LabelsToValuesToServiceNames map[LabelValue]map[core_model.ResourceIdentifier]bool
+	LabelsToValuesToResourceIdentifier map[LabelValue]map[core_model.ResourceIdentifier]bool
 )
 
 // MeshContext contains shared data within one mesh that is required for generating XDS config.
@@ -75,25 +76,25 @@ type (
 // If there is an information that can be precomputed and shared between all data plane proxies
 // it should be put here. This way we can save CPU cycles of computing the same information.
 type MeshContext struct {
-	Hash                                    string
-	Resource                                *core_mesh.MeshResource
-	Resources                               Resources
-	DataplanesByName                        map[string]*core_mesh.DataplaneResource
-	MeshServiceByName                       map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource
-	MeshServiceNamesByLabelByValue          LabelsToValuesToServiceNames
-	MeshExternalServiceByName               map[core_model.ResourceIdentifier]*meshexternalservice_api.MeshExternalServiceResource
-	MeshExternalServiceNamesByLabelByValue  LabelsToValuesToServiceNames
-	MeshMultiZoneServiceByName              map[core_model.ResourceIdentifier]*meshmzservice_api.MeshMultiZoneServiceResource
-	MeshMultiZoneServiceNamesByLabelByValue LabelsToValuesToServiceNames
-	EndpointMap                             xds.EndpointMap
-	IngressEndpointMap                      xds.EndpointMap
-	ExternalServicesEndpointMap             xds.EndpointMap
-	CrossMeshEndpoints                      map[xds.MeshName]xds.EndpointMap
-	VIPDomains                              []xds.VIPDomains
-	VIPOutbounds                            xds.Outbounds
-	ServicesInformation                     map[string]*ServiceInformation
-	DataSourceLoader                        datasource.Loader
-	ReachableServicesGraph                  ReachableServicesGraph
+	Hash                                string
+	Resource                            *core_mesh.MeshResource
+	Resources                           Resources
+	DataplanesByName                    map[string]*core_mesh.DataplaneResource
+	MeshServiceByIdentifier             map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource
+	MeshServicesByLabelByValue          LabelsToValuesToResourceIdentifier
+	MeshExternalServiceByIdentifier     map[core_model.ResourceIdentifier]*meshexternalservice_api.MeshExternalServiceResource
+	MeshExternalServicesByLabelByValue  LabelsToValuesToResourceIdentifier
+	MeshMultiZoneServiceByIdentifier    map[core_model.ResourceIdentifier]*meshmzservice_api.MeshMultiZoneServiceResource
+	MeshMultiZoneServicesByLabelByValue LabelsToValuesToResourceIdentifier
+	EndpointMap                         xds.EndpointMap
+	IngressEndpointMap                  xds.EndpointMap
+	ExternalServicesEndpointMap         xds.EndpointMap
+	CrossMeshEndpoints                  map[xds.MeshName]xds.EndpointMap
+	VIPDomains                          []xds_types.VIPDomains
+	VIPOutbounds                        xds_types.Outbounds
+	ServicesInformation                 map[string]*ServiceInformation
+	DataSourceLoader                    datasource.Loader
+	ReachableServicesGraph              ReachableServicesGraph
 }
 
 type ServiceInformation struct {
@@ -149,11 +150,11 @@ func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]
 		var found bool
 		switch kind {
 		case string(meshexternalservice_api.MeshExternalServiceType):
-			matchedResourceIdentifiers, found = mc.MeshExternalServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshExternalServicesByLabelByValue[key]
 		case string(meshservice_api.MeshServiceType):
-			matchedResourceIdentifiers, found = mc.MeshServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshServicesByLabelByValue[key]
 		case string(meshmzservice_api.MeshMultiZoneServiceType):
-			matchedResourceIdentifiers, found = mc.MeshMultiZoneServiceNamesByLabelByValue[key]
+			matchedResourceIdentifiers, found = mc.MeshMultiZoneServicesByLabelByValue[key]
 		}
 		if found {
 			for ri := range matchedResourceIdentifiers {

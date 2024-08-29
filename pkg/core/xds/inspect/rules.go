@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -36,7 +37,7 @@ func (r *RuleAttachment) AddAddress(address string) {
 	r.Addresses = append(r.Addresses, address)
 }
 
-func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]core_xds.TypedMatchingPolicies, networking *mesh_proto.Dataplane_Networking, domains []core_xds.VIPDomains) []RuleAttachment {
+func BuildRulesAttachments(matchedPoliciesByType map[core_model.ResourceType]core_xds.TypedMatchingPolicies, networking *mesh_proto.Dataplane_Networking, domains []xds_types.VIPDomains) []RuleAttachment {
 	domainsByAddress := map[string][]string{}
 	for _, d := range domains {
 		domainsByAddress[d.Address] = append(domainsByAddress[d.Address], d.Domains...)
