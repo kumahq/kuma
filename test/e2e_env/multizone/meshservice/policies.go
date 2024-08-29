@@ -46,6 +46,11 @@ func MeshServiceTargeting() {
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
 			)).
+			Install(testserver.Install(
+				testserver.WithName("kumaioservice-targeted-test-server"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator
@@ -101,9 +106,9 @@ spec:
         kind: MeshService
         name: test-server
         sectionName: main
-      rules: 
+      rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /prefix
           default:
@@ -124,6 +129,50 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Received.Path).To(Equal("/hello/world"))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should configure URLRewrite if targeted to kuma.io/service", func() {
+		// when
+		Expect(YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-to-kumaio-meshservice
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: kumaioservice-targeted-test-server_%s_svc_80
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /prefix
+          default:
+            filters:
+              - type: URLRewrite
+                urlRewrite:
+                  path:
+                    type: ReplacePrefixMatch
+                    replacePrefixMatch: /hello/old/
+`, namespace, meshName, namespace))(multizone.KubeZone1)).To(Succeed())
+		// then receive redirect response
+		Eventually(func(g Gomega) {
+			resp, err := client.CollectEchoResponse(
+				multizone.KubeZone1,
+				"test-client",
+				fmt.Sprintf("%s/prefix/world", addressToMeshService("kumaioservice-targeted-test-server")),
+				client.FromKubernetesPod(namespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(resp.Received.Path).To(Equal("/hello/old/world"))
 		}, "30s", "1s").Should(Succeed())
 	})
 
@@ -159,7 +208,7 @@ spec:
       kind: MeshService
       name: test-server
       sectionName: main
-    rules: 
+    rules:
     - default:
         backendRefs:
         - kind: MeshService
