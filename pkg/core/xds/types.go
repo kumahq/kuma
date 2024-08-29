@@ -258,11 +258,6 @@ type ZoneIngressProxy struct {
 	MeshResourceList    []*MeshIngressResources
 }
 
-//type VIPDomains struct {
-//	Address string
-//	Domains []string
-//}
-
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
