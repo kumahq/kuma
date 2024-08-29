@@ -1,0 +1,38 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: 19000
+    kuma.io/application-probe-proxy-port: "8662"
+spec:
+  containers:
+    - readinessProbe:
+        httpGet:
+          httpHeaders:
+            - name: X-Kuma-Probes-Timeout
+              value: "8"
+          path: /3001/metrics
+          port: 8662
+          scheme: HTTP
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        successThreshold: 1
+        timeoutSeconds: 8
+      livenessProbe:
+        httpGet:
+          path: /tcp/8081
+          port: 8662
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      startupProbe:
+        httpGet:
+          path: /grpc/8081
+          port: 8662
+        initialDelaySeconds: 3
+        periodSeconds: 3
+status:
+  podIP: 192.168.0.1
