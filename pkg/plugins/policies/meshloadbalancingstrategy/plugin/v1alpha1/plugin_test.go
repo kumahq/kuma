@@ -15,6 +15,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
@@ -125,7 +126,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						mesh_proto.ZoneTag:    "zone-1",
 					}).
 					Build(),
-				Outbounds: core_xds.Outbounds{
+				Outbounds: xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -428,7 +429,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							"k8s.io/region":       "test",
 						}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -610,7 +611,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -794,7 +795,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -924,7 +925,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -1106,7 +1107,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",

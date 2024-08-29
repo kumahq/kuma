@@ -3887,11 +3887,20 @@ spec:
                 description: MeshServices is a list of matched MeshServices
                 items:
                   properties:
+                    mesh:
+                      type: string
                     name:
                       description: Name is a core name of MeshService
                       type: string
+                    namespace:
+                      type: string
+                    zone:
+                      type: string
                   required:
+                  - mesh
                   - name
+                  - namespace
+                  - zone
                   type: object
                 type: array
               vips:

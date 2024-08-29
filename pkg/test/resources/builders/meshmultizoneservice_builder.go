@@ -50,9 +50,12 @@ func (m *MeshMultiZoneServiceBuilder) WithServiceLabelSelector(labels map[string
 	return m
 }
 
-func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(name string) *MeshMultiZoneServiceBuilder {
+func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(msID core_model.ResourceIdentifier) *MeshMultiZoneServiceBuilder {
 	m.res.Status.MeshServices = append(m.res.Status.MeshServices, meshmzservice_api.MatchedMeshService{
-		Name: name,
+		Name:      msID.Name,
+		Namespace: msID.Namespace,
+		Zone:      msID.Zone,
+		Mesh:      msID.Mesh,
 	})
 	return m
 }

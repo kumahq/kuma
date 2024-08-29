@@ -12,6 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -157,7 +158,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Meta: meta,
 			},
-			VIPDomains: []model.VIPDomains{
+			VIPDomains: []xds_types.VIPDomains{
 				{
 					Address: "240.0.0.3",
 					Domains: []string{"backend"},

@@ -8,6 +8,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -100,10 +101,10 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds core_xds.Outbounds,
+	outbounds xds_types.Outbounds,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds.Filter(core_xds.NonBackendRefFilter),
+		outbounds,
 		outboundSplitClusters,
 		outboundClusters,
 	)

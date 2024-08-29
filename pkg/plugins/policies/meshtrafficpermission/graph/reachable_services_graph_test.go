@@ -7,10 +7,10 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
 	graph_services "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/services"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -37,7 +37,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			// when
 			g := graph.NewGraph(
 				graph_services.BuildRules(services, given.mtps),
-				map[backends.BackendKey]rules.Rules{},
+				map[model.TypedResourceIdentifier]rules.Rules{},
 			)
 
 			// then
@@ -214,7 +214,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		// when
 		g := graph.NewGraph(
 			graph_services.BuildRules(services, mtps),
-			map[backends.BackendKey]rules.Rules{},
+			map[model.TypedResourceIdentifier]rules.Rules{},
 		)
 
 		// then
@@ -242,7 +242,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		// when
 		g := graph.NewGraph(
 			graph_services.BuildRules(services, mtps),
-			map[backends.BackendKey]rules.Rules{},
+			map[model.TypedResourceIdentifier]rules.Rules{},
 		)
 
 		// then
@@ -264,7 +264,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		// when
 		g := graph.NewGraph(
 			graph_services.BuildRules(nil, nil),
-			map[backends.BackendKey]rules.Rules{},
+			map[model.TypedResourceIdentifier]rules.Rules{},
 		)
 
 		// then
@@ -296,7 +296,7 @@ var _ = Describe("Reachable Services Graph", func() {
 			// when
 			g := graph.NewGraph(
 				graph_services.BuildRules(services, mtps),
-				map[backends.BackendKey]rules.Rules{},
+				map[model.TypedResourceIdentifier]rules.Rules{},
 			)
 
 			// then

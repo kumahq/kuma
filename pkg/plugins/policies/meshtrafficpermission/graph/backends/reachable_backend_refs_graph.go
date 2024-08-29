@@ -3,7 +3,6 @@ package backends
 import (
 	"golang.org/x/exp/maps"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -15,13 +14,8 @@ import (
 
 var log = core.Log.WithName("rms-graph")
 
-type BackendKey struct {
-	Kind string
-	Name string
-}
-
-func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[BackendKey]core_rules.Rules {
-	rules := map[BackendKey]core_rules.Rules{}
+func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[core_model.TypedResourceIdentifier]core_rules.Rules {
+	rules := map[core_model.TypedResourceIdentifier]core_rules.Rules{}
 	for _, ms := range meshServices {
 		dpTags := maps.Clone(ms.Spec.Selector.DataplaneTags)
 		if origin, ok := core_model.ResourceOrigin(ms.GetMeta()); ok {
@@ -38,10 +32,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 		if !ok {
 			continue
 		}
-		rules[BackendKey{
-			Kind: string(common_api.MeshService),
-			Name: ms.Meta.GetName(),
-		}] = rl
+		rules[core_model.NewTypedResourceIdentifier(ms)] = rl
 	}
 	return rules
 }

@@ -1,7 +1,6 @@
 package rules
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -30,6 +29,23 @@ type ResourceRule struct {
 	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
 	// then key is an empty string "".
 	BackendRefOriginIndex BackendRefOriginIndex
+}
+
+func (r *ResourceRule) GetBackendRefOrigin(hash MatchesHash) (core_model.ResourceMeta, bool) {
+	if r == nil {
+		return nil, false
+	}
+	if r.BackendRefOriginIndex == nil {
+		return nil, false
+	}
+	index, ok := r.BackendRefOriginIndex[hash]
+	if !ok {
+		return nil, false
+	}
+	if index >= len(r.Origin) {
+		return nil, false
+	}
+	return r.Origin[index].Resource, true
 }
 
 type BackendRefOriginIndex map[MatchesHash]int
@@ -64,32 +80,9 @@ type Origin struct {
 	RuleIndex int
 }
 
-type UniqueResourceIdentifier struct {
-	core_model.ResourceIdentifier
+type ResourceRules map[core_model.TypedResourceIdentifier]ResourceRule
 
-	ResourceType core_model.ResourceType
-	SectionName  string
-}
-
-func (ri UniqueResourceIdentifier) MarshalText() ([]byte, error) {
-	return []byte(ri.String()), nil
-}
-
-func (ri UniqueResourceIdentifier) String() string {
-	var pairs []string
-	if ri.ResourceType != "" {
-		pairs = append(pairs, strings.ToLower(string(ri.ResourceType)))
-	}
-	pairs = append(pairs, ri.ResourceIdentifier.String())
-	if ri.SectionName != "" {
-		pairs = append(pairs, fmt.Sprintf("section/%s", ri.SectionName))
-	}
-	return strings.Join(pairs, ":")
-}
-
-type ResourceRules map[UniqueResourceIdentifier]ResourceRule
-
-func (rr ResourceRules) Compute(uri UniqueResourceIdentifier, reader ResourceReader) *ResourceRule {
+func (rr ResourceRules) Compute(uri core_model.TypedResourceIdentifier, reader ResourceReader) *ResourceRule {
 	if rule, ok := rr[uri]; ok {
 		return &rule
 	}
@@ -159,8 +152,8 @@ func BuildResourceRules(list []PolicyItemWithMeta, reader ResourceReader) (Resou
 	return rules, nil
 }
 
-func indexResources(ri []*resolvedPolicyItem) map[UniqueResourceIdentifier]core_model.Resource {
-	index := map[UniqueResourceIdentifier]core_model.Resource{}
+func indexResources(ri []*resolvedPolicyItem) map[core_model.TypedResourceIdentifier]core_model.Resource {
+	index := map[core_model.TypedResourceIdentifier]core_model.Resource{}
 	for _, i := range ri {
 		index[UniqueKey(i.resource, i.sectionName())] = i.resource
 	}
@@ -203,8 +196,8 @@ func origins(items []PolicyItemWithMeta, withRuleIndex bool) ([]Origin, BackendR
 	return rv, originIndex
 }
 
-func UniqueKey(r core_model.Resource, sectionName string) UniqueResourceIdentifier {
-	return UniqueResourceIdentifier{
+func UniqueKey(r core_model.Resource, sectionName string) core_model.TypedResourceIdentifier {
+	return core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.NewResourceIdentifier(r),
 		ResourceType:       r.Descriptor().Name,
 		SectionName:        sectionName,

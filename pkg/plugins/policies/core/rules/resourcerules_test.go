@@ -245,7 +245,7 @@ var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
@@ -254,7 +254,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -273,11 +273,11 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       mesh.MeshType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
 			}: {Conf: []interface{}{"conf-2"}},
@@ -292,7 +292,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "frontend",
 					Mesh: "mesh-1",
@@ -311,11 +311,11 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshMultiZoneService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       mesh.MeshType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
 			}: {Conf: []interface{}{"conf-2"}},
@@ -330,7 +330,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "multi-backend",
 					Mesh: "mesh-1",
@@ -349,11 +349,11 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService with section", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 				SectionName:        "http-port",
@@ -369,7 +369,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -388,11 +388,11 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService rule if MeshService with section is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 				SectionName:        "http-port",
@@ -408,7 +408,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -431,7 +431,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",

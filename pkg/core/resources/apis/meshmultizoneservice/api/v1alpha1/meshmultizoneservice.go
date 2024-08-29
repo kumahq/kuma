@@ -41,5 +41,8 @@ type MeshMultiZoneServiceStatus struct {
 
 type MatchedMeshService struct {
 	// Name is a core name of MeshService
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Zone      string `json:"zone"`
+	Mesh      string `json:"mesh"`
 }

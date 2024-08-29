@@ -212,9 +212,9 @@ spec:
     - default:
         backendRefs:
         - kind: MeshService
-          name: second-test-server.%s
+          name: second-test-server
           port: 80
-`, namespace, meshName, namespace))(multizone.KubeZone1)).To(Succeed())
+`, namespace, meshName))(multizone.KubeZone1)).To(Succeed())
 
 		// then
 		// should route to second MeshService
