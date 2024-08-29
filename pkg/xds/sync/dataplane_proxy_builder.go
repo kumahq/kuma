@@ -2,12 +2,10 @@ package sync
 
 import (
 	"context"
-	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
 
-	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -17,7 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -113,29 +110,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 
 func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) []*xds_types.Outbound {
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
-		newOutbounds := []*xds_types.Outbound{}
-		for _, o := range dataplane.Spec.Networking.Outbound {
-			if o.BackendRef != nil {
-				newOutbounds = append(newOutbounds, &xds_types.Outbound{
-					Address: o.Address,
-					Port:    o.Port,
-					Resource: &core_model.TypedResourceIdentifier{
-						ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
-							dataplane.GetMeta(),
-							common_api.TargetRef{
-								Kind:        common_api.MeshService,
-								Name:        o.BackendRef.Name,
-								SectionName: fmt.Sprintf("%d", o.BackendRef.Port),
-								// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
-							}),
-						ResourceType: meshservice_api.MeshServiceType,
-					},
-				})
-			} else {
-				newOutbounds = append(newOutbounds, &xds_types.Outbound{LegacyOutbound: o})
-			}
-		}
-		return newOutbounds
+		return dataplane.AsOutbounds()
 	}
 	reachableServices := map[string]bool{}
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
