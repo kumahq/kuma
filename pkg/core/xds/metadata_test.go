@@ -47,6 +47,11 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "9300",
 						},
 					},
+					"dataplane.appProbeProxy.enabled": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "true",
+						},
+					},
 					"systemCaPath": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "/etc/certs/cert.pem",
@@ -55,10 +60,11 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
-				AdminPort:     1234,
-				DNSPort:       8000,
-				SystemCaPath:  "/etc/certs/cert.pem",
-				ReadinessPort: 9300,
+				AdminPort:            1234,
+				DNSPort:              8000,
+				SystemCaPath:         "/etc/certs/cert.pem",
+				ReadinessPort:        9300,
+				AppProbeProxyEnabled: true,
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{

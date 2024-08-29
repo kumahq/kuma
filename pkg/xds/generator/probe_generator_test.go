@@ -20,8 +20,9 @@ import (
 
 var _ = Describe("ProbeGenerator", func() {
 	type testCase struct {
-		dataplane string
-		expected  string
+		dataplane            string
+		expected             string
+		appProbeProxyEnabled bool
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -37,6 +38,9 @@ var _ = Describe("ProbeGenerator", func() {
 						Version: "1",
 					},
 					Spec: dataplane,
+				},
+				Metadata: &core_xds.DataplaneMetadata{
+					AppProbeProxyEnabled: given.appProbeProxyEnabled,
 				},
 				APIVersion: envoy_common.APIV3,
 			}
@@ -103,6 +107,21 @@ var _ = Describe("ProbeGenerator", func() {
                 path: /8080/healthz/probe?param1=value1&param2=value2
 `,
 			expected: "04.envoy.golden.yaml",
+		}),
+		Entry("skip probes listener with application probe proxy enabled ", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe
+                path: /8080/healthz/probe
+`,
+			appProbeProxyEnabled: true,
+			expected:             "05.envoy.golden.yaml",
 		}),
 	)
 })
