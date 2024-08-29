@@ -2,8 +2,13 @@ package rules
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
+
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -239,12 +244,16 @@ func isRelevant(policyItem *resolvedPolicyItem, r core_model.Resource, sectionNa
 }
 
 type resolvedPolicyItem struct {
-	item     PolicyItemWithMeta
-	resource core_model.Resource
+	item                PolicyItemWithMeta
+	resource            core_model.Resource
+	implicitSectionName string
 }
 
 func (r *resolvedPolicyItem) sectionName() string {
-	return r.item.PolicyItem.GetTargetRef().SectionName
+	if refSectionName := r.item.PolicyItem.GetTargetRef().SectionName; refSectionName != "" {
+		return refSectionName
+	}
+	return r.implicitSectionName
 }
 
 func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolvedPolicyItem {
@@ -254,13 +263,36 @@ func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolve
 	rtype := core_model.ResourceType(item.GetTargetRef().Kind)
 	list := reader.ListOrEmpty(rtype).GetItems()
 
-	if len(item.GetTargetRef().Labels) > 0 {
+	var implicitPort uint32
+	implicitLabels := map[string]string{}
+	if item.GetTargetRef().Kind == common_api.MeshService && item.GetTargetRef().SectionName == "" {
+		if name, namespace, port, err := parseService(item.GetTargetRef().Name); err == nil {
+			implicitLabels[mesh_proto.KubeNamespaceTag] = namespace
+			implicitLabels[mesh_proto.DisplayName] = name
+			implicitPort = port
+		}
+	}
+
+	labels := item.GetTargetRef().Labels
+	if len(implicitLabels) > 0 {
+		labels = implicitLabels
+	}
+
+	if len(labels) > 0 {
 		var rv []*resolvedPolicyItem
-		trLabels := NewSubset(item.GetTargetRef().Labels)
+		trLabels := NewSubset(labels)
 		for _, r := range list {
 			rLabels := NewSubset(r.GetMeta().GetLabels())
+			var implicitSectionName string
+			if ms, ok := r.(*meshservice_api.MeshServiceResource); ok && implicitPort != 0 {
+				for _, port := range ms.Spec.Ports {
+					if port.Port == implicitPort {
+						implicitSectionName = port.Name
+					}
+				}
+			}
 			if trLabels.IsSubset(rLabels) {
-				rv = append(rv, &resolvedPolicyItem{resource: r, item: item})
+				rv = append(rv, &resolvedPolicyItem{resource: r, item: item, implicitSectionName: implicitSectionName})
 			}
 		}
 		return rv
@@ -272,4 +304,28 @@ func resolveTargetRef(item PolicyItemWithMeta, reader ResourceReader) []*resolve
 	}
 
 	return nil
+}
+
+func parseService(host string) (string, string, uint32, error) {
+	// split host into <name>_<namespace>_svc_<port>
+	segments := strings.Split(host, "_")
+
+	var port uint32
+	switch len(segments) {
+	case 4:
+		p, err := strconv.ParseInt(segments[3], 10, 32)
+		if err != nil {
+			return "", "", 0, err
+		}
+		port = uint32(p)
+	case 3:
+		// service less service names have no port, so we just put the reserved
+		// one here to note that this service is actually
+		port = mesh_proto.TCPPortReserved
+	default:
+		return "", "", 0, errors.Errorf("service tag in unexpected format")
+	}
+
+	name, namespace := segments[0], segments[1]
+	return name, namespace, port, nil
 }
