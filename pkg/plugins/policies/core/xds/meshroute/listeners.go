@@ -260,6 +260,12 @@ func makeSplit(
 			clusterName = envoy_names.GetMeshExternalServiceName(ref.LegacyBackendRef.Name) // todo shouldn't this be in destination name?
 		case common_api.MeshMultiZoneService:
 			clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
+		case common_api.MeshService:
+			if ref.LegacyBackendRef.Port != nil {
+				clusterName = meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
+				break
+			}
+			fallthrough
 		default:
 			clusterName, _ = envoy_tags.Tags(ref.LegacyBackendRef.Tags).
 				WithTags(mesh_proto.ServiceTag, service).

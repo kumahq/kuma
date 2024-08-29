@@ -195,12 +195,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 		}()),
 		Entry("default-meshservice", func() outboundsTestCase {
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
+				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "app", "backend")).
-				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
+				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.5").
 					WithPort(8084).
 					WithWeight(1).
@@ -698,7 +698,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
+				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).

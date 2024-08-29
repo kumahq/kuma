@@ -128,7 +128,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -136,7 +136,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -184,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@5c685ec0bc8d18f9faa540cb66837c326176c541 # v2.4.1
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
