@@ -100,6 +100,13 @@ func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters, insert: true}
 }
 
+// NewConditionalInsertOrAppendRule creates a new RuleBuilder for an iptables rule
+// that will either be appended to the end of an existing chain or inserted at a
+// specific position based on the given `insert` argument
+func NewConditionalInsertOrAppendRule(insert bool, parameters ...*parameters.Parameter) *RuleBuilder {
+	return &RuleBuilder{parameters: parameters, insert: insert}
+}
+
 // BuildForRestore generates an iptables rule formatted for use with
 // `iptables-restore`.
 //

@@ -226,14 +226,15 @@ type Exclusion struct {
 
 // TrafficFlow is a struct for Inbound/Outbound configuration
 type TrafficFlow struct {
-	Enabled             bool     `json:"enabled"`                                                          // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_ENABLED, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_ENABLED
-	Port                Port     `json:"port"`                                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_PORT, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_PORT
-	ChainName           string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_CHAIN_NAME
-	RedirectChainName   string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_REDIRECT_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_REDIRECT_CHAIN_NAME
-	IncludePorts        Ports    `json:"includePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INCLUDE_PORTS
-	ExcludePorts        Ports    `json:"excludePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS
-	ExcludePortsForUIDs []string `json:"excludePortsForUIDs,omitempty" envconfig:"exclude_ports_for_uids"` // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_UIDS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_UIDS
-	ExcludePortsForIPs  []string `json:"excludePortsForIPs,omitempty" envconfig:"exclude_ports_for_ips"`   // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_IPS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_IPS
+	Enabled                       bool     `json:"enabled"`                                                          // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_ENABLED, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_ENABLED
+	Port                          Port     `json:"port"`                                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_PORT, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_PORT
+	ChainName                     string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_CHAIN_NAME
+	RedirectChainName             string   `json:"-" split_words:"true"`                                             // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_REDIRECT_CHAIN_NAME, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_REDIRECT_CHAIN_NAME
+	IncludePorts                  Ports    `json:"includePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INCLUDE_PORTS
+	ExcludePorts                  Ports    `json:"excludePorts,omitempty" split_words:"true"`                        // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS
+	ExcludePortsForUIDs           []string `json:"excludePortsForUIDs,omitempty" envconfig:"exclude_ports_for_uids"` // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_UIDS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_UIDS
+	ExcludePortsForIPs            []string `json:"excludePortsForIPs,omitempty" envconfig:"exclude_ports_for_ips"`   // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_EXCLUDE_PORTS_FOR_IPS, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_EXCLUDE_PORTS_FOR_IPS
+	InsertRedirectInsteadOfAppend bool     `json:"insertRedirectInsteadOfAppend,omitempty" split_words:"true"`       // KUMA_TRANSPARENT_PROXY_REDIRECT_INBOUND_INSERT_REDIRECT_INSTEAD_OF_APPEND, KUMA_TRANSPARENT_PROXY_REDIRECT_OUTBOUND_INSERT_REDIRECT_INSTEAD_OF_APPEND
 }
 
 func (c TrafficFlow) Initialize(

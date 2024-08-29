@@ -268,6 +268,25 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Inbound.ExcludePortsForIPs, "exclude-inbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy inbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 	cmd.Flags().StringArrayVar(&cfg.Redirect.Outbound.ExcludePortsForIPs, "exclude-outbound-ips", []string{}, "specify IP addresses (IPv4 or IPv6, with or without CIDR notation) to be excluded from transparent proxy outbound redirection. Examples: '10.0.0.1', '192.168.0.0/24', 'fe80::1', 'fd00::/8'. This flag can be specified multiple times or with multiple addresses separated by commas to exclude multiple IP addresses or ranges.")
 
+	cmd.Flags().BoolVar(
+		&cfg.Redirect.Inbound.InsertRedirectInsteadOfAppend,
+		"redirect-inbound-insert-instead-of-append",
+		cfg.Redirect.Inbound.InsertRedirectInsteadOfAppend,
+		fmt.Sprintf(
+			"for inbound traffic, by default, the last applied iptables rule in the 'PREROUTING' chain of the 'nat' table redirects traffic to our custom chain ('%s') for handling transparent proxying. If there is an existing rule in this chain that redirects traffic to another chain, our default behavior of appending the rule would cause it to be added after the existing one, making our rule ineffective. Specifying this flag changes the behavior to insert the rule at the beginning of the chain, ensuring our rule takes precedence. Note that if the '--vnet' flag is also specified, the default behavior is already to insert the rule, so using this flag will not change that behavior",
+			fmt.Sprintf("%s_%s", cfg.Redirect.NamePrefix, cfg.Redirect.Inbound.ChainName),
+		),
+	)
+	cmd.Flags().BoolVar(
+		&cfg.Redirect.Outbound.InsertRedirectInsteadOfAppend,
+		"redirect-outbound-insert-instead-of-append",
+		cfg.Redirect.Outbound.InsertRedirectInsteadOfAppend,
+		fmt.Sprintf(
+			"for outbound traffic, by default, the last applied iptables rule in the 'OUTPUT' chain of the 'nat' table redirects traffic to our custom chain ('%s'), where it is processed for transparent proxying. However, if there is an existing rule in this chain that already redirects traffic to another chain, our default behavior of appending the rule will cause our rule to be added after the existing one, effectively ignoring it. When this flag is specified, it changes the behavior from appending to inserting the rule at the beginning of the chain, ensuring that our iptables rule takes precedence",
+			fmt.Sprintf("%s_%s", cfg.Redirect.NamePrefix, cfg.Redirect.Outbound.ChainName),
+		),
+	)
+
 	cmd.Flags().StringVar(&configValue, flagTransparentProxyConfig, configValue, "transparent proxy configuration provided in YAML or JSON format")
 	cmd.Flags().StringVar(&configFile, flagTransparentProxyConfigFile, configFile, "path to the file containing the transparent proxy configuration in YAML or JSON format")
 
