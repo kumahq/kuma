@@ -17,7 +17,7 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           normalizePath: true
           routeConfig:
-            name: outbound:backend_svc_80
+            name: outbound:backend_msvc_80
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -26,7 +26,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: backend_svc_80
+              name: backend_msvc_80
               routes:
               - match:
                   path: /v1
@@ -68,21 +68,21 @@ resources:
                   path: /v4
                 name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
                 route:
-                  cluster: backend_svc_80
+                  cluster: backend_msvc_80
                   timeout: 0s
               - match:
                   prefix: /v4/
                 name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
                 route:
-                  cluster: backend_svc_80
+                  cluster: backend_msvc_80
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: backend_svc_80
+                  cluster: backend_msvc_80
                   timeout: 0s
-          statPrefix: backend_svc_80
+          statPrefix: backend_msvc_80
     metadata:
       filterMetadata:
         io.kuma.tags: {}

@@ -5,9 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -1206,7 +1206,7 @@ var _ = Describe("TrafficRoute", func() {
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
 										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
-										Port:        8080,
+										Port:        80,
 										ServicePort: 18080,
 									},
 									{
@@ -1220,73 +1220,36 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 				meshServices: []*meshservice_api.MeshServiceResource{
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "kong.kong-system",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneTags: map[string]string{
-									"app": "kong",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:        80,
-									TargetPort:  intstr.FromInt(8080),
-									AppProtocol: "http",
-								},
-								{
-									Port:        8081,
-									TargetPort:  intstr.FromInt(8081),
-									AppProtocol: "http",
-								},
-							},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "redis",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneTags: map[string]string{
-									mesh_proto.ServiceTag: "redis_svc_6379",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:       6379,
-									TargetPort: intstr.FromInt(6379),
-								},
-							},
-						},
-					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "redis-0",
-						},
-						Spec: &meshservice_api.MeshService{
-							Selector: meshservice_api.Selector{
-								DataplaneRef: &meshservice_api.DataplaneRef{
-									Name: "redis-0",
-								},
-							},
-							Ports: []meshservice_api.Port{
-								{
-									Port:       6379,
-									TargetPort: intstr.FromInt(6379),
-								},
-							},
-						},
-					},
+					builders.MeshService().
+						WithName("kong.kong-system").
+						WithDataplaneTagsSelectorKV("app", "kong").
+						AddIntPort(8080, 80, "http").
+						AddIntPort(8081, 8001, "http").
+						Build(),
+					builders.MeshService().
+						WithName("redis").
+						WithDataplaneTagsSelectorKV(mesh_proto.ServiceTag, "redis_svc_6379").
+						AddIntPort(6379, 6379, "tcp").
+						Build(),
+					builders.MeshService().
+						WithName("redis-0").
+						WithDataplaneRefNameSelector("redis-0").
+						AddIntPort(6379, 6379, "tcp").
+						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
 					"redis_svc_6379": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.100",
+							Port:   12345,
+							Tags: map[string]string{
+								"kuma.io/service": "redis_svc_6379",
+								"version":         "v1",
+							},
+							Weight:   1,
+							Locality: nil,
+						},
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -1295,7 +1258,16 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"redis-0_svc_6379": []core_xds.Endpoint{
+					"redis_msvc_6379": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.1",
+							Port:     6379,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "redis_svc_6379", "version": "v1"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"redis-0_msvc_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -1307,13 +1279,31 @@ var _ = Describe("TrafficRoute", func() {
 					"kong_kong-system_svc_80": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
-							Port:     8080,
+							Port:     80,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_msvc_8080": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     80,
 							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
 							Locality: nil,
 							Weight:   1,
 						},
 					},
 					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:   "192.168.0.2",
+							Port:     8001,
+							Tags:     map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_8001", "app": "kong"},
+							Locality: nil,
+							Weight:   1,
+						},
+					},
+					"kong_kong-system_msvc_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
@@ -1345,9 +1335,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
@@ -1512,9 +1502,9 @@ var _ = Describe("TrafficRoute", func() {
 							},
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
-								Version: &meshexternalservice_api.Version{
-									Min: pointer.To(meshexternalservice_api.TLSVersion12),
-									Max: pointer.To(meshexternalservice_api.TLSVersion13),
+								Version: &common_tls.Version{
+									Min: pointer.To(common_tls.TLSVersion12),
+									Max: pointer.To(common_tls.TLSVersion13),
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
@@ -1580,7 +1570,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"backend_svc_80": []core_xds.Endpoint{
+					"backend_msvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -1590,12 +1580,12 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"backend-4v44xv7dwv4v8z2d_svc_80": []core_xds.Endpoint{
+					"backend-4v44xv7dwv4v8z2d_msvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_svc_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_msvc_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
@@ -1615,7 +1605,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_svc_80",
+								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_msvc_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,

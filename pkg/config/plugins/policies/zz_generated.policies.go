@@ -17,6 +17,7 @@ var DefaultEnabled = []string{
 	"meshretries",
 	"meshtcproutes",
 	"meshtimeouts",
+	"meshtlses",
 	"meshtraces",
 	"meshtrafficpermissions",
 }

@@ -17,6 +17,7 @@ var SupportedTags = map[string]struct{}{
 	mesh_proto.KubeNamespaceTag: {},
 	mesh_proto.KubeServiceTag:   {},
 	mesh_proto.KubePortTag:      {},
+	mesh_proto.ServiceTag:       {},
 }
 
 // BuildServices we could just take result of xds_topology.VIPOutbounds, however it does not have a context of additional tags

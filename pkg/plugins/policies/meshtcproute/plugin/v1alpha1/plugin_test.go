@@ -73,6 +73,14 @@ var _ = Describe("MeshTCPRoute", func() {
 		SectionName:  "",
 	}
 
+	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name: "example",
+			Mesh: "default",
+		},
+		ResourceType: "MeshExternalService",
+	}
+
 	type policiesTestCase struct {
 		dataplane      *core_mesh.DataplaneResource
 		resources      xds_context.Resources
@@ -379,7 +387,101 @@ var _ = Describe("MeshTCPRoute", func() {
 			}
 
 			dp, proxy := dppForMeshExternalService()
-			mc := meshContextForMeshExternalService(dp, meshExtSvc)
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextForMeshExternalService(dp.Build(), &meshExtSvc, egress)
+
+			return outboundsTestCase{
+				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
+				proxy:      proxy,
+			}
+		}()),
+		Entry("tcproute-meshexternalservice", func() outboundsTestCase {
+			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Port:     9090,
+						Protocol: meshexternalservice_api.TcpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+						{
+							Address: "192.168.1.1",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled: true,
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+			meshExtSvc2 := meshexternalservice_api.MeshExternalServiceResource{
+				Meta: &test_model.ResourceMeta{Name: "example2", Mesh: "default"},
+				Spec: &meshexternalservice_api.MeshExternalService{
+					Match: meshexternalservice_api.Match{
+						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Port:     9090,
+						Protocol: meshexternalservice_api.TcpProtocol,
+					},
+					Endpoints: []meshexternalservice_api.Endpoint{
+						{
+							Address: "example.com",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+						{
+							Address: "192.168.1.1",
+							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+						},
+					},
+					Tls: &meshexternalservice_api.Tls{
+						Enabled: true,
+					},
+				},
+				Status: &meshexternalservice_api.MeshExternalServiceStatus{
+					VIP: meshexternalservice_api.VIP{
+						IP: "10.20.20.1",
+					},
+				},
+			}
+
+			dp, proxy := dppForMeshExternalService()
+			egress := builders.ZoneEgress().WithPort(10002).Build()
+			mc := meshContextForMeshExternalService(egress, &meshExtSvc, &meshExtSvc2, dp.Build())
+
+			proxy.Policies = core_xds.MatchedPolicies{
+				Dynamic: core_xds.PluginOriginatedPolicies{},
+			}
+			proxy.Policies.Dynamic[api.MeshTCPRouteType] = core_xds.TypedMatchingPolicies{
+				Type: api.MeshTCPRouteType,
+				ToRules: core_rules.ToRules{
+					ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+						backendMeshExternalServiceIdentifier: {
+							Conf: []interface{}{
+								api.Rule{
+									Default: api.RuleConf{
+										BackendRefs: []common_api.BackendRef{
+											{
+												TargetRef: builders.TargetRefMeshExternalService("example2"),
+												Weight:    pointer.To(uint(100)),
+												Port:      pointer.To(uint32(80)),
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			}
 
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithMeshContext(mc).Build(),
@@ -471,7 +573,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_svc_80", xds_builders.Endpoint().
+				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
@@ -1059,20 +1161,16 @@ rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
 -----END CERTIFICATE-----
 `
 
-func meshContextForMeshExternalService(dp *builders.DataplaneBuilder, meshExtSvc meshexternalservice_api.MeshExternalServiceResource) *xds_context.MeshContext {
+func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
 	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
 	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
-	err = resourceStore.Create(context.Background(), dp.Build(), store.CreateByKey("dp", "default"))
-	Expect(err).ToNot(HaveOccurred())
-
-	err = resourceStore.Create(context.Background(), builders.ZoneEgress().WithPort(10002).Build(), store.CreateByKey("zone-egress", core_model.NoMesh))
-	Expect(err).ToNot(HaveOccurred())
-
-	err = resourceStore.Create(context.Background(), &meshExtSvc, store.CreateByKey("example", "default"))
-	Expect(err).ToNot(HaveOccurred())
+	for _, res := range resources {
+		err = resourceStore.Create(context.Background(), res, store.CreateByKey(res.GetMeta().GetName(), res.GetMeta().GetMesh()))
+		Expect(err).ToNot(HaveOccurred())
+	}
 
 	lookupIPFunc := func(s string) ([]net.IP, error) {
 		return []net.IP{net.ParseIP(s)}, nil
