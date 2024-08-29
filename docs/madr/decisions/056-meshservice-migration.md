@@ -92,6 +92,18 @@ set a canonical name for every port assuming one isn't set.
 Because the `port` field must be unique anyway, this could be a suitable,
 automatic `name`.
 
+#### Do not apply _routes_ targeted at `kuma.io/service` to corresponding `MeshServices`
+
+An issue arises with `MeshHTTPRoute`/`MeshTCPRoute` because these contain,
+inside each `spec.to[].rules` list, further references to `kuma.io/service` and
+`MeshService`. Because the behavior of routes is fundamentally linked to the the
+endpoint selection, which `MeshService` changes, it's important in any case that
+every route resource is examined for correctness when migrating to
+`MeshService`.
+
+For this reason, `MeshHTTPRoutes` and `MeshTCPRoutes` will **not** be targetted
+to corresponding real `MeshService` objects when they target `kuma.io/service`.
+
 ### Stats
 
 For the Kuma API it's important that we can derive the destination that corresponds
@@ -165,6 +177,7 @@ the listener for the ClusterIP.
 
 - Policies applied to `demo-app_kuma-demo_svc_5000` should also apply to
   the `MeshService `{name: demo-app, namespace: kuma-demo, spec.ports[port == 5000]}`.
+  - **except** for `MeshHTTPRoute`/`MeshTCPRoute`
   - in order to target `MeshService` only, `sectionName` must be set
   - For `MeshLoadBalancingStrategy`, only the `localZone` portion applies
 - When the feature is enabled, generate new clusters for `MeshServices`
@@ -174,20 +187,27 @@ the listener for the ClusterIP.
 ### Migration
 
 1. Upgrade to new version
-  - If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
-  - On `Mesh`, users have the option `meshServices` with `Disabled` being the
-    default value
+
+- If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
+- On `Mesh`, users have the option `meshServices` with `Disabled` being the
+  default value
+
 2. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
    depending on whether they need cross-zone
+
+   - requires updating `MeshHTTPRoute`/`MeshTCPRoute`
+
 3. Users can enable behavior by setting
-    - `meshServices: Everywhere` syncs `MeshService` outbounds to all data plane proxies
-    - `meshServices: ReachableBackendRefs` to enable on a case-by-case basis by setting
-       `reachableBackendRefs`:
-          `reachableBackendRefs: { kind: MeshService, labels: {} }`
-  - **NOTE**: On k8s if the consumer can reach a given local `MeshService`,
-    the Kubernetes IP has the behavior of `MeshService`
-  - **NOTE**: This change makes the *experimental* options `GENERATE_MESH_SERVICES` & `SKIP_PERSISTED_VIPS`
-    *obsolete*, these options *now do nothing*
+   - `meshServices: Everywhere` syncs `MeshService` outbounds to all data plane proxies
+   - `meshServices: ReachableBackendRefs` to enable on a case-by-case basis by setting
+     `reachableBackendRefs`:
+     `reachableBackendRefs: { kind: MeshService, labels: {} }`
+
+- **NOTE**: On k8s if the consumer can reach a given local `MeshService`,
+  the Kubernetes IP has the behavior of `MeshService`
+- **NOTE**: This change makes the _experimental_ options `GENERATE_MESH_SERVICES` & `SKIP_PERSISTED_VIPS`
+  _obsolete_, these options _now do nothing_
+
 4. Set `meshServices: Exclusive` to disable old behavior and config generation
 
 ## Pros and Cons of the Options
@@ -201,9 +221,11 @@ generation.
 
 1. Upgrade to new version
 1. Create MeshMultiZoneServices for cross-zone traffic.
-  - Potentially create MeshService manually to gradually switch over
+
+- Potentially create MeshService manually to gradually switch over
+
 1. Enable MeshService generation to have generate MeshServices
-  and have local zone traffic take over
+   and have local zone traffic take over
 
 #### Pros
 
@@ -322,18 +344,20 @@ or maybe it's OK to switch to local-zone load balancing:
 #### Migration
 
 1. Upgrade to new version
-  If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
+   If the user doesn't change any config, nothing changes. No `MeshServices` are generated.
 1. On `Mesh`, users have the option `meshServices`:
-  - `Disabled` is the default
-  - `Everywhere` syncs `MeshService` outbounds to all data plane proxies
-  - `Exclusive` disables `kuma.io/service` outbounds and enables `MeshService`
-  - `ReachableBackendRefs` to generate all `MeshServices` but sync
-    on a case-by-case basis by setting `reachableBackendRefs`:
-      ```
-      reachableBackendRefs: { kind: MeshService, labels: {} }
-      ```
-  1. On K8s: if the consumer can reach a given local `MeshService`,
-    the Kubernetes IP has the behavior of `MeshService`
+
+- `Disabled` is the default
+- `Everywhere` syncs `MeshService` outbounds to all data plane proxies
+- `Exclusive` disables `kuma.io/service` outbounds and enables `MeshService`
+- `ReachableBackendRefs` to generate all `MeshServices` but sync
+  on a case-by-case basis by setting `reachableBackendRefs`:
+  ```
+  reachableBackendRefs: { kind: MeshService, labels: {} }
+  ```
+
+1. On K8s: if the consumer can reach a given local `MeshService`,
+   the Kubernetes IP has the behavior of `MeshService`
 1. The user starts migrating to either `MeshService` or `MeshMultiZoneService`
    depending on whether they need cross-zone
 1. Disable old cluster/VIP generation
