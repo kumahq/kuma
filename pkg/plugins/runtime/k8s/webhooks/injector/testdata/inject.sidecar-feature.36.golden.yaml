@@ -13,6 +13,8 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: "9000"
     traffic.kuma.io/drop-invalid-packets: "true"
   creationTimestamp: null
   labels:
