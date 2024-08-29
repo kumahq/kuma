@@ -20,7 +20,7 @@ func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
 	return appProbeProxyPort == 0, nil
 }
 
-func SetupPodProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
+func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
@@ -166,10 +166,5 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	}
 
 	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
-	// with application probe proxy enabled, we don't need virtual probes
-	if annotations[metadata.KumaApplicationProbeProxyPortAnnotation] != "0" {
-		delete(annotations, metadata.KumaVirtualProbesAnnotation)
-		delete(annotations, metadata.KumaVirtualProbesPortAnnotation)
-	}
 	return nil
 }

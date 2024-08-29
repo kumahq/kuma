@@ -222,12 +222,13 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	if err != nil {
 		return err
 	}
-	if !disabledAppProbeProxy {
-		if err := probes.SetupPodProbeProxies(pod, log); err != nil {
+
+	if disabledAppProbeProxy {
+		if err := i.overrideHTTPProbes(pod); err != nil {
 			return err
 		}
 	} else {
-		if err := i.overrideHTTPProbes(pod); err != nil {
+		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
 			return err
 		}
 	}
