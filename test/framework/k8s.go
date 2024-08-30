@@ -114,7 +114,6 @@ func UpdateKubeObject(
 		}
 		return "", nil
 	})
-
 	if err != nil {
 		return errors.Wrapf(err, "failed to update %s object %q", typeName, objectName)
 	}
