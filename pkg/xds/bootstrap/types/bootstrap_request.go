@@ -13,6 +13,7 @@ type BootstrapRequest struct {
 	CaCert           string            `json:"caCert"`
 	DynamicMetadata  map[string]string `json:"dynamicMetadata"`
 	DNSPort          uint32            `json:"dnsPort,omitempty"`
+	ReadinessPort    uint32            `json:"readinessPort,omitempty"`
 	OperatingSystem  string            `json:"operatingSystem"`
 	Features         []string          `json:"features"`
 	Resources        ProxyResources    `json:"resources"`

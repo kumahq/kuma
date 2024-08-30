@@ -106,6 +106,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		},
 		DynamicMetadata: request.DynamicMetadata,
 		DNSPort:         request.DNSPort,
+		ReadinessPort:   request.ReadinessPort,
 		ProxyType:       request.ProxyType,
 		Features:        request.Features,
 		Resources:       request.Resources,

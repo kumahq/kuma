@@ -25,10 +25,11 @@ var DefaultConfig = func() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:      "",
-			Name:      "", // Dataplane name must be set explicitly
-			DrainTime: config_types.Duration{Duration: 30 * time.Second},
-			ProxyType: "dataplane",
+			Mesh:          "",
+			Name:          "", // Dataplane name must be set explicitly
+			DrainTime:     config_types.Duration{Duration: 30 * time.Second},
+			ProxyType:     "dataplane",
+			ReadinessPort: 9902,
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
@@ -132,6 +133,8 @@ type Dataplane struct {
 	ProxyType string `json:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Drain time for listeners.
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
+	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
 }
 
 func (d *Dataplane) PostProcess() error {
@@ -303,6 +306,10 @@ func (d *Dataplane) Validate() error {
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime.Duration <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+	}
+
+	if d.ReadinessPort > 65353 {
+		return errors.New(".ReadinessPort has to be in [0, 65353] range")
 	}
 
 	return errs

@@ -289,6 +289,11 @@ resources:
               name: kuma:envoy:admin
               routes:
               - match:
+                  prefix: /ready
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /ready
+              - match:
                   prefix: /
                 route:
                   cluster: kuma:envoy:admin

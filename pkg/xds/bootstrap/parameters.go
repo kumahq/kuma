@@ -30,6 +30,7 @@ type configParameters struct {
 	Service            string
 	AdminAddress       string
 	AdminPort          uint32
+	ReadinessPort      uint32
 	AdminAccessLogPath string
 	XdsHost            string
 	XdsPort            uint32
