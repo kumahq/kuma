@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -207,6 +208,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
 				Dataplane:           opts.Dataplane,
 				DNSPort:             cfg.DNS.EnvoyDNSPort,
+				ReadinessPort:       cfg.Dataplane.ReadinessPort,
 				EmptyDNSPort:        cfg.DNS.CoreDNSEmptyPort,
 				EnvoyVersion:        *envoyVersion,
 				AccessLogSocketPath: accessLogSocketPath,
@@ -238,6 +240,15 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
 			)
 			components = append(components, metricsServer)
+
+			var readinessReporter *readiness.Reporter
+			if cfg.Dataplane.ReadinessPort > 0 {
+				readinessReporter = readiness.NewReporter(
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+					cfg.Dataplane.ReadinessPort)
+				components = append(components, readinessReporter)
+			}
+
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
@@ -250,6 +261,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					if err := envoyComponent.DrainConnections(); err != nil {
 						runLog.Error(err, "could not drain connections")
 					} else {
+						if readinessReporter != nil {
+							readinessReporter.Terminating()
+						}
 						runLog.Info("waiting for connections to be drained", "waitTime", cfg.Dataplane.DrainTime)
 						select {
 						case <-time.After(cfg.Dataplane.DrainTime.Duration):

@@ -38,6 +38,8 @@ github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d h1:Byv0BzEl
 github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d/go.mod h1:WaHUgvxTVq04UNunO+XhnAqY/wQc+bxr74GqbsZ/Jqw=
 github.com/aws/aws-sdk-go v1.44.187 h1:D5CsRomPnlwDHJCanL2mtaLIcbhjiWxNh5j8zvaWdJA=
 github.com/aws/aws-sdk-go v1.44.187/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
+github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121 h1:0mA5T6mV0/9+t7TfYAWINV3V6PNrXl0G0bnUgSIpq4E=
+github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121/go.mod h1:0I6DOlUOuXiVency29rZX1chhXtuZBH1p9TVzKkMw60=
 github.com/benbjohnson/clock v1.1.0/go.mod h1:J11/hYXuz8f4ySSvYwY0FKfm+ezbsZBKZxNJlLklBHA=
 github.com/beorn7/perks v1.0.1 h1:VlbKKnNfV8bJzeqoa4cOKqO6bYr3WgKZxO8Z16+hsOM=
 github.com/beorn7/perks v1.0.1/go.mod h1:G2ZrVWU2WbWT9wwq4/hrbKbnv/1ERSJQ0ibhJ6rlkpw=

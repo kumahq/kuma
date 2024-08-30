@@ -59,6 +59,11 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 							StringValue: "8001",
 						},
 					},
+					"dataplane.readinessReporter.port": {
+						Kind: &structpb.Value_StringValue{
+							StringValue: "9300",
+						},
+					},
 					"accessLogSocketPath": {
 						Kind: &structpb.Value_StringValue{
 							StringValue: "/tmp/logs",
@@ -77,6 +82,7 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				EmptyDNSPort:        8001,
 				AccessLogSocketPath: "/tmp/logs",
 				MetricsSocketPath:   "/tmp/metrics",
+				ReadinessPort:       9300,
 			},
 		}),
 		Entry("should ignore dependencies version provided through metadata if version is not set at all", testCase{
