@@ -325,7 +325,8 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 
 	nat.Output().AddRules(
 		rules.
-			NewAppendRule(
+			NewConditionalInsertOrAppendRule(
+				cfg.Redirect.Outbound.InsertRedirectInsteadOfAppend,
 				Protocol(Tcp()),
 				Jump(ToUserDefinedChain(cfg.Redirect.Outbound.ChainName)),
 			).
@@ -345,7 +346,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 		)
 	}
 
-	if len(cfg.Redirect.VNet.InterfaceCIDRs) == 0 {
+	if len(cfg.Redirect.VNet.InterfaceCIDRs) == 0 && !cfg.Redirect.Inbound.InsertRedirectInsteadOfAppend {
 		nat.Prerouting().AddRules(
 			rules.
 				NewAppendRule(
