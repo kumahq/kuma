@@ -107,6 +107,9 @@ type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
 	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
+		if mc.Resource.Spec.MeshServicesEnabled() == mesh_proto.Mesh_MeshServices_ReachableBackendRefs {
+			return &ReachableBackends{}
+		}
 		return nil
 	}
 	reachableBackends := ReachableBackends{}
