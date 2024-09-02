@@ -144,6 +144,24 @@ spec:
 	return YamlK8s(mesh)
 }
 
+func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    enabled: %s
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name, meshServicesEnabled)
+	return YamlK8s(mesh)
+}
+
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
