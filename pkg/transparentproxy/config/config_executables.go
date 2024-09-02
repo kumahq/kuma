@@ -21,57 +21,6 @@ const (
 	WarningDryRunNoValidIptablesFound = "[dry-run]: no valid iptables executables found; the generated iptables rules may differ from those generated in an environment with valid iptables executables"
 )
 
-type Version struct {
-	k8s_version.Version
-
-	Mode IptablesMode
-}
-
-func getIptablesVersion(ctx context.Context, path string) (Version, error) {
-	isVersionMissing := func(output string) bool {
-		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", FlagVersion))
-	}
-
-	var stdout bytes.Buffer
-	var stderr bytes.Buffer
-	// #nosec G204
-	cmd := exec.CommandContext(ctx, path, FlagVersion)
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-
-	// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
-	// flag. Depending on the version, this may result in:
-	//   - The command exiting with a non-zero code and a warning written to stderr
-	//   - The command exiting with code 0 but still outputting a warning to stderr
-	// In these cases, the function assumes the iptables mode is legacy
-	switch {
-	case err != nil && isVersionMissing(err.Error()):
-		return Version{Mode: IptablesModeLegacy}, nil
-	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
-		return Version{Mode: IptablesModeLegacy}, nil
-	case err != nil:
-		return Version{}, err
-	}
-
-	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
-	if len(matched) < 2 {
-		return Version{}, errors.Errorf("unable to parse iptables version in: '%s'", stdout.String())
-	}
-
-	version, err := k8s_version.ParseGeneric(matched[1])
-	if err != nil {
-		return Version{}, errors.Wrapf(err, "invalid iptables version string: '%s'", matched[1])
-	}
-
-	if len(matched) < 3 {
-		return Version{Version: *version, Mode: IptablesModeLegacy}, nil
-	}
-
-	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
-}
-
 type Executable struct {
 	name string
 	mode IptablesMode
@@ -462,4 +411,55 @@ func (c Executables) InitializeIPv4(
 	default:
 		return nft, c.NftIPv6, nil
 	}
+}
+
+type Version struct {
+	k8s_version.Version
+
+	Mode IptablesMode
+}
+
+func getIptablesVersion(ctx context.Context, path string) (Version, error) {
+	isVersionMissing := func(output string) bool {
+		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", FlagVersion))
+	}
+
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	// #nosec G204
+	cmd := exec.CommandContext(ctx, path, FlagVersion)
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+
+	// Older iptables versions (e.g., 1.4.21, 1.6.1) may not support the `--version`
+	// flag. Depending on the version, this may result in:
+	//   - The command exiting with a non-zero code and a warning written to stderr
+	//   - The command exiting with code 0 but still outputting a warning to stderr
+	// In these cases, the function assumes the iptables mode is legacy
+	switch {
+	case err != nil && isVersionMissing(err.Error()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
+		return Version{Mode: IptablesModeLegacy}, nil
+	case err != nil:
+		return Version{}, err
+	}
+
+	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) < 2 {
+		return Version{}, errors.Errorf("unable to parse iptables version in: '%s'", stdout.String())
+	}
+
+	version, err := k8s_version.ParseGeneric(matched[1])
+	if err != nil {
+		return Version{}, errors.Wrapf(err, "invalid iptables version string: '%s'", matched[1])
+	}
+
+	if len(matched) < 3 {
+		return Version{Version: *version, Mode: IptablesModeLegacy}, nil
+	}
+
+	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
 }
