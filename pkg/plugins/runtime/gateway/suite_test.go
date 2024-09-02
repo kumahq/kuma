@@ -130,7 +130,6 @@ func MakeGeneratorContext(rt runtime.Runtime, key core_model.ResourceKey) (*xds_
 		rt.Config().DNSServer.Domain,
 		rt.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
-		rt.Config().Experimental.SkipPersistedVIPs,
 	)
 
 	meshCtx, err := meshCtxBuilder.Build(context.TODO(), key.Mesh)

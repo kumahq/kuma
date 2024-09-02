@@ -52,7 +52,6 @@ var _ = Describe("MeshService generator", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 		meshCache, err := cache_mesh.NewCache(
 			100*time.Millisecond,
