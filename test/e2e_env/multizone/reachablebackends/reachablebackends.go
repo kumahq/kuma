@@ -110,6 +110,8 @@ spec:
 	meshWithEgress := fmt.Sprintf(`
 type: Mesh
 name: "%s"
+meshServices:
+  enabled: Everywhere
 mtls:
   enabledBackend: ca-1
   backends:
