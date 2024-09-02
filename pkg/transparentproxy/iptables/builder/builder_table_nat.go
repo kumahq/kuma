@@ -229,7 +229,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 
 // buildMeshRedirect creates a chain in the NAT table to handle traffic redirection
 // to a specified port. The chain will be configured to redirect TCP traffic to the
-// provided port, which can be different for IPv4 and IPv6.
+// provided port, which can be different for IPv4 and IPv6
 func buildMeshRedirect(cfg config.InitializedTrafficFlow) *Chain {
 	return MustNewChain(TableNat, cfg.RedirectChainName).AddRules(
 		rules.
@@ -276,7 +276,6 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 		)
 	}
 
-	// Conditionally add DNS redirection rules if DNS redirection is enabled.
 	if cfg.Redirect.DNS.Enabled {
 		nat.Output().AddRules(
 			rules.
@@ -335,7 +334,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 }
 
 // addPreroutingRules adds rules to the PREROUTING chain of the NAT table to
-// handle inbound traffic according to the provided configuration.
+// handle inbound traffic according to the provided configuration
 func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 	// Add a logging rule if logging is enabled.
 	if cfg.Log.Enabled {
@@ -392,7 +391,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 // buildNatTable constructs the NAT table for iptables with the necessary rules
 // for handling inbound and outbound traffic redirection, DNS redirection, and
 // specific port exclusions or inclusions. It sets up custom chains for mesh
-// traffic management based on the provided configuration.
+// traffic management based on the provided configuration
 func buildNatTable(cfg config.InitializedConfigIPvX) *tables.NatTable {
 	nat := tables.Nat()
 
