@@ -294,7 +294,7 @@ type InitializedDNS struct {
 
 // Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
 // the nameservers from the file specified in the ResolvConfigPath field of
-// the input DNS struct.
+// the input DNS struct
 func (c DNS) Initialize(
 	l Logger,
 	executables InitializedExecutablesIPvX,
@@ -329,7 +329,7 @@ func (c DNS) Initialize(
 		)
 	}
 
-	// Loop through each DNS server address parsed from the resolv.conf file.
+	// Loop through each DNS server address parsed from the resolv.conf file
 	for _, address := range dnsConfig.Servers {
 		parsed := net.ParseIP(address)
 		// Check if the address matches the expected IP version.
@@ -416,7 +416,7 @@ func (c VNet) Initialize(ipv6 bool) (InitializedVNet, error) {
 type InitializedVNet struct {
 	// InterfaceCIDRs is a map where the keys are interface names and the values
 	// are IP addresses in CIDR notation, representing the parsed and validated
-	// virtual network configurations.
+	// virtual network configurations
 	InterfaceCIDRs map[string]string
 }
 
@@ -494,7 +494,7 @@ type Log struct {
 	// entries for matching packets. Higher values increase the verbosity.
 	// Commonly used levels are: 1 (alerts), 4 (warnings), 5 (notices),
 	// 7 (debugging). The exact behavior can depend on the system's syslog
-	// configuration.
+	// configuration
 	Level uint16 `json:"level"` // KUMA_TRANSPARENT_PROXY_LOG_LEVEL
 }
 
@@ -516,21 +516,21 @@ type Comments struct {
 
 // InitializedComments struct contains the processed configuration for iptables
 // rule comments. It indicates whether comments are enabled and the prefix to
-// use for comment text.
+// use for comment text
 type InitializedComments struct {
 	// Enabled indicates whether iptables rule comments are enabled based on
-	// the initial configuration and system capabilities.
+	// the initial configuration and system capabilities
 	Enabled bool
 	// Prefix defines the prefix to be used for comments on iptables rules,
 	// aiding in identifying and organizing rules created by the transparent
-	// proxy.
+	// proxy
 	Prefix string
 }
 
 // Initialize processes the Comments configuration and determines whether
 // iptables rule comments should be enabled. It checks the system's
 // functionality to see if the comment module is available and returns
-// an InitializedComments struct with the result.
+// an InitializedComments struct with the result
 func (c Comments) Initialize(e InitializedExecutablesIPvX) InitializedComments {
 	return InitializedComments{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
@@ -569,7 +569,7 @@ type Config struct {
 	// placed (os.Stderr by default)
 	RuntimeStderr io.Writer `json:"-" ignored:"true"`
 	// Verbose when set will generate iptables configuration with longer
-	// argument/flag names, additional comments etc.
+	// argument/flag names, additional comments etc
 	Verbose bool `json:"verbose,omitempty"` // KUMA_TRANSPARENT_PROXY_VERBOSE
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
@@ -578,14 +578,13 @@ type Config struct {
 	// enabled, this setting causes the kernel to log details about packets that
 	// match the iptables rules, including IP/IPv6 headers. The logs are useful
 	// for debugging and can be accessed via tools like dmesg or syslog. The
-	// logging behavior is defined by the nested Log struct.
+	// logging behavior is defined by the nested Log struct
 	Log Log `json:"log"`
 	// Wait is the amount of time, in seconds, that the application should wait
 	// for the xtables exclusive lock before exiting. If the lock is not
 	// available within the specified time, the application will exit with
 	// an error. Default value *(0) means wait forever. To disable this behavior
-	// and exit immediately if the xtables lock is not available, set this to
-	// nil
+	// and exit immediately if the xtables lock is not available, set this to nil
 	Wait uint `json:"wait"` // KUMA_TRANSPARENT_PROXY_WAIT
 	// WaitInterval is the amount of time, in microseconds, that iptables should
 	// wait between each iteration of the lock acquisition loop. This can be
@@ -597,7 +596,7 @@ type Config struct {
 	// retry an installation if it fails
 	Retry Retry `json:"retry"`
 	// StoreFirewalld when set, configures firewalld to store the generated
-	// iptables rules.
+	// iptables rules
 	StoreFirewalld bool `json:"storeFirewalld,omitempty" split_words:"true"` // KUMA_TRANSPARENT_PROXY_STORE_FIREWALLD
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
@@ -605,13 +604,13 @@ type Config struct {
 	Executables Executables `json:"-"`
 	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
-	// created by the transparent proxy, making them easier to manage and debug.
+	// created by the transparent proxy, making them easier to manage and debug
 	Comments Comments `json:"comments"`
 	// IPFamilyMode specifies the IP family mode to be used by the
 	// configuration. It determines whether the system operates in dualstack
 	// mode (supporting both IPv4 and IPv6) or IPv4-only mode. This setting is
 	// crucial for environments where both IP families are in use, ensuring that
-	// the correct iptables rules are applied for the specified IP family.
+	// the correct iptables rules are applied for the specified IP family
 	IPFamilyMode IPFamilyMode `json:"ipFamilyMode" envconfig:"ip_family_mode"` // KUMA_TRANSPARENT_PROXY_IP_FAMILY_MODE
 	CNIMode      bool         `json:"cniMode,omitempty" envconfig:"cni_mode"`  // KUMA_TRANSPARENT_PROXY_CNI_MODE
 }
@@ -638,20 +637,19 @@ const (
 )
 
 // String returns the string representation of the IPFamilyMode.
-// This is used both by fmt.Print and by Cobra in help text.
+// This is used both by fmt.Print and by Cobra in help text
 func (e *IPFamilyMode) String() string {
 	return string(*e)
 }
 
 // Type returns the type of the IPFamilyMode.
-// This is only used in help text by Cobra.
+// This is only used in help text by Cobra
 func (e *IPFamilyMode) Type() string {
 	return "string"
 }
 
 // Set assigns the IPFamilyMode based on the provided value. It validates the
-// input and sets the appropriate mode or returns an error if the input is
-// invalid.
+// input and sets the appropriate mode or returns an error if the input is invalid
 func (e *IPFamilyMode) Set(v string) error {
 	switch strings.ToLower(v) {
 	case "": // Default value is "dualstack"
@@ -671,7 +669,7 @@ func (e *IPFamilyMode) Set(v string) error {
 
 // InitializedConfigIPvX extends the Config struct by adding fields that require
 // additional logic to retrieve their values. These values typically involve
-// interacting with the system or external resources.
+// interacting with the system or external resources
 type InitializedConfigIPvX struct {
 	Config
 	// Logger is utilized for detailed logging throughout the lifecycle of the
@@ -679,7 +677,7 @@ type InitializedConfigIPvX struct {
 	// operations such as rule setup, modification, and restoration. The Logger
 	// in this struct ensures detailed, step-by-step logs are available for
 	// operations related to the corresponding IP version (IPv4 or IPv6), aiding
-	// in diagnostics and debugging.
+	// in diagnostics and debugging
 	Logger Logger
 	// Redirect is an InitializedRedirect struct containing the initialized
 	// redirection configuration. If DNS redirection is enabled this includes
@@ -688,14 +686,14 @@ type InitializedConfigIPvX struct {
 	Redirect InitializedRedirect
 	// Executables field holds the initialized version of Config.Executables.
 	// It attempts to locate the actual executable paths on the system based on
-	// the provided configuration and verifies their functionality.
+	// the provided configuration and verifies their functionality
 	Executables InitializedExecutablesIPvX
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
 	// packets that are considered invalid. This is useful in scenarios where
 	// out-of-order packets bypass DNAT by iptables and reach the application
 	// directly, causing connection resets. This field is set during
 	// configuration initialization and considers whether the mangle table is
-	// available for the corresponding IP version (IPv4 or IPv6).
+	// available for the corresponding IP version (IPv4 or IPv6)
 	DropInvalidPackets bool
 	// LoopbackInterfaceName represents the name of the loopback interface which
 	// will be used to construct outbound iptable rules for outbound (i.e.
@@ -703,16 +701,16 @@ type InitializedConfigIPvX struct {
 	LoopbackInterfaceName string
 	// LocalhostCIDR is a string representing the CIDR notation of the localhost
 	// address for the given IP version (IPv4 or IPv6). This is used to
-	// construct rules related to the loopback interface.
+	// construct rules related to the loopback interface
 	LocalhostCIDR string
 	// InboundPassthroughCIDR is a string representing the CIDR notation of the
 	// address used for inbound passthrough traffic. This is used to construct
-	// rules allowing specific traffic to bypass normal proxying.
+	// rules allowing specific traffic to bypass normal proxying
 	InboundPassthroughCIDR string
 	// Comments holds the processed configuration for iptables rule comments,
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
-	// the transparent proxy, making them easier to manage and debug.
+	// the transparent proxy, making them easier to manage and debug
 	Comments   InitializedComments
 	KumaDPUser Owner
 
@@ -720,10 +718,7 @@ type InitializedConfigIPvX struct {
 }
 
 // Enabled returns the state of the 'enabled' field, indicating whether the
-// IP version-specific configuration is enabled.
-//
-// This method simply returns the value of the 'enabled' field which
-// determines if the corresponding IPv4 or IPv6 configuration is active.
+// IP version-specific configuration is enabled
 func (c InitializedConfigIPvX) Enabled() bool {
 	return c.enabled
 }
@@ -733,18 +728,18 @@ type InitializedConfig struct {
 	// InitializedConfig, including the initialization and finalization phases
 	// of the transparent proxy installation process. This logger is used to log
 	// high-level information and statuses, while more specific logging related
-	// to iptables operations is handled by the Logger in InitializedConfigIPvX.
+	// to iptables operations is handled by the Logger in InitializedConfigIPvX
 	Logger Logger
 	// DryRun when set will not execute, but just display instructions which
 	// otherwise would have served to install transparent proxy
 	DryRun bool
 	// IPv4 contains the initialized configuration specific to IPv4. This
 	// includes all settings, executables, and rules relevant to IPv4 iptables
-	// management.
+	// management
 	IPv4 InitializedConfigIPvX
 	// IPv6 contains the initialized configuration specific to IPv6. This
 	// includes all settings, executables, and rules relevant to IPv6 ip6tables
-	// management.
+	// management
 	IPv6 InitializedConfigIPvX
 }
 

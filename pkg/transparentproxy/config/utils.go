@@ -34,7 +34,7 @@ func parsePort(s string) (Port, error) {
 // system. This function iterates over all network interfaces and checks if the
 // 'net.FlagLoopback' flag is set. If a loopback interface is found, its name is
 // returned. Otherwise, an error message indicating that no loopback interface
-// was found is returned.
+// was found is returned
 func getLoopbackInterfaceName() (string, error) {
 	interfaces, err := net.Interfaces()
 	if err != nil {
@@ -146,14 +146,10 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 
 // parseExcludePortsForIPs parses a slice of strings representing port exclusion
 // rules based on IP addresses and returns a slice of IPToPorts structs.
-//
 // This function currently allows each exclusion rule to be a valid IPv4 or IPv6
 // address, with or without a CIDR suffix. It is designed to potentially support
-// more complex exclusion rules in the future.
-func parseExcludePortsForIPs(
-	exclusionRules []string,
-	ipv6 bool,
-) ([]Exclusion, error) {
+// more complex exclusion rules in the future
+func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, error) {
 	var result []Exclusion
 
 	for _, rule := range exclusionRules {
@@ -307,8 +303,6 @@ func findUserUID(userOrUID string) (string, bool) {
 	return "", false
 }
 
-// executables
-
 // buildRestoreArgs constructs a slice of flags for restoring iptables rules
 // based on the provided configuration and iptables mode.
 //
@@ -341,22 +335,8 @@ func buildRestoreArgs(cfg Config, mode consts.IptablesMode) []string {
 }
 
 // getPathsToSearchForExecutable generates a list of potential paths for the
-// given executable considering both versions with and without the mode suffix.
-//
-// This function prioritizes finding the executable with the mode information
-// embedded in the name (e.g., iptables-nft) for faster mode verification.
-// It achieves this by:
-//  1. Adding the `nameWithMode` (e.g., iptables-nft) as the first potential
-//     path.
-//  2. Appending paths formed by joining `FallbackExecutablesSearchLocations`
-//     with `nameWithMode` (e.g., /usr/sbin/iptables-nft, /sbin/iptables-nft).
-//  3. After checking paths with the mode suffix, it adds the `nameWithoutMode`
-//     (e.g., iptables) as a fallback.
-//  4. Similar to step 2, it appends paths formed by joining
-//     `FallbackExecutablesSearchLocations` with `nameWithoutMode`.
-//
-// Finally, the function returns the combined list of potential paths for the
-// executable.
+// given executable, prioritizing paths with the mode suffix (e.g., iptables-nft)
+// before falling back to paths without it (e.g., iptables)
 func getPathsToSearchForExecutable(
 	nameWithMode string,
 	nameWithoutMode string,
@@ -438,17 +418,12 @@ func joinNonEmptyWithHyphen(elems ...string) string {
 
 // createBackupFile generates a backup file with a specified prefix and a
 // timestamp suffix. The file is created in the system's temporary directory and
-// is used to store iptables rules for backup purposes.
+// is used to store iptables rules for backup purposes
 func createBackupFile(prefix string) (*os.File, error) {
-	// Generate a timestamp suffix for the backup file name.
 	dateSuffix := time.Now().Format("2006-01-02-150405")
-
-	// Construct the backup file name using the provided prefix and the
-	// timestamp suffix.
 	fileName := fmt.Sprintf("%s-rules.%s.txt.backup", prefix, dateSuffix)
 	filePath := filepath.Join(os.TempDir(), fileName)
 
-	// Create the backup file in the system's temporary directory.
 	f, err := os.Create(filePath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create backup file: %s", filePath)
@@ -459,12 +434,7 @@ func createBackupFile(prefix string) (*os.File, error) {
 
 // createTempFile generates a temporary file with a specified prefix. The file
 // is created in the system's default temporary directory and is used for
-// storing iptables rules temporarily.
-//
-// This function performs the following steps:
-//  1. Constructs a template for the temporary file name using the provided
-//     prefix.
-//  2. Creates the temporary file in the system's default temporary directory.
+// storing iptables rules temporarily
 func createTempFile(prefix string) (*os.File, error) {
 	// Construct a template for the temporary file name using the provided prefix.
 	nameTemplate := fmt.Sprintf("%s-rules.*.txt", prefix)
@@ -480,19 +450,13 @@ func createTempFile(prefix string) (*os.File, error) {
 
 // writeToFile writes the provided content to the specified file using a
 // buffered writer. It ensures that all data is written to the file by flushing
-// the buffer.
-//
-// This function performs the following steps:
-//  1. Writes the content to the file using a buffered writer for efficiency.
-//  2. Flushes the buffer to ensure all data is written to the file.
+// the buffer
 func writeToFile(content string, f *os.File) error {
-	// Write the content to the file using a buffered writer.
 	writer := bufio.NewWriter(f)
 	if _, err := writer.WriteString(content); err != nil {
 		return errors.Wrapf(err, "failed to write to file: %s", f.Name())
 	}
 
-	// Flush the buffer to ensure all data is written.
 	if err := writer.Flush(); err != nil {
 		return errors.Wrapf(err, "failed to flush the buffered writer for file: %s", f.Name())
 	}

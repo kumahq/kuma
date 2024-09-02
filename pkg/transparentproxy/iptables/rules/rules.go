@@ -70,15 +70,7 @@ func (b *RuleBuilder) Build(
 // NewAppendRule creates a new RuleBuilder for an iptables rule that will be
 // appended to the end of an existing chain. This function takes a variable
 // number of parameters, each represented as a pointer to a Parameter object,
-// which specify the various conditions and actions for the rule.
-//
-// Args:
-//   - parameters (...*parameters.Parameter): A variadic list of pointers to
-//     Parameter objects that define the rule's conditions and actions.
-//
-// Returns:
-//   - *RuleBuilder: A pointer to a RuleBuilder configured to append a new rule
-//     with the specified parameters.
+// which specify the various conditions and actions for the rule
 func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters}
 }
@@ -87,15 +79,7 @@ func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 // inserted at a specific position within an existing chain. This function takes
 // a variable number of parameters, each represented as a pointer to a Parameter
 // object, which specify the various conditions and actions for the rule.
-// The rule will be marked for insertion rather than appending.
-//
-// Args:
-//   - parameters (...*parameters.Parameter): A variadic list of pointers to
-//     Parameter objects that define the rule's conditions and actions.
-//
-// Returns:
-//   - *RuleBuilder: A pointer to a RuleBuilder configured to insert a new rule
-//     with the specified parameters.
+// The rule will be marked for insertion rather than appending
 func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters, insert: true}
 }
@@ -125,17 +109,7 @@ func NewConditionalInsertOrAppendRule(insert bool, parameters ...*parameters.Par
 // the flag, the chain name, the optional position (if not zero), and the rule
 // parameters. If a comment is provided (`r.comment`) and the comment
 // functionality is enabled in the configuration, it is included in the
-// parameters with the prefix specified by `consts.IptablesRuleCommentPrefix`.
-//
-// The `parameters.Build(cfg.Verbose)` method is used to generate the final
-// parameter list in the appropriate format.
-//
-// Args:
-//   - cfg (config.InitializedConfigIPvX): Configuration settings that control
-//     the verbose output and other behaviors.
-//
-// Returns:
-//   - string: The constructed iptables rule formatted for `iptables-restore`.
+// parameters with the prefix specified by `consts.IptablesRuleCommentPrefix`
 func (r *Rule) BuildForRestore(cfg config.InitializedConfigIPvX) string {
 	flag := consts.FlagVariationsMap[consts.FlagAppend][cfg.Verbose]
 	if r.position != 0 {
