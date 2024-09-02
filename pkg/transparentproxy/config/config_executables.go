@@ -149,18 +149,12 @@ func (c ExecutablesIPvX) Initialize(
 	}
 
 	if len(errs) != 0 {
-		return InitializedExecutablesIPvX{}, errors.Wrap(
-			std_errors.Join(errs...),
-			"failed to initialize executables",
-		)
+		return InitializedExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to initialize executables")
 	}
 
 	functionality, err := verifyFunctionality(ctx, iptables, iptablesSave)
 	if err != nil {
-		return InitializedExecutablesIPvX{}, errors.Wrap(
-			err,
-			"failed to verify functionality",
-		)
+		return InitializedExecutablesIPvX{}, errors.Wrap(err, "failed to verify functionality")
 	}
 
 	return InitializedExecutablesIPvX{

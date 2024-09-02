@@ -66,10 +66,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 	for _, elem := range exclusionRules {
 		parts := strings.Split(elem, ":")
 		if len(parts) == 0 || len(parts) > 3 {
-			return nil, errors.Errorf(
-				"invalid format for excluding ports by UIDs: '%s'. Expected format: <protocol:>?<ports:>?<uids>",
-				elem,
-			)
+			return nil, errors.Errorf("invalid format for excluding ports by UIDs: '%s'. Expected format: <protocol:>?<ports:>?<uids>", elem)
 		}
 
 		var portValuesOrRange, protocolOpts, uidValuesOrRange string
@@ -102,10 +99,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 		}
 
 		if strings.Contains(uidValuesOrRange, ",") {
-			return nil, errors.Errorf(
-				"invalid UID entry: '%s'. It should either be a single item or a range",
-				uidValuesOrRange,
-			)
+			return nil, errors.Errorf("invalid UID entry: '%s'. It should either be a single item or a range", uidValuesOrRange)
 		}
 
 		if err := validateUintValueOrRange(uidValuesOrRange); err != nil {
@@ -122,10 +116,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 					continue
 				}
 
-				return nil, errors.Errorf(
-					"invalid or unsupported protocol: '%s'",
-					s,
-				)
+				return nil, errors.Errorf("invalid or unsupported protocol: '%s'", s)
 			}
 		}
 
@@ -154,9 +145,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 
 	for _, rule := range exclusionRules {
 		if rule == "" {
-			return nil, errors.New(
-				"invalid exclusion rule: the rule cannot be empty",
-			)
+			return nil, errors.New("invalid exclusion rule: the rule cannot be empty")
 		}
 
 		for _, address := range strings.Split(rule, ",") {
@@ -181,11 +170,7 @@ func validateUintValueOrRange(valueOrRange string) error {
 	for _, element := range strings.Split(valueOrRange, ",") {
 		for _, port := range strings.Split(element, "-") {
 			if _, err := parseUint16(port); err != nil {
-				return errors.Wrapf(
-					err,
-					"validation failed for value or range '%s'",
-					valueOrRange,
-				)
+				return errors.Wrapf(err, "validation failed for value or range '%s'", valueOrRange)
 			}
 		}
 	}
@@ -206,10 +191,7 @@ func validateIP(address string, ipv6 bool) (error, bool) {
 	// If parsing as both CIDR and IP address fails, return an error with a
 	// message.
 	if ip == nil {
-		return errors.Errorf(
-			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
-			address,
-		), false
+		return errors.Errorf("invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)", address), false
 	}
 
 	// Check if the IP version matches the expected IP version.

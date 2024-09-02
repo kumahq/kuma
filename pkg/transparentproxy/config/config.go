@@ -243,18 +243,12 @@ func (c TrafficFlow) Initialize(
 
 	excludePortsForUIDs, err := parseExcludePortsForUIDs(c.ExcludePortsForUIDs)
 	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"parsing excluded outbound ports for uids failed",
-		)
+		return initialized, errors.Wrap(err, "parsing excluded outbound ports for uids failed")
 	}
 
 	excludePortsForIPs, err := parseExcludePortsForIPs(c.ExcludePortsForIPs, ipv6)
 	if err != nil {
-		return initialized, errors.Wrap(
-			err,
-			"parsing excluded outbound ports for IPs failed",
-		)
+		return initialized, errors.Wrap(err, "parsing excluded outbound ports for IPs failed")
 	}
 
 	initialized.Exclusions = slices.Concat(
@@ -322,11 +316,7 @@ func (c DNS) Initialize(
 
 	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
 	if err != nil {
-		return initialized, errors.Wrapf(
-			err,
-			"unable to read file %s",
-			c.ResolvConfigPath,
-		)
+		return initialized, errors.Wrapf(err, "unable to read file %s", c.ResolvConfigPath)
 	}
 
 	// Loop through each DNS server address parsed from the resolv.conf file
@@ -344,11 +334,7 @@ func (c DNS) Initialize(
 		initialized.Enabled = false
 		initialized.ConntrackZoneSplit = false
 
-		l.Warnf(
-			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
-			IPTypeMap[ipv6],
-			c.ResolvConfigPath,
-		)
+		l.Warnf("couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled", IPTypeMap[ipv6], c.ResolvConfigPath)
 	}
 
 	return initialized, nil
@@ -389,19 +375,12 @@ func (c VNet) Initialize(ipv6 bool) (InitializedVNet, error) {
 		// problem with parsing
 		pair := strings.SplitN(network, ":", 2)
 		if len(pair) < 2 {
-			return InitializedVNet{}, errors.Errorf(
-				"invalid virtual network definition: %s",
-				network,
-			)
+			return InitializedVNet{}, errors.Errorf("invalid virtual network definition: %s", network)
 		}
 
 		address, _, err := net.ParseCIDR(pair[1])
 		if err != nil {
-			return InitializedVNet{}, errors.Wrapf(
-				err,
-				"invalid CIDR definition for %s",
-				pair[1],
-			)
+			return InitializedVNet{}, errors.Wrapf(err, "invalid CIDR definition for %s", pair[1])
 		}
 
 		// Add the address to the map if it matches the specified IP version
@@ -657,11 +636,7 @@ func (e *IPFamilyMode) Set(v string) error {
 	case string(IPFamilyModeDualStack), string(IPFamilyModeIPv4):
 		*e = IPFamilyMode(v)
 	default:
-		return errors.Errorf(
-			"must be one of '%s' or '%s'",
-			IPFamilyModeDualStack,
-			IPFamilyModeIPv4,
-		)
+		return errors.Errorf("must be one of '%s' or '%s'", IPFamilyModeDualStack, IPFamilyModeIPv4)
 	}
 
 	return nil
