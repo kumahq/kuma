@@ -41,7 +41,11 @@ func (r *Graph) CanReachBackend(fromTags map[string]string, backendIdentifier co
 	if backendIdentifier.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
 		return true
 	}
-	rule := r.backendRules[backendIdentifier].Compute(core_rules.SubsetFromTags(fromTags))
+	noPort := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: backendIdentifier.ResourceIdentifier,
+		ResourceType:       backendIdentifier.ResourceType,
+	}
+	rule := r.backendRules[noPort].Compute(core_rules.SubsetFromTags(fromTags))
 	if rule == nil {
 		return false
 	}
