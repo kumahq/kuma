@@ -45,6 +45,10 @@
                     },
                     "type": "array",
                     "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
+                },
+                "meshServices": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.MeshServices",
+                    "additionalProperties": true
                 }
             },
             "additionalProperties": true,
@@ -235,6 +239,34 @@
             "type": "object",
             "title": "Rules",
             "description": "Rules defines a set of rules for data plane proxies to be member of the mesh."
+        },
+        "kuma.mesh.v1alpha1.Mesh.MeshServices": {
+            "properties": {
+                "enabled": {
+                    "enum": [
+                        "Disabled",
+                        0,
+                        "Everywhere",
+                        1,
+                        "ReachableBackendRefs",
+                        2,
+                        "Exclusive",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Enabled"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Services"
         },
         "kuma.mesh.v1alpha1.Mesh.Mtls": {
             "properties": {
