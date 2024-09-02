@@ -271,6 +271,23 @@ type Rule struct {
 	BackendRefOriginIndex BackendRefOriginIndex
 }
 
+func (r *Rule) GetBackendRefOrigin(hash MatchesHash) (core_model.ResourceMeta, bool) {
+	if r == nil {
+		return nil, false
+	}
+	if r.BackendRefOriginIndex == nil {
+		return nil, false
+	}
+	index, ok := r.BackendRefOriginIndex[hash]
+	if !ok {
+		return nil, false
+	}
+	if index >= len(r.Origin) {
+		return nil, false
+	}
+	return r.Origin[index], true
+}
+
 type Rules []*Rule
 
 // Compute returns configuration for the given subset.

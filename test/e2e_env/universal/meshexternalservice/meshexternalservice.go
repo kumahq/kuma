@@ -91,7 +91,7 @@ routing:
 		esHttpsName := "mes-https"
 		esHttp2Name := "mes-http-2"
 
-		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, AppModeTcpSink)
+		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, "mes-tcp-sink")
 
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
 		esHttpsContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpsName)
@@ -99,7 +99,7 @@ routing:
 
 		err := NewClusterSetup().
 			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
-			Install(TcpSinkUniversal(AppModeTcpSink, WithDockerContainerName(tcpSinkDockerName))).
+			Install(TcpSinkUniversal("mes-tcp-sink", WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttp2Name, 81, false, WithDockerContainerName(esHttp2ContainerName))).
@@ -516,7 +516,7 @@ spec:
 			Eventually(func(g Gomega) {
 				makeRequest(g)
 
-				stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
+				stdout, _, err := universal.Cluster.Exec("", "", "mes-tcp-sink", "head", "-1", "/nc.out")
 				g.Expect(err).ToNot(HaveOccurred())
 				parts := strings.Split(stdout, ",")
 				g.Expect(parts).To(HaveLen(3))

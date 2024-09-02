@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -128,9 +129,11 @@ var _ = Describe("GenerateSnapshot", func() {
 		Expect(err).ToNot(HaveOccurred())
 	}
 
-	generateSnapshot := func(name, mesh string) []byte {
+	generateSnapshot := func(name, mesh string, outbounds xds_types.Outbounds) []byte {
 		mCtx, err := mCtxBuilder.Build(context.Background(), mesh)
 		Expect(err).ToNot(HaveOccurred())
+
+		mCtx.VIPOutbounds = outbounds
 
 		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
 		Expect(err).ToNot(HaveOccurred())
@@ -243,7 +246,7 @@ var _ = Describe("GenerateSnapshot", func() {
 		}
 
 		// when
-		snapshot := generateSnapshot("web1", "demo")
+		snapshot := generateSnapshot("web1", "demo", nil)
 
 		// then
 		Expect(snapshot).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "hook-before-pt.golden.yaml")))
@@ -294,7 +297,6 @@ var _ = Describe("GenerateSnapshot", func() {
 						WithServicePort(8443).
 						WithService("backend-4"),
 				).
-				AddOutboundToService("es-with-tls").
 				WithTransparentProxying(15001, 15006, "ipv4").
 				Build(),
 		)
@@ -355,7 +357,16 @@ var _ = Describe("GenerateSnapshot", func() {
 		}
 
 		// when
-		snapshot := generateSnapshot("web1", "demo")
+		snapshot := generateSnapshot("web1", "demo", xds_types.Outbounds{
+			{
+				LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+					Port: builders.FirstOutboundPort,
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "es-with-tls",
+					},
+				},
+			},
+		})
 
 		// then
 		Expect(snapshot).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "stable-es.golden.yaml")))

@@ -11,7 +11,7 @@ import (
 // buildRawTable constructs the raw table for iptables with the necessary rules
 // for handling DNS traffic and connection tracking zone splitting. This table
 // is configured based on the provided configuration, including handling IPv4
-// and IPv6 DNS servers.
+// and IPv6 DNS servers
 func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 	raw := tables.Raw()
 

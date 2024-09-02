@@ -33,6 +33,12 @@ func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 	if len(segments) < 2 || segments[0] != "" {
 		return KumaProbe{}, errors.New("not enough segments in probe's path")
 	}
+
+	// application probe proxy also supports TCP and gRPC probes, we skip them by returning an empty probe object
+	if segments[1] == "tcp" || segments[1] == "grpc" {
+		return KumaProbe{}, nil
+	}
+
 	vport, err := strconv.ParseInt(segments[1], 10, 32)
 	if err != nil {
 		return KumaProbe{}, errors.Errorf("invalid port value %s", segments[1])

@@ -6,8 +6,9 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -19,7 +20,7 @@ import (
 func MakeTCPSplit(
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []common_api.BackendRef,
+	refs []core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
@@ -41,7 +42,7 @@ func MakeTCPSplit(
 func MakeHTTPSplit(
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []common_api.BackendRef,
+	refs []core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
@@ -58,11 +59,10 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound      mesh_proto.OutboundInterface
-	Protocol      core_mesh.Protocol
-	ServiceName   string
-	BackendRef    common_api.BackendRef
-	OwnerResource *core_rules.UniqueResourceIdentifier
+	Outbound    *xds_types.Outbound
+	Protocol    core_mesh.Protocol
+	ServiceName string
+	BackendRef  common_api.BackendRef
 }
 
 func CollectServices(
@@ -72,15 +72,17 @@ func CollectServices(
 	var dests []DestinationService
 	for _, outbound := range proxy.Outbounds {
 		var destinationService *DestinationService
-		switch outbound.LegacyOutbound.GetBackendRef().GetKind() {
-		case string(common_api.MeshService):
-			destinationService = collectMeshService(outbound.LegacyOutbound, proxy, meshCtx)
-		case string(common_api.MeshExternalService):
-			destinationService = collectMeshExternalService(outbound.LegacyOutbound, proxy, meshCtx)
-		case string(common_api.MeshMultiZoneService):
-			destinationService = collectMeshMultiZoneService(outbound.LegacyOutbound, proxy, meshCtx)
-		default:
-			destinationService = collectServiceTagService(outbound.LegacyOutbound, proxy, meshCtx)
+		if outbound.LegacyOutbound != nil {
+			destinationService = collectServiceTagService(outbound, meshCtx)
+		} else {
+			switch outbound.Resource.ResourceType {
+			case core_model.ResourceType(common_api.MeshService):
+				destinationService = collectMeshService(outbound, meshCtx)
+			case core_model.ResourceType(common_api.MeshExternalService):
+				destinationService = collectMeshExternalService(outbound, meshCtx)
+			case core_model.ResourceType(common_api.MeshMultiZoneService):
+				destinationService = collectMeshMultiZoneService(outbound, meshCtx)
+			}
 		}
 		if destinationService != nil {
 			dests = append(dests, *destinationService)
@@ -90,17 +92,16 @@ func CollectServices(
 }
 
 func collectMeshService(
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
-	proxy *core_xds.Proxy,
+	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	ms, msOk := meshCtx.MeshServiceByName[outbound.BackendRef.Name]
+	ms, msOk := meshCtx.MeshServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
 	if !msOk {
 		// we want to ignore service which is not found. Logging might be excessive here.
 		// We don't have other mechanism to bubble up warnings yet.
 		return nil
 	}
-	port, ok := ms.FindPort(outbound.BackendRef.Port)
+	port, ok := ms.FindPortByName(outbound.Resource.SectionName)
 	if !ok {
 		return nil
 	}
@@ -109,9 +110,9 @@ func collectMeshService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound),
+		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: ms.DestinationName(outbound.BackendRef.Port),
+		ServiceName: ms.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
@@ -119,23 +120,21 @@ func collectMeshService(
 			},
 			Port: &port.Port,
 		},
-		OwnerResource: pointer.To(core_rules.UniqueKey(ms, port.Name)),
 	}
 }
 
 func collectMeshExternalService(
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
-	proxy *core_xds.Proxy,
+	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	mes, mesOk := meshCtx.MeshExternalServiceByName[outbound.BackendRef.Name]
+	mes, mesOk := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
 	if !mesOk {
 		return nil
 	}
 	return &DestinationService{
-		Outbound:    proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound),
+		Outbound:    outbound,
 		Protocol:    core_mesh.Protocol(mes.Spec.Match.Protocol),
-		ServiceName: mes.DestinationName(outbound.BackendRef.Port),
+		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshExternalService,
@@ -143,20 +142,18 @@ func collectMeshExternalService(
 			},
 			Port: pointer.To(uint32(mes.Spec.Match.Port)),
 		},
-		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 }
 
 func collectMeshMultiZoneService(
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
-	proxy *core_xds.Proxy,
+	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	svc, mesOk := meshCtx.MeshMultiZoneServiceByName[outbound.BackendRef.Name]
+	svc, mesOk := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
 	if !mesOk {
 		return nil
 	}
-	port, ok := svc.FindPort(outbound.BackendRef.Port)
+	port, ok := svc.FindPortByName(outbound.Resource.SectionName)
 	if !ok {
 		return nil
 	}
@@ -165,9 +162,9 @@ func collectMeshMultiZoneService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound),
+		Outbound:    outbound,
 		Protocol:    protocol,
-		ServiceName: svc.DestinationName(outbound.BackendRef.Port),
+		ServiceName: svc.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshMultiZoneService,
@@ -175,25 +172,23 @@ func collectMeshMultiZoneService(
 			},
 			Port: &port.Port,
 		},
-		OwnerResource: pointer.To(core_rules.UniqueKey(svc, port.Name)),
 	}
 }
 
 func collectServiceTagService(
-	outbound *mesh_proto.Dataplane_Networking_Outbound,
-	proxy *core_xds.Proxy,
+	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	serviceName := outbound.GetService()
+	serviceName := outbound.LegacyOutbound.GetService()
 	return &DestinationService{
-		Outbound:    proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound),
+		Outbound:    outbound,
 		Protocol:    meshCtx.GetServiceProtocol(serviceName),
 		ServiceName: serviceName,
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
 				Name: serviceName,
-				Tags: outbound.GetTags(),
+				Tags: outbound.LegacyOutbound.GetTags(),
 			},
 		},
 	}
@@ -203,13 +198,13 @@ func makeSplit(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []common_api.BackendRef,
+	refs []core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
 
 	for _, ref := range refs {
-		switch ref.Kind {
+		switch ref.LegacyBackendRef.Kind {
 		case common_api.MeshService, common_api.MeshExternalService, common_api.MeshServiceSubset, common_api.MeshMultiZoneService:
 		default:
 			continue
@@ -217,42 +212,42 @@ func makeSplit(
 
 		var service string
 		var protocol core_mesh.Protocol
-		if pointer.DerefOr(ref.Weight, 1) == 0 {
+		if pointer.DerefOr(ref.LegacyBackendRef.Weight, 1) == 0 {
 			continue
 		}
 		switch {
-		case ref.Kind == common_api.MeshExternalService:
-			mes, ok := meshCtx.MeshExternalServiceByName[ref.Name]
+		case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
+			mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 			if !ok {
 				continue
 			}
-			port := pointer.Deref(ref.Port)
+			port := pointer.Deref(ref.LegacyBackendRef.Port)
 			service = mes.DestinationName(port)
 			protocol = meshCtx.GetServiceProtocol(service)
-		case ref.Kind == common_api.MeshMultiZoneService:
-			ms, ok := meshCtx.MeshMultiZoneServiceByName[ref.Name]
+		case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
+			ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 			if !ok {
 				continue
 			}
-			port, ok := ms.FindPort(*ref.Port)
+			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
 			if !ok {
 				continue
 			}
-			service = ms.DestinationName(*ref.Port)
+			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
 			protocol = port.AppProtocol
-		case ref.Kind == common_api.MeshService && ref.ReferencesRealObject():
-			ms, ok := meshCtx.MeshServiceByName[ref.Name]
+		case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
+			ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 			if !ok {
 				continue
 			}
-			port, ok := ms.FindPort(*ref.Port)
+			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
 			if !ok {
 				continue
 			}
-			service = ms.DestinationName(*ref.Port)
+			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
 			protocol = port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
 		default:
-			service = ref.Name
+			service = ref.LegacyBackendRef.Name
 			protocol = meshCtx.GetServiceProtocol(service)
 		}
 		if _, ok := protocols[protocol]; !ok {
@@ -260,13 +255,19 @@ func makeSplit(
 		}
 
 		var clusterName string
-		switch ref.Kind {
+		switch ref.LegacyBackendRef.Kind {
 		case common_api.MeshExternalService:
-			clusterName = envoy_names.GetMeshExternalServiceName(ref.Name) // todo shouldn't this be in destination name?
+			clusterName = envoy_names.GetMeshExternalServiceName(ref.LegacyBackendRef.Name) // todo shouldn't this be in destination name?
 		case common_api.MeshMultiZoneService:
-			clusterName = meshCtx.MeshMultiZoneServiceByName[ref.Name].DestinationName(*ref.Port)
+			clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
+		case common_api.MeshService:
+			if ref.LegacyBackendRef.Port != nil {
+				clusterName = meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
+				break
+			}
+			fallthrough
 		default:
-			clusterName, _ = envoy_tags.Tags(ref.Tags).
+			clusterName, _ = envoy_tags.Tags(ref.LegacyBackendRef.Tags).
 				WithTags(mesh_proto.ServiceTag, service).
 				DestinationClusterName(nil)
 		}
@@ -274,19 +275,19 @@ func makeSplit(
 		// The mesh tag is present here if this destination is generated
 		// from a cross-mesh MeshGateway listener virtual outbound.
 		// It is not part of the service tags.
-		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+		if mesh, ok := ref.LegacyBackendRef.Tags[mesh_proto.MeshTag]; ok {
 			// The name should be distinct to the service & mesh combination
 			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
 		}
 
 		isExternalService := meshCtx.IsExternalService(service)
-		refHash := ref.Hash()
+		refHash := ref.LegacyBackendRef.Hash()
 
 		if existingClusterName, ok := clusterCache[refHash]; ok {
 			// cluster already exists, so adding only split
 			split = append(split, plugins_xds.NewSplitBuilder().
 				WithClusterName(existingClusterName).
-				WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+				WithWeight(uint32(pointer.DerefOr(ref.LegacyBackendRef.Weight, 1))).
 				WithExternalService(isExternalService).
 				Build())
 			continue
@@ -296,19 +297,19 @@ func makeSplit(
 
 		split = append(split, plugins_xds.NewSplitBuilder().
 			WithClusterName(clusterName).
-			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+			WithWeight(uint32(pointer.DerefOr(ref.LegacyBackendRef.Weight, 1))).
 			WithExternalService(isExternalService).
 			Build())
 
 		clusterBuilder := plugins_xds.NewClusterBuilder().
 			WithService(service).
 			WithName(clusterName).
-			WithTags(envoy_tags.Tags(ref.Tags).
-				WithTags(mesh_proto.ServiceTag, ref.Name).
+			WithTags(envoy_tags.Tags(ref.LegacyBackendRef.Tags).
+				WithTags(mesh_proto.ServiceTag, ref.LegacyBackendRef.Name).
 				WithoutTags(mesh_proto.MeshTag)).
 			WithExternalService(isExternalService)
 
-		if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+		if mesh, ok := ref.LegacyBackendRef.Tags[mesh_proto.MeshTag]; ok {
 			clusterBuilder.WithMesh(mesh)
 		}
 

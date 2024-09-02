@@ -4,6 +4,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -19,11 +20,11 @@ func Context() *ContextBuilder {
 	return &ContextBuilder{
 		res: &xds_context.Context{
 			Mesh: xds_context.MeshContext{
-				Resource:                  samples.MeshDefault(),
-				EndpointMap:               map[core_xds.ServiceName][]core_xds.Endpoint{},
-				ServicesInformation:       map[string]*xds_context.ServiceInformation{},
-				MeshExternalServiceByName: map[string]*meshexternalservice_api.MeshExternalServiceResource{},
-				MeshServiceByName:         map[string]*meshservice_api.MeshServiceResource{},
+				Resource:                        samples.MeshDefault(),
+				EndpointMap:                     map[core_xds.ServiceName][]core_xds.Endpoint{},
+				ServicesInformation:             map[string]*xds_context.ServiceInformation{},
+				MeshExternalServiceByIdentifier: map[model.ResourceIdentifier]*meshexternalservice_api.MeshExternalServiceResource{},
+				MeshServiceByIdentifier:         map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource{},
 			},
 			ControlPlane: &xds_context.ControlPlaneContext{
 				CLACache: &xds.DummyCLACache{OutboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{}},
@@ -36,10 +37,10 @@ func Context() *ContextBuilder {
 
 func (mc *ContextBuilder) Build() *xds_context.Context {
 	for _, ms := range mc.res.Mesh.Resources.MeshServices().Items {
-		mc.res.Mesh.MeshServiceByName[ms.GetMeta().GetName()] = ms
+		mc.res.Mesh.MeshServiceByIdentifier[model.NewResourceIdentifier(ms)] = ms
 	}
 	for _, mes := range mc.res.Mesh.Resources.MeshExternalServices().Items {
-		mc.res.Mesh.MeshExternalServiceByName[mes.GetMeta().GetName()] = mes
+		mc.res.Mesh.MeshExternalServiceByIdentifier[model.NewResourceIdentifier(mes)] = mes
 	}
 	return mc.res
 }
