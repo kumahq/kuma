@@ -195,6 +195,21 @@ mtls:
 	return YamlUniversal(mesh)
 }
 
+func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+meshServices:
+  enabled: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+`, name, meshServicesEnabled)
+	return YamlUniversal(mesh)
+}
+
 func TrafficRouteKubernetes(name string) InstallFunc {
 	tr := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
