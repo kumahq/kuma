@@ -1,9 +1,0 @@
-import{d as w,r as l,o as t,m as n,w as e,b as i,k as m,U as c,e as a,T as C,t as d,c as u,F as f,G as h,p,q as g}from"./index-Oo_hgHuo.js";const B={class:"stack"},K={class:"columns"},D=w({__name:"MeshExternalServiceDetailView",props:{data:{}},setup(y){const r=y;return(o,T)=>{const k=l("KTruncate"),_=l("KBadge"),V=l("KCard"),v=l("AppView"),b=l("RouteView");return t(),n(b,{name:"mesh-external-service-detail-view",params:{}},{default:e(()=>[i(v,null,{default:e(()=>[m("div",B,[i(V,null,{default:e(()=>[m("div",K,[r.data.status.addresses.length>0?(t(),n(c,{key:0},{title:e(()=>[a(`
-                Addresses
-              `)]),body:e(()=>[r.data.status.addresses.length===1?(t(),n(C,{key:0,text:r.data.status.addresses[0].hostname},{default:e(()=>[a(d(r.data.status.addresses[0].hostname),1)]),_:1},8,["text"])):(t(),n(k,{key:1},{default:e(()=>[(t(!0),u(f,null,h(r.data.status.addresses,s=>(t(),u("span",{key:s.hostname},d(s.hostname),1))),128))]),_:1}))]),_:1})):p("",!0),a(),o.data.spec.match?(t(),n(c,{key:1,class:"port"},{title:e(()=>[a(`
-                Port
-              `)]),body:e(()=>[(t(!0),u(f,null,h([o.data.spec.match],s=>(t(),n(_,{key:s.port,appearance:"info"},{default:e(()=>[a(d(s.port)+"/"+d(s.protocol),1)]),_:2},1024))),128))]),_:1})):p("",!0),a(),o.data.spec.match?(t(),n(c,{key:2,class:"tls"},{title:e(()=>[a(`
-                TLS
-              `)]),body:e(()=>[i(_,{appearance:"neutral"},{default:e(()=>{var s;return[a(d((s=o.data.spec.tls)!=null&&s.enabled?"Enabled":"Disabled"),1)]}),_:1})]),_:1})):p("",!0),a(),typeof o.data.status.vip<"u"?(t(),n(c,{key:3,class:"ip"},{title:e(()=>[a(`
-                VIP
-              `)]),body:e(()=>[a(d(o.data.status.vip.ip),1)]),_:1})):p("",!0)])]),_:1})])]),_:1})]),_:1})}}}),E=g(D,[["__scopeId","data-v-76acb15c"]]);export{E as default};
