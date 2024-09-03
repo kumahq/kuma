@@ -50,9 +50,9 @@ func (c Executable) Initialize(
 
 	for _, path := range paths {
 		if found := findPath(path); found != "" {
-			if v, err := getIptablesVersion(ctx, path); err == nil && v.Mode == c.mode {
+			if v, err := getIptablesVersion(ctx, found); err == nil && v.Mode == c.mode {
 				return InitializedExecutable{
-					Path:    path,
+					Path:    found,
 					logger:  l,
 					name:    c.name,
 					prefix:  c.prefix,
