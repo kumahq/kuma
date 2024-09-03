@@ -39,7 +39,7 @@ func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator
 		resManager:      resManager,
 		authenticator:   authenticator,
 		streams:         map[core_xds.StreamID]stream{},
-		deltaStreams:         map[core_xds.StreamID]stream{},
+		deltaStreams:    map[core_xds.StreamID]stream{},
 		dpNotFoundRetry: dpNotFoundRetry,
 	}
 }
@@ -53,7 +53,7 @@ type authCallbacks struct {
 
 	sync.RWMutex // protects streams
 	streams      map[core_xds.StreamID]stream
-	deltaStreams      map[core_xds.StreamID]stream
+	deltaStreams map[core_xds.StreamID]stream
 }
 
 type stream struct {
@@ -85,22 +85,7 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 }
 
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	s, err := a.stream(streamID, req)
-	if err != nil {
-		return err
-	}
-
-	credential, err := ExtractCredential(s.ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
-	}
-	if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
-		return errors.Wrap(err, "authentication failed")
-	}
-	a.Lock()
-	a.streams[streamID] = s
-	a.Unlock()
-	return nil
+	return a.onStreamRequest(streamID, req, false)
 }
 
 func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
@@ -123,7 +108,11 @@ func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
 }
 
 func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
-	s, err := a.deltaStream(streamID, req)
+	return a.onStreamRequest(streamID, req, true)
+}
+
+func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds.Request, isDelta bool) error {
+	s, err := a.stream(streamID, req, isDelta)
 	if err != nil {
 		return err
 	}
@@ -137,41 +126,24 @@ func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req uti
 		return errors.Wrap(err, "authentication failed")
 	}
 	a.Lock()
-	a.deltaStreams[streamID] = s
+	if isDelta {
+		a.deltaStreams[streamID] = s
+	} else {
+		a.streams[streamID] = s
+	}
 	a.Unlock()
 	return nil
 }
 
-func (a *authCallbacks) deltaStream(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) (stream, error) {
+func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request, isDelta bool) (stream, error) {
 	a.RLock()
-	s, ok := a.deltaStreams[streamID]
-	a.RUnlock()
-	if !ok {
-		return stream{}, errors.New("stream is not present")
+	var s stream
+	var ok bool
+	if isDelta {
+		s, ok = a.deltaStreams[streamID]
+	} else {
+		s, ok = a.streams[streamID]
 	}
-
-	if s.nodeID == "" {
-		s.nodeID = req.NodeId()
-	}
-
-	if s.nodeID != req.NodeId() {
-		return stream{}, errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", s.nodeID, req.NodeId())
-	}
-
-	if s.resource == nil {
-		md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
-		res, err := a.resource(user.Ctx(s.ctx, user.ControlPlane), md, req.NodeId())
-		if err != nil {
-			return stream{}, err
-		}
-		s.resource = res
-	}
-	return s, nil
-}
-
-func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) (stream, error) {
-	a.RLock()
-	s, ok := a.streams[streamID]
 	a.RUnlock()
 	if !ok {
 		return stream{}, errors.New("stream is not present")

@@ -6,11 +6,10 @@ import (
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/server/config"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-
 	envoy_server_delta "github.com/envoyproxy/go-control-plane/pkg/server/delta/v3"
 	envoy_server_rest "github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
 	envoy_server_sotw "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -81,13 +80,11 @@ func RegisterXDS(
 		),
 		util_xds_v3.AdaptDeltaCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptDeltaCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
-		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
 	if cb := rt.XDS().ServerCallbacks; cb != nil {
 		deltaCallbacks = append(deltaCallbacks, util_xds_v3.AdaptDeltaCallbacks(cb))
 	}
-
 
 	rest := envoy_server_rest.NewServer(xdsContext.Cache(), callbacks)
 	sotw := envoy_server_sotw.NewServer(context.Background(), xdsContext.Cache(), callbacks)

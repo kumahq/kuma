@@ -84,13 +84,6 @@ func (r *resourceWarmingForcer) OnStreamClosed(streamID int64, _ *envoy_core.Nod
 	delete(r.nodeIDs, streamID)
 }
 
-func (r *resourceWarmingForcer) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
-	r.Lock()
-	defer r.Unlock()
-	delete(r.lastEndpointNonces, streamID)
-	delete(r.nodeIDs, streamID)
-}
-
 func (r *resourceWarmingForcer) OnStreamRequest(streamID xds.StreamID, request *envoy_sd.DiscoveryRequest) error {
 	if request.TypeUrl != envoy_resource.EndpointType {
 		return nil // we force Cluster warming only on receiving the same EDS Discovery Request
@@ -121,57 +114,6 @@ func (r *resourceWarmingForcer) OnStreamRequest(streamID xds.StreamID, request *
 	return nil
 }
 
-func (r *resourceWarmingForcer) OnStreamDeltaRequest(streamID xds.StreamID, request *envoy_sd.DeltaDiscoveryRequest) error {
-	warmingForcerLog.Info("check something", "streamdi", streamID, "request.TypeUrl", request.TypeUrl, "request.ResponseNonce", request.ResponseNonce)
-	if request.TypeUrl != envoy_resource.EndpointType {
-		return nil // we force Cluster warming only on receiving the same EDS Discovery Request
-	}
-	if request.ResponseNonce == "" {
-		return nil // initial request, no need to force warming
-	}
-	if request.ErrorDetail != nil {
-		return nil // we only care about ACKs, otherwise we can get 2 Nonces with multiple NACKs
-	}
-	warmingForcerLog.Info("received second Endpoint DiscoveryRequest with same Nonce. Forcing new version of Endpoints to warm the Cluster")
-	r.Lock()
-	lastEndpointNonce := r.lastEndpointNonces[streamID]
-	r.lastEndpointNonces[streamID] = request.ResponseNonce
-	nodeID := r.nodeIDs[streamID]
-	if nodeID == "" {
-		nodeID = r.hasher.ID(request.Node) // request.Node can be set only on first request therefore we need to save it
-		r.nodeIDs[streamID] = nodeID
-	}
-	r.Unlock()
-	warmingForcerLog.Info("HMMM", "lastEndpointNonce", lastEndpointNonce, "request.ResponseNonce ", request.ResponseNonce )
-	if lastEndpointNonce == request.ResponseNonce || lastEndpointNonce == "" {
-		warmingForcerLog.Info("received second Endpoint DiscoveryRequest with same Nonce. Forcing new version of Endpoints to warm the Cluster")
-		if err := r.deltaForceNewEndpointsVersion(nodeID); err != nil {
-			warmingForcerLog.Error(err, "could not force cluster warming")
-		}
-	}
-	return nil
-}
-
-func (r *resourceWarmingForcer) OnStreamDeltaResponse(streamID int64, request *envoy_sd.DeltaDiscoveryRequest, _ *envoy_sd.DeltaDiscoveryResponse) {
-	if request.TypeUrl != envoy_resource.ClusterType {
-		return
-	}
-	r.Lock()
-
-	nodeID := r.nodeIDs[streamID]
-	if nodeID == "" {
-		nodeID = r.hasher.ID(request.Node) // request.Node can be set only on first request therefore we need to save it
-		r.nodeIDs[streamID] = nodeID
-	}
-	r.Unlock()
-	if request.TypeUrl == envoy_resource.ClusterType {
-		warmingForcerLog.Info("received second Endpoint DiscoveryRequest with same Nonce. Forcing new version of Endpoints to warm the Cluster")
-		if err := r.deltaForceNewEndpointsVersion(nodeID); err != nil {
-			warmingForcerLog.Error(err, "could not force cluster warming")
-		}
-	}
-}
-
 func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 	snapshot, err := r.cache.GetSnapshot(nodeID)
 	if err != nil {
@@ -187,26 +129,6 @@ func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 	if err := r.cache.SetSnapshot(context.TODO(), nodeID, snapshot); err != nil {
 		return errors.Wrap(err, "could not set snapshot")
 	}
-	return nil
-}
-
-func (r *resourceWarmingForcer) deltaForceNewEndpointsVersion(nodeID string) error {
-	snapshot, err := r.cache.GetSnapshot(nodeID)
-	if err != nil {
-		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot
-	}
-	cacheSnapshot, ok := snapshot.(*envoy_cache.Snapshot)
-	if !ok {
-		return errors.New("couldn't convert snapshot from cache to envoy Snapshot")
-	}
-	responseType, err := envoy_cache.GetResponseTypeURL(types.Endpoint) 
-	if err != nil {
-		return err
-	}
-	for _, endpoint := range cacheSnapshot.VersionMap[responseType]{
-		cacheSnapshot.VersionMap[responseType][endpoint] = ""
-	}
-	
 	return nil
 }
 

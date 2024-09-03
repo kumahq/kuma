@@ -3,52 +3,50 @@ package xds
 import (
 	"context"
 
-	discoveryv3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// DiscoveryRequest defines interface over real Envoy's DiscoveryRequest.
-type DiscoveryRequest interface {
+type Request interface {
 	NodeId() string
-	// Node returns either a v2 or v3 Node
 	Node() interface{}
 	Metadata() *structpb.Struct
-	VersionInfo() string
-	GetTypeUrl() string
 	GetResponseNonce() string
-	GetResourceNames() []string
+	GetTypeUrl() string
 	HasErrors() bool
 	ErrorMsg() string
+	VersionInfo() string
+	GetResourceNames() []string
+}
+
+type Response interface {
+	GetTypeUrl() string
+	GetResources() []*anypb.Any
+	GetNonce() string
+	VersionInfo() string
+	GetNumberOfResources() int
+}
+
+// DiscoveryRequest defines interface over real Envoy's DiscoveryRequest.
+type DiscoveryRequest interface {
+	Request
 }
 
 // DiscoveryResponse defines interface over real Envoy's DiscoveryResponse.
 type DiscoveryResponse interface {
-	GetTypeUrl() string
-	VersionInfo() string
-	GetResources() []*anypb.Any
-	GetNonce() string
+	Response
 }
 
 type DeltaDiscoveryRequest interface {
-	NodeId() string
-	// Node returns either a v2 or v3 Node
-	Node() interface{}
-	Metadata() *structpb.Struct
-	GetTypeUrl() string
-	GetResponseNonce() string
+	Request
 	GetResourceNamesSubscribe() []string
 	GetInitialResourceVersions() map[string]string
-	HasErrors() bool
-	ErrorMsg() string
 }
 
 // DeltaDiscoveryResponse defines interface over real Envoy's DeltaDiscoveryResponse.
 type DeltaDiscoveryResponse interface {
-	GetTypeUrl() string
-	GetResources() []*discoveryv3.Resource
+	Response
 	GetRemovedResources() []string
-	GetNonce() string
 }
 
 // Callbacks defines Callbacks for xDS streaming requests. The difference over real go-control-plane Callbacks is that it takes an DiscoveryRequest / DiscoveryResponse interface.
@@ -101,4 +99,3 @@ type MultiXDSCallbacks interface {
 	Callbacks
 	DeltaCallbacks
 }
-
