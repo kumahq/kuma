@@ -307,6 +307,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "mismatch-ports.services-for-pod.yaml",
 			dataplane:      "mismatch-ports.dataplane.yaml",
 		}),
+		Entry("30. Pod using application probe proxy", testCase{
+			pod:            "30.pod.yaml",
+			servicesForPod: "30.services-for-pod.yaml",
+			dataplane:      "30.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
