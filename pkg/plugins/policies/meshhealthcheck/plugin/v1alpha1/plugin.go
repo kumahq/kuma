@@ -167,10 +167,10 @@ func configure(
 }
 
 func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		meshExternalServices := resource.Resources[meshexternalservice_api.MeshExternalServiceType]
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
-			policies, ok := resource.Dynamic[mes.GetMeta().GetName()]
+			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
 			if !ok {
 				continue
 			}
@@ -178,13 +178,13 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			for uri, resType := range rs.IndexByOrigin() {
-				conf := mhc.ToRules.ResourceRules.Compute(uri, resource)
+			for mesID, typedResources := range rs.IndexByOrigin() {
+				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
 				if conf == nil {
 					continue
 				}
 
-				for typ, resources := range resType {
+				for typ, resources := range typedResources {
 					switch typ {
 					case envoy_resource.ClusterType:
 						err := configureClusters(resources, conf.Conf[0].(api.Conf), mesh_proto.MultiValueTagSet{})

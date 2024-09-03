@@ -1,3 +1,4 @@
+# MeshExternalService policy with targetting egress
 type: MeshHealthCheck
 name: mhc-1
 mesh: mesh-1
@@ -32,3 +33,18 @@ spec:
         http:
           path: /health/test
           expectedStatuses: [200, 201, 204]
+---
+type: MeshExternalService
+mesh: mesh-1
+name: mes
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: my-es.io
+      port: 80
+---
+type: Mesh
+name: mesh-1

@@ -324,27 +324,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									{
-										Meta: &test_model.ResourceMeta{Name: "external", Mesh: "default"},
-										Spec: &meshexternalservice_api.MeshExternalService{
-											Match: meshexternalservice_api.Match{
-												Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-												Port:     9090,
-												Protocol: meshexternalservice_api.HttpProtocol,
-											},
-											Endpoints: []meshexternalservice_api.Endpoint{
-												{
-													Address: "example.com",
-													Port:    pointer.To(meshexternalservice_api.Port(10000)),
-												},
-											},
-										},
-										Status: &meshexternalservice_api.MeshExternalServiceStatus{
-											VIP: meshexternalservice_api.VIP{
-												IP: "10.20.20.1",
-											},
-										},
-									},
+									samples.MeshExternalServiceExampleBuilder().WithMesh("default").WithName("external").Build(),
 								},
 							},
 						},
@@ -379,27 +359,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									{
-										Meta: &test_model.ResourceMeta{Name: "external", Mesh: "mesh2"},
-										Spec: &meshexternalservice_api.MeshExternalService{
-											Match: meshexternalservice_api.Match{
-												Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-												Port:     9090,
-												Protocol: meshexternalservice_api.HttpProtocol,
-											},
-											Endpoints: []meshexternalservice_api.Endpoint{
-												{
-													Address: "example.com",
-													Port:    pointer.To(meshexternalservice_api.Port(10000)),
-												},
-											},
-										},
-										Status: &meshexternalservice_api.MeshExternalServiceStatus{
-											VIP: meshexternalservice_api.VIP{
-												IP: "10.20.20.1",
-											},
-										},
-									},
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-2").Build(),
 								},
 							},
 						},
