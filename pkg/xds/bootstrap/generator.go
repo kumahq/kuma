@@ -38,6 +38,7 @@ func NewDefaultBootstrapGenerator(
 	enableReloadableTokens bool,
 	hdsEnabled bool,
 	defaultAdminPort uint32,
+	deltaXdsEnabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -56,6 +57,7 @@ func NewDefaultBootstrapGenerator(
 		hostsAndIps:             hostsAndIps,
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
+		deltaXdsEnabled:         deltaXdsEnabled,
 	}, nil
 }
 
@@ -69,6 +71,7 @@ type bootstrapGenerator struct {
 	hostsAndIps             SANSet
 	hdsEnabled              bool
 	defaultAdminPort        uint32
+	deltaXdsEnabled         bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -114,7 +117,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsCertPath: request.MetricsResources.CertPath,
 		MetricsKeyPath:  request.MetricsResources.KeyPath,
 		SystemCaPath:    request.SystemCaPath,
-		UseDelta:        request.XDSConfigType == "delta",
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -123,6 +125,12 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		} else {
 			params.AdminPort = b.defaultAdminPort
 		}
+	}
+
+	if request.XDSConfigType == "" {
+		params.UseDelta = b.deltaXdsEnabled
+	} else {
+		params.UseDelta = request.XDSConfigType == "delta"
 	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {

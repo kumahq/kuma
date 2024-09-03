@@ -20,6 +20,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
+		rt.Config().Experimental.UseDeltaXDS,
 	)
 	if err != nil {
 		return err

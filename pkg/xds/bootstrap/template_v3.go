@@ -106,10 +106,10 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			},
 		})
 	}
-	configType := envoy_core_v3.ApiConfigSource_DELTA_GRPC
-	// if parameters.UseDelta {
-	// 	configType = envoy_core_v3.ApiConfigSource_DELTA_GRPC
-	// }
+	configType := envoy_core_v3.ApiConfigSource_GRPC
+	if parameters.UseDelta {
+		configType = envoy_core_v3.ApiConfigSource_DELTA_GRPC
+	}
 
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
@@ -233,7 +233,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 	if parameters.HdsEnabled {
 		res.HdsConfig = &envoy_core_v3.ApiConfigSource{
-			ApiType:                   configType,
+			ApiType:                   envoy_core_v3.ApiConfigSource_GRPC,
 			TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 			SetNodeOnFirstMessageOnly: true,
 			GrpcServices: []*envoy_core_v3.GrpcService{

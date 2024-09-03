@@ -464,6 +464,8 @@ type ExperimentalConfig struct {
 	// If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
 	// Do not enable on production.
 	SkipPersistedVIPs bool `json:"skipPersistedVIPs" envconfig:"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS"`
+	// If true uses Delta xDS to deliver changes to sidecars.
+	UseDeltaXDS bool `json:"useDeltaXDS" envconfig:"KUMA_EXPERIMENTAL_USE_DELTA_XDS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
