@@ -84,6 +84,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "0"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----

@@ -11,8 +11,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: backend_svc_80
-          statPrefix: backend_svc_80
+          cluster: backend_msvc_80
+          statPrefix: backend_msvc_80
     metadata:
       filterMetadata:
         io.kuma.tags: {}

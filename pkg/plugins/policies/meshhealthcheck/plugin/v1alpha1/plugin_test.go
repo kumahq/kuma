@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
@@ -47,7 +48,7 @@ var _ = Describe("MeshHealthCheck", func() {
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
 
-	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -111,7 +112,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.DataplaneBackendBuilder()).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  httpServiceTag,
 						mesh_proto.ProtocolTag: "http",
@@ -249,7 +250,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("TCP HealthCheck to real MeshService", testCase{
 			resources: tcpCluster,
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{

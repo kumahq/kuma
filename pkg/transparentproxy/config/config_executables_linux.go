@@ -14,14 +14,6 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
-func mount(src string, dest string, flags uintptr) error {
-	if err := unix.Mount(src, dest, "", flags, ""); err != nil {
-		return errors.Wrapf(err, "failed to mount %s to %s", src, dest)
-	}
-
-	return nil
-}
-
 func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
 	// Unshare the current process's mount namespace to isolate it from other processes
 	if err := unix.Unshare(unix.CLONE_NEWNS); err != nil {
@@ -139,4 +131,12 @@ func (c InitializedExecutable) Exec(
 	}
 
 	return &stdout, &stderr, nil
+}
+
+func mount(src string, dest string, flags uintptr) error {
+	if err := unix.Mount(src, dest, "", flags, ""); err != nil {
+		return errors.Wrapf(err, "failed to mount %s to %s", src, dest)
+	}
+
+	return nil
 }

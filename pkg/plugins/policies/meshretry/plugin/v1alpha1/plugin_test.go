@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
@@ -38,7 +39,7 @@ import (
 )
 
 var _ = Describe("MeshRetry", func() {
-	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -49,7 +50,7 @@ var _ = Describe("MeshRetry", func() {
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -89,7 +90,7 @@ var _ = Describe("MeshRetry", func() {
 				WithMesh("default").
 				WithAddress("127.0.0.1").
 				WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http")).
-			WithOutbounds(core_xds.Outbounds{
+			WithOutbounds(xds_types.Outbounds{
 				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Port: builders.FirstOutboundPort,
 					Tags: map[string]string{
@@ -511,7 +512,7 @@ var _ = Describe("MeshRetry", func() {
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -607,7 +608,7 @@ var _ = Describe("MeshRetry", func() {
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
