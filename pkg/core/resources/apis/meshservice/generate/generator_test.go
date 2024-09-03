@@ -75,11 +75,9 @@ var _ = Describe("MeshService generator", func() {
 			Expect(allocator.Start(stopCh)).To(Succeed())
 		}()
 
-		Expect(samples.MeshDefaultBuilder().With(func(mesh *core_mesh.MeshResource) {
-			mesh.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-				Enabled: mesh_proto.Mesh_MeshServices_Everywhere,
-			}
-		}).Create(resManager)).To(Succeed())
+		Expect(
+			samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+		).To(Succeed())
 	})
 
 	AfterEach(func() {
