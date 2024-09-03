@@ -60,16 +60,17 @@ func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableServic
 }
 
 func GetAvailableServices(
-	otherDataplanes []*core_mesh.DataplaneResource,
+	skipAvailableServices map[xds.MeshName]struct{},
+	allDataplanes []*core_mesh.DataplaneResource,
 	meshGateways []*core_mesh.MeshGatewayResource,
 	externalServices []*core_mesh.ExternalServiceResource,
 	tagFilters []string,
 ) []*mesh_proto.ZoneIngress_AvailableService {
-	availableServices := GetIngressAvailableServices(otherDataplanes, tagFilters)
+	availableServices := GetIngressAvailableServices(skipAvailableServices, allDataplanes, tagFilters)
 	availableExternalServices := GetExternalAvailableServices(externalServices)
 	availableServices = append(availableServices, availableExternalServices...)
 
-	meshGatewayDataplanes := getMeshGateways(otherDataplanes, meshGateways)
+	meshGatewayDataplanes := getMeshGateways(allDataplanes, meshGateways)
 
 	for _, meshGateways := range meshGatewayDataplanes {
 		availableMeshGatewayListeners := getIngressAvailableMeshGateways(
@@ -140,9 +141,16 @@ func getIngressAvailableMeshGateways(meshName string, meshGateways []*core_mesh.
 	return tagSets.toAvailableServices()
 }
 
-func GetIngressAvailableServices(others []*core_mesh.DataplaneResource, tagFilters []string) []*mesh_proto.ZoneIngress_AvailableService {
+func GetIngressAvailableServices(
+	skipAvailableServices map[xds.MeshName]struct{},
+	dataplanes []*core_mesh.DataplaneResource,
+	tagFilters []string,
+) []*mesh_proto.ZoneIngress_AvailableService {
 	tagSets := tagSets{}
-	for _, dp := range others {
+	for _, dp := range dataplanes {
+		if _, ok := skipAvailableServices[dp.GetMeta().GetMesh()]; ok {
+			continue
+		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
 			tags := map[string]string{}
 			for key, value := range dpInbound.Tags {

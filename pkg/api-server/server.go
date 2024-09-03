@@ -476,7 +476,6 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			cfg.Experimental.SkipPersistedVIPs,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

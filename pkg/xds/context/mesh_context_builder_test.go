@@ -39,7 +39,6 @@ var _ = Describe("hash", func() {
 			"mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 	})
 
