@@ -14,7 +14,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -304,9 +304,9 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				meshServiceByName := map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource{}
+				meshServiceByName := map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource{}
 				for _, ms := range given.meshServices {
-					meshServiceByName[model.NewResourceIdentifier(ms)] = ms
+					meshServiceByName[core_model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := BuildEdsEndpointMap(
 					given.mesh,
@@ -1555,8 +1555,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 					samples.MeshMultiZoneServiceBackendBuilder().
-						AddMatchedMeshServiceName(model.NewResourceIdentifier(samples.MeshServiceBackend())).
-						AddMatchedMeshServiceName(model.NewResourceIdentifier(samples.MeshServiceSyncedBackend())).
+						AddMatchedMeshServiceName(core_model.NewResourceIdentifier(samples.MeshServiceBackend())).
+						AddMatchedMeshServiceName(core_model.NewResourceIdentifier(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
@@ -1724,8 +1724,18 @@ var _ = Describe("TrafficRoute", func() {
 								Tags: map[string]string{
 									"mesh": "default",
 								},
-								Weight:          1,
-								ExternalService: &core_xds.ExternalService{TLSEnabled: false, Protocol: core_mesh.ProtocolTCP},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									TLSEnabled: false,
+									Protocol:   core_mesh.ProtocolTCP,
+									OwnerResource: &core_model.TypedResourceIdentifier{
+										ResourceType: "MeshExternalService",
+										ResourceIdentifier: core_model.ResourceIdentifier{
+											Name: "example",
+											Mesh: "default",
+										},
+									},
+								},
 							},
 						},
 					},

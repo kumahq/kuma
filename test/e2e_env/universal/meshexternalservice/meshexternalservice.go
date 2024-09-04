@@ -15,6 +15,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -587,6 +588,90 @@ spec:
 			src, dst := expectTrafficLogged(makeRequest)
 			Expect(src).To(Equal("mes-demo-client-no-defaults"))
 			Expect(dst).To(Equal("mes-access-log"))
+		})
+	})
+
+	Context("MeshExternalService with MeshHealthCheck", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-health-check
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			healthCheck := fmt.Sprintf(`
+type: MeshHealthCheck
+mesh: %s
+name: mes-health-check-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-health-check
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuseConnection: true
+        http:
+          path: /test
+          expectedStatuses:
+          - 500`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshHealthCheck
+			By("check if service is healthy")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-health-check.extsvc.mesh.local/test",
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("mes-http"))
+			}, "30s", "1s").Should(Succeed())
+
+			// when MeshHealthCheck applied
+			Expect(universal.Cluster.Install(YamlUniversal(healthCheck))).To(Succeed())
+
+			// wait cluster mes-health-check to be marked as unhealthy
+			Eventually(func(g Gomega) {
+				egressClusters, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetClusters()
+				g.Expect(err).ToNot(HaveOccurred())
+				cluster := egressClusters.GetCluster(fmt.Sprintf("%s:meshexternalservice_mes-health-check", meshNameNoDefaults))
+				g.Expect(cluster).ToNot(BeNil())
+				g.Expect(cluster.HostStatuses).To(HaveLen(1))
+				g.Expect(cluster.HostStatuses[0].HealthStatus.FailedActiveHealthCheck).To(BeTrue())
+			}, "30s", "1s").Should(Succeed())
+
+			// check that mes-health-check is unhealthy
+			Consistently(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-health-check.extsvc.mesh.local/test",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 

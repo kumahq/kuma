@@ -13,6 +13,7 @@ import (
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/file"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -305,7 +306,7 @@ var _ = Describe("Rules", func() {
 	Describe("BuildRules", func() {
 		buildRulesTestTemplate := func(inputFile string, fn func(policies []core_model.Resource) (interface{}, error)) {
 			// given
-			policies := readInputFile(inputFile)
+			policies := file.ReadInputFile(inputFile)
 			// when
 			rules, err := fn(policies)
 			Expect(err).ToNot(HaveOccurred())
