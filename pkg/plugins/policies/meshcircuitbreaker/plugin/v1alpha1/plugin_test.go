@@ -16,6 +16,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
@@ -39,7 +40,7 @@ import (
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
-	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -50,8 +51,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := func(mesh string) *core_rules.UniqueResourceIdentifier {
-		return &core_rules.UniqueResourceIdentifier{
+	backendMeshExternalServiceIdentifier := func(mesh string) *core_model.TypedResourceIdentifier {
+		return &core_model.TypedResourceIdentifier{
 			ResourceIdentifier: core_model.ResourceIdentifier{
 				Name:      "external",
 				Mesh:      mesh,
@@ -134,7 +135,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithAddress("127.0.0.1").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 						Port: builders.FirstOutboundPort,
 						Tags: map[string]string{
@@ -447,7 +448,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -499,27 +500,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									{
-										Meta: &test_model.ResourceMeta{Name: "external", Mesh: "default"},
-										Spec: &meshexternalservice_api.MeshExternalService{
-											Match: meshexternalservice_api.Match{
-												Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-												Port:     9090,
-												Protocol: meshexternalservice_api.HttpProtocol,
-											},
-											Endpoints: []meshexternalservice_api.Endpoint{
-												{
-													Address: "example.com",
-													Port:    pointer.To(meshexternalservice_api.Port(10000)),
-												},
-											},
-										},
-										Status: &meshexternalservice_api.MeshExternalServiceStatus{
-											VIP: meshexternalservice_api.VIP{
-												IP: "10.20.20.1",
-											},
-										},
-									},
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("default").Build(),
 								},
 							},
 						},
@@ -547,27 +528,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									{
-										Meta: &test_model.ResourceMeta{Name: "external", Mesh: "mesh2"},
-										Spec: &meshexternalservice_api.MeshExternalService{
-											Match: meshexternalservice_api.Match{
-												Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-												Port:     9090,
-												Protocol: meshexternalservice_api.HttpProtocol,
-											},
-											Endpoints: []meshexternalservice_api.Endpoint{
-												{
-													Address: "example.com",
-													Port:    pointer.To(meshexternalservice_api.Port(10000)),
-												},
-											},
-										},
-										Status: &meshexternalservice_api.MeshExternalServiceStatus{
-											VIP: meshexternalservice_api.VIP{
-												IP: "10.20.20.1",
-											},
-										},
-									},
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh2").Build(),
 								},
 							},
 						},

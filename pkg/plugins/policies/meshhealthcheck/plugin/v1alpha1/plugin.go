@@ -9,6 +9,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -65,12 +66,12 @@ func applyToOutbounds(
 	rules core_rules.ToRules,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
-	outbounds core_xds.Outbounds,
+	outbounds xds_types.Outbounds,
 	dataplane *core_mesh.DataplaneResource,
 	meshCtx xds_context.MeshContext,
 ) error {
 	targetedClusters := policies_xds.GatherTargetedClusters(
-		outbounds.Filter(core_xds.NonBackendRefFilter),
+		outbounds,
 		outboundSplitClusters,
 		outboundClusters,
 	)
@@ -166,10 +167,11 @@ func configure(
 }
 
 func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
-	for _, resource := range proxy.ZoneEgressProxy.MeshResourcesList {
-		meshExternalServices := resource.Resources[meshexternalservice_api.MeshExternalServiceType]
+	indexed := rs.IndexByOrigin()
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
-			policies, ok := resource.Dynamic[mes.GetMeta().GetName()]
+			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
 			if !ok {
 				continue
 			}
@@ -177,13 +179,13 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			for uri, resType := range rs.IndexByOrigin() {
-				conf := mhc.ToRules.ResourceRules.Compute(uri, resource)
+			for mesID, typedResources := range indexed {
+				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
 				if conf == nil {
 					continue
 				}
 
-				for typ, resources := range resType {
+				for typ, resources := range typedResources {
 					switch typ {
 					case envoy_resource.ClusterType:
 						err := configureClusters(resources, conf.Conf[0].(api.Conf), mesh_proto.MultiValueTagSet{})

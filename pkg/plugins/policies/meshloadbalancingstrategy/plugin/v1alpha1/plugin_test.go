@@ -17,13 +17,13 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
@@ -48,7 +48,7 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-	externalMeshExternalServiceIdentifier := &core_rules.UniqueResourceIdentifier{
+	externalMeshExternalServiceIdentifier := &core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "external",
 			Mesh:      "mesh-1",
@@ -138,7 +138,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						mesh_proto.ZoneTag:    "zone-1",
 					}).
 					Build(),
-				Outbounds: core_xds.Outbounds{
+				Outbounds: xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -473,30 +473,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 								},
+							},
 							Resources: map[core_model.ResourceType]core_model.ResourceList{
 								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
 									Items: []*meshexternalservice_api.MeshExternalServiceResource{
-										{
-											Meta: &test_model.ResourceMeta{Name: "external", Mesh: "mesh-1"},
-											Spec: &meshexternalservice_api.MeshExternalService{
-												Match: meshexternalservice_api.Match{
-													Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-													Port:     9090,
-													Protocol: meshexternalservice_api.TcpProtocol,
-												},
-												Endpoints: []meshexternalservice_api.Endpoint{
-													{
-														Address: "example.com",
-														Port:    pointer.To(meshexternalservice_api.Port(10000)),
-													},
-												},
-											},
-											Status: &meshexternalservice_api.MeshExternalServiceStatus{
-												VIP: meshexternalservice_api.VIP{
-													IP: "10.20.20.1",
-												},
-											},
-										},
+										samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-1").Build(),
 									},
 								},
 							},
@@ -580,7 +561,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 							"k8s.io/region":       "test",
 						}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -762,7 +743,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -946,7 +927,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -1076,7 +1057,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",
@@ -1258,7 +1239,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						"k8s.io/region":       "test",
 					}),
 				).
-				WithOutbounds(core_xds.Outbounds{
+				WithOutbounds(xds_types.Outbounds{
 					{LegacyOutbound: builders.Outbound().WithAddress("127.0.0.1").WithPort(27777).WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
 						mesh_proto.ProtocolTag: "http",

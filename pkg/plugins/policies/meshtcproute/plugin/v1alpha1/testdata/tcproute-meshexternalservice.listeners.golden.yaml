@@ -18,6 +18,25 @@ resources:
         io.kuma.tags: {}
     name: outbound:10.20.20.1:9090
     trafficDirection: OUTBOUND
+- name: outbound:10.20.20.2:9090
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.20.20.2
+        portValue: 9090
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshexternalservice_example2
+          statPrefix: example2
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: outbound:10.20.20.2:9090
+    trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

@@ -27,7 +27,7 @@ func Connectivity() {
 	var testServerPodNames []string
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
@@ -177,7 +177,6 @@ spec:
 				WithGlobalAddress(multizone.Global.GetKuma().GetKDSServerAddress()),
 				WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 				WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 			)).
 			Install(IngressUniversal(multizone.Global.GetKuma().GenerateZoneIngressToken)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "auto-uni-test-server"}))).

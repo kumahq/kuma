@@ -321,7 +321,7 @@ to:
 `),
 		ErrorCases("MeshExternalService can be set only with Mesh", []validators.Violation{{
 			Field:   "spec.to[0].targetRef.kind",
-			Message: "kind MeshExternalService is only allowed with targetRef.kind: Mesh",
+			Message: "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh",
 		}}, `
 type: MeshLoadBalancingStrategy
 mesh: mesh-1

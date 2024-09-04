@@ -8,6 +8,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -33,7 +34,7 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	tags := svc.BackendRef.Tags
-	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.DataplaneIP, svc.Outbound.DataplanePort, core_xds.SocketAddressProtocolTCP).
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
 
@@ -63,7 +64,7 @@ func generateFromService(
 				// we need to create a split for the mirror backend
 				_ = meshroute_xds.MakeHTTPSplit(
 					clusterCache, servicesAcc,
-					[]common_api.BackendRef{filter.RequestMirror.BackendRef},
+					[]core_model.ResolvedBackendRef{{LegacyBackendRef: &filter.RequestMirror.BackendRef}},
 					meshCtx,
 				)
 			}
@@ -111,7 +112,7 @@ func generateFromService(
 			Name:           listener.GetName(),
 			Origin:         generator.OriginOutbound,
 			Resource:       listener,
-			ResourceOrigin: svc.OwnerResource,
+			ResourceOrigin: svc.Outbound.Resource,
 			Protocol:       svc.Protocol,
 		})
 
@@ -148,26 +149,38 @@ func generateListeners(
 	return resources, nil
 }
 
-func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) *api.PolicyDefault {
+func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[string]core_model.ResourceMeta) {
 	// compute for old MeshService
-	conf := rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshService(svc.ServiceName))
-	switch svc.BackendRef.Kind {
-	case common_api.MeshExternalService:
-		conf = rules.ComputeConf[api.PolicyDefault](toRules.Rules, core_rules.MeshExternalService(svc.ServiceName))
-	}
-	// check if there is configuration for real MeshService and prioritize it
-	if svc.OwnerResource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.OwnerResource, meshCtx.Resources)
-		if resourceConf != nil && len(resourceConf.Conf) != 0 {
-			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
+	var conf *api.PolicyDefault
+	backendRefOrigin := map[string]core_model.ResourceMeta{}
+
+	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
+	if ruleHTTP != nil {
+		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
+		for hash := range ruleHTTP.BackendRefOriginIndex {
+			if origin, ok := ruleHTTP.GetBackendRefOrigin(hash); ok {
+				backendRefOrigin[string(hash)] = origin
+			}
 		}
 	}
-	return conf
+	// check if there is configuration for real MeshService and prioritize it
+	if svc.Outbound.Resource != nil {
+		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
+		if resourceConf != nil && len(resourceConf.Conf) != 0 {
+			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
+			for hash := range resourceConf.BackendRefOriginIndex {
+				if origin, ok := resourceConf.GetBackendRefOrigin(hash); ok {
+					backendRefOrigin[string(hash)] = origin
+				}
+			}
+		}
+	}
+	return conf, backendRefOrigin
 }
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
-	conf := ComputeHTTPRouteConf(toRules, svc, meshCtx)
+	conf, backendRefToOrigin := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {
@@ -183,7 +196,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	}
 
 	// sort rules before we add default prefix matches etc
-	routes := api.SortRules(apiRules)
+	routes := api.SortRules(apiRules, backendRefToOrigin)
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
 	catchAllMatch := api.Match{
@@ -215,7 +228,10 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		if len(route.BackendRefs) == 0 {
 			defaultBackend := svc.BackendRef
 			defaultBackend.Weight = pointer.To(uint(100))
-			route.BackendRefs = []common_api.BackendRef{defaultBackend}
+			route.BackendRefs = []core_model.ResolvedBackendRef{{
+				LegacyBackendRef: &defaultBackend,
+				Resource:         svc.Outbound.Resource,
+			}}
 		}
 	}
 

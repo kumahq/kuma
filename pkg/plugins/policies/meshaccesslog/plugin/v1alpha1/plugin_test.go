@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
@@ -35,7 +36,7 @@ import (
 )
 
 var _ = Describe("MeshAccessLog", func() {
-	backendMeshServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "backend",
 			Mesh:      "default",
@@ -46,7 +47,7 @@ var _ = Describe("MeshAccessLog", func() {
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := core_rules.UniqueResourceIdentifier{
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
 			Name:      "example",
 			Mesh:      "default",
@@ -58,7 +59,7 @@ var _ = Describe("MeshAccessLog", func() {
 
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		outbounds         core_xds.Outbounds
+		outbounds         xds_types.Outbounds
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
@@ -89,7 +90,7 @@ var _ = Describe("MeshAccessLog", func() {
 							WithPort(17777),
 						),
 				).
-				WithOutbounds(append(given.outbounds, &core_xds.Outbound{
+				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
 					LegacyOutbound: builders.Outbound().
 						WithService("other-service").
 						WithAddress("127.0.0.1").
@@ -180,7 +181,7 @@ var _ = Describe("MeshAccessLog", func() {
 				ResourceOrigin: &backendMeshServiceIdentifier,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -223,7 +224,7 @@ var _ = Describe("MeshAccessLog", func() {
 				ResourceOrigin: &backendMeshExternalServiceIdentifier,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_rules.UniqueResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -413,7 +414,7 @@ var _ = Describe("MeshAccessLog", func() {
 						)),
 					)).MustBuild(),
 			}},
-			outbounds: core_xds.Outbounds{
+			outbounds: xds_types.Outbounds{
 				{LegacyOutbound: builders.Outbound().
 					WithService("foo-service").
 					WithAddress("127.0.0.1").

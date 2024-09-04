@@ -40,11 +40,9 @@ spec:
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(MTLSMeshKubernetes(meshName)).
+			Install(MTLSMeshWithMeshServicesKubernetes(meshName, "Exclusive")).
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
@@ -98,7 +96,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("first-test-server_%s_svc_80", namespace))))
+			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace))))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -106,7 +104,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("first-test-server_%s_svc_80", namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace)))
 		}, "30s", "1s").Should(Succeed())
 
 		Consistently(func(g Gomega) {

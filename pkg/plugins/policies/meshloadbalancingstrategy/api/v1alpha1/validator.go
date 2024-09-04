@@ -43,11 +43,12 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
+				common_api.MeshMultiZoneService,
 				common_api.MeshExternalService,
 			},
 		}))
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh")
+			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
 		}
 		verr.AddErrorAt(path.Field("default"), validateConf(toItem.Default, toItem))
 	}

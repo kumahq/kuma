@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -93,7 +94,7 @@ func CompareMatch(a Match, b Match) int {
 type Route struct {
 	Match       Match
 	Filters     []Filter
-	BackendRefs []common_api.BackendRef
+	BackendRefs []core_model.ResolvedBackendRef
 	Hash        string
 }
 
@@ -101,7 +102,7 @@ type Route struct {
 // https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
 // We treat RegularExpression matches, which are implementation-specific, the
 // same as prefix matches, the longer length match has priority.
-func SortRules(rules []Rule) []Route {
+func SortRules(rules []Rule, backendRefToOrigin map[string]core_model.ResourceMeta) []Route {
 	type keyed struct {
 		sortKey Match
 		rule    Rule
@@ -120,10 +121,18 @@ func SortRules(rules []Rule) []Route {
 	})
 	var out []Route
 	for _, key := range keys {
+		var backendRefs []core_model.ResolvedBackendRef
+		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
+			if origin, ok := backendRefToOrigin[HashMatches(key.rule.Matches)]; ok {
+				backendRefs = append(backendRefs, core_model.ResolveBackendRef(origin, br))
+			} else {
+				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
+			}
+		}
 		out = append(out, Route{
 			Hash:        HashMatches(key.rule.Matches),
 			Match:       key.sortKey,
-			BackendRefs: pointer.Deref(key.rule.Default.BackendRefs),
+			BackendRefs: backendRefs,
 			Filters:     pointer.Deref(key.rule.Default.Filters),
 		})
 	}

@@ -1,6 +1,7 @@
 package mesh
 
 import (
+	"fmt"
 	"hash/fnv"
 	"net"
 	"strconv"
@@ -8,8 +9,10 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -224,8 +227,34 @@ func (d *DataplaneResource) AdminPort(defaultAdminPort uint32) uint32 {
 
 func (d *DataplaneResource) Hash() []byte {
 	hasher := fnv.New128a()
-	_, _ = hasher.Write(model.HashMeta(d))
+	_, _ = hasher.Write(core_model.HashMeta(d))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAddress()))
 	_, _ = hasher.Write([]byte(d.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
+}
+
+func (d *DataplaneResource) AsOutbounds() xds_types.Outbounds {
+	var outbounds xds_types.Outbounds
+	for _, o := range d.Spec.Networking.Outbound {
+		if o.BackendRef != nil {
+			outbounds = append(outbounds, &xds_types.Outbound{
+				Address: o.Address,
+				Port:    o.Port,
+				Resource: &core_model.TypedResourceIdentifier{
+					ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
+						d.GetMeta(),
+						common_api.TargetRef{
+							Kind:        common_api.MeshService,
+							Name:        o.BackendRef.Name,
+							SectionName: fmt.Sprintf("%d", o.BackendRef.Port),
+							// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
+						}),
+					ResourceType: core_model.ResourceType(common_api.MeshService),
+				},
+			})
+		} else {
+			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
+		}
+	}
+	return outbounds
 }

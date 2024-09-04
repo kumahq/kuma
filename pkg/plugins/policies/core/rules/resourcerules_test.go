@@ -19,7 +19,9 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/file"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -152,14 +154,14 @@ var _ = Describe("BuildResourceRules", func() {
 			DescribeTable("should build a rule-based view for policies",
 				func(given testCase) {
 					// given
-					resources := readInputFile(inputFile)
+					resources := file.ReadInputFile(inputFile)
 					updFn(given.meta, resources)
-					meshCtx := buildMeshContext(resources)
-					toList, err := core_rules.BuildToList(matchedPolicies(resources), meshCtx)
+					meshCtx := xds_builders.Context().WithMeshLocalResources(resources).Build()
+					toList, err := core_rules.BuildToList(matchedPolicies(resources), meshCtx.Mesh.Resources)
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					rules, err := core_rules.BuildResourceRules(toList, meshCtx)
+					rules, err := core_rules.BuildResourceRules(toList, meshCtx.Mesh.Resources)
 					Expect(err).ToNot(HaveOccurred())
 
 					// then
@@ -245,7 +247,7 @@ var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
@@ -254,7 +256,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -273,11 +275,11 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       mesh.MeshType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
 			}: {Conf: []interface{}{"conf-2"}},
@@ -292,7 +294,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "frontend",
 					Mesh: "mesh-1",
@@ -311,11 +313,11 @@ var _ = Describe("Compute", func() {
 	It("should return Mesh rule if MeshMultiZoneService is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       mesh.MeshType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Name: "mesh-1"},
 			}: {Conf: []interface{}{"conf-2"}},
@@ -330,7 +332,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "multi-backend",
 					Mesh: "mesh-1",
@@ -349,11 +351,11 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService with section", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 				SectionName:        "http-port",
@@ -369,7 +371,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -388,11 +390,11 @@ var _ = Describe("Compute", func() {
 	It("should return MeshService rule if MeshService with section is not found", func() {
 		// given
 		rr := core_rules.ResourceRules{
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 			}: {Conf: []interface{}{"conf-1"}},
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
 				SectionName:        "http-port",
@@ -408,7 +410,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",
@@ -431,7 +433,7 @@ var _ = Describe("Compute", func() {
 
 		// when
 		rule := rr.Compute(
-			core_rules.UniqueResourceIdentifier{
+			core_model.TypedResourceIdentifier{
 				ResourceIdentifier: core_model.ResourceIdentifier{
 					Name: "backend",
 					Mesh: "mesh-1",

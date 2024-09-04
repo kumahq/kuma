@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -38,7 +39,7 @@ var _ = Describe("DNSGenerator", func() {
 						},
 						Spec: &mesh_proto.Mesh{},
 					},
-					VIPDomains: []model.VIPDomains{
+					VIPDomains: []xds_types.VIPDomains{
 						{Address: "240.0.0.1", Domains: []string{"httpbin.mesh"}},
 						{Address: "240.0.0.0", Domains: []string{"backend.test-ns.svc.8080.mesh", "backend_test-ns_svc_8080.mesh"}},
 						{Address: "2001:db8::ff00:42:8329", Domains: []string{"frontend.test-ns.svc.8080.mesh", "frontend_test-ns_svc_8080.mesh"}}, // this is ignored because there is no outbounds for it
@@ -64,6 +65,10 @@ var _ = Describe("DNSGenerator", func() {
 					DNSPort: 53001,
 					Version: &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
 				},
+			}
+
+			for _, dppOutbound := range dataplane.GetNetworking().GetOutbound() {
+				proxy.Outbounds = append(proxy.Outbounds, &xds_types.Outbound{LegacyOutbound: dppOutbound})
 			}
 
 			// when
