@@ -76,6 +76,7 @@ var (
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
 	_ = Describe("Targeting real MeshService in policies", meshservice.MeshServiceTargeting, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
+	_ = Describe("MeshMultiZoneService MeshLbStrategy", localityawarelb.MeshMzService, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 )
