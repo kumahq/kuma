@@ -1,0 +1,28 @@
+ResourceRules: {}
+Rules:
+- BackendRefOriginIndex: {}
+  Conf:
+    http:
+      requestTimeout: 1s
+      streamIdleTimeout: 3s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    labels:
+      k8s.kuma.io/namespace: test-ns
+      kuma.io/policy-role: consumer
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: bbb
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    labels:
+      k8s.kuma.io/namespace: test-ns
+      kuma.io/policy-role: consumer
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: aaa
+    type: MeshTimeout
+  Subset:
+  - Key: kuma.io/service
+    Not: false
+    Value: backend
