@@ -135,13 +135,15 @@ const (
 	ProbeGRPC      ProbeHandlerType = "grpc"
 )
 
-type ProbeHandlerType string
-type probeParams struct {
-	ProbeType   ProbeType
-	HandlerType ProbeHandlerType
-	Port        uint32
-	HttpGetPath string
-}
+type (
+	ProbeHandlerType string
+	probeParams      struct {
+		ProbeType   ProbeType
+		HandlerType ProbeHandlerType
+		Port        uint32
+		HttpGetPath string
+	}
+)
 
 func (p probeParams) toKubeProbe() *corev1.Probe {
 	switch p.HandlerType {
