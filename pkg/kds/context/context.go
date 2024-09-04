@@ -266,7 +266,18 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
 				zone_tokens.SigningKeyPrefix,
 			}...)
-		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+		}
+
+		isGlobal := core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
+
+		switch {
+		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllZonesFlag):
+			return true
+		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+			if r.Descriptor().IsPolicy && core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
+				return false
+			}
+
 			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
 			// Reference: https://github.com/kumahq/kuma/issues/10952
 			zoneTag := util.ZoneTag(r)
@@ -283,11 +294,10 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				// make any strong decisions which might affect connectivity
 				return true
 			}
-
 			return zone.Spec.IsEnabled()
-		default:
-			return core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
 		}
+
+		return false
 	}
 }
 

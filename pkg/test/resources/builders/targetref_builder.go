@@ -32,10 +32,19 @@ func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	}
 }
 
-func TargetRefMeshService(name, sectionName string) common_api.TargetRef {
+func TargetRefMeshService(name, namespace, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
 		Name:        name,
+		Namespace:   namespace,
+		SectionName: sectionName,
+	}
+}
+
+func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) common_api.TargetRef {
+	return common_api.TargetRef{
+		Kind:        common_api.MeshService,
+		Labels:      labels,
 		SectionName: sectionName,
 	}
 }

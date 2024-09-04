@@ -503,15 +503,23 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		case systemNamespace:
 			role = mesh_proto.SystemPolicyRole
 		default:
-			role = ComputePolicyRole(r.GetSpec().(Policy))
+			role = MustComputePolicyRole(r.GetSpec().(Policy), ns)
 		}
-		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
+		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
 	return labels
 }
 
-func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
+func MustComputePolicyRole(p Policy, ns string) mesh_proto.PolicyRole {
+	pr, err := ComputePolicyRole(p, ns)
+	if err != nil {
+		panic(err)
+	}
+	return pr
+}
+
+func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
 	hasTo := false
 	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
 		hasTo = true
@@ -522,11 +530,39 @@ func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
 		hasFrom = true
 	}
 
-	if hasTo && !hasFrom {
-		// todo(lobkovilya): detect if the policy is a producer policy when they're supported
-		return mesh_proto.ConsumerPolicyRole
-	} else {
-		return mesh_proto.WorkloadOwnerPolicyRole
+	if hasFrom || !(hasTo || hasFrom) {
+		// if there is 'from' or neither (single item)
+		return mesh_proto.WorkloadOwnerPolicyRole, nil
+	}
+
+	isProducerItem := func(tr common_api.TargetRef) bool {
+		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns)
+	}
+
+	isConsumerItem := func(tr common_api.TargetRef) bool {
+		if len(tr.Labels) > 0 {
+			return true
+		}
+		return tr.Namespace != "" && tr.Namespace != ns
+	}
+
+	producerItems, consumerItems := 0, 0
+	for _, item := range p.(PolicyWithToList).GetToList() {
+		switch {
+		case isProducerItem(item.GetTargetRef()):
+			producerItems++
+		case isConsumerItem(item.GetTargetRef()):
+			consumerItems++
+		}
+	}
+
+	switch {
+	case producerItems > 0 && consumerItems == 0:
+		return mesh_proto.ProducerPolicyRole, nil
+	case producerItems == 0 && consumerItems > 0:
+		return mesh_proto.ConsumerPolicyRole, nil
+	default:
+		return "", errors.New("it's not allowed to mix producer and consumer items in the same policy")
 	}
 }
 

@@ -107,32 +107,6 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 			}
 		}
 	}
-
-	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-		return c.validatePolicyRole(r, ns)
-	}
-
-	return nil
-}
-
-func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource, ns string) *admission.Response {
-	policy, ok := r.GetSpec().(core_model.Policy)
-	if !ok {
-		return nil
-	}
-	policyRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
-	if !ok {
-		return nil
-	}
-	if ns == c.SystemNamespace {
-		if policyRole != string(mesh_proto.SystemPolicyRole) {
-			return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole), policyRole)
-		}
-		return nil
-	}
-	if policyRole != string(core_model.ComputePolicyRole(policy)) {
-		return resourceLabelsNotAllowedResponse(mesh_proto.PolicyRoleLabel, string(core_model.ComputePolicyRole(policy)), policyRole)
-	}
 	return nil
 }
 
