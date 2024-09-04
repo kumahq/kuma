@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -51,32 +52,23 @@ type TagSelectorSet []mesh_proto.TagSelector
 // DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
 // DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
-type DestinationMap map[ServiceName]TagSelectorSet
-
-type TlsVersion int32
-
-const (
-	TLSVersionAuto TlsVersion = 0
-	TLSVersion10   TlsVersion = 1
-	TLSVersion11   TlsVersion = 2
-	TLSVersion12   TlsVersion = 3
-	TLSVersion13   TlsVersion = 4
+type (
+	DestinationMap  map[ServiceName]TagSelectorSet
+	ExternalService struct {
+		Protocol                 core_mesh.Protocol
+		TLSEnabled               bool
+		FallbackToSystemCa       bool
+		CaCert                   []byte
+		ClientCert               []byte
+		ClientKey                []byte
+		AllowRenegotiation       bool
+		SkipHostnameVerification bool
+		ServerName               string
+		SANs                     []SAN
+		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+	}
 )
-
-type ExternalService struct {
-	Protocol                 core_mesh.Protocol
-	TLSEnabled               bool
-	FallbackToSystemCa       bool
-	CaCert                   []byte
-	ClientCert               []byte
-	ClientKey                []byte
-	AllowRenegotiation       bool
-	SkipHostnameVerification bool
-	ServerName               string
-	SANs                     []SAN
-	MinTlsVersion            *TlsVersion
-	MaxTlsVersion            *TlsVersion
-}
 
 type MatchType string
 
