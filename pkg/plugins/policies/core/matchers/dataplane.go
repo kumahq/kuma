@@ -127,11 +127,11 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
+	if !ddpSelectedByNamespace(meta, dpp) {
+		return []core_rules.InboundListener{}, nil, false, nil
+	}
 	switch ref.Kind {
 	case common_api.Mesh:
-		if !ddpSelectedByNamespace(meta, dpp) {
-			return []core_rules.InboundListener{}, nil, false, nil
-		}
 		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
@@ -175,12 +175,13 @@ func dppSelectedByPolicy(
 }
 
 func ddpSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	if meta.GetLabels()[mesh_proto.PolicyRoleLabel] == string(mesh_proto.ConsumerPolicyRole) {
+	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
+	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
 		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
 		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
 	}
-
-	return true
 }
 
 func resolveMeshHTTPRouteRef(refMeta core_model.ResourceMeta, refName string, mhrs core_model.ResourceList) *meshhttproute_api.MeshHTTPRouteResource {
