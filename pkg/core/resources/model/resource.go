@@ -539,27 +539,17 @@ func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
 		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns)
 	}
 
-	isConsumerItem := func(tr common_api.TargetRef) bool {
-		if len(tr.Labels) > 0 {
-			return true
-		}
-		return tr.Namespace != "" && tr.Namespace != ns
-	}
-
-	producerItems, consumerItems := 0, 0
+	producerItems := 0
 	for _, item := range p.(PolicyWithToList).GetToList() {
-		switch {
-		case isProducerItem(item.GetTargetRef()):
+		if isProducerItem(item.GetTargetRef()) {
 			producerItems++
-		case isConsumerItem(item.GetTargetRef()):
-			consumerItems++
 		}
 	}
 
 	switch {
-	case producerItems > 0 && consumerItems == 0:
+	case producerItems == len(p.(PolicyWithToList).GetToList()):
 		return mesh_proto.ProducerPolicyRole, nil
-	case producerItems == 0 && consumerItems > 0:
+	case producerItems == 0:
 		return mesh_proto.ConsumerPolicyRole, nil
 	default:
 		return "", errors.New("it's not allowed to mix producer and consumer items in the same policy")
