@@ -41,6 +41,9 @@ var _ = Describe("AvailableServices Tracker", func() {
 		BeforeEach(func() {
 			resourceStore := memory.NewStore()
 			resManager = manager.NewResourceManager(resourceStore)
+
+			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
+
 			meshContextBuilder = xds_context.NewMeshContextBuilder(
 				resManager,
 				server.MeshResourceTypes(),
@@ -50,7 +53,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				".mesh",
 				80,
 				xds_context.AnyToAnyReachableServicesGraphBuilder,
-				false,
 			)
 			var err error
 			metrics, err = core_metrics.NewMetrics("Zone")
@@ -71,7 +73,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 				20*time.Millisecond,
 				nil,
 				"zone",
-				false,
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -89,7 +90,6 @@ var _ = Describe("AvailableServices Tracker", func() {
 		})
 		It("should update all ZoneIngresses", func() {
 			Expect(builders.ZoneIngress().Create(resManager)).To(Succeed())
-			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
 			externalService := &core_mesh.ExternalServiceResource{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
@@ -150,20 +150,39 @@ var _ = Describe("AvailableServices Tracker", func() {
 		var stop chan struct{}
 
 		BeforeEach(func() {
-			resManager = manager.NewResourceManager(memory.NewStore())
+			resourceStore := memory.NewStore()
+			resManager = manager.NewResourceManager(resourceStore)
 			var err error
 			metrics, err := core_metrics.NewMetrics("Zone")
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(samples.MeshMTLSBuilder().WithEgressRoutingEnabled().Create(resManager)).To(Succeed())
+
+			meshContextBuilder := xds_context.NewMeshContextBuilder(
+				resManager,
+				server.MeshResourceTypes(),
+				net.LookupIP,
+				"zone",
+				vips.NewPersistence(resManager, config_manager.NewConfigManager(resourceStore), false),
+				".mesh",
+				80,
+				xds_context.AnyToAnyReachableServicesGraphBuilder,
+			)
+			meshCache, err := cache_mesh.NewCache(
+				1*time.Second,
+				meshContextBuilder,
+				metrics,
+			)
 			Expect(err).ToNot(HaveOccurred())
 
 			tracker, err := zone.NewZoneAvailableServicesTracker(
 				core.Log.WithName("test"),
 				metrics,
 				resManager,
-				nil, // not used when available services are disabled
+				meshCache, // not used when available services are disabled
 				20*time.Millisecond,
 				nil,
 				"zone",
-				true,
 			)
 			Expect(err).ToNot(HaveOccurred())
 
@@ -179,9 +198,26 @@ var _ = Describe("AvailableServices Tracker", func() {
 		})
 
 		It("should clear available services list when available services are disabled", func() {
-			Expect(builders.ZoneIngress().
-				AddSimpleAvailableService("backend").
-				Create(resManager)).To(Succeed())
+			Expect(builders.ZoneIngress().Create(resManager)).To(Succeed())
+			externalService := &core_mesh.ExternalServiceResource{
+				Meta: &test_model.ResourceMeta{
+					Mesh: "default",
+					Name: "es-1",
+				},
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "127.0.0.1:80",
+					},
+					Tags: map[string]string{
+						"kuma.io/service":  "httpbin",
+						"version":          "v1",
+						mesh_proto.ZoneTag: "zone",
+					},
+				},
+			}
+			Expect(resManager.Create(context.Background(), externalService, store.CreateByKey("es-1", core_model.DefaultMesh))).To(Succeed())
+			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
+			Expect(samples.DataplaneWebBuilder().Create(resManager)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				zi := core_mesh.NewZoneIngressResource()

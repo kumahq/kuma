@@ -5,6 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -56,12 +57,12 @@ func GatherClusters(rs *core_xds.ResourceSet) Clusters {
 }
 
 func GatherTargetedClusters(
-	outbounds []*core_xds.Outbound,
+	outbounds xds_types.Outbounds,
 	outboundSplitClusters map[string][]*envoy_cluster.Cluster,
 	outboundClusters map[string]*envoy_cluster.Cluster,
 ) map[*envoy_cluster.Cluster]string {
 	targetedClusters := map[*envoy_cluster.Cluster]string{}
-	for _, outbound := range outbounds {
+	for _, outbound := range outbounds.Filter(xds_types.NonBackendRefFilter) {
 		serviceName := outbound.LegacyOutbound.GetService()
 		for _, splitCluster := range outboundSplitClusters[serviceName] {
 			targetedClusters[splitCluster] = serviceName

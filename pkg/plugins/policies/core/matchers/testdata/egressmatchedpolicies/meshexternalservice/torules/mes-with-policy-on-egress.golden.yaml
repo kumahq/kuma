@@ -1,0 +1,99 @@
+DataplanePolicies: null
+FromRules:
+  Rules:
+    :0:
+    - BackendRefOriginIndex: {}
+      Conf:
+        healthyThreshold: 99
+        http:
+          expectedStatuses:
+          - 200
+          - 201
+          - 204
+          path: /health/test
+        interval: 8s
+        timeout: 7s
+        unhealthyThreshold: 10
+      Origin:
+      - creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mhc-2
+        type: MeshHealthCheck
+      Subset: []
+GatewayRules:
+  FromRules: null
+  ToRules:
+    ByListener: null
+    ByListenerAndHostname: null
+InboundPolicies: null
+OutboundPolicies: null
+ServicePolicies: null
+SingleItemRules:
+  Rules: null
+ToRules:
+  ResourceRules:
+    mesh:name/mesh-1:
+      BackendRefOriginIndex: {}
+      Conf:
+      - healthyThreshold: 99
+        http:
+          expectedStatuses:
+          - 200
+          - 201
+          - 204
+          path: /health/test
+        interval: 8s
+        timeout: 7s
+        unhealthyThreshold: 10
+      Origin:
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mhc-2
+          type: MeshHealthCheck
+        RuleIndex: 0
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mesh-1
+        type: Mesh
+      ResourceSectionName: ""
+    meshexternalservice:mesh/mesh-1:name/mes:
+      BackendRefOriginIndex: {}
+      Conf:
+      - healthyThreshold: 1
+        http:
+          expectedStatuses:
+          - 200
+          - 201
+          path: /health
+        interval: 8s
+        timeout: 7s
+        unhealthyThreshold: 3
+      Origin:
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mhc-2
+          type: MeshHealthCheck
+        RuleIndex: 0
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mhc-1
+          type: MeshHealthCheck
+        RuleIndex: 0
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mes
+        type: MeshExternalService
+      ResourceSectionName: ""
+  Rules: null
+Type: MeshHealthCheck
+Warnings: null

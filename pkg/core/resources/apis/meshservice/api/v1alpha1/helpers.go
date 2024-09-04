@@ -5,16 +5,31 @@ import (
 	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshServiceResource) DestinationName(port uint32) string {
-	return fmt.Sprintf("%s_svc_%d", strings.ReplaceAll(m.GetMeta().GetName(), ".", "_"), port)
+	return fmt.Sprintf("%s_msvc_%d", strings.ReplaceAll(m.GetMeta().GetName(), ".", "_"), port)
 }
 
 func (m *MeshServiceResource) FindPort(port uint32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
+			return p, true
+		}
+	}
+	return Port{}, false
+}
+
+func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
+	for _, p := range m.Spec.Ports {
+		if p.Name == name {
+			return p, true
+		}
+		if fmt.Sprintf("%d", p.Port) == name {
 			return p, true
 		}
 	}
@@ -32,7 +47,7 @@ func (m *MeshServiceResource) IsLocalMeshService(localZone string) bool {
 	return resZone == localZone
 }
 
-var _ vip.ResourceHoldingVIPs = &MeshServiceResource{}
+var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
 
 func (t *MeshServiceResource) VIPs() []string {
 	vips := make([]string, len(t.Status.VIPs))
@@ -76,4 +91,39 @@ func (t *MeshServiceResource) Default() error {
 		t.Spec.State = StateUnavailable
 	}
 	return nil
+}
+
+func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
+	var outbounds xds_types.Outbounds
+	for _, vip := range t.Status.VIPs {
+		for _, port := range t.Spec.Ports {
+			outbounds = append(outbounds, &xds_types.Outbound{
+				Address:  vip.IP,
+				Port:     port.Port,
+				Resource: pointer.To(model.NewTypedResourceIdentifier(t, model.WithSectionName(port.GetName()))),
+			})
+		}
+	}
+	return outbounds
+}
+
+func (t *MeshServiceResource) Domains() *xds_types.VIPDomains {
+	if len(t.Status.VIPs) > 0 {
+		var domains []string
+		for _, addr := range t.Status.Addresses {
+			domains = append(domains, addr.Hostname)
+		}
+		return &xds_types.VIPDomains{
+			Address: t.Status.VIPs[0].IP,
+			Domains: domains,
+		}
+	}
+	return nil
+}
+
+func (p *Port) GetName() string {
+	if p.Name != "" {
+		return p.Name
+	}
+	return fmt.Sprintf("%d", p.Port)
 }

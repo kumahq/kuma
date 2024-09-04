@@ -5,6 +5,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -31,7 +32,11 @@ func generateFromService(
 	serviceName := svc.ServiceName
 	protocol := svc.Protocol
 
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, svc.BackendRef, meshCtx)
+	fallbackBackendRef := model.ResolvedBackendRef{
+		LegacyBackendRef: &svc.BackendRef,
+		Resource:         svc.Outbound.Resource,
+	}
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, fallbackBackendRef, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
@@ -48,7 +53,7 @@ func generateFromService(
 		Name:           listener.GetName(),
 		Origin:         generator.OriginOutbound,
 		Resource:       listener,
-		ResourceOrigin: svc.OwnerResource,
+		ResourceOrigin: svc.Outbound.Resource,
 		Protocol:       protocol,
 	})
 	return resources, nil
@@ -88,14 +93,17 @@ func buildOutboundListener(
 	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	tags := svc.BackendRef.Tags
+	var tags envoy_tags.Tags
+	if svc.Outbound.LegacyOutbound != nil {
+		tags = svc.Outbound.LegacyOutbound.Tags
+	}
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(
 		proxy.APIVersion,
-		svc.Outbound.DataplaneIP,
-		svc.Outbound.DataplanePort,
+		svc.Outbound.GetAddress(),
+		svc.Outbound.GetPort(),
 		core_xds.SocketAddressProtocolTCP,
 	)
 
@@ -104,7 +112,7 @@ func buildOutboundListener(
 	)
 
 	tagsMetadata := envoy_listeners.TagsMetadata(
-		envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag),
+		tags.WithoutTags(mesh_proto.MeshTag),
 	)
 
 	return builder.Configure(

@@ -9,13 +9,15 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	mhc_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/file"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 )
 
 var _ = Describe("EgressMatchedPolicies", func() {
@@ -108,24 +110,26 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "torules")))
 
-	DescribeTable("should return egress toRules for the given mesh external service",
-		func(given testCase) {
-			// given policies
-			resources, _ := readPolicies(given.policiesFile)
+	DescribeTableSubtree("MeshExternalService ResourceRules",
+		func(inputFile string) {
+			DescribeTable("should build a rule-based view for policies",
+				func() {
+					// given
+					resources := file.ReadInputFile(inputFile)
+					meshCtx := xds_builders.Context().WithMeshLocalResources(resources).Build()
 
-			// given MeshExternalService resource
-			mes := readMES(given.mesFile)
-			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
-				Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
-			}
+					// when
+					rules, err := matchers.EgressMatchedPolicies(mhc_api.MeshHealthCheckType, map[string]string{}, meshCtx.Mesh.Resources)
+					Expect(err).ToNot(HaveOccurred())
 
-			// when
-			policies, err := matchers.EgressMatchedPolicies(mhc_api.MeshHealthCheckType, map[string]string{}, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			// then
-			bytes, err := yaml.Marshal(policies.ToRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		}, generateTableEntries(filepath.Join("testdata", "egressmatchedpolicies", "meshexternalservice", "torules")))
+					// then
+					bytes, err := yaml.Marshal(rules)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(bytes).To(test_matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.", ".golden.", 1)))
+				},
+				Entry("should generate to resource rules for egress and mesh externalservice"),
+			)
+		},
+		test.EntriesForFolder(filepath.Join("egressmatchedpolicies", "meshexternalservice", "torules")),
+	)
 })

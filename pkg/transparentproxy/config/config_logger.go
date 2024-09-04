@@ -7,25 +7,6 @@ import (
 	"strings"
 )
 
-// logln writes a line of output to the specified writer. It directly passes the
-// provided arguments to the writer without any formatting or prefix.
-func logln(w io.Writer, a []any) {
-	fmt.Fprintln(w, a...)
-}
-
-// loglnWithPrefixes writes a formatted line to the specified writer,
-// prefixing it with a hash (#) and additional prefixes for context.
-func (l Logger) loglnWithPrefixes(w io.Writer, args []any, prefixes ...string) {
-	finalPrefixes := []any{"#"}
-	for _, prefix := range slices.Concat(slices.Clone(l.defaultPrefixes), prefixes) {
-		if prefix != "" {
-			finalPrefixes = append(finalPrefixes, fmt.Sprintf("[%s]", prefix))
-		}
-	}
-
-	logln(w, slices.Concat(finalPrefixes, args))
-}
-
 // Logger provides simple logging capabilities directing output to specified
 // stdout and stderr writers. It supports retry-aware logging, tracking the
 // current and maximum retry counts to adjust log messages accordingly.
@@ -113,4 +94,23 @@ func (l Logger) ErrorTry(err error, a ...any) {
 	errInOneLine := strings.ReplaceAll(err.Error(), "\n", "")
 
 	l.loglnWithPrefixes(l.stderr, append(a, errInOneLine), l.tryPrefix())
+}
+
+// logln writes a line of output to the specified writer. It directly passes the
+// provided arguments to the writer without any formatting or prefix.
+func logln(w io.Writer, a []any) {
+	fmt.Fprintln(w, a...)
+}
+
+// loglnWithPrefixes writes a formatted line to the specified writer,
+// prefixing it with a hash (#) and additional prefixes for context.
+func (l Logger) loglnWithPrefixes(w io.Writer, args []any, prefixes ...string) {
+	finalPrefixes := []any{"#"}
+	for _, prefix := range slices.Concat(slices.Clone(l.defaultPrefixes), prefixes) {
+		if prefix != "" {
+			finalPrefixes = append(finalPrefixes, fmt.Sprintf("[%s]", prefix))
+		}
+	}
+
+	logln(w, slices.Concat(finalPrefixes, args))
 }

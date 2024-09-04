@@ -127,6 +127,9 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
+	if !ddpSelectedByNamespace(meta, dpp) {
+		return []core_rules.InboundListener{}, nil, false, nil
+	}
 	switch ref.Kind {
 	case common_api.Mesh:
 		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
@@ -168,6 +171,16 @@ func dppSelectedByPolicy(
 		return dppSelectedByPolicy(mhr.Meta, mhr.Spec.TargetRef, dpp, gateway, referencableResources)
 	default:
 		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
+	}
+}
+
+func ddpSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
+	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
+	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
+		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
 	}
 }
 

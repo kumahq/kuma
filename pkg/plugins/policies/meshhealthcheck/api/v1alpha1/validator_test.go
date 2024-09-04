@@ -286,8 +286,9 @@ violations:
 			Entry("cannot use MeshExternalService with other type than Mesh", testCase{
 				inputYaml: `
 targetRef:
-  kind: MeshService
-  name: backend
+  kind: MeshSubset
+  tags:
+    kuma.io/service: backend
 to:
   - targetRef:
       kind: MeshExternalService
@@ -304,7 +305,7 @@ to:
 				expected: `
 violations:
   - field: spec.to[0].targetRef.kind
-    message: 'kind MeshExternalService is only allowed with targetRef.kind: Mesh'`,
+    message: 'kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh'`,
 			}),
 		)
 	})

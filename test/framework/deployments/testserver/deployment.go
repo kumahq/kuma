@@ -3,6 +3,7 @@ package testserver
 import (
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/test/framework"
 )
@@ -16,7 +17,8 @@ type DeploymentOpts struct {
 	WithStatefulSet     bool
 	ServiceAccount      string
 	echoArgs            []string
-	healthcheckTCPArgs  []string
+	args                []string
+	probes              []probeParams
 	Replicas            int32
 	WaitingToBeReady    bool
 	EnableProbes        bool
@@ -108,15 +110,92 @@ func WithoutWaitingToBeReady() DeploymentOptsFn {
 	}
 }
 
+// WithEchoArgs sets the arguments for the echo server, values will be appended the default echo arguments
 func WithEchoArgs(args ...string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		opts.echoArgs = args
 	}
 }
 
-func WithHealthCheckTCPArgs(args ...string) DeploymentOptsFn {
+// WithArgs sets the arguments for the test server, they take precedence over the echo arguments
+func WithArgs(args ...string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
-		opts.healthcheckTCPArgs = args
+		opts.args = args
+	}
+}
+
+type ProbeType string
+
+const (
+	ReadinessProbe ProbeType        = "readiness"
+	StartupProbe   ProbeType        = "startup"
+	LivenessProbe  ProbeType        = "liveness"
+	ProbeHttpGet   ProbeHandlerType = "httpGet"
+	ProbeTcpSocket ProbeHandlerType = "tcpSocket"
+	ProbeGRPC      ProbeHandlerType = "grpc"
+)
+
+type (
+	ProbeHandlerType string
+	probeParams      struct {
+		ProbeType   ProbeType
+		HandlerType ProbeHandlerType
+		Port        uint32
+		HttpGetPath string
+	}
+)
+
+func (p probeParams) toKubeProbe() *corev1.Probe {
+	switch p.HandlerType {
+	case ProbeHttpGet:
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				HTTPGet: &corev1.HTTPGetAction{
+					Path: p.HttpGetPath,
+					Port: intstr.FromInt32(int32(p.Port)),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       5,
+			TimeoutSeconds:      3,
+			FailureThreshold:    60,
+		}
+	case ProbeTcpSocket:
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				TCPSocket: &corev1.TCPSocketAction{
+					Port: intstr.FromInt32(int32(p.Port)),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	case ProbeGRPC:
+		return &corev1.Probe{
+			ProbeHandler: corev1.ProbeHandler{
+				GRPC: &corev1.GRPCAction{
+					Port: int32(p.Port),
+				},
+			},
+			InitialDelaySeconds: 3,
+			PeriodSeconds:       3,
+		}
+	}
+	return nil
+}
+
+// WithProbe adds a probe to the deployment, this only works when the arguments are customize using WithArgs
+func WithProbe(probeType ProbeType, handlerType ProbeHandlerType, port uint32, httpGetPath string) DeploymentOptsFn {
+	return func(opts *DeploymentOpts) {
+		if opts.probes == nil {
+			opts.probes = []probeParams{}
+		}
+		opts.probes = append(opts.probes, probeParams{
+			ProbeType:   probeType,
+			HandlerType: handlerType,
+			Port:        port,
+			HttpGetPath: httpGetPath,
+		})
 	}
 }
 

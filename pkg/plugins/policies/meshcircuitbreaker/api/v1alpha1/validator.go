@@ -62,7 +62,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			},
 		}))
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
-			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh")
+			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
 		}
 		defaultField := path.Field("default")
 		verr.Add(validateDefault(defaultField, toItem.Default))

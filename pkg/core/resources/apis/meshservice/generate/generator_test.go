@@ -52,7 +52,6 @@ var _ = Describe("MeshService generator", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 		meshCache, err := cache_mesh.NewCache(
 			100*time.Millisecond,
@@ -76,7 +75,9 @@ var _ = Describe("MeshService generator", func() {
 			Expect(allocator.Start(stopCh)).To(Succeed())
 		}()
 
-		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+		Expect(
+			samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+		).To(Succeed())
 	})
 
 	AfterEach(func() {

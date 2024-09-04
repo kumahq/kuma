@@ -8,9 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-// buildMangleTable constructs the mangle table for iptables with the necessary
-// rules for handling invalid packets. This table is configured based on the
-// provided configuration and handles both IPv4 and IPv6 traffic.
 func buildMangleTable(cfg config.InitializedConfigIPvX) *tables.MangleTable {
 	mangle := tables.Mangle()
 

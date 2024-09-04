@@ -418,14 +418,14 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return refName == GetDisplayName(resourceMeta)
 }
 
-func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool {
 	switch mode {
 	case config_core.Global:
-		origin, ok := ResourceOrigin(r.GetMeta())
+		origin, ok := resourceOrigin(labels)
 		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, _ := ResourceOrigin(r.GetMeta())
-		return origin == mesh_proto.ZoneResourceOrigin
+		origin, ok := resourceOrigin(labels)
+		return !ok || origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
 	}
@@ -442,7 +442,14 @@ func GetDisplayName(rm ResourceMeta) string {
 }
 
 func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
-	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+	if rm == nil {
+		return "", false
+	}
+	return resourceOrigin(rm.GetLabels())
+}
+
+func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) {
+	if labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
 		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
 	}
 	return "", false
@@ -483,7 +490,14 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+	if isK8s && IsLocallyOriginated(mode, labels) {
+		ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
+		if ok && ns != "" {
+			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
+		}
+	}
+
+	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
 		var role mesh_proto.PolicyRole
 		switch ns {
 		case systemNamespace:
@@ -704,6 +718,29 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 	}
 }
 
+func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBackendRef {
+	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
+
+	switch {
+	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
+	case br.Kind == common_api.MeshExternalService:
+	case br.Kind == common_api.MeshMultiZoneService:
+	default:
+		return resolved
+	}
+
+	resolved.Resource = &TypedResourceIdentifier{
+		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
+		ResourceType:       ResourceType(br.Kind),
+	}
+
+	if br.Port != nil {
+		resolved.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+	}
+
+	return resolved
+}
+
 func (r ResourceIdentifier) String() string {
 	var pairs []string
 	if r.Mesh != "" {
@@ -717,6 +754,53 @@ func (r ResourceIdentifier) String() string {
 	}
 	if r.Name != "" {
 		pairs = append(pairs, fmt.Sprintf("name/%s", r.Name))
+	}
+	return strings.Join(pairs, ":")
+}
+
+type TypedResourceIdentifier struct {
+	ResourceIdentifier
+
+	ResourceType ResourceType
+	SectionName  string
+}
+
+type ResolvedBackendRef struct {
+	LegacyBackendRef *common_api.BackendRef
+	Resource         *TypedResourceIdentifier
+}
+
+type NewTypedResourceIdentifierFunc func(id *TypedResourceIdentifier)
+
+func WithSectionName(sectionName string) NewTypedResourceIdentifierFunc {
+	return func(id *TypedResourceIdentifier) {
+		id.SectionName = sectionName
+	}
+}
+
+func NewTypedResourceIdentifier(r Resource, opts ...NewTypedResourceIdentifierFunc) TypedResourceIdentifier {
+	tri := TypedResourceIdentifier{
+		ResourceType:       r.Descriptor().Name,
+		ResourceIdentifier: NewResourceIdentifier(r),
+	}
+	for _, opt := range opts {
+		opt(&tri)
+	}
+	return tri
+}
+
+func (ri TypedResourceIdentifier) MarshalText() ([]byte, error) {
+	return []byte(ri.String()), nil
+}
+
+func (ri TypedResourceIdentifier) String() string {
+	var pairs []string
+	if ri.ResourceType != "" {
+		pairs = append(pairs, strings.ToLower(string(ri.ResourceType)))
+	}
+	pairs = append(pairs, ri.ResourceIdentifier.String())
+	if ri.SectionName != "" {
+		pairs = append(pairs, fmt.Sprintf("section/%s", ri.SectionName))
 	}
 	return strings.Join(pairs, ":")
 }

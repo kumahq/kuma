@@ -28,8 +28,8 @@ func (g DNSGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xds
 	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().IpFamilyMode != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
 
 	outboundIPs := map[string]bool{}
-	for _, outbound := range proxy.Dataplane.Spec.Networking.GetOutboundInterfaces() {
-		outboundIPs[outbound.DataplaneIP] = true
+	for _, outbound := range proxy.Outbounds {
+		outboundIPs[outbound.GetAddress()] = true
 	}
 
 	vips := map[string][]string{}
