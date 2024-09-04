@@ -7,14 +7,18 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"reflect"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"golang.org/x/exp/maps"
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 const (
@@ -23,6 +27,7 @@ const (
 
 type Executable struct {
 	name string
+	path string
 	mode IptablesMode
 	// prefix represents the prefix used for iptables executables, which varies
 	// based on whether it's for IPv4 or IPv6 operations. For IPv4, it can be
@@ -40,31 +45,47 @@ func (c Executable) Initialize(
 	cniMode bool,
 	args []string,
 ) (InitializedExecutable, error) {
+	initialized := InitializedExecutable{
+		logger:  l,
+		name:    c.name,
+		prefix:  c.prefix,
+		cniMode: cniMode,
+		args:    args,
+	}
+
 	// ip{6}tables-{nft|legacy}, ip{6}tables-{nft|legacy}-save,
 	// ip{6}tables-{nft|legacy}-restore
 	nameWithMode := joinNonEmptyWithHyphen(c.prefix, string(c.mode), c.name)
 	// ip{6}tables, ip{6}tables-save, ip{6}tables-restore
 	nameWithoutMode := joinNonEmptyWithHyphen(c.prefix, c.name)
 
-	paths := getPathsToSearchForExecutable(nameWithMode, nameWithoutMode)
+	if c.path != "" {
+		if found := findPath(c.path); found != "" {
+			v, err := getIptablesVersion(ctx, found)
+			if err != nil {
+				return InitializedExecutable{}, errors.Wrapf(err, "invalid executable at specified path '%s' for '%s'", c.path, nameWithoutMode)
+			}
 
-	for _, path := range paths {
+			initialized.Path = found
+			initialized.version = v
+
+			return initialized, nil
+		}
+
+		return InitializedExecutable{}, errors.Errorf("specified path '%s' for executable '%s' does not exist", c.path, nameWithoutMode)
+	}
+
+	for _, path := range getPathsToSearchForExecutable(nameWithMode, nameWithoutMode) {
 		if found := findPath(path); found != "" {
 			if v, err := getIptablesVersion(ctx, found); err == nil && v.Mode == c.mode {
-				return InitializedExecutable{
-					Path:    found,
-					logger:  l,
-					name:    c.name,
-					prefix:  c.prefix,
-					cniMode: cniMode,
-					version: v,
-					args:    args,
-				}, nil
+				initialized.Path = found
+				initialized.version = v
+				return initialized, nil
 			}
 		}
 	}
 
-	return InitializedExecutable{}, errors.Errorf("failed to find executable %s", nameWithMode)
+	return InitializedExecutable{}, errors.Errorf("could not locate executable '%s' with mode '%s'", nameWithoutMode, c.mode)
 }
 
 type InitializedExecutable struct {
@@ -107,6 +128,26 @@ type ExecutablesIPvX struct {
 	Iptables        Executable
 	IptablesSave    Executable
 	IptablesRestore Executable
+
+	mode IptablesMode
+}
+
+func (c ExecutablesIPvX) WithPaths(iptables, iptablesSave, iptablesRestore string) ExecutablesIPvX {
+	newExecutable := func(e Executable, path string) Executable {
+		return Executable{
+			name:   e.name,
+			mode:   e.mode,
+			prefix: e.prefix,
+			path:   path,
+		}
+	}
+
+	return ExecutablesIPvX{
+		Iptables:        newExecutable(c.Iptables, iptables),
+		IptablesSave:    newExecutable(c.IptablesSave, iptablesSave),
+		IptablesRestore: newExecutable(c.IptablesRestore, iptablesRestore),
+		mode:            c.mode,
+	}
 }
 
 func NewExecutablesIPvX(ipv6 bool, mode IptablesMode) ExecutablesIPvX {
@@ -122,6 +163,7 @@ func NewExecutablesIPvX(ipv6 bool, mode IptablesMode) ExecutablesIPvX {
 		Iptables:        newExecutable(""),
 		IptablesSave:    newExecutable("save"),
 		IptablesRestore: newExecutable("restore"),
+		mode:            mode,
 	}
 }
 
@@ -149,12 +191,17 @@ func (c ExecutablesIPvX) Initialize(
 	}
 
 	if len(errs) != 0 {
-		return InitializedExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to initialize executables")
+		return InitializedExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "initialization of one or more executables failed")
+	}
+
+	mode, err := inferIptablesMode(iptables, iptablesSave, iptablesRestore)
+	if err != nil {
+		return InitializedExecutablesIPvX{}, errors.Wrap(err, "failed to infer consistent iptables mode")
 	}
 
 	functionality, err := verifyFunctionality(ctx, iptables, iptablesSave)
 	if err != nil {
-		return InitializedExecutablesIPvX{}, errors.Wrap(err, "failed to verify functionality")
+		return InitializedExecutablesIPvX{}, errors.Wrap(err, "functionality verification failed")
 	}
 
 	return InitializedExecutablesIPvX{
@@ -162,6 +209,8 @@ func (c ExecutablesIPvX) Initialize(
 		IptablesSave:    iptablesSave,
 		IptablesRestore: iptablesRestore,
 		Functionality:   functionality,
+
+		mode: mode,
 
 		retry:  cfg.Retry,
 		logger: l,
@@ -173,6 +222,8 @@ type InitializedExecutablesIPvX struct {
 	IptablesSave    InitializedExecutable
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
+
+	mode IptablesMode
 
 	retry  Retry
 	logger Logger
@@ -346,34 +397,44 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 }
 
 type Executables struct {
-	NftIPv4    ExecutablesIPvX
-	NftIPv6    ExecutablesIPvX
-	LegacyIPv4 ExecutablesIPvX
-	LegacyIPv6 ExecutablesIPvX
+	// Embedded structs to allow unmarshalling executable paths from a flat configuration file
+	// instead of requiring nested objects
+	ExecutablesPathsIPv4
+	ExecutablesPathsIPv6
+	nftIPv4    ExecutablesIPvX
+	nftIPv6    ExecutablesIPvX
+	legacyIPv4 ExecutablesIPvX
+	legacyIPv6 ExecutablesIPvX
 }
 
 func NewExecutables() Executables {
 	return Executables{
-		NftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
-		NftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
-		LegacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
-		LegacyIPv6: NewExecutablesIPvX(true, IptablesModeLegacy),
+		nftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
+		nftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
+		legacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
+		legacyIPv6: NewExecutablesIPvX(true, IptablesModeLegacy),
 	}
 }
 
-func (c Executables) InitializeIPv4(
+func (c *Executables) InitializeIPv4(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-) (InitializedExecutablesIPvX, ExecutablesIPvX, error) {
+) (InitializedExecutablesIPvX, error) {
 	var errs []error
 
-	nft, nftErr := c.NftIPv4.Initialize(ctx, l, cfg)
+	if initialized, ok, err := tryInitializeExecutablePaths(ctx, l, cfg, c.ExecutablesPathsIPv4); err != nil {
+		l.Warn(err)
+	} else if ok {
+		return initialized, nil
+	}
+
+	nft, nftErr := c.nftIPv4.Initialize(ctx, l, cfg)
 	if nftErr != nil {
 		errs = append(errs, nftErr)
 	}
 
-	legacy, legacyErr := c.LegacyIPv4.Initialize(ctx, l, cfg)
+	legacy, legacyErr := c.legacyIPv4.Initialize(ctx, l, cfg)
 	if legacyErr != nil {
 		errs = append(errs, legacyErr)
 	}
@@ -381,30 +442,158 @@ func (c Executables) InitializeIPv4(
 	switch {
 	case len(errs) == 2 && cfg.DryRun:
 		l.Warn(WarningDryRunNoValidIptablesFound)
-		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, nil
+		return InitializedExecutablesIPvX{}, nil
 	case len(errs) == 2:
-		return InitializedExecutablesIPvX{}, ExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
+		return InitializedExecutablesIPvX{}, errors.Wrap(std_errors.Join(errs...), "failed to find valid nft or legacy executables")
 	case legacyErr != nil:
-		return nft, c.NftIPv6, nil
+		return nft, nil
 	case nftErr != nil:
-		return legacy, c.LegacyIPv6, nil
+		return legacy, nil
 	case nft.Functionality.Rules.ExistingRules && legacy.Functionality.Rules.ExistingRules:
 		switch {
 		case nft.Functionality.Chains.DockerOutput && legacy.Functionality.Chains.DockerOutput:
 			fallthrough
 		case !nft.Functionality.Chains.DockerOutput && !legacy.Functionality.Chains.DockerOutput:
 			l.Warn("conflicting iptables modes detected; both iptables-nft and iptables-legacy have existing rules and/or custom chains. To avoid potential conflicts, iptables-legacy will be ignored, and iptables-nft will be used")
-			return nft, c.NftIPv6, nil
+			return nft, nil
 		case legacy.Functionality.Chains.DockerOutput:
-			return legacy, c.LegacyIPv6, nil
+			return legacy, nil
 		default:
-			return nft, c.NftIPv6, nil
+			return nft, nil
 		}
 	case legacy.Functionality.Rules.ExistingRules:
-		return legacy, c.LegacyIPv6, nil
+		return legacy, nil
 	default:
-		return nft, c.NftIPv6, nil
+		return nft, nil
 	}
+}
+
+func (c *Executables) InitializeIPv6(
+	ctx context.Context,
+	l Logger,
+	cfg Config,
+	modeIPv4 IptablesMode,
+) (InitializedExecutablesIPvX, error) {
+	if initialized, ok, err := tryInitializeExecutablePaths(ctx, l, cfg, c.ExecutablesPathsIPv6); err != nil {
+		l.Warn(err)
+	} else if ok {
+		return initialized, nil
+	}
+
+	switch modeIPv4 {
+	case IptablesModeNft:
+		return c.nftIPv6.Initialize(ctx, l, cfg)
+	case IptablesModeLegacy:
+		return c.legacyIPv6.Initialize(ctx, l, cfg)
+	default:
+		return InitializedExecutablesIPvX{}, errors.Errorf("unknown iptables mode '%s'", modeIPv4)
+	}
+}
+
+func (c *Executables) Set(s string) error {
+	var errs []error
+
+	if s = strings.TrimSpace(s); s == "" {
+		return nil
+	}
+
+	for _, block := range removeEmptyStrings(strings.Split(s, ",")) {
+		name, path, found := strings.Cut(block, ":")
+		if !found {
+			errs = append(
+				errs,
+				errors.Errorf("invalid format in '%s': expected '<name>:<path>' (e.g., 'iptables:/usr/sbin/iptables' or 'ip6tables-save:/usr/sbin/ip6tables-save')", block),
+			)
+			continue
+		}
+
+		cleanPath := filepath.Clean(path)
+
+		switch name {
+		case Iptables:
+			c.ExecutablesPathsIPv4.Iptables = cleanPath
+		case IptablesSave:
+			c.ExecutablesPathsIPv4.IptablesSave = cleanPath
+		case IptablesRestore:
+			c.ExecutablesPathsIPv4.IptablesRestore = cleanPath
+		case Ip6tables:
+			c.ExecutablesPathsIPv6.Ip6tables = cleanPath
+		case Ip6tablesSave:
+			c.ExecutablesPathsIPv6.Ip6tablesSave = cleanPath
+		case Ip6tablesRestore:
+			c.ExecutablesPathsIPv6.Ip6tablesRestore = cleanPath
+		default:
+			errs = append(
+				errs,
+				errors.Errorf("unsupported executable name '%s': valid names are %s", name, getNamesString(c.ExecutablesPathsIPv4, c.ExecutablesPathsIPv6)),
+			)
+		}
+	}
+
+	return std_errors.Join(errs...)
+}
+
+func (c *Executables) String() string {
+	var result []string
+
+	for name, path := range getPathsMap(c.ExecutablesPathsIPv4, c.ExecutablesPathsIPv6) {
+		if path != "" {
+			result = append(result, fmt.Sprintf("%s:%s", name, path))
+		}
+	}
+
+	return strings.Join(result, ",")
+}
+
+func (c *Executables) Type() string {
+	return "name:path[,name:path...]"
+}
+
+type executablesPaths interface {
+	getPathsMap() map[string]string
+	convert() ExecutablesIPvX
+}
+
+var _ executablesPaths = ExecutablesPathsIPv4{}
+
+type ExecutablesPathsIPv4 struct {
+	Iptables        string `json:"iptables"`
+	IptablesSave    string `json:"iptables-save"`
+	IptablesRestore string `json:"iptables-restore"`
+}
+
+func (c ExecutablesPathsIPv4) getPathsMap() map[string]string {
+	return map[string]string{
+		Iptables:        c.Iptables,
+		IptablesSave:    c.IptablesSave,
+		IptablesRestore: c.IptablesRestore,
+	}
+}
+
+func (c ExecutablesPathsIPv4) convert() ExecutablesIPvX {
+	return NewExecutablesIPvX(false, IptablesModeUnknown).
+		WithPaths(c.Iptables, c.IptablesSave, c.IptablesRestore)
+}
+
+var _ executablesPaths = ExecutablesPathsIPv6{}
+
+type ExecutablesPathsIPv6 struct {
+	Ip6tables        string `json:"ip6tables"`
+	Ip6tablesSave    string `json:"ip6tables-save"`
+	Ip6tablesRestore string `json:"ip6tables-restore"`
+}
+
+func (c ExecutablesPathsIPv6) getPathsMap() map[string]string {
+	return map[string]string{
+		Ip6tables:        c.Ip6tables,
+		Ip6tablesSave:    c.Ip6tablesSave,
+		Ip6tablesRestore: c.Ip6tablesRestore,
+	}
+}
+
+func (c ExecutablesPathsIPv6) convert() ExecutablesIPvX {
+	return NewExecutablesIPvX(true, IptablesModeUnknown).
+		WithPaths(c.Ip6tables, c.Ip6tablesSave, c.Ip6tablesRestore)
 }
 
 type Version struct {
@@ -438,17 +627,17 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
 		return Version{Mode: IptablesModeLegacy}, nil
 	case err != nil:
-		return Version{}, err
+		return Version{}, formatIptablesVersionErrorf(err.Error())
 	}
 
 	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
 	if len(matched) < 2 {
-		return Version{}, errors.Errorf("unable to parse iptables version in: '%s'", stdout.String())
+		return Version{}, errors.Wrap(formatIptablesVersionErrorf(stdout.String()), "unable to parse iptables version")
 	}
 
 	version, err := k8s_version.ParseGeneric(matched[1])
 	if err != nil {
-		return Version{}, errors.Wrapf(err, "invalid iptables version string: '%s'", matched[1])
+		return Version{}, errors.Wrapf(formatIptablesVersionErrorf(err.Error()), "invalid iptables version string: '%s'", matched[1])
 	}
 
 	if len(matched) < 3 {
@@ -456,4 +645,135 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	}
 
 	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
+}
+
+func getExecutablesModesString(executables ...InitializedExecutable) string {
+	var result []string
+
+	for _, e := range executables {
+		result = append(
+			result,
+			fmt.Sprintf("%s: %s (%s)", joinNonEmptyWithHyphen(e.prefix, e.name), e.Path, e.version.Mode),
+		)
+	}
+
+	slices.Sort(result)
+
+	return strings.Join(result, ", ")
+}
+
+func inferIptablesMode(executables ...InitializedExecutable) (IptablesMode, error) {
+	modesSet := make(map[IptablesMode]struct{}, len(executables))
+
+	for _, executable := range executables {
+		modesSet[executable.version.Mode] = struct{}{}
+	}
+
+	modes := maps.Keys(modesSet)
+
+	if len(modes) != 1 {
+		return IptablesModeUnknown, errors.Errorf(
+			"executables are of mixed types; all must be of the same type ('%s' or '%s') [%s]",
+			IptablesModeNft,
+			IptablesModeLegacy,
+			getExecutablesModesString(executables...),
+		)
+	}
+
+	return modes[0], nil
+}
+
+func tryInitializeExecutablePaths(
+	ctx context.Context,
+	l Logger,
+	cfg Config,
+	ep executablesPaths,
+) (InitializedExecutablesIPvX, bool, error) {
+	if reflect.ValueOf(ep).IsZero() {
+		return InitializedExecutablesIPvX{}, false, nil
+	}
+
+	if paths := getNonEmptyPaths(ep); len(paths) != 0 && len(paths) != 3 {
+		return InitializedExecutablesIPvX{}, false, errors.Errorf(
+			"provided incomplete executables configuration: %s must all be specified together; provided paths (%s) will be ignored and automatic executables detection will proceed",
+			getNamesString(ep),
+			getNamesWithPathsString(ep),
+		)
+	}
+
+	initialized, err := ep.convert().Initialize(ctx, l, cfg)
+	if err != nil {
+		return InitializedExecutablesIPvX{}, false, errors.Wrap(
+			err,
+			"failed to initialize executables from the provided paths; automatic detection will proceed",
+		)
+	}
+
+	l.Infof("provided executables will be used (%s)", getNamesWithPathsString(ep))
+
+	return initialized, true, nil
+}
+
+func getNonEmptyPaths(ep executablesPaths) []string {
+	return removeEmptyStrings(maps.Values(ep.getPathsMap()))
+}
+
+func removeEmptyStrings(strngs []string) []string {
+	return slices.DeleteFunc(
+		strngs,
+		func(s string) bool {
+			return strings.TrimSpace(s) == ""
+		},
+	)
+}
+
+func getNamesWithPathsString(eps ...executablesPaths) string {
+	var result []string
+
+	pathsMap := getPathsMap(eps...)
+	for _, name := range util_maps.SortedKeys(pathsMap) {
+		result = append(result, fmt.Sprintf("%s: '%s'", name, pathsMap[name]))
+	}
+
+	return strings.Join(result, ", ")
+}
+
+func getNamesString(eps ...executablesPaths) string {
+	var result []string
+
+	pathsMap := getPathsMap(eps...)
+	for i, name := range util_maps.SortedKeys(pathsMap) {
+		if i == len(pathsMap)-1 {
+			result = append(result, fmt.Sprintf("and '%s'", name))
+		} else {
+			result = append(result, fmt.Sprintf("'%s'", name))
+		}
+	}
+
+	return strings.Join(result, ", ")
+}
+
+func getPathsMap(eps ...executablesPaths) map[string]string {
+	result := map[string]string{}
+
+	for _, ep := range eps {
+		for name, path := range ep.getPathsMap() {
+			result[name] = path
+		}
+	}
+
+	return result
+}
+
+func formatIptablesVersionErrorf(format string, a ...any) error {
+	msg := fmt.Sprintf(format, a...)
+	msgWithoutNewLines := strings.ReplaceAll(msg, "\n", " ")
+	msgWithoutDuplicatedSpaces := strings.ReplaceAll(msgWithoutNewLines, "  ", " ")
+	msgWithoutDotSuffix := strings.TrimRight(msgWithoutDuplicatedSpaces, ".")
+
+	if len(msgWithoutDotSuffix) > 500 {
+		msgWithoutDotSuffix = fmt.Sprintf("%.500s...", msgWithoutDotSuffix)
+	}
+
+	return errors.New(msgWithoutDotSuffix)
 }

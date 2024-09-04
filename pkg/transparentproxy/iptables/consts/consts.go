@@ -8,8 +8,12 @@ import (
 )
 
 const (
-	Iptables  = "iptables"
-	Ip6tables = "ip6tables"
+	Iptables         = "iptables"
+	IptablesSave     = "iptables-save"
+	IptablesRestore  = "iptables-restore"
+	Ip6tables        = "ip6tables"
+	Ip6tablesSave    = "ip6tables-save"
+	Ip6tablesRestore = "ip6tables-restore"
 )
 
 // IptablesCommandByFamily maps a boolean value indicating IPv4 (false) or IPv6
@@ -139,8 +143,13 @@ const (
 type IptablesMode string
 
 const (
-	IptablesModeNft    IptablesMode = "nft"
-	IptablesModeLegacy IptablesMode = "legacy"
+	// IptablesModeUnknown indicates that the iptables mode (nft or legacy) is
+	// unknown. This is typically used when the user explicitly specifies custom
+	// paths to iptables executables, making it unclear whether they are using
+	// the nft or legacy iptables
+	IptablesModeUnknown IptablesMode = ""
+	IptablesModeNft     IptablesMode = "nft"
+	IptablesModeLegacy  IptablesMode = "legacy"
 )
 
 // Regexp used to parse the result of `iptables --version` then used to map to
