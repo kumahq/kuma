@@ -409,3 +409,21 @@ spec:
         {{- end }}
         - name: tmp
           emptyDir: {}
+      {{- if .Values.controlPlane.dns.policy }}
+      dnsPolicy: {{ .Values.controlPlane.dns.policy }}
+      {{- end }}
+      {{- if or (gt (len .Values.controlPlane.dns.config.nameservers) 0) (gt (len .Values.controlPlane.dns.config.searches) 0) }}
+      dnsConfig:
+        {{- if gt (len .Values.controlPlane.dns.config.nameservers) 0 }}
+        nameservers:
+        {{- range $nameserver := .Values.controlPlane.dns.config.nameservers }}
+        - {{ $nameserver }}
+        {{- end }}
+        {{- end }}
+        {{- if gt (len .Values.controlPlane.dns.config.searches) 0 }}
+        searches:
+        {{- range $search := .Values.controlPlane.dns.config.searches }}
+        - {{ $search }}
+        {{- end }}
+        {{- end }}
+      {{- end }}

@@ -1,0 +1,1203 @@
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kuma-system
+  labels:
+    kuma.io/system-namespace: "true"
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kuma-control-plane-config
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+data:
+  config.yaml: |
+    # use this file to override default configuration of `kuma-cp`
+    #
+    # see conf/kuma-cp.conf.yml for available settings
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - pods
+      - configmaps
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses/status
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+    - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
+      - meshgatewayconfigs
+      - meshaccesslogs
+      - meshcircuitbreakers
+      - meshfaultinjections
+      - meshhealthchecks
+      - meshhttproutes
+      - meshloadbalancingstrategies
+      - meshmetrics
+      - meshpassthroughs
+      - meshproxypatches
+      - meshratelimits
+      - meshretries
+      - meshtcproutes
+      - meshtimeouts
+      - meshtlses
+      - meshtraces
+      - meshtrafficpermissions
+      - hostnamegenerators
+      - meshexternalservices
+      - meshmultizoneservices
+      - meshservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  # validate k8s token before issuing mTLS cert
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  # leader-for-life election deletes Pods in some circumstances
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+    prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5680
+      name: diagnostics
+      appProtocol: http
+    - port: 5681
+      name: http-api-server
+      appProtocol: http
+    - port: 5682
+      name: https-api-server
+      appProtocol: https
+    - port: 443
+      name: https-admission-server
+      targetPort: 5443
+      appProtocol: https
+    - port: 5676
+      name: mads-server
+      appProtocol: https
+    - port: 5678
+      name: dp-server
+      appProtocol: https
+  selector:
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+spec:
+  type: ClusterIP
+  ports:
+    - port: 10002
+      protocol: TCP
+      targetPort: 10002
+  selector:
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10001
+      protocol: TCP
+      targetPort: 10001
+  selector:
+    app: kuma-ingress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  annotations: 
+    
+spec:
+  replicas: 1
+  minReadySeconds: 0
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+      app: kuma-control-plane
+  template:
+    metadata:
+      annotations:
+        checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
+        checksum/tls-secrets: cd5650b43d26157935d13a561eed2f7c85b6d0cf988a024a52e005527240a49d
+      labels: 
+        app: kuma-control-plane
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app
+                  operator: In
+                  values:
+                  - 'kuma-control-plane'
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      securityContext:
+        runAsNonRoot: true
+      serviceAccountName: kuma-control-plane
+      automountServiceAccountToken: true
+      nodeSelector:
+        
+        kubernetes.io/os: linux
+      hostNetwork: false
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: control-plane
+          image: "docker.io/kumahq/kuma-cp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
+          env:
+            - name: KUMA_API_SERVER_AUTHN_LOCALHOST_IS_ADMIN
+              value: "false"
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
+              value: "false"
+            - name: KUMA_DP_SERVER_HDS_ENABLED
+              value: "false"
+            - name: KUMA_ENVIRONMENT
+              value: "kubernetes"
+            - name: KUMA_GENERAL_TLS_CERT_FILE
+              value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
+            - name: KUMA_GENERAL_TLS_KEY_FILE
+              value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+              value: "docker.io/kumahq/kuma-init:0.0.1"
+            - name: KUMA_MODE
+              value: "zone"
+            - name: KUMA_PLUGIN_POLICIES_ENABLED
+              value: "meshaccesslogs,meshcircuitbreakers,meshfaultinjections,meshhealthchecks,meshhttproutes,meshloadbalancingstrategies,meshmetrics,meshpassthroughs,meshproxypatches,meshratelimits,meshretries,meshtcproutes,meshtimeouts,meshtlses,meshtraces,meshtrafficpermissions"
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+              value: "/var/run/secrets/kuma.io/tls-cert"
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
+              value: "5443"
+            - name: KUMA_RUNTIME_KUBERNETES_ALLOWED_USERS
+              value: "system:serviceaccount:kuma-system:kuma-control-plane"
+            - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
+              value: "kuma-control-plane"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+              value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+              value: "false"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+              value: "docker.io/kumahq/kuma-dp:0.0.1"
+            - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+              value: "kuma-system"
+            - name: KUMA_STORE_TYPE
+              value: "kubernetes"
+            - name: KUMA_INTER_CP_CATALOG_INSTANCE_ADDRESS
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  containerName: control-plane
+                  resource: limits.memory
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  containerName: control-plane
+                  resource: limits.cpu
+          args:
+            - run
+            - --log-level=info
+            - --log-output-path=
+            - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          ports:
+            - containerPort: 5680
+              name: diagnostics
+              protocol: TCP
+            - containerPort: 5681
+            - containerPort: 5682
+            - containerPort: 5443
+            - containerPort: 5678
+          livenessProbe:
+            timeoutSeconds: 10
+            httpGet:
+              path: /healthy
+              port: 5680
+          readinessProbe:
+            timeoutSeconds: 10
+            httpGet:
+              path: /ready
+              port: 5680
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 500m
+              memory: 256Mi
+          
+          volumeMounts:
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/tls.key
+              subPath: tls.key
+              readOnly: true
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              subPath: ca.crt
+              readOnly: true
+            - name: kuma-control-plane-config
+              mountPath: /etc/kuma.io/kuma-control-plane
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: general-tls-cert
+          secret:
+            secretName: general-tls-secret
+        - name: kuma-control-plane-config
+          configMap:
+            name: kuma-control-plane-config
+        - name: tmp
+          emptyDir: {}
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+        - 8.8.8.8
+        - 1.1.1.1
+        searches:
+        - test.com
+        - new.test.com
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-egress
+  namespace: kuma-system
+  labels: 
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+      app: kuma-egress
+  template:
+    metadata:
+      annotations:
+        kuma.io/egress: enabled
+      labels:
+        app: kuma-egress
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-egress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
+      serviceAccountName: kuma-egress
+      automountServiceAccountToken: true
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      dnsConfig:
+        nameservers:
+        - 8.8.8.8
+        - 1.1.1.1
+      containers:
+        - name: egress
+          image: "docker.io/kumahq/kuma-dp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.kuma-system:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "egress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10002
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources: 
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: control-plane-ca
+          secret:
+            secretName: "general-tls-secret"
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-ingress
+  namespace: kuma-system
+  labels: 
+    app: kuma-ingress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: kuma
+      app: kuma-ingress
+  template:
+    metadata:
+      annotations:
+        kuma.io/ingress: enabled
+      labels:
+        app: kuma-ingress
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: kuma
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-ingress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
+      serviceAccountName: kuma-ingress
+      automountServiceAccountToken: true
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      terminationGracePeriodSeconds: 40
+      dnsConfig:
+        nameservers:
+        - 8.8.8.8
+        - 1.1.1.1
+      containers:
+        - name: ingress
+          image: "docker.io/kumahq/kuma-dp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.kuma-system:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "ingress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10001
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources: 
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          
+          volumeMounts:
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: control-plane-ca
+          secret:
+            secretName: "general-tls-secret"
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir: {}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: kuma-admission-mutating-webhook-configuration
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+webhooks:
+  - name: mesh.defaulter.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /default-kuma-io-v1alpha1-mesh
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - meshes
+          - dataplanes
+          - dataplaneinsights
+          - meshgateways
+          - zoneingresses
+          - zoneingressinsights
+          - zoneegresses
+          - zoneegressinsights
+          - serviceinsights
+          - zone
+          - zoneinsights
+          - meshaccesslogs
+          - meshcircuitbreakers
+          - meshfaultinjections
+          - meshhealthchecks
+          - meshhttproutes
+          - meshloadbalancingstrategies
+          - meshmetrics
+          - meshpassthroughs
+          - meshproxypatches
+          - meshratelimits
+          - meshretries
+          - meshtcproutes
+          - meshtimeouts
+          - meshtlses
+          - meshtraces
+          - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
+          - meshmultizoneservices
+          - meshservices
+    sideEffects: None
+  - name: owner-reference.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /owner-reference-kuma-io-v1alpha1
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+        resources:
+          - circuitbreakers
+          - externalservices
+          - faultinjections
+          - healthchecks
+          - meshgateways
+          - meshgatewayroutes
+          - proxytemplates
+          - ratelimits
+          - retries
+          - timeouts
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+          - virtualoutbounds
+          - meshaccesslogs
+          - meshcircuitbreakers
+          - meshfaultinjections
+          - meshhealthchecks
+          - meshhttproutes
+          - meshloadbalancingstrategies
+          - meshmetrics
+          - meshpassthroughs
+          - meshproxypatches
+          - meshratelimits
+          - meshretries
+          - meshtcproutes
+          - meshtimeouts
+          - meshtlses
+          - meshtraces
+          - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
+          - meshmultizoneservices
+          - meshservices
+  
+      
+    sideEffects: None
+  - name: namespace-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+        - key: kuma.io/sidecar-injection
+          operator: In
+          values: ["enabled", "true"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+  - name: pods-kuma-injector.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    objectSelector:
+      matchLabels:
+        kuma.io/sidecar-injection: enabled
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: kuma-validating-webhook-configuration
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+webhooks:
+  - name: validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Fail
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-kuma-io-v1alpha1
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - circuitbreakers
+          - dataplanes
+          - externalservices
+          - faultinjections
+          - meshgatewayinstances
+          - healthchecks
+          - meshes
+          - meshgateways
+          - meshgatewayroutes
+          - proxytemplates
+          - ratelimits
+          - retries
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+          - virtualoutbounds
+          - zones
+          - containerpatches
+          - meshaccesslogs
+          - meshcircuitbreakers
+          - meshfaultinjections
+          - meshhealthchecks
+          - meshhttproutes
+          - meshloadbalancingstrategies
+          - meshmetrics
+          - meshpassthroughs
+          - meshproxypatches
+          - meshratelimits
+          - meshretries
+          - meshtcproutes
+          - meshtimeouts
+          - meshtlses
+          - meshtraces
+          - meshtrafficpermissions
+          - hostnamegenerators
+          - meshexternalservices
+          - meshmultizoneservices
+          - meshservices
+    
+      
+    sideEffects: None
+  - name: service.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services
+    sideEffects: None
+  - name: secret.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-secret
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - secrets
+    sideEffects: None
+  - name: gateway.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1"]
+    failurePolicy: Ignore
+    namespaceSelector:
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values: ["kube-system"]
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-gatewayclass
+    rules:
+      - apiGroups:
+          - "gateway.networking.k8s.io"
+        apiVersions:
+          - v1beta1
+        operations:
+          - CREATE
+        resources:
+          - gatewayclasses
+    sideEffects: None
