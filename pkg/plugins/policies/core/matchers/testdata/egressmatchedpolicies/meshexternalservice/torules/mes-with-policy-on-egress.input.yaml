@@ -1,4 +1,4 @@
-# MeshExternalService policy with targetting egress
+# MeshExternalService policy with targeting egress
 type: MeshHealthCheck
 name: mhc-1
 mesh: mesh-1
