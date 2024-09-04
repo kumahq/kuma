@@ -6,6 +6,7 @@ import (
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -63,10 +64,12 @@ func NetworkDirectResponse(response string) FilterChainBuilderOpt {
 	})
 }
 
-func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker) FilterChainBuilderOpt {
+func ServerSideMTLS(mesh *core_mesh.MeshResource, secrets core_xds.SecretsTracker, tlsVersion *common_tls.Version, tlsCiphers common_tls.TlsCiphers) FilterChainBuilderOpt {
 	return AddFilterChainConfigurer(&v3.ServerSideMTLSConfigurer{
 		Mesh:           mesh,
 		SecretsTracker: secrets,
+		TlsVersion:     tlsVersion,
+		TlsCiphers:     tlsCiphers,
 	})
 }
 
