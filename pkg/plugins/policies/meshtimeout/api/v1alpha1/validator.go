@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTimeoutResource) validate() error {
@@ -15,8 +16,9 @@ func (r *MeshTimeoutResource) validate() error {
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateFrom(r.Spec.From, r.Spec.TargetRef.Kind))
-	verr.AddErrorAt(path, validateTo(r.Spec.To, r.Spec.TargetRef.Kind))
+	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	verr.AddErrorAt(path, validateFrom(r.Spec.From, topLevel.Kind))
+	verr.AddErrorAt(path, validateTo(r.Spec.To, topLevel.Kind))
 	return verr.OrNil()
 }
 
