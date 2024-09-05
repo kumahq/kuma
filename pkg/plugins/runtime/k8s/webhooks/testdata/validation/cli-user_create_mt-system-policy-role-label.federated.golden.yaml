@@ -2,8 +2,8 @@ Patches: null
 allowed: false
 status:
   code: 403
-  message: Operation not allowed. kuma.io/zone label should have zone-1 value, got
-    wrong-zone
+  message: Operation not allowed. kuma.io/policy-role label should have system value,
+    got invalid
   metadata: {}
   reason: Forbidden
   status: Failure

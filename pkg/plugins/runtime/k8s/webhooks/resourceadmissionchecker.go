@@ -38,7 +38,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 	}
 
 	if !c.isResourceTypeAllowed(r.Descriptor()) {
-		return c.resourceTypeIsNotAllowedResponse(r.Descriptor().Name)
+		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))
 	}
 
 	if errResponse := c.isResourceAllowed(r, ns); errResponse != nil {
@@ -85,7 +85,7 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 		}
 	}
 
-	return c.validateLabels(r)
+	return c.validateLabels(r, ns)
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -97,16 +97,51 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admission.Response {
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
 	if c.Mode != core.Global {
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
 		if originPresent && resourceOrigin != mesh_proto.GlobalResourceOrigin {
 			zoneTag, ok := r.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 			if ok && zoneTag != c.ZoneName {
-				return resourceLabelsNotAllowedResponse(mesh_proto.ZoneTag, c.ZoneName, zoneTag)
+				return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.ZoneTag, c.ZoneName, zoneTag))
 			}
 		}
 	}
+
+	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+		return c.validatePolicyRole(r, ns)
+	}
+
+	return nil
+}
+
+func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource, ns string) *admission.Response {
+	policy, ok := r.GetSpec().(core_model.Policy)
+	if !ok {
+		return nil
+	}
+
+	policyRole, err := core_model.ComputePolicyRole(policy, ns)
+	if err != nil {
+		return forbiddenResponse(err.Error())
+	}
+
+	providedRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
+	if !ok {
+		return nil
+	}
+
+	if ns == c.SystemNamespace {
+		if providedRole != string(mesh_proto.SystemPolicyRole) {
+			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole), providedRole))
+		}
+		return nil
+	}
+
+	if providedRole != string(policyRole) {
+		return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.PolicyRoleLabel, string(policyRole), providedRole))
+	}
+
 	return nil
 }
 
@@ -133,54 +168,30 @@ func (c *ResourceAdmissionChecker) resourceIsNotAllowedResponse() *admission.Res
 	}
 }
 
-func (c *ResourceAdmissionChecker) resourceTypeIsNotAllowedResponse(resType core_model.ResourceType) admission.Response {
-	otherCpMode := ""
-	if c.Mode == core.Zone {
-		otherCpMode = core.Global
-	} else if c.Mode == core.Global {
-		otherCpMode = core.Zone
-	}
-	return admission.Response{
-		AdmissionResponse: v1.AdmissionResponse{
-			Allowed: false,
-			Result: &metav1.Status{
-				Status: "Failure",
-				Message: fmt.Sprintf("Operation not allowed. %s resources like %s can be updated or deleted only "+
-					"from the %s control plane and not from a %s control plane.", version.Product, resType, strings.ToUpper(otherCpMode), strings.ToUpper(c.Mode)),
-				Reason: "Forbidden",
-				Code:   403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be empty",
-							Field:   "metadata.annotations[kuma.io/synced]",
-						},
-					},
-				},
-			},
-		},
-	}
+func labelsNotAllowedMsg(label, correctValue, actual string) string {
+	return fmt.Sprintf("Operation not allowed. %s label should have %s value, got %s", label, correctValue, actual)
 }
 
-func resourceLabelsNotAllowedResponse(label string, correctValue string, actual string) *admission.Response {
+func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {
+	otherCpMode := ""
+	if mode == core.Zone {
+		otherCpMode = core.Global
+	} else if mode == core.Global {
+		otherCpMode = core.Zone
+	}
+	return fmt.Sprintf("Operation not allowed. %s resources like %s can be updated or deleted only "+
+		"from the %s control plane and not from a %s control plane.", version.Product, resType, strings.ToUpper(otherCpMode), strings.ToUpper(mode))
+}
+
+func forbiddenResponse(msg string) *admission.Response {
 	return &admission.Response{
 		AdmissionResponse: v1.AdmissionResponse{
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("Operation not allowed. %s label should have %s value, got %s", label, correctValue, actual),
+				Message: msg,
 				Reason:  "Forbidden",
 				Code:    403,
-				Details: &metav1.StatusDetails{
-					Causes: []metav1.StatusCause{
-						{
-							Type:    "FieldValueInvalid",
-							Message: "cannot be set",
-							Field:   "metadata.annotations[kuma.io/synced]",
-						},
-					},
-				},
 			},
 		},
 	}

@@ -505,7 +505,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		default:
 			role = MustComputePolicyRole(r.GetSpec().(Policy), ns)
 		}
-		labels[mesh_proto.PolicyRoleLabel] = string(role)
+		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
 	}
 
 	return labels

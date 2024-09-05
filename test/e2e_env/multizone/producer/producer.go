@@ -130,6 +130,7 @@ metadata:
   labels:
     kuma.io/origin: zone
     kuma.io/mesh: %s
+    kuma.io/policy-role: consumer
 spec:
   targetRef:
     kind: Mesh
