@@ -5,12 +5,12 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
 )
 
 type Table interface {
-	Name() TableName
+	Name() consts.TableName
 	Chains() []*chains.Chain
 	CustomChains() []*chains.Chain
 }
@@ -53,7 +53,7 @@ func BuildRulesForRestore(cfg config.InitializedConfigIPvX, table Table) string 
 			customChainLines,
 			fmt.Sprintf(
 				"%s %s",
-				FlagVariationsMap[FlagNewChain][cfg.Verbose],
+				consts.FlagVariationsMap[consts.FlagNewChain][cfg.Verbose],
 				c.Name(),
 			),
 		)

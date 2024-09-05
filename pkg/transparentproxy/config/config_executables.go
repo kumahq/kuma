@@ -17,7 +17,7 @@ import (
 	"golang.org/x/exp/maps"
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
@@ -28,7 +28,7 @@ const (
 type Executable struct {
 	name string
 	path string
-	mode IptablesMode
+	mode consts.IptablesMode
 	// prefix represents the prefix used for iptables executables, which varies
 	// based on whether it's for IPv4 or IPv6 operations. For IPv4, it can be
 	// `iptables` (for binaries such as `iptables`, `iptables-restore`, or
@@ -108,7 +108,7 @@ type InitializedExecutable struct {
 func (c InitializedExecutable) NeedLock() bool {
 	// iptables-nft does not use the xtables lock, so no lock is needed for this
 	// mode
-	if c.version.Mode == IptablesModeNft {
+	if c.version.Mode == consts.IptablesModeNft {
 		return false
 	}
 
@@ -129,7 +129,7 @@ type ExecutablesIPvX struct {
 	IptablesSave    Executable
 	IptablesRestore Executable
 
-	mode IptablesMode
+	mode consts.IptablesMode
 }
 
 func (c ExecutablesIPvX) WithPaths(iptables, iptablesSave, iptablesRestore string) ExecutablesIPvX {
@@ -150,12 +150,12 @@ func (c ExecutablesIPvX) WithPaths(iptables, iptablesSave, iptablesRestore strin
 	}
 }
 
-func NewExecutablesIPvX(ipv6 bool, mode IptablesMode) ExecutablesIPvX {
+func NewExecutablesIPvX(ipv6 bool, mode consts.IptablesMode) ExecutablesIPvX {
 	newExecutable := func(name string) Executable {
 		return Executable{
 			name:   name,
 			mode:   mode,
-			prefix: IptablesCommandByFamily[ipv6],
+			prefix: consts.IptablesCommandByFamily[ipv6],
 		}
 	}
 
@@ -223,7 +223,7 @@ type InitializedExecutablesIPvX struct {
 	IptablesRestore InitializedExecutable
 	Functionality   Functionality
 
-	mode IptablesMode
+	mode consts.IptablesMode
 
 	retry  Retry
 	logger Logger
@@ -298,7 +298,7 @@ func (c InitializedExecutablesIPvX) Restore(
 		return "", err
 	}
 
-	return c.restore(ctx, f, quiet, FlagNoFlush)
+	return c.restore(ctx, f, quiet, consts.FlagNoFlush)
 }
 
 // RestoreWithFlush executes the iptables-restore command with the given rules,
@@ -376,7 +376,7 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 		return "", err
 	}
 
-	stdout, _, err := c.IptablesRestore.Exec(ctx, FlagTest, f.Name())
+	stdout, _, err := c.IptablesRestore.Exec(ctx, consts.FlagTest, f.Name())
 	if err != nil {
 		// There is an existing bug which occurs on Ubuntu 20.04
 		// ref. https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003
@@ -384,7 +384,7 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 			c.logger.Warnf(
 				`cannot confirm rules are valid because "%s %s" is returning unexpected error: %q. See https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=960003 for more details`,
 				c.IptablesRestore.Path,
-				FlagTest,
+				consts.FlagTest,
 				err,
 			)
 			return "", nil
@@ -409,10 +409,10 @@ type Executables struct {
 
 func NewExecutables() Executables {
 	return Executables{
-		nftIPv4:    NewExecutablesIPvX(false, IptablesModeNft),
-		nftIPv6:    NewExecutablesIPvX(true, IptablesModeNft),
-		legacyIPv4: NewExecutablesIPvX(false, IptablesModeLegacy),
-		legacyIPv6: NewExecutablesIPvX(true, IptablesModeLegacy),
+		nftIPv4:    NewExecutablesIPvX(false, consts.IptablesModeNft),
+		nftIPv6:    NewExecutablesIPvX(true, consts.IptablesModeNft),
+		legacyIPv4: NewExecutablesIPvX(false, consts.IptablesModeLegacy),
+		legacyIPv6: NewExecutablesIPvX(true, consts.IptablesModeLegacy),
 	}
 }
 
@@ -472,7 +472,7 @@ func (c *Executables) InitializeIPv6(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-	modeIPv4 IptablesMode,
+	modeIPv4 consts.IptablesMode,
 ) (InitializedExecutablesIPvX, error) {
 	if initialized, ok, err := tryInitializeExecutablePaths(ctx, l, cfg, c.ExecutablesPathsIPv6); err != nil {
 		l.Warn(err)
@@ -481,9 +481,9 @@ func (c *Executables) InitializeIPv6(
 	}
 
 	switch modeIPv4 {
-	case IptablesModeNft:
+	case consts.IptablesModeNft:
 		return c.nftIPv6.Initialize(ctx, l, cfg)
-	case IptablesModeLegacy:
+	case consts.IptablesModeLegacy:
 		return c.legacyIPv6.Initialize(ctx, l, cfg)
 	default:
 		return InitializedExecutablesIPvX{}, errors.Errorf("unknown iptables mode '%s'", modeIPv4)
@@ -510,17 +510,17 @@ func (c *Executables) Set(s string) error {
 		cleanPath := filepath.Clean(path)
 
 		switch name {
-		case Iptables:
+		case consts.Iptables:
 			c.ExecutablesPathsIPv4.Iptables = cleanPath
-		case IptablesSave:
+		case consts.IptablesSave:
 			c.ExecutablesPathsIPv4.IptablesSave = cleanPath
-		case IptablesRestore:
+		case consts.IptablesRestore:
 			c.ExecutablesPathsIPv4.IptablesRestore = cleanPath
-		case Ip6tables:
+		case consts.Ip6tables:
 			c.ExecutablesPathsIPv6.Ip6tables = cleanPath
-		case Ip6tablesSave:
+		case consts.Ip6tablesSave:
 			c.ExecutablesPathsIPv6.Ip6tablesSave = cleanPath
-		case Ip6tablesRestore:
+		case consts.Ip6tablesRestore:
 			c.ExecutablesPathsIPv6.Ip6tablesRestore = cleanPath
 		default:
 			errs = append(
@@ -564,14 +564,14 @@ type ExecutablesPathsIPv4 struct {
 
 func (c ExecutablesPathsIPv4) getPathsMap() map[string]string {
 	return map[string]string{
-		Iptables:        c.Iptables,
-		IptablesSave:    c.IptablesSave,
-		IptablesRestore: c.IptablesRestore,
+		consts.Iptables:        c.Iptables,
+		consts.IptablesSave:    c.IptablesSave,
+		consts.IptablesRestore: c.IptablesRestore,
 	}
 }
 
 func (c ExecutablesPathsIPv4) convert() ExecutablesIPvX {
-	return NewExecutablesIPvX(false, IptablesModeUnknown).
+	return NewExecutablesIPvX(false, consts.IptablesModeUnknown).
 		WithPaths(c.Iptables, c.IptablesSave, c.IptablesRestore)
 }
 
@@ -585,32 +585,32 @@ type ExecutablesPathsIPv6 struct {
 
 func (c ExecutablesPathsIPv6) getPathsMap() map[string]string {
 	return map[string]string{
-		Ip6tables:        c.Ip6tables,
-		Ip6tablesSave:    c.Ip6tablesSave,
-		Ip6tablesRestore: c.Ip6tablesRestore,
+		consts.Ip6tables:        c.Ip6tables,
+		consts.Ip6tablesSave:    c.Ip6tablesSave,
+		consts.Ip6tablesRestore: c.Ip6tablesRestore,
 	}
 }
 
 func (c ExecutablesPathsIPv6) convert() ExecutablesIPvX {
-	return NewExecutablesIPvX(true, IptablesModeUnknown).
+	return NewExecutablesIPvX(true, consts.IptablesModeUnknown).
 		WithPaths(c.Ip6tables, c.Ip6tablesSave, c.Ip6tablesRestore)
 }
 
 type Version struct {
 	k8s_version.Version
 
-	Mode IptablesMode
+	Mode consts.IptablesMode
 }
 
 func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	isVersionMissing := func(output string) bool {
-		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", FlagVersion))
+		return strings.Contains(output, fmt.Sprintf("unrecognized option '%s'", consts.FlagVersion))
 	}
 
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	// #nosec G204
-	cmd := exec.CommandContext(ctx, path, FlagVersion)
+	cmd := exec.CommandContext(ctx, path, consts.FlagVersion)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
@@ -623,14 +623,14 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	// In these cases, the function assumes the iptables mode is legacy
 	switch {
 	case err != nil && isVersionMissing(err.Error()):
-		return Version{Mode: IptablesModeLegacy}, nil
+		return Version{Mode: consts.IptablesModeLegacy}, nil
 	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
-		return Version{Mode: IptablesModeLegacy}, nil
+		return Version{Mode: consts.IptablesModeLegacy}, nil
 	case err != nil:
 		return Version{}, formatIptablesVersionErrorf(err.Error())
 	}
 
-	matched := IptablesModeRegex.FindStringSubmatch(stdout.String())
+	matched := consts.IptablesModeRegex.FindStringSubmatch(stdout.String())
 	if len(matched) < 2 {
 		return Version{}, errors.Wrap(formatIptablesVersionErrorf(stdout.String()), "unable to parse iptables version")
 	}
@@ -641,10 +641,10 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	}
 
 	if len(matched) < 3 {
-		return Version{Version: *version, Mode: IptablesModeLegacy}, nil
+		return Version{Version: *version, Mode: consts.IptablesModeLegacy}, nil
 	}
 
-	return Version{Version: *version, Mode: IptablesModeMap[matched[2]]}, nil
+	return Version{Version: *version, Mode: consts.IptablesModeMap[matched[2]]}, nil
 }
 
 func getExecutablesModesString(executables ...InitializedExecutable) string {
@@ -662,8 +662,8 @@ func getExecutablesModesString(executables ...InitializedExecutable) string {
 	return strings.Join(result, ", ")
 }
 
-func inferIptablesMode(executables ...InitializedExecutable) (IptablesMode, error) {
-	modesSet := make(map[IptablesMode]struct{}, len(executables))
+func inferIptablesMode(executables ...InitializedExecutable) (consts.IptablesMode, error) {
+	modesSet := make(map[consts.IptablesMode]struct{}, len(executables))
 
 	for _, executable := range executables {
 		modesSet[executable.version.Mode] = struct{}{}
@@ -672,10 +672,10 @@ func inferIptablesMode(executables ...InitializedExecutable) (IptablesMode, erro
 	modes := maps.Keys(modesSet)
 
 	if len(modes) != 1 {
-		return IptablesModeUnknown, errors.Errorf(
+		return consts.IptablesModeUnknown, errors.Errorf(
 			"executables are of mixed types; all must be of the same type ('%s' or '%s') [%s]",
-			IptablesModeNft,
-			IptablesModeLegacy,
+			consts.IptablesModeNft,
+			consts.IptablesModeLegacy,
 			getExecutablesModesString(executables...),
 		)
 	}

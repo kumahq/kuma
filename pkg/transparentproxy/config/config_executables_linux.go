@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
@@ -31,10 +31,10 @@ func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
 		return errors.Wrap(err, "failed to remount root filesystem as private")
 	}
 
-	if c.NeedLock() && c.version.LessThan(IptablesVersionWithLockfileEnv) {
+	if c.NeedLock() && c.version.LessThan(consts.IptablesVersionWithLockfileEnv) {
 		// The abbility to change the xtables lock path using the XTABLES_LOCKFILE
 		// environment variable was introduced in iptables-legacy version 1.8.6
-		if err := mount(netns.Path(), PathLegacyXtablesLock, unix.MS_BIND|unix.MS_RDONLY); err != nil {
+		if err := mount(netns.Path(), consts.PathLegacyXtablesLock, unix.MS_BIND|unix.MS_RDONLY); err != nil {
 			return err
 		}
 	}
@@ -43,7 +43,7 @@ func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
 	// in the partially initialized network namespace. This prevents issues with iptables
 	// which might use the `xt_owner` module that can trigger the `passwd` service lookup
 	// More info: https://github.com/kumahq/kuma/issues/11038
-	if err := mount(PathDevNull, PathNSSwitchConf, unix.MS_BIND|unix.MS_RDONLY); err != nil {
+	if err := mount(consts.PathDevNull, consts.PathNSSwitchConf, unix.MS_BIND|unix.MS_RDONLY); err != nil {
 		return err
 	}
 
@@ -64,10 +64,10 @@ func (c InitializedExecutable) runInSandbox(cmd *exec.Cmd) error {
 
 	// The ability to change the xtables lock path using the XTABLES_LOCKFILE environment
 	// variable was introduced in iptables-legacy version 1.8.6
-	if c.NeedLock() && c.version.AtLeast(IptablesVersionWithLockfileEnv) {
+	if c.NeedLock() && c.version.AtLeast(consts.IptablesVersionWithLockfileEnv) {
 		cmd.Env = append(
 			cmd.Env,
-			fmt.Sprintf("%s=%s", EnvVarXtablesLockfile, n.Path()),
+			fmt.Sprintf("%s=%s", consts.EnvVarXtablesLockfile, n.Path()),
 		)
 	}
 

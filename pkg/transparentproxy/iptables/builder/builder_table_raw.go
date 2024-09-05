@@ -2,7 +2,7 @@ package builder
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
@@ -19,7 +19,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 		raw.Output().AddRules(
 			rules.
 				NewAppendRule(
-					Protocol(Udp(DestinationPort(DNSPort))),
+					Protocol(Udp(DestinationPort(consts.DNSPort))),
 					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					Jump(Ct(Zone("1"))),
 				).
@@ -37,7 +37,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			raw.Output().AddRules(
 				rules.
 					NewAppendRule(
-						Protocol(Udp(DestinationPort(DNSPort))),
+						Protocol(Udp(DestinationPort(consts.DNSPort))),
 						Jump(Ct(Zone("2"))),
 					).
 					WithComment("assign connection tracking zone 2 to all DNS requests"),
@@ -46,7 +46,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			raw.Prerouting().AddRules(
 				rules.
 					NewAppendRule(
-						Protocol(Udp(SourcePort(DNSPort))),
+						Protocol(Udp(SourcePort(consts.DNSPort))),
 						Jump(Ct(Zone("1"))),
 					).
 					WithComment("assign connection tracking zone 1 to all DNS responses"),
@@ -57,7 +57,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 					rules.
 						NewAppendRule(
 							Destination(ip),
-							Protocol(Udp(DestinationPort(DNSPort))),
+							Protocol(Udp(DestinationPort(consts.DNSPort))),
 							Jump(Ct(Zone("2"))),
 						).
 						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip),
@@ -66,7 +66,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 					rules.
 						NewAppendRule(
 							Destination(ip),
-							Protocol(Udp(SourcePort(DNSPort))),
+							Protocol(Udp(SourcePort(consts.DNSPort))),
 							Jump(Ct(Zone("1"))),
 						).
 						WithCommentf("assign connection tracking zone 1 to DNS responses from %s", ip),

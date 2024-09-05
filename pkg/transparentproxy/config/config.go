@@ -17,7 +17,7 @@ import (
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 var _ json.Unmarshaler = &Owner{}
@@ -55,18 +55,18 @@ func (c *Owner) Set(s string) error {
 		return errors.Errorf("the specified UID or username ('%s') does not refer to a valid user on the host", s)
 	}
 
-	if c.UID, ok = findUserUID(OwnerDefaultUID); ok {
+	if c.UID, ok = findUserUID(consts.OwnerDefaultUID); ok {
 		return nil
 	}
 
-	if c.UID, ok = findUserUID(OwnerDefaultUsername); ok {
+	if c.UID, ok = findUserUID(consts.OwnerDefaultUsername); ok {
 		return nil
 	}
 
 	return errors.Errorf(
 		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
-		OwnerDefaultUID,
-		OwnerDefaultUsername,
+		consts.OwnerDefaultUID,
+		consts.OwnerDefaultUsername,
 	)
 }
 
@@ -206,7 +206,7 @@ func (p *Ports) UnmarshalJSON(bs []byte) error {
 }
 
 type Exclusion struct {
-	Protocol ProtocolL4
+	Protocol consts.ProtocolL4
 	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
@@ -334,7 +334,11 @@ func (c DNS) Initialize(
 		initialized.Enabled = false
 		initialized.ConntrackZoneSplit = false
 
-		l.Warnf("couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled", IPTypeMap[ipv6], c.ResolvConfigPath)
+		l.Warnf(
+			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
+			consts.IPTypeMap[ipv6],
+			c.ResolvConfigPath,
+		)
 	}
 
 	return initialized, nil
@@ -513,7 +517,7 @@ type InitializedComments struct {
 func (c Comments) Initialize(e InitializedExecutablesIPvX) InitializedComments {
 	return InitializedComments{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
-		Prefix:  IptablesRuleCommentPrefix,
+		Prefix:  consts.IptablesRuleCommentPrefix,
 	}
 }
 
@@ -727,8 +731,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
-	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
-	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
+	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[false])
+	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[true])
 
 	loopbackInterfaceName, err := getLoopbackInterfaceName()
 	if err != nil {
@@ -753,8 +757,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			Executables:            executablesIPv4,
 			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          LocalhostCIDRIPv4,
-			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
+			LocalhostCIDR:          consts.LocalhostCIDRIPv4,
+			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv4,
 			Comments:               c.Comments.Initialize(executablesIPv4),
 			DropInvalidPackets:     c.DropInvalidPackets && executablesIPv4.Functionality.Tables.Mangle,
 			KumaDPUser:             c.KumaDPUser,
@@ -800,8 +804,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		Logger:                 loggerIPv6,
 		Executables:            executablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
-		LocalhostCIDR:          LocalhostCIDRIPv6,
-		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
+		LocalhostCIDR:          consts.LocalhostCIDRIPv6,
+		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv6,
 		Comments:               c.Comments.Initialize(executablesIPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && executablesIPv6.Functionality.Tables.Mangle,
 		KumaDPUser:             c.KumaDPUser,
@@ -816,10 +820,10 @@ func DefaultConfig() Config {
 	return Config{
 		KumaDPUser: Owner{UID: ""},
 		Redirect: Redirect{
-			NamePrefix: IptablesChainsPrefix,
+			NamePrefix: consts.IptablesChainsPrefix,
 			Inbound: TrafficFlow{
 				Enabled:           true,
-				Port:              Port(DefaultRedirectInbountPort),
+				Port:              Port(consts.DefaultRedirectInbountPort),
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
 				ExcludePorts:      Ports{},
@@ -827,14 +831,14 @@ func DefaultConfig() Config {
 			},
 			Outbound: TrafficFlow{
 				Enabled:           true,
-				Port:              Port(DefaultRedirectOutboundPort),
+				Port:              Port(consts.DefaultRedirectOutboundPort),
 				ChainName:         "OUTBOUND",
 				RedirectChainName: "OUTBOUND_REDIRECT",
 				ExcludePorts:      Ports{},
 				IncludePorts:      Ports{},
 			},
 			DNS: DNS{
-				Port:                   Port(DefaultRedirectDNSPort),
+				Port:                   Port(consts.DefaultRedirectDNSPort),
 				Enabled:                false,
 				CaptureAll:             false,
 				SkipConntrackZoneSplit: false,
@@ -857,7 +861,7 @@ func DefaultConfig() Config {
 		DryRun:             false,
 		Log: Log{
 			Enabled: false,
-			Level:   LogLevelDebug,
+			Level:   consts.LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,

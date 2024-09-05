@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 type FunctionalityTables struct {
@@ -96,9 +96,9 @@ func verifyMinimalRequirements(functionality Functionality) error {
 func verifyTable(
 	ctx context.Context,
 	iptablesSave InitializedExecutable,
-	table TableName,
+	table consts.TableName,
 ) (bool, string) {
-	stdout, _, err := iptablesSave.Exec(ctx, FlagTable, string(table))
+	stdout, _, err := iptablesSave.Exec(ctx, consts.FlagTable, string(table))
 	if err != nil {
 		return false, ""
 	}
@@ -111,17 +111,17 @@ func verifyModule(
 	iptables InitializedExecutable,
 	matchExtension string,
 ) bool {
-	_, _, err := iptables.Exec(ctx, FlagMatch, matchExtension, FlagHelp)
+	_, _, err := iptables.Exec(ctx, consts.FlagMatch, matchExtension, consts.FlagHelp)
 	return err == nil
 }
 
 func verifyExistingRulesForTable(
 	ctx context.Context,
 	iptablesSave InitializedExecutable,
-	table TableName,
+	table consts.TableName,
 	expectedLinesCount int,
 ) bool {
-	stdout, _, err := iptablesSave.Exec(ctx, FlagTable, string(table))
+	stdout, _, err := iptablesSave.Exec(ctx, consts.FlagTable, string(table))
 	if err != nil {
 		return false
 	}
@@ -166,17 +166,17 @@ func verifyExistingRules(ctx context.Context, iptablesSave InitializedExecutable
 	// transparent proxy tests. This order does not have any inherent semantic significance.
 
 	// Check the nat table: :PREROUTING, :INPUT, :OUTPUT, :POSTROUTING
-	if verifyExistingRulesForTable(ctx, iptablesSave, TableNat, 4) {
+	if verifyExistingRulesForTable(ctx, iptablesSave, consts.TableNat, 4) {
 		return true
 	}
 
 	// Check the raw table: :PREROUTING, :OUTPUT
-	if verifyExistingRulesForTable(ctx, iptablesSave, TableRaw, 2) {
+	if verifyExistingRulesForTable(ctx, iptablesSave, consts.TableRaw, 2) {
 		return true
 	}
 
 	// Check the mangle table: :PREROUTING, :INPUT, :FORWARD, :OUTPUT, :POSTROUTING
-	if verifyExistingRulesForTable(ctx, iptablesSave, TableMangle, 5) {
+	if verifyExistingRulesForTable(ctx, iptablesSave, consts.TableMangle, 5) {
 		return true
 	}
 
@@ -190,25 +190,25 @@ func verifyFunctionality(
 ) (Functionality, error) {
 	functionality := Functionality{
 		Modules: FunctionalityModules{
-			Owner:     verifyModule(ctx, iptables, ModuleOwner),
-			Tcp:       verifyModule(ctx, iptables, ModuleTcp),
-			Udp:       verifyModule(ctx, iptables, ModuleUdp),
-			Comment:   verifyModule(ctx, iptables, ModuleComment),
-			Conntrack: verifyModule(ctx, iptables, ModuleConntrack),
-			Multiport: verifyModule(ctx, iptables, ModuleMultiport),
+			Owner:     verifyModule(ctx, iptables, consts.ModuleOwner),
+			Tcp:       verifyModule(ctx, iptables, consts.ModuleTcp),
+			Udp:       verifyModule(ctx, iptables, consts.ModuleUdp),
+			Comment:   verifyModule(ctx, iptables, consts.ModuleComment),
+			Conntrack: verifyModule(ctx, iptables, consts.ModuleConntrack),
+			Multiport: verifyModule(ctx, iptables, consts.ModuleMultiport),
 		},
 		Rules: FunctionalityRules{
 			ExistingRules: verifyExistingRules(ctx, iptablesSave),
 		},
 	}
 
-	if ok, stdout := verifyTable(ctx, iptablesSave, TableNat); ok {
+	if ok, stdout := verifyTable(ctx, iptablesSave, consts.TableNat); ok {
 		functionality.Tables.Nat = true
-		functionality.Chains.DockerOutput = DockerOutputChainRegex.MatchString(stdout)
+		functionality.Chains.DockerOutput = consts.DockerOutputChainRegex.MatchString(stdout)
 	}
 
-	functionality.Tables.Raw, _ = verifyTable(ctx, iptablesSave, TableRaw)
-	functionality.Tables.Mangle, _ = verifyTable(ctx, iptablesSave, TableMangle)
+	functionality.Tables.Raw, _ = verifyTable(ctx, iptablesSave, consts.TableRaw)
+	functionality.Tables.Mangle, _ = verifyTable(ctx, iptablesSave, consts.TableMangle)
 
 	return functionality, verifyMinimalRequirements(functionality)
 }
