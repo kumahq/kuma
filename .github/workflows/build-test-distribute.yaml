@@ -19,7 +19,7 @@ jobs:
       contents: read
       # golangci-lint-action
       checks: write
-    timeout-minutes: 20
+    timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
@@ -51,7 +51,7 @@ jobs:
       - uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
         with:
           args: --fix=false --verbose
-          version: v1.59.1
+          version: v1.59.0
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
         with:
           path: |
