@@ -277,7 +277,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
 				role, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
 				if err != nil {
-					log.V(1).Error(err, "failed to compute role of the synced policy", "zone", clusterID)
+					log.V(1).Info(err.Error(), "zone", clusterID)
 					return false
 				}
 				if role != mesh_proto.ProducerPolicyRole {
