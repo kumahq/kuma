@@ -13,7 +13,7 @@ type MeshFaultInjection struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`

@@ -104,8 +104,6 @@ type: MeshHealthCheck
 mesh: %s
 name: everything-to-backend
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService

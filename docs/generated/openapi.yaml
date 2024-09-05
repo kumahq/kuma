@@ -3266,8 +3266,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
@@ -4477,8 +4475,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
@@ -4982,8 +4978,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
@@ -5461,8 +5455,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
@@ -7008,8 +7000,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
@@ -7332,8 +7322,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
@@ -7508,8 +7496,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
@@ -8217,7 +8203,6 @@ components:
               type: object
           required:
             - default
-            - targetRef
           type: object
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
@@ -8795,8 +8780,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
@@ -9433,8 +9416,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
@@ -9765,8 +9746,6 @@ components:
                 type: object
               minItems: 1
               type: array
-          required:
-            - targetRef
           type: object
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
@@ -10236,8 +10215,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
@@ -10510,8 +10487,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
@@ -10852,8 +10827,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
@@ -11085,8 +11058,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
