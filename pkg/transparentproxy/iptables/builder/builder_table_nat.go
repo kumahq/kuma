@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
@@ -283,9 +283,10 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 					Protocol(Udp(DestinationPort(DNSPort))),
 					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					JumpConditional(
-						cfg.Executables.Functionality.Chains.DockerOutput, // if DOCKER_OUTPUT should be targeted
-						ToUserDefinedChain(ChainDockerOutput),             // --jump DOCKER_OUTPUT
-						Return(),                                          // else RETURN
+						// if DOCKER_OUTPUT should be targeted --jump DOCKER_OUTPUT or else RETURN
+						cfg.Executables.Functionality.Chains.DockerOutput,
+						ToUserDefinedChain(ChainDockerOutput),
+						Return(),
 					),
 				).
 				WithConditionalComment(

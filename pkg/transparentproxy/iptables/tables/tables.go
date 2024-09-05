@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 type Table interface {

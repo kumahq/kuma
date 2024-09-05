@@ -17,7 +17,7 @@ import (
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	. "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 var _ json.Unmarshaler = &Owner{}
