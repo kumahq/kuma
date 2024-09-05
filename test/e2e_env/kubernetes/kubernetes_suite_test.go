@@ -1,13 +1,13 @@
 package kubernetes_test
 
 import (
-	"github.com/kumahq/kuma/test/e2e_env/kubernetes/appprobeproxy"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/api"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/appprobeproxy"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/connectivity"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/container_patch"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/defaults"

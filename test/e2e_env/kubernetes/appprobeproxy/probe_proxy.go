@@ -3,11 +3,10 @@ package appprobeproxy
 import (
 	"context"
 	"fmt"
+	"strconv"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
@@ -16,8 +15,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"strconv"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -118,7 +119,7 @@ func ApplicationProbeProxy() {
 		Eventually(func() error {
 			httpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s', error: %v", httpAppPodName))
+				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", httpAppPodName))
 			}
 			Expect(httpPod).ToNot(BeNil())
 
@@ -130,7 +131,7 @@ func ApplicationProbeProxy() {
 			Expect(container).ToNot(BeNil())
 			Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
 			probeProxyPort, _ := strconv.Atoi(probeProxyPortAnno)
-			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(probeProxyPort))))
+			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(probeProxyPort)))) //nolint:gosec  // we never overflow here
 			Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
@@ -138,7 +139,7 @@ func ApplicationProbeProxy() {
 		Eventually(func() error {
 			tcpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), tcpAppPodName)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s', error: %v", tcpAppPodName))
+				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", tcpAppPodName))
 			}
 
 			container := getAppContainer(tcpPod, tcpAppName)
@@ -151,7 +152,7 @@ func ApplicationProbeProxy() {
 		Eventually(func() error {
 			grpcPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), grpcAppPodName)
 			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s', error: %v", grpcAppPodName))
+				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", grpcAppPodName))
 			}
 
 			container := getAppContainer(grpcPod, gRPCAppName)
@@ -175,7 +176,7 @@ func ApplicationProbeProxy() {
 			checkApp := func(podName, appName string) error {
 				pod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
 				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s', error: %v", podName))
+					return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", podName))
 				}
 
 				if !isTestServerReady(pod, appName) {
@@ -196,7 +197,7 @@ func ApplicationProbeProxy() {
 			return nil
 		}, "30s", "3s", MustPassRepeatedly(2)).ShouldNot(HaveOccurred())
 
-		// forth, assert Probes data is present for HTTP Probes
+		// fourth, assert Probes data is present for HTTP Probes
 		Eventually(func() error {
 			checkDPProbes := func(podName string, shouldHasProbes bool) error {
 				dpName := fmt.Sprintf("%s.%s", podName, namespace)
@@ -276,7 +277,7 @@ func ApplicationProbeProxy() {
 			Expect(container).ToNot(BeNil())
 			Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
 			port, _ := strconv.Atoi(virtualProbesPortAnno)
-			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(port))))
+			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(port)))) //nolint:gosec  // we never overflow here
 			Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
