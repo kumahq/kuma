@@ -15,8 +15,8 @@ import (
 	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 const (

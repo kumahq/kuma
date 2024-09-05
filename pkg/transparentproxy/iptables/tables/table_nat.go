@@ -1,8 +1,8 @@
 package tables
 
 import (
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/chains"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 var _ Table = &NatTable{}
