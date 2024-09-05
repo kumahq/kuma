@@ -109,8 +109,8 @@ message Mesh {
       // MeshServices are generated and used for configuration
       Everywhere = 1;
       // MeshServices are generated but only used for configuration where
-      // configured via reachableBackendRefs
-      ReachableBackendRefs = 2;
+      // configured via reachableBackends
+      ReachableBackends = 2;
       // MeshServices are generated, used for configuration and kuma.io/services
       // are not used
       Exclusive = 3;
