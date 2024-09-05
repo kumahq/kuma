@@ -59,6 +59,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		}))
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
