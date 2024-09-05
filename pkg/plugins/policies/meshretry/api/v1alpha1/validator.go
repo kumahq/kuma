@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshRetryResource) validate() error {
@@ -19,14 +20,17 @@ func (r *MeshRetryResource) validate() error {
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.To, r.Spec.TargetRef))
+	verr.AddErrorAt(path, validateTo(r.Spec.To, pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})))
 	return verr.OrNil()
 }
 
-func (r *MeshRetryResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -38,7 +42,7 @@ func (r *MeshRetryResource) validateTop(targetRef common_api.TargetRef) validato
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,

@@ -15,7 +15,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	const factor = 2
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: common_api.TargetRef{
+			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: []common_api.TargetRefProxyType{
 					common_api.Sidecar,
@@ -79,7 +79,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
-			TargetRef: common_api.TargetRef{
+			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: []common_api.TargetRefProxyType{
 					common_api.Gateway,

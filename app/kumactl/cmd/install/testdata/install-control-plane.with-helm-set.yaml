@@ -1008,8 +1008,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -2073,8 +2071,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -3415,8 +3411,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -3709,8 +3703,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -4074,8 +4066,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -4626,7 +4616,6 @@ spec:
                 type: object
             required:
             - default
-            - targetRef
             type: object
         type: object
     served: true
@@ -5126,8 +5115,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -5635,8 +5622,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6132,8 +6117,6 @@ spec:
                   type: object
                 minItems: 1
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6497,8 +6480,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6808,8 +6789,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7093,8 +7072,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7298,8 +7275,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -8892,8 +8867,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -9633,8 +9606,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true

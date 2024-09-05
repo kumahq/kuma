@@ -99,8 +99,6 @@ metadata:
     kuma.io/mesh: %s
     kuma.io/origin: zone
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -144,8 +142,6 @@ metadata:
     kuma.io/mesh: %s
     kuma.io/origin: zone
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -201,8 +197,6 @@ metadata:
     kuma.io/mesh: %s
     kuma.io/origin: zone
 spec:
-  targetRef:
-    kind: Mesh
   to:
   - targetRef:
       kind: MeshService

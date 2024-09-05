@@ -484,5 +484,4 @@ properties:
         type: object
     required:
       - default
-      - targetRef
     type: object

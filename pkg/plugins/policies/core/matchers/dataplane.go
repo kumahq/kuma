@@ -14,6 +14,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -168,7 +169,7 @@ func dppSelectedByPolicy(
 		if mhr == nil {
 			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", ref.Name)
 		}
-		return dppSelectedByPolicy(mhr.Meta, mhr.Spec.TargetRef, dpp, gateway, referencableResources)
+		return dppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
 	default:
 		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}
