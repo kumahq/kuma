@@ -85,7 +85,7 @@ func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns s
 		}
 	}
 
-	return c.validateLabels(r, ns)
+	return c.validateLabels(r)
 }
 
 func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userInfo authenticationv1.UserInfo) bool {
@@ -97,7 +97,7 @@ func (c *ResourceAdmissionChecker) isPrivilegedUser(allowedUsers []string, userI
 	return slices.Contains(allowedUsers, userInfo.Username)
 }
 
-func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns string) *admission.Response {
+func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource) *admission.Response {
 	if c.Mode != core.Global {
 		resourceOrigin, originPresent := core_model.ResourceOrigin(r.GetMeta())
 		if originPresent && resourceOrigin != mesh_proto.GlobalResourceOrigin {
