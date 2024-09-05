@@ -364,7 +364,9 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithName("tcp-server"),
 					testserver.WithNamespace(namespace),
-					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
+					testserver.WithArgs("health-check", "tcp", "--port", "80"),
+					testserver.WithProbe(testserver.LivenessProbe, testserver.ProbeTcpSocket, 80, ""),
+					testserver.WithProbe(testserver.ReadinessProbe, testserver.ProbeTcpSocket, 80, ""),
 				)).
 				Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 				Setup(kubernetes.Cluster)
@@ -438,7 +440,9 @@ spec:
 					testserver.WithMesh(meshName),
 					testserver.WithName("tcp-server"),
 					testserver.WithNamespace(namespace),
-					testserver.WithHealthCheckTCPArgs("health-check", "tcp", "--port", "80"),
+					testserver.WithArgs("health-check", "tcp", "--port", "80"),
+					testserver.WithProbe(testserver.LivenessProbe, testserver.ProbeTcpSocket, 80, ""),
+					testserver.WithProbe(testserver.ReadinessProbe, testserver.ProbeTcpSocket, 80, ""),
 				)).
 				Install(MeshTrafficPermissionAllowAllKubernetes(meshName))
 			Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())

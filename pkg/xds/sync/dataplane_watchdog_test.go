@@ -77,7 +77,6 @@ var _ = Describe("Dataplane Watchdog", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 		newMetrics, err := metrics.NewMetrics(zone)
 		Expect(err).ToNot(HaveOccurred())

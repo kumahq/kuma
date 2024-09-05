@@ -128,7 +128,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -136,7 +136,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -184,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -263,7 +263,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@31c86eb3b33c9b601a1f60f98dcbfd1d70f379b4 # v1.10.3
+        uses: actions/create-github-app-token@3378cda945da322a8db4b193e19d46352ebe2de5 # v1.10.4
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

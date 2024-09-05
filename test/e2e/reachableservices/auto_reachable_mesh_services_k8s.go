@@ -40,11 +40,9 @@ spec:
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(MTLSMeshKubernetes(meshName)).
+			Install(MTLSMeshWithMeshServicesKubernetes(meshName, "Exclusive")).
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
