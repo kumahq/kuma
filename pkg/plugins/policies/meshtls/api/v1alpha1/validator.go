@@ -13,7 +13,7 @@ func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From))
+	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, r.Spec.TargetRef.Kind))
 	return verr.OrNil()
 }
 
@@ -22,27 +22,30 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
-			common_api.MeshService,
-			common_api.MeshServiceSubset,
 		},
 	})
 	return targetRefErr
 }
 
-func validateFrom(from []From) validators.ValidationError {
+func validateFrom(from []From, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 	fromPath := validators.Root()
 
 	for idx, fromItem := range from {
 		path := fromPath.Index(idx)
 
-		defaultField := path.Field("default")
-		verr.Add(validateDefault(defaultField, fromItem.Default))
+		targetRefErr := mesh.ValidateTargetRef(fromItem.TargetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds: []common_api.TargetRefKind{
+				common_api.Mesh,
+			},
+		})
+		verr.AddErrorAt(path.Field("targetRef"), targetRefErr)
+		verr.Add(validateDefault(path.Field("default"), fromItem.Default, topLevelTargetRef))
 	}
 	return verr
 }
 
-func validateDefault(path validators.PathBuilder, conf Conf) validators.ValidationError {
+func validateDefault(path validators.PathBuilder, conf Conf, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if conf.Mode != nil {
@@ -51,18 +54,24 @@ func validateDefault(path validators.PathBuilder, conf Conf) validators.Validati
 		}
 	}
 
-	if !containsAll(allCiphers, conf.TlsCiphers) {
-		verr.AddErrorAt(path.Field("tlsCiphers"), validators.MakeFieldMustBeOneOfErr("tlsCiphers", allCiphers...))
+	if len(conf.TlsCiphers) > 0 && topLevelTargetRef != common_api.Mesh {
+		verr.AddViolationAt(path.Field("tlsCiphers"), "tlsCiphers can only be defined with top level targetRef kind: Mesh")
+	} else if !containsAll(common_tls.AllCiphers, conf.TlsCiphers) {
+		verr.AddErrorAt(path.Field("tlsCiphers"), validators.MakeFieldMustBeOneOfErr("tlsCiphers", common_tls.AllCiphers...))
 	}
 
 	if conf.TlsVersion != nil {
-		verr.AddErrorAt(path.Field("version"), common_tls.ValidateVersion(conf.TlsVersion))
+		if topLevelTargetRef != common_api.Mesh {
+			verr.AddViolationAt(path.Field("tlsVersion"), "tlsVersion can only be defined with top level targetRef kind: Mesh")
+		} else {
+			verr.AddErrorAt(path.Field("tlsVersion"), common_tls.ValidateVersion(conf.TlsVersion))
+		}
 	}
 
 	return verr
 }
 
-func containsAll(main []string, sub TlsCiphers) bool {
+func containsAll(main []string, sub common_tls.TlsCiphers) bool {
 	elementMap := make(map[string]bool)
 
 	for _, element := range main {

@@ -1,0 +1,12 @@
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      tlsVersion:
+        min: TLS12
+        max: TLS13
+      tlsCiphers:
+        - "ECDHE-ECDSA-AES128-GCM-SHA256"
+      mode: Permissive

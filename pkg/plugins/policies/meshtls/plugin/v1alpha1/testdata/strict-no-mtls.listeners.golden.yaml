@@ -1,0 +1,47 @@
+resources:
+- name: inbound:127.0.0.1:17777
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17777
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17777
+          idleTimeout: 7200s
+          statPrefix: localhost_17777
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: inbound:127.0.0.1:17777
+    trafficDirection: INBOUND
+- name: inbound:127.0.0.1:17778
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17778
+    bindToPort: false
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: localhost:17778
+          idleTimeout: 7200s
+          statPrefix: localhost_17778
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: frontend
+    name: inbound:127.0.0.1:17778
+    trafficDirection: INBOUND
