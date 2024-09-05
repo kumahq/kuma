@@ -6,6 +6,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
 	"golang.org/x/exp/maps"
 
@@ -64,7 +65,15 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	return p.configureDPP(proxy, policies.ToRules, listeners, clusters, endpoints, rs, ctx.Mesh.Resource.ZoneEgressEnabled())
+	return p.configureDPP(
+		proxy,
+		policies.ToRules,
+		listeners,
+		clusters,
+		endpoints,
+		rs,
+		ctx.Mesh,
+	)
 }
 
 func (p plugin) configureDPP(
@@ -74,7 +83,7 @@ func (p plugin) configureDPP(
 	clusters policies_xds.Clusters,
 	endpoints policies_xds.EndpointMap,
 	rs *core_xds.ResourceSet,
-	egressEnabled bool,
+	meshCtx xds_context.MeshContext,
 ) error {
 	serviceConfs := map[string]api.Conf{}
 
@@ -105,7 +114,7 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], serviceName, conf, rs, proxy.Zone, proxy.APIVersion, meshCtx.Resource.ZoneEgressEnabled(), generator.OriginOutbound); err != nil {
 				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", serviceName)
 			}
 		}
@@ -113,12 +122,60 @@ func (p plugin) configureDPP(
 			if err := p.configureCluster(cluster, conf); err != nil {
 				return err
 			}
-			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], cluster.Name, conf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, generator.OriginOutbound); err != nil {
+			if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], cluster.Name, conf, rs, proxy.Zone, proxy.APIVersion, meshCtx.Resource.ZoneEgressEnabled(), generator.OriginOutbound); err != nil {
 				return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
 			}
 		}
 	}
 
+	if err := p.applyToRealResources(proxy, endpoints, rs, toRules.ResourceRules, meshCtx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p plugin) applyToRealResources(
+	proxy *core_xds.Proxy,
+	endpoints policies_xds.EndpointMap,
+	rs *core_xds.ResourceSet,
+	rules core_rules.ResourceRules,
+	meshCtx xds_context.MeshContext,
+) error {
+	for uri, resType := range rs.IndexByOrigin() {
+		conf := rules.Compute(uri, meshCtx.Resources)
+		if conf == nil {
+			continue
+		}
+		apiConf := conf.Conf[0].(api.Conf)
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				for _, resource := range resources {
+					if resource.Origin != generator.OriginOutbound {
+						continue
+					}
+					if err := p.configureListener(resource.Resource.(*envoy_listener.Listener), nil, &apiConf); err != nil {
+						return err
+					}
+				}
+			case envoy_resource.ClusterType:
+				for _, resource := range resources {
+					if resource.Origin != generator.OriginOutbound {
+						continue
+					}
+					cluster := resource.Resource.(*envoy_cluster.Cluster)
+					if err := p.configureCluster(cluster, apiConf); err != nil {
+						return err
+					}
+					if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[cluster.Name], cluster.Name, apiConf, rs, proxy.Zone, proxy.APIVersion, false, generator.OriginOutbound); err != nil {
+						return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

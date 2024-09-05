@@ -25,7 +25,7 @@ func MeshServiceTargeting() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MeshUniversal(meshName)).
+			Install(MeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 

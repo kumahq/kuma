@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	meshservice_k8s "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
@@ -67,10 +68,11 @@ var _ = Describe("MeshServiceController", func() {
 				Build()
 
 			reconciler = &MeshServiceReconciler{
-				Client:        kubeClient,
-				Log:           logr.Discard(),
-				Scheme:        k8sClientScheme,
-				EventRecorder: kube_record.NewFakeRecorder(10),
+				Client:            kubeClient,
+				Log:               logr.Discard(),
+				Scheme:            k8sClientScheme,
+				EventRecorder:     kube_record.NewFakeRecorder(10),
+				ResourceConverter: k8s.NewSimpleConverter(),
 			}
 
 			key := kube_types.NamespacedName{

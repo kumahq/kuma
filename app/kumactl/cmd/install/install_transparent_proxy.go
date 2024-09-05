@@ -15,8 +15,8 @@ import (
 	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 const (
@@ -24,6 +24,7 @@ const (
 	flagDryRun                     = "dry-run"
 	flagTransparentProxyConfig     = "config"
 	flagTransparentProxyConfigFile = "config-file"
+	flagIptablesExecutables        = "iptables-executables"
 )
 
 const (
@@ -284,6 +285,17 @@ runuser -u kuma-dp -- \
 		fmt.Sprintf(
 			"for outbound traffic, by default, the last applied iptables rule in the 'OUTPUT' chain of the 'nat' table redirects traffic to our custom chain ('%s'), where it is processed for transparent proxying. However, if there is an existing rule in this chain that already redirects traffic to another chain, our default behavior of appending the rule will cause our rule to be added after the existing one, effectively ignoring it. When this flag is specified, it changes the behavior from appending to inserting the rule at the beginning of the chain, ensuring that our iptables rule takes precedence",
 			fmt.Sprintf("%s_%s", cfg.Redirect.NamePrefix, cfg.Redirect.Outbound.ChainName),
+		),
+	)
+
+	cmd.Flags().Var(
+		&cfg.Executables,
+		flagIptablesExecutables,
+		fmt.Sprintf(
+			"specify custom paths for iptables executables in the format name:path[,name:path...]. Valid names are 'iptables', 'iptables-save', 'iptables-restore', 'ip6tables', 'ip6tables-save', and 'ip6tables-restore'. You must provide all three executables for each IP version you want to customize (IPv4 or IPv6), meaning if you configure one for IPv6 (e.g., 'ip6tables'), you must also specify 'ip6tables-save' and 'ip6tables-restore'. Partial configurations for either IPv4 or IPv6 are not allowed. Configuration values can be set through a combination of sources: config file (via --%s or --%s), environment variables, and the '--%s' flag. For example, you can specify 'ip6tables' in the config file, 'ip6tables-save' as an environment variable, and 'ip6tables-restore' via the '--%[3]s' flag. [WARNING] Provided paths are not extensively validated, so ensure you specify correct paths and that the executables are actual iptables binaries to avoid misconfigurations and unexpected behavior",
+			flagTransparentProxyConfig,
+			flagTransparentProxyConfigFile,
+			flagIptablesExecutables,
 		),
 	)
 

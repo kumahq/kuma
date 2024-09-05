@@ -6,8 +6,13 @@ type ClusterItem struct {
 }
 
 type HostStatus struct {
-	Priority *int      `json:"priority,omitempty"`
-	Locality *Locality `json:"locality,omitempty"`
+	HealthStatus *HealthStatus `json:"health_status,omitempty"`
+	Priority     *int          `json:"priority,omitempty"`
+	Locality     *Locality     `json:"locality,omitempty"`
+}
+
+type HealthStatus struct {
+	FailedActiveHealthCheck bool `json:"failed_active_health_check"`
 }
 
 type Locality struct {

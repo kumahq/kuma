@@ -20,7 +20,6 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().Multizone.Zone.IngressUpdateInterval.Duration,
 		rt.Config().Experimental.IngressTagFilters,
 		rt.Config().Multizone.Zone.Name,
-		rt.Config().Experimental.SkipPersistedVIPs,
 	)
 	if err != nil {
 		return err

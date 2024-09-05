@@ -33,15 +33,14 @@ import (
 )
 
 type meshContextBuilder struct {
-	rm                manager.ReadOnlyResourceManager
-	typeSet           map[core_model.ResourceType]struct{}
-	ipFunc            lookup.LookupIPFunc
-	zone              string
-	vipsPersistence   *vips.Persistence
-	topLevelDomain    string
-	vipPort           uint32
-	rsGraphBuilder    ReachableServicesGraphBuilder
-	skipPersistedVIPs bool
+	rm              manager.ReadOnlyResourceManager
+	typeSet         map[core_model.ResourceType]struct{}
+	ipFunc          lookup.LookupIPFunc
+	zone            string
+	vipsPersistence *vips.Persistence
+	topLevelDomain  string
+	vipPort         uint32
+	rsGraphBuilder  ReachableServicesGraphBuilder
 }
 
 // MeshContextBuilder
@@ -72,7 +71,6 @@ func NewMeshContextBuilder(
 	topLevelDomain string,
 	vipPort uint32,
 	rsGraphBuilder ReachableServicesGraphBuilder,
-	skipPersistedVIPs bool,
 ) MeshContextBuilder {
 	typeSet := map[core_model.ResourceType]struct{}{}
 	for _, typ := range types {
@@ -80,15 +78,14 @@ func NewMeshContextBuilder(
 	}
 
 	return &meshContextBuilder{
-		rm:                rm,
-		typeSet:           typeSet,
-		ipFunc:            ipFunc,
-		zone:              zone,
-		vipsPersistence:   vipsPersistence,
-		topLevelDomain:    topLevelDomain,
-		vipPort:           vipPort,
-		rsGraphBuilder:    rsGraphBuilder,
-		skipPersistedVIPs: skipPersistedVIPs,
+		rm:              rm,
+		typeSet:         typeSet,
+		ipFunc:          ipFunc,
+		zone:            zone,
+		vipsPersistence: vipsPersistence,
+		topLevelDomain:  topLevelDomain,
+		vipPort:         vipPort,
+		rsGraphBuilder:  rsGraphBuilder,
 	}
 }
 
@@ -189,7 +186,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
-	if !m.skipPersistedVIPs {
+	if baseMeshContext.Mesh.Spec.MeshServicesEnabled() != mesh_proto.Mesh_MeshServices_Exclusive {
 		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not fetch vips")

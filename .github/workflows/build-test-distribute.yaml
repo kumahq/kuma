@@ -66,7 +66,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@a1f9449f51053b1ef86fd1e35d9b6d588c7c3a7d # v2.5.0
+        uses: Kong/public-shared-actions/security-actions/sca@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
         with:
           dir: .
           config: .syft.yaml
@@ -125,7 +125,7 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       actions: read # For getting workflow run info
     env:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"

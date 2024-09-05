@@ -110,6 +110,8 @@ spec:
 	meshWithEgress := fmt.Sprintf(`
 type: Mesh
 name: "%s"
+meshServices:
+  enabled: Everywhere
 mtls:
   enabledBackend: ca-1
   backends:
@@ -144,18 +146,21 @@ routing:
 				testserver.WithName("client-server"),
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
+				testserver.WithReachableServices("dummy-service"),
 				testserver.WithReachableBackends(reachableBackends),
 			)).
 			Install(testserver.Install(
 				testserver.WithName("client-server-namespace"),
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
+				testserver.WithReachableServices("dummy-service"),
 				testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
 			)).
 			Install(testserver.Install(
 				testserver.WithName("client-server-no-access"),
 				testserver.WithMesh(meshName),
 				testserver.WithNamespace(namespace),
+				testserver.WithReachableServices("dummy-service"),
 				testserver.WithReachableBackends("{}"),
 			)).
 			Install(testserver.Install(
@@ -313,36 +318,44 @@ spec:
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
+		}, "5s", "100ms").Should(Succeed())
 
+		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable services via Kuma DNS
-			response, err = client.CollectFailure(
+			response, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server", "not-accessible-es.extsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because Kuma DP has no such DNS
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Equal(6))
+		}, "5s", "100ms").Should(Succeed())
 
+		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			response, err = client.CollectFailure(
+			response, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server", "not-accessible-es.reachable-backends-non-mesh.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(52), Equal(56)))
+		}, "5s", "100ms").Should(Succeed())
 
+		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable mesh multizone service via Kuma DNS
-			response, err = client.CollectFailure(
+			response, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server", "other-zone-not-accessible.mzsvc.mesh.local",
 				client.FromKubernetesPod(namespace, "client-server"),
 			)
 			// then it fails because we don't encrypt traffic to unknown destination in the mesh
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Exitcode).To(Or(Equal(6)))
+		}, "5s", "100ms").Should(Succeed())
 
+		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable service via Kubernetes DNS
-			response, err = client.CollectFailure(
+			response, err := client.CollectFailure(
 				multizone.KubeZone1, "client-server-no-access", "second-test-server.reachable-backends.svc.cluster.local",
 				client.FromKubernetesPod(namespace, "client-server-no-access"),
 			)

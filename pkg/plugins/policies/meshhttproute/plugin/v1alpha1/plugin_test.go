@@ -2059,7 +2059,6 @@ func meshContextWithResources(resources ...core_model.Resource) *xds_context.Mes
 		"mesh",
 		80,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
-		false,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())
