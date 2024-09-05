@@ -7,5 +7,5 @@ kumactl generate tls-certificate --type=client --key-file=client.key --cert-file
 
 ## Server
 ```bash
-kumactl generate tls-certificate --type=server --cp-hostname=kuma-control-plane
+kumactl generate tls-certificate --type=server --hostname=kuma-control-plane
 ```
