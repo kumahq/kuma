@@ -80,5 +80,6 @@ var (
 	_ = Describe("MeshMultiZoneService MeshLbStrategy", localityawarelb.MeshMzService, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
+	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 )

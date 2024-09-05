@@ -24,6 +24,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -650,7 +651,8 @@ func createMeshExternalServiceEndpoint(
 	zone string,
 ) error {
 	es := &core_xds.ExternalService{
-		Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+		Protocol:      core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
 	if tags == nil {
