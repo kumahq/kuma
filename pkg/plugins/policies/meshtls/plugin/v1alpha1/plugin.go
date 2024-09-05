@@ -95,7 +95,7 @@ func applyToInbounds(
 		if l != nil {
 			rs.Remove(resource.ListenerType, listener.GetName())
 			rs.Add(&core_xds.Resource{
-				Name:     listener.Name,
+				Name:     listener.GetName(),
 				Origin:   generator.OriginInbound,
 				Resource: l,
 			})
