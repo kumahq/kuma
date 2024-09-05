@@ -1,6 +1,7 @@
 package kubernetes_test
 
 import (
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/appprobeproxy"
 	"testing"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -96,4 +97,5 @@ var (
 	_ = Describe("Connectivity - Exclude Outbound Port", connectivity.ExcludeOutboundPort, Ordered)
 	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
 	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
+	_ = Describe("ApplicationProbeProxy", appprobeproxy.ApplicationProbeProxy, Ordered)
 )
