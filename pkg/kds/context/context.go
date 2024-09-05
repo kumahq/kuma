@@ -274,8 +274,15 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllZonesFlag):
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
-			if r.Descriptor().IsPolicy && core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
-				return false
+			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+				role, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+				if err != nil {
+					log.V(1).Error(err, "failed to compute role of the synced policy", "zone", clusterID)
+					return false
+				}
+				if role != mesh_proto.ProducerPolicyRole {
+					return false
+				}
 			}
 
 			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
