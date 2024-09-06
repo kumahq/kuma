@@ -85,7 +85,7 @@ func (cb *CircuitBreaker) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *CircuitBreaker) GetStatus() (core_model.ResourceStatus, error) {
@@ -194,7 +194,7 @@ func (cb *Dataplane) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *Dataplane) GetStatus() (core_model.ResourceStatus, error) {
@@ -299,7 +299,7 @@ func (cb *DataplaneInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *DataplaneInsight) GetStatus() (core_model.ResourceStatus, error) {
@@ -404,7 +404,7 @@ func (cb *ExternalService) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ExternalService) GetStatus() (core_model.ResourceStatus, error) {
@@ -509,7 +509,7 @@ func (cb *FaultInjection) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *FaultInjection) GetStatus() (core_model.ResourceStatus, error) {
@@ -614,7 +614,7 @@ func (cb *HealthCheck) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *HealthCheck) GetStatus() (core_model.ResourceStatus, error) {
@@ -719,7 +719,7 @@ func (cb *Mesh) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *Mesh) GetStatus() (core_model.ResourceStatus, error) {
@@ -824,7 +824,7 @@ func (cb *MeshGateway) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *MeshGateway) GetStatus() (core_model.ResourceStatus, error) {
@@ -929,7 +929,7 @@ func (cb *MeshGatewayRoute) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *MeshGatewayRoute) GetStatus() (core_model.ResourceStatus, error) {
@@ -1034,7 +1034,7 @@ func (cb *MeshInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *MeshInsight) GetStatus() (core_model.ResourceStatus, error) {
@@ -1139,7 +1139,7 @@ func (cb *ProxyTemplate) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ProxyTemplate) GetStatus() (core_model.ResourceStatus, error) {
@@ -1244,7 +1244,7 @@ func (cb *RateLimit) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *RateLimit) GetStatus() (core_model.ResourceStatus, error) {
@@ -1349,7 +1349,7 @@ func (cb *Retry) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *Retry) GetStatus() (core_model.ResourceStatus, error) {
@@ -1454,7 +1454,7 @@ func (cb *ServiceInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ServiceInsight) GetStatus() (core_model.ResourceStatus, error) {
@@ -1559,7 +1559,7 @@ func (cb *Timeout) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *Timeout) GetStatus() (core_model.ResourceStatus, error) {
@@ -1664,7 +1664,7 @@ func (cb *TrafficLog) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *TrafficLog) GetStatus() (core_model.ResourceStatus, error) {
@@ -1769,7 +1769,7 @@ func (cb *TrafficPermission) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *TrafficPermission) GetStatus() (core_model.ResourceStatus, error) {
@@ -1874,7 +1874,7 @@ func (cb *TrafficRoute) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *TrafficRoute) GetStatus() (core_model.ResourceStatus, error) {
@@ -1979,7 +1979,7 @@ func (cb *TrafficTrace) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *TrafficTrace) GetStatus() (core_model.ResourceStatus, error) {
@@ -2084,7 +2084,7 @@ func (cb *VirtualOutbound) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *VirtualOutbound) GetStatus() (core_model.ResourceStatus, error) {
@@ -2190,7 +2190,7 @@ func (cb *ZoneEgress) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ZoneEgress) GetStatus() (core_model.ResourceStatus, error) {
@@ -2295,7 +2295,7 @@ func (cb *ZoneEgressInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ZoneEgressInsight) GetStatus() (core_model.ResourceStatus, error) {
@@ -2401,7 +2401,7 @@ func (cb *ZoneIngress) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ZoneIngress) GetStatus() (core_model.ResourceStatus, error) {
@@ -2506,7 +2506,7 @@ func (cb *ZoneIngressInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ZoneIngressInsight) GetStatus() (core_model.ResourceStatus, error) {

@@ -141,9 +141,9 @@ func (cb *{{.ResourceType}}) SetSpec(spec core_model.ResourceSpec) {
 	}
 
 {{ if eq .ResourceType "DataplaneInsight" }}
-	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Status = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 {{- else}}
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 {{- end}}
 }
 

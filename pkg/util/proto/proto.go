@@ -2,10 +2,12 @@ package proto
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 
 	"github.com/golang/protobuf/jsonpb"
 	protov1 "github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/structpb"
 	"sigs.k8s.io/yaml"
@@ -32,6 +34,27 @@ func ToYAML(pb proto.Message) ([]byte, error) {
 	return yaml.JSONToYAML([]byte(json))
 }
 
+// we change proto to map, and map to json so we can keep data ordered
+// and do not detect changes once resource is returned from k8s
+func ToJSONSorted(pb proto.Message) ([]byte, error) {
+	jsonData, err := protojson.Marshal(pb)
+	if err != nil {
+		return nil, err
+	}
+	var resultMap map[string]interface{}
+	err = json.Unmarshal(jsonData, &resultMap)
+	if err != nil {
+		return nil, err
+	}
+
+	// json.Marshal returns sorted data
+	jsonData, err = json.Marshal(resultMap)
+	if err != nil {
+		return nil, err
+	}
+	return jsonData, nil
+}
+
 func ToJSON(pb proto.Message) ([]byte, error) {
 	var buf bytes.Buffer
 	marshaler := &jsonpb.Marshaler{}
@@ -39,6 +62,15 @@ func ToJSON(pb proto.Message) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
+}
+
+func MustMarshalJSONSorted(in proto.Message) []byte {
+	content, err := ToJSONSorted(in)
+	if err != nil {
+		panic(fmt.Sprintf("failed to marshal %T: %s", in, err))
+	}
+
+	return content
 }
 
 func MustMarshalJSON(in proto.Message) []byte {

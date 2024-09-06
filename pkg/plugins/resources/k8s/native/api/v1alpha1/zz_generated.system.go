@@ -85,7 +85,7 @@ func (cb *Zone) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *Zone) GetStatus() (core_model.ResourceStatus, error) {
@@ -190,7 +190,7 @@ func (cb *ZoneInsight) SetSpec(spec core_model.ResourceSpec) {
 		panic(fmt.Sprintf("unexpected protobuf message type %T", spec))
 	}
 
-	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSON(s)}
+	cb.Spec = &apiextensionsv1.JSON{Raw: util_proto.MustMarshalJSONSorted(s)}
 }
 
 func (cb *ZoneInsight) GetStatus() (core_model.ResourceStatus, error) {
