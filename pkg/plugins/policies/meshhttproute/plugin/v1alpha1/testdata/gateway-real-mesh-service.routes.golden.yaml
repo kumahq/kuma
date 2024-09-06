@@ -20,7 +20,7 @@ resources:
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-26cb64fa4e85e7b7
+            - name: backend_msvc_80-6c7282d3d97450ca
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
@@ -34,7 +34,7 @@ resources:
           idleTimeout: 5s
           weightedClusters:
             clusters:
-            - name: backend-26cb64fa4e85e7b7
+            - name: backend_msvc_80-6c7282d3d97450ca
               requestHeadersToAdd:
               - header:
                   key: x-kuma-tags
