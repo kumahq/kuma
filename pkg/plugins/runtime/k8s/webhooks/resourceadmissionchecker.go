@@ -109,37 +109,9 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	}
 
 	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-		return c.validatePolicyRole(r, ns)
-	}
-
-	return nil
-}
-
-func (c *ResourceAdmissionChecker) validatePolicyRole(r core_model.Resource, ns string) *admission.Response {
-	policy, ok := r.GetSpec().(core_model.Policy)
-	if !ok {
-		return nil
-	}
-
-	policyRole, err := core_model.ComputePolicyRole(policy, ns)
-	if err != nil {
-		return forbiddenResponse(err.Error())
-	}
-
-	providedRole, ok := r.GetMeta().GetLabels()[mesh_proto.PolicyRoleLabel]
-	if !ok {
-		return nil
-	}
-
-	if ns == c.SystemNamespace {
-		if providedRole != string(mesh_proto.SystemPolicyRole) {
-			return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.PolicyRoleLabel, string(mesh_proto.SystemPolicyRole), providedRole))
+		if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), ns); err != nil {
+			return forbiddenResponse(err.Error())
 		}
-		return nil
-	}
-
-	if providedRole != string(policyRole) {
-		return forbiddenResponse(labelsNotAllowedMsg(mesh_proto.PolicyRoleLabel, string(policyRole), providedRole))
 	}
 
 	return nil

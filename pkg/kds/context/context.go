@@ -277,7 +277,8 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
 				role, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
 				if err != nil {
-					log.V(1).Info(err.Error(), "zone", clusterID)
+					ri := core_model.NewResourceIdentifier(r)
+					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
 					return false
 				}
 				if role != mesh_proto.ProducerPolicyRole {

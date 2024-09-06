@@ -497,7 +497,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
 		var role mesh_proto.PolicyRole
 		switch ns {
 		case systemNamespace:
@@ -505,7 +505,7 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		default:
 			role = MustComputePolicyRole(r.GetSpec().(Policy), ns)
 		}
-		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
+		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
 	return labels
