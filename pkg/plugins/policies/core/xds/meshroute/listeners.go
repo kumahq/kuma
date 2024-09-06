@@ -194,6 +194,51 @@ func collectServiceTagService(
 	}
 }
 
+func GetServiceAndProtocolFromRef(
+	meshCtx xds_context.MeshContext,
+	ref core_model.ResolvedBackendRef,
+) (string, core_mesh.Protocol, bool) {
+	switch {
+	case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
+		mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port := pointer.Deref(ref.LegacyBackendRef.Port)
+		service := mes.DestinationName(port)
+		protocol := meshCtx.GetServiceProtocol(service)
+		return service, protocol, true
+	case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
+		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		if !ok {
+			return "", "", false
+		}
+		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		protocol := port.AppProtocol
+		return service, protocol, true
+	case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
+		ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		if !ok {
+			return "", "", false
+		}
+		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		return service, protocol, true
+	default:
+		service := ref.LegacyBackendRef.Name
+		protocol := meshCtx.GetServiceProtocol(service)
+		return service, protocol, true
+	}
+}
+
 func makeSplit(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
@@ -215,40 +260,9 @@ func makeSplit(
 		if pointer.DerefOr(ref.LegacyBackendRef.Weight, 1) == 0 {
 			continue
 		}
-		switch {
-		case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
-			mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port := pointer.Deref(ref.LegacyBackendRef.Port)
-			service = mes.DestinationName(port)
-			protocol = meshCtx.GetServiceProtocol(service)
-		case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
-			ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
-			if !ok {
-				continue
-			}
-			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
-			protocol = port.AppProtocol
-		case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
-			ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
-			if !ok {
-				continue
-			}
-			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
-			protocol = port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		default:
-			service = ref.LegacyBackendRef.Name
-			protocol = meshCtx.GetServiceProtocol(service)
+		service, protocol, ok := GetServiceAndProtocolFromRef(meshCtx, ref)
+		if !ok {
+			continue
 		}
 		if _, ok := protocols[protocol]; !ok {
 			return nil

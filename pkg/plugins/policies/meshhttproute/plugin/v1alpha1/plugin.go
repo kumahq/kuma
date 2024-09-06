@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -118,7 +119,7 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := meshroute.CollectListenerInfos(
+	listeners := meshroute_gateway.CollectListenerInfos(
 		ctx,
 		xdsCtx.Mesh,
 		gateway,

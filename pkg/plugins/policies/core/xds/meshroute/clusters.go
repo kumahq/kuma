@@ -102,8 +102,8 @@ func GenerateClusters(
 							proxy.SecretsTracker,
 							meshCtx.Resource,
 							tlsReady,
-							sniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
-							serviceTagIdentities(service.BackendRef(), meshCtx),
+							SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+							ServiceTagIdentities(service.BackendRef(), meshCtx),
 						))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
@@ -157,7 +157,7 @@ func createResourceOrigin(
 	return nil
 }
 
-func sniForBackendRef(
+func SniForBackendRef(
 	backendRef core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
@@ -186,7 +186,7 @@ func sniForBackendRef(
 	)
 }
 
-func serviceTagIdentities(
+func ServiceTagIdentities(
 	backendRef core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []string {
