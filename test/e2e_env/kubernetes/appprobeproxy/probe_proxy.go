@@ -86,7 +86,12 @@ func ApplicationProbeProxy() {
 		}
 		if envIndex > -1 {
 			patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsCP, Config.KumaServiceName,
-				fmt.Sprintf(`[{"op":"remove", "path":"/spec/template/spec/containers/0/env/%d"}]`, envIndex))
+				fmt.Sprintf(`[{"op":"remove", "path":"/spec/template/spec/containers/0/env/%d"}]`, envIndex), true)
+
+			// refresh port forwards
+			controlPlane := kubernetes.Cluster.GetKuma().(*K8sControlPlane)
+			controlPlane.ClosePortForwards()
+			_ = controlPlane.FinalizeAdd()
 		}
 	})
 
@@ -238,26 +243,12 @@ func ApplicationProbeProxy() {
 
 	It("should fallback to virtual probes when application probe proxy is disabled", func() {
 		kubectlOptsCP := kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace)
-		cpPrevTemplateHash, _ := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsCP, Config.KumaServiceName,
-			fmt.Sprintf(`[{"op":"add", "path":"/spec/template/spec/containers/0/env/-", "value":{"name":"%s", "value":"0"}}]`, appProbeProxyPortConfigKey))
-
-		// wait for control plane to complete the rolling update
-		Eventually(func() error {
-			oldCPPods, err := k8s.ListPodsE(kubernetes.Cluster.GetTesting(), kubectlOptsCP,
-				metav1.ListOptions{LabelSelector: "pod-template-hash=" + cpPrevTemplateHash})
-			if err != nil {
-				return errors.Wrap(err, "failed to list previous version pods of control plane")
-			}
-
-			if len(oldCPPods) > 0 {
-				return errors.New("waiting for previous version of control plane to terminate")
-			}
-			return nil
-		}, "90s", "3s").ShouldNot(HaveOccurred())
+		patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsCP, Config.KumaServiceName,
+			fmt.Sprintf(`[{"op":"add", "path":"/spec/template/spec/containers/0/env/-", "value":{"name":"%s", "value":"0"}}]`, appProbeProxyPortConfigKey), true)
 
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
 		_, nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
-			`[{"op":"add", "path":"/spec/template/metadata/annotations/restarted-by-test", "value": "true"}]`)
+			`[{"op":"add", "path":"/spec/template/metadata/annotations/restarted-by-test", "value": "true"}]`, false)
 
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
 		Eventually(func() error {
@@ -293,7 +284,8 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 	return nil
 }
 
-func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) (string, string) {
+func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string,
+	jsonPatch string, waitForTerminate bool) (string, string) {
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -320,7 +312,22 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 		return fmt.Errorf("failed to find the latest ReplicaSet for Deployment %s", appName)
 	}, "30s", "2s").ShouldNot(HaveOccurred(), "failed to find the latest ReplicaSet for Deployment %s", appName)
 
+	prevRSHash := prevRS.Labels["pod-template-hash"]
 	nextRSHash := nextRS.Labels["pod-template-hash"]
 	Expect(WaitPodsAvailableWithLabel(kubectlOpts.Namespace, "pod-template-hash", nextRSHash)(cluster)).To(Succeed())
-	return prevRS.Labels["pod-template-hash"], nextRSHash
+
+	if waitForTerminate {
+		Eventually(func() error {
+			prevPods, err := k8s.ListPodsE(t, kubectlOpts, metav1.ListOptions{LabelSelector: "pod-template-hash=" + prevRSHash})
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("fail to list previous version of '%s' pods", appName))
+			}
+
+			if len(prevPods) > 0 {
+				return errors.New(fmt.Sprintf("waiting for previous version of '%s' pods to terminate", appName))
+			}
+			return nil
+		}, "90s", "3s").ShouldNot(HaveOccurred())
+	}
+	return prevRSHash, nextRSHash
 }
