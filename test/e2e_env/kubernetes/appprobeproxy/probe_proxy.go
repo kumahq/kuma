@@ -24,8 +24,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
 )
 
-const appProbeProxyPortConfigKey = "KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT"
-
 func ApplicationProbeProxy() {
 	meshName := "application-probe-proxy"
 	namespace := "application-probe-proxy"
@@ -70,29 +68,6 @@ func ApplicationProbeProxy() {
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
-
-		// restore the CP to the original state if it was patched
-		kubectlOptsCP := kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace)
-		cpDeploy := k8s.GetDeployment(kubernetes.Cluster.GetTesting(), kubectlOptsCP, Config.KumaServiceName)
-		Expect(cpDeploy).ToNot(BeNil())
-
-		envIndex := -1
-		cpContainer := cpDeploy.Spec.Template.Spec.Containers[0]
-		for i, env := range cpContainer.Env {
-			if env.Name == appProbeProxyPortConfigKey {
-				envIndex = i
-				break
-			}
-		}
-		if envIndex > -1 {
-			patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsCP, Config.KumaServiceName,
-				fmt.Sprintf(`[{"op":"remove", "path":"/spec/template/spec/containers/0/env/%d"}]`, envIndex), true)
-
-			// refresh port forwards
-			controlPlane := kubernetes.Cluster.GetKuma().(*K8sControlPlane)
-			controlPlane.ClosePortForwards()
-			_ = controlPlane.FinalizeAdd()
-		}
 	})
 
 	It("should setup application app proxy", func() {
@@ -169,34 +144,16 @@ func ApplicationProbeProxy() {
 
 		// third, assert pods are ready and live
 		Consistently(func() error {
-			isTestServerReady := func(pod *corev1.Pod, appName string) bool {
-				for _, c := range pod.Status.ContainerStatuses {
-					if c.Name == appName {
-						return c.Ready
-					}
-				}
-				return false
-			}
-
-			checkApp := func(podName, appName string) error {
-				pod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), podName)
-				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", podName))
-				}
-
-				if !isTestServerReady(pod, appName) {
-					return errors.Errorf("pod '%s' is not ready", podName)
-				}
-				return nil
-			}
-
-			if err := checkApp(httpAppPodName, httpAppName); err != nil {
+			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
+				httpAppPodName, httpAppName); err != nil {
 				return err
 			}
-			if err := checkApp(tcpAppPodName, tcpAppName); err != nil {
+			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
+				tcpAppPodName, tcpAppName); err != nil {
 				return err
 			}
-			if err := checkApp(grpcAppPodName, gRPCAppName); err != nil {
+			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
+				grpcAppPodName, gRPCAppName); err != nil {
 				return err
 			}
 			return nil
@@ -242,14 +199,11 @@ func ApplicationProbeProxy() {
 	})
 
 	It("should fallback to virtual probes when application probe proxy is disabled", func() {
-		kubectlOptsCP := kubernetes.Cluster.GetKubectlOptions(Config.KumaNamespace)
-		patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsCP, Config.KumaServiceName,
-			fmt.Sprintf(`[{"op":"add", "path":"/spec/template/spec/containers/0/env/-", "value":{"name":"%s", "value":"0"}}]`, appProbeProxyPortConfigKey), true)
-
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
 		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
-			`[{"op":"add", "path":"/spec/template/metadata/annotations/restarted-by-test", "value": "true"}]`, false)
+			`[{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
 
+		var nextRevPodName string
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
 		Eventually(func() error {
 			httpPods, err := k8s.ListPodsE(kubernetes.Cluster.GetTesting(), kubectlOptsApps,
@@ -260,9 +214,9 @@ func ApplicationProbeProxy() {
 
 			Expect(httpPods).ToNot(BeEmpty())
 			httpPod := httpPods[0]
+			nextRevPodName = httpPod.Name
 			virtualProbesPortAnno := httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]
 			Expect(virtualProbesPortAnno).To(Equal("9000"))
-			Expect(httpPod.Annotations[metadata.KumaApplicationProbeProxyPortAnnotation]).To(Equal("0"))
 
 			container := getAppContainer(&httpPod, httpAppName)
 			Expect(container).ToNot(BeNil())
@@ -272,6 +226,14 @@ func ApplicationProbeProxy() {
 			Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
+
+		Consistently(func() error {
+			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
+				nextRevPodName, httpAppName); err != nil {
+				return err
+			}
+			return nil
+		}, "30s", "3s", MustPassRepeatedly(2)).ShouldNot(HaveOccurred())
 	})
 }
 
@@ -284,9 +246,7 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 	return nil
 }
 
-func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string,
-	jsonPatch string, waitForTerminate bool,
-) string {
+func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) string {
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -297,14 +257,13 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 	prevRevision := updatedDeployObj.Annotations["deployment.kubernetes.io/revision"]
 	prevRevisionNum, _ := strconv.Atoi(prevRevision)
 	nextRevision := strconv.Itoa(prevRevisionNum + 1)
-	var prevRS, nextRS *appsv1.ReplicaSet
+	var nextRS *appsv1.ReplicaSet
 	Eventually(func() error {
 		rsList := k8s.ListReplicaSets(t, kubectlOpts, metav1.ListOptions{LabelSelector: "app=" + appName})
 		for _, rs := range rsList {
-			if rs.Annotations["deployment.kubernetes.io/revision"] == prevRevision {
-				prevRS = &rs
-			} else if rs.Annotations["deployment.kubernetes.io/revision"] == nextRevision {
+			if rs.Annotations["deployment.kubernetes.io/revision"] == nextRevision {
 				nextRS = &rs
+				break
 			}
 		}
 		if nextRS != nil {
@@ -313,22 +272,29 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 		return fmt.Errorf("failed to find the latest ReplicaSet for Deployment %s", appName)
 	}, "30s", "2s").ShouldNot(HaveOccurred(), "failed to find the latest ReplicaSet for Deployment %s", appName)
 
-	prevRSHash := prevRS.Labels["pod-template-hash"]
 	nextRSHash := nextRS.Labels["pod-template-hash"]
 	Expect(WaitPodsAvailableWithLabel(kubectlOpts.Namespace, "pod-template-hash", nextRSHash)(cluster)).To(Succeed())
 
-	if waitForTerminate {
-		Eventually(func() error {
-			prevPods, err := k8s.ListPodsE(t, kubectlOpts, metav1.ListOptions{LabelSelector: "pod-template-hash=" + prevRSHash})
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("fail to list previous version of '%s' pods", appName))
-			}
-
-			if len(prevPods) > 0 {
-				return errors.New(fmt.Sprintf("waiting for previous version of '%s' pods to terminate", appName))
-			}
-			return nil
-		}, "90s", "3s").ShouldNot(HaveOccurred())
-	}
 	return nextRSHash
+}
+
+func checkIfAppReady(t testing.TestingT, kubectlOpts *k8s.KubectlOptions, podName, appName string) error {
+	pod, err := k8s.GetPodE(t, kubectlOpts, podName)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", podName))
+	}
+
+	if !isTestServerReady(pod, appName) {
+		return errors.Errorf("pod '%s' is not ready", podName)
+	}
+	return nil
+}
+
+func isTestServerReady(pod *corev1.Pod, appName string) bool {
+	for _, c := range pod.Status.ContainerStatuses {
+		if c.Name == appName {
+			return c.Ready
+		}
+	}
+	return false
 }
