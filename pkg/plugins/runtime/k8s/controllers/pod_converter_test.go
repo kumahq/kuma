@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -136,7 +137,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, otherDataplanes)
+			dataplaneProto, err := converter.PodToDataplane(context.Background(), dataplane, pod, services, otherDataplanes)
+			dataplane.SetMesh(util_k8s.MeshOfByAnnotation(pod, &namespace))
+			dataplane.SetSpec(dataplaneProto)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -359,8 +362,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// then
-			err = converter.PodToIngress(context.Background(), ingress, pod, services)
+			ingresSpec, err := converter.PodToIngress(context.Background(), ingress, pod, services)
 			Expect(err).ToNot(HaveOccurred())
+			ingress.SetSpec(ingresSpec)
 
 			actual, err := yaml.Marshal(ingress)
 			Expect(err).ToNot(HaveOccurred())
@@ -444,7 +448,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			egress := &mesh_k8s.ZoneEgress{}
-			err = converter.PodToEgress(ctx, egress, pod, services)
+			zoneEgressRes, err := converter.PodToEgress(ctx, egress, pod, services)
+			egress.SetSpec(zoneEgressRes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

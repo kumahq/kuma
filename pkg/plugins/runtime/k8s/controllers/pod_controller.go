@@ -22,6 +22,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -317,22 +318,35 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
 	}
+	dataplaneSpec, err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others)
+	if err != nil {
+		return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
+	}
+
+	// set spec after we check that specs are different so we don't need call marshal
+	changed, err := r.hasResourceChange(ctx, dataplane, dataplaneSpec)
+	if err != nil {
+		return errors.Wrap(err, "unable to detect if resource has changed")
+	}
+	if !changed {
+		r.Log.V(1).Info("dataplane hasn't changed, skip")
+		return nil
+	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
-		}
+		dataplane.SetMesh(util_k8s.MeshOfByAnnotation(pod, ns))
+		dataplane.SetSpec(dataplaneSpec)
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Dataplane's controller reference to Pod")
 		}
 		return nil
 	})
-	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
 		if !errors.Is(err, context.Canceled) {
 			log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
@@ -352,6 +366,36 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	return nil
 }
 
+func (r *PodReconciler) hasResourceChange(ctx context.Context, resource kube_client.Object, newResourceSpec model.ResourceSpec) (bool, error) {
+	key := kube_client.ObjectKeyFromObject(resource)
+	// This call shouldn't affect performance because if we don't call it here `createOrUpdate` does this call.
+	// If the resource change, `createOrUpdate` calls it 2nd time but in this case it should use the value
+	// from the cache.
+	if err := r.Client.Get(ctx, key, resource); err != nil {
+		if !kube_apierrs.IsNotFound(err) {
+			return false, err
+		}
+	}
+
+	var spec model.ResourceSpec
+	var err error
+	switch r := resource.(type) {
+	case *v1alpha1.Dataplane:
+		spec, err = r.GetSpec()
+	case *v1alpha1.ZoneIngress:
+		spec, err = r.GetSpec()
+	case *v1alpha1.ZoneEgress:
+		spec, err = r.GetSpec()
+	}
+	if err != nil {
+		return false, errors.Wrap(err, "unable to parse Object specification")
+	}
+	if model.Equal(spec, newResourceSpec) {
+		return false, nil
+	}
+	return true, nil
+}
+
 func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_core.Pod, services []*kube_core.Service) error {
 	ingress := &mesh_k8s.ZoneIngress{
 		ObjectMeta: kube_meta.ObjectMeta{
@@ -360,10 +404,23 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 		},
 		Mesh: model.NoMesh,
 	}
+
+	ingressSpec, err := r.PodConverter.PodToIngress(ctx, ingress, pod, services)
+	if err != nil {
+		return errors.Wrap(err, "unable to translate a Pod into a Egress")
+	}
+
+	// set spec after we check that specs are different so we don't need call marshal
+	changed, err := r.hasResourceChange(ctx, ingress, ingressSpec)
+	if err != nil {
+		return errors.Wrap(err, "unable to detect if resource has changed")
+	}
+	if !changed {
+		r.Log.V(1).Info("egress hasn't changed, skip")
+		return nil
+	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
-		if err := r.PodConverter.PodToIngress(ctx, ingress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
-		}
+		ingress.SetSpec(ingressSpec)
 		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Ingress's controller reference to Pod")
 		}
@@ -394,10 +451,23 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 		},
 		Mesh: model.NoMesh,
 	}
+
+	egressSpec, err := r.PodConverter.PodToEgress(ctx, egress, pod, services)
+	if err != nil {
+		return errors.Wrap(err, "unable to translate a Pod into a Egress")
+	}
+
+	// set spec after we check that specs are different so we don't need call marshal
+	changed, err := r.hasResourceChange(ctx, egress, egressSpec)
+	if err != nil {
+		return errors.Wrap(err, "unable to detect if resource has changed")
+	}
+	if !changed {
+		r.Log.V(1).Info("egress hasn't changed, skip")
+		return nil
+	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, egress, func() error {
-		if err := r.PodConverter.PodToEgress(ctx, egress, pod, services); err != nil {
-			return errors.Wrap(err, "unable to translate a Pod into a Egress")
-		}
+		egress.SetSpec(egressSpec)
 		if err := kube_controllerutil.SetControllerReference(pod, egress, r.Scheme); err != nil {
 			return errors.Wrap(err, "unable to set Egress's controller reference to Pod")
 		}

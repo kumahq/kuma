@@ -16,7 +16,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -39,51 +38,54 @@ func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
-) error {
-	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
+) (*mesh_proto.Dataplane, error) {
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	dataplane.SetSpec(dataplaneProto)
-	return nil
+	return dataplaneProto, nil
 }
 
-func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) PodToIngress(
+	ctx context.Context,
+	zoneIngress *mesh_k8s.ZoneIngress,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+) (*mesh_proto.ZoneIngress, error) {
 	logger := converterLog.WithValues("ZoneIngress.name", zoneIngress.Name, "Pod.name", pod.Name)
 	// Start with the existing ZoneIngress spec so we won't override available services in Ingress section
 	zoneIngressRes := core_mesh.NewZoneIngressResource()
 	if err := p.ResourceConverter.ToCoreResource(zoneIngress, zoneIngressRes); err != nil {
 		logger.Error(err, "unable to convert ZoneIngress k8s object into core resource")
-		return err
+		return nil, err
 	}
 
 	if err := p.IngressFor(ctx, zoneIngressRes.Spec, pod, services); err != nil {
-		return err
+		return nil, err
 	}
-
-	zoneIngress.SetSpec(zoneIngressRes.Spec)
-	return nil
+	return zoneIngressRes.Spec, nil
 }
 
-func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) PodToEgress(
+	ctx context.Context,
+	zoneEgress *mesh_k8s.ZoneEgress,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+) (*mesh_proto.ZoneEgress, error) {
 	logger := converterLog.WithValues("ZoneEgress.name", zoneEgress.Name, "Pod.name", pod.Name)
 	// Start with the existing ZoneEgress spec
 	zoneEgressRes := core_mesh.NewZoneEgressResource()
 	if err := p.ResourceConverter.ToCoreResource(zoneEgress, zoneEgressRes); err != nil {
 		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
-		return err
+		return nil, err
 	}
 
 	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
-		return err
+		return nil, err
 	}
-
-	zoneEgress.SetSpec(zoneEgressRes.Spec)
-	return nil
+	return zoneEgressRes.Spec, nil
 }
 
 func (p *PodConverter) dataplaneFor(
