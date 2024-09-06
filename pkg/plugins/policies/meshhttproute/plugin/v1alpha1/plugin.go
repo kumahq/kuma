@@ -27,7 +27,9 @@ type ToRouteRule struct {
 	Subset    rules.Subset
 	Rules     []api.Rule
 	Hostnames []string
-	Origin    []core_model.ResourceMeta
+
+	Origins          []core_model.ResourceMeta
+	BackendRefOrigin map[string]core_model.ResourceMeta
 }
 
 type plugin struct{}

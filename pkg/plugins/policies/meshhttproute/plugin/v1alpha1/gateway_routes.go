@@ -64,11 +64,19 @@ func sortRulesToHosts(
 		rulesByHostname := map[string][]ruleByHostname{}
 		for _, rawRule := range rawRules {
 			conf := rawRule.Conf.(api.PolicyDefault)
+
+			backendRefOrigin := map[string]model.ResourceMeta{}
+			for hash := range rawRule.BackendRefOriginIndex {
+				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
+					backendRefOrigin[string(hash)] = origin
+				}
+			}
 			rule := ToRouteRule{
-				Subset:    rawRule.Subset,
-				Rules:     conf.Rules,
-				Hostnames: conf.Hostnames,
-				Origin:    rawRule.Origin,
+				Subset:           rawRule.Subset,
+				Rules:            conf.Rules,
+				Hostnames:        conf.Hostnames,
+				Origins:          rawRule.Origin,
+				BackendRefOrigin: backendRefOrigin,
 			}
 			hostnames := rule.Hostnames
 			if len(rule.Hostnames) == 0 {
@@ -173,11 +181,12 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	for _, rules := range toRules {
 		for _, rule := range rules.Rule.Rules {
 			var names []string
-			for _, orig := range rules.Rule.Origin {
+			for _, orig := range rules.Rule.Origins {
 				names = append(names, orig.GetName())
 			}
 			slices.Sort(names)
-			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
+
+			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin)
 
 			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
@@ -204,12 +213,16 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
 }
 
-func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
+func makeHttpRouteEntry(name string, rule api.Rule, backendRefToOrigin map[string]model.ResourceMeta) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
+		var ref *model.ResolvedBackendRef
+		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
+			ref = pointer.To(model.ResolveBackendRef(origin, b))
+		}
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation
@@ -217,6 +230,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		}
 		target := route.Destination{
 			Destination:   dest,
+			BackendRef:    ref,
 			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolHTTP,
