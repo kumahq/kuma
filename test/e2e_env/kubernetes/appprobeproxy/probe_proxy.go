@@ -247,7 +247,7 @@ func ApplicationProbeProxy() {
 			fmt.Sprintf(`[{"op":"add", "path":"/spec/template/spec/containers/0/env/-", "value":{"name":"%s", "value":"0"}}]`, appProbeProxyPortConfigKey), true)
 
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
-		_, nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
+		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
 			`[{"op":"add", "path":"/spec/template/metadata/annotations/restarted-by-test", "value": "true"}]`, false)
 
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
@@ -285,7 +285,8 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 }
 
 func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string,
-	jsonPatch string, waitForTerminate bool) (string, string) {
+	jsonPatch string, waitForTerminate bool,
+) string {
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
 	Expect(err).ToNot(HaveOccurred())
 
@@ -329,5 +330,5 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 			return nil
 		}, "90s", "3s").ShouldNot(HaveOccurred())
 	}
-	return prevRSHash, nextRSHash
+	return nextRSHash
 }
