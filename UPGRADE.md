@@ -176,26 +176,24 @@ Migration step:
 
 ### Introduction to Application Probe Proxy and deprecation of Virtual Probes
 
-To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports HTTP Get, TCP Socket and gRPC application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
+To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports `HTTPGet`, `TCPSocket` and `gRPC` application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
 
 Application workloads using Virtual Probes will be migrated to Application Probe Proxy automatically on next restart/redeploy on Kubernetes, without other operations. 
 
-Application Probe Proxy will by default listen on port `9001`. If you'd customized the Virtual Probes port, you might also want to customize the port of Application Probe Proxy. You may do so using one of these methods:
+Application Probe Proxy will by default listen on port `9001`. To prevent potential conflicts with applications, you may customize this port using one of these methods:
 
-1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
+1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.applicationProbeProxyPort` 
 1. Configuring on the control plane to apply on all dataplanes: set the port using environment variable `KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT` 
 1. Configuring for certain dataplanes: set the port using pod annotation `kuma.io/application-probe-proxy-port`
 
-By setting the port to `0`, Application Probe Proxy feature will be disabled.
-
-When the Application Probe Proxy is disabled, Virtual Probes still works as usual before Virtual Probes is removed.
+By setting the port to `0`, Application Probe Proxy feature will be disabled, and when it's disabled, Virtual Probes still works as usual until the deprecation period ends.
 
 Because of deprecation of Virtual Probes, the following items are considered deprecated:
 
 - Pod annotation `kuma.io/virtual-probes`
 - Pod annotation `kuma.io/virtual-probes-port`
-- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesEnabled`
-- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesPort`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesEnabled`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesPort`
 - Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED`
 - Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
 - Data field `probes` on `Dataplane` objects
