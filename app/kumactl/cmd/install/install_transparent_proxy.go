@@ -166,18 +166,6 @@ runuser -u kuma-dp -- \
 				return err
 			}
 
-			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
-			// or if the value was not set in the config file. The Set method contains logic to check
-			// for the existence of a user with the default UID "5678". If that does not exist, it
-			// checks for the default username "kuma-dp". Since the Cobra library does not call
-			// the Set method when --kuma-dp-user is not specified, we need to invoke it manually
-			// here to ensure the proper user is set.
-			if !cfg.KumaDPUser.Changed() {
-				if err := cfg.KumaDPUser.Set(""); err != nil {
-					return errors.Wrap(err, "failed to set default owner for transparent proxy")
-				}
-			}
-
 			if cfg.Redirect.DNS.CaptureAll && cfg.Redirect.DNS.Enabled {
 				return errors.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
 			}
@@ -237,8 +225,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().Var(&cfg.Redirect.Inbound.Port, "redirect-inbound-port", `inbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortInbound"`)
 	cmd.Flags().Var(&cfg.Redirect.Inbound.ExcludePorts, "exclude-inbound-ports", "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
-	cmd.Flags().Var(&cfg.KumaDPUser, "kuma-dp-user", fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
-	cmd.Flags().Var(&cfg.KumaDPUser, "kuma-dp-uid", "the uid of the user that will run kuma-dp")
+	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-user", cfg.KumaDPUser, fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
+	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-uid", cfg.KumaDPUser, "the uid of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, "redirect-dns", cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")

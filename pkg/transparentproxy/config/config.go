@@ -20,77 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
-var _ json.Unmarshaler = &Owner{}
-
-type Owner struct {
-	UID string `json:"uid"`
-	// Indicates if the property was set. This replaces similar logic previously
-	// handled by Cobra library, as the value can now also be set in the config
-	// file.
-	changed bool
-}
-
-func (c *Owner) Changed() bool {
-	return c.changed
-}
-
-func (c *Owner) String() string {
-	return c.UID
-}
-
-func (c *Owner) Type() string {
-	return "uid|username"
-}
-
-func (c *Owner) Set(s string) error {
-	var ok bool
-
-	c.changed = true
-
-	if s != "" {
-		if c.UID, ok = findUserUID(s); ok {
-			return nil
-		}
-
-		return errors.Errorf("the specified UID or username ('%s') does not refer to a valid user on the host", s)
-	}
-
-	if c.UID, ok = findUserUID(consts.OwnerDefaultUID); ok {
-		return nil
-	}
-
-	if c.UID, ok = findUserUID(consts.OwnerDefaultUsername); ok {
-		return nil
-	}
-
-	return errors.Errorf(
-		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
-		consts.OwnerDefaultUID,
-		consts.OwnerDefaultUsername,
-	)
-}
-
-func (c *Owner) UnmarshalJSON(bs []byte) error {
-	var jsonValue interface{}
-
-	if err := json.Unmarshal(bs, &jsonValue); err != nil {
-		return err
-	}
-
-	switch jsonValue.(type) {
-	case string, float64:
-		return c.Set(fmt.Sprint(jsonValue))
-	}
-
-	return errors.Errorf("invalid type for provided value '%s'; expected string or numeric value for UID or username", string(bs))
-}
-
-// Using a value receiver here is intentional, as we are working with the Owner value itself,
-// not a pointer, for JSON marshaling
-func (c Owner) MarshalJSON() ([]byte, error) {
-	return json.Marshal(c.UID)
-}
-
 // ValueOrRangeList is a format acceptable by iptables in which
 // single values are denoted by just a number e.g. 1000
 // multiple values (lists) are denoted by a number separated by a comma e.g. 1000,1001
@@ -526,7 +455,7 @@ var _ core_config.Config = Config{}
 type Config struct {
 	core_config.BaseConfig
 
-	KumaDPUser Owner    `json:"kumaDPUser" envconfig:"kuma_dp_user"` // KUMA_TRANSPARENT_PROXY_KUMA_DP_USER
+	KumaDPUser string   `json:"kumaDPUser" envconfig:"kuma_dp_user"` // KUMA_TRANSPARENT_PROXY_KUMA_DP_USER
 	Redirect   Redirect `json:"redirect"`
 	Ebpf       Ebpf     `json:"ebpf"`
 	// DropInvalidPackets when enabled, kuma-dp will configure iptables to drop
@@ -596,6 +525,38 @@ type Config struct {
 	// the correct iptables rules are applied for the specified IP family
 	IPFamilyMode IPFamilyMode `json:"ipFamilyMode" envconfig:"ip_family_mode"` // KUMA_TRANSPARENT_PROXY_IP_FAMILY_MODE
 	CNIMode      bool         `json:"cniMode,omitempty" envconfig:"cni_mode"`  // KUMA_TRANSPARENT_PROXY_CNI_MODE
+}
+
+func (c Config) InitializeKumaDPUser() (string, error) {
+	switch {
+	case c.CNIMode && c.KumaDPUser != "":
+		return c.KumaDPUser, nil
+	case c.CNIMode:
+		return consts.OwnerDefaultUID, nil
+	case c.KumaDPUser != "":
+		if v, ok := findUserUID(c.KumaDPUser); ok {
+			return v, nil
+		}
+
+		return "", errors.Errorf(
+			"the specified UID or username ('%s') does not refer to a valid user on the host",
+			c.KumaDPUser,
+		)
+	}
+
+	if v, ok := findUserUID(consts.OwnerDefaultUID); ok {
+		return v, nil
+	}
+
+	if v, ok := findUserUID(consts.OwnerDefaultUsername); ok {
+		return v, nil
+	}
+
+	return "", errors.Errorf(
+		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
+		consts.OwnerDefaultUID,
+		consts.OwnerDefaultUsername,
+	)
 }
 
 type IPFamilyMode string
@@ -691,7 +652,7 @@ type InitializedConfigIPvX struct {
 	// text. This helps in identifying and organizing iptables rules created by
 	// the transparent proxy, making them easier to manage and debug
 	Comments   InitializedComments
-	KumaDPUser Owner
+	KumaDPUser string
 
 	enabled bool
 }
@@ -723,7 +684,12 @@ type InitializedConfig struct {
 }
 
 func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
+	var kumaDPUser string
 	var err error
+
+	if kumaDPUser, err = c.InitializeKumaDPUser(); err != nil {
+		return InitializedConfig{}, err
+	}
 
 	l := Logger{
 		stdout: c.RuntimeStdout,
@@ -761,7 +727,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv4,
 			Comments:               c.Comments.Initialize(executablesIPv4),
 			DropInvalidPackets:     c.DropInvalidPackets && executablesIPv4.Functionality.Tables.Mangle,
-			KumaDPUser:             c.KumaDPUser,
+			KumaDPUser:             kumaDPUser,
 			Redirect:               redirectIPv4,
 			enabled:                true,
 		},
@@ -808,7 +774,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv6,
 		Comments:               c.Comments.Initialize(executablesIPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && executablesIPv6.Functionality.Tables.Mangle,
-		KumaDPUser:             c.KumaDPUser,
+		KumaDPUser:             kumaDPUser,
 		Redirect:               redirectIPv6,
 		enabled:                true,
 	}
@@ -818,7 +784,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		KumaDPUser: Owner{UID: ""},
+		KumaDPUser: "",
 		Redirect: Redirect{
 			NamePrefix: consts.IptablesChainsPrefix,
 			Inbound: TrafficFlow{

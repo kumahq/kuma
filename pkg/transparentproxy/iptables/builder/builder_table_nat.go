@@ -149,24 +149,24 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
 					NotDestination(cfg.LocalhostCIDR),
-					Match(Owner(Uid(cfg.KumaDPUser.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.RedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", consts.DNSPort, cfg.LocalhostCIDR, cfg.KumaDPUser.UID, cfg.Redirect.Inbound.RedirectChainName),
+				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", consts.DNSPort, cfg.LocalhostCIDR, cfg.KumaDPUser, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
 				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
 					OutInterface(cfg.LoopbackInterfaceName),
-					Match(Owner(NotUid(cfg.KumaDPUser.UID))),
+					Match(Owner(NotUid(cfg.KumaDPUser))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", consts.DNSPort, cfg.KumaDPUser.UID),
+				WithCommentf("return outbound TCP traffic (except to DNS port %d) destined for loopback interface, owned by any UID other than %s (kuma-dp user)", consts.DNSPort, cfg.KumaDPUser),
 			rules.
 				NewAppendRule(
-					Match(Owner(Uid(cfg.KumaDPUser.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(Return()),
 				).
-				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.KumaDPUser.UID),
+				WithCommentf("return outbound traffic owned by UID %s (kuma-dp user)", cfg.KumaDPUser),
 		)
 
 	if cfg.Redirect.DNS.Enabled {
@@ -281,7 +281,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 			rules.
 				NewInsertRule(
 					Protocol(Udp(DestinationPort(consts.DNSPort))),
-					Match(Owner(Uid(cfg.KumaDPUser.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
 					JumpConditional(
 						// if DOCKER_OUTPUT should be targeted --jump DOCKER_OUTPUT or else RETURN
 						cfg.Executables.Functionality.Chains.DockerOutput,
