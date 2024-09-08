@@ -57,7 +57,7 @@ func (g *MeshMultiZoneServiceHostnameGenerator) HasStatusChanged(resource model.
 	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
 }
 
-func (g *MeshMultiZoneServiceHostnameGenerator) GenerateHostname(generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
+func (g *MeshMultiZoneServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
 	service, ok := resource.(*meshmzservice_api.MeshMultiZoneServiceResource)
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshmzservice_api.MeshMultiZoneServiceResource)(nil), resource)
@@ -68,5 +68,5 @@ func (g *MeshMultiZoneServiceHostnameGenerator) GenerateHostname(generator *host
 	if !generator.Spec.Selector.MeshMultiZoneService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}
-	return hostname.EvaluateTemplate(generator.Spec.Template, service.GetMeta())
+	return hostname.EvaluateTemplate(localZone, generator.Spec.Template, service.GetMeta())
 }
