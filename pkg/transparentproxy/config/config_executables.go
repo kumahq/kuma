@@ -557,9 +557,9 @@ type executablesPaths interface {
 var _ executablesPaths = ExecutablesPathsIPv4{}
 
 type ExecutablesPathsIPv4 struct {
-	Iptables        string `json:"iptables"`
-	IptablesSave    string `json:"iptables-save"`
-	IptablesRestore string `json:"iptables-restore"`
+	Iptables        string `json:"iptables,omitempty"`
+	IptablesSave    string `json:"iptables-save,omitempty"`
+	IptablesRestore string `json:"iptables-restore,omitempty"`
 }
 
 func (c ExecutablesPathsIPv4) getPathsMap() map[string]string {
@@ -578,9 +578,9 @@ func (c ExecutablesPathsIPv4) convert() ExecutablesIPvX {
 var _ executablesPaths = ExecutablesPathsIPv6{}
 
 type ExecutablesPathsIPv6 struct {
-	Ip6tables        string `json:"ip6tables"`
-	Ip6tablesSave    string `json:"ip6tables-save"`
-	Ip6tablesRestore string `json:"ip6tables-restore"`
+	Ip6tables        string `json:"ip6tables,omitempty"`
+	Ip6tablesSave    string `json:"ip6tables-save,omitempty"`
+	Ip6tablesRestore string `json:"ip6tables-restore,omitempty"`
 }
 
 func (c ExecutablesPathsIPv6) getPathsMap() map[string]string {
