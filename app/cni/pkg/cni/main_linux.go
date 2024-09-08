@@ -281,20 +281,23 @@ func logPrevResult(conf *PluginConf) {
 	log.V(1).Info("cmdAdd config parsed", "version", conf.CNIVersion, "prevResult", loggedPrevResult)
 }
 
-func cmdCheck(args *skel.CmdArgs) error {
+func cmdCheck(*skel.CmdArgs) error {
 	return nil
 }
 
 // cmdDel is called for DELETE requests
-func cmdDel(args *skel.CmdArgs) error {
+func cmdDel(*skel.CmdArgs) error {
 	return nil
 }
 
 func Run() {
-	cniFuncs := skel.CNIFuncs{
-		Add:   cmdAdd,
-		Del:   cmdDel,
-		Check: cmdCheck,
-	}
-	skel.PluginMainFuncs(cniFuncs, version.All, fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version))
+	skel.PluginMainFuncs(
+		skel.CNIFuncs{
+			Add:   cmdAdd,
+			Del:   cmdDel,
+			Check: cmdCheck,
+		},
+		version.All,
+		fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version),
+	)
 }
