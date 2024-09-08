@@ -497,7 +497,7 @@ func (c *Executables) Set(s string) error {
 		return nil
 	}
 
-	for _, block := range removeEmptyStrings(strings.Split(s, ",")) {
+	for _, block := range parseCommaSeparatedStrings(s) {
 		name, path, found := strings.Cut(block, ":")
 		if !found {
 			errs = append(
@@ -714,17 +714,14 @@ func tryInitializeExecutablePaths(
 	return initialized, true, nil
 }
 
-func getNonEmptyPaths(ep executablesPaths) []string {
-	return removeEmptyStrings(maps.Values(ep.getPathsMap()))
-}
+func getNonEmptyPaths(eps ...executablesPaths) []string {
+	var result []string
 
-func removeEmptyStrings(strngs []string) []string {
-	return slices.DeleteFunc(
-		strngs,
-		func(s string) bool {
-			return strings.TrimSpace(s) == ""
-		},
-	)
+	for _, ep := range eps {
+		result = slices.Concat(result, removeEmptyStrings(maps.Values(ep.getPathsMap())))
+	}
+
+	return result
 }
 
 func getNamesWithPathsString(eps ...executablesPaths) string {

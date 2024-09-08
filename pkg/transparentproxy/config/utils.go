@@ -110,7 +110,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 		if protocolOpts == "" || protocolOpts == "*" {
 			protocols = []consts.ProtocolL4{consts.ProtocolTCP, consts.ProtocolUDP}
 		} else {
-			for _, s := range strings.Split(protocolOpts, ",") {
+			for _, s := range parseCommaSeparatedStrings(protocolOpts) {
 				if p := consts.ParseProtocolL4(s); p != consts.ProtocolUndefined {
 					protocols = append(protocols, p)
 					continue
@@ -148,7 +148,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 			return nil, errors.New("invalid exclusion rule: the rule cannot be empty")
 		}
 
-		for _, address := range strings.Split(rule, ",") {
+		for _, address := range parseCommaSeparatedStrings(rule) {
 			err, isExpectedIPVersion := validateIP(address, ipv6)
 			if err != nil {
 				return nil, errors.Wrap(err, "invalid exclusion rule")
@@ -167,7 +167,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 // single uint16 value or a range of uint16 values. The input string can contain
 // multiple comma-separated values or ranges (e.g., "80,1000-2000").
 func validateUintValueOrRange(valueOrRange string) error {
-	for _, element := range strings.Split(valueOrRange, ",") {
+	for _, element := range parseCommaSeparatedStrings(valueOrRange) {
 		for _, port := range strings.Split(element, "-") {
 			if _, err := parseUint16(port); err != nil {
 				return errors.Wrapf(err, "validation failed for value or range '%s'", valueOrRange)
@@ -457,4 +457,17 @@ func handleRunError(err error, stderr *bytes.Buffer) error {
 	}
 
 	return err
+}
+
+func parseCommaSeparatedStrings(v string) []string {
+	return removeEmptyStrings(strings.Split(v, ","))
+}
+
+func removeEmptyStrings(strngs []string) []string {
+	return slices.DeleteFunc(
+		strngs,
+		func(s string) bool {
+			return strings.TrimSpace(s) == ""
+		},
+	)
 }
