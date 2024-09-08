@@ -178,20 +178,21 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-// validateIP validates an IP address or CIDR and checks if it matches the
-// expected IP version (IPv4 or IPv6).
+// validateIP validates an IP address or CIDR and checks if it matches the expected
+// IP version (IPv4 or IPv6)
 func validateIP(address string, ipv6 bool) (error, bool) {
-	// Attempt to parse the address as a CIDR.
+	address = strings.TrimSpace(address)
+
 	ip, _, err := net.ParseCIDR(address)
-	// If parsing as CIDR fails, attempt to parse it as a plain IP address.
 	if err != nil {
 		ip = net.ParseIP(address)
 	}
 
-	// If parsing as both CIDR and IP address fails, return an error with a
-	// message.
 	if ip == nil {
-		return errors.Errorf("invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)", address), false
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		), false
 	}
 
 	// Check if the IP version matches the expected IP version.
