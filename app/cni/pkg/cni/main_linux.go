@@ -7,7 +7,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"strconv"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -32,6 +31,7 @@ const (
 	defaultLogLocation     = "/tmp/kuma-cni.log"
 	defaultLogLevel        = kuma_log.DebugLevel
 	defaultLogName         = "kuma-cni"
+	installCNIBinary       = "/install-cni"
 )
 
 var log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
@@ -107,16 +107,12 @@ func hijackMainProcessStderr(logLevel string) (*os.File, error) {
 }
 
 func getCniProcessStderr() (*os.File, error) {
-	pids, err := pidOf("/install-cni")
+	pid, err := pidOf(installCNIBinary)
 	if err != nil {
 		return nil, err
 	}
-	if len(pids) != 1 {
-		return nil, errors.New("more than one process '/install-cni' running on a node, this should not happen")
-	}
 
-	file, err := os.OpenFile(path.Join("/proc", strconv.Itoa(pids[0]), "fd", "2"), os.O_WRONLY, 0)
-	return file, err
+	return os.OpenFile(path.Join("/proc", pid, "fd", "2"), os.O_WRONLY, 0)
 }
 
 // cmdAdd is called for ADD requests

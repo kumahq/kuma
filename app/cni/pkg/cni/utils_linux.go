@@ -2,29 +2,42 @@ package cni
 
 import (
 	"bytes"
-	"errors"
 	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/pkg/errors"
 )
 
 // PidOf Find process(es) with a specified name (string match)
 // copied from https://github.com/kubernetes/kubernetes/blob/v1.24.3/pkg/util/procfs/procfs_linux.go#L99
 // with small modifications
 // and return their pid(s)
-func pidOf(name string) ([]int, error) {
-	if len(name) == 0 {
-		return []int{}, errors.New("name should not be empty")
+func pidOf(name string) (string, error) {
+	pids := getPids(name)
+
+	switch {
+	case name == "":
+		return "", errors.New("it's not possible to search for PID of process with no name")
+	case len(pids) == 0:
+		return "", errors.Errorf("couldn't find PID for '%s'", name)
+	case len(pids) > 1:
+		return "", errors.Errorf("more than one process '%s' running on a node, this should not happen", name)
+	default:
+		return strconv.Itoa(pids[0]), nil
 	}
-	return getPids(name), nil
 }
 
 // we don't need regex so this is changed to "string"
 func getPids(name string) []int {
-	pids := []int{}
+	var pids []int
+
+	if name == "" {
+		return nil
+	}
 
 	dirFD, err := os.Open("/proc")
 	if err != nil {
