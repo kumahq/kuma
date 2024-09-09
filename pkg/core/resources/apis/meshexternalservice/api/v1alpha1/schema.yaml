@@ -63,11 +63,6 @@ properties:
           protocol:
             default: tcp
             description: 'Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.'
-            enum:
-              - tcp
-              - grpc
-              - http
-              - http2
             type: string
           type:
             default: HostnameGenerator
