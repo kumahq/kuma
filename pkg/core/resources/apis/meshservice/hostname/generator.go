@@ -57,7 +57,7 @@ func (g *MeshServiceHostnameGenerator) HasStatusChanged(resource model.Resource,
 	return !reflect.DeepEqual(addresses, service.Status.Addresses) || !reflect.DeepEqual(generatorStatuses, service.Status.HostnameGenerators), nil
 }
 
-func (g *MeshServiceHostnameGenerator) GenerateHostname(generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
+func (g *MeshServiceHostnameGenerator) GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error) {
 	service, ok := resource.(*meshservice_api.MeshServiceResource)
 	if !ok {
 		return "", errors.Errorf("invalid resource type: expected=%T, got=%T", (*meshservice_api.MeshServiceResource)(nil), resource)
@@ -68,5 +68,5 @@ func (g *MeshServiceHostnameGenerator) GenerateHostname(generator *hostnamegener
 	if !generator.Spec.Selector.MeshService.Matches(service.Meta.GetLabels()) {
 		return "", nil
 	}
-	return hostname.EvaluateTemplate(generator.Spec.Template, service.GetMeta())
+	return hostname.EvaluateTemplate(localZone, generator.Spec.Template, service.GetMeta())
 }

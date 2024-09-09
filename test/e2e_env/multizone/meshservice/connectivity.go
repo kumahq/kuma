@@ -109,27 +109,6 @@ spec:
 		}
 		Expect(testServerPodNames).To(HaveLen(1))
 
-		kubeServiceYAML := `
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: msconnectivity
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: msconnectivity
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: msconnectivity
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -137,36 +116,17 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
-
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: msconnectivity
-labels:
-  kuma.io/origin: zone
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
 
 		err = NewClusterSetup().
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-1"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 
