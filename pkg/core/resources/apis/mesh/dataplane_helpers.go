@@ -253,9 +253,8 @@ func (d *DataplaneResource) AsOutbounds(resolver LabelResourceIdentifierResolver
 					ResourceType: core_model.ResourceType(o.BackendRef.Kind),
 				},
 			}
-			labels := map[string]string{} // todo o.BackendRef.Labels todo(jakubdyszkiewicz)
-			if len(labels) > 0 {
-				resIdentifier := resolver(core_model.ResourceType(o.BackendRef.Kind), labels)
+			if len(o.BackendRef.Labels) > 0 {
+				resIdentifier := resolver(core_model.ResourceType(o.BackendRef.Kind), o.BackendRef.Labels)
 				if resIdentifier == nil {
 					continue
 				}
