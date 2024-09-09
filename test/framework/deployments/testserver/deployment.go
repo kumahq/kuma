@@ -184,7 +184,7 @@ func (p probeParams) toKubeProbe() *corev1.Probe {
 	return nil
 }
 
-// WithProbe adds a probe to the deployment, this only works when the arguments are customize using WithArgs
+// WithProbe adds a probe to the deployment, this only works when the arguments are customized using WithArgs
 func WithProbe(probeType ProbeType, handlerType ProbeHandlerType, port uint32, httpGetPath string) DeploymentOptsFn {
 	return func(opts *DeploymentOpts) {
 		if opts.probes == nil {

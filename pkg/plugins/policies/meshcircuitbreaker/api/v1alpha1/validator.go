@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshCircuitBreakerResource) validate() error {
@@ -16,12 +17,15 @@ func (r *MeshCircuitBreakerResource) validate() error {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
-	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
+	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
+	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
@@ -59,6 +63,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		}))
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {

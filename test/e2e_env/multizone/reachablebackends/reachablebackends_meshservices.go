@@ -28,7 +28,7 @@ func MeshServicesWithReachableBackendsOption() {
 type: Mesh
 name: "%s"
 meshServices:
-  enabled: ReachableBackendRefs
+  enabled: ReachableBackends
 mtls:
   enabledBackend: ca-1
   backends:

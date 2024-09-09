@@ -22,10 +22,13 @@ func (r *MeshMetricResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshMetricResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshMetricResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -36,7 +39,7 @@ func (r *MeshMetricResource) validateTop(targetRef common_api.TargetRef) validat
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -69,65 +70,11 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		})
 
 		cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
-		routes := envoy_common.Routes{}
-
-		// Iterate over that RateLimits and generate the relevant Routes.
-		// We do assume that the rateLimits resource is sorted, so the most
-		// specific source matches come first.
-		for _, rl := range proxy.Policies.RateLimitsInbound[endpoint] {
-			if rl.Spec.GetConf().GetHttp() == nil {
-				continue
-			}
-
-			routes = append(routes, envoy_common.NewRoute(
-				envoy_common.WithCluster(cluster),
-				envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-				envoy_common.WithRateLimit(rl.Spec),
-			))
-		}
-
-		// Add the default fall-back route
-		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+		routes := GenerateRoutes(proxy, endpoint, cluster)
 
 		// generate LDS resource
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
-		filterChainBuilder := func(serverSideMTLS bool) *envoy_listeners.FilterChainBuilder {
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
-			switch protocol {
-			// configuration for HTTP case
-			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
-				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
-					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
-			case core_mesh.ProtocolGRPC:
-				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
-					Configure(envoy_listeners.GrpcStats()).
-					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
-					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
-					Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
-					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
-			case core_mesh.ProtocolKafka:
-				filterChainBuilder.
-					Configure(envoy_listeners.Kafka(localClusterName)).
-					Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
-			case core_mesh.ProtocolTCP:
-				fallthrough
-			default:
-				// configuration for non-HTTP cases
-				filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
-			}
-			if serverSideMTLS {
-				filterChainBuilder.
-					Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker))
-			}
-			return filterChainBuilder.
-				Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
-		}
 
 		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
@@ -136,24 +83,24 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {
 		case mesh_proto.CertificateAuthorityBackend_STRICT:
 			listenerBuilder.
-				Configure(envoy_listeners.FilterChain(filterChainBuilder(true).Configure(
+				Configure(envoy_listeners.FilterChain(FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 					envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
 				)))
 		case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
 			listenerBuilder.
 				Configure(envoy_listeners.TLSInspector()).
 				Configure(envoy_listeners.FilterChain(
-					filterChainBuilder(false).Configure(
+					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("raw_buffer"))),
 				).
 				Configure(envoy_listeners.FilterChain(
 					// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
 					// the app itself might be protected by TLS.
-					filterChainBuilder(false).Configure(
+					FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"))),
 				).
 				Configure(envoy_listeners.FilterChain(
-					filterChainBuilder(true).Configure(
+					FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, endpoint, service, &routes, nil, nil).Configure(
 						envoy_listeners.MatchTransportProtocol("tls"),
 						envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
 						envoy_listeners.NetworkRBAC(inboundListenerName, xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]),
@@ -174,4 +121,65 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		})
 	}
 	return resources, nil
+}
+
+func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy *core_xds.Proxy, localClusterName string, xdsCtx xds_context.Context, endpoint mesh_proto.InboundInterface, service string, routes *envoy_common.Routes, tlsVersion *tls.Version, ciphers tls.TlsCiphers) *envoy_listeners.FilterChainBuilder {
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
+	switch protocol {
+	// configuration for HTTP case
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+		filterChainBuilder.
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
+			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
+			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
+			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+	case core_mesh.ProtocolGRPC:
+		filterChainBuilder.
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+			Configure(envoy_listeners.GrpcStats()).
+			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
+			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
+			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
+			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
+	case core_mesh.ProtocolKafka:
+		filterChainBuilder.
+			Configure(envoy_listeners.Kafka(localClusterName)).
+			Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+	case core_mesh.ProtocolTCP:
+		fallthrough
+	default:
+		// configuration for non-HTTP cases
+		filterChainBuilder.Configure(envoy_listeners.TcpProxyDeprecated(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
+	}
+	if serverSideMTLS {
+		filterChainBuilder.
+			Configure(envoy_listeners.ServerSideMTLS(xdsCtx.Mesh.Resource, proxy.SecretsTracker, tlsVersion, ciphers))
+	}
+	return filterChainBuilder.
+		Configure(envoy_listeners.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
+}
+
+func GenerateRoutes(proxy *core_xds.Proxy, endpoint mesh_proto.InboundInterface, cluster *envoy_common.ClusterImpl) envoy_common.Routes {
+	routes := envoy_common.Routes{}
+
+	// Iterate over that RateLimits and generate the relevant Routes.
+	// We do assume that the rateLimits resource is sorted, so the most
+	// specific source matches come first.
+	for _, rl := range proxy.Policies.RateLimitsInbound[endpoint] {
+		if rl.Spec.GetConf().GetHttp() == nil {
+			continue
+		}
+
+		routes = append(routes, envoy_common.NewRoute(
+			envoy_common.WithCluster(cluster),
+			envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+			envoy_common.WithRateLimit(rl.Spec),
+		))
+	}
+
+	// Add the default fall-back route
+	routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+
+	return routes
 }

@@ -237,6 +237,15 @@ to:
       name: web-backend
     default:
       connectionLimits: { }`),
+			Entry("with MeshMultiZoneService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      name: web-backend
+    default:
+      connectionLimits: { }`),
 			Entry("gateway example", `
 targetRef:
   kind: MeshGateway

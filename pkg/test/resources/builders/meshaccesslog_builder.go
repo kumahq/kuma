@@ -25,7 +25,7 @@ func MeshAccessLog() *MeshAccessLogBuilder {
 }
 
 func (m *MeshAccessLogBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshAccessLogBuilder {
-	m.res.Spec.TargetRef = targetRef
+	m.res.Spec.TargetRef = &targetRef
 	return m
 }
 

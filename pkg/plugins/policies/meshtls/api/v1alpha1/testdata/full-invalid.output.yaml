@@ -1,11 +1,13 @@
 violations:
-- field: spec.from[0].default.mode
+- field: spec.from[0].targetRef.kind
+  message: value is not supported
+- field: spec.from[1].default.mode
   message: '"mode" must be one of ["Strict", "Permissive"]'
-- field: spec.from[0].default.tlsCiphers
+- field: spec.from[1].default.tlsCiphers
   message: '"tlsCiphers" must be one of ["ECDHE-ECDSA-AES128-GCM-SHA256", "ECDHE-ECDSA-AES256-GCM-SHA384",
     "ECDHE-ECDSA-CHACHA20-POLY1305", "ECDHE-RSA-AES128-GCM-SHA256", "ECDHE-RSA-AES256-GCM-SHA384",
     "ECDHE-RSA-CHACHA20-POLY1305"]'
-- field: spec.from[0].default.version.min
+- field: spec.from[1].default.tlsVersion.min
   message: '"min" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
-- field: spec.from[0].default.version.max
+- field: spec.from[1].default.tlsVersion.max
   message: '"max" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'

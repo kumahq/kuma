@@ -58,8 +58,9 @@ spec:
                         'targetRef'
                       properties:
                         mode:
-                          description: Mode defines the behavior of inbound listeners
-                            with regard to traffic encryption.
+                          description: |-
+                            Mode defines the behavior of inbound listeners with regard to traffic encryption.
+                            Default: Strict.
                           enum:
                           - Permissive
                           - Strict
@@ -232,8 +233,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true

@@ -56,6 +56,10 @@ var _ = Describe("MeshTLS", func() {
 				name: "meshtls-2",
 				file: "full-invalid",
 			}),
+			Entry("invalid top level", testCase{
+				name: "meshtls-3",
+				file: "invalid-top-level",
+			}),
 		)
 	})
 })

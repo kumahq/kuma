@@ -10,7 +10,7 @@ import (
 var defaultMeshCircuitBreakerResource = func() model.Resource {
 	return &v1alpha1.MeshCircuitBreakerResource{
 		Spec: &v1alpha1.MeshCircuitBreaker{
-			TargetRef: common_api.TargetRef{
+			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 			},
 			To: []v1alpha1.To{

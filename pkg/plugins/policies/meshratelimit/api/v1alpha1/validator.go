@@ -8,21 +8,26 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateFrom(r.Spec.TargetRef, r.Spec.From))
-	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
+	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
+	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
 	return verr.OrNil()
 }
 
-func (r *MeshRateLimitResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -34,7 +39,7 @@ func (r *MeshRateLimitResource) validateTop(targetRef common_api.TargetRef) vali
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
