@@ -48,8 +48,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default:default_backend__east_msvc_80
-          statPrefix: default_default_backend__east_msvc_80
+          cluster: default_backend__east_msvc_80
+          statPrefix: default_backend__east_msvc_80
     - filterChainMatch:
         serverNames:
         - aec60634adf0f45d6.backend2.80.default.ms
@@ -58,8 +58,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default:default_backend___msvc_80
-          statPrefix: default_default_backend___msvc_80
+          cluster: default_backend___msvc_80
+          statPrefix: default_backend___msvc_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

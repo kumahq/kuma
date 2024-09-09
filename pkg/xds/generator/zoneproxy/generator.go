@@ -173,8 +173,6 @@ func AddFilterChains(
 	}
 
 	for _, refDest := range meshDestinations.BackendRefs {
-		clusterName := envoy_names.GetMeshClusterName(refDest.Mesh, refDest.DestinationName)
-
 		if _, ok := sniUsed[refDest.SNI]; ok {
 			continue
 		}
@@ -186,7 +184,7 @@ func AddFilterChains(
 		// Destination name usually equals to kuma.io/service so we will add already existing cluster which will be
 		// then deduplicated in later steps
 		cluster := envoy_common.NewCluster(
-			envoy_common.WithName(clusterName),
+			envoy_common.WithName(refDest.DestinationName),
 			envoy_common.WithService(refDest.DestinationName),
 			envoy_common.WithTags(relevantTags),
 		)
@@ -197,7 +195,7 @@ func AddFilterChains(
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(refDest.SNI),
 				envoy_listeners.TcpProxyDeprecatedWithMetadata(
-					clusterName,
+					refDest.DestinationName,
 					cluster,
 				),
 			),
