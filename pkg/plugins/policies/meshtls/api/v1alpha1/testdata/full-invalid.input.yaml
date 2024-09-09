@@ -1,7 +1,9 @@
 targetRef:
-  kind: MeshService
-  name: svc-1
+  kind: Mesh
 from:
+  - targetRef:
+      kind: MeshHTTPRoute
+    default: {}
   - targetRef:
       kind: Mesh
     default:

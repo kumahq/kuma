@@ -29,6 +29,7 @@ func SetupHostnameGenerator(rt runtime.Runtime) error {
 		logger,
 		rt.Metrics(),
 		rt.ResourceManager(),
+		rt.Config().Multizone.Zone.Name,
 		rt.Config().IPAM.AllocationInterval.Duration,
 		[]hostname.HostnameGenerator{
 			mesGenerator, msGenerator, mzmsGenerator,

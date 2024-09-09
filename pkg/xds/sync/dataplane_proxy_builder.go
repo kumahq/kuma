@@ -128,9 +128,6 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 	var legacyOutbounds []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range meshContext.VIPOutbounds {
 		if outbound.LegacyOutbound != nil {
-			if reachableBackends != nil && len(reachableServices) == 0 {
-				continue
-			}
 			service := outbound.LegacyOutbound.GetService()
 			if len(reachableServices) != 0 {
 				if !reachableServices[service] {

@@ -22,7 +22,7 @@ type MeshHTTPRoute struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// To matches destination services of requests and holds configuration.
 	To []To `json:"to,omitempty"`

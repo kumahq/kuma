@@ -19,7 +19,9 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/test/resources/file"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -152,14 +154,14 @@ var _ = Describe("BuildResourceRules", func() {
 			DescribeTable("should build a rule-based view for policies",
 				func(given testCase) {
 					// given
-					resources := readInputFile(inputFile)
+					resources := file.ReadInputFile(inputFile)
 					updFn(given.meta, resources)
-					meshCtx := buildMeshContext(resources)
-					toList, err := core_rules.BuildToList(matchedPolicies(resources), meshCtx)
+					meshCtx := xds_builders.Context().WithMeshLocalResources(resources).Build()
+					toList, err := core_rules.BuildToList(matchedPolicies(resources), meshCtx.Mesh.Resources)
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					rules, err := core_rules.BuildResourceRules(toList, meshCtx)
+					rules, err := core_rules.BuildResourceRules(toList, meshCtx.Mesh.Resources)
 					Expect(err).ToNot(HaveOccurred())
 
 					// then

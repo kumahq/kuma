@@ -113,7 +113,6 @@ func SetupAndGetState() []byte {
 
 	kubeZone1Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1),
-		WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 		WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 	)
 	if Config.IPV6 {

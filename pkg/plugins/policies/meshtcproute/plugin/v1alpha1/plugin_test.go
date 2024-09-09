@@ -108,7 +108,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-1",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: builders.TargetRefMesh(),
+									TargetRef: pointer.To(builders.TargetRefMesh()),
 									To: []api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
@@ -122,7 +122,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-2",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: builders.TargetRefService("web"),
+									TargetRef: pointer.To(builders.TargetRefService("web")),
 									To: []api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
@@ -1192,7 +1192,6 @@ func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_co
 		"mesh",
 		80,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
-		false,
 	)
 	mc, err := meshContextBuilder.Build(context.Background(), "default")
 	Expect(err).ToNot(HaveOccurred())

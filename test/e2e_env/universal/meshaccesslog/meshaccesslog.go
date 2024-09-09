@@ -166,8 +166,6 @@ type: MeshAccessLog
 name: client-outgoing-real-ms
 mesh: meshaccesslog
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService

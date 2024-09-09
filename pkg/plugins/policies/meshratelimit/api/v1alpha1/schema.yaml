@@ -445,6 +445,4 @@ properties:
             - targetRef
           type: object
         type: array
-    required:
-      - targetRef
     type: object

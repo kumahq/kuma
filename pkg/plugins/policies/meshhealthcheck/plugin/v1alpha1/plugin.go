@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -19,7 +20,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -31,7 +32,14 @@ func (p plugin) MatchedPolicies(dataplane *core_mesh.DataplaneResource, resource
 	return matchers.MatchedPolicies(api.MeshHealthCheckType, dataplane, resources, opts...)
 }
 
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshHealthCheckType, tags, resources, opts...)
+}
+
 func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.ZoneEgressProxy != nil {
+		return applyToEgressRealResources(rs, proxy)
+	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshHealthCheckType]
 	if !ok {
 		return nil
@@ -154,6 +162,40 @@ func configure(
 
 	if err := configurer.Configure(cluster); err != nil {
 		return err
+	}
+	return nil
+}
+
+func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	indexed := rs.IndexByOrigin()
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
+		for _, mes := range meshExternalServices.GetItems() {
+			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
+			if !ok {
+				continue
+			}
+			mhc, ok := policies[api.MeshHealthCheckType]
+			if !ok {
+				continue
+			}
+			for mesID, typedResources := range indexed {
+				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
+				if conf == nil {
+					continue
+				}
+
+				for typ, resources := range typedResources {
+					switch typ {
+					case envoy_resource.ClusterType:
+						err := configureClusters(resources, conf.Conf[0].(api.Conf), mesh_proto.MultiValueTagSet{})
+						if err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
 	}
 	return nil
 }

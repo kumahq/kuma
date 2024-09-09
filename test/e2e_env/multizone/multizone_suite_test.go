@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtcproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtls"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/reachablebackends"
@@ -76,6 +77,9 @@ var (
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
 	_ = Describe("Targeting real MeshService in policies", meshservice.MeshServiceTargeting, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
+	_ = Describe("MeshMultiZoneService MeshLbStrategy", localityawarelb.MeshMzService, Ordered)
 	_ = Describe("Available services", connectivity.AvailableServices, Ordered)
 	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
+	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
+	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 )

@@ -49,7 +49,7 @@ var DefaultConfig = func() Config {
 			CoreDNSLogging:            false,
 		},
 		ApplicationProbeProxyServer: ApplicationProbeProxyServer{
-			Port: 9000,
+			Port: 9001,
 		},
 	}
 }

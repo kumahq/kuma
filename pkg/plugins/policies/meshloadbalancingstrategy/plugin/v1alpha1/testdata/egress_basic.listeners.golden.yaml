@@ -1,1 +1,68 @@
-{}
+resources:
+- name: egress-listener
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10002
+    enableReusePort: false
+    filterChains:
+    - filterChainMatch:
+        serverNames:
+        - eds-cluster{mesh=mesh-1}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: inbound:eds-cluster
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: eds-cluster
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: eds-cluster
+                  timeout: 0s
+          statPrefix: "127_0_0_1_10002"
+    - filterChainMatch:
+        serverNames:
+        - static-cluster{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: inbound:static-cluster
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: static-cluster
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: static-cluster
+                  timeout: 0s
+          statPrefix: "127_0_0_1_10002"
+    name: inbound:127.0.0.1:10002
+    trafficDirection: INBOUND
