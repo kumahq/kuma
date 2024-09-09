@@ -331,7 +331,8 @@ controlPlane:
   # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
   # The downside is that control plane requires permission to read Secrets in all namespaces.
   supportGatewaySecretsInAllNamespaces: false
-  # -- DNS configuration for the pod.
+  # -- DNS configuration for the control-plane pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
     # -- Defines how DNS resolution is configured for that Pod.
     policy: ""
@@ -545,7 +546,8 @@ ingress:
   serviceAccountAnnotations: { }
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
-  # -- DNS configuration for the pod.
+  # -- DNS configuration for the ingress pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
     # -- Defines how DNS resolution is configured for that Pod.
     policy: ""
@@ -667,7 +669,8 @@ egress:
   serviceAccountAnnotations: { }
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
-  # -- DNS configuration for the pod.
+  # -- DNS configuration for the egress pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
   dns:
     # -- Defines how DNS resolution is configured for that Pod.
     policy: ""

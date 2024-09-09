@@ -479,6 +479,14 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      dnsPolicy: None
+      dnsConfig:
+        nameservers:
+          - 8.8.8.8
+          - 1.1.1.1
+        searches:
+          - test.com
+          - new.test.com
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -595,14 +603,6 @@ spec:
             name: kuma-control-plane-config
         - name: tmp
           emptyDir: {}
-      dnsPolicy: None
-      dnsConfig:
-        nameservers:
-        - 8.8.8.8
-        - 1.1.1.1
-        searches:
-        - test.com
-        - new.test.com
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -663,9 +663,9 @@ spec:
       
         kubernetes.io/os: linux
       dnsConfig:
-        nameservers:
-        - 8.8.8.8
-        - 1.1.1.1
+        searches:
+          - test.com
+          - new.test.com
       containers:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -798,8 +798,8 @@ spec:
       terminationGracePeriodSeconds: 40
       dnsConfig:
         nameservers:
-        - 8.8.8.8
-        - 1.1.1.1
+          - 8.8.8.8
+          - 1.1.1.1
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

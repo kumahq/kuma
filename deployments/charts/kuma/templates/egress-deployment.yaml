@@ -45,24 +45,7 @@ spec:
       tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- if .Values.ingress.dns.policy }}
-      dnsPolicy: {{ .Values.ingress.dns.policy }}
-      {{- end }}
-      {{- if or (gt (len .Values.ingress.dns.config.nameservers) 0) (gt (len .Values.ingress.dns.config.searches) 0) }}
-      dnsConfig:
-        {{- if gt (len .Values.ingress.dns.config.nameservers) 0 }}
-        nameservers:
-        {{- range $nameserver := .Values.ingress.dns.config.nameservers }}
-        - {{ $nameserver }}
-        {{- end }}
-        {{- end }}
-        {{- if gt (len .Values.ingress.dns.config.searches) 0 }}
-        searches:
-        {{- range $search := .Values.ingress.dns.config.searches }}
-        - {{ $search }}
-        {{- end }}
-        {{- end }}
-      {{- end }}
+      {{ include "kuma.dnsConfig" (dict "dns" .Values.egress.dns) | nindent 6 | trim }}
       containers:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}

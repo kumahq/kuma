@@ -96,7 +96,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for control plane. |
 | controlPlane.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for control plane. |
 | controlPlane.supportGatewaySecretsInAllNamespaces | bool | `false` | If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace. The downside is that control plane requires permission to read Secrets in all namespaces. |
-| controlPlane.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the pod. |
+| controlPlane.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the control-plane pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
 | controlPlane.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
 | controlPlane.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | controlPlane.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
@@ -161,7 +161,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
 | ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | ingress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
-| ingress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the pod. |
+| ingress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the ingress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
 | ingress.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
 | ingress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | ingress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
@@ -198,7 +198,7 @@ A Helm chart for the Kuma Control Plane
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
 | egress.automountServiceAccountToken | bool | `true` | Whether to automountServiceAccountToken for cp. Optionally set to false |
-| egress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the pod. |
+| egress.dns | object | `{"config":{"nameservers":[],"searches":[]},"policy":""}` | DNS configuration for the egress pod. This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy). |
 | egress.dns.policy | string | `""` | Defines how DNS resolution is configured for that Pod. |
 | egress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | egress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
