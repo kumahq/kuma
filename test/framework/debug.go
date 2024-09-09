@@ -5,11 +5,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-<<<<<<< HEAD
-=======
 	"slices"
-	"strings"
->>>>>>> 0a366462a (ci(e2e/framework): don't fail when some debug commands will fail (#11342))
 	"syscall"
 
 	"github.com/google/uuid"
