@@ -30,7 +30,6 @@ spec:
     meshService:
       matchLabels:
         kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: mzmsconnectivity
   ports:
   - port: 80
     appProtocol: http
@@ -59,29 +58,9 @@ spec:
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: mzmsconnectivity
-labels:
-  kuma.io/origin: zone
-  kuma.io/env: universal
-  k8s.kuma.io/namespace: mzmsconnectivity # add a label to aggregate kube and uni service
-  kuma.io/display-name: test-server # add a label to aggregate kube and uni service
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
-
 		err = NewClusterSetup().
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	})
