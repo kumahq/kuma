@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -131,9 +130,13 @@ func collectMeshExternalService(
 	if !mesOk {
 		return nil
 	}
+	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
+	if mes.Spec.Match.Protocol != "" {
+		protocol = mes.Spec.Match.Protocol
+	}
 	return &DestinationService{
 		Outbound:    outbound,
-		Protocol:    core_mesh.Protocol(mes.Spec.Match.Protocol),
+		Protocol:    protocol,
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
@@ -223,7 +226,7 @@ func makeSplit(
 			}
 			port := pointer.Deref(ref.LegacyBackendRef.Port)
 			service = mes.DestinationName(port)
-			protocol = meshCtx.GetServiceProtocol(service)
+			protocol = mes.Spec.Match.Protocol
 		case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
 			ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 			if !ok {
@@ -257,7 +260,7 @@ func makeSplit(
 		var clusterName string
 		switch ref.LegacyBackendRef.Kind {
 		case common_api.MeshExternalService:
-			clusterName = envoy_names.GetMeshExternalServiceName(ref.LegacyBackendRef.Name) // todo shouldn't this be in destination name?
+			clusterName = meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(pointer.Deref(ref.LegacyBackendRef.Port))
 		case common_api.MeshMultiZoneService:
 			clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
 		case common_api.MeshService:
