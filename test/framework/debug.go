@@ -5,6 +5,11 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+<<<<<<< HEAD
+=======
+	"slices"
+	"strings"
+>>>>>>> 0a366462a (ci(e2e/framework): don't fail when some debug commands will fail (#11342))
 	"syscall"
 
 	"github.com/google/uuid"
@@ -38,7 +43,9 @@ func DebugUniversal(cluster Cluster, mesh string) {
 		debugUniversalInspectDPs(cluster, mesh, debugDir, kumactlOpts),
 	}
 
-	Expect(seenErrors).ToNot(ContainElement(true), "some debug commands failed")
+	if slices.Contains(seenErrors, true) {
+		Logf("[WARNING]: some debug commands failed")
+	}
 }
 
 func debugUniversalCopyLogs(debugPath string) bool {
@@ -194,9 +201,12 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	}
 
 	exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-	Expect(errorSeen).NotTo(BeTrue(), "some debug commands failed")
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
+	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
+
+	if errorSeen {
+		Logf("[WARNING]: some debug commands failed")
+	}
 }
 
 func prepareDebugDir() string {
