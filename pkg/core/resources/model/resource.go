@@ -718,7 +718,9 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 	}
 }
 
-func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBackendRef {
+type LabelResourceIdentifierResolver func(ResourceType, map[string]string) *ResourceIdentifier
+
+func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) ResolvedBackendRef {
 	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
 
 	switch {
@@ -729,7 +731,9 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBack
 		return resolved
 	}
 
-	br.Labels
+	if len(br.Labels) > 0 {
+		resolver(ResourceType(br.Kind), br.Labels)
+	}
 
 	resolved.Resource = &TypedResourceIdentifier{
 		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),

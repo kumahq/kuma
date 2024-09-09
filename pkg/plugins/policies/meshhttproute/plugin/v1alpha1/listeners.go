@@ -196,7 +196,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	}
 
 	// sort rules before we add default prefix matches etc
-	routes := api.SortRules(apiRules, backendRefToOrigin)
+	routes := api.SortRules(apiRules, backendRefToOrigin, meshCtx.ResolveResourceIdentifier)
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
 	catchAllMatch := api.Match{

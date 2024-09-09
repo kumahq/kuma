@@ -233,9 +233,7 @@ func (d *DataplaneResource) Hash() []byte {
 	return hasher.Sum(nil)
 }
 
-type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) *core_model.ResourceIdentifier
-
-func (d *DataplaneResource) AsOutbounds(resolver LabelResourceIdentifierResolver) xds_types.Outbounds {
+func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentifierResolver) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range d.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
