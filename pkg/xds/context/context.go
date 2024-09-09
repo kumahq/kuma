@@ -3,6 +3,7 @@ package context
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -105,6 +106,46 @@ type ServiceInformation struct {
 
 type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
+func (mc *MeshContext) ResolveOutbound(outbound *xds_types.Outbound, labels map[string]string) *xds_types.Outbound {
+	if len(labels) == 0 {
+		return outbound
+	}
+	tris := mc.resolveResourceIdentifiersForLabels(string(outbound.Resource.ResourceType), labels)
+	switch len(tris) {
+	case 0:
+		return nil
+	case 1:
+		newOutbound := *outbound
+		newOutbound.Resource = &tris[0]
+		return &newOutbound
+	default:
+		var oldestCreationTime *time.Time
+		var oldestTri *core_model.TypedResourceIdentifier
+		for _, tri := range tris {
+			var resource core_model.Resource
+			var found bool
+			switch tri.ResourceType {
+			case meshexternalservice_api.MeshExternalServiceType:
+				resource, found = mc.MeshExternalServiceByIdentifier[tri.ResourceIdentifier]
+			case meshservice_api.MeshServiceType:
+				resource, found = mc.MeshServiceByIdentifier[tri.ResourceIdentifier]
+			case meshmzservice_api.MeshMultiZoneServiceType:
+				resource, found = mc.MeshMultiZoneServiceByIdentifier[tri.ResourceIdentifier]
+			}
+			if found {
+				resCreationTime := resource.GetMeta().GetCreationTime()
+				if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
+					oldestCreationTime = &resCreationTime
+					oldestTri = &tri
+				}
+			}
+		}
+		newOutbound := *outbound
+		newOutbound.Resource = oldestTri
+		return &newOutbound
+	}
+}
+
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
 	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
 		return nil
@@ -112,15 +153,8 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 	reachableBackends := ReachableBackends{}
 	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
-			reachable := mc.getResourceNamesForLabels(reachableBackend.Kind, reachableBackend.Labels)
-			for ri, count := range reachable {
-				tri := core_model.TypedResourceIdentifier{
-					ResourceType:       core_model.ResourceType(reachableBackend.Kind),
-					ResourceIdentifier: ri,
-				}
-				if count == len(reachableBackend.Labels) {
-					reachableBackends[tri] = true
-				}
+			for _, tri := range mc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
+				reachableBackends[tri] = true
 			}
 		} else {
 			key := core_model.TypedResourceIdentifier{
@@ -137,6 +171,21 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 		}
 	}
 	return &reachableBackends
+}
+
+func (mc *MeshContext) resolveResourceIdentifiersForLabels(kind string, labels map[string]string) []core_model.TypedResourceIdentifier {
+	var result []core_model.TypedResourceIdentifier
+	reachable := mc.getResourceNamesForLabels(kind, labels)
+	for ri, count := range reachable {
+		tri := core_model.TypedResourceIdentifier{
+			ResourceType:       core_model.ResourceType(kind),
+			ResourceIdentifier: ri,
+		}
+		if count == len(labels) {
+			result = append(result, tri)
+		}
+	}
+	return result
 }
 
 func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[core_model.ResourceIdentifier]int {

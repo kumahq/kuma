@@ -251,6 +251,7 @@ func (d *DataplaneResource) AsOutbounds() xds_types.Outbounds {
 						}),
 					ResourceType: core_model.ResourceType(common_api.MeshService),
 				},
+				// Labels: o.BackendRef.Labels todo(jakubdyszkiewicz)
 			})
 		} else {
 			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})

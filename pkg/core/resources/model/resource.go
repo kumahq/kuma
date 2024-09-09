@@ -729,6 +729,8 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBack
 		return resolved
 	}
 
+	br.Labels
+
 	resolved.Resource = &TypedResourceIdentifier{
 		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
 		ResourceType:       ResourceType(br.Kind),
