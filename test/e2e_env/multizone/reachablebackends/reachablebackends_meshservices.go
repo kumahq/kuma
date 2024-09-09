@@ -162,7 +162,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("local-test-server_%s_msvc_80", namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_local-test-server_%s__msvc_80", meshName, namespace)))
 		}, "10s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
 
 		Eventually(func(g Gomega) {

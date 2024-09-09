@@ -38,7 +38,7 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           http2ProtocolOptions: {}
-- name: meshexternalservice_example
+- name: default_example___mextsvc_9090
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
@@ -46,7 +46,7 @@ resources:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: meshexternalservice_example
+    name: default_example___mextsvc_9090
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:

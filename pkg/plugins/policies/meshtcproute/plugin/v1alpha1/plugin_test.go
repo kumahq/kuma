@@ -364,7 +364,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
@@ -403,7 +403,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
@@ -431,7 +431,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
@@ -479,7 +479,7 @@ var _ = Describe("MeshTCPRoute", func() {
 											{
 												TargetRef: builders.TargetRefMeshExternalService("example2"),
 												Weight:    pointer.To(uint(100)),
-												Port:      pointer.To(uint32(80)),
+												Port:      pointer.To(uint32(9090)),
 											},
 										},
 									},
@@ -580,14 +580,14 @@ var _ = Describe("MeshTCPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("default_backend___msvc_80", core_mesh.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
