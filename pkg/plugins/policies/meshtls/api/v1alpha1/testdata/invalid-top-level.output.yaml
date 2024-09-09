@@ -1,0 +1,5 @@
+violations:
+- field: spec.from[0].default.tlsCiphers
+  message: 'tlsCiphers can only be defined with top level targetRef kind: Mesh'
+- field: spec.from[0].default.tlsVersion
+  message: 'tlsVersion can only be defined with top level targetRef kind: Mesh'

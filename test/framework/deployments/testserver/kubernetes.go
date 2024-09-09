@@ -23,7 +23,7 @@ func (k *k8SDeployment) Name() string {
 
 func (k *k8SDeployment) service() *corev1.Service {
 	appProtocol := k.opts.protocol
-	isTcpHealthCheck := len(k.opts.args) > 2 && k.opts.args[0] == "health-check" && k.opts.args[1] == "tcp"
+	isTcpHealthCheck := len(k.opts.args) >= 2 && k.opts.args[0] == "health-check" && k.opts.args[1] == "tcp"
 	if isTcpHealthCheck || k.opts.tlsKey != "" {
 		appProtocol = "tcp"
 	}

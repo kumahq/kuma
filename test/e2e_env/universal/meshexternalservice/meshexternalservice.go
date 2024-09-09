@@ -17,6 +17,7 @@ import (
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancingstrategy_api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -672,6 +673,152 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
 			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("MeshExternalService with MeshCircuitBreaker", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-circuit-breaker
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			circuitBreaker := fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: mes-circuit-breaker-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-circuit-breaker
+      default:
+        connectionLimits:
+          maxConnectionPools: 1
+          maxConnections: 1
+          maxPendingRequests: 1
+          maxRequests: 1
+          maxRetries: 1`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshCircuitBreaker
+			By("check if service is healthy")
+			Eventually(func() ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-circuit-breaker.extsvc.mesh.local",
+					client.WithNumberOfRequests(10),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				HaveEach(HaveField("ResponseCode", 200)),
+			))
+
+			// when MeshHealthCheck applied
+			Expect(universal.Cluster.Install(YamlUniversal(circuitBreaker))).To(Succeed())
+
+			By("should return 503")
+			Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-circuit-breaker.extsvc.mesh.local",
+					client.WithNumberOfRequests(10),
+					// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
+					client.WithHeader("x-set-response-delay-ms", "1000"),
+					client.WithoutRetries(),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				ContainElement(HaveField("ResponseCode", 503)),
+			))
+		})
+	})
+
+	Context("MeshExternalService with MeshLoadBalancingStrategy", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-load-balancing
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+    - address: %s
+      port: 81  
+`, meshNameNoDefaults, esHttpContainerName, esHttp2ContainerName)
+			loadBalancing := fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+mesh: %s
+name: mes-load-balancing-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-load-balancing
+      default:
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            hashPolicies:
+              - type: Header
+                header:
+                  name: x-header`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshLoadBalancingStrategy
+			By("check if responses comes from 2 endpoints")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(2))
+			}, "30s", "1s").Should(Succeed())
+
+			// when MeshLoadBalancingStrategy applied
+			Expect(universal.Cluster.Install(YamlUniversal(loadBalancing))).To(Succeed())
+
+			By("should return responses only from 1 instance")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(1))
+			}, "30s", "500ms").Should(Succeed())
 		})
 	})
 

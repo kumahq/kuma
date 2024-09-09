@@ -17,7 +17,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/vishvananda/netlink"
 
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 func parsePort(s string) (Port, error) {

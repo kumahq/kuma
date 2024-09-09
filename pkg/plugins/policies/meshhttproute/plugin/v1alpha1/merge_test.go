@@ -39,7 +39,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-1",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefMesh(),
+						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
@@ -61,7 +61,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-2",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefService("web"),
+						TargetRef: pointer.To(builders.TargetRefService("web")),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
@@ -160,7 +160,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefMesh(),
+						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
@@ -185,7 +185,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "b-route",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefMesh(),
+						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
@@ -256,7 +256,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefMesh(),
+						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
@@ -333,7 +333,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "b-route",
 					},
 					Spec: &api.MeshHTTPRoute{
-						TargetRef: builders.TargetRefMesh(),
+						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: []api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{

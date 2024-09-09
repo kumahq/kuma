@@ -222,8 +222,6 @@ metadata:
   labels:
     kuma.io/mesh: %s
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService

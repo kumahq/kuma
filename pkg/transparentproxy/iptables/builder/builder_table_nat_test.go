@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 	tproxy_test "github.com/kumahq/kuma/pkg/transparentproxy/test"
 )

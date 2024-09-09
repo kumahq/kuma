@@ -1,0 +1,59 @@
+resources:
+- name: mesh-1:external
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-1_external
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        initialFetchTimeout: 0s
+        resourceApiVersion: V3
+    lbPolicy: RING_HASH
+    name: mesh-1:external
+    ringHashLbConfig:
+      hashFunction: MURMUR_HASH_2
+      maximumRingSize: "1000"
+      minimumRingSize: "100"
+    type: EDS
+- name: mesh-2:static-cluster
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: mesh-2_static-cluster
+    loadAssignment:
+      clusterName: mesh-2:static-cluster
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-1
+        locality:
+          zone: zone-1
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.0.2
+                portValue: 8080
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+                kuma.io/zone: zone-2
+        locality:
+          zone: zone-2
+        priority: 1
+    name: mesh-2:static-cluster
+    type: STATIC

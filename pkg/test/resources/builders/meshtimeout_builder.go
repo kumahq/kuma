@@ -25,7 +25,7 @@ func MeshTimeout() *MeshTimeoutBuilder {
 }
 
 func (m *MeshTimeoutBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTimeoutBuilder {
-	m.res.Spec.TargetRef = targetRef
+	m.res.Spec.TargetRef = &targetRef
 	return m
 }
 

@@ -61,6 +61,7 @@ func validateTo(to []To) validators.ValidationError {
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		}))
 

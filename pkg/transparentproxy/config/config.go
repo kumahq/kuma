@@ -17,7 +17,7 @@ import (
 
 	core_config "github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 var _ json.Unmarshaler = &Owner{}
@@ -55,18 +55,18 @@ func (c *Owner) Set(s string) error {
 		return errors.Errorf("the specified UID or username ('%s') does not refer to a valid user on the host", s)
 	}
 
-	if c.UID, ok = findUserUID(OwnerDefaultUID); ok {
+	if c.UID, ok = findUserUID(consts.OwnerDefaultUID); ok {
 		return nil
 	}
 
-	if c.UID, ok = findUserUID(OwnerDefaultUsername); ok {
+	if c.UID, ok = findUserUID(consts.OwnerDefaultUsername); ok {
 		return nil
 	}
 
 	return errors.Errorf(
 		"no UID or username provided, and user with the default UID ('%s') or username ('%s') could not be found",
-		OwnerDefaultUID,
-		OwnerDefaultUsername,
+		consts.OwnerDefaultUID,
+		consts.OwnerDefaultUsername,
 	)
 }
 
@@ -206,7 +206,7 @@ func (p *Ports) UnmarshalJSON(bs []byte) error {
 }
 
 type Exclusion struct {
-	Protocol ProtocolL4
+	Protocol consts.ProtocolL4
 	Address  string
 	UIDs     ValueOrRangeList
 	Ports    ValueOrRangeList
@@ -334,7 +334,11 @@ func (c DNS) Initialize(
 		initialized.Enabled = false
 		initialized.ConntrackZoneSplit = false
 
-		l.Warnf("couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled", IPTypeMap[ipv6], c.ResolvConfigPath)
+		l.Warnf(
+			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
+			consts.IPTypeMap[ipv6],
+			c.ResolvConfigPath,
+		)
 	}
 
 	return initialized, nil
@@ -513,7 +517,7 @@ type InitializedComments struct {
 func (c Comments) Initialize(e InitializedExecutablesIPvX) InitializedComments {
 	return InitializedComments{
 		Enabled: !c.Disabled && e.Functionality.Modules.Comment,
-		Prefix:  IptablesRuleCommentPrefix,
+		Prefix:  consts.IptablesRuleCommentPrefix,
 	}
 }
 
@@ -580,7 +584,7 @@ type Config struct {
 	// Executables field holds configuration for the executables used to
 	// interact with iptables (or ip6tables). It can handle both nft (nftables)
 	// and legacy iptables modes, and supports IPv4 and IPv6 versions
-	Executables Executables `json:"-"`
+	Executables Executables `json:"iptablesExecutables" envconfig:"iptables_executables"` // KUMA_TRANSPARENT_PROXY_IPTABLES_EXECUTABLES
 	// Comments configures the prefix and enable/disable status for iptables rule
 	// comments. This setting helps in identifying and organizing iptables rules
 	// created by the transparent proxy, making them easier to manage and debug
@@ -727,22 +731,22 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
-	loggerIPv4 := l.WithPrefix(IptablesCommandByFamily[false])
-	loggerIPv6 := l.WithPrefix(IptablesCommandByFamily[true])
+	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[false])
+	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[true])
 
 	loopbackInterfaceName, err := getLoopbackInterfaceName()
 	if err != nil {
-		return InitializedConfig{}, errors.Wrap(err, "unable to initialize LoopbackInterfaceName")
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize loopback interface name")
 	}
 
-	initializedExecutablesIPv4, executablesIPv6, err := c.Executables.InitializeIPv4(ctx, l, c)
+	executablesIPv4, err := c.Executables.InitializeIPv4(ctx, loggerIPv4, c)
 	if err != nil {
-		return InitializedConfig{}, errors.Wrap(err, "unable to initialize Executables configuration")
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 executables")
 	}
 
-	redirectIPv4, err := c.Redirect.Initialize(loggerIPv4, initializedExecutablesIPv4, false)
+	redirectIPv4, err := c.Redirect.Initialize(loggerIPv4, executablesIPv4, false)
 	if err != nil {
-		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 Redirect configuration")
+		return InitializedConfig{}, errors.Wrap(err, "unable to initialize IPv4 redirect configuration")
 	}
 
 	initialized := InitializedConfig{
@@ -751,20 +755,19 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		IPv4: InitializedConfigIPvX{
 			Config:                 c,
 			Logger:                 loggerIPv4,
-			Executables:            initializedExecutablesIPv4,
+			Executables:            executablesIPv4,
 			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          LocalhostCIDRIPv4,
-			InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv4,
-			Comments:               c.Comments.Initialize(initializedExecutablesIPv4),
-			DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv4.Functionality.Tables.Mangle,
+			LocalhostCIDR:          consts.LocalhostCIDRIPv4,
+			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv4,
+			Comments:               c.Comments.Initialize(executablesIPv4),
+			DropInvalidPackets:     c.DropInvalidPackets && executablesIPv4.Functionality.Tables.Mangle,
 			KumaDPUser:             c.KumaDPUser,
 			Redirect:               redirectIPv4,
 			enabled:                true,
 		},
 	}
 
-	// If IPv6 initialization fails at any point, the process will continue
-	// Instead of terminating, a warning will be logged, and IPv6 will be ignored
+	// IPv6 initialization is optional; failures will log warnings and continue with IPv4 only
 
 	if c.IPFamilyMode == IPFamilyModeIPv4 {
 		return initialized, nil
@@ -772,39 +775,39 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 	if ok, err := hasLocalIPv6(); !ok || err != nil {
 		if c.Verbose {
-			loggerIPv6.Warn("IPv6 executables initialization skipped:", err)
+			loggerIPv6.Warn("IPv6 initialization skipped due to missing or faulty IPv6 support:", err)
 		}
 		return initialized, nil
 	}
 
 	if err := configureIPv6OutboundAddress(); err != nil {
 		if c.Verbose {
-			loggerIPv6.Warn("failed to configure IPv6 outbound address. IPv6 rules will be skipped:", err)
+			loggerIPv6.Warn("failed to configure IPv6 outbound address; IPv6 rules will be skipped:", err)
 		}
 		return initialized, nil
 	}
 
-	initializedExecutablesIPv6, err := executablesIPv6.Initialize(ctx, loggerIPv6, c)
+	executablesIPv6, err := c.Executables.InitializeIPv6(ctx, loggerIPv6, c, executablesIPv4.mode)
 	if err != nil {
 		loggerIPv6.Warn("failed to initialize IPv6 executables:", err)
 		return initialized, nil
 	}
 
-	redirectIPv6, err := c.Redirect.Initialize(loggerIPv6, initializedExecutablesIPv6, true)
+	redirectIPv6, err := c.Redirect.Initialize(loggerIPv6, executablesIPv6, true)
 	if err != nil {
-		loggerIPv6.Warn("failed to initialize IPv6 Redirect configuration:", err)
+		loggerIPv6.Warn("failed to initialize IPv6 redirect configuration:", err)
 		return initialized, nil
 	}
 
 	initialized.IPv6 = InitializedConfigIPvX{
 		Config:                 c,
 		Logger:                 loggerIPv6,
-		Executables:            initializedExecutablesIPv6,
+		Executables:            executablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
-		LocalhostCIDR:          LocalhostCIDRIPv6,
-		InboundPassthroughCIDR: InboundPassthroughSourceAddressCIDRIPv6,
-		Comments:               c.Comments.Initialize(initializedExecutablesIPv6),
-		DropInvalidPackets:     c.DropInvalidPackets && initializedExecutablesIPv6.Functionality.Tables.Mangle,
+		LocalhostCIDR:          consts.LocalhostCIDRIPv6,
+		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv6,
+		Comments:               c.Comments.Initialize(executablesIPv6),
+		DropInvalidPackets:     c.DropInvalidPackets && executablesIPv6.Functionality.Tables.Mangle,
 		KumaDPUser:             c.KumaDPUser,
 		Redirect:               redirectIPv6,
 		enabled:                true,
@@ -817,10 +820,10 @@ func DefaultConfig() Config {
 	return Config{
 		KumaDPUser: Owner{UID: ""},
 		Redirect: Redirect{
-			NamePrefix: IptablesChainsPrefix,
+			NamePrefix: consts.IptablesChainsPrefix,
 			Inbound: TrafficFlow{
 				Enabled:           true,
-				Port:              Port(DefaultRedirectInbountPort),
+				Port:              Port(consts.DefaultRedirectInbountPort),
 				ChainName:         "INBOUND",
 				RedirectChainName: "INBOUND_REDIRECT",
 				ExcludePorts:      Ports{},
@@ -828,14 +831,14 @@ func DefaultConfig() Config {
 			},
 			Outbound: TrafficFlow{
 				Enabled:           true,
-				Port:              Port(DefaultRedirectOutboundPort),
+				Port:              Port(consts.DefaultRedirectOutboundPort),
 				ChainName:         "OUTBOUND",
 				RedirectChainName: "OUTBOUND_REDIRECT",
 				ExcludePorts:      Ports{},
 				IncludePorts:      Ports{},
 			},
 			DNS: DNS{
-				Port:                   Port(DefaultRedirectDNSPort),
+				Port:                   Port(consts.DefaultRedirectDNSPort),
 				Enabled:                false,
 				CaptureAll:             false,
 				SkipConntrackZoneSplit: false,
@@ -858,7 +861,7 @@ func DefaultConfig() Config {
 		DryRun:             false,
 		Log: Log{
 			Enabled: false,
-			Level:   LogLevelDebug,
+			Level:   consts.LogLevelDebug,
 		},
 		Wait:         5,
 		WaitInterval: 0,

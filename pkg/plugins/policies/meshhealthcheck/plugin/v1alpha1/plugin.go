@@ -167,6 +167,7 @@ func configure(
 }
 
 func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	indexed := rs.IndexByOrigin()
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
@@ -178,7 +179,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			if !ok {
 				continue
 			}
-			for mesID, typedResources := range rs.IndexByOrigin() {
+			for mesID, typedResources := range indexed {
 				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
 				if conf == nil {
 					continue
