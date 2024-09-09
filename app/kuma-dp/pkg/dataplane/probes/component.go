@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/bakito/go-log-logr-adapter/adapter"
@@ -21,7 +20,7 @@ import (
 )
 
 var (
-	logger             = core.Log.WithName("virtual-probes")
+	logger             = core.Log.WithName("application-probe-proxy")
 	tcpGRPCPathPattern = regexp.MustCompile(`^/(tcp|grpc)/(?P<port>[0-9]+)(/.*)?$`)
 	httpPathPattern    = regexp.MustCompile(`^/(?P<port>[0-9]+)(?P<path>/.*)?$`)
 	errLimitReached    = errors.New("the read limit is reached")
@@ -64,10 +63,10 @@ func NewProber(podIPAddr string, listenPort uint32) *Prober {
 func (p *Prober) Start(stop <-chan struct{}) error {
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", p.listenPort))
 	if err != nil {
-		return err_pkg.Wrap(err, "unable to listen for the virtual probes server")
+		return err_pkg.Wrap(err, "unable to listen for the Application Probe Proxy server")
 	}
 
-	logger.Info("starting Virtual Probes Server", "port", p.listenPort)
+	logger.Info("starting Application Probe Proxy server", "port", p.listenPort)
 
 	// routes:
 	// /tcp/<port>
@@ -94,7 +93,7 @@ func (p *Prober) Start(stop <-chan struct{}) error {
 	case err := <-errCh:
 		return err
 	case <-stop:
-		logger.Info("stopping Virtual Probes Server")
+		logger.Info("stopping Application Probe Proxy server")
 		return server.Shutdown(context.Background())
 	}
 }
@@ -178,28 +177,6 @@ func getScheme(req *http.Request) kube_core.URIScheme {
 
 func getGRPCService(req *http.Request) string {
 	return req.Header.Get(probes.HeaderNameGRPCService)
-}
-
-// copied from https://github.com/kubernetes/kubernetes/blob/v1.27.0-alpha.1/pkg/probe/dialer_others.go#L27
-// createProbeDialer returns a dialer optimized for probes to avoid lingering sockets on TIME-WAIT state.
-// The dialer reduces the TIME-WAIT period to 1 seconds instead of the OS default of 60 seconds.
-// Using 1 second instead of 0 because SO_LINGER socket option to 0 causes pending data to be
-// discarded and the connection to be aborted with an RST rather than for the pending data to be
-// transmitted and the connection closed cleanly with a FIN.
-// Ref: https://issues.k8s.io/89898
-func createProbeDialer(isIPv6 bool) *net.Dialer {
-	dialer := &net.Dialer{
-		Control: func(network, address string, c syscall.RawConn) error {
-			return c.Control(func(fd uintptr) {
-				_ = syscall.SetsockoptLinger(int(fd), syscall.SOL_SOCKET, syscall.SO_LINGER, &syscall.Linger{Onoff: 1, Linger: 1})
-			})
-		},
-	}
-	dialer.LocalAddr = LocalAddrIPv4
-	if isIPv6 {
-		dialer.LocalAddr = LocalAddrIPv6
-	}
-	return dialer
 }
 
 func writeProbeResult(writer http.ResponseWriter, result string) {

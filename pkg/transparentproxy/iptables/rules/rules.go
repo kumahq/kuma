@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
@@ -70,15 +70,7 @@ func (b *RuleBuilder) Build(
 // NewAppendRule creates a new RuleBuilder for an iptables rule that will be
 // appended to the end of an existing chain. This function takes a variable
 // number of parameters, each represented as a pointer to a Parameter object,
-// which specify the various conditions and actions for the rule.
-//
-// Args:
-//   - parameters (...*parameters.Parameter): A variadic list of pointers to
-//     Parameter objects that define the rule's conditions and actions.
-//
-// Returns:
-//   - *RuleBuilder: A pointer to a RuleBuilder configured to append a new rule
-//     with the specified parameters.
+// which specify the various conditions and actions for the rule
 func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters}
 }
@@ -87,17 +79,16 @@ func NewAppendRule(parameters ...*parameters.Parameter) *RuleBuilder {
 // inserted at a specific position within an existing chain. This function takes
 // a variable number of parameters, each represented as a pointer to a Parameter
 // object, which specify the various conditions and actions for the rule.
-// The rule will be marked for insertion rather than appending.
-//
-// Args:
-//   - parameters (...*parameters.Parameter): A variadic list of pointers to
-//     Parameter objects that define the rule's conditions and actions.
-//
-// Returns:
-//   - *RuleBuilder: A pointer to a RuleBuilder configured to insert a new rule
-//     with the specified parameters.
+// The rule will be marked for insertion rather than appending
 func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
 	return &RuleBuilder{parameters: parameters, insert: true}
+}
+
+// NewConditionalInsertOrAppendRule creates a new RuleBuilder for an iptables rule
+// that will either be appended to the end of an existing chain or inserted at a
+// specific position based on the given `insert` argument
+func NewConditionalInsertOrAppendRule(insert bool, parameters ...*parameters.Parameter) *RuleBuilder {
+	return &RuleBuilder{parameters: parameters, insert: insert}
 }
 
 // BuildForRestore generates an iptables rule formatted for use with
@@ -118,17 +109,7 @@ func NewInsertRule(parameters ...*parameters.Parameter) *RuleBuilder {
 // the flag, the chain name, the optional position (if not zero), and the rule
 // parameters. If a comment is provided (`r.comment`) and the comment
 // functionality is enabled in the configuration, it is included in the
-// parameters with the prefix specified by `consts.IptablesRuleCommentPrefix`.
-//
-// The `parameters.Build(cfg.Verbose)` method is used to generate the final
-// parameter list in the appropriate format.
-//
-// Args:
-//   - cfg (config.InitializedConfigIPvX): Configuration settings that control
-//     the verbose output and other behaviors.
-//
-// Returns:
-//   - string: The constructed iptables rule formatted for `iptables-restore`.
+// parameters with the prefix specified by `consts.IptablesRuleCommentPrefix`
 func (r *Rule) BuildForRestore(cfg config.InitializedConfigIPvX) string {
 	flag := consts.FlagVariationsMap[consts.FlagAppend][cfg.Verbose]
 	if r.position != 0 {
@@ -143,11 +124,11 @@ func (r *Rule) BuildForRestore(cfg config.InitializedConfigIPvX) string {
 
 	var params parameters.Parameters
 
-	if cfg.Comment.Enabled && r.comment != "" {
+	if cfg.Comments.Enabled && r.comment != "" {
 		params = append(
 			params,
 			parameters.Match(
-				parameters.Comment(cfg.Comment.Prefix, r.comment),
+				parameters.Comment(cfg.Comments.Prefix, r.comment),
 			),
 		)
 	}

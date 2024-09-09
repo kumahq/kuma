@@ -750,5 +750,6 @@ plugins:
     meshretries: true
     meshtcproutes: true
     meshtimeouts: true
+    meshtlses: true
     meshtraces: true
     meshtrafficpermissions: true

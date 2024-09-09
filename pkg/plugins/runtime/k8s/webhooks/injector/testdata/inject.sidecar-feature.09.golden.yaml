@@ -13,6 +13,8 @@ metadata:
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: "9000"
     prometheus.metrics.kuma.io/path: /custom-metrics
     prometheus.metrics.kuma.io/port: "5678"
   creationTimestamp: null
@@ -30,8 +32,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --config-file
-    - /tmp/kumactl/config
     - --redirect-outbound-port
     - "15001"
     - --redirect-inbound=true

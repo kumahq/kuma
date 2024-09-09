@@ -94,7 +94,6 @@ var _ = Describe("Proxy Builder", func() {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
-		builder.Config().Experimental.SkipPersistedVIPs,
 	)
 	metrics, err := core_metrics.NewMetrics("cache")
 	Expect(err).ToNot(HaveOccurred())

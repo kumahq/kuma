@@ -54,7 +54,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 		return nil
 	}
 
-	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules.Rules); err != nil {
+	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules); err != nil {
 		return err
 	}
 
@@ -66,12 +66,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	return nil
 }
 
-func ApplyToOutbounds(
-	proxy *core_xds.Proxy,
-	rs *core_xds.ResourceSet,
-	xdsCtx xds_context.Context,
-	rules rules.Rules,
-) error {
+func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, rules rules.ToRules) error {
 	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
 	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 

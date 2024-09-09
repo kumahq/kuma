@@ -1,0 +1,21 @@
+resources:
+- name: backend_msvc_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: backend_msvc_80
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8084
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              app: backend
+              kuma.io/protocol: http
+            envoy.transport_socket_match:
+              app: backend
+              kuma.io/protocol: http

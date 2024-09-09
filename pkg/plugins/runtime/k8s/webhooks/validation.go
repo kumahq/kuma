@@ -9,7 +9,6 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -75,13 +74,6 @@ func (h *validatingHandler) Handle(_ context.Context, req admission.Request) adm
 			return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
 		}
 
-		if req.Namespace != h.SystemNamespace {
-			// policies in custom namespaces with 'to' array can't reference MeshService util it's properly supported
-			if err := h.validateNoTargetRefMeshService(coreRes); err.HasViolations() {
-				return convertValidationErrorOf(err, k8sObj, k8sObj.GetObjectMeta())
-			}
-		}
-
 		if err := core_model.Validate(coreRes); err != nil {
 			if kumaErr, ok := err.(*validators.ValidationError); ok {
 				// we assume that coreRes.Validate() returns validation errors of the spec
@@ -127,21 +119,6 @@ func (h *validatingHandler) validateLabels(rm core_model.ResourceMeta) validator
 	if origin, ok := core_model.ResourceOrigin(rm); ok {
 		if err := origin.IsValid(); err != nil {
 			verr.AddViolationAt(labelsPath.Key(mesh_proto.ResourceOriginLabel), err.Error())
-		}
-	}
-	return verr
-}
-
-func (h *validatingHandler) validateNoTargetRefMeshService(r core_model.Resource) validators.ValidationError {
-	var verr validators.ValidationError
-	if pt, ok := r.GetSpec().(core_model.PolicyWithToList); ok {
-		specField := validators.Root().Field("spec")
-		for i, toItem := range pt.GetToList() {
-			toItemField := specField.Field("to").Index(i)
-			switch toItem.GetTargetRef().Kind {
-			case v1alpha1.MeshService:
-				verr.AddViolationAt(toItemField.Field("targetRef").Field("kind"), "can't use 'MeshService' at this moment")
-			}
 		}
 	}
 	return verr

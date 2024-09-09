@@ -1,0 +1,49 @@
+# MeshRetry with targetRef to the real MeshExternalService resource
+type: MeshRetry
+name: matched-for-rules-mr-aaaaaa
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: external
+      default:
+        http:
+          numRetries: 10
+          backOff:
+            baseInterval: 15s
+            maxInterval: 20m
+---
+type: MeshRetry
+name: matched-for-rules-mr-bbbbbb
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 99
+          backOff:
+            baseInterval: 55s
+          retryOn:
+            - "5xx"
+---
+type: MeshExternalService
+name: external
+mesh: mesh-1
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+  - address: external.io
+    port: 80
+---
+type: Mesh
+name: mesh-1

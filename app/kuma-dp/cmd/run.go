@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/probes"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/readiness"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -181,15 +182,18 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			runLog.Info("fetched Envoy version", "version", envoyVersion)
 
 			runLog.Info("generating bootstrap configuration")
+			appProbeProxyEnabled := opts.Config.ApplicationProbeProxyServer.Port > 0
 			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:       opts.Dataplane,
-				DNSPort:         cfg.DNS.EnvoyDNSPort,
-				EnvoyVersion:    *envoyVersion,
-				Workdir:         cfg.DataplaneRuntime.SocketDir,
-				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
-				MetricsCertPath: cfg.DataplaneRuntime.Metrics.CertPath,
-				MetricsKeyPath:  cfg.DataplaneRuntime.Metrics.KeyPath,
-				SystemCaPath:    cfg.DataplaneRuntime.SystemCaPath,
+				Dataplane:            opts.Dataplane,
+				DNSPort:              cfg.DNS.EnvoyDNSPort,
+				ReadinessPort:        cfg.Dataplane.ReadinessPort,
+				AppProbeProxyEnabled: appProbeProxyEnabled,
+				EnvoyVersion:         *envoyVersion,
+				Workdir:              cfg.DataplaneRuntime.SocketDir,
+				DynamicMetadata:      rootCtx.BootstrapDynamicMetadata,
+				MetricsCertPath:      cfg.DataplaneRuntime.Metrics.CertPath,
+				MetricsKeyPath:       cfg.DataplaneRuntime.Metrics.KeyPath,
+				SystemCaPath:         cfg.DataplaneRuntime.SystemCaPath,
 			})
 			if err != nil {
 				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -237,11 +241,20 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
 			components = append(components, observabilityComponents...)
+
+			var readinessReporter *readiness.Reporter
+			if cfg.Dataplane.ReadinessPort > 0 {
+				readinessReporter = readiness.NewReporter(
+					bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+					cfg.Dataplane.ReadinessPort)
+				components = append(components, readinessReporter)
+			}
+
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
-			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
+			if appProbeProxyEnabled {
 				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
 				if err := rootCtx.ComponentManager.Add(prober); err != nil {
 					return err
@@ -273,6 +286,9 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 						if draining {
 							runLog.Info("already drained, exit immediately")
 						} else {
+							if readinessReporter != nil {
+								readinessReporter.Terminating()
+							}
 							runLog.Info("draining Envoy connections")
 							if err := envoyComponent.FailHealthchecks(); err != nil {
 								runLog.Error(err, "could not drain connections")

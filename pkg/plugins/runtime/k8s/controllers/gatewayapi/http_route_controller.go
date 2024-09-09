@@ -215,7 +215,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				routeSubName := generateMeshHTTPRouteName(route, ref)
 
 				routes[routeSubName] = &meshhttproute_api.MeshHTTPRoute{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.MeshGateway,
 						Name: fmt.Sprintf("%s.%s", ref.Name, namespace),
 						Tags: tags,
@@ -410,6 +410,7 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return err
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-http-route-controller").
 		For(&gatewayapi.HTTPRoute{}).
 		Watches(
 			&gatewayapi.Gateway{},

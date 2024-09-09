@@ -2,7 +2,7 @@ package test
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 func InitializeConfigIPvX(

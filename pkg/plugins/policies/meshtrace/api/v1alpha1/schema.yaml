@@ -200,6 +200,7 @@ properties:
               - MeshGateway
               - MeshService
               - MeshExternalService
+              - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
             type: string
@@ -247,6 +248,4 @@ properties:
               `MeshSubset` and `MeshServiceSubset`
             type: object
         type: object
-    required:
-      - targetRef
     type: object

@@ -1,0 +1,57 @@
+resources:
+- name: meshexternalservice_example
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.20.20.1
+        portValue: 9090
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          routeConfig:
+            name: meshexternalservice_example
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/protocol=http&&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: example
+              routes:
+              - match:
+                  path: /v1
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                route:
+                  autoHostRewrite: true
+                  cluster: meshexternalservice_example
+                  timeout: 0s
+              - match:
+                  prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                route:
+                  autoHostRewrite: true
+                  cluster: meshexternalservice_example
+                  timeout: 0s
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  autoHostRewrite: true
+                  cluster: meshexternalservice_example
+                  timeout: 0s
+          statPrefix: meshexternalservice_example
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: meshexternalservice_example
+    trafficDirection: OUTBOUND

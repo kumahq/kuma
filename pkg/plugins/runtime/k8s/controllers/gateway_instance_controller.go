@@ -470,6 +470,7 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 	}
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-gateway-instance-controller").
 		For(&mesh_k8s.MeshGatewayInstance{}).
 		Owns(&kube_core.Service{}).
 		Owns(&kube_apps.Deployment{}).

@@ -198,7 +198,6 @@ func tryStartApiServer(t *testApiServerConfigurer) (*api_server.ApiServer, kuma_
 			cfg.DNSServer.Domain,
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			cfg.Experimental.SkipPersistedVIPs,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

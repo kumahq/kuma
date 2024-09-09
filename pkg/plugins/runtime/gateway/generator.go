@@ -190,7 +190,6 @@ func gatewayListenerInfoFromProxy(
 		ctx,
 		meshCtx.Resource,
 		matchedExternalServices,
-		meshCtx.Resources.MeshExternalServices().Items,
 		meshCtx.DataSourceLoader,
 		proxy.Zone,
 	)

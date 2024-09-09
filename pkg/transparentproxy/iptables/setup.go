@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 func Setup(ctx context.Context, cfg config.InitializedConfig) (string, error) {
@@ -56,7 +56,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 	cfg.Logger.Infof(
 		"starting cleanup of existing transparent proxy rules. Any rule found in chains with names starting with %q or containing comments starting with %q will be deleted",
 		cfg.Redirect.NamePrefix,
-		cfg.Comment.Prefix,
+		cfg.Comments.Prefix,
 	)
 
 	// Execute iptables-save to retrieve current rules.
@@ -67,7 +67,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 
 	output := stdout.String()
 	containsTProxyRules := strings.Contains(output, cfg.Redirect.NamePrefix)
-	containsTProxyComments := strings.Contains(output, cfg.Comment.Prefix)
+	containsTProxyComments := strings.Contains(output, cfg.Comments.Prefix)
 
 	switch {
 	case !containsTProxyRules && !containsTProxyComments:
@@ -79,20 +79,19 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 		return errors.New("transparent proxy rules detected, but expected comments are missing. Cleanup cannot proceed safely without comments to identify rules. Please remove the transparent proxy iptables rules manually")
 	}
 
-	// Split the output into lines and remove lines related to transparent
-	// proxy rules and chains.
+	// Split the output into lines and remove lines related to transparent proxy rules and chains
 	lines := strings.Split(output, "\n")
 	linesCleaned := slices.DeleteFunc(
 		lines,
 		func(line string) bool {
 			return strings.HasPrefix(line, "#") ||
-				strings.Contains(line, cfg.Comment.Prefix) ||
+				strings.Contains(line, cfg.Comments.Prefix) ||
 				strings.Contains(line, cfg.Redirect.NamePrefix)
 		},
 	)
 	newRules := strings.Join(linesCleaned, "\n")
 
-	// Verify if the new rules after cleanup are correct.
+	// Verify if the new rules after cleanup are correct
 	if _, err := cfg.Executables.RestoreTest(ctx, newRules); err != nil {
 		return errors.Wrap(
 			err,
@@ -106,7 +105,7 @@ func cleanupIPvX(ctx context.Context, cfg config.InitializedConfigIPvX) error {
 		return nil
 	}
 
-	// Restore the new rules with flushing.
+	// Restore the new rules with flushing
 	if _, err := cfg.Executables.RestoreWithFlush(ctx, newRules, true); err != nil {
 		return errors.Wrap(
 			err,
@@ -154,8 +153,7 @@ func dryRun(cfg config.InitializedConfig) string {
 
 // dryRunIPvX generates iptables rules for either IPv4 or IPv6 based on the
 // provided configuration. It returns a slice with a header indicating the
-// IP version and the generated rules as a single string.
-
+// IP version and the generated rules as a single string
 func dryRunIPvX(cfg config.InitializedConfigIPvX, ipv6 bool) []string {
 	if !cfg.Enabled() {
 		return nil

@@ -27,7 +27,7 @@ func Connectivity() {
 	var testServerPodNames []string
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
@@ -109,27 +109,6 @@ spec:
 		}
 		Expect(testServerPodNames).To(HaveLen(1))
 
-		kubeServiceYAML := `
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: msconnectivity
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: msconnectivity
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: msconnectivity
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -137,36 +116,17 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
-
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: msconnectivity
-labels:
-  kuma.io/origin: zone
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
 
 		err = NewClusterSetup().
 			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-1"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone2)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -177,7 +137,6 @@ spec:
 				WithGlobalAddress(multizone.Global.GetKuma().GetKDSServerAddress()),
 				WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 				WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 			)).
 			Install(IngressUniversal(multizone.Global.GetKuma().GenerateZoneIngressToken)).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "auto-uni-test-server"}))).

@@ -56,7 +56,8 @@ func Ctstate(state conntrack.State, states ...conntrack.State) *ConntrackParamet
 	}
 }
 
-// Conntrack when combined with connection tracking, allows access to the connection tracking state for this packet/connection.
+// Conntrack when combined with connection tracking, allows access to the connection
+// tracking state for this packet/connection
 func Conntrack(conntrackParameters ...*ConntrackParameter) *MatchParameter {
 	var parameters []ParameterBuilder
 

@@ -2,7 +2,7 @@ package builder
 
 import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/rules"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
@@ -11,7 +11,7 @@ import (
 // buildRawTable constructs the raw table for iptables with the necessary rules
 // for handling DNS traffic and connection tracking zone splitting. This table
 // is configured based on the provided configuration, including handling IPv4
-// and IPv6 DNS servers.
+// and IPv6 DNS servers
 func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 	raw := tables.Raw()
 
@@ -19,15 +19,15 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 		raw.Output().AddRules(
 			rules.
 				NewAppendRule(
-					Protocol(Udp(DestinationPort(DNSPort))),
-					Match(Owner(Uid(cfg.Owner.UID))),
+					Protocol(Udp(DestinationPort(consts.DNSPort))),
+					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					Jump(Ct(Zone("1"))),
 				).
-				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.Owner.UID),
+				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.KumaDPUser.UID),
 			rules.
 				NewAppendRule(
 					Protocol(Udp(SourcePort(cfg.Redirect.DNS.Port))),
-					Match(Owner(Uid(cfg.Owner.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser.UID))),
 					Jump(Ct(Zone("2"))),
 				).
 				WithComment("assign connection tracking zone 2 to DNS responses from the kuma-dp DNS proxy"),
@@ -37,7 +37,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			raw.Output().AddRules(
 				rules.
 					NewAppendRule(
-						Protocol(Udp(DestinationPort(DNSPort))),
+						Protocol(Udp(DestinationPort(consts.DNSPort))),
 						Jump(Ct(Zone("2"))),
 					).
 					WithComment("assign connection tracking zone 2 to all DNS requests"),
@@ -46,7 +46,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			raw.Prerouting().AddRules(
 				rules.
 					NewAppendRule(
-						Protocol(Udp(SourcePort(DNSPort))),
+						Protocol(Udp(SourcePort(consts.DNSPort))),
 						Jump(Ct(Zone("1"))),
 					).
 					WithComment("assign connection tracking zone 1 to all DNS responses"),
@@ -57,7 +57,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 					rules.
 						NewAppendRule(
 							Destination(ip),
-							Protocol(Udp(DestinationPort(DNSPort))),
+							Protocol(Udp(DestinationPort(consts.DNSPort))),
 							Jump(Ct(Zone("2"))),
 						).
 						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip),
@@ -66,7 +66,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 					rules.
 						NewAppendRule(
 							Destination(ip),
-							Protocol(Udp(SourcePort(DNSPort))),
+							Protocol(Udp(SourcePort(consts.DNSPort))),
 							Jump(Ct(Zone("1"))),
 						).
 						WithCommentf("assign connection tracking zone 1 to DNS responses from %s", ip),

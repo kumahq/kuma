@@ -96,6 +96,113 @@ spec:
 		})
 	}, Ordered)
 
+	Describe("HTTP to real MeshService", func() {
+		meshName := "meshhealthcheck-http-ms"
+		healthCheck := func(mesh, method, status string) string {
+			return fmt.Sprintf(`
+type: MeshHealthCheck
+mesh: %s
+name: everything-to-backend
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuseConnection: true
+        http: 
+          path: /%s
+          expectedStatuses: 
+          - %s`, mesh, method, status)
+		}
+
+		uniServiceYAML := fmt.Sprintf(`
+type: MeshService
+name: test-server
+mesh: %s
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+`, meshName)
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(MeshUniversal(meshName)).
+				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
+				Install(DemoClientUniversal("dp-demo-client", meshName,
+					WithTransparentProxy(true)),
+				).
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP))).
+				Install(YamlUniversal(uniServiceYAML)).
+				Install(YamlUniversal(`
+type: HostnameGenerator
+name: uni-ms
+spec:
+  template: '{{ .DisplayName }}.universal.ms'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/env: universal`)).
+				Setup(universal.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterEachFailure(func() {
+			DebugUniversal(universal.Cluster, meshName)
+		})
+
+		E2EAfterAll(func() {
+			Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+			Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+		})
+
+		It("should mark host as unhealthy if it doesn't reply on health checks", func() {
+			// check that test-server is healthy
+			Eventually(func(g Gomega) {
+				stdout, _, err := client.CollectResponse(
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("response"))
+			}).Should(Succeed())
+
+			// update HealthCheck policy to check for another status code
+			Expect(YamlUniversal(healthCheck(meshName, "are-you-healthy", "500"))(universal.Cluster)).To(Succeed())
+
+			// wait cluster 'test-server' to be marked as unhealthy
+			Eventually(func(g Gomega) {
+				cmd := []string{"/bin/bash", "-c", "\"curl localhost:9901/clusters | grep test-server\""}
+				stdout, _, err := universal.Cluster.Exec("", "", "dp-demo-client", cmd...)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stdout).To(ContainSubstring("health_flags::/failed_active_hc"))
+			}, "30s", "500ms").Should(Succeed())
+
+			// check that test-server is unhealthy
+			Consistently(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}).Should(Succeed())
+		})
+	}, Ordered)
+
 	Describe("TCP", func() {
 		healthCheck := func(mesh, serviceName, send, recv string) string {
 			sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))

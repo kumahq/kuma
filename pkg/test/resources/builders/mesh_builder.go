@@ -112,6 +112,13 @@ func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
 	return m
 }
 
+func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Enabled) *MeshBuilder {
+	m.res.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
+		Enabled: enabled,
+	}
+	return m
+}
+
 func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuilder {
 	fn(m.res)
 	return m

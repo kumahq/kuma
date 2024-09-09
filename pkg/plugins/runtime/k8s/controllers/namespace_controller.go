@@ -122,6 +122,7 @@ func (r *NamespaceReconciler) deleteNetworkAttachmentDefinition(ctx context.Cont
 
 func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-namespace-controller").
 		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
 		Complete(r)
 }

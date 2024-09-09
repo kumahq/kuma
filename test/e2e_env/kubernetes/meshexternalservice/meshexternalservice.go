@@ -20,7 +20,7 @@ func MeshExternalServices() {
 	namespace := "mesh-external-services"
 	clientNamespace := "client-mesh-external-services"
 
-	egressMesh := func(disallowMesTraffic string) InstallFunc {
+	mesh := func(name, passthroughEnabled, disallowMesTraffic string) InstallFunc {
 		return YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -34,17 +34,17 @@ spec:
         type: builtin
   networking:
     outbound:
-      passthrough: false
+      passthrough: %s
   routing:
     zoneEgress: true
     defaultForbidMeshExternalServiceAccess: %s
-`, meshNameEgress, disallowMesTraffic))
+`, name, passthroughEnabled, disallowMesTraffic))
 	}
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshKubernetes(meshName)).
-			Install(egressMesh("true")).
+			Install(mesh(meshName, "true", "false")).
+			Install(mesh(meshNameEgress, "false", "true")).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -71,7 +71,7 @@ metadata:
   name: http-external-service
   namespace: %s
   labels:
-    kuma.io/mesh: mesh-external-services
+    kuma.io/mesh: %s
     hostname: "true"
 spec:
   match:
@@ -81,7 +81,7 @@ spec:
   endpoints:
     - address: external-service.mesh-external-services.svc.cluster.local
       port: 80
-`, Config.KumaNamespace)
+`, Config.KumaNamespace, meshName)
 
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
@@ -90,6 +90,13 @@ spec:
 			))
 			Expect(err).ToNot(HaveOccurred())
 		})
+
+		filter := fmt.Sprintf(
+			"cluster.%s_%s_%s.upstream_rq_total",
+			meshName,
+			"meshexternalservice_http-external-service",
+			Config.KumaNamespace,
+		)
 
 		It("should route to http external-service", func() {
 			// given working communication outside the mesh with passthrough enabled and no traffic permission
@@ -112,10 +119,17 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
+
+			// and flows through Egress
+			Eventually(func(g Gomega) {
+				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stat).To(stats.BeGreaterThanZero())
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 
-	Context("http non-TLS with egress", func() {
+	Context("http non-TLS with rbac switch", func() {
 		meshExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
@@ -164,7 +178,7 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 
 			// when allow all traffic
-			Expect(kubernetes.Cluster.Install(egressMesh("false"))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(mesh(meshNameEgress, "false", "false"))).To(Succeed())
 
 			// then traffic works
 			Eventually(func(g Gomega) {
@@ -192,7 +206,7 @@ metadata:
   name: tcp-external-service
   namespace: %s
   labels:
-    kuma.io/mesh: mesh-external-services
+    kuma.io/mesh: %s
     hostname: "true"
 spec:
   match:
@@ -202,8 +216,13 @@ spec:
   endpoints:
     - address: tcp-external-service.mesh-external-services.svc.cluster.local
       port: 80
-`, Config.KumaNamespace)
-
+`, Config.KumaNamespace, meshName)
+		filter := fmt.Sprintf(
+			"cluster.%s_%s_%s.upstream_rq_total",
+			meshName,
+			"meshexternalservice_tcp-external-service",
+			Config.KumaNamespace,
+		)
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithName("tcp-external-service"),
@@ -235,6 +254,13 @@ spec:
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
+
+			// and flows through Egress
+			Eventually(func(g Gomega) {
+				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stat).To(stats.BeGreaterThanZero())
+			}, "30s", "1s").Should(Succeed())
 		})
 	})
 
@@ -246,7 +272,7 @@ metadata:
   name: tls-external-service
   namespace: %s
   labels:
-    kuma.io/mesh: mesh-external-services
+    kuma.io/mesh: %s
     hostname: "true"
 spec:
   match:
@@ -260,8 +286,13 @@ spec:
     enabled: true
     verification:
       mode: SkipCA # test-server certificate is not signed by a CA that is in the system trust store
-`, Config.KumaNamespace)
-
+`, Config.KumaNamespace, meshName)
+		filter := fmt.Sprintf(
+			"cluster.%s_%s_%s.upstream_rq_total", // cx
+			meshName,
+			"meshexternalservice_tls-external-service",
+			Config.KumaNamespace,
+		)
 		BeforeAll(func() {
 			err := NewClusterSetup().
 				Install(testserver.Install(
@@ -282,6 +313,13 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
+			}, "30s", "1s").Should(Succeed())
+
+			// and flows through Egress
+			Eventually(func(g Gomega) {
+				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(stat).To(stats.BeGreaterThanZero())
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

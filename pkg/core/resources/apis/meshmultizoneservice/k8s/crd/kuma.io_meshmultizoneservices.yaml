@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.2
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -140,12 +140,7 @@ spec:
                             - Unknown
                             type: string
                           type:
-                            description: |-
-                              type of condition in CamelCase or in foo.example.com/CamelCase.
-                              ---
-                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                              useful (see .node.status.conditions), the ability to deconflict is important.
-                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -174,11 +169,20 @@ spec:
                 description: MeshServices is a list of matched MeshServices
                 items:
                   properties:
+                    mesh:
+                      type: string
                     name:
                       description: Name is a core name of MeshService
                       type: string
+                    namespace:
+                      type: string
+                    zone:
+                      type: string
                   required:
+                  - mesh
                   - name
+                  - namespace
+                  - zone
                   type: object
                 type: array
               vips:

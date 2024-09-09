@@ -13,7 +13,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
@@ -22,6 +25,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
@@ -29,11 +33,45 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 var _ = Describe("MeshCircuitBreaker", func() {
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
+	backendMeshExternalServiceIdentifier := func(mesh string) *core_model.TypedResourceIdentifier {
+		return &core_model.TypedResourceIdentifier{
+			ResourceIdentifier: core_model.ResourceIdentifier{
+				Name:      "external",
+				Mesh:      mesh,
+				Namespace: "",
+				Zone:      "",
+			},
+			ResourceType: "MeshExternalService",
+		}
+	}
+
+	getResource := func(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
+		resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
+		Expect(err).ToNot(HaveOccurred())
+		actual, err := util_proto.ToYAML(resources)
+		Expect(err).ToNot(HaveOccurred())
+
+		return actual
+	}
+
 	type sidecarTestCase struct {
 		resources       []*core_xds.Resource
 		toRules         core_rules.ToRules
@@ -95,9 +133,22 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						WithName("backend").
 						WithMesh("default").
 						WithAddress("127.0.0.1").
-						AddOutboundsToServices("other-service", "second-service").
 						WithInboundOfTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, "http"),
 				).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "other-service",
+						},
+					}},
+					{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
+						Port: builders.FirstOutboundPort + 1,
+						Tags: map[string]string{
+							mesh_proto.ServiceTag: "second-service",
+						},
+					}},
+				}).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshCircuitBreakerType, given.toRules, given.fromRules),
 				).
@@ -387,7 +438,132 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				"outbound_split_cluster_0_connection_limits_outlier_detection.golden.yaml",
 			},
 		}),
+		Entry("basic outbound cluster with connection limits targeting real MeshService", sidecarTestCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:           "outbound",
+					Origin:         generator.OriginOutbound,
+					Resource:       test_xds.ClusterWithName("backend"),
+					ResourceOrigin: &backendMeshServiceIdentifier,
+				},
+			},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(false),
+							},
+						},
+					},
+				},
+			},
+			expectedCluster: []string{"outbound_cluster_connection_limits_real_resource.golden.yaml"},
+		}),
 	)
+
+	It("should generate correct configuration for MeshExternalService with ZoneEgress", func() {
+		// given
+		rs := core_xds.NewResourceSet()
+		rs.Add(&core_xds.Resource{
+			Name:           "external-default",
+			Origin:         egress.OriginEgress,
+			Resource:       test_xds.ClusterWithName("external"),
+			ResourceOrigin: backendMeshExternalServiceIdentifier("default"),
+			Protocol:       core_mesh.ProtocolTCP,
+		})
+		rs.Add(&core_xds.Resource{
+			Name:           "external-mesh2",
+			Origin:         egress.OriginEgress,
+			Resource:       test_xds.ClusterWithName("external"),
+			ResourceOrigin: backendMeshExternalServiceIdentifier("mesh2"),
+			Protocol:       core_mesh.ProtocolTCP,
+		})
+
+		proxy := &core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+			ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+				ZoneEgressResource: &core_mesh.ZoneEgressResource{
+					Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "default"},
+					Spec: &mesh_proto.ZoneEgress{
+						Networking: &mesh_proto.ZoneEgress_Networking{
+							Address: "192.168.0.1",
+							Port:    10002,
+						},
+					},
+				},
+				ZoneIngresses: []*core_mesh.ZoneIngressResource{},
+				MeshResourcesList: []*core_xds.MeshResources{
+					{
+						Mesh: builders.Mesh().WithName("default").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
+						Resources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("default").Build(),
+								},
+							},
+						},
+						Dynamic: core_xds.ExternalServiceDynamicPolicies{
+							"external": {
+								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
+									ToRules: core_rules.ToRules{
+										ResourceRules: core_rules.ResourceRules{
+											*backendMeshExternalServiceIdentifier("default"): {
+												Conf: []interface{}{
+													api.Conf{
+														ConnectionLimits: genConnectionLimits(),
+														OutlierDetection: genOutlierDetection(false),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Mesh: builders.Mesh().WithName("mesh2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
+						Resources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh2").Build(),
+								},
+							},
+						},
+						Dynamic: core_xds.ExternalServiceDynamicPolicies{
+							"external": {
+								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
+									ToRules: core_rules.ToRules{
+										ResourceRules: core_rules.ResourceRules{
+											*backendMeshExternalServiceIdentifier("mesh2"): {
+												Conf: []interface{}{
+													api.Conf{
+														ConnectionLimits: genConnectionLimits(),
+														OutlierDetection: genOutlierDetection(true),
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		err := p.Apply(rs, xds_context.Context{}, proxy)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(getResource(rs, envoy_resource.ClusterType)).
+			To(matchers.MatchGoldenYAML(filepath.Join("testdata", "basic-meshexternalservice.egress_cluster.golden.yaml")))
+	})
 
 	type gatewayTestCase struct {
 		name  string
@@ -424,14 +600,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
-			getResourceYaml := func(list core_xds.ResourceList) []byte {
-				actualResource, err := util_proto.ToYAML(list[0].Resource)
-				Expect(err).ToNot(HaveOccurred())
-				return actualResource
-			}
-
 			// then
-			Expect(getResourceYaml(generatedResources.ListOf(envoy_resource.ClusterType))).
+			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{

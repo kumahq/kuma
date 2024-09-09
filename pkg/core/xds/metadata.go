@@ -19,19 +19,21 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 
 const (
 	// Supported Envoy node metadata fields.
-	FieldDataplaneAdminPort         = "dataplane.admin.port"
-	FieldDataplaneAdminAddress      = "dataplane.admin.address"
-	FieldDataplaneDNSPort           = "dataplane.dns.port"
-	FieldDataplaneDataplaneResource = "dataplane.resource"
-	FieldDynamicMetadata            = "dynamicMetadata"
-	FieldDataplaneProxyType         = "dataplane.proxyType"
-	FieldVersion                    = "version"
-	FieldPrefixDependenciesVersion  = "version.dependencies"
-	FieldFeatures                   = "features"
-	FieldWorkdir                    = "workdir"
-	FieldMetricsCertPath            = "metricsCertPath"
-	FieldMetricsKeyPath             = "metricsKeyPath"
-	FieldSystemCaPath               = "systemCaPath"
+	FieldDataplaneAdminPort            = "dataplane.admin.port"
+	FieldDataplaneAdminAddress         = "dataplane.admin.address"
+	FieldDataplaneReadinessPort        = "dataplane.readinessReporter.port"
+	FieldDataplaneAppProbeProxyEnabled = "dataplane.appProbeProxy.enabled"
+	FieldDataplaneDNSPort              = "dataplane.dns.port"
+	FieldDataplaneDataplaneResource    = "dataplane.resource"
+	FieldDynamicMetadata               = "dynamicMetadata"
+	FieldDataplaneProxyType            = "dataplane.proxyType"
+	FieldVersion                       = "version"
+	FieldPrefixDependenciesVersion     = "version.dependencies"
+	FieldFeatures                      = "features"
+	FieldWorkdir                       = "workdir"
+	FieldMetricsCertPath               = "metricsCertPath"
+	FieldMetricsKeyPath                = "metricsKeyPath"
+	FieldSystemCaPath                  = "systemCaPath"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -49,18 +51,20 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	Resource        model.Resource
-	AdminPort       uint32
-	AdminAddress    string
-	DNSPort         uint32
-	DynamicMetadata map[string]string
-	ProxyType       mesh_proto.ProxyType
-	Version         *mesh_proto.Version
-	Features        Features
-	WorkDir         string
-	MetricsCertPath string
-	MetricsKeyPath  string
-	SystemCaPath    string
+	Resource             model.Resource
+	AdminPort            uint32
+	AdminAddress         string
+	ReadinessPort        uint32
+	AppProbeProxyEnabled bool
+	DNSPort              uint32
+	DynamicMetadata      map[string]string
+	ProxyType            mesh_proto.ProxyType
+	Version              *mesh_proto.Version
+	Features             Features
+	WorkDir              string
+	MetricsCertPath      string
+	MetricsKeyPath       string
+	SystemCaPath         string
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -113,6 +117,20 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
+func (m *DataplaneMetadata) GetReadinessPort() uint32 {
+	if m == nil {
+		return 0
+	}
+	return m.ReadinessPort
+}
+
+func (m *DataplaneMetadata) GetAppProbeProxyEnabled() bool {
+	if m == nil {
+		return false
+	}
+	return m.AppProbeProxyEnabled
+}
+
 func (m *DataplaneMetadata) GetAdminAddress() string {
 	if m == nil {
 		return ""
@@ -154,6 +172,8 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, FieldDataplaneAdminPort)
 	metadata.AdminAddress = xdsMetadata.Fields[FieldDataplaneAdminAddress].GetStringValue()
+	metadata.ReadinessPort = uint32Metadata(xdsMetadata, FieldDataplaneReadinessPort)
+	metadata.AppProbeProxyEnabled = boolMetadata(xdsMetadata, FieldDataplaneAppProbeProxyEnabled)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, FieldDataplaneDNSPort)
 	if value := xdsMetadata.Fields[FieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.YAML.UnmarshalCore([]byte(value.GetStringValue()))
@@ -231,4 +251,12 @@ func uint32Metadata(xdsMetadata *structpb.Struct, field string) uint32 {
 		return 0
 	}
 	return uint32(port)
+}
+
+func boolMetadata(xdsMetadata *structpb.Struct, field string) bool {
+	value := xdsMetadata.Fields[field]
+	if value == nil {
+		return false
+	}
+	return value.GetStringValue() == "true"
 }

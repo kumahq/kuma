@@ -27,6 +27,24 @@ func TestPlugin() {
 		return net.JoinHostPort(ip, strconv.Itoa(port))
 	}
 
+	uniServiceYAML := fmt.Sprintf(`
+type: MeshService
+name: test-server
+mesh: %s
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+    name: main-port
+`, meshName)
+
 	BeforeAll(func() {
 		externalServiceDockerName = fmt.Sprintf("%s_%s-%s", universal.Cluster.Name(), meshName, "test-server")
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, AppModeTcpSink)
@@ -35,6 +53,17 @@ func TestPlugin() {
 			Install(TestServerUniversal(
 				"test-server", meshName, WithArgs([]string{"echo", "--instance", "echo-v1"}), WithDockerContainerName(externalServiceDockerName)),
 			).
+			Install(YamlUniversal(uniServiceYAML)).
+			Install(YamlUniversal(`
+type: HostnameGenerator
+name: uni-ms
+spec:
+  template: '{{ .DisplayName }}.universal.ms'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/env: universal`)).
 			Install(GatewayProxyUniversal(meshName, "edge-gateway")).
 			Install(YamlUniversal(gateway.MkGateway("edge-gateway", meshName, "edge-gateway", false, "example.kuma.io", "test-server", 8080))).
 			Install(gateway.GatewayClientAppUniversal("gateway-client")).
@@ -122,6 +151,40 @@ spec:
 		makeRequest := func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}
+		src, dst := expectTrafficLogged(makeRequest)
+
+		Expect(src).To(Equal(AppModeDemoClient))
+		Expect(dst).To(Equal("test-server"))
+	})
+
+	It("should log outgoing traffic to real MeshService", func() {
+		yaml := fmt.Sprintf(`
+type: MeshAccessLog
+name: client-outgoing-real-ms
+mesh: meshaccesslog
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+        sectionName: main-port
+      default:
+        backends:
+          - type: Tcp
+            tcp:
+              format:
+                type: Plain
+                plain: '%s'
+              address: "%s:9999"
+`, trafficLogFormat, tcpSinkDockerName)
+		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
+
+		makeRequest := func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, AppModeDemoClient, "test-server.universal.ms",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}

@@ -8,13 +8,13 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var (
 	allMatchProtocols    = []string{string(TcpProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
-	allTlsVersions       = []string{string(TLSVersionAuto), string(TLSVersion10), string(TLSVersion11), string(TLSVersion12), string(TLSVersion13)}
 	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )
@@ -49,7 +49,7 @@ func validateTls(tls *Tls) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if tls.Version != nil {
-		verr.AddError(validators.RootedAt("version").String(), validateVersion(tls.Version))
+		verr.AddError(validators.RootedAt("version").String(), common_tls.ValidateVersion(tls.Version))
 	}
 
 	if tls.Verification != nil {
@@ -74,33 +74,6 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ClientCert == nil && tls.Verification.ClientKey != nil {
 			verr.AddViolation(path.Field("clientCert").String(), validators.MustBeDefined+" when clientKey is defined")
 		}
-	}
-
-	return verr
-}
-
-func validateVersion(version *Version) validators.ValidationError {
-	var verr validators.ValidationError
-	path := validators.Root()
-	specificMin := false
-	specificMax := false
-	if version.Min != nil {
-		if !slices.Contains(allTlsVersions, string(*version.Min)) {
-			verr.AddErrorAt(path.Field("min"), validators.MakeFieldMustBeOneOfErr("min", allTlsVersions...))
-		} else if *version.Min != TLSVersionAuto {
-			specificMin = true
-		}
-	}
-	if version.Max != nil {
-		if !slices.Contains(allTlsVersions, string(*version.Max)) {
-			verr.AddErrorAt(path.Field("max"), validators.MakeFieldMustBeOneOfErr("max", allTlsVersions...))
-		} else if *version.Max != TLSVersionAuto {
-			specificMax = true
-		}
-	}
-
-	if specificMin && specificMax && tlsVersionOrder[*version.Min] > tlsVersionOrder[*version.Max] {
-		verr.AddViolationAt(path.Field("min"), "min version must be lower than max")
 	}
 
 	return verr

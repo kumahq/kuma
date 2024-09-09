@@ -26,7 +26,7 @@ func MeshTrace() *MeshTraceBuilder {
 }
 
 func (m *MeshTraceBuilder) WithTargetRef(targetRef common_api.TargetRef) *MeshTraceBuilder {
-	m.res.Spec.TargetRef = targetRef
+	m.res.Spec.TargetRef = &targetRef
 	return m
 }
 

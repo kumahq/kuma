@@ -41,7 +41,7 @@ func MeshHTTPRoute(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
 metadata:
-  name: external-service-mhr
+  name: external-service-mhr-delegated
 mesh: %s
 spec:
   tags:
@@ -56,7 +56,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-  name: mhr
+  name: mhr-delegated
   namespace: %s
   labels:
     kuma.io/mesh: %[2]s

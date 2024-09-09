@@ -12,6 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/user"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -19,14 +20,13 @@ import (
 )
 
 type ZoneAvailableServicesTracker struct {
-	logger                   logr.Logger
-	metric                   prometheus.Summary
-	resManager               manager.ResourceManager
-	meshCache                *mesh.Cache
-	interval                 time.Duration
-	ingressTagFilters        []string
-	zone                     string
-	disableAvailableServices bool
+	logger            logr.Logger
+	metric            prometheus.Summary
+	resManager        manager.ResourceManager
+	meshCache         *mesh.Cache
+	interval          time.Duration
+	ingressTagFilters []string
+	zone              string
 }
 
 func NewZoneAvailableServicesTracker(
@@ -37,7 +37,6 @@ func NewZoneAvailableServicesTracker(
 	interval time.Duration,
 	ingressTagFilters []string,
 	zone string,
-	disableAvailableServices bool,
 ) (*ZoneAvailableServicesTracker, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_zone_available_services",
@@ -48,14 +47,13 @@ func NewZoneAvailableServicesTracker(
 		return nil, err
 	}
 	return &ZoneAvailableServicesTracker{
-		logger:                   logger,
-		metric:                   metric,
-		resManager:               resManager,
-		meshCache:                meshCache,
-		interval:                 interval,
-		ingressTagFilters:        ingressTagFilters,
-		zone:                     zone,
-		disableAvailableServices: disableAvailableServices,
+		logger:            logger,
+		metric:            metric,
+		resManager:        resManager,
+		meshCache:         meshCache,
+		interval:          interval,
+		ingressTagFilters: ingressTagFilters,
+		zone:              zone,
 	}, nil
 }
 
@@ -101,7 +99,7 @@ func (t *ZoneAvailableServicesTracker) getIngressExternalServices(
 	var externalServices []*core_mesh.ExternalServiceResource
 
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		if !mesh.ZoneEgressEnabled() {
+		if !mesh.ZoneEgressEnabled() || mesh.Spec.MeshServicesEnabled() == mesh_proto.Mesh_MeshServices_Exclusive {
 			continue
 		}
 
@@ -124,18 +122,23 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 	}
 
 	var availableServices []*mesh_proto.ZoneIngress_AvailableService
-	if !t.disableAvailableServices {
-		aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
-		if err != nil {
-			return err
-		}
-		availableServices = ingress.GetAvailableServices(
-			aggregatedMeshCtxs.AllDataplanes(),
-			aggregatedMeshCtxs.AllMeshGateways(),
-			t.getIngressExternalServices(aggregatedMeshCtxs),
-			t.ingressTagFilters,
-		)
+	aggregatedMeshCtxs, err := xds_context.AggregateMeshContexts(ctx, t.resManager, t.meshCache.GetMeshContext)
+	if err != nil {
+		return err
 	}
+	skipAvailableServices := map[xds.MeshName]struct{}{}
+	for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
+		if meshCtx.Resource.Spec.MeshServicesEnabled() == mesh_proto.Mesh_MeshServices_Exclusive {
+			skipAvailableServices[mesh] = struct{}{}
+		}
+	}
+	availableServices = ingress.GetAvailableServices(
+		skipAvailableServices,
+		aggregatedMeshCtxs.AllDataplanes(),
+		aggregatedMeshCtxs.AllMeshGateways(),
+		t.getIngressExternalServices(aggregatedMeshCtxs),
+		t.ingressTagFilters,
+	)
 
 	var names []string
 	for _, zi := range zis.Items {

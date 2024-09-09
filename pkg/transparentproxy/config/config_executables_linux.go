@@ -11,18 +11,10 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/sys/unix"
 
-	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
-func mount(src string, dest string, flags uintptr) error {
-	if err := unix.Mount(src, dest, "", flags, ""); err != nil {
-		return errors.Wrapf(err, "failed to mount %s to %s", src, dest)
-	}
-
-	return nil
-}
-
-func setupSandbox(netns ns.NetNS, needLock bool) error {
+func (c InitializedExecutable) setupSandbox(netns ns.NetNS) error {
 	// Unshare the current process's mount namespace to isolate it from other processes
 	if err := unix.Unshare(unix.CLONE_NEWNS); err != nil {
 		return errors.Wrap(err, "failed to unshare mount namespace")
@@ -39,13 +31,10 @@ func setupSandbox(netns ns.NetNS, needLock bool) error {
 		return errors.Wrap(err, "failed to remount root filesystem as private")
 	}
 
-	if needLock {
+	if c.NeedLock() && c.version.LessThan(consts.IptablesVersionWithLockfileEnv) {
 		// The abbility to change the xtables lock path using the XTABLES_LOCKFILE
-		// environment variable was introduced in iptables-legacy version 1.8.6.
-		// However, it is safe to mount /run/xtables.lock even when XTABLES_LOCKFILE
-		// is set, as the path specified by XTABLES_LOCKFILE will take precedence
-		// over /run/xtables.lock
-		if err := mount(netns.Path(), PathLegacyXtablesLock, unix.MS_BIND|unix.MS_RDONLY); err != nil {
+		// environment variable was introduced in iptables-legacy version 1.8.6
+		if err := mount(netns.Path(), consts.PathLegacyXtablesLock, unix.MS_BIND|unix.MS_RDONLY); err != nil {
 			return err
 		}
 	}
@@ -54,7 +43,7 @@ func setupSandbox(netns ns.NetNS, needLock bool) error {
 	// in the partially initialized network namespace. This prevents issues with iptables
 	// which might use the `xt_owner` module that can trigger the `passwd` service lookup
 	// More info: https://github.com/kumahq/kuma/issues/11038
-	if err := mount(PathDevNull, PathNSSwitchConf, unix.MS_BIND|unix.MS_RDONLY); err != nil {
+	if err := mount(consts.PathDevNull, consts.PathNSSwitchConf, unix.MS_BIND|unix.MS_RDONLY); err != nil {
 		return err
 	}
 
@@ -64,7 +53,7 @@ func setupSandbox(netns ns.NetNS, needLock bool) error {
 // runInSandbox sets up a lightweight sandbox ("container") to create an appropriate environment
 // for running iptables commands. This is particularly useful in CNI, where commands are executed
 // from the host but within the container's network namespace
-func runInSandbox(l Logger, needLock bool, c *exec.Cmd) error {
+func (c InitializedExecutable) runInSandbox(cmd *exec.Cmd) error {
 	var executed bool
 	chErr := make(chan error, 1)
 
@@ -73,14 +62,12 @@ func runInSandbox(l Logger, needLock bool, c *exec.Cmd) error {
 		return errors.Wrap(nerr, "failed to get current network namespace")
 	}
 
-	if needLock {
-		// The ability to change the xtables lock path using the XTABLES_LOCKFILE environment
-		// variable was introduced in iptables-legacy version 1.8.6. However, it is safe to
-		// set this environment variable without checking the version, as earlier versions
-		// will simply ignore it
-		c.Env = append(
-			c.Env,
-			fmt.Sprintf("%s=%s", EnvVarXtablesLockfile, n.Path()),
+	// The ability to change the xtables lock path using the XTABLES_LOCKFILE environment
+	// variable was introduced in iptables-legacy version 1.8.6
+	if c.NeedLock() && c.version.AtLeast(consts.IptablesVersionWithLockfileEnv) {
+		cmd.Env = append(
+			cmd.Env,
+			fmt.Sprintf("%s=%s", consts.EnvVarXtablesLockfile, n.Path()),
 		)
 	}
 
@@ -95,7 +82,7 @@ func runInSandbox(l Logger, needLock bool, c *exec.Cmd) error {
 			// Note: Do not call UnlockOSThread!
 			runtime.LockOSThread()
 
-			if err := setupSandbox(n, needLock); err != nil {
+			if err := c.setupSandbox(n); err != nil {
 				return err
 			}
 
@@ -104,7 +91,7 @@ func runInSandbox(l Logger, needLock bool, c *exec.Cmd) error {
 			executed = true
 
 			// Execute the provided function within the sandbox
-			return c.Run()
+			return cmd.Run()
 		}()
 	}()
 
@@ -113,38 +100,43 @@ func runInSandbox(l Logger, needLock bool, c *exec.Cmd) error {
 	if err != nil && !executed {
 		// If setting up the environment fails, continue in a best-effort approach
 		// to handle environments with restrictive access controls
-		l.Warnf("failed to set up the sandbox environment. This may be due to restrictive access controls (e.g., SELinux). Attempting to continue without the sandbox: %v", err)
+		c.logger.Warnf("failed to set up the sandbox environment. This may be due to restrictive access controls (e.g., SELinux). Attempting to continue without the sandbox: %v", err)
 
-		return c.Run()
+		return cmd.Run()
 	}
 
 	return err
 }
 
-func execCmd(
+func (c InitializedExecutable) Exec(
 	ctx context.Context,
-	l Logger,
-	cniMode bool,
-	needLock bool,
-	path string,
 	args ...string,
 ) (*bytes.Buffer, *bytes.Buffer, error) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	// #nosec G204
-	cmd := exec.CommandContext(ctx, path, args...)
+	cmd := exec.CommandContext(ctx, c.Path, append(c.args, args...)...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	run := func(c *exec.Cmd) error { return c.Run() }
-
-	if cniMode {
-		run = func(c *exec.Cmd) error { return runInSandbox(l, needLock, c) }
+	var err error
+	if c.cniMode {
+		err = c.runInSandbox(cmd)
+	} else {
+		err = cmd.Run()
 	}
 
-	if err := run(cmd); err != nil {
+	if err != nil {
 		return nil, nil, handleRunError(err, &stderr)
 	}
 
 	return &stdout, &stderr, nil
+}
+
+func mount(src string, dest string, flags uintptr) error {
+	if err := unix.Mount(src, dest, "", flags, ""); err != nil {
+		return errors.Wrapf(err, "failed to mount %s to %s", src, dest)
+	}
+
+	return nil
 }
