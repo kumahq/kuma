@@ -106,44 +106,35 @@ type ServiceInformation struct {
 
 type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
-func (mc *MeshContext) ResolveOutbound(outbound *xds_types.Outbound, labels map[string]string) *xds_types.Outbound {
+func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *core_model.ResourceIdentifier {
 	if len(labels) == 0 {
-		return outbound
-	}
-	tris := mc.resolveResourceIdentifiersForLabels(string(outbound.Resource.ResourceType), labels)
-	switch len(tris) {
-	case 0:
 		return nil
-	case 1:
-		newOutbound := *outbound
-		newOutbound.Resource = &tris[0]
-		return &newOutbound
-	default:
-		var oldestCreationTime *time.Time
-		var oldestTri *core_model.TypedResourceIdentifier
-		for _, tri := range tris {
-			var resource core_model.Resource
-			var found bool
-			switch tri.ResourceType {
-			case meshexternalservice_api.MeshExternalServiceType:
-				resource, found = mc.MeshExternalServiceByIdentifier[tri.ResourceIdentifier]
-			case meshservice_api.MeshServiceType:
-				resource, found = mc.MeshServiceByIdentifier[tri.ResourceIdentifier]
-			case meshmzservice_api.MeshMultiZoneServiceType:
-				resource, found = mc.MeshMultiZoneServiceByIdentifier[tri.ResourceIdentifier]
-			}
-			if found {
-				resCreationTime := resource.GetMeta().GetCreationTime()
-				if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
-					oldestCreationTime = &resCreationTime
-					oldestTri = &tri
-				}
+	}
+	var oldestCreationTime *time.Time
+	var oldestTri *core_model.TypedResourceIdentifier
+	for _, tri := range mc.resolveResourceIdentifiersForLabels(string(resType), labels) {
+		var resource core_model.Resource
+		var found bool
+		switch tri.ResourceType {
+		case meshexternalservice_api.MeshExternalServiceType:
+			resource, found = mc.MeshExternalServiceByIdentifier[tri.ResourceIdentifier]
+		case meshservice_api.MeshServiceType:
+			resource, found = mc.MeshServiceByIdentifier[tri.ResourceIdentifier]
+		case meshmzservice_api.MeshMultiZoneServiceType:
+			resource, found = mc.MeshMultiZoneServiceByIdentifier[tri.ResourceIdentifier]
+		}
+		if found {
+			resCreationTime := resource.GetMeta().GetCreationTime()
+			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
+				oldestCreationTime = &resCreationTime
+				oldestTri = &tri
 			}
 		}
-		newOutbound := *outbound
-		newOutbound.Resource = oldestTri
-		return &newOutbound
 	}
+	if oldestTri != nil {
+		return &oldestTri.ResourceIdentifier
+	}
+	return nil
 }
 
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {

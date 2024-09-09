@@ -233,26 +233,36 @@ func (d *DataplaneResource) Hash() []byte {
 	return hasher.Sum(nil)
 }
 
-func (d *DataplaneResource) AsOutbounds() xds_types.Outbounds {
+type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) *core_model.ResourceIdentifier
+
+func (d *DataplaneResource) AsOutbounds(resolver LabelResourceIdentifierResolver) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range d.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
-			outbounds = append(outbounds, &xds_types.Outbound{
+			outbound := &xds_types.Outbound{
 				Address: o.Address,
 				Port:    o.Port,
 				Resource: &core_model.TypedResourceIdentifier{
 					ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
 						d.GetMeta(),
 						common_api.TargetRef{
-							Kind:        common_api.MeshService,
-							Name:        o.BackendRef.Name,
-							SectionName: fmt.Sprintf("%d", o.BackendRef.Port),
+							Kind: common_api.TargetRefKind(o.BackendRef.Kind),
+							Name: o.BackendRef.Name,
 							// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
 						}),
-					ResourceType: core_model.ResourceType(common_api.MeshService),
+					ResourceType: core_model.ResourceType(o.BackendRef.Kind),
 				},
-				// Labels: o.BackendRef.Labels todo(jakubdyszkiewicz)
-			})
+			}
+			labels := map[string]string{} // todo o.BackendRef.Labels todo(jakubdyszkiewicz)
+			if len(labels) > 0 {
+				resIdentifier := resolver(core_model.ResourceType(o.BackendRef.Kind), labels)
+				if resIdentifier == nil {
+					continue
+				}
+				outbound.Resource.ResourceIdentifier = *resIdentifier
+			}
+			outbound.Resource.SectionName = fmt.Sprintf("%d", o.BackendRef.Port)
+			outbounds = append(outbounds, outbound)
 		} else {
 			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
 		}

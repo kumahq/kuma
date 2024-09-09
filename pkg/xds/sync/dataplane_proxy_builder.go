@@ -110,17 +110,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 
 func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.MeshContext, dataplane *core_mesh.DataplaneResource) []*xds_types.Outbound {
 	if dataplane.Spec.Networking.GetTransparentProxying() == nil {
-		var resolvedOutbounds xds_types.Outbounds
-		for _, outbound := range dataplane.AsOutbounds() {
-			resolved, err := meshContext.ResolveOutbound(outbound)
-			if err != nil {
-				continue
-			}
-			if resolved != nil {
-				resolvedOutbounds = append(resolvedOutbounds, resolved)
-			}
-		}
-		return resolvedOutbounds
+		return dataplane.AsOutbounds(meshContext.ResolveResourceIdentifier)
 	}
 	reachableServices := map[string]bool{}
 	for _, reachableService := range dataplane.Spec.Networking.TransparentProxying.ReachableServices {
