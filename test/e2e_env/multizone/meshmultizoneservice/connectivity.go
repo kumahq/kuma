@@ -49,28 +49,6 @@ spec:
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		kubeServiceYAML := `
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: mzmsconnectivity
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: mzmsconnectivity
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: mzmsconnectivity
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -78,7 +56,6 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 
