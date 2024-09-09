@@ -10,7 +10,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - eds-cluster{mesh=mesh-1}
+        - external{mesh=mesh-1}
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -21,47 +21,25 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
-            name: inbound:eds-cluster
+            name: inbound:external
             requestHeadersToRemove:
             - x-kuma-tags
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: eds-cluster
+              name: external
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: eds-cluster
-                  timeout: 0s
-          statPrefix: "127_0_0_1_10002"
-    - filterChainMatch:
-        serverNames:
-        - static-cluster{mesh=mesh-2}
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          routeConfig:
-            name: inbound:static-cluster
-            requestHeadersToRemove:
-            - x-kuma-tags
-            validateClusters: false
-            virtualHosts:
-            - domains:
-              - '*'
-              name: static-cluster
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: static-cluster
+                  cluster: external
+                  hashPolicy:
+                  - queryParameter:
+                      name: queryparam
+                    terminal: true
+                  - connectionProperties:
+                      sourceIp: true
                   timeout: 0s
           statPrefix: "127_0_0_1_10002"
     name: inbound:127.0.0.1:10002
