@@ -256,6 +256,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
 			metadata.KumaMeshLabel:         mesh,
+			mesh_proto.DisplayName:         name,
 			mesh_proto.ManagedByLabel:      managedByValue,
 			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
