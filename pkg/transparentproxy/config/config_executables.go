@@ -586,6 +586,7 @@ func getPathsToSearchForExecutable(
 func findPath(path string) string {
 	found, err := exec.LookPath(path)
 	switch {
+<<<<<<< HEAD
 	case err == nil:
 		return found
 	case errors.Is(err, exec.ErrDot):
@@ -601,6 +602,31 @@ func findPath(path string) string {
 	}
 
 	return ""
+=======
+	case err != nil && isVersionMissing(err.Error()):
+		return Version{Mode: consts.IptablesModeLegacy}, nil
+	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
+		return Version{Mode: consts.IptablesModeLegacy}, nil
+	case err != nil:
+		return Version{}, formatIptablesVersionError(err.Error())
+	}
+
+	matched := consts.IptablesModeRegex.FindStringSubmatch(stdout.String())
+	if len(matched) < 2 {
+		return Version{}, errors.Wrap(formatIptablesVersionError(stdout.String()), "unable to parse iptables version")
+	}
+
+	version, err := k8s_version.ParseGeneric(matched[1])
+	if err != nil {
+		return Version{}, errors.Wrapf(formatIptablesVersionError(err.Error()), "invalid iptables version string: '%s'", matched[1])
+	}
+
+	if len(matched) < 3 {
+		return Version{Version: *version, Mode: consts.IptablesModeLegacy}, nil
+	}
+
+	return Version{Version: *version, Mode: consts.IptablesModeMap[matched[2]]}, nil
+>>>>>>> 23ecef9db (chore(deps): bump golangci-lint to v1.60.3 (#11362))
 }
 
 // joinNonEmptyWithHyphen joins a slice of strings with hyphens (-) as
@@ -695,5 +721,21 @@ func configureIPv6OutboundAddress() error {
 		)
 	}
 
+<<<<<<< HEAD
 	return nil
+=======
+	return result
+}
+
+func formatIptablesVersionError(msg string) error {
+	msgWithoutNewLines := strings.ReplaceAll(msg, "\n", " ")
+	msgWithoutDuplicatedSpaces := strings.ReplaceAll(msgWithoutNewLines, "  ", " ")
+	msgWithoutDotSuffix := strings.TrimRight(msgWithoutDuplicatedSpaces, ".")
+
+	if len(msgWithoutDotSuffix) > 500 {
+		msgWithoutDotSuffix = fmt.Sprintf("%.500s...", msgWithoutDotSuffix)
+	}
+
+	return errors.New(msgWithoutDotSuffix)
+>>>>>>> 23ecef9db (chore(deps): bump golangci-lint to v1.60.3 (#11362))
 }
