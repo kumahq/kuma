@@ -36,8 +36,10 @@ func GenerateCDS(
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
 			envoy_tags.Without(mesh_proto.ServiceTag),
 		)
-
 		clusterName := envoy_names.GetMeshClusterName(meshName, service)
+		if clusters.BackendRef().LegacyBackendRef != nil && clusters.BackendRef().LegacyBackendRef.ReferencesRealObject() {
+			clusterName = service
+		}
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 			Configure(envoy_clusters.EdsCluster()).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
@@ -66,9 +68,12 @@ func GenerateEDS(
 	var resources []*core_xds.Resource
 
 	for _, service := range services.Sorted() {
+		clusters := services[service]
 		endpoints := endpointMap[service]
-
 		clusterName := envoy_names.GetMeshClusterName(meshName, service)
+		if clusters.BackendRef().LegacyBackendRef != nil && clusters.BackendRef().LegacyBackendRef.ReferencesRealObject() {
+			clusterName = service
+		}
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
 		if err != nil {
 			return nil, err

@@ -1717,7 +1717,7 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 							},
 						},
-						"example": []core_xds.Endpoint{
+						"default_example___mextsvc_443": []core_xds.Endpoint{
 							{
 								Target: "192.168.1.1",
 								Port:   10000,

@@ -15,7 +15,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -58,7 +57,7 @@ func GenerateClusters(
 					edsClusterBuilder.
 						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
 					if isMeshExternalService(endpoints) {
-						edsClusterBuilder.WithName(envoy_names.GetMeshExternalServiceName(serviceName))
+						edsClusterBuilder.WithName(serviceName)
 						edsClusterBuilder.Configure(
 							envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, proxy.Metadata.SystemCaPath, true),
 						)

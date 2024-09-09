@@ -659,7 +659,6 @@ func createMeshExternalServiceEndpoint(
 		tags = map[string]string{}
 	}
 	meshName := mesh.GetMeta().GetName()
-	name := mes.Meta.GetName()
 	tls := mes.Spec.Tls
 	if tls != nil && tls.Enabled {
 		var caCert, clientCert, clientKey []byte
@@ -753,7 +752,7 @@ func createMeshExternalServiceEndpoint(
 				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 			}
 		}
-		outbounds[name] = append(outbounds[name], *outboundEndpoint)
+		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
 	}
 	return nil
 }
