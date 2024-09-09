@@ -293,6 +293,9 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	endpoints := policies_xds.GatherEgressEndpoints(rs)
 	clusters := policies_xds.GatherClusters(rs)
 	listeners := policies_xds.GatherListeners(rs)
+	if listeners.Egress == nil {
+		return nil
+	}
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		for serviceName, dynamic := range meshResources.Dynamic {
 			meshName := meshResources.Mesh.GetMeta().GetName()
@@ -340,9 +343,6 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 							}
 						}
 					}
-				}
-				if listeners.Egress == nil {
-					continue
 				}
 				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), mesID.Name, mesID.Mesh)
 				if err != nil {

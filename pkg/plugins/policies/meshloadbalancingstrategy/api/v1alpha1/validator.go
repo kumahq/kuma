@@ -17,7 +17,8 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
+	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
 	return verr.OrNil()
 }
 
