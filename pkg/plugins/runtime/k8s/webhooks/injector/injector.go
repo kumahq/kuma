@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -520,154 +521,210 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 }
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
-	annotations := map[string]string{
+	portOutbound := i.cfg.SidecarContainer.RedirectPortOutbound
+	portInbound := i.cfg.SidecarContainer.RedirectPortInbound
+
+	result := map[string]string{
 		metadata.KumaMeshAnnotation:                            mesh, // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
-		metadata.KumaSidecarUID:                                fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
+		metadata.KumaSidecarInjectedAnnotation:                 metadata.AnnotationTrue,
 		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
-		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+		metadata.KumaSidecarUID:                                fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", portOutbound),
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", portInbound),
 	}
+
 	if i.cfg.CNIEnabled {
-		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
+		result[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-	podAnnotations := metadata.Annotations(pod.Annotations)
+	annotations := metadata.Annotations(pod.Annotations)
 
-	if val, ok, _ := podAnnotations.GetEnabled(
+	if v, exists, _ := annotations.GetEnabled(
 		metadata.KumaTransparentProxyingAnnotation,
-	); ok && !val {
+	); exists && !v {
 		logger.Info(fmt.Sprintf(
-			"WARNING: cannot change the value of annotation %s as the transparent proxy must be enabled in Kubernetes",
+			"[WARNING]: cannot change the value of annotation %s as the transparent proxy must be enabled in Kubernetes",
 			metadata.KumaTransparentProxyingAnnotation,
 		))
 	}
 
-	if val, ok, _ := podAnnotations.GetUint32(
+	if v, exists, _ := annotations.GetUint32(
 		metadata.KumaTransparentProxyingInboundPortAnnotation,
-	); ok && val != i.cfg.SidecarContainer.RedirectPortInbound {
+	); exists && v != portInbound {
 		logger.Info(fmt.Sprintf(
-			"WARNING: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
+			"[WARNING]: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
 			metadata.KumaTransparentProxyingInboundPortAnnotation,
 		))
 	}
 
-	if val, ok, _ := podAnnotations.GetUint32(
+	if v, exists, _ := annotations.GetUint32(
 		metadata.KumaTransparentProxyingOutboundPortAnnotation,
-	); ok && val != i.cfg.SidecarContainer.RedirectPortOutbound {
+	); exists && v != portOutbound {
 		logger.Info(fmt.Sprintf(
-			"WARNING: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
+			"[WARNING]: cannot change the value of annotation %s on a per pod basis. The global setting will be used",
 			metadata.KumaTransparentProxyingOutboundPortAnnotation,
 		))
 	}
 
-	ebpfEnabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.EBPF.Enabled, metadata.KumaTransparentProxyingEbpf)
-	if err != nil {
+	if ebpfEnabled, _, err := annotations.GetEnabledWithDefault(
+		i.cfg.EBPF.Enabled,
+		metadata.KumaTransparentProxyingEbpf,
+	); err != nil {
 		return nil, errors.Wrapf(err, "getting %s annotation failed", metadata.KumaTransparentProxyingEbpf)
-	}
-	annotations[metadata.KumaTransparentProxyingEbpf] = metadata.BoolToEnabled(ebpfEnabled)
+	} else if ebpfEnabled {
+		result[metadata.KumaTransparentProxyingEbpf] = metadata.AnnotationEnabled
 
-	if ebpfEnabled {
-		podAnnotations.GetString()
-
-		bpffsPath, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.BPFFSPath, metadata.KumaTransparentProxyingEbpfBPFFSPath)
-		if bpffsPath != "" {
-			annotations[metadata.KumaTransparentProxyingEbpfBPFFSPath] = bpffsPath
+		if v, _ := annotations.GetStringWithDefault(
+			i.cfg.EBPF.BPFFSPath,
+			metadata.KumaTransparentProxyingEbpfBPFFSPath,
+		); v != "" {
+			result[metadata.KumaTransparentProxyingEbpfBPFFSPath] = v
 		}
 
-		cgroupPath, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.CgroupPath, metadata.KumaTransparentProxyingEbpfCgroupPath)
-		if cgroupPath != "" {
-			annotations[metadata.KumaTransparentProxyingEbpfCgroupPath] = cgroupPath
+		if v, _ := annotations.GetStringWithDefault(
+			i.cfg.EBPF.CgroupPath,
+			metadata.KumaTransparentProxyingEbpfCgroupPath,
+		); v != "" {
+			result[metadata.KumaTransparentProxyingEbpfCgroupPath] = v
 		}
 
-		tcAttachIface, _ := podAnnotations.GetStringWithDefault(i.cfg.EBPF.TCAttachIface, metadata.KumaTransparentProxyingEbpfTCAttachIface)
-		if tcAttachIface != "" {
-			annotations[metadata.KumaTransparentProxyingEbpfTCAttachIface] = tcAttachIface
+		if v, _ := annotations.GetStringWithDefault(
+			i.cfg.EBPF.TCAttachIface,
+			metadata.KumaTransparentProxyingEbpfTCAttachIface,
+		); v != "" {
+			result[metadata.KumaTransparentProxyingEbpfTCAttachIface] = v
 		}
 
-		annotations[metadata.KumaTransparentProxyingEbpfProgramsSourcePath], _ = podAnnotations.GetStringWithDefault(i.cfg.EBPF.ProgramsSourcePath, metadata.KumaTransparentProxyingEbpfProgramsSourcePath)
-		if value, exists := podAnnotations.GetString(i.cfg.EBPF.InstanceIPEnvVarName, metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName); exists {
-			annotations[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = value
+		if v, _ := annotations.GetStringWithDefault(
+			i.cfg.EBPF.ProgramsSourcePath,
+			metadata.KumaTransparentProxyingEbpfProgramsSourcePath,
+		); v != "" {
+			result[metadata.KumaTransparentProxyingEbpfProgramsSourcePath] = v
+		}
+
+		if v, _ := annotations.GetString(
+			i.cfg.EBPF.InstanceIPEnvVarName,
+			metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName,
+		); v != "" {
+			result[metadata.KumaTransparentProxyingEbpfInstanceIPEnvVarName] = v
 		}
 	}
 
-	enabled, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Enabled, metadata.KumaBuiltinDNS)
-	if err != nil {
+	if dnsEnabled, _, err := annotations.GetEnabledWithDefault(
+		i.cfg.BuiltinDNS.Enabled,
+		metadata.KumaBuiltinDNS,
+	); err != nil {
 		return nil, err
+	} else if dnsEnabled {
+		result[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
+
+		if v, _, err := annotations.GetUint32WithDefault(
+			i.cfg.BuiltinDNS.Port,
+			metadata.KumaBuiltinDNSPort,
+		); err != nil {
+			return nil, err
+		} else {
+			result[metadata.KumaBuiltinDNSPort] = fmt.Sprintf("%d", v)
+		}
+
+		if v, _, err := annotations.GetEnabledWithDefault(
+			i.cfg.BuiltinDNS.Logging,
+			metadata.KumaBuiltinDNSLogging,
+		); err != nil {
+			return nil, err
+		} else {
+			result[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(v)
+		}
 	}
-	port, _, err := podAnnotations.GetUint32WithDefault(i.cfg.BuiltinDNS.Port, metadata.KumaBuiltinDNSPort)
-	if err != nil {
+
+	if err := probes.SetVirtualProbesEnabledAnnotation(
+		result,
+		pod.Annotations,
+		i.cfg.VirtualProbesEnabled,
+	); err != nil {
+		return nil, errors.Wrap(
+			err,
+			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation),
+		)
+	}
+
+	if err := setVirtualProbesPortAnnotation(result, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(
+			err,
+			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation),
+		)
+	}
+
+	if err := probes.SetApplicationProbeProxyPortAnnotation(
+		result,
+		pod.Annotations,
+		i.cfg.ApplicationProbeProxyPort,
+	); err != nil {
+		return nil, errors.Wrap(
+			err,
+			fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation),
+		)
+	}
+
+	if v, _ := annotations.GetStringWithDefault(
+		portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts),
+		metadata.KumaTrafficExcludeInboundPorts,
+	); v != "" {
+		result[metadata.KumaTrafficExcludeInboundPorts] = v
+	}
+
+	if v, _ := annotations.GetStringWithDefault(
+		portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts),
+		metadata.KumaTrafficExcludeOutboundPorts,
+	); v != "" {
+		result[metadata.KumaTrafficExcludeOutboundPorts] = v
+	}
+
+	if v, _ := annotations.GetStringWithDefault(
+		i.cfg.SidecarContainer.IpFamilyMode,
+		metadata.KumaTransparentProxyingIPFamilyMode,
+	); v != "" {
+		result[metadata.KumaTransparentProxyingIPFamilyMode] = v
+	} else {
+		result[metadata.KumaTransparentProxyingIPFamilyMode] = string(tproxy_config.IPFamilyModeDualStack)
+	}
+
+	if v, _, err := annotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets); err != nil {
 		return nil, err
+	} else if v {
+		result[metadata.KumaTrafficDropInvalidPackets] = metadata.AnnotationTrue
 	}
-	logging, _, err := podAnnotations.GetEnabledWithDefault(i.cfg.BuiltinDNS.Logging, metadata.KumaBuiltinDNSLogging)
-	if err != nil {
+
+	if v, _, err := annotations.GetBoolean(metadata.KumaTrafficIptablesLogs); err != nil {
 		return nil, err
+	} else if v {
+		result[metadata.KumaTrafficIptablesLogs] = metadata.AnnotationTrue
 	}
 
-	if enabled {
-		portVal := strconv.Itoa(int(port))
-		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
-		annotations[metadata.KumaBuiltinDNSPort] = portVal
-		annotations[metadata.KumaBuiltinDNSLogging] = strconv.FormatBool(logging)
-	}
-
-	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, pod.Annotations, i.cfg.VirtualProbesEnabled); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
-	}
-	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
-	}
-
-	if err := probes.SetApplicationProbeProxyPortAnnotation(annotations, pod.Annotations, i.cfg.ApplicationProbeProxyPort); err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaApplicationProbeProxyPortAnnotation))
-	}
-
-	if val, _ := podAnnotations.GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts), metadata.KumaTrafficExcludeInboundPorts); val != "" {
-		annotations[metadata.KumaTrafficExcludeInboundPorts] = val
-	}
-	if val, _ := podAnnotations.GetStringWithDefault(portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts), metadata.KumaTrafficExcludeOutboundPorts); val != "" {
-		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
-	}
-
-	ipFamilyMode, _ := podAnnotations.GetStringWithDefault(i.cfg.SidecarContainer.IpFamilyMode, metadata.KumaTransparentProxyingIPFamilyMode)
-	annotations[metadata.KumaTransparentProxyingIPFamilyMode] = ipFamilyMode
-	dropInvalidPackets, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets)
-	if err != nil {
+	if v, _, err := annotations.GetUint32WithDefault(
+		i.defaultAdminPort,
+		metadata.KumaEnvoyAdminPort,
+	); err != nil {
 		return nil, err
-	}
-	if dropInvalidPackets {
-		annotations[metadata.KumaTrafficDropInvalidPackets] = "true"
-	}
-
-	iptablesLogs, _, err := podAnnotations.GetBoolean(metadata.KumaTrafficIptablesLogs)
-	if err != nil {
-		return nil, err
-	}
-	if iptablesLogs {
-		annotations[metadata.KumaTrafficIptablesLogs] = "true"
+	} else {
+		result[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", v)
 	}
 
-	val, _, err := podAnnotations.GetUint32WithDefault(i.defaultAdminPort, metadata.KumaEnvoyAdminPort)
-	if err != nil {
-		return nil, err
-	}
-	annotations[metadata.KumaEnvoyAdminPort] = fmt.Sprintf("%d", val)
-
-	if val, _ := podAnnotations.GetStringWithDefault(
+	if v, _ := annotations.GetStringWithDefault(
 		strings.Join(i.cfg.SidecarTraffic.ExcludeOutboundIPs, ","),
 		metadata.KumaTrafficExcludeOutboundIPs,
-	); val != "" {
-		annotations[metadata.KumaTrafficExcludeOutboundIPs] = val
+	); v != "" {
+		result[metadata.KumaTrafficExcludeOutboundIPs] = v
 	}
 
-	if val, _ := podAnnotations.GetStringWithDefault(
+	if v, _ := annotations.GetStringWithDefault(
 		strings.Join(i.cfg.SidecarTraffic.ExcludeInboundIPs, ","),
 		metadata.KumaTrafficExcludeInboundIPs,
-	); val != "" {
-		annotations[metadata.KumaTrafficExcludeInboundIPs] = val
+	); v != "" {
+		result[metadata.KumaTrafficExcludeInboundIPs] = v
 	}
 
-	return annotations, nil
+	return result, nil
 }
 
 func portsToAnnotationValue(ports []uint32) string {
