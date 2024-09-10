@@ -723,10 +723,10 @@ func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_
 	id := NewResourceIdentifier(r)
 	return common_api.BackendRef{
 		TargetRef: common_api.TargetRef{
-			Kind:        common_api.TargetRefKind(resType),
-			Name:        id.Name,
-			Namespace:   id.Namespace,
-			Mesh:        id.Mesh,
+			Kind:      common_api.TargetRefKind(resType),
+			Name:      id.Name,
+			Namespace: id.Namespace,
+			Mesh:      id.Mesh,
 		},
 		Port: pointer.To(port),
 	}
