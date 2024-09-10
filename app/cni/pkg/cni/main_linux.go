@@ -15,13 +15,10 @@ import (
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-retry"
 
 	"github.com/kumahq/kuma/app/cni/pkg/install"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -168,36 +165,11 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 		"netns", args.Netns,
 	)
 
-	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) == "" {
-		logger.Info("pod excluded - no kubernetes data")
-		return conf, nil
-	}
-
-	if shouldExcludePod(conf.Kubernetes.ExcludeNamespaces, k8sArgs.K8S_POD_NAMESPACE) {
-		logger.Info("pod excluded - is in the namespace excluded by 'exclude_namespaces'")
-		return conf, nil
-	}
-
-	containerCount, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
-	if err != nil {
-		return nil, errors.Wrap(err, "error getting pod info")
-	}
-
-	if isInitContainerPresent(initContainersMap) {
-		logger.Info("pod excluded - already injected with kuma-init container")
-		return conf, nil
-	}
-
-	if _, sidecarInInitContainers := initContainersMap[util.KumaSidecarContainerName]; containerCount < 2 && !sidecarInInitContainers {
-		logger.Info("pod excluded - not enough containers in pod. Kuma-sidecar container required")
-		return conf, nil
-	}
-
-	logger.V(1).Info("checking annotations prior to injecting redirect",
-		"netns", args.Netns,
-		"annotations", annotations)
-	if excludeByMissingSidecarInjectedAnnotation(annotations) {
-		logger.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
+	annotations, ok, err := getAndValidatePodAnnotations(ctx, logger, conf, k8sArgs)
+	if err != nil && !ok {
+		return nil, errors.Wrap(err, "failed to get pod annotations")
+	} else if err != nil {
+		logger.Info("pod excluded", "reason", err)
 		return conf, nil
 	}
 
@@ -214,77 +186,6 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 	return conf, nil
 }
 
-func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {
-	excludePod := false
-	val, ok := annotations[metadata.KumaSidecarInjectedAnnotation]
-	if !ok || val != "true" {
-		excludePod = true
-	}
-	return excludePod
-}
-
-func isInitContainerPresent(initContainersMap map[string]struct{}) bool {
-	excludePod := false
-	// Check if kuma-init container is present; in that case exclude pod
-	if _, present := initContainersMap[util.KumaInitContainerName]; present {
-		excludePod = true
-	}
-	return excludePod
-}
-
-func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
-	client, err := newKubeClient(log, *conf)
-	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "could not create kube client")
-	}
-
-	var containerCount int
-	var initContainersMap map[string]struct{}
-	var annotations map[string]string
-	var k8sErr error
-
-	backoff := retry.WithMaxRetries(podRetrievalMaxRetries, retry.NewConstant(podRetrievalInterval))
-	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		containerCount, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
-		if k8sErr != nil {
-			log.Error(k8sErr, "error getting pod info", "retries", podRetrievalMaxRetries)
-			return retry.RetryableError(k8sErr)
-		}
-		log.V(1).Info("pod container info",
-			"count count", containerCount,
-			"initContainers", initContainersMap,
-			"annotations", annotations,
-		)
-		return nil
-	})
-	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "failed to get pod data")
-	}
-
-	return containerCount, initContainersMap, annotations, nil
-}
-
-func shouldExcludePod(excludedNamespaces []string, podNamespace types.UnmarshallableString) bool {
-	excludePod := false
-	for _, excludeNs := range excludedNamespaces {
-		if string(podNamespace) == excludeNs {
-			excludePod = true
-			break
-		}
-	}
-	return excludePod
-}
-
-func logPrevResult(conf *PluginConf) {
-	var loggedPrevResult interface{}
-	if conf.PrevResult == nil {
-		loggedPrevResult = "none"
-	} else {
-		loggedPrevResult = conf.PrevResult
-	}
-
-	log.V(1).Info("cmdAdd config parsed", "version", conf.CNIVersion, "prevResult", loggedPrevResult)
-}
 
 func cmdCheck(*skel.CmdArgs) error {
 	return nil
