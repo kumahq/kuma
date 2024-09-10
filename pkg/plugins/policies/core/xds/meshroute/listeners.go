@@ -225,6 +225,9 @@ func makeSplit(
 				continue
 			}
 			port := pointer.Deref(ref.LegacyBackendRef.Port)
+			if port == 0 {
+				port = uint32(mes.Spec.Match.Port)
+			}
 			service = mes.DestinationName(port)
 			protocol = mes.Spec.Match.Protocol
 		case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:

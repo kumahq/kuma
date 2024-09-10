@@ -7,6 +7,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -37,11 +38,15 @@ func BuildMeshDestinations(
 	res xds_context.Resources,
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
+	mesServices []*meshexternalservice_api.MeshExternalServiceResource,
 	systemNamespace string,
 ) MeshDestinations {
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
-		BackendRefs:    append(buildMeshServiceDestinations(meshServices, systemNamespace), buildMeshMultiZoneServiceDestinations(meshMzSvc)...),
+		BackendRefs: append(
+			append(buildMeshServiceDestinations(meshServices, systemNamespace), buildMeshMultiZoneServiceDestinations(meshMzSvc)...),
+			buildMeshExternalServiceDestinations(mesServices)...,
+		),
 	}
 }
 
@@ -67,6 +72,27 @@ func buildMeshServiceDestinations(
 		}
 	}
 	return msDestinations
+}
+
+func buildMeshExternalServiceDestinations(
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+) []BackendRefDestination {
+	var mesDestinations []BackendRefDestination
+	for _, mes := range meshExternalServices {
+		sni := tls.SNIForResource(
+			core_model.GetDisplayName(mes.GetMeta()),
+			mes.GetMeta().GetMesh(),
+			meshexternalservice_api.MeshExternalServiceType,
+			uint32(mes.Spec.Match.Port),
+			nil,
+		)
+		mesDestinations = append(mesDestinations, BackendRefDestination{
+			Mesh:            mes.GetMeta().GetMesh(),
+			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
+			SNI:             sni,
+		})
+	}
+	return mesDestinations
 }
 
 func buildMeshMultiZoneServiceDestinations(

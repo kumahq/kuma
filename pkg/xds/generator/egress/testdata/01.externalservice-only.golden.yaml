@@ -142,7 +142,7 @@ resources:
           requireClientCertificate: true
     - filterChainMatch:
         serverNames:
-        - mesh-1_meshexternalservice-1___mextsvc_9090{mesh=mesh-1}
+        - a45e197ed7825551b.meshexternalservice-1.9090.mesh-1.ms
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager

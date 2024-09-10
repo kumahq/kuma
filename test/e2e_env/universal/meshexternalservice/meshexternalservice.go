@@ -660,7 +660,7 @@ spec:
 			Eventually(func(g Gomega) {
 				egressClusters, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetClusters()
 				g.Expect(err).ToNot(HaveOccurred())
-				cluster := egressClusters.GetCluster(fmt.Sprintf("%s:meshexternalservice_mes-health-check", meshNameNoDefaults))
+				cluster := egressClusters.GetCluster(fmt.Sprintf("%s_mes-health-check__kuma-3_mextsvc_80", meshNameNoDefaults))
 				g.Expect(cluster).ToNot(BeNil())
 				g.Expect(cluster.HostStatuses).To(HaveLen(1))
 				g.Expect(cluster.HostStatuses[0].HealthStatus.FailedActiveHealthCheck).To(BeTrue())

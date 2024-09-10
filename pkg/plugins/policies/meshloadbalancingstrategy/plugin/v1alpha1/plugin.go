@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"strings"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -319,7 +321,8 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
-			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
+			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			policies, ok := meshResources.Dynamic[meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port))]
 			if !ok {
 				continue
 			}
@@ -344,7 +347,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 						}
 					}
 				}
-				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), mesID.Name, mesID.Mesh)
+				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), mesID.Name, mesID.Mesh, uint32(meshExtSvc.Spec.Match.Port))
 				if err != nil {
 					return err
 				}
@@ -429,6 +432,7 @@ func (p plugin) configureEgressListener(
 	conf api.Conf,
 	name string,
 	meshName string,
+	port uint32,
 ) error {
 	if conf.LoadBalancer == nil {
 		return nil
@@ -455,16 +459,12 @@ func (p plugin) configureEgressListener(
 		return errors.New("expected at least one filter chain")
 	}
 
+	sni := tls.SNIForResource(name, meshName, meshexternalservice_api.MeshExternalServiceType, port, nil)
 	for _, chain := range l.FilterChains {
 		matched := false
 		for _, serverName := range chain.FilterChainMatch.ServerNames {
-			tags, err := tls.TagsFromSNI(serverName)
-			if err != nil {
-				return err
-			}
-			if tags[mesh_proto.ServiceTag] == name && tags["mesh"] == meshName {
+			if strings.Contains(serverName, sni) {
 				matched = true
-				break
 			}
 		}
 		if !matched {

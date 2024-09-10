@@ -430,7 +430,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 												BackendRefs: &[]common_api.BackendRef{{
 													TargetRef: builders.TargetRefMeshExternalService("example"),
 													Weight:    pointer.To(uint(100)),
-													Port:      pointer.To(uint32(9090)),
 												}},
 											},
 										},
