@@ -637,5 +637,38 @@ to:
           - kind: MeshService
             name: backend
 `),
+		Entry("MeshService and MeshMultiZoneService", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+    - matches:
+      - path:
+          value: /v1
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: backend
+            port: 8080
+    - matches:
+      - path:
+          value: /v2
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshMultiZoneService
+            labels:
+              kuma.io/display-name: backend
+            port: 8080
+`),
 	)
 })

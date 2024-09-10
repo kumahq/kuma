@@ -720,7 +720,7 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 
 type LabelResourceIdentifierResolver func(ResourceType, map[string]string) *ResourceIdentifier
 
-func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) ResolvedBackendRef {
+func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
 	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
 
 	switch {
@@ -728,11 +728,7 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver Lab
 	case br.Kind == common_api.MeshExternalService:
 	case br.Kind == common_api.MeshMultiZoneService:
 	default:
-		return resolved
-	}
-
-	if len(br.Labels) > 0 {
-		resolver(ResourceType(br.Kind), br.Labels)
+		return &resolved
 	}
 
 	resolved.Resource = &TypedResourceIdentifier{
@@ -740,11 +736,19 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver Lab
 		ResourceType:       ResourceType(br.Kind),
 	}
 
+	if len(br.Labels) > 0 {
+		ri := resolver(ResourceType(br.Kind), br.Labels)
+		if ri == nil {
+			return nil
+		}
+		resolved.Resource.ResourceIdentifier = *ri
+	}
+
 	if br.Port != nil {
 		resolved.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
 	}
 
-	return resolved
+	return &resolved
 }
 
 func (r ResourceIdentifier) String() string {

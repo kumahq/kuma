@@ -126,15 +126,18 @@ func SortRules(
 	var out []Route
 	for _, key := range keys {
 		var backendRefs []core_model.ResolvedBackendRef
+		hashMatches := HashMatches(key.rule.Matches)
 		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
-			if origin, ok := backendRefToOrigin[HashMatches(key.rule.Matches)]; ok {
-				backendRefs = append(backendRefs, core_model.ResolveBackendRef(origin, br, labelResolver))
+			if origin, ok := backendRefToOrigin[hashMatches]; ok {
+				if resolved := core_model.ResolveBackendRef(origin, br, labelResolver); resolved != nil {
+					backendRefs = append(backendRefs, *resolved)
+				}
 			} else {
 				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
 			}
 		}
 		out = append(out, Route{
-			Hash:        HashMatches(key.rule.Matches),
+			Hash:        hashMatches,
 			Match:       key.sortKey,
 			BackendRefs: backendRefs,
 			Filters:     pointer.Deref(key.rule.Default.Filters),

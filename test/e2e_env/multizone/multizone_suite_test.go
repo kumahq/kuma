@@ -53,6 +53,7 @@ var (
 	_ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 	_ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+	_ = Describe("MeshHTTPRoute MeshService", meshhttproute.MeshService, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
