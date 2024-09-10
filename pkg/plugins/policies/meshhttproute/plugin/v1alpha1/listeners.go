@@ -34,7 +34,7 @@ func generateFromService(
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
 	tags := svc.BackendRef.Tags
-	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
+	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.OutboundInterface.DataplaneIP, svc.OutboundInterface.DataplanePort, core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
 
@@ -112,7 +112,7 @@ func generateFromService(
 			Name:           listener.GetName(),
 			Origin:         generator.OriginOutbound,
 			Resource:       listener,
-			ResourceOrigin: svc.Outbound.Resource,
+			ResourceOrigin: svc.Resource,
 			Protocol:       svc.Protocol,
 		})
 
@@ -164,8 +164,8 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 		}
 	}
 	// check if there is configuration for real MeshService and prioritize it
-	if svc.Outbound.Resource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
+	if svc.Resource != nil {
+		resourceConf := toRules.ResourceRules.Compute(*svc.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
 			for hash := range resourceConf.BackendRefOriginIndex {
@@ -230,7 +230,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 			defaultBackend.Weight = pointer.To(uint(100))
 			route.BackendRefs = []core_model.ResolvedBackendRef{{
 				LegacyBackendRef: &defaultBackend,
-				Resource:         svc.Outbound.Resource,
+				Resource:         svc.Resource,
 			}}
 		}
 	}
