@@ -30,22 +30,14 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - "9000"
-    - --exclude-outbound-ports
-    - ""
+    - --kuma-dp-user=5678
+    - --ip-family-mode=dualstack
+    - --redirect-outbound-port=15001
+    - --exclude-outbound-ips=10.0.0.1,172.16.0.0/16,fe80::1,fe80::/10
+    - --redirect-inbound
+    - --redirect-inbound-port=15006
+    - --exclude-inbound-ports=9000
     - --verbose
-    - --ip-family-mode
-    - dualstack
-    - --exclude-outbound-ips
-    - 10.0.0.1,172.16.0.0/16,fe80::1,fe80::/10
     command:
     - /usr/bin/kumactl
     - install

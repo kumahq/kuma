@@ -29,20 +29,12 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - ""
-    - --exclude-outbound-ports
-    - ""
+    - --kuma-dp-user=5678
+    - --ip-family-mode=ipv4
+    - --redirect-outbound-port=15001
+    - --redirect-inbound
+    - --redirect-inbound-port=15006
     - --verbose
-    - --ip-family-mode
-    - ipv4
     command:
     - /usr/bin/kumactl
     - install

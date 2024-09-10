@@ -28,20 +28,13 @@ spec:
     resources: {}
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - "9000"
-    - --exclude-outbound-ports
-    - ""
+    - --kuma-dp-user=5678
+    - --ip-family-mode=dualstack
+    - --redirect-outbound-port=15001
+    - --redirect-inbound
+    - --redirect-inbound-port=15006
+    - --exclude-inbound-ports=9000
     - --verbose
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install
