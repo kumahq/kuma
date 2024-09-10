@@ -152,7 +152,7 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 	// Determine if running under k8s by checking the CNI args
 	var k8sArgs K8sArgs
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		return nil, errors.Wrap(err, "error loading kuma-cni cmdAdd args")
+		return nil, errors.Wrap(err, "failed to load CNI arguments")
 	}
 
 	logger := log.WithValues(
@@ -185,7 +185,6 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 
 	return conf, nil
 }
-
 
 func cmdCheck(*skel.CmdArgs) error {
 	return nil
