@@ -104,6 +104,7 @@ func CollectListenerInfos(
 			listener.listener.GetProtocol(),
 			listener.sublisteners,
 		)
+
 		infos[port] = plugin_gateway.GatewayListenerInfo{
 			Proxy:             proxy,
 			Gateway:           gateway,

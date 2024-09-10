@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -120,7 +121,7 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := meshroute.CollectListenerInfos(
+	listeners := meshroute_gateway.CollectListenerInfos(
 		ctx,
 		xdsCtx.Mesh,
 		gateway,
@@ -161,7 +162,7 @@ func sortRulesToHosts(
 	address string,
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	sublisteners []meshroute.Sublistener,
+	sublisteners []meshroute_gateway.Sublistener,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
@@ -184,7 +185,7 @@ func sortRulesToHosts(
 			continue
 		}
 		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
-		meshroute.AddToListenerByHostname(
+		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,
 			hostnameTag.Hostname,
@@ -193,5 +194,5 @@ func sortRulesToHosts(
 		)
 	}
 
-	return meshroute.SortByHostname(hostInfosByHostname)
+	return meshroute_gateway.SortByHostname(hostInfosByHostname)
 }
