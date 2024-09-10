@@ -111,6 +111,7 @@ spec:
       {{- end }}
       hostNetwork: {{ .Values.controlPlane.hostNetwork }}
       terminationGracePeriodSeconds: {{ .Values.controlPlane.terminationGracePeriodSeconds }}
+      {{ include "kuma.dnsConfig" (dict "dns" .Values.controlPlane.dns) | nindent 6 | trim }}
       {{- if (eq .Values.controlPlane.environment "universal") }}
       initContainers:
         - name: migration
