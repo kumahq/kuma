@@ -328,7 +328,7 @@ spec:
 			)
 			// then it fails because Kuma DP has no such DNS
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6), Equal(28))
+			g.Expect(response.Exitcode).To(Or(Equal(6), Equal(28)))
 		}, "5s", "100ms").Should(Succeed())
 
 		Consistently(func(g Gomega) {

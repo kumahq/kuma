@@ -70,7 +70,10 @@ func buildMeshServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
 				SNI:             sni,
-				Resource:        model.ResolveBackendRef(ms.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(ms))),
+				Resource:        model.ResolveBackendRef(
+					ms.Meta, 
+					model.ResourceToBackendRef(ms,meshservice_api.MeshServiceType, port.Port),
+				),
 			})
 		}
 	}
@@ -93,7 +96,10 @@ func buildMeshExternalServiceDestinations(
 			Mesh:            mes.GetMeta().GetMesh(),
 			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 			SNI:             sni,
-			Resource:        model.ResolveBackendRef(mes.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(mes))),
+			Resource:        model.ResolveBackendRef(
+				mes.Meta, 
+				model.ResourceToBackendRef(mes,meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port),),
+			),
 		})
 	}
 	return mesDestinations
@@ -108,7 +114,10 @@ func buildMeshMultiZoneServiceDestinations(
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
-				Resource:        model.ResolveBackendRef(ms.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(ms))),
+				Resource:        model.ResolveBackendRef(
+					ms.Meta, 
+					model.ResourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, uint32(port.Port),),
+				),
 				SNI: tls.SNIForResource(
 					core_model.GetDisplayName(ms.GetMeta()),
 					ms.GetMeta().GetMesh(),

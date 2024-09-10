@@ -207,7 +207,6 @@ func AddFilterChains(
 		)
 
 		listenerBuilder.Configure(filterChain)
-
 		servicesAcc.AddBackendRef(refDest.Resource, cluster)
 	}
 

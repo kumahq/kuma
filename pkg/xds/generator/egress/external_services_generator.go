@@ -35,7 +35,7 @@ func (g *ExternalServicesGenerator) Generate(
 	localResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
-		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+		localResources,
 		nil,
 		nil,
 		localResources.MeshExternalServices().Items,
@@ -178,7 +178,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 	for _, esName := range esNames {
 		if !services[esName] {
-			return
+			continue
 		}
 		endpoints := endpointMap[esName]
 		destinations := meshDestinations.KumaIoServices[esName]
@@ -246,11 +246,9 @@ func (*ExternalServicesGenerator) configureFilterChain(
 	// There is a case where multiple meshes contain services with
 	// the same names, so we cannot use just "serviceName" as a cluster
 	// name as we would overwrite some clusters with the latest one
-	var clusterName string
+	clusterName := envoy_names.GetMeshClusterName(meshName, esName)
 	if isMeshExternalService(endpoints) {
 		clusterName = esName
-	} else {
-		clusterName = envoy_names.GetMeshClusterName(meshName, esName)
 	}
 
 	cluster := envoy_common.NewCluster(
@@ -298,11 +296,9 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		// Add the default fall-back route
 		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
-		var routeConfigName string
+		routeConfigName := envoy_names.GetOutboundRouteName(esName)
 		if isMeshExternalService(endpoints) {
 			routeConfigName = esName
-		} else {
-			routeConfigName = envoy_names.GetOutboundRouteName(esName)
 		}
 
 		filterChainBuilder.
@@ -320,7 +316,6 @@ func (*ExternalServicesGenerator) configureFilterChain(
 			envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),
 		)
 	}
-
 	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 }
 
