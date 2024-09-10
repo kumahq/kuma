@@ -201,7 +201,6 @@ func GetServiceAndProtocolFromRef(
 	meshCtx xds_context.MeshContext,
 	ref core_model.ResolvedBackendRef,
 ) (string, core_mesh.Protocol, bool) {
-
 	switch {
 	case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
 		mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]

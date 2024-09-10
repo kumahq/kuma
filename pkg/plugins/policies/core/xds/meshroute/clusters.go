@@ -49,7 +49,7 @@ func GenerateClusters(
 							meshCtx.Resource,
 							mesh_proto.ZoneEgressServiceName,
 							true,
-							sniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+							SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
 						))
 					} else {
 						edsClusterBuilder.
