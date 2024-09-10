@@ -7,7 +7,6 @@ endpoints:
     port: 12345
   - address: example.com
     port: 80
-  - address: unix:///tmp/example.sock
 tls:
   version:
     min: TLS12
