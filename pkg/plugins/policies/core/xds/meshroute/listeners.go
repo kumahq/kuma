@@ -58,10 +58,12 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    *xds_types.Outbound
-	Protocol    core_mesh.Protocol
-	ServiceName string
-	BackendRef  common_api.BackendRef
+	OutboundInterface mesh_proto.OutboundInterface
+	Resource          *core_model.TypedResourceIdentifier
+	Tags              envoy_tags.Tags
+	Protocol          core_mesh.Protocol
+	ServiceName       string
+	BackendRef        common_api.BackendRef
 }
 
 func CollectServices(
@@ -109,7 +111,12 @@ func collectMeshService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    protocol,
 		ServiceName: ms.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
@@ -135,8 +142,13 @@ func collectMeshExternalService(
 		protocol = mes.Spec.Match.Protocol
 	}
 	return &DestinationService{
-		Outbound:    outbound,
-		Protocol:    protocol,
+		Protocol: protocol,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
@@ -165,7 +177,12 @@ func collectMeshMultiZoneService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    protocol,
 		ServiceName: svc.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
@@ -184,7 +201,12 @@ func collectServiceTagService(
 ) *DestinationService {
 	serviceName := outbound.LegacyOutbound.GetService()
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    meshCtx.GetServiceProtocol(serviceName),
 		ServiceName: serviceName,
 		BackendRef: common_api.BackendRef{
