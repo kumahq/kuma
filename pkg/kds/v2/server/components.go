@@ -89,12 +89,11 @@ func newSyncTracker(
 	for _, typ := range providedTypes {
 		changedTypes[typ] = struct{}{}
 	}
-	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_xds_v3.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "nodeID", node.Id)
 		log = kuma_log.AddFieldsFromCtx(log, ctx, extensions)
 		if experimentalWatchdogCfg.Enabled {
 			return &EventBasedWatchdog{
-				Ctx:           ctx,
 				Node:          node,
 				EventBus:      eventBus,
 				Reconciler:    reconciler,
@@ -128,7 +127,7 @@ func newSyncTracker(
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
-			OnTick: func(context.Context) error {
+			OnTick: func(ctx context.Context) error {
 				start := core.Now()
 				log.V(1).Info("on tick")
 				err, changed := reconciler.Reconcile(ctx, node, changedTypes, log)
@@ -147,7 +146,7 @@ func newSyncTracker(
 				log.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				if err := reconciler.Clear(ctx, node); err != nil {
+				if err := reconciler.Clear(node); err != nil {
 					log.Error(err, "OnStop() failed")
 				}
 			},
