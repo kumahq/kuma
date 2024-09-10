@@ -3,23 +3,25 @@ package cni
 import (
 	"context"
 
+	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func newKubeClient(conf PluginConf) (*kubernetes.Clientset, error) {
-	kubeconfig := conf.Kubernetes.Kubeconfig
+func newKubeClient(l logr.Logger, conf PluginConf) (*kubernetes.Clientset, error) {
+	l = log.WithValues("kubeconfig", conf.Kubernetes.Kubeconfig)
+
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: kubeconfig},
+		&clientcmd.ClientConfigLoadingRules{ExplicitPath: conf.Kubernetes.Kubeconfig},
 		&clientcmd.ConfigOverrides{},
 	).ClientConfig()
 	if err != nil {
-		log.Error(err, "failed setting up kubernetes client with kubeconfig", "kubeconfig", kubeconfig)
+		l.Error(err, "failed setting up kubernetes client with kubeconfig")
 		return nil, err
 	}
 
-	log.V(1).Info("set up kubernetes client with kubeconfig", "kubeconfig", kubeconfig, "config", config)
+	l.V(1).Info("set up kubernetes client with kubeconfig", "config", config)
 
 	return kubernetes.NewForConfig(config)
 }

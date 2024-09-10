@@ -230,7 +230,7 @@ func isInitContainerPresent(initContainersMap map[string]struct{}) bool {
 }
 
 func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
-	client, err := newKubeClient(*conf)
+	client, err := newKubeClient(log, *conf)
 	if err != nil {
 		return 0, nil, nil, errors.Wrap(err, "could not create kube client")
 	}
