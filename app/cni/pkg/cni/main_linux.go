@@ -118,61 +118,79 @@ func getCniProcessStderr() (*os.File, error) {
 
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
-	ctx := context.Background()
+	conf, err := add(context.Background(), args)
+	if err != nil {
+		log.Info("[WARNING]: pod excluded", "reason", err)
+		return err
+	}
+
+	result := conf.PrevResult
+	if conf.PrevResult == nil {
+		result = &current.Result{CNIVersion: current.ImplementedSpecVersion}
+	}
+
+	log.Info("cmdAdd result", "result", result)
+
+	return types.PrintResult(result, conf.CNIVersion)
+}
+
+func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 	conf, err := parseConfig(args.StdinData)
 	if err != nil {
-		return errorLogged(log, err, "error parsing kuma-cni cmdAdd config")
+		return nil, errors.Wrap(err, "failed to parse kuma-cni configuration in cmdAdd")
 	}
 
 	stderr, err := hijackMainCNIProcessStderr(log)
 	if err != nil {
-		return err
+		return nil, errors.Wrap(err, "failed to hijack main process stderr")
 	}
 	defer stderr.Close()
 
 	if err := install.SetLogLevel(&log, conf.LogLevel, defaultLogName); err != nil {
-		return errorLogged(log, err, "wrong set the right log level")
+		return nil, errors.Wrap(err, "failed to set log level")
 	}
 
-	logPrevResult(conf)
+	log.V(1).Info("cmdAdd config parsed", "version", conf.CNIVersion, "prevResult", conf.PrevResult)
 
 	// Determine if running under k8s by checking the CNI args
-	k8sArgs := K8sArgs{}
+	var k8sArgs K8sArgs
 	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		return errorLogged(log, err, "error loading kuma-cni cmdAdd args")
+		return nil, errors.Wrap(err, "error loading kuma-cni cmdAdd args")
 	}
+
 	logger := log.WithValues(
-		"pod", string(k8sArgs.K8S_POD_NAME),
-		"namespace", string(k8sArgs.K8S_POD_NAMESPACE),
-		"podInfraContainerId", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID),
-		"ip", string(k8sArgs.IP),
+		"pod", k8sArgs.K8S_POD_NAME,
+		"namespace", k8sArgs.K8S_POD_NAMESPACE,
+		"infraContainerId", k8sArgs.K8S_POD_INFRA_CONTAINER_ID,
+		"ip", k8sArgs.IP,
 		"containerId", args.ContainerID,
 		"args", args.Args,
+		"netns", args.Netns,
 	)
 
 	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) == "" {
 		logger.Info("pod excluded - no kubernetes data")
-		return prepareResult(conf, logger)
+		return conf, nil
 	}
 
 	if shouldExcludePod(conf.Kubernetes.ExcludeNamespaces, k8sArgs.K8S_POD_NAMESPACE) {
-		logger.Info(`pod excluded - is in the namespace excluded by "exclude_namespaces"`)
-		return prepareResult(conf, logger)
+		logger.Info("pod excluded - is in the namespace excluded by 'exclude_namespaces'")
+		return conf, nil
 	}
 
 	containerCount, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
 	if err != nil {
-		return errorLogged(logger, err, "pod excluded - error getting pod info")
+		return nil, errors.Wrap(err, "error getting pod info")
 	}
 
 	if isInitContainerPresent(initContainersMap) {
 		logger.Info("pod excluded - already injected with kuma-init container")
-		return prepareResult(conf, logger)
+		return conf, nil
 	}
 
 	if _, sidecarInInitContainers := initContainersMap[util.KumaSidecarContainerName]; containerCount < 2 && !sidecarInInitContainers {
 		logger.Info("pod excluded - not enough containers in pod. Kuma-sidecar container required")
-		return prepareResult(conf, logger)
+		return conf, nil
 	}
 
 	logger.V(1).Info("checking annotations prior to injecting redirect",
@@ -180,37 +198,20 @@ func cmdAdd(args *skel.CmdArgs) error {
 		"annotations", annotations)
 	if excludeByMissingSidecarInjectedAnnotation(annotations) {
 		logger.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
-		return prepareResult(conf, logger)
+		return conf, nil
 	}
 
 	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-		return errorLogged(logger, configErr, "pod excluded - pod intermediateConfig failed due to bad params")
+		return nil, errors.Wrap(configErr, "pod intermediateConfig failed due to bad params")
 	} else {
 		if err := Inject(ctx, args.Netns, intermediateConfig, logger); err != nil {
-			return errorLogged(logger, err, "pod excluded - could not inject rules into namespace")
+			return nil, errors.Wrap(err, "could not inject rules into namespace")
 		}
 	}
+
 	logger.Info("successfully injected iptables rules")
-	return prepareResult(conf, logger)
-}
 
-func prepareResult(conf *PluginConf, logger logr.Logger) error {
-	var result *current.Result
-	if conf.PrevResult == nil {
-		result = &current.Result{
-			CNIVersion: current.ImplementedSpecVersion,
-		}
-	} else {
-		// Pass through the result for the next plugin
-		result = conf.PrevResult
-	}
-	logger.Info("result", "result", result)
-	return types.PrintResult(result, conf.CNIVersion)
-}
-
-func errorLogged(logger logr.Logger, err error, message string) error {
-	logger.Info(fmt.Sprintf("[WARNING] %s", message), "err", err)
-	return errors.Wrap(err, message)
+	return conf, nil
 }
 
 func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {
