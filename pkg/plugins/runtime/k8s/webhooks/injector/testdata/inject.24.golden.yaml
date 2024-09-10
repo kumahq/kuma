@@ -15,7 +15,6 @@ metadata:
     kuma.io/sidecar-proxy-concurrency: "99"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
