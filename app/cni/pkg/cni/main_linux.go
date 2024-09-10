@@ -66,25 +66,27 @@ type K8sArgs struct {
 
 // parseConfig parses the supplied configuration (and prevResult) from stdin
 func parseConfig(stdin []byte) (*PluginConf, error) {
-	conf := PluginConf{}
+	var conf PluginConf
 
 	if err := json.Unmarshal(stdin, &conf); err != nil {
-		return nil, errors.Wrapf(err, "could not parse network configuration")
+		return nil, errors.Wrap(err, "failed to parse network configuration from stdin")
 	}
 
 	if conf.RawPrevResult != nil {
 		resultBytes, err := json.Marshal(conf.RawPrevResult)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not serialize prevResult")
+			return nil, errors.Wrap(err, "failed to serialize previous result")
 		}
+
 		res, err := version.NewResult(conf.CNIVersion, resultBytes)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse prevResult")
+			return nil, errors.Wrap(err, "failed to parse previous result")
 		}
+
 		conf.RawPrevResult = nil
-		conf.PrevResult, err = current.NewResultFromResult(res)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not convert result to current version")
+
+		if conf.PrevResult, err = current.NewResultFromResult(res); err != nil {
+			return nil, errors.Wrap(err, "failed to convert previous result to current version")
 		}
 	}
 
