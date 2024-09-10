@@ -188,14 +188,6 @@ func flag[T string | bool | uint32](name string, values ...T) []string {
 	return result
 }
 
-func flagBool(name string, value bool) []string {
-	if !value {
-		return []string{fmt.Sprintf("--%s=false", name)}
-	}
-
-	return []string{fmt.Sprintf("--%s", name)}
-}
-
 func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	if condition == *new(T) {
 		return nil
@@ -214,18 +206,22 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 		flag("exclude-outbound-ips", pr.ExcludeOutboundIPs),
 		flag("exclude-outbound-ports-for-uids", pr.ExcludeOutboundPortsForUIDs...),
 		// inbound
-		flagBool("redirect-inbound", pr.RedirectInbound),
-		flag("redirect-inbound-port", pr.RedirectPortInbound),
-		flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
-		flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
-		// DNS
+		flagsIf(!pr.RedirectInbound,
+			flag("redirect-inbound", "false"),
+		),
+		flagsIf(pr.RedirectInbound,
+			flag("redirect-inbound-port", pr.RedirectPortInbound),
+			flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
+			flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
+		),
+		// dns
 		flagsIf(pr.BuiltinDNSEnabled,
-			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
+			flag("redirect-all-dns-traffic", true),
 			flag("redirect-dns-port", pr.BuiltinDNSPort),
 		),
 		// ebpf
 		flagsIf(pr.TransparentProxyEnableEbpf,
-			flag("ebpf-enabled", pr.TransparentProxyEnableEbpf),
+			flag("ebpf-enabled", true),
 			flag("ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath),
 			flag("ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath),
 			flag("ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface),
