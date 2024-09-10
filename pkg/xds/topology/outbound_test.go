@@ -1406,24 +1406,6 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "no-tls-mes",
-						},
-						Spec: &meshexternalservice_api.MeshExternalService{
-							Match: meshexternalservice_api.Match{
-								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-								Port:     10000,
-								Protocol: core_mesh.ProtocolGRPC,
-							},
-							Endpoints: []meshexternalservice_api.Endpoint{
-								{
-									Address: "unix://no-tls-mes",
-								},
-							},
-						},
-					},
 				},
 				zoneEgresses: []*core_mesh.ZoneEgressResource{
 					{
@@ -1456,25 +1438,6 @@ var _ = Describe("TrafficRoute", func() {
 								OwnerResource: &core_model.TypedResourceIdentifier{
 									ResourceIdentifier: core_model.ResourceIdentifier{
 										Name: "another-mes",
-										Mesh: "default",
-									},
-									ResourceType: meshexternalservice_api.MeshExternalServiceType,
-								},
-							},
-						},
-					},
-					"default_no-tls-mes___mextsvc_10000": []core_xds.Endpoint{
-						{
-							Target:   "1.1.1.1",
-							Port:     10002,
-							Locality: nil,
-							Weight:   1,
-							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolGRPC,
-								TLSEnabled: false,
-								OwnerResource: &core_model.TypedResourceIdentifier{
-									ResourceIdentifier: core_model.ResourceIdentifier{
-										Name: "no-tls-mes",
 										Mesh: "default",
 									},
 									ResourceType: meshexternalservice_api.MeshExternalServiceType,

@@ -12,7 +12,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -33,12 +33,12 @@ func sortRulesToHosts(
 	address string,
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	sublisteners []meshroute.Sublistener,
+	sublisteners []meshroute_gateway.Sublistener,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
 	// Iterate over the listeners in order
-	sublistenersByHostname := map[string]meshroute.Sublistener{}
+	sublistenersByHostname := map[string]meshroute_gateway.Sublistener{}
 	for _, sublistener := range sublisteners {
 		sublistenersByHostname[sublistener.Hostname] = sublistener
 	}
@@ -64,11 +64,19 @@ func sortRulesToHosts(
 		rulesByHostname := map[string][]ruleByHostname{}
 		for _, rawRule := range rawRules {
 			conf := rawRule.Conf.(api.PolicyDefault)
+
+			backendRefOrigin := map[string]model.ResourceMeta{}
+			for hash := range rawRule.BackendRefOriginIndex {
+				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
+					backendRefOrigin[string(hash)] = origin
+				}
+			}
 			rule := ToRouteRule{
-				Subset:    rawRule.Subset,
-				Rules:     conf.Rules,
-				Hostnames: conf.Hostnames,
-				Origin:    rawRule.Origin,
+				Subset:           rawRule.Subset,
+				Rules:            conf.Rules,
+				Hostnames:        conf.Hostnames,
+				Origins:          rawRule.Origin,
+				BackendRefOrigin: backendRefOrigin,
 			}
 			hostnames := rule.Hostnames
 			if len(rule.Hostnames) == 0 {
@@ -146,7 +154,7 @@ func sortRulesToHosts(
 			}
 			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules))
 
-			meshroute.AddToListenerByHostname(
+			meshroute_gateway.AddToListenerByHostname(
 				hostInfosByHostname,
 				protocol,
 				hostnameTag.Hostname,
@@ -157,7 +165,7 @@ func sortRulesToHosts(
 		observedHostnames = append(observedHostnames, hostname)
 	}
 
-	return meshroute.SortByHostname(hostInfosByHostname)
+	return meshroute_gateway.SortByHostname(hostInfosByHostname)
 }
 
 func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
@@ -173,11 +181,12 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	for _, rules := range toRules {
 		for _, rule := range rules.Rule.Rules {
 			var names []string
-			for _, orig := range rules.Rule.Origin {
+			for _, orig := range rules.Rule.Origins {
 				names = append(names, orig.GetName())
 			}
 			slices.Sort(names)
-			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
+
+			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin)
 
 			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
@@ -204,12 +213,16 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
 }
 
-func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
+func makeHttpRouteEntry(name string, rule api.Rule, backendRefToOrigin map[string]model.ResourceMeta) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
+		var ref *model.ResolvedBackendRef
+		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
+			ref = pointer.To(model.ResolveBackendRef(origin, b))
+		}
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {
 			// This should be caught by validation
@@ -217,6 +230,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 		}
 		target := route.Destination{
 			Destination:   dest,
+			BackendRef:    ref,
 			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolHTTP,

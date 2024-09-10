@@ -5,7 +5,6 @@ import (
 	"maps"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -733,24 +732,13 @@ func createMeshExternalServiceEndpoint(
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
-		var outboundEndpoint *core_xds.Endpoint
-		if strings.HasPrefix(endpoint.Address, "unix://") {
-			outboundEndpoint = &core_xds.Endpoint{
-				UnixDomainPath:  endpoint.Address,
-				Weight:          1,
-				ExternalService: es,
-				Tags:            tags,
-				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-			}
-		} else {
-			outboundEndpoint = &core_xds.Endpoint{
-				Target:          endpoint.Address,
-				Port:            uint32(*endpoint.Port),
-				Weight:          1,
-				ExternalService: es,
-				Tags:            tags,
-				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-			}
+		outboundEndpoint := &core_xds.Endpoint{
+			Target:          endpoint.Address,
+			Port:            uint32(*endpoint.Port),
+			Weight:          1,
+			ExternalService: es,
+			Tags:            tags,
+			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
 		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
 	}

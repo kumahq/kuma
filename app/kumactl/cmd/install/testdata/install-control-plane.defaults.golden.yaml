@@ -295,9 +295,8 @@ spec:
                   properties:
                     address:
                       description: Address defines an address to which a user want
-                        to send a request. Is possible to provide `domain`, `ip` and
-                        `unix` sockets.
-                      example: unix:///tmp/example.sock
+                        to send a request. Is possible to provide `domain`, `ip`.
+                      example: example.com
                       minLength: 1
                       type: string
                     port:
@@ -9973,6 +9972,7 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"

@@ -631,6 +631,7 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"

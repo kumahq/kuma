@@ -129,6 +129,7 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      
       initContainers:
         - name: migration
           image: "docker.io/kumahq/kuma-cp:0.0.1"

@@ -10,6 +10,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -19,6 +20,7 @@ import (
 
 func Connectivity() {
 	namespace := "msconnectivity"
+	clientNamespace := "msconnectivity-client"
 	meshName := "msconnectivity"
 	autoGenerateUniversalClusterName := "autogenerate-universal"
 
@@ -78,8 +80,59 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		meshGateway := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+metadata:
+  name: edge-gateway
+  labels:
+    kuma.io/origin: zone
+mesh: %s
+spec:
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway_%s_svc
+  conf:
+    listeners:
+    - port: 8080
+      protocol: HTTP
+`, meshName, namespace)
+		gatewayRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: route
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /local
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: test-server
+                namespace: %s
+                port: 80
+                weight: 1
+`, Config.KumaNamespace, meshName, namespace)
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(clientNamespace)).
+			Install(testserver.Install(
+				testserver.WithName("demo-client"),
+				testserver.WithNamespace(clientNamespace),
+			)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
@@ -93,6 +146,9 @@ spec:
 				testserver.WithHeadlessService(),
 				testserver.WithEchoArgs("echo", "--instance", "kube-statefulset-test-server-1"),
 			)).
+			Install(YamlK8s(meshGateway)).
+			Install(YamlK8s(gatewayRoute)).
+			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway", namespace, meshName))).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
@@ -168,6 +224,32 @@ spec:
 		expectedInstance string
 		should           types.GomegaMatcher
 	}
+
+	DescribeTable("Gateway in Kubernetes",
+		func(given testCase) {
+			if given.should == nil {
+				given.should = Succeed()
+			}
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client",
+					fmt.Sprintf("http://edge-gateway.%s:8080/%s", namespace, given.address()),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal(given.expectedInstance))
+			}, "30s", "1s").Should(Succeed())
+		},
+		Entry("should access service in the same Kubernetes cluster via a mesh-targeted generator name", testCase{
+			address:          func() string { return "/local" },
+			expectedInstance: "kube-test-server-1",
+		}),
+		XEntry("should access service in the a Universal cluster", testCase{
+			address:          func() string { return "/uni-2" },
+			expectedInstance: "uni-test-server",
+		}),
+	)
 
 	DescribeTable("client from Kubernetes",
 		func(given testCase) {

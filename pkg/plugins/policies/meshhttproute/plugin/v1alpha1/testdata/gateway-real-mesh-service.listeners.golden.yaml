@@ -1,0 +1,60 @@
+resources:
+- name: sample-gateway:HTTP:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 8080
+    enableReusePort: true
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            headersWithUnderscoresAction: REJECT_REQUEST
+            idleTimeout: 300s
+          http2ProtocolOptions:
+            allowConnect: true
+            initialConnectionWindowSize: 1048576
+            initialStreamWindowSize: 65536
+            maxConcurrentStreams: 100
+          httpFilters:
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
+          - name: gzip-compress
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+              compressorLibrary:
+                name: gzip
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+              responseDirectionConfig:
+                disableOnEtagHeader: true
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          mergeSlashes: true
+          normalizePath: true
+          pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+          rds:
+            configSource:
+              ads: {}
+              initialFetchTimeout: 0s
+              resourceApiVersion: V3
+            routeConfigName: sample-gateway:HTTP:8080:*
+          requestHeadersTimeout: 0.500s
+          serverName: Kuma Gateway
+          statPrefix: sample-gateway
+          streamIdleTimeout: 5s
+          useRemoteAddress: true
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    name: sample-gateway:HTTP:8080
+    perConnectionBufferLimitBytes: 32768
+    trafficDirection: INBOUND
