@@ -2,28 +2,8 @@ resources:
 - name: external-default
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    healthChecks:
-    - healthyThreshold: 77
-      interval: 11s
-      tcpHealthCheck:
-        receive:
-        - text: 634739755a776f3d
-        send:
-          text: 63476c755a776f3d
-      timeout: 99s
-      unhealthyThreshold: 7
     name: external
 - name: external-mesh2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    healthChecks:
-    - healthyThreshold: 311
-      interval: 55s
-      tcpHealthCheck:
-        receive:
-        - text: 634739755a776f3d
-        send:
-          text: 63476c755a776f3d
-      timeout: 5s
-      unhealthyThreshold: 122
     name: external

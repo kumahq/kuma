@@ -195,6 +195,9 @@ func configureEndpoints(
 	egressEnabled bool,
 	origin string,
 ) error {
+	if cluster == nil {
+		return nil
+	}
 	if cluster.LoadAssignment != nil {
 		if err := ConfigureStaticEndpointsLocalityAware(tags, endpoints, cluster, conf, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
 			return err

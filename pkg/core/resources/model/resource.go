@@ -718,6 +718,18 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 	}
 }
 
+func TypedResourceIdentifierToBackendRef(id TypedResourceIdentifier) common_api.BackendRef {
+	return common_api.BackendRef{
+		TargetRef: common_api.TargetRef{
+			Kind:        common_api.TargetRefKind(id.ResourceType),
+			Name:        id.Name,
+			Namespace:   id.Namespace,
+			Mesh:        id.Mesh,
+			SectionName: id.SectionName,
+		},
+	}
+}
+
 func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef) ResolvedBackendRef {
 	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
 

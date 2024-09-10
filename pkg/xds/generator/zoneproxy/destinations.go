@@ -10,6 +10,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -31,6 +32,7 @@ type BackendRefDestination struct {
 	// DestinationName is a string to reference Type+Name+Mesh+Port. Effectively an Envoy Cluster name
 	DestinationName string
 	SNI             string
+	Resource        model.ResolvedBackendRef
 }
 
 func BuildMeshDestinations(
@@ -68,6 +70,7 @@ func buildMeshServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
 				SNI:             sni,
+				Resource:        model.ResolveBackendRef(ms.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(ms))),
 			})
 		}
 	}
@@ -90,6 +93,7 @@ func buildMeshExternalServiceDestinations(
 			Mesh:            mes.GetMeta().GetMesh(),
 			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 			SNI:             sni,
+			Resource:        model.ResolveBackendRef(mes.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(mes))),
 		})
 	}
 	return mesDestinations
@@ -104,6 +108,7 @@ func buildMeshMultiZoneServiceDestinations(
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
+				Resource:        model.ResolveBackendRef(ms.Meta, model.TypedResourceIdentifierToBackendRef(model.NewTypedResourceIdentifier(ms))),
 				SNI: tls.SNIForResource(
 					core_model.GetDisplayName(ms.GetMeta()),
 					ms.GetMeta().GetMesh(),

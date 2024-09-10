@@ -481,6 +481,8 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			Protocol:       core_mesh.ProtocolTCP,
 		})
 
+		mesDefault := samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("default").Build()
+		mesMesh2 := samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh2").Build()
 		proxy := &core_xds.Proxy{
 			APIVersion: envoy_common.APIV3,
 			ZoneEgressProxy: &core_xds.ZoneEgressProxy{
@@ -499,13 +501,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Mesh: builders.Mesh().WithName("default").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("default").Build(),
-								},
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{mesDefault},
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							mesDefault.DestinationName(0): {
 								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{
@@ -527,13 +527,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Mesh: builders.Mesh().WithName("mesh2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
 						Resources: map[core_model.ResourceType]core_model.ResourceList{
 							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-								Items: []*meshexternalservice_api.MeshExternalServiceResource{
-									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh2").Build(),
-								},
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{mesMesh2},
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							mesMesh2.DestinationName(0): {
 								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{

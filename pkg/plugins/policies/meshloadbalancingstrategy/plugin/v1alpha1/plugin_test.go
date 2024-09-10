@@ -34,6 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -459,7 +460,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 		Entry("egress_meshexternalservice", testCase{
 			resources: []core_xds.Resource{
 				{
-					Name:   "mesh-1:external",
+					Name:   samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-1").Build().DestinationName(0),
 					Origin: egress.OriginEgress,
 					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:external").
 						Configure(clusters.EdsCluster()).
@@ -483,7 +484,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
-							Configure(MatchServerNames("external{mesh=mesh-1}")).
+							Configure(MatchServerNames(tls.SNIForResource("external", "mesh-1", meshexternalservice_api.MeshExternalServiceType, 9000, nil))).
 							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
 							Configure(
 								HttpInboundRoutes(
@@ -507,7 +508,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						{
 							Mesh: builders.Mesh().WithName("mesh-1").Build(),
 							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								"external": {
+								samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-1").Build().DestinationName(0): {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										ToRules: core_rules.ToRules{
 											ResourceRules: core_rules.ResourceRules{

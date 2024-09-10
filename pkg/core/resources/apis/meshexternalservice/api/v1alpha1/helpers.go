@@ -12,6 +12,9 @@ import (
 
 func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
 	id := model.NewResourceIdentifier(m)
+	if port == 0 {
+		port = uint32(m.Spec.Match.Port)
+	}
 	return fmt.Sprintf("%s_%s_%s_%s_mextsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 

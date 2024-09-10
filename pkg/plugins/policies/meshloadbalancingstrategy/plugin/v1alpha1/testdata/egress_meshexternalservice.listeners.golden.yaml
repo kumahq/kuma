@@ -10,7 +10,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - external{mesh=mesh-1}
+        - ad098e6a3e7e807e1.external.9000.mesh-1.mes
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
