@@ -16,26 +16,26 @@ import (
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func newKubeClient(l logr.Logger, conf PluginConf) (*kubernetes.Clientset, error) {
-	l = log.WithValues("kubeconfig", conf.Kubernetes.Kubeconfig)
+func newKubeClient(logger logr.Logger, conf PluginConf) (*kubernetes.Clientset, error) {
+	logger = logger.WithValues("kubeconfig", conf.Kubernetes.Kubeconfig)
 
 	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 		&clientcmd.ClientConfigLoadingRules{ExplicitPath: conf.Kubernetes.Kubeconfig},
 		&clientcmd.ConfigOverrides{},
 	).ClientConfig()
 	if err != nil {
-		l.Error(err, "failed setting up kubernetes client with kubeconfig")
+		logger.Error(err, "failed setting up kubernetes client with kubeconfig")
 		return nil, err
 	}
 
-	l.V(1).Info("set up kubernetes client with kubeconfig", "config", config)
+	logger.V(1).Info("set up kubernetes client with kubeconfig", "config", config)
 
 	return kubernetes.NewForConfig(config)
 }
 
 func getAndValidatePodAnnotations(
 	ctx context.Context,
-	l logr.Logger,
+	logger logr.Logger,
 	conf *PluginConf,
 	k8sArgs K8sArgs,
 ) (map[string]string, bool, error) {
@@ -50,7 +50,7 @@ func getAndValidatePodAnnotations(
 		return nil, true, errors.New("namespace is in the exclude list")
 	}
 
-	client, err := newKubeClient(l, *conf)
+	client, err := newKubeClient(logger, *conf)
 	if err != nil {
 		return nil, false, errors.Wrap(err, "failed to create Kubernetes client")
 	}
@@ -67,7 +67,7 @@ func getAndValidatePodAnnotations(
 		return nil, false, errors.Wrap(err, "failed to retrieve pod data from Kubernetes API")
 	}
 
-	l.V(1).Info(
+	logger.V(1).Info(
 		"retrieved pod data",
 		"name", pod.Name,
 		"namespace", pod.Namespace,
