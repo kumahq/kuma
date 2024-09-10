@@ -93,19 +93,18 @@ func parseConfig(stdin []byte) (*PluginConf, error) {
 	return &conf, nil
 }
 
-func hijackMainProcessStderr(logLevel string) (*os.File, error) {
+func hijackMainCNIProcessStderr(l logr.Logger) (*os.File, error) {
 	file, err := getCniProcessStderr()
 	if err != nil {
-		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
-		return nil, err
-	}
-	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
-	os.Stderr = file
-	if err := install.SetLogLevel(&log, logLevel, defaultLogName); err != nil {
-		return file, errors.Wrap(err, "wrong set the right log level")
+		l.Error(err, "failed to hijack stderr of the CNI process, continuing to log to the default location: "+defaultLogLocation)
+		return nil, errors.Wrap(err, "unable to open CNI process stderr file")
 	}
 
-	return file, err
+	os.Stderr = file
+
+	l.Info("successfully hijacked stderr of the CNI process; logs will be visible via 'kubectl logs'")
+
+	return file, nil
 }
 
 func getCniProcessStderr() (*os.File, error) {
@@ -125,13 +124,16 @@ func cmdAdd(args *skel.CmdArgs) error {
 		return errorLogged(log, err, "error parsing kuma-cni cmdAdd config")
 	}
 
-	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel)
-	if mainProcessStderr != nil {
-		defer mainProcessStderr.Close()
-	}
+	stderr, err := hijackMainCNIProcessStderr(log)
 	if err != nil {
 		return err
 	}
+	defer stderr.Close()
+
+	if err := install.SetLogLevel(&log, conf.LogLevel, defaultLogName); err != nil {
+		return errorLogged(log, err, "wrong set the right log level")
+	}
+
 	logPrevResult(conf)
 
 	// Determine if running under k8s by checking the CNI args
