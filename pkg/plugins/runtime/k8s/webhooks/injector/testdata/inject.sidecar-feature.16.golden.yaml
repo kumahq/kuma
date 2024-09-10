@@ -35,7 +35,6 @@ spec:
     - --ip-family-mode=dualstack
     - --redirect-outbound-port=15001
     - --exclude-outbound-ports=1236
-    - --redirect-inbound
     - --redirect-inbound-port=15006
     - --exclude-inbound-ports=1234,1235,9000
     - --verbose

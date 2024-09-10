@@ -33,7 +33,6 @@ spec:
     - --kuma-dp-user=5678
     - --ip-family-mode=dualstack
     - --redirect-outbound-port=15001
-    - --redirect-inbound
     - --redirect-inbound-port=15006
     - --exclude-inbound-ports=9000
     - --exclude-inbound-ips=192.168.0.1,172.32.16.8/16,a81b:a033:6399:73c7:72b6:aa8c:6f22:7098,fe80::/10

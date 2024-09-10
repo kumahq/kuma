@@ -34,7 +34,6 @@ spec:
     - --kuma-dp-user=5678
     - --ip-family-mode=dualstack
     - --redirect-outbound-port=15001
-    - --redirect-inbound
     - --redirect-inbound-port=15006
     - --ebpf-enabled
     - --ebpf-bpffs-path=/sys/fs/bpf
