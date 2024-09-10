@@ -18,7 +18,7 @@ package kubernetes
 
 import (
 	"fmt"
-	"strconv"
+	"slices"
 	"strings"
 
 	kube_core "k8s.io/api/core/v1"
@@ -172,78 +172,63 @@ func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 	return fmt.Sprintf("%s,%s", inboundPortsToExclude, appProbeProxyPort)
 }
 
-func (pr *PodRedirect) AsKumactlCommandLine() []string {
-	result := []string{
-		"--redirect-outbound-port",
-		fmt.Sprintf("%d", pr.RedirectPortOutbound),
-		"--redirect-inbound=" + fmt.Sprintf("%t", pr.RedirectInbound),
-		"--redirect-inbound-port",
-		fmt.Sprintf("%d", pr.RedirectPortInbound),
-		"--kuma-dp-user",
-		pr.UID,
-		"--exclude-inbound-ports",
-		pr.ExcludeInboundPorts,
-		"--exclude-outbound-ports",
-		pr.ExcludeOutboundPorts,
-		"--verbose",
-		"--ip-family-mode",
-		pr.IpFamilyMode,
-	}
+func flag[T string | bool | uint32](name string, values ...T) []string {
+	var result []string
 
-	for _, exclusion := range pr.ExcludeOutboundPortsForUIDs {
-		result = append(result,
-			"--exclude-outbound-ports-for-uids", exclusion,
-		)
-	}
-
-	if pr.BuiltinDNSEnabled {
-		result = append(result,
-			"--redirect-all-dns-traffic",
-			"--redirect-dns-port", strconv.FormatInt(int64(pr.BuiltinDNSPort), 10),
-		)
-	}
-
-	if pr.TransparentProxyEnableEbpf {
-		result = append(result, "--ebpf-enabled")
-
-		instanceIPEnvVarName := "INSTANCE_IP"
-		if pr.TransparentProxyEbpfInstanceIPEnvVarName != "" {
-			instanceIPEnvVarName = pr.TransparentProxyEbpfInstanceIPEnvVarName
+	for _, value := range values {
+		boolValue, isBool := any(value).(bool)
+		switch {
+		case isBool && boolValue:
+			result = append(result, fmt.Sprintf("--%s", name))
+		case value != *new(T):
+			result = append(result, fmt.Sprintf("--%s=%v", name, value))
 		}
-		result = append(result, "--ebpf-instance-ip", fmt.Sprintf("$(%s)", instanceIPEnvVarName))
-
-		if pr.TransparentProxyEbpfBPFFSPath != "" {
-			result = append(result, "--ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath)
-		}
-
-		if pr.TransparentProxyEbpfCgroupPath != "" {
-			result = append(result, "--ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath)
-		}
-
-		if pr.TransparentProxyEbpfTCAttachIface != "" {
-			result = append(result, "--ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface)
-		}
-
-		if pr.TransparentProxyEbpfProgramsSourcePath != "" {
-			result = append(result, "--ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath)
-		}
-	}
-
-	if pr.DropInvalidPackets {
-		result = append(result, "--drop-invalid-packets")
-	}
-
-	if pr.IptablesLogs {
-		result = append(result, "--iptables-logs")
-	}
-
-	if pr.ExcludeOutboundIPs != "" {
-		result = append(result, "--exclude-outbound-ips", pr.ExcludeOutboundIPs)
-	}
-
-	if pr.ExcludeInboundIPs != "" {
-		result = append(result, "--exclude-inbound-ips", pr.ExcludeInboundIPs)
 	}
 
 	return result
+}
+
+func flagsIf[T string | bool](condition T, flags ...[]string) []string {
+	if condition == *new(T) {
+		return nil
+	}
+
+	return slices.Concat(flags...)
+}
+
+func (pr *PodRedirect) AsKumactlCommandLine() []string {
+	return slices.Concat(
+		flag("kuma-dp-user", pr.UID),
+		flag("ip-family-mode", pr.IpFamilyMode),
+		// outbound
+		flag("redirect-outbound-port", pr.RedirectPortOutbound),
+		flag("exclude-outbound-ports", pr.ExcludeOutboundPorts),
+		flag("exclude-outbound-ips", pr.ExcludeOutboundIPs),
+		flag("exclude-outbound-ports-for-uids", pr.ExcludeOutboundPortsForUIDs...),
+		// inbound
+		flag("redirect-inbound", pr.RedirectInbound),
+		flag("redirect-inbound-port", pr.RedirectPortInbound),
+		flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
+		flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
+		// DNS
+		flagsIf(pr.BuiltinDNSEnabled,
+			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
+			flag("redirect-dns-port", pr.BuiltinDNSPort),
+		),
+		// ebpf
+		flagsIf(pr.TransparentProxyEnableEbpf,
+			flag("ebpf-enabled", pr.TransparentProxyEnableEbpf),
+			flag("ebpf-bpffs-path", pr.TransparentProxyEbpfBPFFSPath),
+			flag("ebpf-cgroup-path", pr.TransparentProxyEbpfCgroupPath),
+			flag("ebpf-tc-attach-iface", pr.TransparentProxyEbpfTCAttachIface),
+			flag("ebpf-programs-source-path", pr.TransparentProxyEbpfProgramsSourcePath),
+			flagsIf(pr.TransparentProxyEbpfInstanceIPEnvVarName,
+				flag("ebpf-instance-ip", fmt.Sprintf("$(%s)", pr.TransparentProxyEbpfInstanceIPEnvVarName)),
+			),
+		),
+		// other
+		flag("drop-invalid-packets", pr.DropInvalidPackets),
+		flag("iptables-logs", pr.IptablesLogs),
+		flag("verbose", true),
+	)
 }
