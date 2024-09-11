@@ -481,7 +481,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "egress-listener",
 					Origin: egress.OriginEgress,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mesh-1:meshexternalservice_external").
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("external{mesh=mesh-1}")).
 							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
