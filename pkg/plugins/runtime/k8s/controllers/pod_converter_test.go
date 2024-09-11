@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -52,6 +52,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		dataplane         string
 		existingDataplane string
 		nodeLabelsToCopy  []string
+		unchanged         bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -137,9 +138,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			dataplaneProto, err := converter.PodToDataplane(context.Background(), dataplane, pod, services, otherDataplanes)
-			dataplane.SetMesh(util_k8s.MeshOfByAnnotation(pod, &namespace))
-			dataplane.SetSpec(dataplaneProto)
+			err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -362,13 +361,17 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// then
-			ingresSpec, err := converter.PodToIngress(context.Background(), ingress, pod, services)
-			Expect(err).ToNot(HaveOccurred())
-			ingress.SetSpec(ingresSpec)
+			err = converter.PodToIngress(context.Background(), ingress, pod, services)
+			if given.unchanged {
+				Expect(err).To(HaveOccurred())
+				Expect(err).To(Equal(k8s_util.UnchangedResourceError))
+			} else {
+				Expect(err).ToNot(HaveOccurred())
 
-			actual, err := yaml.Marshal(ingress)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
+				actual, err := yaml.Marshal(ingress)
+				Expect(err).ToNot(HaveOccurred())
+				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
+			}
 		},
 		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
 			pod:            "01.pod.yaml",
@@ -402,11 +405,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
 		}),
-		Entry("Existing ZoneIngress with load balancer and ip", testCase{
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
 			pod:               "ingress-exists.pod.yaml",
 			servicesForPod:    "ingress-exists.services-for-pod.yaml",
-			existingDataplane: "ingress-exists.existing-dataplane.yaml",
 			dataplane:         "ingress-exists.golden.yaml",
+			unchanged:         true,
 		}),
 	)
 
@@ -448,8 +451,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			egress := &mesh_k8s.ZoneEgress{}
-			zoneEgressRes, err := converter.PodToEgress(ctx, egress, pod, services)
-			egress.SetSpec(zoneEgressRes)
+			err = converter.PodToEgress(ctx, egress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

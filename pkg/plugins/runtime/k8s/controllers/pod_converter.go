@@ -13,9 +13,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -38,54 +40,74 @@ func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
+	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
-) (*mesh_proto.Dataplane, error) {
+) error {
+	previousMesh := dataplane.Mesh
+	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return dataplaneProto, nil
+	currentSpec, err := dataplane.GetSpec()
+	if err != nil {
+		return err
+	}
+
+	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh {
+		return util_k8s.UnchangedResourceError
+	}
+	dataplane.SetSpec(dataplaneProto)
+	return nil
 }
 
-func (p *PodConverter) PodToIngress(
-	ctx context.Context,
-	zoneIngress *mesh_k8s.ZoneIngress,
-	pod *kube_core.Pod,
-	services []*kube_core.Service,
-) (*mesh_proto.ZoneIngress, error) {
+func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	logger := converterLog.WithValues("ZoneIngress.name", zoneIngress.Name, "Pod.name", pod.Name)
 	// Start with the existing ZoneIngress spec so we won't override available services in Ingress section
 	zoneIngressRes := core_mesh.NewZoneIngressResource()
 	if err := p.ResourceConverter.ToCoreResource(zoneIngress, zoneIngressRes); err != nil {
 		logger.Error(err, "unable to convert ZoneIngress k8s object into core resource")
-		return nil, err
+		return err
 	}
 
 	if err := p.IngressFor(ctx, zoneIngressRes.Spec, pod, services); err != nil {
-		return nil, err
+		return err
 	}
-	return zoneIngressRes.Spec, nil
+
+	currentSpec, err := zoneIngress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneIngressRes.Spec) {
+		return util_k8s.UnchangedResourceError
+	}
+	zoneIngress.SetSpec(zoneIngressRes.Spec)
+	return nil
 }
 
-func (p *PodConverter) PodToEgress(
-	ctx context.Context,
-	zoneEgress *mesh_k8s.ZoneEgress,
-	pod *kube_core.Pod,
-	services []*kube_core.Service,
-) (*mesh_proto.ZoneEgress, error) {
+func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.ZoneEgress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	logger := converterLog.WithValues("ZoneEgress.name", zoneEgress.Name, "Pod.name", pod.Name)
 	// Start with the existing ZoneEgress spec
 	zoneEgressRes := core_mesh.NewZoneEgressResource()
 	if err := p.ResourceConverter.ToCoreResource(zoneEgress, zoneEgressRes); err != nil {
 		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
-		return nil, err
+		return err
 	}
 
 	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
-		return nil, err
+		return err
 	}
-	return zoneEgressRes.Spec, nil
+	currentSpec, err := zoneEgress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneEgressRes.Spec) {
+		return util_k8s.UnchangedResourceError
+	}
+
+	zoneEgress.SetSpec(zoneEgressRes.Spec)
+	return nil
 }
 
 func (p *PodConverter) dataplaneFor(
