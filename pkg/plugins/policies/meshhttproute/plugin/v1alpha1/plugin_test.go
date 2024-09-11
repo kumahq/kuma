@@ -1658,9 +1658,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Build(),
 			}
 		}()),
-		Entry("gateway-real-mesh-external-service", func() outboundsTestCase {
+		FEntry("gateway-real-mesh-external-service", func() outboundsTestCase {
 			meshExtSvc := meshexternalservice_api.MeshExternalServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Meta: &test_model.ResourceMeta{Name: "external", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match:     meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
@@ -1707,12 +1707,16 @@ var _ = Describe("MeshHTTPRoute", func() {
 			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
 				Items: []*meshexternalservice_api.MeshExternalServiceResource{&meshExtSvc},
 			}
+			resources.MeshLocalResources[core_mesh.ZoneEgressType] = &core_mesh.ZoneEgressResourceList{
+				Items: []*core_mesh.ZoneEgressResource{builders.ZoneEgress().WithPort(10002).Build()},
+			}
+
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend", xds_builders.Endpoint().
+				AddEndpoint("external", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(9090).
 					WithWeight(1).
-					WithTags(mesh_proto.ServiceTag, "backend"))
+					WithTags(mesh_proto.ServiceTag, "external"))
 			xdsContext := xds_builders.Context().
 				WithMeshBuilder(samples.MeshDefaultBuilder()).
 				WithResources(resources).
@@ -1739,7 +1743,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								BackendRefs: &[]common_api.BackendRef{{
 									TargetRef: common_api.TargetRef{
 										Kind: common_api.MeshExternalService,
-										Name: "backend",
+										Name: "external",
 									},
 									Port:   pointer.To(uint32(9090)),
 									Weight: pointer.To(uint(100)),

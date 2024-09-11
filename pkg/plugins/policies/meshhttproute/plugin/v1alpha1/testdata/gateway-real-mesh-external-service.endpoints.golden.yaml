@@ -1,1 +1,13 @@
-{}
+resources:
+- name: external-610eac5adec8fa2c
+  resource:
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
+    clusterName: external-610eac5adec8fa2c
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 9090
+        loadBalancingWeight: 1
