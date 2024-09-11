@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 // MeshExternalService
@@ -31,16 +32,6 @@ const (
 	HostnameGeneratorType MatchType = "HostnameGenerator"
 )
 
-// +kubebuilder:validation:Enum=tcp;grpc;http;http2
-type ProtocolType string
-
-const (
-	TcpProtocol   ProtocolType = "tcp"
-	GrpcProtocol  ProtocolType = "grpc"
-	HttpProtocol  ProtocolType = "http"
-	Http2Protocol ProtocolType = "http2"
-)
-
 type Match struct {
 	// Type of the match, only `HostnameGenerator` is available at the moment.
 	// +kubebuilder:default=HostnameGenerator
@@ -49,7 +40,8 @@ type Match struct {
 	Port Port `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
-	Protocol ProtocolType `json:"protocol,omitempty"`
+	// +kubebuilder:validation:Enum=tcp;grpc;http;http2
+	Protocol core_mesh.Protocol `json:"protocol,omitempty"`
 }
 
 type Extension struct {
