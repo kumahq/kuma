@@ -1,0 +1,73 @@
+DataplanePolicies: null
+FromRules:
+  Rules:
+    :0: []
+GatewayRules:
+  FromRules: null
+  ToRules:
+    ByListener: null
+    ByListenerAndHostname: null
+InboundPolicies: null
+OutboundPolicies: null
+ServicePolicies: null
+SingleItemRules:
+  Rules: null
+ToRules:
+  ResourceRules:
+    mesh:name/mesh-1:
+      BackendRefOriginIndex: {}
+      Conf:
+      - connectionLimits:
+          maxConnectionPools: 99
+          maxConnections: 99
+          maxPendingRequests: 99
+          maxRequests: 99
+          maxRetries: 99
+      Origin:
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mcb-2
+          type: MeshCircuitBreaker
+        RuleIndex: 0
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mesh-1
+        type: Mesh
+      ResourceSectionName: ""
+    meshexternalservice:mesh/mesh-1:name/mes:
+      BackendRefOriginIndex: {}
+      Conf:
+      - connectionLimits:
+          maxConnectionPools: 99
+          maxConnections: 99
+          maxPendingRequests: 1
+          maxRequests: 1
+          maxRetries: 1
+      Origin:
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mcb-2
+          type: MeshCircuitBreaker
+        RuleIndex: 0
+      - Resource:
+          creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mcb-1
+          type: MeshCircuitBreaker
+        RuleIndex: 0
+      Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mes
+        type: MeshExternalService
+      ResourceSectionName: ""
+  Rules: null
+Type: MeshCircuitBreaker
+Warnings: null
