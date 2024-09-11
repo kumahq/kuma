@@ -24,6 +24,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type PodRedirect struct {
@@ -57,15 +58,17 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	var pr PodRedirect
 
 	annotations := metadata.Annotations(pod.Annotations)
+	defaultTProxyCfg := tproxy_config.DefaultConfig()
 
 	pr.BuiltinDNSEnabled, _, err = annotations.GetEnabled(metadata.KumaBuiltinDNS)
 	if err != nil {
 		return nil, err
 	}
 
-	pr.BuiltinDNSPort, _, err = annotations.GetUint32(metadata.KumaBuiltinDNSPort)
-	if err != nil {
+	if v, _, err := annotations.GetUint32(metadata.KumaBuiltinDNSPort); err != nil {
 		return nil, err
+	} else if v != uint32(defaultTProxyCfg.Redirect.DNS.Port) {
+		pr.BuiltinDNSPort = v
 	}
 
 	pr.ExcludeOutboundPorts, _ = annotations.GetString(metadata.KumaTrafficExcludeOutboundPorts)
@@ -74,9 +77,10 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		pr.ExcludeOutboundPortsForUIDs = strings.Split(excludeOutboundPortsForUIDs, ";")
 	}
 
-	pr.RedirectPortOutbound, _, err = annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
-	if err != nil {
+	if v, _, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
 		return nil, err
+	} else if v != uint32(defaultTProxyCfg.Redirect.Outbound.Port) {
+		pr.RedirectPortOutbound = v
 	}
 
 	pr.RedirectInbound = true
@@ -89,12 +93,17 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	}
 
 	pr.ExcludeInboundPorts = excludeApplicationProbeProxyPort(pod.Annotations)
-	pr.RedirectPortInbound, _, err = annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
-	if err != nil {
+
+	if v, _, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
 		return nil, err
+	} else if v != uint32(defaultTProxyCfg.Redirect.Inbound.Port) {
+		pr.RedirectPortInbound = v
 	}
 
-	pr.IpFamilyMode, _ = annotations.GetStringWithDefault(metadata.IpFamilyModeDualStack, metadata.KumaTransparentProxyingIPFamilyMode)
+	defaultIPFamilyMode := string(defaultTProxyCfg.IPFamilyMode)
+	if v, _ := annotations.GetString(metadata.KumaTransparentProxyingIPFamilyMode); v != defaultIPFamilyMode {
+		pr.IpFamilyMode = v
+	}
 
 	pr.DropInvalidPackets, _, _ = annotations.GetBoolean(metadata.KumaTrafficDropInvalidPackets)
 
@@ -189,8 +198,6 @@ func flag[T string | bool | uint32](name string, values ...T) []string {
 
 	return result
 }
-
-
 
 func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	if condition == *new(T) {
