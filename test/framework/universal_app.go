@@ -524,5 +524,5 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	if isipv6 {
 		errString = "No IPv6 address found"
 	}
-	return "", errors.Errorf(errString)
+	return "", errors.New(errString)
 }

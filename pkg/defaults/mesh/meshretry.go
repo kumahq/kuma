@@ -14,7 +14,7 @@ import (
 var defaultMeshRetryResource = func() model.Resource {
 	return &v1alpha1.MeshRetryResource{
 		Spec: &v1alpha1.MeshRetry{
-			TargetRef: common_api.TargetRef{
+			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 			},
 			To: []v1alpha1.To{

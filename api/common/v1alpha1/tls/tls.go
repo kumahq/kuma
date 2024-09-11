@@ -4,6 +4,8 @@ package tls
 import (
 	"slices"
 
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -62,3 +64,43 @@ func ValidateVersion(version *Version) validators.ValidationError {
 
 	return verr
 }
+
+func ToTlsVersion(version *TlsVersion) tlsv3.TlsParameters_TlsProtocol {
+	switch *version {
+	case TLSVersion13:
+		return tlsv3.TlsParameters_TLSv1_3
+	case TLSVersion12:
+		return tlsv3.TlsParameters_TLSv1_2
+	case TLSVersion11:
+		return tlsv3.TlsParameters_TLSv1_1
+	case TLSVersion10:
+		return tlsv3.TlsParameters_TLSv1_0
+	case TLSVersionAuto:
+		fallthrough
+	default:
+		return tlsv3.TlsParameters_TLS_AUTO
+	}
+}
+
+// +kubebuilder:validation:Enum=ECDHE-ECDSA-AES128-GCM-SHA256;ECDHE-ECDSA-AES256-GCM-SHA384;ECDHE-ECDSA-CHACHA20-POLY1305;ECDHE-RSA-AES128-GCM-SHA256;ECDHE-RSA-AES256-GCM-SHA384;ECDHE-RSA-CHACHA20-POLY1305
+type TlsCipher string
+
+const (
+	EcdheEcdsaAes128GcmSha256  TlsCipher = "ECDHE-ECDSA-AES128-GCM-SHA256"
+	EcdheEcdsaAes256GcmSha384  TlsCipher = "ECDHE-ECDSA-AES256-GCM-SHA384"
+	EcdheEcdsaChacha20Poly1305 TlsCipher = "ECDHE-ECDSA-CHACHA20-POLY1305"
+	EcdheRsaAes128GcmSha256    TlsCipher = "ECDHE-RSA-AES128-GCM-SHA256"
+	EcdheRsaAes256GcmSha384    TlsCipher = "ECDHE-RSA-AES256-GCM-SHA384"
+	EcdheRsaChacha20Poly1305   TlsCipher = "ECDHE-RSA-CHACHA20-POLY1305"
+)
+
+var AllCiphers = []string{
+	string(EcdheEcdsaAes128GcmSha256),
+	string(EcdheEcdsaAes256GcmSha384),
+	string(EcdheEcdsaChacha20Poly1305),
+	string(EcdheRsaAes128GcmSha256),
+	string(EcdheRsaAes256GcmSha384),
+	string(EcdheRsaChacha20Poly1305),
+}
+
+type TlsCiphers []TlsCipher

@@ -78,6 +78,19 @@ from:
     default:
       backends: []
 `),
+			Entry("MeshMultiZoneService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      name: web-backend
+    default:
+      backends:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+`),
 		)
 
 		type testCase struct {

@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtcproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtimeout"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtls"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshtrafficpermission"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/ownership"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/producer"
@@ -53,6 +54,7 @@ var (
 	_ = Describe("TrafficPermission", trafficpermission.TrafficPermission, Ordered)
 	_ = Describe("TrafficRoute", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("MeshHTTPRoute", meshhttproute.Test, Ordered)
+	_ = Describe("MeshHTTPRoute MeshService", meshhttproute.MeshService, Ordered)
 	_ = Describe("MeshTCPRoute", meshtcproute.Test, Ordered)
 	_ = Describe("InboundPassthrough", inbound_communication.InboundPassthrough, Ordered)
 	_ = Describe("InboundPassthroughDisabled", inbound_communication.InboundPassthroughDisabled, Ordered)
@@ -82,4 +84,5 @@ var (
 	_ = Describe("ReachableBackends", reachablebackends.ReachableBackends, Ordered)
 	_ = Describe("Producer Policy Flow", producer.ProducerPolicyFlow, Ordered)
 	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
+	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
 )

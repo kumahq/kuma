@@ -199,9 +199,9 @@ the listener for the ClusterIP.
 
 3. Users can enable behavior by setting
    - `meshServices: Everywhere` syncs `MeshService` outbounds to all data plane proxies
-   - `meshServices: ReachableBackendRefs` to enable on a case-by-case basis by setting
-     `reachableBackendRefs`:
-     `reachableBackendRefs: { kind: MeshService, labels: {} }`
+   - `meshServices: ReachableBackends` to enable on a case-by-case basis by setting
+     `reachableBackends`:
+     `reachableBackends: { kind: MeshService, labels: {} }`
 
 - **NOTE**: On k8s if the consumer can reach a given local `MeshService`,
   the Kubernetes IP has the behavior of `MeshService`
@@ -350,10 +350,10 @@ or maybe it's OK to switch to local-zone load balancing:
 - `Disabled` is the default
 - `Everywhere` syncs `MeshService` outbounds to all data plane proxies
 - `Exclusive` disables `kuma.io/service` outbounds and enables `MeshService`
-- `ReachableBackendRefs` to generate all `MeshServices` but sync
-  on a case-by-case basis by setting `reachableBackendRefs`:
+- `ReachableBackends` to generate all `MeshServices` but sync
+  on a case-by-case basis by setting `reachableBackends`:
   ```
-  reachableBackendRefs: { kind: MeshService, labels: {} }
+  reachableBackends: { kind: MeshService, labels: {} }
   ```
 
 1. On K8s: if the consumer can reach a given local `MeshService`,

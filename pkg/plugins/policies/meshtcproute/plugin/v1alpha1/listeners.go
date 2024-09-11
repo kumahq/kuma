@@ -13,7 +13,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -34,7 +33,7 @@ func generateFromService(
 
 	fallbackBackendRef := model.ResolvedBackendRef{
 		LegacyBackendRef: &svc.BackendRef,
-		Resource:         svc.Outbound.Resource,
+		Resource:         svc.Resource,
 	}
 	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, fallbackBackendRef, meshCtx)
 	if len(backendRefs) == 0 {
@@ -53,7 +52,7 @@ func generateFromService(
 		Name:           listener.GetName(),
 		Origin:         generator.OriginOutbound,
 		Resource:       listener,
-		ResourceOrigin: svc.Outbound.Resource,
+		ResourceOrigin: svc.Resource,
 		Protocol:       protocol,
 	})
 	return resources, nil
@@ -93,17 +92,14 @@ func buildOutboundListener(
 	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	var tags envoy_tags.Tags
-	if svc.Outbound.LegacyOutbound != nil {
-		tags = svc.Outbound.LegacyOutbound.Tags
-	}
+	tags := svc.Tags
 
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(
 		proxy.APIVersion,
-		svc.Outbound.GetAddress(),
-		svc.Outbound.GetPort(),
+		svc.OutboundInterface.DataplaneIP,
+		svc.OutboundInterface.DataplanePort,
 		core_xds.SocketAddressProtocolTCP,
 	)
 

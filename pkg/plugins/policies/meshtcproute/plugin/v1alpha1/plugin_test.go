@@ -108,7 +108,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-1",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: builders.TargetRefMesh(),
+									TargetRef: pointer.To(builders.TargetRefMesh()),
 									To: []api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
@@ -122,7 +122,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									Name: "route-2",
 								},
 								Spec: &api.MeshTCPRoute{
-									TargetRef: builders.TargetRefService("web"),
+									TargetRef: pointer.To(builders.TargetRefService("web")),
 									To: []api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
@@ -364,7 +364,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
@@ -403,7 +403,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
@@ -431,7 +431,7 @@ var _ = Describe("MeshTCPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.TcpProtocol,
+						Protocol: core_mesh.ProtocolTCP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{

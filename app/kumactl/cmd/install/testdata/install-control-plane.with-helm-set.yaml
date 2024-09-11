@@ -315,9 +315,8 @@ spec:
                   properties:
                     address:
                       description: Address defines an address to which a user want
-                        to send a request. Is possible to provide `domain`, `ip` and
-                        `unix` sockets.
-                      example: unix:///tmp/example.sock
+                        to send a request. Is possible to provide `domain`, `ip`.
+                      example: example.com
                       minLength: 1
                       type: string
                     port:
@@ -1008,8 +1007,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -2073,8 +2070,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -3415,8 +3410,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -3709,8 +3702,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -4074,8 +4065,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -4626,7 +4615,6 @@ spec:
                 type: object
             required:
             - default
-            - targetRef
             type: object
         type: object
     served: true
@@ -5126,8 +5114,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -5635,8 +5621,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6132,8 +6116,6 @@ spec:
                   type: object
                 minItems: 1
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6497,8 +6479,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6634,8 +6614,9 @@ spec:
                         'targetRef'
                       properties:
                         mode:
-                          description: Mode defines the behavior of inbound listeners
-                            with regard to traffic encryption.
+                          description: |-
+                            Mode defines the behavior of inbound listeners with regard to traffic encryption.
+                            Default: Strict.
                           enum:
                           - Permissive
                           - Strict
@@ -6808,8 +6789,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7093,8 +7072,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7298,8 +7275,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -8892,8 +8867,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -9633,8 +9606,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -10068,6 +10039,7 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -10247,6 +10219,7 @@ spec:
       nodeSelector:
       
         kubernetes.io/os: linux
+      
       containers:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -10377,6 +10350,7 @@ spec:
       
         kubernetes.io/os: linux
       terminationGracePeriodSeconds: 40
+      
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

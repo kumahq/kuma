@@ -12,11 +12,13 @@ import (
 	"github.com/onsi/gomega/types"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancingstrategy_api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -60,7 +62,7 @@ routing:
 				Match: meshexternalservice_api.Match{
 					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 					Port:     80,
-					Protocol: meshexternalservice_api.HttpProtocol,
+					Protocol: core_mesh.ProtocolHTTP,
 				},
 				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
@@ -746,6 +748,78 @@ spec:
 				HaveLen(10),
 				ContainElement(HaveField("ResponseCode", 503)),
 			))
+		})
+	})
+
+	Context("MeshExternalService with MeshLoadBalancingStrategy", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-load-balancing
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+    - address: %s
+      port: 81  
+`, meshNameNoDefaults, esHttpContainerName, esHttp2ContainerName)
+			loadBalancing := fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+mesh: %s
+name: mes-load-balancing-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-load-balancing
+      default:
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            hashPolicies:
+              - type: Header
+                header:
+                  name: x-header`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshLoadBalancingStrategy
+			By("check if responses comes from 2 endpoints")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(2))
+			}, "30s", "1s").Should(Succeed())
+
+			// when MeshLoadBalancingStrategy applied
+			Expect(universal.Cluster.Install(YamlUniversal(loadBalancing))).To(Succeed())
+
+			By("should return responses only from 1 instance")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(1))
+			}, "30s", "500ms").Should(Succeed())
 		})
 	})
 

@@ -151,6 +151,32 @@ app: {{ include "kuma.name" . }}-cni
 {{- end }}
 
 {{/*
+params: { dns: { policy?, config: {nameservers?, searches?}} }
+returns: formatted dnsConfig
+*/}}
+{{- define "kuma.dnsConfig" -}}
+{{- $dns := .dns }}
+{{- if $dns.policy }}
+dnsPolicy: {{ $dns.policy }}
+{{- end }}
+{{- if or (gt (len $dns.config.nameservers) 0) (gt (len $dns.config.searches) 0) }}
+dnsConfig:
+  {{- if gt (len $dns.config.nameservers) 0 }}
+  nameservers:
+    {{- range $nameserver := $dns.config.nameservers }}
+    - {{ $nameserver }}
+    {{- end }}
+  {{- end }}
+  {{- if gt (len $dns.config.searches) 0 }}
+  searches:
+    {{- range $search := $dns.config.searches }}
+    - {{ $search }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end -}}
+
+{{/*
 params: { image: { registry?, repository, tag? }, root: $ }
 returns: formatted image string
 */}}

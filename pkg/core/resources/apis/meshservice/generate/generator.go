@@ -22,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -254,6 +255,8 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			log.Info("Port conflict for a kuma.io/service tag, ports must be identical across Dataplane inbounds for a given kuma.io/service", "dps", dps)
 		}
 		if err := g.resManager.Create(ctx, meshService, store.CreateByKey(name, mesh), store.CreateWithLabels(map[string]string{
+			metadata.KumaMeshLabel:         mesh,
+			mesh_proto.DisplayName:         name,
 			mesh_proto.ManagedByLabel:      managedByValue,
 			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),

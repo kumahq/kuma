@@ -21,14 +21,17 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(r.Spec.TargetRef, r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
 	return verr.OrNil()
 }
 
-func (r *MeshHTTPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshGateway,
@@ -39,7 +42,7 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef common_api.TargetRef) vali
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -63,6 +66,7 @@ func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.Vali
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		})
 	}
@@ -371,6 +375,7 @@ func validateBackendRefs(
 					common_api.MeshService,
 					common_api.MeshServiceSubset,
 					common_api.MeshExternalService,
+					common_api.MeshMultiZoneService,
 				},
 				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
 			}),

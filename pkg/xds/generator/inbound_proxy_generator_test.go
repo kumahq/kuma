@@ -250,5 +250,10 @@ var _ = Describe("InboundProxyGenerator", func() {
 			expected:      "6-envoy-config.golden.yaml",
 			mode:          mesh_proto.CertificateAuthorityBackend_PERMISSIVE,
 		}),
+		Entry("07. transparent_proxying=true, ip_addresses=2, ports=2, mode=strict", testCase{
+			dataplaneFile: "7-dataplane.input.yaml",
+			expected:      "7-envoy-config.golden.yaml",
+			mode:          mesh_proto.CertificateAuthorityBackend_STRICT,
+		}),
 	)
 })

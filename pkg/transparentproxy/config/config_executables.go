@@ -627,17 +627,17 @@ func getIptablesVersion(ctx context.Context, path string) (Version, error) {
 	case stderr.Len() > 0 && isVersionMissing(stderr.String()):
 		return Version{Mode: consts.IptablesModeLegacy}, nil
 	case err != nil:
-		return Version{}, formatIptablesVersionErrorf(err.Error())
+		return Version{}, formatIptablesVersionError(err.Error())
 	}
 
 	matched := consts.IptablesModeRegex.FindStringSubmatch(stdout.String())
 	if len(matched) < 2 {
-		return Version{}, errors.Wrap(formatIptablesVersionErrorf(stdout.String()), "unable to parse iptables version")
+		return Version{}, errors.Wrap(formatIptablesVersionError(stdout.String()), "unable to parse iptables version")
 	}
 
 	version, err := k8s_version.ParseGeneric(matched[1])
 	if err != nil {
-		return Version{}, errors.Wrapf(formatIptablesVersionErrorf(err.Error()), "invalid iptables version string: '%s'", matched[1])
+		return Version{}, errors.Wrapf(formatIptablesVersionError(err.Error()), "invalid iptables version string: '%s'", matched[1])
 	}
 
 	if len(matched) < 3 {
@@ -765,8 +765,7 @@ func getPathsMap(eps ...executablesPaths) map[string]string {
 	return result
 }
 
-func formatIptablesVersionErrorf(format string, a ...any) error {
-	msg := fmt.Sprintf(format, a...)
+func formatIptablesVersionError(msg string) error {
 	msgWithoutNewLines := strings.ReplaceAll(msg, "\n", " ")
 	msgWithoutDuplicatedSpaces := strings.ReplaceAll(msgWithoutNewLines, "  ", " ")
 	msgWithoutDotSuffix := strings.TrimRight(msgWithoutDuplicatedSpaces, ".")

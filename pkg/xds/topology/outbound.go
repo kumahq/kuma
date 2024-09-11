@@ -5,7 +5,6 @@ import (
 	"maps"
 	"net"
 	"strconv"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
@@ -699,10 +698,10 @@ func createMeshExternalServiceEndpoint(
 			}
 			if tls.Version != nil {
 				if tls.Version.Min != nil {
-					es.MinTlsVersion = pointer.To(toTlsVersion(tls.Version.Min))
+					es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
 				}
 				if tls.Version.Max != nil {
-					es.MaxTlsVersion = pointer.To(toTlsVersion(tls.Version.Max))
+					es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
 				}
 			}
 			// Server name and SNI we need to add
@@ -734,45 +733,17 @@ func createMeshExternalServiceEndpoint(
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
-		var outboundEndpoint *core_xds.Endpoint
-		if strings.HasPrefix(endpoint.Address, "unix://") {
-			outboundEndpoint = &core_xds.Endpoint{
-				UnixDomainPath:  endpoint.Address,
-				Weight:          1,
-				ExternalService: es,
-				Tags:            tags,
-				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-			}
-		} else {
-			outboundEndpoint = &core_xds.Endpoint{
-				Target:          endpoint.Address,
-				Port:            uint32(*endpoint.Port),
-				Weight:          1,
-				ExternalService: es,
-				Tags:            tags,
-				Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
-			}
+		outboundEndpoint := &core_xds.Endpoint{
+			Target:          endpoint.Address,
+			Port:            uint32(*endpoint.Port),
+			Weight:          1,
+			ExternalService: es,
+			Tags:            tags,
+			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
 		outbounds[name] = append(outbounds[name], *outboundEndpoint)
 	}
 	return nil
-}
-
-func toTlsVersion(version *common_tls.TlsVersion) core_xds.TlsVersion {
-	switch *version {
-	case common_tls.TLSVersion13:
-		return core_xds.TLSVersion13
-	case common_tls.TLSVersion12:
-		return core_xds.TLSVersion12
-	case common_tls.TLSVersion11:
-		return core_xds.TLSVersion11
-	case common_tls.TLSVersion10:
-		return core_xds.TLSVersion10
-	case common_tls.TLSVersionAuto:
-		fallthrough
-	default:
-		return core_xds.TLSVersionAuto
-	}
 }
 
 func createExternalServiceEndpoint(
