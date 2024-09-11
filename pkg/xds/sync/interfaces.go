@@ -5,7 +5,7 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -25,5 +25,5 @@ type SnapshotReconciler interface {
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-	New(dpKey core_model.ResourceKey) util_watchdog.Watchdog
+	New(dpKey core_model.ResourceKey) util_xds_v3.Watchdog
 }

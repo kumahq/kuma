@@ -29,7 +29,7 @@ func (s staticReconciler) Reconcile(ctx context.Context, node *envoy_core.Node, 
 	return nil, true
 }
 
-func (s staticReconciler) Clear(ctx context.Context, node *envoy_core.Node) error {
+func (s staticReconciler) Clear(node *envoy_core.Node) error {
 	return nil
 }
 
@@ -39,7 +39,7 @@ var _ = Describe("Event Based Watchdog", func() {
 	var eventBus events.EventBus
 	var metrics core_metrics.Metrics
 	var reconciler *staticReconciler
-	var stopCh chan struct{}
+	var cancel context.CancelFunc
 	var flushCh chan time.Time
 	var fullResyncCh chan time.Time
 	var watchdog *EventBasedWatchdog
@@ -56,14 +56,14 @@ var _ = Describe("Event Based Watchdog", func() {
 		eventBus, err = events.NewEventBus(10, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
-		stopCh = make(chan struct{})
 		flushCh = make(chan time.Time)
 		fullResyncCh = make(chan time.Time)
 		reconciler = &staticReconciler{
 			changedResTypes: make(chan map[core_model.ResourceType]struct{}, 1),
 		}
+		ctx := context.Background()
+		ctx, cancel = context.WithCancel(ctx)
 		watchdog = &EventBasedWatchdog{
-			Ctx: context.Background(),
 			Node: &envoy_core.Node{
 				Id: "1",
 			},
@@ -84,12 +84,12 @@ var _ = Describe("Event Based Watchdog", func() {
 			},
 		}
 		go func() {
-			watchdog.Start(stopCh)
+			watchdog.Start(ctx)
 		}()
 	})
 
 	AfterAll(func() {
-		close(stopCh)
+		cancel()
 	})
 
 	It("should reconcile on the first flush", func() {

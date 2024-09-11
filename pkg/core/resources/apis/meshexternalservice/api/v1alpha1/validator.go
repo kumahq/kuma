@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var (
-	allMatchProtocols    = []string{string(TcpProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
+	allMatchProtocols    = []string{core_mesh.ProtocolTCP, core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}
 	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )
@@ -106,32 +106,16 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 			}
 		}
 
-		if isValidUnixPath(endpoint.Address) {
-			if endpoint.Port != nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustNotBeDefined+" when endpoint is a unix path")
-			}
-		}
-
 		if govalidator.IsDNSName(endpoint.Address) {
 			if endpoint.Port == nil {
 				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined+" when endpoint is a hostname")
 			}
 		}
 
-		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address) || isValidUnixPath(endpoint.Address)) {
-			verr.AddViolationAt(validators.Root().Index(i).Field("address"), "address has to be a valid IP or hostname or a unix path")
+		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address)) {
+			verr.AddViolationAt(validators.Root().Index(i).Field("address"), "address has to be a valid IP or hostname")
 		}
 	}
 
 	return verr
-}
-
-func isValidUnixPath(path string) bool {
-	if strings.HasPrefix(path, "unix://") {
-		parts := strings.Split(path, "unix://")
-		filePath := parts[1]
-		return govalidator.IsUnixFilePath(filePath)
-	} else {
-		return false
-	}
 }

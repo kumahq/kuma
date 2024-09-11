@@ -33,7 +33,7 @@ func NewGetResourcesCmd(pctx *kumactl_cmd.RootContext, desc model.ResourceTypeDe
 				currentMesh = ""
 			}
 			if err := rs.List(context.Background(), resources, core_store.ListByMesh(currentMesh), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
-				return errors.Wrapf(err, "failed to list "+string(desc.Name))
+				return errors.Wrap(err, "failed to list "+string(desc.Name))
 			}
 
 			format := output.Format(pctx.GetContext.Args.OutputFormat)

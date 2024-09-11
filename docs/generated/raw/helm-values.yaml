@@ -331,6 +331,17 @@ controlPlane:
   # -- If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
   # The downside is that control plane requires permission to read Secrets in all namespaces.
   supportGatewaySecretsInAllNamespaces: false
+  # -- DNS configuration for the control-plane pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
+  dns:
+    # -- Defines how DNS resolution is configured for that Pod.
+    policy: ""
+    # -- Optional dns configuration, required when policy is 'None'
+    config:
+      # -- A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified.
+      nameservers: []
+      # -- A list of DNS search domains for hostname lookup in the Pod.
+      searches: []
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container
@@ -535,6 +546,17 @@ ingress:
   serviceAccountAnnotations: { }
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
+  # -- DNS configuration for the ingress pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
+  dns:
+    # -- Defines how DNS resolution is configured for that Pod.
+    policy: ""
+    # -- Optional dns configuration, required when policy is 'None'
+    config:
+      # -- A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified.
+      nameservers: []
+      # -- A list of DNS search domains for hostname lookup in the Pod.
+      searches: []
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
@@ -647,6 +669,17 @@ egress:
   serviceAccountAnnotations: { }
   # -- Whether to automountServiceAccountToken for cp. Optionally set to false
   automountServiceAccountToken: true
+  # -- DNS configuration for the egress pod.
+  # This is equivalent to the [Kubernetes DNS policy](https://kubernetes.io/docs/concepts/services-networking/dns-pod-service/#pod-s-dns-policy).
+  dns:
+    # -- Defines how DNS resolution is configured for that Pod.
+    policy: ""
+    # -- Optional dns configuration, required when policy is 'None'
+    config:
+      # -- A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified.
+      nameservers: []
+      # -- A list of DNS search domains for hostname lookup in the Pod.
+      searches: []
 
 kumactl:
   image:

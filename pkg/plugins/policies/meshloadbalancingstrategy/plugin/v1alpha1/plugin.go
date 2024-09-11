@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -26,6 +27,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -287,12 +289,16 @@ func (p plugin) configureGateway(
 }
 
 func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	indexed := rs.IndexByOrigin()
 	endpoints := policies_xds.GatherEgressEndpoints(rs)
 	clusters := policies_xds.GatherClusters(rs)
-
-	for _, mr := range proxy.ZoneEgressProxy.MeshResourcesList {
-		for serviceName, dynamic := range mr.Dynamic {
-			meshName := mr.Mesh.GetMeta().GetName()
+	listeners := policies_xds.GatherListeners(rs)
+	if listeners.Egress == nil {
+		return nil
+	}
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		for serviceName, dynamic := range meshResources.Dynamic {
+			meshName := meshResources.Mesh.GetMeta().GetName()
 			policies, ok := dynamic[api.MeshLoadBalancingStrategyType]
 			if !ok {
 				continue
@@ -308,6 +314,40 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 			err := configureEndpoints(mesh_proto.MultiValueTagSet{}, clusters.Egress[clusterName], endpoints[clusterName], clusterName, conf, rs, proxy.Zone, proxy.APIVersion, true, egress.OriginEgress)
 			if err != nil {
 				return err
+			}
+		}
+
+		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
+		for _, mes := range meshExternalServices.GetItems() {
+			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
+			if !ok {
+				continue
+			}
+			mlbs, ok := policies[api.MeshLoadBalancingStrategyType]
+			if !ok {
+				continue
+			}
+			for mesID, typedResources := range indexed {
+				conf := mlbs.ToRules.ResourceRules.Compute(mesID, meshResources)
+				if conf == nil {
+					continue
+				}
+
+				for typ, resources := range typedResources {
+					switch typ {
+					case envoy_resource.ClusterType:
+						for _, cluster := range resources {
+							err := p.configureCluster(cluster.Resource.(*envoy_cluster.Cluster), conf.Conf[0].(api.Conf))
+							if err != nil {
+								return err
+							}
+						}
+					}
+				}
+				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), mesID.Name, mesID.Mesh)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -363,6 +403,78 @@ func (p plugin) configureListener(
 				routeConfig = r.RouteConfig
 			case *envoy_hcm.HttpConnectionManager_Rds:
 				routeConfig = routes[r.Rds.RouteConfigName]
+			default:
+				return errors.Errorf("unexpected RouteSpecifer %T", r)
+			}
+
+			hpc := &xds.HashPolicyConfigurer{HashPolicies: *hashPolicy}
+			for _, vh := range routeConfig.VirtualHosts {
+				for _, route := range vh.Routes {
+					if err := hpc.Configure(route); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (p plugin) configureEgressListener(
+	l *envoy_listener.Listener,
+	conf api.Conf,
+	name string,
+	meshName string,
+) error {
+	if conf.LoadBalancer == nil {
+		return nil
+	}
+
+	var hashPolicy *[]api.HashPolicy
+
+	switch conf.LoadBalancer.Type {
+	case api.RingHashType:
+		if conf.LoadBalancer.RingHash == nil {
+			return nil
+		}
+		hashPolicy = conf.LoadBalancer.RingHash.HashPolicies
+	case api.MaglevType:
+		if conf.LoadBalancer.Maglev == nil {
+			return nil
+		}
+		hashPolicy = conf.LoadBalancer.Maglev.HashPolicies
+	default:
+		return nil
+	}
+
+	if l.FilterChains == nil {
+		return errors.New("expected at least one filter chain")
+	}
+
+	for _, chain := range l.FilterChains {
+		matched := false
+		for _, serverName := range chain.FilterChainMatch.ServerNames {
+			tags, err := tls.TagsFromSNI(serverName)
+			if err != nil {
+				return err
+			}
+			if tags[mesh_proto.ServiceTag] == name && tags["mesh"] == meshName {
+				matched = true
+				break
+			}
+		}
+		if !matched {
+			continue
+		}
+		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
+			var routeConfig *envoy_route.RouteConfiguration
+			switch r := hcm.RouteSpecifier.(type) {
+			case *envoy_hcm.HttpConnectionManager_RouteConfig:
+				routeConfig = r.RouteConfig
 			default:
 				return errors.Errorf("unexpected RouteSpecifer %T", r)
 			}

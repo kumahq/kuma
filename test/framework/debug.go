@@ -2,11 +2,10 @@ package framework
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -33,32 +32,31 @@ func DebugUniversal(cluster Cluster, mesh string) {
 	kumactlOpts := *cluster.GetKumactlOptions()
 	kumactlOpts.Verbose = false
 
-	seenErrors := []bool{
+	errs := slices.Concat(
 		debugUniversalCopyLogs(debugDir),
 		debugUniversalExport(cluster, mesh, debugDir, kumactlOpts),
 		debugUniversalInspectDPs(cluster, mesh, debugDir, kumactlOpts),
-	}
+	)
 
-	Expect(seenErrors).ToNot(ContainElement(true), "some debug commands failed")
+	for _, err := range errs {
+		Logf("[WARNING]: %s", err)
+	}
 }
 
-func debugUniversalCopyLogs(debugPath string) bool {
-	currPath := universal_logs.GetLogsPath(
+func debugUniversalCopyLogs(debugPath string) []error {
+	srcPath := universal_logs.GetLogsPath(
 		ginkgo.CurrentSpecReport(),
 		Config.UniversalE2ELogsPath,
 	).Describe
-	copyPath := filepath.Join(debugPath, "logs")
+	destPath := filepath.Join(debugPath, "logs")
 
-	logMsg := fmt.Sprintf("copying logs from %q to %q", currPath, copyPath)
+	Logf("copying logs from %q to %q", srcPath, destPath)
 
-	Logf(logMsg)
-
-	if err := CopyDirectory(currPath, copyPath); err != nil {
-		Logf("%s failed with error: %s", logMsg, err)
-		return true
+	if err := os.CopyFS(destPath, os.DirFS(srcPath)); err != nil {
+		return []error{errors.Wrapf(err, "failed to copy logs from %q to %q", srcPath, destPath)}
 	}
 
-	return false
+	return nil
 }
 
 func debugUniversalExport(
@@ -66,33 +64,28 @@ func debugUniversalExport(
 	mesh string,
 	debugPath string,
 	kumactlOpts kumactl.KumactlOptions,
-) bool {
-	var errorSeen bool
+) []error {
+	var errs []error
 
 	filePath := filepath.Join(
 		debugPath,
 		fmt.Sprintf("%s-export.yaml", cluster.Name()),
 	)
 
-	logMsg := fmt.Sprintf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, filePath)
-
-	Logf(logMsg)
+	Logf("saving export for cluster %q and mesh %q to file %q", cluster.Name(), mesh, filePath)
 
 	out, err := kumactlOpts.RunKumactlAndGetOutput("export", "--profile", "all")
 	if err != nil {
-		// We don't want to fail in the middle.
-		errorSeen = true
-		msg := fmt.Sprintf("kumactl export --profile all failed with error: %s", err)
-		out = fmt.Sprintf("# %s", msg)
-		Logf(fmt.Sprintf("%s failed: %s", logMsg, msg))
+		wrappedErr := errors.Wrap(err, "failed to run 'kumactl export --profile all'")
+		errs = append(errs, wrappedErr)
+		out = fmt.Sprintf("# export failed: %s", wrappedErr)
 	}
 
 	if err := os.WriteFile(filePath, []byte(out), 0o600); err != nil {
-		errorSeen = true
-		Logf("%s failed with error: %s", logMsg, err)
+		errs = append(errs, errors.Wrapf(err, "failed to write export to file %q", filePath))
 	}
 
-	return errorSeen
+	return errs
 }
 
 func debugUniversalInspectDPs(
@@ -100,8 +93,8 @@ func debugUniversalInspectDPs(
 	mesh string,
 	debugPath string,
 	kumactlOpts kumactl.KumactlOptions,
-) bool {
-	var errorSeen bool
+) []error {
+	var errs []error
 
 	Logf("saving dataplane inspections from cluster %q for mesh %q", cluster.Name(), mesh)
 
@@ -122,10 +115,9 @@ func debugUniversalInspectDPs(
 				"--type", typ,
 			); err != nil {
 				// We don't want to fail in the middle.
-				errorSeen = true
-				msg := fmt.Sprintf("kumactl inspect dataplane %s --mesh %s --type %s failed with error: %s", dpName, mesh, typ, err)
-				out = fmt.Sprintf("%q", msg)
-				Logf(msg)
+				err := errors.Wrapf(err, "kumactl inspect dataplane %s --mesh %s --type %s failed", dpName, mesh, typ)
+				errs = append(errs, err)
+				out = fmt.Sprintf("%q", err)
 			}
 
 			filePath := filepath.Join(
@@ -134,13 +126,12 @@ func debugUniversalInspectDPs(
 			)
 
 			if err := os.WriteFile(filePath, []byte(out), 0o600); err != nil {
-				errorSeen = true
-				Logf("saving %q for dataplane %q to file %q failed with error: %s", typ, dpName, filePath, err)
+				errs = append(errs, errors.Wrapf(err, "failed to write file %q", filePath))
 			}
 		}
 	}
 
-	return errorSeen
+	return errs
 }
 
 func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
@@ -202,9 +193,12 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	}
 
 	exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-	Expect(errorSeen).NotTo(BeTrue(), "some debug commands failed")
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
+	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
+
+	if errorSeen {
+		Logf("[WARNING]: some debug commands failed")
+	}
 }
 
 func prepareDebugDir() string {
@@ -232,115 +226,4 @@ func CpRestarted(cluster Cluster) bool {
 	default:
 		return false
 	}
-}
-
-// When we'll update our package to Go 1.23, below helper functions are can be replaced with
-// err = os.CopyFS(destDir, os.DirFS(srcDir))
-// ref#1. https://stackoverflow.com/a/56314145
-// ref#2. https://github.com/golang/go/issues/62484
-
-func CopyDirectory(scrDir, dest string) error {
-	entries, err := os.ReadDir(scrDir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		sourcePath := filepath.Join(scrDir, entry.Name())
-		destPath := filepath.Join(dest, entry.Name())
-
-		fileInfo, err := os.Stat(sourcePath)
-		if err != nil {
-			return err
-		}
-
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return errors.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
-		}
-
-		switch fileInfo.Mode() & os.ModeType {
-		case os.ModeDir:
-			if err := CreateIfNotExists(destPath, 0o755); err != nil {
-				return err
-			}
-			if err := CopyDirectory(sourcePath, destPath); err != nil {
-				return err
-			}
-		case os.ModeSymlink:
-			if err := CopySymLink(sourcePath, destPath); err != nil {
-				return err
-			}
-		default:
-			if err := Copy(sourcePath, destPath); err != nil {
-				return err
-			}
-		}
-
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
-		}
-
-		fInfo, err := entry.Info()
-		if err != nil {
-			return err
-		}
-
-		isSymlink := fInfo.Mode()&os.ModeSymlink != 0
-		if !isSymlink {
-			if err := os.Chmod(destPath, fInfo.Mode()); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func Copy(srcFile, dstFile string) error {
-	out, err := os.Create(dstFile)
-	if err != nil {
-		return err
-	}
-
-	defer out.Close()
-
-	in, err := os.Open(srcFile)
-	if err != nil {
-		return err
-	}
-
-	defer in.Close()
-
-	if _, err = io.Copy(out, in); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func Exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
-
-func CreateIfNotExists(dir string, perm os.FileMode) error {
-	if Exists(dir) {
-		return nil
-	}
-
-	if err := os.MkdirAll(dir, perm); err != nil {
-		return errors.Wrapf(err, "failed to create directory: '%s'", dir)
-	}
-
-	return nil
-}
-
-func CopySymLink(source, dest string) error {
-	link, err := os.Readlink(source)
-	if err != nil {
-		return err
-	}
-	return os.Symlink(link, dest)
 }
