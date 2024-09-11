@@ -149,7 +149,7 @@ var booleanAnnotations = map[string]bool{
 	metadata.KumaInitFirst:                         true,
 }
 
-func logYesNoDeprecations(podAnnotations map[string]string, logger logr.Logger) bool {
+func logYesNoDeprecations(podAnnotations map[string]string, logger logr.Logger) {
 	for key, value := range podAnnotations {
 		if _, isBooleanAnno := booleanAnnotations[key]; !isBooleanAnno {
 			continue
@@ -164,5 +164,4 @@ func logYesNoDeprecations(podAnnotations map[string]string, logger logr.Logger) 
 				value, key, replacement))
 		}
 	}
-	return false
 }

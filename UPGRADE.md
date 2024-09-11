@@ -213,9 +213,9 @@ In this release, KDS Delta is used by default and the CP environment variable `K
 
 ### Deprecation of `yes/no` values for annotation switches
 
-The value `yes` and `no` are deprecated when specifying boolean values for switches based on pod annotations, the support for these values will be removed in a future release. These values were not documented, so they are not expected to be widely used.
+The values `yes` and `no` are deprecated for specifying boolean values in switches based on pod annotations, and support for these values will be removed in a future release. Since these values were undocumented, they are not expected to be widely used.
 
-Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. Please check the documentation for the specific annotation for correct replacements.
+Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. Check the documentation for the specific annotation to confirm the correct replacements.
 
 ## Upgrade to `2.8.x`
 
