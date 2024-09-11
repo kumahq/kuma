@@ -3,9 +3,11 @@ package gatewayapi_test
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"testing"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
-	"io/fs"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -19,7 +21,6 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
-	"testing"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
