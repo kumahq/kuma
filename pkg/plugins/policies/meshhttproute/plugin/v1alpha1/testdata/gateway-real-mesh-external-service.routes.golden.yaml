@@ -1,0 +1,20 @@
+resources:
+- name: sample-gateway:HTTP:8080:*
+  resource:
+    '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+    ignorePortInHostMatching: true
+    name: sample-gateway:HTTP:8080:*
+    requestHeadersToRemove:
+    - x-kuma-tags
+    validateClusters: false
+    virtualHosts:
+    - domains:
+      - '*'
+      name: '*'
+      routes:
+      - match:
+          path: /
+        name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+      - match:
+          prefix: /
+        name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
