@@ -46,3 +46,10 @@ func TargetRefMeshExternalService(name string) common_api.TargetRef {
 		Name: name,
 	}
 }
+
+func TargetRefMeshGateway(name string) *common_api.TargetRef {
+	return &common_api.TargetRef{
+		Kind: common_api.MeshGateway,
+		Name: name,
+	}
+}
