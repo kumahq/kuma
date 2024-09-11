@@ -1326,7 +1326,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.HttpProtocol,
+								Protocol: core_mesh.ProtocolHTTP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
@@ -1379,7 +1379,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.TcpProtocol,
+								Protocol: core_mesh.ProtocolTCP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
@@ -1477,7 +1477,7 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.HttpProtocol,
+								Protocol: core_mesh.ProtocolHTTP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
@@ -1661,7 +1661,7 @@ var _ = Describe("TrafficRoute", func() {
 								Match: meshexternalservice_api.Match{
 									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 									Port:     443,
-									Protocol: meshexternalservice_api.TcpProtocol,
+									Protocol: core_mesh.ProtocolTCP,
 								},
 								Endpoints: []meshexternalservice_api.Endpoint{
 									{
