@@ -10,6 +10,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
+	mcb_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	mhc_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -112,7 +113,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 
 	DescribeTableSubtree("MeshExternalService ResourceRules",
 		func(inputFile string) {
-			DescribeTable("should build a rule-based view for policies",
+			DescribeTable("should build a rule-based view for to policies",
 				func() {
 					// given
 					resources := file.ReadInputFile(inputFile)
@@ -131,5 +132,28 @@ var _ = Describe("EgressMatchedPolicies", func() {
 			)
 		},
 		test.EntriesForFolder(filepath.Join("egressmatchedpolicies", "meshexternalservice", "torules")),
+	)
+
+	DescribeTableSubtree("MeshExternalService ResourceRules from policy",
+		func(inputFile string) {
+			DescribeTable("should build a rule-based view for policies",
+				func() {
+					// given
+					resources := file.ReadInputFile(inputFile)
+					meshCtx := xds_builders.Context().WithMeshLocalResources(resources).Build()
+
+					// when
+					rules, err := matchers.EgressMatchedPolicies(mcb_api.MeshCircuitBreakerType, map[string]string{}, meshCtx.Mesh.Resources)
+					Expect(err).ToNot(HaveOccurred())
+
+					// then
+					bytes, err := yaml.Marshal(rules)
+					Expect(err).ToNot(HaveOccurred())
+					Expect(bytes).To(test_matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.", ".golden.", 1)))
+				},
+				Entry("should generate to resource rules for egress and mesh externalservice"),
+			)
+		},
+		test.EntriesForFolder(filepath.Join("egressmatchedpolicies", "meshexternalservice", "fromtorules")),
 	)
 })
