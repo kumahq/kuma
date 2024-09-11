@@ -145,7 +145,7 @@ func collectMeshExternalService(
 		},
 		Tags:        outbound.LegacyOutbound.GetTags(),
 		Resource:    outbound.Resource,
-		Protocol:    core_mesh.Protocol(mes.Spec.Match.Protocol),
+		Protocol:    mes.Spec.Match.Protocol,
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
