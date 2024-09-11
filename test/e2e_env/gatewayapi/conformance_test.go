@@ -1,7 +1,10 @@
 package gatewayapi_test
 
 import (
+	"context"
+	"fmt"
 	"io/fs"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -45,8 +48,28 @@ func TestConformance(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := NewK8sCluster(t, clusterName, Silent)
+	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
+		if t.Failed() {
+			var namespaces []string
+			clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+			if err == nil {
+				if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
+					metav1.ListOptions{
+						LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
+					}); err == nil {
+					for _, ns := range nsList.Items {
+						namespaces = append(namespaces, ns.Name)
+					}
+				}
+			}
+
+			if len(namespaces) > 0 {
+				DebugKube(cluster, "default", namespaces...)
+			}
+		}
+
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -55,8 +78,6 @@ func TestConformance(t *testing.T) {
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(Kuma(config_core.Zone)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
-
-	opts := cluster.GetKubectlOptions()
 
 	configPath, err := opts.GetConfigPath(t)
 	g.Expect(err).ToNot(HaveOccurred())
