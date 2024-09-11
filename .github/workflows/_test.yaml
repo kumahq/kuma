@@ -13,7 +13,7 @@ env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
   K8S_MIN_VERSION: v1.23.17-k3s1
-  K8S_MAX_VERSION: v1.30.0-k3s1
+  K8S_MAX_VERSION: v1.31.0-k3s1
 jobs:
   test_unit:
     timeout-minutes: 20
