@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"slices"
@@ -14,6 +13,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/universal_logs"
