@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -275,7 +276,8 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-				role, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+				policy := r.GetSpec().(core_model.Policy)
+				role, err := core_model.ComputePolicyRole(policy, r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
 				if err != nil {
 					ri := core_model.NewResourceIdentifier(r)
 					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
@@ -283,6 +285,12 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				}
 				if role != mesh_proto.ProducerPolicyRole {
 					return false
+				}
+				if policy.GetTargetRef().Kind == common_api.MeshSubset {
+					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
+					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
+						return false
+					}
 				}
 			}
 
