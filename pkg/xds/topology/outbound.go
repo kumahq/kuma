@@ -128,7 +128,7 @@ func BuildEdsEndpointMap(
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone)
 
 	if mesh.ZoneEgressEnabled() {
-		FillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
+		fillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
 	}
 
 	// it has to be last because it reuses endpoints for other cases
@@ -763,7 +763,7 @@ func createExternalServiceEndpoint(
 	outbound[service] = append(outbound[service], *externalServiceEndpoint)
 }
 
-func FillExternalServicesOutboundsThroughEgress(
+func fillExternalServicesOutboundsThroughEgress(
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
