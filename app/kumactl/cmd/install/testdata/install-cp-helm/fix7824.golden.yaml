@@ -494,6 +494,7 @@ spec:
         kubernetes.io/os: linux
       hostNetwork: false
       terminationGracePeriodSeconds: 30
+      
       containers:
         - name: control-plane
           image: "docker.io/kumahq/kuma-cp:0.0.1"
@@ -694,6 +695,7 @@ spec:
       nodeSelector:
       
         kubernetes.io/os: linux
+      
       containers:
         - name: egress
           image: "docker.io/kumahq/kuma-dp:0.0.1"
@@ -845,6 +847,7 @@ spec:
       
         kubernetes.io/os: linux
       terminationGracePeriodSeconds: 40
+      
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

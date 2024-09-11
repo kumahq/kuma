@@ -55,7 +55,7 @@ func NewKumactlOptions(
 func (k *KumactlOptions) RunKumactl(args ...string) error {
 	out, err := k.RunKumactlAndGetOutput(args...)
 	if err != nil {
-		return errors.Wrapf(err, out)
+		return errors.Wrap(err, out)
 	}
 	return nil
 }

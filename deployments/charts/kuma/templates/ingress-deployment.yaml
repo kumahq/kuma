@@ -46,6 +46,7 @@ spec:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.ingress.terminationGracePeriodSeconds }}
+      {{ include "kuma.dnsConfig" (dict "dns" .Values.ingress.dns) | nindent 6 | trim }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}

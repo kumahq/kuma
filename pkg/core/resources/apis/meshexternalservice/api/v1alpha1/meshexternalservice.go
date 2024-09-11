@@ -64,10 +64,9 @@ type Extension struct {
 type Port int
 
 type Endpoint struct {
-	// Address defines an address to which a user want to send a request. Is possible to provide `domain`, `ip` and `unix` sockets.
+	// Address defines an address to which a user want to send a request. Is possible to provide `domain`, `ip`.
 	// +kubebuilder:example="127.0.0.1"
 	// +kubebuilder:example="example.com"
-	// +kubebuilder:example="unix:///tmp/example.sock"
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint

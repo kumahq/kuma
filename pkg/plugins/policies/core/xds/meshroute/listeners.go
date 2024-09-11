@@ -59,10 +59,12 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	Outbound    *xds_types.Outbound
-	Protocol    core_mesh.Protocol
-	ServiceName string
-	BackendRef  common_api.BackendRef
+	OutboundInterface mesh_proto.OutboundInterface
+	Resource          *core_model.TypedResourceIdentifier
+	Tags              envoy_tags.Tags
+	Protocol          core_mesh.Protocol
+	ServiceName       string
+	BackendRef        common_api.BackendRef
 }
 
 func CollectServices(
@@ -110,7 +112,12 @@ func collectMeshService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    protocol,
 		ServiceName: ms.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
@@ -132,7 +139,12 @@ func collectMeshExternalService(
 		return nil
 	}
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    core_mesh.Protocol(mes.Spec.Match.Protocol),
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
@@ -162,7 +174,12 @@ func collectMeshMultiZoneService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    protocol,
 		ServiceName: svc.DestinationName(port.Port),
 		BackendRef: common_api.BackendRef{
@@ -181,7 +198,12 @@ func collectServiceTagService(
 ) *DestinationService {
 	serviceName := outbound.LegacyOutbound.GetService()
 	return &DestinationService{
-		Outbound:    outbound,
+		OutboundInterface: mesh_proto.OutboundInterface{
+			DataplaneIP:   outbound.GetAddress(),
+			DataplanePort: outbound.GetPort(),
+		},
+		Tags:        outbound.LegacyOutbound.GetTags(),
+		Resource:    outbound.Resource,
 		Protocol:    meshCtx.GetServiceProtocol(serviceName),
 		ServiceName: serviceName,
 		BackendRef: common_api.BackendRef{
@@ -191,6 +213,51 @@ func collectServiceTagService(
 				Tags: outbound.LegacyOutbound.GetTags(),
 			},
 		},
+	}
+}
+
+func GetServiceAndProtocolFromRef(
+	meshCtx xds_context.MeshContext,
+	ref core_model.ResolvedBackendRef,
+) (string, core_mesh.Protocol, bool) {
+	switch {
+	case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
+		mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port := pointer.Deref(ref.LegacyBackendRef.Port)
+		service := mes.DestinationName(port)
+		protocol := meshCtx.GetServiceProtocol(service)
+		return service, protocol, true
+	case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
+		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		if !ok {
+			return "", "", false
+		}
+		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		protocol := port.AppProtocol
+		return service, protocol, true
+	case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
+		ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
+		if !ok {
+			return "", "", false
+		}
+		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		if !ok {
+			return "", "", false
+		}
+		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
+		return service, protocol, true
+	default:
+		service := ref.LegacyBackendRef.Name
+		protocol := meshCtx.GetServiceProtocol(service)
+		return service, protocol, true
 	}
 }
 
@@ -215,40 +282,9 @@ func makeSplit(
 		if pointer.DerefOr(ref.LegacyBackendRef.Weight, 1) == 0 {
 			continue
 		}
-		switch {
-		case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
-			mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port := pointer.Deref(ref.LegacyBackendRef.Port)
-			service = mes.DestinationName(port)
-			protocol = meshCtx.GetServiceProtocol(service)
-		case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
-			ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
-			if !ok {
-				continue
-			}
-			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
-			protocol = port.AppProtocol
-		case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
-			ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-			if !ok {
-				continue
-			}
-			port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
-			if !ok {
-				continue
-			}
-			service = ms.DestinationName(*ref.LegacyBackendRef.Port)
-			protocol = port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		default:
-			service = ref.LegacyBackendRef.Name
-			protocol = meshCtx.GetServiceProtocol(service)
+		service, protocol, ok := GetServiceAndProtocolFromRef(meshCtx, ref)
+		if !ok {
+			continue
 		}
 		if _, ok := protocols[protocol]; !ok {
 			return nil

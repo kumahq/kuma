@@ -8,6 +8,12 @@ does not have any particular instructions.
 
 ## Upgrade to `2.9.x`
 
+### MeshExternalService
+
+#### Removal of unix sockets support
+
+It's no longer possible to define a unix domain socket on the `address` field.
+
 ### Upgrading Transparent Proxy Configuration
 
 #### Removal of Deprecated IPv6 Redirection Flag and Annotation
