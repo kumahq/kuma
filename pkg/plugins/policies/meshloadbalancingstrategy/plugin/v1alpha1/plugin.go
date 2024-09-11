@@ -144,7 +144,7 @@ func (p plugin) applyToRealResources(
 	rules core_rules.ResourceRules,
 	meshCtx xds_context.MeshContext,
 ) error {
-	for uri, resType := range rs.IndexByOrigin() {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			continue
@@ -456,7 +456,7 @@ func (p plugin) configureEgressListener(
 	}
 
 	for _, chain := range l.FilterChains {
-		if chain.Name != names.GetEgressMeshExternalServiceName(meshName, name) {
+		if chain.Name != names.GetEgressFilterChainName(name, meshName) {
 			continue
 		}
 		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
