@@ -53,10 +53,6 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 			}
 			isExternalService := xdsCtx.Mesh.IsExternalService(service)
 			isExternalCluster = isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
-			//isExternalServiceThroughZoneEgress := isExternalService && xdsCtx.Mesh.Resource.ZoneEgressEnabled()
-			//if isExternalServiceThroughZoneEgress {
-			//	upstreamServiceName = mesh_proto.ZoneEgressServiceName
-			//}
 		} else {
 			service = dest.Destination[mesh_proto.ServiceTag]
 

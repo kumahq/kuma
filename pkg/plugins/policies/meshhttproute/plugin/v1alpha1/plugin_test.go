@@ -427,8 +427,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 					To: []api.To{
 						{
 							TargetRef: common_api.TargetRef{
-								Kind:        common_api.MeshExternalService,
-								Name:        "example",
+								Kind: common_api.MeshExternalService,
+								Name: "example",
 							},
 							Rules: []api.Rule{
 								{
