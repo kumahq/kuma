@@ -25,6 +25,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
 type PodRedirect struct {
@@ -203,7 +204,9 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	defaultConfig := tproxy_config.DefaultConfig()
 
 	return slices.Concat(
-		flag("kuma-dp-user", pr.UID),
+		flagsIf(pr.UID != tproxy_consts.OwnerDefaultUID,
+			flag("kuma-dp-user", pr.UID),
+		),
 		flagsIf(pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
 			flag("ip-family-mode", pr.IpFamilyMode),
 		),
