@@ -1,36 +1,34 @@
 resources:
-- name: mesh1:default_backend___msvc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh1_default_backend___msvc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh1:default_backend___msvc_80
+    name: default_backend___msvc_80
     type: EDS
-- name: mesh1:default_backend__east_msvc_80
+- name: default_backend__east_msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh1_default_backend__east_msvc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh1:default_backend__east_msvc_80
+    name: default_backend__east_msvc_80
     type: EDS
-- name: mesh1:default_backend___msvc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh1:default_backend___msvc_80
-- name: mesh1:default_backend__east_msvc_80
+    clusterName: default_backend___msvc_80
+- name: default_backend__east_msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh1:default_backend__east_msvc_80
+    clusterName: default_backend__east_msvc_80
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

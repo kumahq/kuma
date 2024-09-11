@@ -202,7 +202,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 }
 
 func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
-	for uri, resType := range rs.IndexByOrigin() {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			continue

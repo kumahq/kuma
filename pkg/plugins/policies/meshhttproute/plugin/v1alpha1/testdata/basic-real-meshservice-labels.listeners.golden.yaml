@@ -17,7 +17,7 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           normalizePath: true
           routeConfig:
-            name: outbound:backend_msvc_80
+            name: outbound:default_backend___msvc_80
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -26,39 +26,39 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: backend_msvc_80
+              name: default_backend___msvc_80
               routes:
               - match:
                   path: /version1
                 name: ExEgbKnY+1gXGsNYQ6CZ7dck4MNOIit5oX7HLROlnE4=
                 route:
-                  cluster: backend_msvc_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /version1/
                 name: ExEgbKnY+1gXGsNYQ6CZ7dck4MNOIit5oX7HLROlnE4=
                 route:
-                  cluster: backend_msvc_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   path: /version2
                 name: mNuADh5d2QXFo3V0KWvZuj8EUfszOl6JoAaFFDm7ueU=
                 route:
-                  cluster: backend-second_msvc_80
+                  cluster: default_backend-second___msvc_80
                   timeout: 0s
               - match:
                   prefix: /version2/
                 name: mNuADh5d2QXFo3V0KWvZuj8EUfszOl6JoAaFFDm7ueU=
                 route:
-                  cluster: backend-second_msvc_80
+                  cluster: default_backend-second___msvc_80
                   timeout: 0s
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: backend_msvc_80
+                  cluster: default_backend___msvc_80
                   timeout: 0s
-          statPrefix: backend_msvc_80
+          statPrefix: default_backend___msvc_80
     metadata:
       filterMetadata:
         io.kuma.tags: {}

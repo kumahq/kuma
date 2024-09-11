@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"strings"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -28,8 +26,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -146,7 +144,7 @@ func (p plugin) applyToRealResources(
 	rules core_rules.ResourceRules,
 	meshCtx xds_context.MeshContext,
 ) error {
-	for uri, resType := range rs.IndexByOrigin() {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			continue
@@ -462,15 +460,8 @@ func (p plugin) configureEgressListener(
 		return errors.New("expected at least one filter chain")
 	}
 
-	sni := tls.SNIForResource(name, meshName, meshexternalservice_api.MeshExternalServiceType, port, nil)
 	for _, chain := range l.FilterChains {
-		matched := false
-		for _, serverName := range chain.FilterChainMatch.ServerNames {
-			if strings.Contains(serverName, sni) {
-				matched = true
-			}
-		}
-		if !matched {
+		if chain.Name != names.GetEgressFilterChainName(name, meshName) {
 			continue
 		}
 		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {

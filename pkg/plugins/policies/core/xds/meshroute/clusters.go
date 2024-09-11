@@ -44,13 +44,14 @@ func GenerateClusters(
 					edsClusterBuilder.
 						Configure(envoy_clusters.EdsCluster())
 					if isMeshExternalService(endpoints) {
-						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							true,
-							SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
-						))
+						edsClusterBuilder.
+							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
+								proxy.SecretsTracker,
+								meshCtx.Resource,
+								mesh_proto.ZoneEgressServiceName,
+								true,
+								SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+							))
 					} else {
 						edsClusterBuilder.
 							Configure(envoy_clusters.ClientSideMTLS(
