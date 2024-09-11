@@ -66,7 +66,11 @@ func TestConformance(t *testing.T) {
 			}
 
 			if len(namespaces) > 0 {
-				DebugKube(cluster, "default", namespaces...)
+				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
+					RegisterFailHandler(g.Fail)
+					DebugKube(cluster, "default", namespaces...)
+					return nil
+				}()).To(Succeed())
 			}
 		}
 
