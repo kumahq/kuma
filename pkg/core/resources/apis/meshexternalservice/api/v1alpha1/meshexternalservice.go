@@ -40,6 +40,7 @@ type Match struct {
 	Port Port `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
+	// +kubebuilder:validation:Enum=tcp;grpc;http;http2
 	Protocol core_mesh.Protocol `json:"protocol,omitempty"`
 }
 

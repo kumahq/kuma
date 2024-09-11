@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	allMatchProtocols    = []string{string(core_mesh.ProtocolTCP), string(core_mesh.ProtocolGRPC), string(core_mesh.ProtocolHTTP), string(core_mesh.ProtocolHTTP2)}
+	allMatchProtocols    = []string{core_mesh.ProtocolTCP, core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}
 	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )

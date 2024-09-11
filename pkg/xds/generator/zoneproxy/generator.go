@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
@@ -207,7 +208,7 @@ func AddFilterChains(
 		)
 
 		listenerBuilder.Configure(filterChain)
-		servicesAcc.AddBackendRef(refDest.Resource, cluster)
+		servicesAcc.AddBackendRef(pointer.Deref(refDest.Resource), cluster)
 	}
 
 	return servicesAcc.Services()

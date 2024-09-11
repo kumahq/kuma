@@ -275,6 +275,13 @@
                 "port": {
                     "type": "integer",
                     "description": "Port of the targeted object. Required when kind is MeshService."
+                },
+                "labels": {
+                    "additionalProperties": {
+                        "type": "string"
+                    },
+                    "type": "object",
+                    "description": "Labels to select a single object. If no object is selected then outbound is not created. If multiple objects are selected then the oldest one is used."
                 }
             },
             "additionalProperties": true,

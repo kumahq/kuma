@@ -219,34 +219,43 @@ spec:
                value: '%%KUMA_DESTINATION_SERVICE%%'
              - key: Start
                value: '%%START_TIME(%%s)%%'
+             - key: HeaderCamel
+               value: '%%REQ(X-Test)%%'
+             - key: HeaderLower
+               value: '%%REQ(x-test)%%'
+             - key: HeaderCrazy
+               value: '%%REQ(X-TeSt)%%'
            address: "%s:9999"
 `, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
-		var src, dst string
+		var log struct {
+			Source      string
+			Destination string
+			Start       string
+			HeaderCamel string
+			HeaderLower string
+			HeaderCrazy string
+		}
+		headerValue := "headervalue"
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, AppModeDemoClient, "test-server.mesh",
+				client.WithHeader("X-TeSt", headerValue),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 
 			stdout, _, err := universal.Cluster.Exec("", "", AppModeTcpSink, "head", "-1", "/nc.out")
 			g.Expect(err).ToNot(HaveOccurred())
 
-			type log struct {
-				Source      string
-				Destination string
-				Start       string
-			}
-			var line log
-			g.Expect(json.Unmarshal([]byte(stdout), &line)).To(Succeed())
-
-			src = line.Source
-			dst = line.Destination
+			g.Expect(json.Unmarshal([]byte(stdout), &log)).To(Succeed())
 		}, "30s", "1s").Should(Succeed())
 
-		Expect(src).To(Equal(AppModeDemoClient))
-		Expect(dst).To(Equal("test-server"))
+		Expect(log.Source).To(Equal(AppModeDemoClient))
+		Expect(log.Destination).To(Equal("test-server"))
+		Expect(log.HeaderCamel).To(Equal(headerValue))
+		Expect(log.HeaderLower).To(Equal(headerValue))
+		Expect(log.HeaderCrazy).To(Equal(headerValue))
 	})
 
 	// This is flaky if we don't redeploy demo-client in BeforeEach/E2EAfterEach

@@ -150,9 +150,17 @@ func (in BackendRef) Hash() BackendRefHash {
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
+
+	keys = maps.Keys(in.Labels)
+	sort.Strings(keys)
+	orderedLabels := make([]string, 0, len(in.Labels))
+	for _, k := range keys {
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))
+	}
+
 	name := in.Name
 	if in.Port != nil {
 		name = fmt.Sprintf("%s_svc_%d", in.Name, *in.Port)
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
 }
