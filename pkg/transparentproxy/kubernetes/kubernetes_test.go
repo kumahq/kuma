@@ -90,6 +90,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			commandLine: []string{
 				"--kuma-dp-user=12345",
+				"--ip-family-mode=dualstack",
 				"--redirect-outbound-port=25100",
 				"--exclude-outbound-ports=11000",
 				"--redirect-inbound-port=25204",
@@ -112,6 +113,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			commandLine: []string{
 				"--kuma-dp-user=12345",
+				"--ip-family-mode=dualstack",
 				"--redirect-outbound-port=25100",
 				"--exclude-outbound-ports=11000",
 				"--redirect-inbound-port=25204",
@@ -136,6 +138,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			commandLine: []string{
 				"--kuma-dp-user=12345",
+				"--ip-family-mode=dualstack",
 				"--redirect-outbound-port=25100",
 				"--exclude-outbound-ports=11000",
 				"--redirect-inbound=false",
@@ -166,6 +169,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			commandLine: []string{
 				"--kuma-dp-user=12345",
+				"--ip-family-mode=dualstack",
 				"--redirect-outbound-port=25100",
 				"--exclude-outbound-ports=11000",
 				"--redirect-inbound=false",
