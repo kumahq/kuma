@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -35,6 +36,7 @@ type MapGatewayRulesToHosts func(
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []Sublistener,
+	resolver model.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname
 
 func CollectListenerInfos(
@@ -103,6 +105,7 @@ func CollectListenerInfos(
 			listener.listener.GetPort(),
 			listener.listener.GetProtocol(),
 			listener.sublisteners,
+			meshCtx.ResolveResourceIdentifier,
 		)
 
 		infos[port] = plugin_gateway.GatewayListenerInfo{
