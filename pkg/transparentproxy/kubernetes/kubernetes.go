@@ -24,6 +24,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type PodRedirect struct {
@@ -190,8 +191,6 @@ func flag[T string | bool | uint32](name string, values ...T) []string {
 	return result
 }
 
-
-
 func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	if condition == *new(T) {
 		return nil
@@ -201,11 +200,17 @@ func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 }
 
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
+	defaultConfig := tproxy_config.DefaultConfig()
+
 	return slices.Concat(
 		flag("kuma-dp-user", pr.UID),
-		flag("ip-family-mode", pr.IpFamilyMode),
+		flagsIf(pr.IpFamilyMode != string(defaultConfig.IPFamilyMode),
+			flag("ip-family-mode", pr.IpFamilyMode),
+		),
 		// outbound
-		flag("redirect-outbound-port", pr.RedirectPortOutbound),
+		flagsIf(pr.RedirectPortOutbound != uint32(defaultConfig.Redirect.Outbound.Port),
+			flag("redirect-outbound-port", pr.RedirectPortOutbound),
+		),
 		flag("exclude-outbound-ports", pr.ExcludeOutboundPorts),
 		flag("exclude-outbound-ips", pr.ExcludeOutboundIPs),
 		flag("exclude-outbound-ports-for-uids", pr.ExcludeOutboundPortsForUIDs...),
@@ -214,14 +219,18 @@ func (pr *PodRedirect) AsKumactlCommandLine() []string {
 			flag("redirect-inbound", "false"),
 		),
 		flagsIf(pr.RedirectInbound,
-			flag("redirect-inbound-port", pr.RedirectPortInbound),
+			flagsIf(pr.RedirectPortInbound != uint32(defaultConfig.Redirect.Inbound.Port),
+				flag("redirect-inbound-port", pr.RedirectPortInbound),
+			),
 			flag("exclude-inbound-ports", pr.ExcludeInboundPorts),
 			flag("exclude-inbound-ips", pr.ExcludeInboundIPs),
 		),
 		// dns
 		flagsIf(pr.BuiltinDNSEnabled,
 			flag("redirect-all-dns-traffic", pr.BuiltinDNSEnabled),
-			flag("redirect-dns-port", pr.BuiltinDNSPort),
+			flagsIf(pr.BuiltinDNSPort != uint32(defaultConfig.Redirect.DNS.Port),
+				flag("redirect-dns-port", pr.BuiltinDNSPort),
+			),
 		),
 		// ebpf
 		flagsIf(pr.TransparentProxyEnableEbpf,
