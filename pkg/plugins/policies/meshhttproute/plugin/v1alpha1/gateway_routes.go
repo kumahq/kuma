@@ -34,6 +34,7 @@ func sortRulesToHosts(
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []meshroute_gateway.Sublistener,
+	resolver model.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
@@ -152,7 +153,7 @@ func sortRulesToHosts(
 			hostInfo := plugin_gateway.GatewayHostInfo{
 				Host: host,
 			}
-			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules))
+			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules, resolver))
 
 			meshroute_gateway.AddToListenerByHostname(
 				hostInfosByHostname,
@@ -168,7 +169,11 @@ func sortRulesToHosts(
 	return meshroute_gateway.SortByHostname(hostInfosByHostname)
 }
 
-func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
+func generateEnvoyRouteEntries(
+	host plugin_gateway.GatewayHost,
+	toRules []ruleByHostname,
+	resolver model.LabelResourceIdentifierResolver,
+) []route.Entry {
 	var entries []route.Entry
 
 	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
@@ -186,7 +191,7 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 			}
 			slices.Sort(names)
 
-			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin)
+			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin, resolver)
 
 			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
@@ -213,7 +218,12 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
 }
 
-func makeHttpRouteEntry(name string, rule api.Rule, backendRefToOrigin map[string]model.ResourceMeta) route.Entry {
+func makeHttpRouteEntry(
+	name string,
+	rule api.Rule,
+	backendRefToOrigin map[string]model.ResourceMeta,
+	resolver model.LabelResourceIdentifierResolver,
+) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
@@ -221,7 +231,7 @@ func makeHttpRouteEntry(name string, rule api.Rule, backendRefToOrigin map[strin
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var ref *model.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			ref = pointer.To(model.ResolveBackendRef(origin, b))
+			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
 		dest, ok := tags.FromTargetRef(b.TargetRef)
 		if !ok {

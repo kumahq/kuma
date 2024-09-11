@@ -130,5 +130,33 @@ to:
       - kind: MeshService
         name: other
 `),
+		Entry("MeshService and MeshMultiZoneService", `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+    sectionName: "8080"
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshMultiZoneService
+        name: other
+        port: 8080
+- targetRef:
+    kind: MeshMultiZoneService
+    name: other
+    sectionName: "8080"
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshService
+        name: backend
+        port: 8080
+`),
 	)
 })
