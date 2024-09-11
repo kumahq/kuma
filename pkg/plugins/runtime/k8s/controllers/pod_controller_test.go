@@ -419,6 +419,7 @@ var _ = Describe("PodReconciler", func() {
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
+				ServiceGetter:     kubeClient,
 			},
 			SystemNamespace:   "kuma-system",
 			ResourceConverter: k8s.NewSimpleConverter(),
@@ -741,6 +742,7 @@ var _ = Describe("PodReconciler", func() {
 	It("should not update Dataplane if nothing has changed", func() {
 		// setup
 		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "poc",
 			ObjectMeta: kube_meta.ObjectMeta{
 				Namespace: "demo",
 				Name:      "pod-with-kuma-sidecar-and-ip",
@@ -789,6 +791,29 @@ var _ = Describe("PodReconciler", func() {
 							},
 						},
 					},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Address: "192.168.0.1",
+							Port:    6061,
+							Tags: map[string]string{
+								"kuma.io/service": "example_demo_svc_6061",
+							},
+						},
+						{
+							Address: "192.168.0.1",
+							Port:    80,
+							Tags: map[string]string{
+								"kuma.io/service": "example_demo_svc_80",
+							},
+						},
+						{
+							Address: "192.168.0.1",
+							Port:    90,
+							Tags: map[string]string{
+								"kuma.io/service": "manual-example_demo_svc_90",
+							},
+						},
+					},
 				},
 			}),
 		})
@@ -822,6 +847,7 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and should not add owner reference
 		Expect(actual).To(MatchYAML(`
+        mesh: poc
         metadata:
           creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
@@ -861,6 +887,19 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
+            outbound:
+            - address: 192.168.0.1
+              port: 6061
+              tags:
+                kuma.io/service: example_demo_svc_6061
+            - address: 192.168.0.1
+              port: 80
+              tags:
+                kuma.io/service: example_demo_svc_80
+            - address: 192.168.0.1
+              port: 90
+              tags:
+                kuma.io/service: manual-example_demo_svc_90
 `))
 	})
 
