@@ -331,7 +331,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
-  name: external-service-http-route
+  name: plain-external-service
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -342,7 +342,7 @@ spec:
     port: 80
     protocol: http
   endpoints:
-    - address: external-service-route.mesh-external-services.svc.cluster.local
+    - address: plain-external-service.mesh-external-services.svc.cluster.local
       port: 80
 `, Config.KumaNamespace, meshName)
 
@@ -379,7 +379,7 @@ spec:
   to:
     - targetRef:
         kind: MeshExternalService
-        name: external-service-http-route
+        name: plain-external-service
       rules:
         - matches:
             - path:
@@ -397,8 +397,8 @@ spec:
 			err := NewClusterSetup().
 				Install(testserver.Install(
 					testserver.WithNamespace(namespace),
-					testserver.WithName("external-service-route"),
-					testserver.WithEchoArgs("echo", "--instance", "external-service-route"),
+					testserver.WithName("plain-external-service"),
+					testserver.WithEchoArgs("echo", "--instance", "plain-external-service"),
 				)).
 				Install(testserver.Install(
 					testserver.WithNamespace(namespace),
@@ -423,11 +423,11 @@ spec:
 			// then communication works
 			Eventually(func(g Gomega) {
 				resp, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service-http-route.extsvc.mesh.local",
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(resp.Instance).To(Equal("external-service-route"))
+				g.Expect(resp.Instance).To(Equal("plain-external-service"))
 			}, "30s", "1s").Should(Succeed())
 
 			// when
@@ -439,7 +439,7 @@ spec:
 			// then traffic is routed to the 2nd MeshExternalService
 			Eventually(func(g Gomega) {
 				resp, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client", "external-service-http-route.extsvc.mesh.local",
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
