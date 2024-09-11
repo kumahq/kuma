@@ -190,6 +190,10 @@ message Dataplane {
         string name = 2;
         // Port of the targeted object. Required when kind is MeshService.
         uint32 port = 3;
+        // Labels to select a single object.
+        // If no object is selected then outbound is not created.
+        // If multiple objects are selected then the oldest one is used.
+        map<string, string> labels = 4;
       }
     }
 

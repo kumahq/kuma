@@ -66,6 +66,7 @@ func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.Vali
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		})
 	}
@@ -374,6 +375,7 @@ func validateBackendRefs(
 					common_api.MeshService,
 					common_api.MeshServiceSubset,
 					common_api.MeshExternalService,
+					common_api.MeshMultiZoneService,
 				},
 				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
 			}),
