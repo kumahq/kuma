@@ -32,10 +32,7 @@ spec:
   initContainers:
   - args:
     - --kuma-dp-user=5678
-    - --ip-family-mode=dualstack
-    - --redirect-outbound-port=15001
     - --exclude-outbound-ports=4321,7654
-    - --redirect-inbound-port=15006
     - --exclude-inbound-ports=1234,5678
     - --verbose
     command:

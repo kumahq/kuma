@@ -135,9 +135,6 @@ spec:
     resources: {}
   - args:
     - --kuma-dp-user=5678
-    - --ip-family-mode=dualstack
-    - --redirect-outbound-port=15001
-    - --redirect-inbound-port=15006
     - --exclude-inbound-ports=9000
     - --iptables-logs
     - --verbose

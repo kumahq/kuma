@@ -135,8 +135,6 @@ spec:
   - args:
     - --kuma-dp-user=5678
     - --ip-family-mode=ipv4
-    - --redirect-outbound-port=15001
-    - --redirect-inbound-port=15006
     - --verbose
     command:
     - /usr/bin/kumactl

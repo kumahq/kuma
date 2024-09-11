@@ -135,10 +135,7 @@ spec:
     resources: {}
   - args:
     - --kuma-dp-user=5678
-    - --ip-family-mode=dualstack
-    - --redirect-outbound-port=15001
     - --exclude-outbound-ips=10.0.0.1,172.16.0.0/16,fe80::1,fe80::/10
-    - --redirect-inbound-port=15006
     - --exclude-inbound-ports=9000
     - --verbose
     command:
