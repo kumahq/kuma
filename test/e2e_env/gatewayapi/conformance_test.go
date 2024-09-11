@@ -3,10 +3,9 @@ package gatewayapi_test
 import (
 	"context"
 	"fmt"
-	"io/fs"
-	"testing"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
+	"io/fs"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
@@ -20,6 +19,7 @@ import (
 	"sigs.k8s.io/gateway-api/conformance/utils/suite"
 	"sigs.k8s.io/gateway-api/pkg/features"
 	"sigs.k8s.io/yaml"
+	"testing"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -50,7 +50,7 @@ func TestConformance(t *testing.T) {
 	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
-		if t.Failed() {
+		if t.Failed() || Config.Debug {
 			var namespaces []string
 			clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
 			if err == nil {
@@ -102,7 +102,7 @@ func TestConformance(t *testing.T) {
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
 		CleanupBaseResources: true,
-		Debug:                false,
+		Debug:                Config.Debug,
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
