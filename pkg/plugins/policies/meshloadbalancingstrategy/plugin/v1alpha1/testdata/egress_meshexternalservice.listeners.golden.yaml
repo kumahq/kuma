@@ -42,6 +42,6 @@ resources:
                       sourceIp: true
                   timeout: 0s
           statPrefix: "127_0_0_1_10002"
-      name: external_mesh-1
+      name: mesh-1_external___mextsvc_9000
     name: inbound:127.0.0.1:10002
     trafficDirection: INBOUND

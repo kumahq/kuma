@@ -650,7 +650,7 @@ func createMeshExternalServiceEndpoint(
 	zone string,
 ) error {
 	es := &core_xds.ExternalService{
-		Protocol:      core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+		Protocol:      mes.Spec.Match.Protocol,
 		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
@@ -815,7 +815,7 @@ func fillExternalServicesOutboundsThroughEgress(
 				Weight:   1,
 				Locality: locality,
 				ExternalService: &core_xds.ExternalService{
-					Protocol:      core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+					Protocol:      mes.Spec.Match.Protocol,
 					OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 				},
 			}

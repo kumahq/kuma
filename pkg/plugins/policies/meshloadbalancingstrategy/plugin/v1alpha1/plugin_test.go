@@ -34,7 +34,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
@@ -483,7 +482,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Name:   "egress-listener",
 					Origin: egress.OriginEgress,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, names.GetEgressFilterChainName("external", "mesh-1")).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-1").Build().DestinationName(0)).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames(tls.SNIForResource("external", "mesh-1", meshexternalservice_api.MeshExternalServiceType, 9000, nil))).
 							Configure(HttpConnectionManager("127.0.0.1:10002", false)).

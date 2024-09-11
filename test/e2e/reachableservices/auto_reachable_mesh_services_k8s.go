@@ -96,7 +96,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("default_first-test-server_%s_defaul_msvc_80", namespace))))
+			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_defaul_msvc_80", meshName, namespace))))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -104,7 +104,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("default_first-test-server_%s_default_msvc_80", namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_default_msvc_80", meshName, namespace)))
 		}, "30s", "1s").Should(Succeed())
 
 		Consistently(func(g Gomega) {

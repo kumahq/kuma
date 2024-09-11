@@ -329,7 +329,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							samples.MeshExternalServiceExampleBuilder().WithMesh("default").WithName("external").Build().DestinationName(0): {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{
@@ -364,7 +364,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-2").Build().DestinationName(0): {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{
