@@ -125,7 +125,6 @@ spec:
     resources: {}
   initContainers:
   - args:
-    - --kuma-dp-user=5678
     - --ebpf-enabled
     - --ebpf-bpffs-path=/sys/fs/bpf
     - --ebpf-cgroup-path=/sys/fs/cgroup

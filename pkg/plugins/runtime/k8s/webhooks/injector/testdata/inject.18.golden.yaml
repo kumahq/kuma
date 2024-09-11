@@ -135,7 +135,6 @@ spec:
     name: init
     resources: {}
   - args:
-    - --kuma-dp-user=5678
     - --verbose
     command:
     - /usr/bin/kumactl

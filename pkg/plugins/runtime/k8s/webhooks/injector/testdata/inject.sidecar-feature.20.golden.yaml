@@ -47,7 +47,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --kuma-dp-user=5678
     - --verbose
     command:
     - /usr/bin/kumactl

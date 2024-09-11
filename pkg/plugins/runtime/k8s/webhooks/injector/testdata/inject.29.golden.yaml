@@ -130,7 +130,6 @@ spec:
     resources: {}
   initContainers:
   - args:
-    - --kuma-dp-user=5678
     - --redirect-all-dns-traffic
     - --redirect-dns-port=25053
     - --verbose

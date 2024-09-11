@@ -149,7 +149,6 @@ spec:
       name: default-token-w7dxf
       readOnly: true
   - args:
-    - --kuma-dp-user=5678
     - --exclude-inbound-ports=9000
     - --verbose
     command:

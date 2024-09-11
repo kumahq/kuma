@@ -41,7 +41,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --kuma-dp-user=5678
     - --exclude-inbound-ports=19000
     - --verbose
     command:

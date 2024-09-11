@@ -133,7 +133,6 @@ spec:
     name: init
     resources: {}
   - args:
-    - --kuma-dp-user=5678
     - --ip-family-mode=ipv4
     - --verbose
     command:

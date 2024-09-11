@@ -30,7 +30,6 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --kuma-dp-user=5678
     - --redirect-inbound=false
     - --verbose
     command:

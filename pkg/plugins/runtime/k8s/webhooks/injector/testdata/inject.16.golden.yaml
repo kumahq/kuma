@@ -135,7 +135,6 @@ spec:
     name: init
     resources: {}
   - args:
-    - --kuma-dp-user=5678
     - --exclude-outbound-ports=1236
     - --exclude-inbound-ports=1234,1235,9000
     - --verbose

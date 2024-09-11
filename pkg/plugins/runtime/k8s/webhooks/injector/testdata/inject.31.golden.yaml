@@ -130,7 +130,6 @@ spec:
     securityContext:
       runAsUser: 5678
   - args:
-    - --kuma-dp-user=5678
     - --exclude-inbound-ports=9000
     - --verbose
     command:
