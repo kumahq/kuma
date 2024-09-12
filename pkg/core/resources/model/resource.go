@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -715,6 +716,18 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 			Namespace: namespace,
 			Name:      tr.Name,
 		}
+	}
+}
+
+func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_api.BackendRef {
+	id := NewResourceIdentifier(r)
+	return common_api.BackendRef{
+		TargetRef: common_api.TargetRef{
+			Kind:      common_api.TargetRefKind(resType),
+			Name:      id.Name,
+			Namespace: id.Namespace,
+		},
+		Port: pointer.To(port),
 	}
 }
 

@@ -40,6 +40,7 @@ func (g *ExternalServicesGenerator) Generate(
 		nil,
 		localResources.MeshExternalServices().Items,
 		"",
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 	services := g.buildServices(endpointMap, zone, meshResources)
 
@@ -97,7 +98,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		isMes := isMeshExternalService(endpoints)
 
 		if isMes {
-			clusterBuilder.WithName(envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName))
+			clusterBuilder.WithName(serviceName)
 			clusterBuilder.
 				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMes, endpoints...)).
 				Configure(
@@ -171,7 +172,6 @@ func (g *ExternalServicesGenerator) addFilterChains(
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 	sniUsed := map[string]bool{}
-
 	esNames := []string{}
 	for _, es := range meshResources.ExternalServices {
 		esNames = append(esNames, es.Spec.GetService())
@@ -184,7 +184,6 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		endpoints := endpointMap[esName]
 		destinations := meshDestinations.KumaIoServices[esName]
 		destinations = append(destinations, meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]...)
-
 		for _, destination := range destinations {
 			meshDestination := destination.
 				WithTags(mesh_proto.ServiceTag, esName).
@@ -196,7 +195,6 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			}
 
 			sniUsed[sni] = true
-
 			g.configureFilterChain(
 				apiVersion,
 				esName,
@@ -249,11 +247,9 @@ func (*ExternalServicesGenerator) configureFilterChain(
 	// There is a case where multiple meshes contain services with
 	// the same names, so we cannot use just "serviceName" as a cluster
 	// name as we would overwrite some clusters with the latest one
-	var clusterName string
+	clusterName := envoy_names.GetMeshClusterName(meshName, esName)
 	if isMeshExternalService(endpoints) {
-		clusterName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
-	} else {
-		clusterName = envoy_names.GetMeshClusterName(meshName, esName)
+		clusterName = esName
 	}
 
 	cluster := envoy_common.NewCluster(
@@ -263,7 +259,12 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		envoy_common.WithExternalService(true),
 	)
 
-	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(esName, meshName)).Configure(
+	filterChainName := names.GetEgressFilterChainName(esName, meshName)
+	if isMeshExternalService(endpoints) {
+		filterChainName = esName
+	}
+
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, filterChainName).Configure(
 		envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker, nil, nil),
 		envoy_listeners.MatchTransportProtocol("tls"),
 		envoy_listeners.MatchServerNames(sni),
@@ -296,11 +297,9 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		// Add the default fall-back route
 		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
 
-		var routeConfigName string
+		routeConfigName := envoy_names.GetOutboundRouteName(esName)
 		if isMeshExternalService(endpoints) {
-			routeConfigName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
-		} else {
-			routeConfigName = envoy_names.GetOutboundRouteName(esName)
+			routeConfigName = esName
 		}
 
 		filterChainBuilder.
