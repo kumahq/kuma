@@ -211,10 +211,10 @@ func parseUint16(port string) (uint16, error) {
 	return uint16(parsedPort), nil
 }
 
-// hasLocalIPv6 checks if the local system has an active non-loopback IPv6
+// HasLocalIPv6 checks if the local system has an active non-loopback IPv6
 // address. It scans through all network interfaces to find any IPv6 address
 // that is not a loopback address.
-func hasLocalIPv6() (bool, error) {
+func HasLocalIPv6() (bool, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return false, err

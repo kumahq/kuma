@@ -4,28 +4,27 @@
 package install
 
 import (
+	std_errors "errors"
+	"fmt"
 	"os"
+	"strings"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/transparentproxy"
-	"github.com/kumahq/kuma/pkg/transparentproxy/validate"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	tproxy_validate "github.com/kumahq/kuma/pkg/transparentproxy/validate"
 )
 
-const defaultLogName = "validator"
-
-type transparentProxyValidatorArgs struct {
-	IpFamilyMode         string
-	ValidationServerPort uint16
-}
+const defaultLogName = "transparentproxy.validator"
 
 func newInstallTransparentProxyValidator() *cobra.Command {
-	args := transparentProxyValidatorArgs{
-		IpFamilyMode:         "dualstack",
-		ValidationServerPort: validate.ValidationServerPort,
-	}
+	ipFamilyMode := tproxy_config.IPFamilyModeDualStack
+	serverPort := tproxy_validate.ServerPort
+
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy-validator",
 		Short: "Validates if transparent proxy has been set up successfully",
@@ -39,25 +38,50 @@ Follow the following steps to validate:
 The result will be shown as text in stdout as well as the exit code.
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			log := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
+			logger := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
+			hasLocalIPv6Addr, _ := tproxy_config.HasLocalIPv6()
+			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
 
-			ipv6Supported, _ := transparentproxy.HasLocalIPv6()
-			useIPv6 := ipv6Supported && args.IpFamilyMode == "ipv6"
+			validate := func(ipv6 bool) error {
+				if ipv6 && !hasLocalIPv6Addr || validateOnlyIPv4 {
+					return nil
+				}
 
-			sExit := make(chan struct{})
-			validator := validate.NewValidator(useIPv6, args.ValidationServerPort, log)
-			_, err := validator.RunServer(sExit)
-			if err != nil {
-				return err
+				logger := logger.WithName(strings.ToLower(tproxy_consts.IPTypeMap[ipv6]))
+				validator := tproxy_validate.NewValidator(ipv6, serverPort, logger)
+				exitC := make(chan struct{})
+
+				if _, err := validator.RunServer(cmd.Context(), exitC); err != nil {
+					return err
+				}
+
+				// by using 0, we make the client to generate a random port to connect verifying
+				// the iptables rules are working
+				return validator.RunClient(cmd.Context(), 0, exitC)
 			}
 
-			// by using 0, we make the client to generate a random port to connect verifying the iptables rules are working
-			err = validator.RunClient(uint16(0), sExit)
-			return err
+			return errors.Wrap(
+				std_errors.Join(validate(false), validate(true)),
+				"validation failed",
+			)
 		},
 	}
 
-	cmd.Flags().StringVar(&args.IpFamilyMode, "ip-family-mode", args.IpFamilyMode, "The IP family mode that has enabled traffic redirection for when setting up transparent proxy. Can be 'dualstack' or 'ipv4'")
-	cmd.Flags().Uint16Var(&args.ValidationServerPort, "validation-server-port", args.ValidationServerPort, "The port that the validation server will listen")
+	cmd.Flags().Var(
+		&ipFamilyMode,
+		"ip-family-mode",
+		fmt.Sprintf(
+			"specify the IP family mode for traffic redirection when setting up the transparent proxy; accepted values: %s",
+			tproxy_config.AllowedIPFamilyModes(),
+		),
+	)
+
+	cmd.Flags().Uint16Var(
+		&serverPort,
+		"validation-server-port",
+		serverPort,
+		"port number for the validation server to listen on",
+	)
+
 	return cmd
 }

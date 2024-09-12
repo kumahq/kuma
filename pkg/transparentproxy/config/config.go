@@ -646,10 +646,14 @@ func (e *IPFamilyMode) Set(v string) error {
 	case string(IPFamilyModeDualStack), string(IPFamilyModeIPv4):
 		*e = IPFamilyMode(v)
 	default:
-		return errors.Errorf("must be one of '%s' or '%s'", IPFamilyModeDualStack, IPFamilyModeIPv4)
+		return errors.Errorf("must be one of %s", AllowedIPFamilyModes())
 	}
 
 	return nil
+}
+
+func AllowedIPFamilyModes() string {
+	return fmt.Sprintf("'%s' or '%s'", IPFamilyModeDualStack, IPFamilyModeIPv4)
 }
 
 // InitializedConfigIPvX extends the Config struct by adding fields that require
@@ -785,7 +789,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		return initialized, nil
 	}
 
-	if ok, err := hasLocalIPv6(); !ok || err != nil {
+	if ok, err := HasLocalIPv6(); !ok || err != nil {
 		if c.Verbose {
 			loggerIPv6.Warn("IPv6 initialization skipped due to missing or faulty IPv6 support:", err)
 		}
