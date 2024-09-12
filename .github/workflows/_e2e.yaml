@@ -113,7 +113,7 @@ jobs:
       - uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         if: always()
         with:
-          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}
+          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}
           if-no-files-found: ignore
           path: |
             /tmp/e2e-debug/
