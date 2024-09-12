@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -320,6 +322,128 @@ spec:
 				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("http service with MeshHTTPRoute", func() {
+		meshExternalService := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: plain-external-service
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    hostname: "true"
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: plain-external-service.mesh-external-services.svc.cluster.local
+      port: 80
+`, Config.KumaNamespace, meshName)
+
+		meshExternalService2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: external-service-with-httproute
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    hostname: "true"
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service-with-httproute.mesh-external-services.svc.cluster.local
+      port: 80
+`, Config.KumaNamespace, meshName)
+
+		meshHttpRoutePolicy := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-mes-policy
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: plain-external-service
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshExternalService
+                name: external-service-with-httproute
+                port: 80
+                weight: 100
+`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("plain-external-service"),
+					testserver.WithEchoArgs("echo", "--instance", "plain-external-service"),
+				)).
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("external-service-with-httproute"),
+					testserver.WithEchoArgs("echo", "--instance", "external-service-with-httproute"),
+				)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName,
+				meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should route to http external-service", func() {
+			// when external service added
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService))).To(Succeed())
+
+			// then communication works
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("plain-external-service"))
+			}, "30s", "1s").Should(Succeed())
+
+			// when
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService2))).To(Succeed())
+
+			// and added route
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshHttpRoutePolicy))).To(Succeed())
+
+			// then traffic is routed to the 2nd MeshExternalService
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("external-service-with-httproute"))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

@@ -76,8 +76,19 @@ ifdef IPV6
 endif
 
 K3D_HELM_DEPLOY_OPTS = \
-	--set global.image.registry="$(DOCKER_REGISTRY)" \
-	--set global.image.tag="$(BUILD_INFO_VERSION)"
+	--set global.image.registry="$(DOCKER_REGISTRY)"
+
+ifeq ($(BUILD_INFO_VERSION),0.0.0-preview.vlocal-build)
+	K3D_HELM_DEPLOY_OPTS += \
+		--set global.image.tag="$(BUILD_INFO_VERSION)"
+else
+	K3D_HELM_DEPLOY_OPTS += \
+		--set controlPlane.image.tag="$(BUILD_INFO_VERSION)" \
+		--set cni.image.tag="$(BUILD_INFO_VERSION)" \
+		--set dataPlane.image.tag="$(BUILD_INFO_VERSION)" \
+		--set dataPlane.initImage.tag="$(BUILD_INFO_VERSION)" \
+		--set kumactl.image.tag="$(BUILD_INFO_VERSION)"
+endif
 
 ifndef K3D_HELM_DEPLOY_NO_CNI
 	K3D_HELM_DEPLOY_OPTS += \

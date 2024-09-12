@@ -26,8 +26,8 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -144,7 +144,7 @@ func (p plugin) applyToRealResources(
 	rules core_rules.ResourceRules,
 	meshCtx xds_context.MeshContext,
 ) error {
-	for uri, resType := range rs.IndexByOrigin() {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			continue
@@ -456,18 +456,7 @@ func (p plugin) configureEgressListener(
 	}
 
 	for _, chain := range l.FilterChains {
-		matched := false
-		for _, serverName := range chain.FilterChainMatch.ServerNames {
-			tags, err := tls.TagsFromSNI(serverName)
-			if err != nil {
-				return err
-			}
-			if tags[mesh_proto.ServiceTag] == name && tags["mesh"] == meshName {
-				matched = true
-				break
-			}
-		}
-		if !matched {
+		if chain.Name != names.GetEgressFilterChainName(name, meshName) {
 			continue
 		}
 		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {
