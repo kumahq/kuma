@@ -110,7 +110,7 @@ func parseExcludePortsForUIDs(exclusionRules []string) ([]Exclusion, error) {
 		if protocolOpts == "" || protocolOpts == "*" {
 			protocols = []consts.ProtocolL4{consts.ProtocolTCP, consts.ProtocolUDP}
 		} else {
-			for _, s := range strings.Split(protocolOpts, ",") {
+			for _, s := range parseCommaSeparatedStrings(protocolOpts) {
 				if p := consts.ParseProtocolL4(s); p != consts.ProtocolUndefined {
 					protocols = append(protocols, p)
 					continue
@@ -148,7 +148,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 			return nil, errors.New("invalid exclusion rule: the rule cannot be empty")
 		}
 
-		for _, address := range strings.Split(rule, ",") {
+		for _, address := range parseCommaSeparatedStrings(rule) {
 			err, isExpectedIPVersion := validateIP(address, ipv6)
 			if err != nil {
 				return nil, errors.Wrap(err, "invalid exclusion rule")
@@ -167,7 +167,7 @@ func parseExcludePortsForIPs(exclusionRules []string, ipv6 bool) ([]Exclusion, e
 // single uint16 value or a range of uint16 values. The input string can contain
 // multiple comma-separated values or ranges (e.g., "80,1000-2000").
 func validateUintValueOrRange(valueOrRange string) error {
-	for _, element := range strings.Split(valueOrRange, ",") {
+	for _, element := range parseCommaSeparatedStrings(valueOrRange) {
 		for _, port := range strings.Split(element, "-") {
 			if _, err := parseUint16(port); err != nil {
 				return errors.Wrapf(err, "validation failed for value or range '%s'", valueOrRange)
@@ -178,20 +178,21 @@ func validateUintValueOrRange(valueOrRange string) error {
 	return nil
 }
 
-// validateIP validates an IP address or CIDR and checks if it matches the
-// expected IP version (IPv4 or IPv6).
+// validateIP validates an IP address or CIDR and checks if it matches the expected
+// IP version (IPv4 or IPv6)
 func validateIP(address string, ipv6 bool) (error, bool) {
-	// Attempt to parse the address as a CIDR.
+	address = strings.TrimSpace(address)
+
 	ip, _, err := net.ParseCIDR(address)
-	// If parsing as CIDR fails, attempt to parse it as a plain IP address.
 	if err != nil {
 		ip = net.ParseIP(address)
 	}
 
-	// If parsing as both CIDR and IP address fails, return an error with a
-	// message.
 	if ip == nil {
-		return errors.Errorf("invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)", address), false
+		return errors.Errorf(
+			"invalid IP address: '%s'. Expected format: <ip> or <ip>/<cidr> (e.g., 10.0.0.1, 172.16.0.0/16, fe80::1, fe80::/10)",
+			address,
+		), false
 	}
 
 	// Check if the IP version matches the expected IP version.
@@ -456,4 +457,17 @@ func handleRunError(err error, stderr *bytes.Buffer) error {
 	}
 
 	return err
+}
+
+func parseCommaSeparatedStrings(v string) []string {
+	return removeEmptyStrings(strings.Split(v, ","))
+}
+
+func removeEmptyStrings(strngs []string) []string {
+	return slices.DeleteFunc(
+		strngs,
+		func(s string) bool {
+			return strings.TrimSpace(s) == ""
+		},
+	)
 }

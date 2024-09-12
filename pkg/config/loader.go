@@ -3,6 +3,7 @@ package config
 import (
 	"io"
 	"os"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"github.com/kelseyhightower/envconfig"
@@ -93,6 +94,10 @@ func (l *Loader) LoadReader(r io.Reader) error {
 }
 
 func (l *Loader) LoadBytes(content []byte) error {
+	if reflect.ValueOf(l.cfg).Kind() != reflect.Ptr {
+		return errors.New("configuration must be a pointer; ensure the Config instance is passed by reference")
+	}
+
 	if content == nil {
 		l.logger.Info("no configuration content provided, skipping byte-based config loading")
 		return nil

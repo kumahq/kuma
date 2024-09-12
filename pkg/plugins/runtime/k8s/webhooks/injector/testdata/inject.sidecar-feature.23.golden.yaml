@@ -14,7 +14,6 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -35,23 +34,9 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - ""
-    - --exclude-outbound-ports
-    - ""
-    - --verbose
-    - --ip-family-mode
-    - dualstack
     - --redirect-all-dns-traffic
-    - --redirect-dns-port
-    - "25053"
+    - --redirect-dns-port=25053
+    - --verbose
     command:
     - /usr/bin/kumactl
     - install
