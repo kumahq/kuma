@@ -34,10 +34,10 @@ func newKubeClient(logger logr.Logger, conf PluginConf) (*kubernetes.Clientset, 
 }
 
 // The returned bool indicates whether the pod should be skipped
-// - If true, the pod is skipped, and any returned error is logged but doesn't
-//   stop the process
-// - If false, an error occurred during validation, and the CNI action should
-//   fail
+//   - If true, the pod is skipped, and any returned error is logged but doesn't
+//     stop the process
+//   - If false, an error occurred during validation, and the CNI action should
+//     fail
 func getAndValidatePodAnnotations(
 	ctx context.Context,
 	logger logr.Logger,
