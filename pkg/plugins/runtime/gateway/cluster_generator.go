@@ -46,7 +46,14 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 		var err error
 
 		if dest.BackendRef != nil && dest.BackendRef.Resource != nil {
-			r, service, err = c.generateRealBackendRefCluster(xdsCtx.Mesh, info.Proxy, *dest.BackendRef, dest.RouteProtocol, "kuma-system", hostTags) // TODO
+			r, service, err = c.generateRealBackendRefCluster(
+				xdsCtx.Mesh,
+				info.Proxy,
+				*dest.BackendRef,
+				dest.RouteProtocol,
+				xdsCtx.ControlPlane.SystemNamespace,
+				hostTags,
+			)
 			if r == nil && err == nil {
 				log.Info("skipping backendRef", "backendRef", dest.BackendRef.LegacyBackendRef)
 				continue
