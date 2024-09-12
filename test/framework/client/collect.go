@@ -427,6 +427,11 @@ type FailureResponse struct {
 // Curl JSON output is returned so the caller can inspect the failure to
 // see whether it was what was expected.
 func CollectFailure(cluster framework.Cluster, container, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, error) {
+	response, _, err := CollectFailureRaw(cluster, container, destination, fn...)
+	return response, err
+}
+
+func CollectFailureRaw(cluster framework.Cluster, container, destination string, fn ...CollectResponsesOptsFn) (FailureResponse, string, error) {
 	opts := CollectOptions(destination, fn...)
 	cmd := collectCommand(opts, "curl",
 		"--request", opts.Method,
@@ -443,7 +448,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 		var err error
 		appPodName, err = framework.PodNameOfApp(cluster, opts.application, opts.namespace)
 		if err != nil {
-			return FailureResponse{}, err
+			return FailureResponse{}, "", err
 		}
 	}
 
@@ -456,7 +461,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	if jsonErr := json.Unmarshal([]byte(stdout), &response); jsonErr != nil {
 		// Prefer the original error to a JSON decoding error.
 		if err == nil {
-			return response, jsonErr
+			return response, stdout, jsonErr
 		}
 	}
 
@@ -464,10 +469,10 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 	// error, but fall back to reporting that the JSON  is missing.
 	if response == empty {
 		if err != nil {
-			return response, err
+			return response, "", err
 		}
 
-		return response, errors.Errorf("empty JSON response from curl: %q", stdout)
+		return response, stdout, errors.Errorf("empty JSON response from curl: %q", stdout)
 	}
 
 	// for k8s
@@ -483,7 +488,7 @@ func CollectFailure(cluster framework.Cluster, container, destination string, fn
 
 	// 3. Finally, report the JSON status and no execution error
 	// since the JSON contains all the Curl error information.
-	return response, nil
+	return response, stdout, nil
 }
 
 func CollectResponsesAndFailures(

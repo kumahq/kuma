@@ -137,10 +137,11 @@ spec:
 	It("should not be able to connect to cross-zone MeshService if reachable backends isn't set", func() {
 		Consistently(func(g Gomega) {
 			// when
-			resp, err := client.CollectFailure(
+			resp, stdout, err := client.CollectFailureRaw(
 				multizone.KubeZone1, "client-without-reachable", "other-zone-test-server.mesh-service-reachable-backends.svc.kuma-2.mesh.local",
 				client.FromKubernetesPod(namespace, "client-without-reachable"),
 			)
+			Logf("cURL stdout: %s", stdout)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(resp.Exitcode).To(Equal(6))
