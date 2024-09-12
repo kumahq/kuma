@@ -33,6 +33,11 @@ func newKubeClient(logger logr.Logger, conf PluginConf) (*kubernetes.Clientset, 
 	return kubernetes.NewForConfig(config)
 }
 
+// The returned bool indicates whether the pod should be skipped
+// - If true, the pod is skipped, and any returned error is logged but doesn't
+//   stop the process
+// - If false, an error occurred during validation, and the CNI action should
+//   fail
 func getAndValidatePodAnnotations(
 	ctx context.Context,
 	logger logr.Logger,
@@ -55,10 +60,15 @@ func getAndValidatePodAnnotations(
 		return nil, false, errors.Wrap(err, "failed to create Kubernetes client")
 	}
 
+	backoff := retry.WithMaxRetries(
+		podRetrievalMaxRetries,
+		retry.NewConstant(podRetrievalInterval),
+	)
+
 	var pod *corev1.Pod
 	if err := retry.Do(
 		ctx,
-		retry.WithMaxRetries(podRetrievalMaxRetries, retry.NewConstant(podRetrievalInterval)), // backoff
+		backoff,
 		func(ctx context.Context) error {
 			pod, err = client.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 			return retry.RetryableError(err)
@@ -90,11 +100,9 @@ func getAndValidatePodAnnotations(
 		return nil, true, errors.New("pod already injected with kuma-init container")
 	}
 
-	if len(containers) < 2 {
-		return nil, true, errors.New("pod requires at least two containers; kuma-sidecar container is missing")
-	}
-
-	if _, ok := containers[k8s_util.KumaSidecarContainerName]; !ok {
+	_, sidecarInContainers := containers[k8s_util.KumaSidecarContainerName]
+	_, sidecarInInitContainers := initContainers[k8s_util.KumaSidecarContainerName]
+	if !sidecarInContainers && !sidecarInInitContainers {
 		return nil, true, errors.New("missing required kuma-sidecar container")
 	}
 
