@@ -791,7 +791,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													Default: api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefMeshService("backend", "test-port"),
+															TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
 															Weight:    pointer.To(uint(100)),
 															Port:      pointer.To(uint32(80)),
 														}},

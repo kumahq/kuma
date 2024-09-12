@@ -324,6 +324,13 @@ var _ = Describe("Context", func() {
 			}),
 		)
 
+		zoneLabelsFn := func(zoneName string) map[string]string {
+			return map[string]string{
+				mesh_proto.ZoneTag:             zoneName,
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			}
+		}
+
 		DescribeTable("zone ingresses",
 			func(given testCase) {
 				ctx := stdcontext.Background()
@@ -345,7 +352,8 @@ var _ = Describe("Context", func() {
 			Entry("should not filter out zone ingresses from the different, enabled zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn("different-zone"),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: "different-zone",
@@ -365,7 +373,8 @@ var _ = Describe("Context", func() {
 			Entry("should filter out zone ingresses from the same zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn(clusterID),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: clusterID,
@@ -376,7 +385,8 @@ var _ = Describe("Context", func() {
 			Entry("should filter out zone ingresses from the different, not enabled zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn("different-zone"),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: "different-zone",

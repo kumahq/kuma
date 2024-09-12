@@ -34,6 +34,9 @@ const FeatureHashSuffix string = "hash-suffix"
 // Otherwise, the zone control plane would reject all hostname generators
 const FeatureHostnameGeneratorMzSelector string = "hg-mz-selector"
 
+// FeatureProducerPolicyFlow means that the zone control plane supports the producer policy flow.
+const FeatureProducerPolicyFlow string = "producer-policy-flow"
+
 func ContextHasFeature(ctx context.Context, feature string) bool {
 	md, _ := metadata.FromIncomingContext(ctx)
 	features := md.Get(FeaturesMetadataKey)

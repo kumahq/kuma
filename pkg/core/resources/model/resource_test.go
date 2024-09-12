@@ -171,12 +171,19 @@ var _ = Describe("IsReferenced", func() {
 var _ = Describe("ComputePolicyRole", func() {
 	type testCase struct {
 		policy       core_model.Policy
+		namespace    string
 		expectedRole mesh_proto.PolicyRole
+		expectedErr  error
 	}
 
 	DescribeTable("should compute the correct policy role",
 		func(given testCase) {
-			role := core_model.ComputePolicyRole(given.policy)
+			role, err := core_model.ComputePolicyRole(given.policy, given.namespace)
+			if given.expectedErr != nil {
+				Expect(err).To(Equal(given.expectedErr))
+			} else {
+				Expect(err).ToNot(HaveOccurred())
+			}
 			Expect(role).To(Equal(given.expectedRole))
 		},
 		Entry("consumer policy", testCase{
@@ -187,7 +194,45 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
+			namespace:    "kuma-demo",
 			expectedRole: mesh_proto.ConsumerPolicyRole,
+		}),
+		Entry("consumer policy with labels", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshServiceLabels(map[string]string{
+					"kuma.io/display-name":  "test",
+					"kuma.io/zone":          "zone-1",
+					"k8s.kuma.io/namespace": "kuma-demo",
+				}, ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:    "kuma-demo",
+			expectedRole: mesh_proto.ConsumerPolicyRole,
+		}),
+		Entry("producer policy", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshService("backend", "kuma-demo", ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:    "kuma-demo",
+			expectedRole: mesh_proto.ProducerPolicyRole,
+		}),
+		Entry("producer policy with no namespace in to[]", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshService("backend", "", ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:    "kuma-demo",
+			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
 		Entry("workload-owner policy with from", testCase{
 			policy: builders.MeshTimeout().
@@ -197,6 +242,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
+			namespace:    "kuma-demo",
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
 		}),
 		Entry("workload-owner policy with both from and to", testCase{
@@ -210,6 +256,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
+			namespace:    "kuma-demo",
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
 		}),
 	)
