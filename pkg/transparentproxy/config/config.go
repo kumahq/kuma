@@ -88,7 +88,14 @@ func (p *Ports) Type() string { return "uint16[,...]" }
 
 func (p *Ports) Set(s string) error {
 	*p = nil
+	return p.append(s)
+}
 
+func (p *Ports) Append(s string) error {
+	return p.append(s)
+}
+
+func (p *Ports) append(s string) error {
 	if s = strings.TrimSpace(s); s == "" {
 		return nil
 	}

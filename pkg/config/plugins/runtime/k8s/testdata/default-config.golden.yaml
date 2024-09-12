@@ -71,6 +71,7 @@ injector:
     excludeInboundPorts: []
     excludeOutboundIPs: []
     excludeOutboundPorts: []
+  transparentProxyConfigMap: ""
   virtualProbesEnabled: true
   virtualProbesPort: 9000
 leaderElection:

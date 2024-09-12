@@ -21,8 +21,6 @@ import (
 	"slices"
 	"strings"
 
-	kube_core "k8s.io/api/core/v1"
-
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
@@ -54,11 +52,9 @@ type PodRedirect struct {
 	ExcludeOutboundIPs                       string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedirect, error) {
 	var err error
 	var pr PodRedirect
-
-	annotations := metadata.Annotations(pod.Annotations)
 
 	pr.BuiltinDNSEnabled, _, err = annotations.GetEnabled(metadata.KumaBuiltinDNS)
 	if err != nil {
@@ -90,7 +86,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		pr.RedirectInbound = false
 	}
 
-	pr.ExcludeInboundPorts = excludeApplicationProbeProxyPort(pod.Annotations)
+	pr.ExcludeInboundPorts = excludeApplicationProbeProxyPort(annotations)
 	pr.RedirectPortInbound, _, err = annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
 	if err != nil {
 		return nil, err

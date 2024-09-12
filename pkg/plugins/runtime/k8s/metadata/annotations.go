@@ -79,6 +79,10 @@ const (
 	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
 	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
+	// KumaTrafficTransparentProxyConfig is an annotation used to pass a YAML with the transparent proxy
+	// configuration in CNI mode, allowing the new logic to retrieve the config from the annotation
+	// instead of processing the ConfigMap explicitly
+	KumaTrafficTransparentProxyConfig      = "traffic.kuma.io/transparent-proxy-config"
 	KumaTrafficExcludeInboundPorts         = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts        = "traffic.kuma.io/exclude-outbound-ports"
 	KumaTrafficExcludeOutboundPortsForUIDs = "traffic.kuma.io/exclude-outbound-ports-for-uids"

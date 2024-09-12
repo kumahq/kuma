@@ -31,3 +31,16 @@ data:
   {{- end }}
 {{- end }}
 {{- end }}
+{{- if and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kuma.transparentProxyConfigMapName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- $kumaCpLabels | nindent 4 }}
+data:
+  config.yaml: |
+    {{- .Values.transparentProxy.config | toYaml | nindent 4 }}
+{{- end }}

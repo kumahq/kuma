@@ -27,7 +27,9 @@ rules:
     resources:
       - namespaces
       - pods
+{{- if not (and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config) }}
       - configmaps
+{{- end }}
       - nodes
 {{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
@@ -120,6 +122,9 @@ rules:
       - ""
     resources:
       - services
+{{- if and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config }}
+      - configmaps
+{{- end }}
     verbs:
       - get
       - delete

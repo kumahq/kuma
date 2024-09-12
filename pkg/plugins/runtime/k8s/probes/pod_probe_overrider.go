@@ -168,3 +168,42 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	annotations[metadata.KumaApplicationProbeProxyPortAnnotation] = str(appProbeProxyPort)
 	return nil
 }
+
+func GetApplicationProbeProxyPort(
+	annotations metadata.Annotations,
+	defaultAppProbeProxyPort uint32,
+) (uint32, error) {
+	// metadata.KumaApplicationProbeProxyPortAnnotation
+
+	// scenarios of switching between virtual probes (vp) and application probe proxy (proxy):
+	// vp   proxy    	result
+	// Y    Y      	     proxy
+	// Y    N            vp
+	// N    N      	     N
+	// N    Y - config   N
+	// N    Y - pod      proxy
+
+	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
+	// this is treated as deprecated though
+
+	proxyPort, proxyPortExist, err := annotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	if err != nil {
+		return 0, err
+	}
+
+	vpEnabled, vpExist, _ := annotations.GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	gwEnabled, _, _ := annotations.GetEnabled(metadata.KumaGatewayAnnotation)
+
+	switch {
+	case gwEnabled && proxyPort > 0:
+		return 0, errors.New("application probe proxies probes can't be enabled in gateway mode")
+	case gwEnabled:
+		return 0, nil
+	case vpExist && !vpEnabled && !proxyPortExist:
+		return 0, nil
+	case proxyPort > 0:
+		return proxyPort, nil
+	default:
+		return defaultAppProbeProxyPort, nil
+	}
+}
