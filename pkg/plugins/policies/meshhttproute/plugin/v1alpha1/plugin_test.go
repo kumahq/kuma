@@ -385,7 +385,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Match: meshexternalservice_api.Match{
 						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 						Port:     9090,
-						Protocol: meshexternalservice_api.HttpProtocol,
+						Protocol: core_mesh.ProtocolHTTP,
 					},
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
