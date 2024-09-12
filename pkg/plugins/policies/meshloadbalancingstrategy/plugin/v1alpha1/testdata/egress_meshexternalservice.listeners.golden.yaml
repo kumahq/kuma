@@ -10,7 +10,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - external{mesh=mesh-1}
+        - ad098e6a3e7e807e1.external.9000.mesh-1.mes
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -42,6 +42,6 @@ resources:
                       sourceIp: true
                   timeout: 0s
           statPrefix: "127_0_0_1_10002"
-      name: external_mesh-1
+      name: mesh-1_external___mextsvc_9000
     name: inbound:127.0.0.1:10002
     trafficDirection: INBOUND

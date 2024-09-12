@@ -11,8 +11,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshexternalservice_example2
-          statPrefix: example
+          cluster: default_example2___mextsvc_9090
+          statPrefix: default_example___mextsvc_9090
     metadata:
       filterMetadata:
         io.kuma.tags: {}
@@ -30,8 +30,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshexternalservice_example2
-          statPrefix: example2
+          cluster: default_example2___mextsvc_9090
+          statPrefix: default_example2___mextsvc_9090
     metadata:
       filterMetadata:
         io.kuma.tags: {}

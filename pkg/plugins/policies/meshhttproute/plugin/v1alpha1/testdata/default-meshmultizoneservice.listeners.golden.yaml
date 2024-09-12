@@ -17,7 +17,7 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           normalizePath: true
           routeConfig:
-            name: outbound:multi-backend_mzsvc_80
+            name: outbound:default_multi-backend___mzsvc_80
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -26,15 +26,15 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: multi-backend_mzsvc_80
+              name: default_multi-backend___mzsvc_80
               routes:
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
-                  cluster: multi-backend_mzsvc_80
+                  cluster: default_multi-backend___mzsvc_80
                   timeout: 0s
-          statPrefix: multi-backend_mzsvc_80
+          statPrefix: default_multi-backend___mzsvc_80
     metadata:
       filterMetadata:
         io.kuma.tags: {}

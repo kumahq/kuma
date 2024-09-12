@@ -1,5 +1,5 @@
 resources:
-- name: backend_msvc_80-6c7282d3d97450ca
+- name: default_backend___msvc_80-01804e3659fbd290
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
@@ -7,7 +7,7 @@ resources:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: backend_msvc_80-6c7282d3d97450ca
+    name: default_backend___msvc_80-01804e3659fbd290
     perConnectionBufferLimitBytes: 32768
     type: EDS
     typedExtensionProtocolOptions:
