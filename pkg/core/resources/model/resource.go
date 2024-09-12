@@ -455,7 +455,7 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) map[string]string {
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) (map[string]string, error) {
 	labels := r.GetMeta().GetLabels()
 	if len(labels) == 0 {
 		labels = map[string]string{}
@@ -503,20 +503,16 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		case systemNamespace:
 			role = mesh_proto.SystemPolicyRole
 		default:
-			role = MustComputePolicyRole(r.GetSpec().(Policy), ns)
+			var err error
+			role, err = ComputePolicyRole(r.GetSpec().(Policy), ns)
+			if err != nil {
+				return nil, err
+			}
 		}
 		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
-	return labels
-}
-
-func MustComputePolicyRole(p Policy, ns string) mesh_proto.PolicyRole {
-	pr, err := ComputePolicyRole(p, ns)
-	if err != nil {
-		panic(err)
-	}
-	return pr
+	return labels, nil
 }
 
 func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
