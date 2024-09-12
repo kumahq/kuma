@@ -276,6 +276,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+				if !features.HasFeature(kds.FeatureProducerPolicyFlow) {
+					return false
+				}
 				policy := r.GetSpec().(core_model.Policy)
 				role, err := core_model.ComputePolicyRole(policy, r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
 				if err != nil {
