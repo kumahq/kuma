@@ -54,7 +54,7 @@ var (
 
 var (
 	_ = Describe("Virtual Probes", healthcheck.VirtualProbes, Ordered)
-	_ = FDescribe("Gateway", gateway.Gateway, Ordered)
+	_ = Describe("Gateway", gateway.Gateway, Ordered)
 	_ = Describe("Gateway - Cross-mesh", gateway.CrossMeshGatewayOnKubernetes, Ordered)
 	_ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
 	_ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)

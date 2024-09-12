@@ -1164,7 +1164,7 @@ spec:
 		})
 	})
 
-	FContext("MeshExternalService", func() {
+	Context("MeshExternalService", func() {
 		meshExternalService := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
@@ -1204,7 +1204,7 @@ spec:
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		FIt("should route to MeshExternalService", func() {
+		It("should route to MeshExternalService", func() {
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster, "demo-client",
