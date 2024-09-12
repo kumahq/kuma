@@ -2,6 +2,7 @@ package delegated
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,6 +96,69 @@ spec:
 				g.Expect(response.Instance).To(HavePrefix("test-server"))
 			}, "30s", "1s").Should(Succeed())
 
+			// and then receive responses from 'external-service'
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster,
+					"demo-client",
+					fmt.Sprintf("http://%s/test-server", config.KicIP),
+					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(HavePrefix("external-service"))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		FIt("should split traffic between MeshService and MeshExternalServices", func() {
+			// given
+			Expect(framework.YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: plain-external-service-delegated
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service.%s.svc.cluster.local
+      port: 80
+`, config.CpNamespace, config.Mesh, config.NamespaceOutsideMesh))(kubernetes.Cluster)).To(Succeed())
+			// when
+			Expect(framework.YamlK8s(fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: mhr-delegated-ms
+  namespace: %s
+  labels:
+    kuma.io/mesh: %[2]s
+spec:
+  targetRef:
+    kind: MeshService
+    name: delegated-gateway-admin_%[2]s_svc_8444
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server_%[2]s_svc_80
+      rules: 
+        - matches:
+            - path: 
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshExternalService
+                name: plain-external-service-delegated
+                port: 80
+                weight: 100
+`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+
+			time.Sleep(1*time.Hour)
 			// and then receive responses from 'external-service'
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(
