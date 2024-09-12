@@ -1,0 +1,139 @@
+on:
+  workflow_call:
+    inputs:
+      matrix:
+        required: true
+        type: string
+      runner:
+        type: string
+        required: true
+permissions:
+  contents: read
+env:
+  CI_TOOLS_DIR: ${{ contains(inputs.runner, '-kong') && '/work/kuma/kuma/.ci_tools' || '/home/runner/work/kuma/kuma/.ci_tools' }}
+  E2E_PARAM_K8S_VERSION: ${{ fromJSON(inputs.matrix).k8sVersion }}
+  E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
+  E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
+  E2E_PARAM_SIDECAR_CONTAINERS: ${{ fromJSON(inputs.matrix).sidecarContainers }}
+  E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
+  E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
+jobs:
+  e2e:
+    timeout-minutes: 60
+    # can't use env vars here
+    runs-on: ${{ inputs.runner }}
+    if: ${{ inputs.runner != '' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        parallelRunnerId: ${{ fromJSON((fromJSON(inputs.matrix).parallelism == '4' && '[0, 1, 2, 3]') || '[0]') }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - name: "Free up disk space for the Runner"
+        run: |
+          echo "Disk usage before cleanup"
+          sudo df -h
+          echo "Removing big directories"
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          echo "Pruning images"
+          docker system prune --all -f
+          echo "Disk usage after cleanup"
+          sudo df -h
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - run: |
+          make -j images
+          make -j docker/save
+      - run: |
+          make dev/set-kuma-helm-repo
+      - name: "Enable ipv6 for docker"
+        if: ${{ env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
+        run: |
+          cat <<'EOF' | sudo tee /etc/docker/daemon.json
+          {
+            "ipv6": true,
+            "fixed-cidr-v6": "2001:db8:1::/64",
+            "dns": ["8.8.8.8"],
+            "dns-search": ["."]
+          }
+          EOF
+          sudo service docker restart
+      - name: "Run E2E tests"
+        env:
+          DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
+        run: |
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            export KUMA_DEBUG=true
+          fi
+          if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
+            export IPV6=true
+            export K8S_CLUSTER_TOOL=kind
+            export KUMA_DEFAULT_RETRIES=60
+            export KUMA_DEFAULT_TIMEOUT="6s"
+          fi
+          if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" != "kind"* ]]; then
+            export CI_K3S_VERSION=$E2E_PARAM_K8S_VERSION
+            export K3D_NETWORK_CNI=${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}
+          fi
+          if [[ "${{ env.E2E_PARAM_ARCH }}" == "arm64" ]]; then
+            export MAKE_PARAMETERS="-j1"
+          else
+            export MAKE_PARAMETERS="-j2"
+          fi
+
+          if [[ "${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}" != "" ]]; then
+            export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
+          fi
+
+          if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then
+            export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
+          fi
+          env
+          if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
+            export KUMA_DEFAULT_RETRIES=60
+          fi
+          
+          function on_exit()
+          {
+            docker logout docker.io
+          }
+          
+          # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
+          # to prevent this, we support specifying a pull credential here
+          if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
+            DOCKER_USER=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 1)
+            DOCKER_PWD=$(echo "$DOCKERHUB_PULL_CREDENTIAL" | cut -d ':' -f 2)
+            echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
+            trap "on_exit" EXIT
+          fi
+          
+          if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
+            target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
+          else
+            target="test/e2e"
+          fi
+          make ${MAKE_PARAMETERS} CI=true "${target}"
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        if: always()
+        with:
+          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}
+          if-no-files-found: ignore
+          path: |
+            /tmp/e2e-debug/
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
