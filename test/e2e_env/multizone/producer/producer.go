@@ -11,6 +11,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
+	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
@@ -22,7 +23,7 @@ func ProducerPolicyFlow() {
 	BeforeAll(func() {
 		// Global
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(mesh)).
+			Install(MTLSMeshWithMeshServicesUniversal(mesh, "Exclusive")).
 			Install(MeshTrafficPermissionAllowAllUniversal(mesh)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
@@ -38,29 +39,6 @@ func ProducerPolicyFlow() {
 			Setup(multizone.KubeZone1),
 		).To(Succeed())
 
-		kubeServiceYAML := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: %s
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: %s
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: %s
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`, k8sZoneNamespace, mesh, k8sZoneNamespace)
-
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(testserver.Install(
@@ -69,7 +47,6 @@ spec:
 				testserver.WithNamespace(k8sZoneNamespace),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
 			Setup(multizone.KubeZone2),
 		).To(Succeed())
 	})
@@ -77,6 +54,7 @@ spec:
 	AfterEachFailure(func() {
 		DebugUniversal(multizone.Global, mesh)
 		DebugKube(multizone.KubeZone1, mesh, k8sZoneNamespace)
+		DebugKube(multizone.KubeZone2, mesh, k8sZoneNamespace)
 	})
 
 	E2EAfterEach(func() {
@@ -90,7 +68,7 @@ spec:
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	It("should synced producer policy to other clusters", func() {
+	It("should sync producer policy to other clusters", func() {
 		Expect(YamlK8s(fmt.Sprintf(`
 kind: MeshTimeout
 apiVersion: kuma.io/v1alpha1
@@ -120,6 +98,17 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(out).To(ContainSubstring(hash.HashedName(mesh, "to-test-server", Kuma2, k8sZoneNamespace)))
 		}).Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			response, err := framework_client.CollectFailure(
+				multizone.KubeZone1, "test-client", fmt.Sprintf("test-server.%s.svc.kuma-2.mesh.local", k8sZoneNamespace),
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "5000"),
+				framework_client.WithMaxTime(10), // we don't want 'curl' to return early
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
 		Expect(YamlK8s(fmt.Sprintf(`
 kind: MeshTimeout
