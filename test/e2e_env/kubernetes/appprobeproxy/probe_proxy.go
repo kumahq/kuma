@@ -75,7 +75,7 @@ func ApplicationProbeProxy() {
 		var tcpAppPodName string
 		var grpcAppPodName string
 
-		// first, we get the pod names
+		By("first, we get the pod names")
 		Eventually(func() error {
 			var err error
 			httpAppPodName, err = PodNameOfApp(kubernetes.Cluster, httpAppName, namespace)
@@ -95,7 +95,7 @@ func ApplicationProbeProxy() {
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		// second, assert probes are converted to HTTPGet
+		By("second, assert probes are converted to HTTPGet")
 		Eventually(func() error {
 			httpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName)
 			if err != nil {
@@ -142,7 +142,7 @@ func ApplicationProbeProxy() {
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		// third, assert pods are ready and live
+		By("third, assert pods are ready and live")
 		Consistently(func() error {
 			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
 				httpAppPodName, httpAppName); err != nil {
@@ -159,7 +159,7 @@ func ApplicationProbeProxy() {
 			return nil
 		}, "30s", "3s", MustPassRepeatedly(2)).ShouldNot(HaveOccurred())
 
-		// fourth, assert Probes data is present for HTTP Probes
+		By("fourth, assert Probes data is present for HTTP Probes")
 		Eventually(func() error {
 			checkDPProbes := func(podName string, shouldHasProbes bool) error {
 				dpName := fmt.Sprintf("%s.%s", podName, namespace)
@@ -199,10 +199,12 @@ func ApplicationProbeProxy() {
 	})
 
 	It("should fallback to virtual probes when application probe proxy is disabled", func() {
+		By("patch the application pod and disabling application probe proxy using annotation")
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
 		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
 			`[{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
 
+		By("checking virtual probes annotations on the new pod")
 		var nextRevPodName string
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
 		Eventually(func() error {
@@ -227,6 +229,7 @@ func ApplicationProbeProxy() {
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
+		By("making sure the new pod is ready")
 		Consistently(func() error {
 			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
 				nextRevPodName, httpAppName); err != nil {
@@ -250,11 +253,11 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
 	Expect(err).ToNot(HaveOccurred())
 
-	updatedDeployObj, err := kubeClient.AppsV1().Deployments(kubectlOpts.Namespace).
+	prevDeployObj, err := kubeClient.AppsV1().Deployments(kubectlOpts.Namespace).
 		Patch(context.Background(), appName, types.JSONPatchType, []byte(jsonPatch), metav1.PatchOptions{})
 	Expect(err).ToNot(HaveOccurred())
 
-	prevRevision := updatedDeployObj.Annotations["deployment.kubernetes.io/revision"]
+	prevRevision := prevDeployObj.Annotations["deployment.kubernetes.io/revision"]
 	prevRevisionNum, _ := strconv.Atoi(prevRevision)
 	nextRevision := strconv.Itoa(prevRevisionNum + 1)
 	var nextRS *appsv1.ReplicaSet

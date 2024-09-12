@@ -136,16 +136,21 @@ type K8sDecoratedError struct {
 }
 
 func (e *K8sDecoratedError) Error() string {
+	detailStr := MarshalObjectDetails(e.Details)
+	return fmt.Sprintf("sourceError: %s K8sDetails: %q", e.Err.Error(), detailStr)
+}
+
+func MarshalObjectDetails(e *ObjectDetails) string {
 	details := "none"
-	if e.Details != nil {
-		b, err := json.Marshal(*e.Details)
+	if e != nil {
+		b, err := json.Marshal(*e)
 		if err != nil {
-			details = "failed to marshal details"
+			details = fmt.Sprintf("failed to marshal details, err: %v", err)
 		} else {
 			details = string(b)
 		}
 	}
-	return fmt.Sprintf("sourceError: %s K8sDetails:%q", e.Err.Error(), details)
+	return details
 }
 
 func ExtractDeploymentDetails(testingT testing.TestingT,

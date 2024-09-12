@@ -13,6 +13,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/universal_logs"
@@ -168,9 +169,23 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		kubeOptions.Logger = logger.Discard                  // to not print on stdout
 		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
 		if err != nil {
-			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err)
+			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err.Error())
 			errorSeen = true
 		}
+
+		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+		if err == nil {
+			for _, deployment := range deployments {
+				if !k8s.IsDeploymentAvailable(&deployment) {
+					deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+					out += MarshalObjectDetails(deployDetails)
+				}
+			}
+		} else {
+			out += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
+			errorSeen = true
+		}
+
 		// Ignore it if we don't have Gateway API resources installed
 		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
 		if err == nil {
