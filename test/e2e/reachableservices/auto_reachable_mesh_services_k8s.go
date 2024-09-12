@@ -15,8 +15,8 @@ import (
 
 func AutoReachableMeshServices() {
 	var k8sCluster Cluster
-	meshName := "reachable-backends"
-	namespace := "reachable-backends"
+	meshName := "auto-reachable-backends"
+	namespace := "auto-reachable-backends"
 
 	hostnameGenerator := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
