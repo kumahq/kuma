@@ -56,6 +56,7 @@ func (i IngressGenerator) Generate(
 			meshResources,
 			localMs,
 			meshResources.MeshMultiZoneServices().Items,
+			nil,
 			xdsCtx.ControlPlane.SystemNamespace,
 		)
 

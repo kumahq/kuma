@@ -816,7 +816,8 @@ func fillExternalServicesOutboundsThroughEgress(
 				Weight:   1,
 				Locality: locality,
 				ExternalService: &core_xds.ExternalService{
-					Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+					Protocol:      core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+					OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 				},
 			}
 

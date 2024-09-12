@@ -42,15 +42,28 @@ func GenerateClusters(
 
 			if meshCtx.IsExternalService(serviceName) {
 				if meshCtx.Resource.ZoneEgressEnabled() {
+					endpoints := meshCtx.EndpointMap[serviceName]
 					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster()).
-						Configure(envoy_clusters.ClientSideMTLS(
-							proxy.SecretsTracker,
-							meshCtx.Resource,
-							mesh_proto.ZoneEgressServiceName,
-							tlsReady,
-							clusterTags,
-						))
+						Configure(envoy_clusters.EdsCluster())
+					if isMeshExternalService(endpoints) {
+						edsClusterBuilder.
+							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
+								proxy.SecretsTracker,
+								meshCtx.Resource,
+								mesh_proto.ZoneEgressServiceName,
+								true,
+								SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+							))
+					} else {
+						edsClusterBuilder.
+							Configure(envoy_clusters.ClientSideMTLS(
+								proxy.SecretsTracker,
+								meshCtx.Resource,
+								mesh_proto.ZoneEgressServiceName,
+								tlsReady,
+								clusterTags,
+							))
+					}
 				} else {
 					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
