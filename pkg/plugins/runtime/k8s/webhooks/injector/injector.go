@@ -597,6 +597,7 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 	return container
 }
 
+// Deprecated
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
 	portOutbound := i.cfg.SidecarContainer.RedirectPortOutbound
 	portInbound := i.cfg.SidecarContainer.RedirectPortInbound
@@ -792,6 +793,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger lo
 	return result, nil
 }
 
+// Deprecated
 func portsToAnnotationValue(ports []uint32) string {
 	stringPorts := make([]string, len(ports))
 	for i, port := range ports {

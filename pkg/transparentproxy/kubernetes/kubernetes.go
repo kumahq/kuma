@@ -26,6 +26,7 @@ import (
 	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
+// Deprecated
 type PodRedirect struct {
 	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
 	// keep in mind to update all other places listed in the issue
@@ -52,6 +53,7 @@ type PodRedirect struct {
 	ExcludeOutboundIPs                       string
 }
 
+// Deprecated
 func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedirect, error) {
 	var err error
 	var pr PodRedirect
@@ -157,6 +159,7 @@ func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedire
 	return &pr, nil
 }
 
+// Deprecated
 func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 	// the annotations are validated/defaulted in a previous step in injector.NewAnnotations, so we can safely ignore the errors here
 	inboundPortsToExclude, _ := metadata.Annotations(annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
@@ -172,6 +175,7 @@ func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 	return fmt.Sprintf("%s,%s", inboundPortsToExclude, appProbeProxyPort)
 }
 
+// Deprecated
 func flag[T string | bool | uint32](name string, values ...T) []string {
 	var result []string
 
@@ -188,6 +192,7 @@ func flag[T string | bool | uint32](name string, values ...T) []string {
 	return result
 }
 
+// Deprecated
 func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	if condition == *new(T) {
 		return nil
@@ -196,6 +201,7 @@ func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	return slices.Concat(flags...)
 }
 
+// Deprecated
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	defaultConfig := tproxy_config.DefaultConfig()
 
