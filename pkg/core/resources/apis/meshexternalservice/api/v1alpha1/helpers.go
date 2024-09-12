@@ -15,7 +15,7 @@ func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
 	if port == 0 {
 		port = uint32(m.Spec.Match.Port)
 	}
-	return fmt.Sprintf("%s_%s_%s_%s_mextsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
+	return fmt.Sprintf("%s_%s_%s_%s_extsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {

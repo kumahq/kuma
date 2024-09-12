@@ -1423,7 +1423,7 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				mesh: defaultMeshWithMTLSAndZoneEgress,
 				expected: core_xds.EndpointMap{
-					"default_another-mes___mextsvc_10000": []core_xds.Endpoint{
+					"default_another-mes___extsvc_10000": []core_xds.Endpoint{
 						{
 							Target: "1.1.1.1",
 							Port:   10002,
@@ -1445,7 +1445,7 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					"default_example-mes___mextsvc_10000": []core_xds.Endpoint{
+					"default_example-mes___extsvc_10000": []core_xds.Endpoint{
 						{
 							Target:   "1.1.1.1",
 							Port:     10002,
@@ -1701,7 +1701,7 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 							},
 						},
-						"default_example___mextsvc_443": []core_xds.Endpoint{
+						"default_example___extsvc_443": []core_xds.Endpoint{
 							{
 								Target: "192.168.1.1",
 								Port:   10000,

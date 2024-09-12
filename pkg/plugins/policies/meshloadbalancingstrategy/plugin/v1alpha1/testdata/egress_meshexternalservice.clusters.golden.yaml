@@ -1,5 +1,5 @@
 resources:
-- name: mesh-1_external___mextsvc_9000
+- name: mesh-1_external___extsvc_9000
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_external

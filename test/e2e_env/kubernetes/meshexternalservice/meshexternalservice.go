@@ -94,7 +94,7 @@ spec:
 		})
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_mextsvc_80.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshName,
 			"http-external-service",
 			Config.KumaNamespace,
@@ -152,7 +152,7 @@ spec:
 `, Config.KumaNamespace, meshNameEgress)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_mextsvc_80.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshNameEgress,
 			"mesh-external-service-egress",
 			Config.KumaNamespace,
@@ -220,7 +220,7 @@ spec:
       port: 80
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_mextsvc_80.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshName,
 			"tcp-external-service",
 			Config.KumaNamespace,
@@ -290,7 +290,7 @@ spec:
       mode: SkipCA # test-server certificate is not signed by a CA that is in the system trust store
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s_default_mextsvc_80.upstream_rq_total", // cx
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total", // cx
 			meshName,
 			"tls-external-service",
 			Config.KumaNamespace,

@@ -17,7 +17,7 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           normalizePath: true
           routeConfig:
-            name: default_example___mextsvc_9090
+            name: default_example___extsvc_9090
             requestHeadersToAdd:
             - header:
                 key: x-kuma-tags
@@ -26,16 +26,16 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: default_example___mextsvc_9090
+              name: default_example___extsvc_9090
               routes:
               - match:
                   prefix: /
                 name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
                 route:
                   autoHostRewrite: true
-                  cluster: default_example___mextsvc_9090
+                  cluster: default_example___extsvc_9090
                   timeout: 0s
-          statPrefix: default_example___mextsvc_9090
+          statPrefix: default_example___extsvc_9090
     metadata:
       filterMetadata:
         io.kuma.tags: {}
