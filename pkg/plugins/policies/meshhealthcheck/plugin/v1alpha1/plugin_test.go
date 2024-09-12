@@ -329,7 +329,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							"default_external___extsvc_9000": {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{
@@ -364,7 +364,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							},
 						},
 						Dynamic: core_xds.ExternalServiceDynamicPolicies{
-							"external": {
+							"mesh-2_external___extsvc_9000": {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
 										ResourceRules: core_rules.ResourceRules{

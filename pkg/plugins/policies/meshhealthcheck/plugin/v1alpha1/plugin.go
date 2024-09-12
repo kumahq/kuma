@@ -171,7 +171,8 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
-			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
+			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			policies, ok := meshResources.Dynamic[meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port))]
 			if !ok {
 				continue
 			}

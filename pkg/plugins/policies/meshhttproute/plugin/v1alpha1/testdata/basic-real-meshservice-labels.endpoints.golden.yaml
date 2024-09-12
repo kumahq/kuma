@@ -1,9 +1,9 @@
 resources:
-- name: backend-second_msvc_80
+- name: default_backend-second___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend-second_msvc_80
-- name: backend_msvc_80
+    clusterName: default_backend-second___msvc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: backend_msvc_80
+    clusterName: default_backend___msvc_80

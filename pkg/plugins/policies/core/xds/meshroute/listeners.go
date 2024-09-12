@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -138,14 +137,18 @@ func collectMeshExternalService(
 	if !mesOk {
 		return nil
 	}
+	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
+	if mes.Spec.Match.Protocol != "" {
+		protocol = mes.Spec.Match.Protocol
+	}
 	return &DestinationService{
+		Protocol: protocol,
 		OutboundInterface: mesh_proto.OutboundInterface{
 			DataplaneIP:   outbound.GetAddress(),
 			DataplanePort: outbound.GetPort(),
 		},
 		Tags:        outbound.LegacyOutbound.GetTags(),
 		Resource:    outbound.Resource,
-		Protocol:    mes.Spec.Match.Protocol,
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 		BackendRef: common_api.BackendRef{
 			TargetRef: common_api.TargetRef{
@@ -227,6 +230,10 @@ func GetServiceAndProtocolFromRef(
 			return "", "", false
 		}
 		port := pointer.Deref(ref.LegacyBackendRef.Port)
+		// if backendRef has no port, get the one from MeshExternalService since match allows only 1 port
+		if port == 0 {
+			port = uint32(mes.Spec.Match.Port)
+		}
 		service := mes.DestinationName(port)
 		protocol := meshCtx.GetServiceProtocol(service)
 		return service, protocol, true
@@ -293,7 +300,7 @@ func makeSplit(
 		var clusterName string
 		switch ref.LegacyBackendRef.Kind {
 		case common_api.MeshExternalService:
-			clusterName = envoy_names.GetMeshExternalServiceName(ref.LegacyBackendRef.Name) // todo shouldn't this be in destination name?
+			clusterName = meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(pointer.Deref(ref.LegacyBackendRef.Port))
 		case common_api.MeshMultiZoneService:
 			clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
 		case common_api.MeshService:
