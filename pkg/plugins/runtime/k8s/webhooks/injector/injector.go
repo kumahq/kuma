@@ -144,7 +144,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	var injectedInitContainer kube_core.Container
 
 	if i.cfg.TransparentProxyConfigMapName != "" {
-		tproxyCfg, err := i.getTransparentProxyConfig(ctx, logger, pod.Annotations)
+		tproxyCfg, err := i.getTransparentProxyConfig(ctx, logger, pod)
 		if err != nil {
 			return err
 		}
@@ -350,28 +350,92 @@ func (i *KumaInjector) loadContainerPatches(
 func (i *KumaInjector) getTransparentProxyConfig(
 	ctx context.Context,
 	logger logr.Logger,
-	annotations map[string]string,
+	pod *kube_core.Pod,
 ) (tproxy_config.Config, error) {
+	// Skip if the TransparentProxyConfigMapName is not specified in the runtime configuration
 	if i.cfg.TransparentProxyConfigMapName == "" {
 		return tproxy_config.Config{}, nil
 	}
 
-	cfg := tproxy_config.DefaultConfig()
-	loader := core_config.NewLoader(&cfg)
-	cm := &kube_core.ConfigMap{}
+	getConfigFromAnnotation := func(name, namespace string) (tproxy_config.Config, bool) {
+		v, err := i.getTransparentProxyConfigMap(ctx, logger, pod, name, namespace)
+		if err != nil {
+			logger.V(1).Info(
+				"[WARNING]: failed to retrieve transparent proxy config from the ConfigMap specified by annotation",
+				"annotation", metadata.KumaTrafficTransparentProxyConfigMapName,
+				"configMapName", name,
+				"configMapNamespace", namespace,
+				"error", err,
+			)
 
-	if err := i.client.Get(ctx, kube_types.NamespacedName{
-		Name:      i.cfg.TransparentProxyConfigMapName,
-		Namespace: i.systemNamespace,
-	}, cm); err == nil {
-		if c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c != "" {
-			if err := loader.LoadBytes([]byte(c)); err != nil {
-				return tproxy_config.Config{}, err
-			}
+			return tproxy_config.Config{}, false
+		}
+
+		return v, true
+	}
+
+	// Try to fetch config using the annotation-specified ConfigMap name
+	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+		if c, ok := getConfigFromAnnotation(v, pod.Namespace); ok {
+			return c, nil
+		}
+
+		if c, ok := getConfigFromAnnotation(v, i.systemNamespace); ok {
+			return c, nil
 		}
 	}
 
-	return tproxy_k8s.ConfigForKubernetes(cfg, i.cfg, annotations, logger)
+	// Fallback to fetching config using the runtime-specified ConfigMap name
+	return i.getTransparentProxyConfigMap(
+		ctx,
+		logger,
+		pod,
+		i.cfg.TransparentProxyConfigMapName,
+		i.systemNamespace,
+	)
+}
+
+func (i *KumaInjector) getTransparentProxyConfigMap(
+	ctx context.Context,
+	logger logr.Logger,
+	pod *kube_core.Pod,
+	name string,
+	namespace string,
+) (tproxy_config.Config, error) {
+	cfg := tproxy_config.DefaultConfig()
+	loader := core_config.NewLoader(&cfg)
+	namespacedName := kube_types.NamespacedName{Name: name, Namespace: namespace}
+
+	var cm kube_core.ConfigMap
+	if err := i.client.Get(ctx, namespacedName, &cm); err != nil {
+		return tproxy_config.Config{}, errors.Wrapf(
+			err,
+			"failed to retrieve ConfigMap %q in namespace %q",
+			name,
+			namespace,
+		)
+	}
+
+	switch c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c {
+	case "":
+		return tproxy_config.Config{}, errors.Errorf(
+			"ConfigMap %q in namespace %q is missing the required key %q",
+			name,
+			namespace,
+			tproxy_consts.KubernetesConfigMapDataKey,
+		)
+	default:
+		if err := loader.LoadBytes([]byte(c)); err != nil {
+			return tproxy_config.Config{}, errors.Wrapf(
+				err,
+				"failed to load transparent proxy configuration from ConfigMap %q in namespace %q",
+				name,
+				namespace,
+			)
+		}
+	}
+
+	return tproxy_k8s.ConfigForKubernetes(cfg, i.cfg, pod.Annotations, logger)
 }
 
 // applyCustomPatches applies the block of patches to the given container and returns a new,
