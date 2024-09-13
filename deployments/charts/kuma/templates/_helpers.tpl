@@ -221,8 +221,8 @@ returns: formatted image string
 {{- end -}}
 
 {{- define "kuma.transparentProxyConfigMapName" -}}
-{{- if .Values.transparentProxy.configMapName }}
-{{- .Values.transparentProxy.configMapName | trunc 253 | trimSuffix "-" }}
+{{- if .Values.transparentProxy.configMap.name }}
+{{- .Values.transparentProxy.configMap.name | trunc 253 | trimSuffix "-" }}
 {{- else }}
 {{- printf "%s-transparent-proxy-config" .Chart.Name }}
 {{- end }}
@@ -265,7 +265,7 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"
 {{- end }}
-{{- if and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config }}
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
 {{- end }}

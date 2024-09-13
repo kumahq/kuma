@@ -27,7 +27,7 @@ rules:
     resources:
       - namespaces
       - pods
-{{- if not (and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config) }}
+{{- if not (and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config) }}
       - configmaps
 {{- end }}
       - nodes
@@ -122,7 +122,7 @@ rules:
       - ""
     resources:
       - services
-{{- if and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config }}
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
       - configmaps
 {{- end }}
     verbs:

@@ -31,7 +31,7 @@ data:
   {{- end }}
 {{- end }}
 {{- end }}
-{{- if and .Values.experimental.transparentProxy.configMap .Values.transparentProxy.config }}
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -42,5 +42,5 @@ metadata:
     {{- $kumaCpLabels | nindent 4 }}
 data:
   config.yaml: |
-    {{- .Values.transparentProxy.config | toYaml | nindent 4 }}
+    {{- .Values.transparentProxy.configMap.config | toYaml | nindent 4 }}
 {{- end }}
