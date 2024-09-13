@@ -112,6 +112,7 @@ type DpServerAuthnConfig struct {
 	// Configuration for zone proxy authentication.
 	ZoneProxy ZoneProxyAuthnConfig `json:"zoneProxy"`
 	// If true then Envoy uses Google gRPC instead of Envoy gRPC which lets a proxy reload the auth data (service account token, dp token etc.) from path without proxy restart.
+	// This is enabled on Kubernetes.
 	EnableReloadableTokens bool `json:"enableReloadableTokens" envconfig:"kuma_dp_server_authn_enable_reloadable_tokens"`
 }
 
