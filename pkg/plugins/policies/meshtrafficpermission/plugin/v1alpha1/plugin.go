@@ -142,10 +142,9 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 		}
 		// egress is configured for all meshes so we cannot use mesh context in this case
 		mesNames := []string{}
-		if _, found := resource.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
-			for _, mes := range resource.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems() {
-				mesNames = append(mesNames, mes.GetMeta().GetName())
-			}
+		for _, mes := range resource.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType).GetItems() {
+			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			mesNames = append(mesNames, meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port)))
 		}
 
 		for _, esName := range esNames {
@@ -201,7 +200,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 					Mesh:      meshName,
 				}
 				for _, filterChain := range listeners.Egress.FilterChains {
-					if filterChain.Name == names.GetEgressFilterChainName(mesName, meshName) {
+					if filterChain.Name == mesName {
 						if err := configurer.Configure(filterChain); err != nil {
 							return err
 						}

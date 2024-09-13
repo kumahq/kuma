@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -43,10 +44,19 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	previousMesh := dataplane.Mesh
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
+	}
+	currentSpec, err := dataplane.GetSpec()
+	if err != nil {
+		return err
+	}
+
+	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh {
+		return util_k8s.UnchangedResourceError
 	}
 	dataplane.SetSpec(dataplaneProto)
 	return nil
@@ -65,6 +75,13 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 
+	currentSpec, err := zoneIngress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneIngressRes.Spec) {
+		return util_k8s.UnchangedResourceError
+	}
 	zoneIngress.SetSpec(zoneIngressRes.Spec)
 	return nil
 }
@@ -80,6 +97,13 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 
 	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
 		return err
+	}
+	currentSpec, err := zoneEgress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneEgressRes.Spec) {
+		return util_k8s.UnchangedResourceError
 	}
 
 	zoneEgress.SetSpec(zoneEgressRes.Spec)

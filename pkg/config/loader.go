@@ -3,18 +3,15 @@ package config
 import (
 	"io"
 	"os"
+	"reflect"
 
-	"github.com/go-logr/logr"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kumahq/kuma/pkg/core"
 )
 
 type Loader struct {
-	logger logr.Logger
-	cfg    Config
+	cfg Config
 
 	strict        bool
 	includeEnv    bool
@@ -23,10 +20,7 @@ type Loader struct {
 }
 
 func NewLoader(cfg Config) *Loader {
-	return &Loader{
-		logger: core.Log.WithName("config"),
-		cfg:    cfg,
-	}
+	return &Loader{cfg: cfg}
 }
 
 func (l *Loader) WithStrictParsing() *Loader {
@@ -58,7 +52,6 @@ func (l *Loader) Load(stdin io.Reader, content []byte, filename string) error {
 
 func (l *Loader) LoadFile(filename string) error {
 	if filename == "" {
-		l.logger.Info("no configuration file provided, skipping file-based config loading")
 		return l.postProcess()
 	}
 
@@ -80,7 +73,6 @@ func (l *Loader) LoadFile(filename string) error {
 
 func (l *Loader) LoadReader(r io.Reader) error {
 	if r == nil {
-		l.logger.Info("no configuration reader provided, skipping reader-based config loading")
 		return nil
 	}
 
@@ -93,8 +85,11 @@ func (l *Loader) LoadReader(r io.Reader) error {
 }
 
 func (l *Loader) LoadBytes(content []byte) error {
+	if reflect.ValueOf(l.cfg).Kind() != reflect.Ptr {
+		return errors.New("configuration must be a pointer; ensure the Config instance is passed by reference")
+	}
+
 	if content == nil {
-		l.logger.Info("no configuration content provided, skipping byte-based config loading")
 		return nil
 	}
 

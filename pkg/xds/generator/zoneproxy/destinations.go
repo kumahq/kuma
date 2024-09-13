@@ -7,8 +7,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -30,6 +32,7 @@ type BackendRefDestination struct {
 	// DestinationName is a string to reference Type+Name+Mesh+Port. Effectively an Envoy Cluster name
 	DestinationName string
 	SNI             string
+	Resource        *model.ResolvedBackendRef
 }
 
 func BuildMeshDestinations(
@@ -37,17 +40,23 @@ func BuildMeshDestinations(
 	res xds_context.Resources,
 	meshServices []*meshservice_api.MeshServiceResource,
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
+	mesServices []*meshexternalservice_api.MeshExternalServiceResource,
 	systemNamespace string,
+	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
 ) MeshDestinations {
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
-		BackendRefs:    append(buildMeshServiceDestinations(meshServices, systemNamespace), buildMeshMultiZoneServiceDestinations(meshMzSvc)...),
+		BackendRefs: append(
+			append(buildMeshServiceDestinations(meshServices, systemNamespace, resolveResourceIdentifier), buildMeshMultiZoneServiceDestinations(meshMzSvc, resolveResourceIdentifier)...),
+			buildMeshExternalServiceDestinations(mesServices, resolveResourceIdentifier)...,
+		),
 	}
 }
 
 func buildMeshServiceDestinations(
 	meshServices []*meshservice_api.MeshServiceResource,
 	systemNamespace string,
+	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
 ) []BackendRefDestination {
 	var msDestinations []BackendRefDestination
 	for _, ms := range meshServices {
@@ -63,14 +72,47 @@ func buildMeshServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
 				SNI:             sni,
+				Resource: model.ResolveBackendRef(
+					ms.Meta,
+					model.ResourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
+					resolveResourceIdentifier,
+				),
 			})
 		}
 	}
 	return msDestinations
 }
 
+func buildMeshExternalServiceDestinations(
+	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
+	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
+) []BackendRefDestination {
+	var mesDestinations []BackendRefDestination
+	for _, mes := range meshExternalServices {
+		sni := tls.SNIForResource(
+			core_model.GetDisplayName(mes.GetMeta()),
+			mes.GetMeta().GetMesh(),
+			meshexternalservice_api.MeshExternalServiceType,
+			uint32(mes.Spec.Match.Port),
+			nil,
+		)
+		mesDestinations = append(mesDestinations, BackendRefDestination{
+			Mesh:            mes.GetMeta().GetMesh(),
+			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
+			SNI:             sni,
+			Resource: model.ResolveBackendRef(
+				mes.Meta,
+				model.ResourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port)),
+				resolveResourceIdentifier,
+			),
+		})
+	}
+	return mesDestinations
+}
+
 func buildMeshMultiZoneServiceDestinations(
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
+	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
 ) []BackendRefDestination {
 	var msDestinations []BackendRefDestination
 	for _, ms := range meshMzSvc {
@@ -78,6 +120,11 @@ func buildMeshMultiZoneServiceDestinations(
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
+				Resource: model.ResolveBackendRef(
+					ms.Meta,
+					model.ResourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
+					resolveResourceIdentifier,
+				),
 				SNI: tls.SNIForResource(
 					core_model.GetDisplayName(ms.GetMeta()),
 					ms.GetMeta().GetMesh(),

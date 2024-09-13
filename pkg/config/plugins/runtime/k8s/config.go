@@ -38,7 +38,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					GID:       5678,
 					DrainTime: config_types.Duration{Duration: 30 * time.Second},
 					EnvVars:   map[string]string{},
-
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
 						TimeoutSeconds:      3,

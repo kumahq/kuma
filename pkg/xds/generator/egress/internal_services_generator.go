@@ -34,7 +34,9 @@ func (g *InternalServicesGenerator) Generate(
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
+		nil,
 		"",
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)

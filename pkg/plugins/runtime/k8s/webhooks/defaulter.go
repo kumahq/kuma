@@ -65,10 +65,13 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	if resp := h.IsOperationAllowed(req.UserInfo, resource, req.Namespace); !resp.Allowed {
 		return resp
 	}
-	labels, annotations := k8s.SplitLabelsAndAnnotations(
-		core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName),
-		obj.GetAnnotations(),
-	)
+
+	computed, err := core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName)
+	if err != nil {
+		return admission.Errored(http.StatusInternalServerError, err)
+	}
+	labels, annotations := k8s.SplitLabelsAndAnnotations(computed, obj.GetAnnotations())
+
 	obj.SetLabels(labels)
 	obj.SetAnnotations(annotations)
 
