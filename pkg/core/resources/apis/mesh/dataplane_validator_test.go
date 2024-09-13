@@ -337,6 +337,25 @@ var _ = Describe("Dataplane", func() {
                     labels:
                       kuma.io/test: abc`,
 		),
+		Entry("dataplane with backend ref with labels", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  backendRef:
+                    kind: MeshService
+                    labels:
+                      kuma.io/display-name: redis
+                    port: 8080`,
+		),
 	)
 
 	type testCase struct {
@@ -1237,8 +1256,8 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking.outbound[0].backendRef.kind
                   message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
-                - field: networking.outbound[0].backendRef.name
-                  message: cannot be empty
+                - field: networking.outbound[0].backendRef
+                  message:  either 'name' or 'labels' should be specified
                 - field: networking.outbound[0].backendRef.port
                   message: port must be in the range [1, 65535]`,
 		}),

@@ -233,8 +233,8 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
 			result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 		}
-		if outbound.BackendRef.Name == "" {
-			result.AddViolation("backendRef.name", "cannot be empty")
+		if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
+			result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
 		}
 		// for MeshExternalService the port does not matter because it's taken from endpoints
 		if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
