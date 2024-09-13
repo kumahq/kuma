@@ -7,7 +7,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -187,7 +186,6 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	if conf != nil {
 		apiRules = conf.Rules
 	}
-	core.Log.Info("prepareRoutes", "conf", conf, "backendRefToOrigin", backendRefToOrigin)
 
 	if len(apiRules) == 0 {
 		switch svc.Protocol {
