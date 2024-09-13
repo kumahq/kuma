@@ -14,7 +14,7 @@ import (
 )
 
 type OutboundRoute struct {
-	Hash                    string
+	Hash                    common_api.MatchesHash
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
