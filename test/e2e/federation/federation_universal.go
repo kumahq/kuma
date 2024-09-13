@@ -76,6 +76,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Expect(global.GetKumactlOptions().RunKumactl("apply", "-f", tmpfile.Name())).To(Succeed())
 			err = zone.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
+				WithHelmWait(),
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
 			)
 			Expect(err).ToNot(HaveOccurred())

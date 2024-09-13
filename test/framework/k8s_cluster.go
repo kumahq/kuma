@@ -437,9 +437,17 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 
 	values := c.genValues(mode)
 
+	var extraArgs map[string][]string
+	if c.opts.helmWait {
+		extraArgs = map[string][]string{
+			"install": {"--wait"},
+			"upgrade": {"--wait"},
+		}
+	}
 	helmOpts := &helm.Options{
 		SetValues:      values,
 		KubectlOptions: c.GetKubectlOptions(Config.KumaNamespace),
+		ExtraArgs:      extraArgs,
 	}
 
 	if c.opts.helmChartVersion != "" {

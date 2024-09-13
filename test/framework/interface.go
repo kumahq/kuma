@@ -36,6 +36,7 @@ type kumaDeploymentOptions struct {
 	helmChartVersion            string
 	helmOpts                    map[string]string
 	noHelmOpts                  []string
+	helmWait                    bool
 	env                         map[string]string
 	zoneIngress                 bool
 	zoneIngressEnvoyAdminTunnel bool
@@ -249,6 +250,12 @@ func WithHelmOpt(name, value string) KumaDeploymentOption {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
+	})
+}
+
+func WithHelmWait() KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.helmWait = true
 	})
 }
 
