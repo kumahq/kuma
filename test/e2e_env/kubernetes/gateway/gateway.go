@@ -97,7 +97,7 @@ type: system.kuma.io/secret
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetesWithEgressRouting(meshName)).
+			Install(MTLSMeshKubernetes(meshName)).
 			Install(Namespace(clientNamespace)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -1186,6 +1186,7 @@ spec:
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
+				Install(MTLSMeshKubernetesWithEgressRouting(meshName)).
 				Install(testserver.Install(
 					testserver.WithNamespace(clientNamespace),
 					testserver.WithName("mes-echo-server"),
@@ -1198,6 +1199,7 @@ spec:
 
 		E2EAfterAll(func() {
 			err := NewClusterSetup().
+				Install(MTLSMeshKubernetes(meshName)).
 				Install(DeleteYamlK8s(routes...)).
 				Install(DeleteYamlK8s(meshExternalService)).
 				Setup(kubernetes.Cluster)
