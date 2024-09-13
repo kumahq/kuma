@@ -1,36 +1,34 @@
 resources:
-- name: mesh1:backend2_msvc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh1_backend2_msvc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh1:backend2_msvc_80
+    name: default_backend___msvc_80
     type: EDS
-- name: mesh1:backend_msvc_80
+- name: default_backend__east_msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh1_backend_msvc_80
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
         initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: mesh1:backend_msvc_80
+    name: default_backend__east_msvc_80
     type: EDS
-- name: mesh1:backend2_msvc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh1:backend2_msvc_80
-- name: mesh1:backend_msvc_80
+    clusterName: default_backend___msvc_80
+- name: default_backend__east_msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
-    clusterName: mesh1:backend_msvc_80
+    clusterName: default_backend__east_msvc_80
 - name: inbound:10.0.0.1:10001
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -48,8 +46,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default:backend_msvc_80
-          statPrefix: default_backend_msvc_80
+          cluster: default_backend__east_msvc_80
+          statPrefix: default_backend__east_msvc_80
     - filterChainMatch:
         serverNames:
         - aec60634adf0f45d6.backend2.80.default.ms
@@ -58,8 +56,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: default:backend2_msvc_80
-          statPrefix: default_backend2_msvc_80
+          cluster: default_backend___msvc_80
+          statPrefix: default_backend___msvc_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:

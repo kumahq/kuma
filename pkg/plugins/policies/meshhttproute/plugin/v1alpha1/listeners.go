@@ -20,7 +20,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -38,13 +37,7 @@ func generateFromService(
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Configure(envoy_listeners.TagsMetadata(envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag)))
 
-	var resourceName string
-	if svc.BackendRef.Kind == common_api.MeshExternalService {
-		resourceName = envoy_names.GetMeshExternalServiceName(svc.BackendRef.Name)
-		listenerBuilder.WithOverwriteName(resourceName)
-	} else {
-		resourceName = svc.ServiceName
-	}
+	resourceName := svc.ServiceName
 
 	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 		Configure(envoy_listeners.AddFilterChainConfigurer(&envoy_listeners_v3.HttpConnectionManagerConfigurer{

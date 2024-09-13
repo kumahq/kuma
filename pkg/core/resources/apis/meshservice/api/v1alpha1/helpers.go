@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
@@ -12,7 +11,8 @@ import (
 )
 
 func (m *MeshServiceResource) DestinationName(port uint32) string {
-	return fmt.Sprintf("%s_msvc_%d", strings.ReplaceAll(m.GetMeta().GetName(), ".", "_"), port)
+	id := model.NewResourceIdentifier(m)
+	return fmt.Sprintf("%s_%s_%s_%s_msvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 
 func (m *MeshServiceResource) FindPort(port uint32) (Port, bool) {

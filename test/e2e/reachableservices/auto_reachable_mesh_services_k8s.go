@@ -15,8 +15,8 @@ import (
 
 func AutoReachableMeshServices() {
 	var k8sCluster Cluster
-	meshName := "reachable-backends"
-	namespace := "reachable-backends"
+	meshName := "auto-reachable-backends"
+	namespace := "auto-reachable-backends"
 
 	hostnameGenerator := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -96,7 +96,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace))))
+			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_defaul_msvc_80", meshName, namespace))))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -104,7 +104,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_default_msvc_80", meshName, namespace)))
 		}, "30s", "1s").Should(Succeed())
 
 		Consistently(func(g Gomega) {

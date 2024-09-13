@@ -313,7 +313,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
-					"kong_kong-system_msvc_8080": []core_xds.Endpoint{
+					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",
@@ -340,7 +340,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
-					"redis_msvc_6379": []core_xds.Endpoint{
+					"default_redis___msvc_6379": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.1",
 							UnixDomainPath: "",
@@ -353,7 +353,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
-					"redis-0_msvc_6379": []core_xds.Endpoint{
+					"default_redis-0___msvc_6379": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
@@ -375,7 +375,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
-					"kong_kong-system_msvc_8081": []core_xds.Endpoint{
+					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",

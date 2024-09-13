@@ -497,7 +497,7 @@ func (c *Executables) Set(s string) error {
 		return nil
 	}
 
-	for _, block := range removeEmptyStrings(strings.Split(s, ",")) {
+	for _, block := range parseCommaSeparatedStrings(s) {
 		name, path, found := strings.Cut(block, ":")
 		if !found {
 			errs = append(
@@ -557,9 +557,9 @@ type executablesPaths interface {
 var _ executablesPaths = ExecutablesPathsIPv4{}
 
 type ExecutablesPathsIPv4 struct {
-	Iptables        string `json:"iptables"`
-	IptablesSave    string `json:"iptables-save"`
-	IptablesRestore string `json:"iptables-restore"`
+	Iptables        string `json:"iptables,omitempty"`
+	IptablesSave    string `json:"iptables-save,omitempty"`
+	IptablesRestore string `json:"iptables-restore,omitempty"`
 }
 
 func (c ExecutablesPathsIPv4) getPathsMap() map[string]string {
@@ -578,9 +578,9 @@ func (c ExecutablesPathsIPv4) convert() ExecutablesIPvX {
 var _ executablesPaths = ExecutablesPathsIPv6{}
 
 type ExecutablesPathsIPv6 struct {
-	Ip6tables        string `json:"ip6tables"`
-	Ip6tablesSave    string `json:"ip6tables-save"`
-	Ip6tablesRestore string `json:"ip6tables-restore"`
+	Ip6tables        string `json:"ip6tables,omitempty"`
+	Ip6tablesSave    string `json:"ip6tables-save,omitempty"`
+	Ip6tablesRestore string `json:"ip6tables-restore,omitempty"`
 }
 
 func (c ExecutablesPathsIPv6) getPathsMap() map[string]string {
@@ -714,17 +714,14 @@ func tryInitializeExecutablePaths(
 	return initialized, true, nil
 }
 
-func getNonEmptyPaths(ep executablesPaths) []string {
-	return removeEmptyStrings(maps.Values(ep.getPathsMap()))
-}
+func getNonEmptyPaths(eps ...executablesPaths) []string {
+	var result []string
 
-func removeEmptyStrings(strngs []string) []string {
-	return slices.DeleteFunc(
-		strngs,
-		func(s string) bool {
-			return strings.TrimSpace(s) == ""
-		},
-	)
+	for _, ep := range eps {
+		result = slices.Concat(result, removeEmptyStrings(maps.Values(ep.getPathsMap())))
+	}
+
+	return result
 }
 
 func getNamesWithPathsString(eps ...executablesPaths) string {

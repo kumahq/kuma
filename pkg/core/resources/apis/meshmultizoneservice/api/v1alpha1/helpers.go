@@ -2,7 +2,6 @@ package v1alpha1
 
 import (
 	"fmt"
-	"strings"
 
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -49,7 +48,8 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (meshservice_
 }
 
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
-	return fmt.Sprintf("%s_mzsvc_%d", strings.ReplaceAll(m.GetMeta().GetName(), ".", "_"), port)
+	id := model.NewResourceIdentifier(m)
+	return fmt.Sprintf("%s_%s_%s_%s_mzsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 
 func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {

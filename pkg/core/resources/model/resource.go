@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -455,7 +456,7 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) map[string]string {
+func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) (map[string]string, error) {
 	labels := r.GetMeta().GetLabels()
 	if len(labels) == 0 {
 		labels = map[string]string{}
@@ -497,21 +498,25 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 		}
 	}
 
-	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
+	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
 		var role mesh_proto.PolicyRole
 		switch ns {
 		case systemNamespace:
 			role = mesh_proto.SystemPolicyRole
 		default:
-			role = ComputePolicyRole(r.GetSpec().(Policy))
+			var err error
+			role, err = ComputePolicyRole(r.GetSpec().(Policy), ns)
+			if err != nil {
+				return nil, err
+			}
 		}
-		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
+		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
-	return labels
+	return labels, nil
 }
 
-func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
+func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
 	hasTo := false
 	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
 		hasTo = true
@@ -522,11 +527,29 @@ func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
 		hasFrom = true
 	}
 
-	if hasTo && !hasFrom {
-		// todo(lobkovilya): detect if the policy is a producer policy when they're supported
-		return mesh_proto.ConsumerPolicyRole
-	} else {
-		return mesh_proto.WorkloadOwnerPolicyRole
+	if hasFrom || !(hasTo || hasFrom) {
+		// if there is 'from' or neither (single item)
+		return mesh_proto.WorkloadOwnerPolicyRole, nil
+	}
+
+	isProducerItem := func(tr common_api.TargetRef) bool {
+		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns)
+	}
+
+	producerItems := 0
+	for _, item := range p.(PolicyWithToList).GetToList() {
+		if isProducerItem(item.GetTargetRef()) {
+			producerItems++
+		}
+	}
+
+	switch {
+	case producerItems == len(p.(PolicyWithToList).GetToList()):
+		return mesh_proto.ProducerPolicyRole, nil
+	case producerItems == 0:
+		return mesh_proto.ConsumerPolicyRole, nil
+	default:
+		return "", errors.New("it's not allowed to mix producer and consumer items in the same policy")
 	}
 }
 
@@ -715,6 +738,18 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 			Namespace: namespace,
 			Name:      tr.Name,
 		}
+	}
+}
+
+func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_api.BackendRef {
+	id := NewResourceIdentifier(r)
+	return common_api.BackendRef{
+		TargetRef: common_api.TargetRef{
+			Kind:      common_api.TargetRefKind(resType),
+			Name:      id.Name,
+			Namespace: id.Namespace,
+		},
+		Port: pointer.To(port),
 	}
 }
 

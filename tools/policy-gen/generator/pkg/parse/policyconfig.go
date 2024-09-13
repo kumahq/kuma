@@ -150,6 +150,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
+	} else if res.HasTo {
+		// potentially a producer policy, so we need to sync it from one zone to another
+		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag"
 	} else {
 		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag"
 	}

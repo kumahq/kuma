@@ -11,6 +11,7 @@ import (
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -54,6 +55,14 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	}
 
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
+		currentSpec, err := dataplane.GetSpec()
+		if err != nil {
+			return errors.Wrap(err, "unable to get current Dataplane's spec")
+		}
+		if model.Equal(currentSpec, dataplaneProto) {
+			return k8s_util.UnchangedResourceError
+		}
+
 		dataplane.SetSpec(dataplaneProto)
 
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -64,6 +73,10 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
+		if errors.Is(err, k8s_util.UnchangedResourceError) {
+			log.V(1).Info("resource hasn't changed, skip")
+			return nil
+		}
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
