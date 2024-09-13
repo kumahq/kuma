@@ -2,12 +2,12 @@ package reconcile
 
 import (
 	"context"
-	"maps"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
@@ -34,7 +34,7 @@ type reconciler struct {
 func (r *reconciler) KnownClientIds() map[string]bool {
 	r.knownClientIdsMutex.Lock()
 	defer r.knownClientIdsMutex.Unlock()
-	return maps.Clone(r.knownClientIds)
+	return util_maps.Clone(r.knownClientIds)
 }
 
 func (r *reconciler) Reconcile(ctx context.Context) error {

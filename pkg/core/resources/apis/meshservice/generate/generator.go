@@ -2,7 +2,6 @@ package generate
 
 import (
 	"context"
-	"maps"
 	"reflect"
 	"slices"
 	"strconv"
@@ -23,6 +22,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -196,7 +196,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			meshService.Spec = newMeshService
 
 			// Unset the grace period by deleting the label
-			newLabels := maps.Clone(meshService.GetMeta().GetLabels())
+			newLabels := util_maps.Clone(meshService.GetMeta().GetLabels())
 			delete(newLabels, mesh_proto.DeletionGracePeriodStartedLabel)
 
 			if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
@@ -232,7 +232,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 					log.Error(err, "couldn't marshal time.Now as text, this shouldn't be possible")
 					continue
 				}
-				newLabels := maps.Clone(meshService.GetMeta().GetLabels())
+				newLabels := util_maps.Clone(meshService.GetMeta().GetLabels())
 				newLabels[mesh_proto.DeletionGracePeriodStartedLabel] = string(nowText)
 				if err := g.resManager.Update(ctx, meshService, store.UpdateWithLabels(newLabels)); err != nil {
 					log.Error(err, "couldn't update MeshService")

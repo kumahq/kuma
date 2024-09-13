@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -473,7 +472,7 @@ func buildOutboundsWithMultipleIPs(dataplane *core_mesh.DataplaneResource, outbo
 
 	tagsToOutbounds := map[string]OutboundWithMultipleIPs{}
 	for _, outbound := range outbounds {
-		tags := maps.Clone(outbound.GetTags())
+		tags := util_maps.Clone(outbound.GetTags())
 		tags[mesh_proto.ServiceTag] = outbound.GetService()
 		tagsStr := mesh_proto.SingleValueTagSet(tags).String()
 		owmi := tagsToOutbounds[tagsStr]

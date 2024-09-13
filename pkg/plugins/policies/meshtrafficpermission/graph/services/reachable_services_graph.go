@@ -1,14 +1,13 @@
 package services
 
 import (
-	"golang.org/x/exp/maps"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 var log = core.Log.WithName("rs-graph")
@@ -65,7 +64,7 @@ func BuildRules(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 	rules := map[string]core_rules.Rules{}
 	for service, tags := range services {
 		// build artificial dpp for matching
-		dpTags := maps.Clone(tags)
+		dpTags := util_maps.Clone(tags)
 		dpTags[mesh_proto.ServiceTag] = service
 		rl, ok, err := graph_util.ComputeMtpRulesForTags(dpTags, trimmedMtps)
 		if err != nil {

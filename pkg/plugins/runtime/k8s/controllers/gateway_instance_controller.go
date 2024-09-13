@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"maps"
 	"reflect"
 	"strconv"
 
@@ -35,6 +34,7 @@ import (
 	ctrls_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/util"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -102,7 +102,7 @@ func k8sSelector(name string) map[string]string {
 }
 
 func (*GatewayInstanceReconciler) gatewayInstanceTags(gatewayInstance *mesh_k8s.MeshGatewayInstance) map[string]string {
-	tags := maps.Clone(gatewayInstance.Spec.Tags)
+	tags := util_maps.Clone(gatewayInstance.Spec.Tags)
 	if tags == nil {
 		tags = map[string]string{}
 	}

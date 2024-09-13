@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"maps"
 	"strings"
 	"time"
 
@@ -21,6 +20,7 @@ import (
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 func typeIsUnregistered(err error) bool {
@@ -242,8 +242,8 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 // Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
 // We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
 func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
-	labels := maps.Clone(coreLabels)
-	annotations := maps.Clone(currentAnnotations)
+	labels := util_maps.Clone(coreLabels)
+	annotations := util_maps.Clone(currentAnnotations)
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
@@ -289,7 +289,7 @@ func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 }
 
 func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
-	labels := maps.Clone(m.GetObjectMeta().GetLabels())
+	labels := util_maps.Clone(m.GetObjectMeta().GetLabels())
 	if labels == nil {
 		labels = map[string]string{}
 	}

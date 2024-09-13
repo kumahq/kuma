@@ -3,10 +3,9 @@ package util
 import (
 	"time"
 
-	"golang.org/x/exp/maps"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 // KDS ResourceMeta only contains name and mesh.
@@ -41,7 +40,7 @@ func WithoutLabel(key string) CloneResourceMetaOpt {
 }
 
 func CloneResourceMeta(m model.ResourceMeta, fs ...CloneResourceMetaOpt) model.ResourceMeta {
-	labels := maps.Clone(m.GetLabels())
+	labels := util_maps.Clone(m.GetLabels())
 	if labels == nil {
 		labels = map[string]string{}
 	}

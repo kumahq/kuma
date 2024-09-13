@@ -1,8 +1,6 @@
 package backends
 
 import (
-	"golang.org/x/exp/maps"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -10,6 +8,7 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 var log = core.Log.WithName("rms-graph")
@@ -17,7 +16,7 @@ var log = core.Log.WithName("rms-graph")
 func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.MeshTrafficPermissionResource) map[core_model.TypedResourceIdentifier]core_rules.Rules {
 	rules := map[core_model.TypedResourceIdentifier]core_rules.Rules{}
 	for _, ms := range meshServices {
-		dpTags := maps.Clone(ms.Spec.Selector.DataplaneTags)
+		dpTags := util_maps.Clone(ms.Spec.Selector.DataplaneTags)
 		if origin, ok := core_model.ResourceOrigin(ms.GetMeta()); ok {
 			dpTags[mesh_proto.ResourceOriginLabel] = string(origin)
 		}

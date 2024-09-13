@@ -15,7 +15,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/exp/maps"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -23,6 +22,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	pgx_config "github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 type pgxResourceStore struct {
@@ -140,7 +140,7 @@ func (r *pgxResourceStore) Create(ctx context.Context, resource core_model.Resou
 		Version:          strconv.Itoa(version),
 		CreationTime:     opts.CreationTime,
 		ModificationTime: opts.CreationTime,
-		Labels:           maps.Clone(opts.Labels),
+		Labels:           util_maps.Clone(opts.Labels),
 	})
 	return nil
 }
@@ -205,7 +205,7 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		Mesh:             resource.GetMeta().GetMesh(),
 		Version:          strconv.Itoa(newVersion),
 		ModificationTime: opts.ModificationTime,
-		Labels:           maps.Clone(opts.Labels),
+		Labels:           util_maps.Clone(opts.Labels),
 	})
 
 	return nil

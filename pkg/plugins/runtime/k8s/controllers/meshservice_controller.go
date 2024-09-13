@@ -3,7 +3,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"maps"
 	"strconv"
 	"strings"
 
@@ -35,6 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/k8s"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -269,7 +269,7 @@ func (r *MeshServiceReconciler) setFromClusterIPSvc(_ context.Context, ms *meshs
 		}
 	}
 	ms.ObjectMeta.Labels[metadata.HeadlessService] = "false"
-	dpTags := maps.Clone(svc.Spec.Selector)
+	dpTags := util_maps.Clone(svc.Spec.Selector)
 	if dpTags == nil {
 		dpTags = map[string]string{}
 	}
@@ -361,7 +361,7 @@ func (r *MeshServiceReconciler) manageMeshService(
 	var unsupportedPorts []string
 
 	result, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ms, func() error {
-		ms.ObjectMeta.Labels = maps.Clone(svc.GetLabels())
+		ms.ObjectMeta.Labels = util_maps.Clone(svc.GetLabels())
 		if ms.ObjectMeta.Labels == nil {
 			ms.ObjectMeta.Labels = map[string]string{}
 		}
