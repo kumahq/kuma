@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
+// Deprecated
 func convertToUint16(field string, value string) (uint16, error) {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
@@ -23,6 +24,7 @@ func convertToUint16(field string, value string) (uint16, error) {
 	return uint16(converted), nil
 }
 
+// Deprecated
 func convertCommaSeparatedString(list string) (config.Ports, error) {
 	split := strings.Split(list, ",")
 	mapped := make(config.Ports, len(split))
@@ -38,7 +40,8 @@ func convertCommaSeparatedString(list string) (config.Ports, error) {
 	return mapped, nil
 }
 
-func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateConfig, logger logr.Logger) error {
+// Deprecated
+func legacyInjectIptables(ctx context.Context, netns string, intermediateConfig *IntermediateConfig, logger logr.Logger) error {
 	var logBuffer bytes.Buffer
 	logWriter := bufio.NewWriter(&logBuffer)
 	cfg, err := mapToConfig(intermediateConfig, logWriter)
@@ -73,6 +76,7 @@ func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateC
 	})
 }
 
+// Deprecated
 func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 
@@ -155,6 +159,7 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	return &cfg, nil
 }
 
+// Deprecated
 func GetEnabled(value string) (bool, error) {
 	switch strings.ToLower(value) {
 	case "enabled", "true":
@@ -164,4 +169,25 @@ func GetEnabled(value string) (bool, error) {
 	default:
 		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
 	}
+}
+
+func injectIptables(ctx context.Context, netns string, cfg config.Config) error {
+	namespace, err := ns.GetNS(netns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open network namespace '%s'", netns)
+	}
+	defer namespace.Close()
+
+	return namespace.Do(func(ns.NetNS) error {
+		initializedConfig, err := cfg.Initialize(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize transparent proxy configuration")
+		}
+
+		if _, err := transparentproxy.Setup(ctx, initializedConfig); err != nil {
+			return errors.Wrap(err, "failed to set up transparent proxy")
+		}
+
+		return nil
+	})
 }
