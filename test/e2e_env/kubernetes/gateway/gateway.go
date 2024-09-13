@@ -236,7 +236,11 @@ spec:
 		}
 	}
 
-	httpRoute := func(name, path, destination string) []string {
+	httpRoute := func(name, path, destination, destinationKind, port string) []string {
+		portValue := ""
+		if port != "" {
+			portValue = "port: " + port
+		}
 		return []string{
 			fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -260,8 +264,9 @@ spec:
           value: "%s"
       default:
         backendRefs:
-        - kind: MeshService
+        - kind: %s
           name: "%s"
+          %s
   - targetRef:
       kind: Mesh
     hostnames:
@@ -279,9 +284,10 @@ spec:
             - name: x-specific-hostname-header
               value: "true"
         backendRefs:
-        - kind: MeshService
+        - kind: %s
           name: "%s"
-`, name, Config.KumaNamespace, path, destination, path, destination),
+          %s
+`, name, Config.KumaNamespace, path, destinationKind, destination, portValue, path, destinationKind, destination, portValue),
 			fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
@@ -312,9 +318,10 @@ spec:
             - name: x-listener-by-hostname-header
               value: "true"
         backendRefs:
-        - kind: MeshService
+        - kind: %s
           name: "%s"
-`, name+"-hostname-specific", Config.KumaNamespace, path, destination),
+          %s
+`, name+"-hostname-specific", Config.KumaNamespace, path, destinationKind, destination, portValue),
 		}
 	}
 
@@ -465,7 +472,7 @@ spec:
 	}
 
 	basicRouting("MeshGatewayRoute", meshGatewayRoutes("internal-service", "/", "echo-server_simple-gateway_svc_80"))
-	basicRouting("MeshHTTPRoute", httpRoute("internal-service", "/", "echo-server_simple-gateway_svc_80"))
+	basicRouting("MeshHTTPRoute", httpRoute("internal-service", "/", "echo-server_simple-gateway_svc_80", "MeshService", ""))
 
 	Context("Rate Limit", func() {
 		rt := `apiVersion: kuma.io/v1alpha1
@@ -550,7 +557,7 @@ spec:
                 header:
                   name: x-header
 `, Config.KumaNamespace, meshName)
-		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80")
+		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80", "MeshService", "")
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
@@ -1154,6 +1161,64 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 
 			Expect(NewClusterSetup().Install(DeleteYamlK8s(route)).Setup(kubernetes.Cluster)).To(Succeed())
+		})
+	})
+
+	Context("MeshExternalService", func() {
+		meshExternalService := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: simple-gateway-mesh-external-service
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: mes-echo-server.client-simple-gateway.svc.cluster.local
+      port: 80`, Config.KumaNamespace, meshName)
+
+		routes := httpRoute("test-server-mes", "/mes", "simple-gateway-mesh-external-service", "MeshExternalService", "80")
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(MTLSMeshKubernetesWithEgressRouting(meshName)).
+				Install(testserver.Install(
+					testserver.WithNamespace(clientNamespace),
+					testserver.WithName("mes-echo-server"),
+				)).
+				Install(YamlK8s(meshExternalService)).
+				Install(YamlK8s(routes...)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		E2EAfterAll(func() {
+			err := NewClusterSetup().
+				Install(MTLSMeshKubernetes(meshName)).
+				Install(DeleteYamlK8s(routes...)).
+				Install(DeleteYamlK8s(meshExternalService)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should route to MeshExternalService", func() {
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/mes",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+					client.WithHeader("x-header", "value"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(1))
+			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})
 }

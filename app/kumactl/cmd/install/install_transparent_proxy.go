@@ -25,6 +25,8 @@ const (
 	flagTransparentProxyConfig     = "config"
 	flagTransparentProxyConfigFile = "config-file"
 	flagIptablesExecutables        = "iptables-executables"
+	flagRedirectDNS                = "redirect-dns"
+	flagRedirectAllDNSTraffic      = "redirect-all-dns-traffic"
 )
 
 const (
@@ -113,7 +115,8 @@ runuser -u kuma-dp -- \
 
 			parseConfigFlags := func(flag *pflag.Flag, value string) error {
 				switch flag.Name {
-				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile:
+				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile,
+					flagRedirectDNS, flagRedirectAllDNSTraffic:
 					return flag.Value.Set(value)
 				default:
 					return nil
@@ -153,6 +156,14 @@ runuser -u kuma-dp -- \
 				)
 			}
 
+			if cfg.Redirect.DNS.Enabled && cfg.Redirect.DNS.CaptureAll {
+				return errors.Errorf(
+					"only one of '--%s' or '--%s' should be specified",
+					flagRedirectDNS,
+					flagRedirectAllDNSTraffic,
+				)
+			}
+
 			// After parsing the config flags, we load the configuration, which involves parsing
 			// the provided YAML or JSON, and including environment variables if present
 			if err := cfgLoader.Load(cmd.InOrStdin(), []byte(configValue), configFile); err != nil {
@@ -164,10 +175,6 @@ runuser -u kuma-dp -- \
 			// other parsing errors for all other flags
 			if err := cmd.Flags().Parse(args); err != nil {
 				return err
-			}
-
-			if cfg.Redirect.DNS.CaptureAll && cfg.Redirect.DNS.Enabled {
-				return errors.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
 			}
 
 			if cfg.Redirect.DNS.CaptureAll {
@@ -227,8 +234,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-user", cfg.KumaDPUser, fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
 	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-uid", cfg.KumaDPUser, "the uid of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, "redirect-dns", cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
-	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
+	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, flagRedirectDNS, cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
+	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, flagRedirectAllDNSTraffic, cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")

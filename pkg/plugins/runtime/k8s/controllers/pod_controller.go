@@ -334,6 +334,10 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
+		if errors.Is(err, util_k8s.UnchangedResourceError) {
+			log.V(1).Info("resource hasn't changed, skip")
+			return nil
+		}
 		if !errors.Is(err, context.Canceled) {
 			log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
 			r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
@@ -371,6 +375,10 @@ func (r *PodReconciler) createOrUpdateIngress(ctx context.Context, pod *kube_cor
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
+		if errors.Is(err, util_k8s.UnchangedResourceError) {
+			log.V(1).Info("resource hasn't changed, skip")
+			return nil
+		}
 		log.Error(err, "unable to create/update Ingress", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Ingress: %s", err.Error())
 		return err
@@ -405,6 +413,10 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 	})
 	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
+		if errors.Is(err, util_k8s.UnchangedResourceError) {
+			log.V(1).Info("resource hasn't changed, skip")
+			return nil
+		}
 		log.Error(err, "unable to create/update Egress", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Egress: %s", err.Error())
 		return err

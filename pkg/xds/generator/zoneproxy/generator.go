@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
@@ -36,8 +37,10 @@ func GenerateCDS(
 		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(
 			envoy_tags.Without(mesh_proto.ServiceTag),
 		)
-
 		clusterName := envoy_names.GetMeshClusterName(meshName, service)
+		if clusters.BackendRef().LegacyBackendRef != nil && clusters.BackendRef().LegacyBackendRef.ReferencesRealObject() {
+			clusterName = service
+		}
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 			Configure(envoy_clusters.EdsCluster()).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).
@@ -66,9 +69,12 @@ func GenerateEDS(
 	var resources []*core_xds.Resource
 
 	for _, service := range services.Sorted() {
+		clusters := services[service]
 		endpoints := endpointMap[service]
-
 		clusterName := envoy_names.GetMeshClusterName(meshName, service)
+		if clusters.BackendRef().LegacyBackendRef != nil && clusters.BackendRef().LegacyBackendRef.ReferencesRealObject() {
+			clusterName = service
+		}
 		cla, err := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints, apiVersion)
 		if err != nil {
 			return nil, err
@@ -173,8 +179,6 @@ func AddFilterChains(
 	}
 
 	for _, refDest := range meshDestinations.BackendRefs {
-		clusterName := envoy_names.GetMeshClusterName(refDest.Mesh, refDest.DestinationName)
-
 		if _, ok := sniUsed[refDest.SNI]; ok {
 			continue
 		}
@@ -186,7 +190,7 @@ func AddFilterChains(
 		// Destination name usually equals to kuma.io/service so we will add already existing cluster which will be
 		// then deduplicated in later steps
 		cluster := envoy_common.NewCluster(
-			envoy_common.WithName(clusterName),
+			envoy_common.WithName(refDest.DestinationName),
 			envoy_common.WithService(refDest.DestinationName),
 			envoy_common.WithTags(relevantTags),
 		)
@@ -197,15 +201,14 @@ func AddFilterChains(
 				envoy_listeners.MatchTransportProtocol("tls"),
 				envoy_listeners.MatchServerNames(refDest.SNI),
 				envoy_listeners.TcpProxyDeprecatedWithMetadata(
-					clusterName,
+					refDest.DestinationName,
 					cluster,
 				),
 			),
 		)
 
 		listenerBuilder.Configure(filterChain)
-
-		servicesAcc.Add(cluster)
+		servicesAcc.AddBackendRef(pointer.Deref(refDest.Resource), cluster)
 	}
 
 	return servicesAcc.Services()

@@ -397,7 +397,11 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
-	labels := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
+	labels, err := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+		return
+	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")

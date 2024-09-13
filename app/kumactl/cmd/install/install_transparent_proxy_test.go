@@ -203,7 +203,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 				"--redirect-all-dns-traffic",
 			},
 			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
-			errorMatcher: Equal("Error: one of --redirect-dns or --redirect-all-dns-traffic should be specified\n"),
+			errorMatcher: Equal("Error: only one of '--redirect-dns' or '--redirect-all-dns-traffic' should be specified\n"),
 		}),
 		Entry("should error out on invalid port value", testCase{
 			extraArgs: []string{
