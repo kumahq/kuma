@@ -107,7 +107,7 @@ func TestConformance(t *testing.T) {
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
 		CleanupBaseResources: true,
-		Debug:                Config.Debug,
+		Debug:                true,
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
