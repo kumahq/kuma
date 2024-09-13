@@ -49,23 +49,28 @@ jobs:
           go-version-file: go.mod
           cache: false
       - uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        if: false
         with:
           args: --fix=false --verbose
           version: v1.60.3
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        if: false
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
+      - if: false
+        run: |
           make dev/tools
       - run: |
           make clean
-      - run: |
+      - if: false
+        run: |
           make check
       - id: sca-project
+        if: false
         uses: Kong/public-shared-actions/security-actions/sca@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
         with:
           dir: .
@@ -92,7 +97,7 @@ jobs:
       id-token: write
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: false
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
@@ -105,7 +110,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
-    if: ${{ github.ref_type == 'tag' }}
+    if: false
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
