@@ -144,7 +144,6 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 	return resources, nil
 }
 
-// tweak this
 func (c *ClusterGenerator) generateRealBackendRefCluster(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
