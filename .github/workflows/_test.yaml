@@ -82,7 +82,7 @@ jobs:
           # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
           OVERRIDE_JQ_CMD: |-
             .test_e2e = false
-            | .test_e2e_env.include = []
+            | .test_e2e_env.include = [{"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"}]
             | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ inputs.K8S_MIN_VERSION}}"}]
         run: |-
           BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'

@@ -137,3 +137,6 @@ jobs:
           path: |
             /tmp/e2e-debug/
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - name: Setup tmate session
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
