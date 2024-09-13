@@ -58,7 +58,8 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				log.Info("skipping backendRef", "backendRef", dest.BackendRef.LegacyBackendRef)
 				continue
 			}
-			isExternalCluster = dest.BackendRef.LegacyBackendRef.Kind == "MeshExternalService"
+			isExternalService := xdsCtx.Mesh.IsExternalService(service)
+			isExternalCluster = isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		} else {
 			service = dest.Destination[mesh_proto.ServiceTag]
 
