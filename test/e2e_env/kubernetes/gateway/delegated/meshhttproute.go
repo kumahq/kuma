@@ -64,7 +64,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: delegated-gateway-admin_%[2]s_svc_8444
+    name: %[2]s-gateway-admin_%[2]s_svc_8444
   to:
     - targetRef:
         kind: MeshService
@@ -139,7 +139,7 @@ func MeshHTTPRouteMeshService(config *Config) func() {
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
-  name: plain-external-service-delegated
+  name: plain-external-service-delegated-ms
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -163,13 +163,14 @@ metadata:
     kuma.io/mesh: %[2]s
 spec:
   targetRef:
-    kind: MeshService
-    name: delegated-gateway-admin_%[2]s_svc_8444
+    kind: MeshSubset
+    tags:
+      kuma.io/service: %[2]s-gateway-admin_%[2]s_svc_8444
   to:
     - targetRef:
         kind: MeshService
-        name: test-server_%[2]s_svc_80
-		namespace: %s
+        name: test-server
+        namespace: %[3]s
       rules: 
         - matches:
             - path: 
@@ -177,23 +178,35 @@ spec:
                 value: /
           default:
             backendRefs:
-              - kind: MeshExternalService
-                name: plain-external-service-delegated
+              - kind: MeshService
+                name: test-server
+                namespace: %[3]s
                 port: 80
-                weight: 100
+                weight: 50
+              - kind: MeshExternalService
+                name: plain-external-service-delegated-ms
+                port: 80
+                weight: 50
 `, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
 			// and then receive responses from 'external-service'
 			Eventually(func(g Gomega) {
-				response, err := client.CollectEchoResponse(
+				response, err := client.CollectResponsesByInstance(
 					kubernetes.Cluster,
 					"demo-client",
 					fmt.Sprintf("http://%s/test-server", config.KicIP),
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
+					client.WithNumberOfRequests(50),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.Instance).To(HavePrefix("external-service"))
-			}, "30s", "1s").Should(Succeed())
+				g.Expect(response).To(HaveLen(4))
+				g.Expect(response).To(And(
+					HaveKeyWithValue(Equal(`test-server-0`), BeNumerically("~", 8, 3)),
+					HaveKeyWithValue(Equal(`test-server-1`), BeNumerically("~", 8, 3)),
+					HaveKeyWithValue(Equal(`test-server-2`), BeNumerically("~", 8, 3)),
+					HaveKeyWithValue(ContainSubstring(`external-service`), BeNumerically("~", 25, 6)),
+				))
+			}, "30s", "5s").Should(Succeed())
 		})
 	}
 }

@@ -6,6 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mcb_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	mr_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway/delegated"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -14,10 +18,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/otelcollector"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
-
-	mcb_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	mr_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 )
 
 func Delegated() {
@@ -29,19 +29,21 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace",
 		IPV6:                        Config.IPV6,
-		MeshServiceMode:             "Disabled",
+		MeshServiceEnabled:          mesh_proto.Mesh_MeshServices_Disabled,
+		UseEgress:                   false,
 	}
 
-	// configMs := delegated.Config{
-	// 	Namespace:                   "delegated-gateway-ms",
-	// 	NamespaceOutsideMesh:        "delegated-gateway-outside-mesh-ms",
-	// 	Mesh:                        "delegated-gateway-ms",
-	// 	KicIP:                       "",
-	// 	CpNamespace:                 Config.KumaNamespace,
-	// 	ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
-	// 	IPV6:                        Config.IPV6,
-	// 	MeshServiceMode:             "Everywhere",
-	// }
+	configMs := delegated.Config{
+		Namespace:                   "delegated-gateway-ms",
+		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh-ms",
+		Mesh:                        "delegated-gateway-ms",
+		KicIP:                       "",
+		CpNamespace:                 Config.KumaNamespace,
+		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
+		IPV6:                        Config.IPV6,
+		MeshServiceEnabled:          mesh_proto.Mesh_MeshServices_Exclusive,
+		UseEgress:                   true,
+	}
 	contextFor := func(name string, config *delegated.Config, testMatrix map[string]func()) {
 		Context(name, func() {
 			externalNameService := func(serviceName string) string {
@@ -56,7 +58,7 @@ spec:
 			}
 			BeforeAll(func() {
 				err := NewClusterSetup().
-					Install(MTLSMeshWithMeshServicesKubernetes(config.Mesh, config.MeshServiceMode)).
+					Install(MTLSMeshWithMeshServicesAndEgressKubernetes(config.Mesh, config.MeshServiceEnabled.String(), config.UseEgress)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 					Install(NamespaceWithSidecarInjection(config.Namespace)).
 					Install(Namespace(config.NamespaceOutsideMesh)).
@@ -148,7 +150,6 @@ spec:
 				Expect(err).ToNot(HaveOccurred())
 
 				config.KicIP = kicIP
-				
 				Expect(DeleteMeshResources(
 					kubernetes.Cluster,
 					config.Mesh,
@@ -156,7 +157,6 @@ spec:
 					mt_api.MeshTimeoutResourceTypeDescriptor,
 					mr_api.MeshRetryResourceTypeDescriptor,
 				)).To(Succeed())
-
 			})
 
 			E2EAfterAll(func() {
@@ -179,21 +179,19 @@ spec:
 	}
 
 	contextFor("delegated with kuma.io/service", &config, map[string]func(){
-			"MeshCircuitBreaker": delegated.CircuitBreaker(&config),
-			"MeshProxyPatch": delegated.MeshProxyPatch(&config),
-			"MeshHealthCheck": delegated.MeshHealthCheck(&config),
-			"MeshRetry": delegated.MeshRetry(&config),
-			"MeshHTTPRoute": delegated.MeshHTTPRoute(&config),
-			"MeshTimeout": delegated.MeshTimeout(&config),
-			"MeshMetric": delegated.MeshMetric(&config),
-			"MeshTrace": delegated.MeshTrace(&config),
-			"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
-			"MeshAccessLog": delegated.MeshAccessLog(&config),
-			"MeshPassthrough": delegated.MeshPassthrough(&config),
-		},
-	)
-	// contextFor("delegated with MeshService", &configMs, map[string]func(){
-	// 	"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&config),
-	// },
-	// )
+		"MeshCircuitBreaker":        delegated.CircuitBreaker(&config),
+		"MeshProxyPatch":            delegated.MeshProxyPatch(&config),
+		"MeshHealthCheck":           delegated.MeshHealthCheck(&config),
+		"MeshRetry":                 delegated.MeshRetry(&config),
+		"MeshHTTPRoute":             delegated.MeshHTTPRoute(&config),
+		"MeshTimeout":               delegated.MeshTimeout(&config),
+		"MeshMetric":                delegated.MeshMetric(&config),
+		"MeshTrace":                 delegated.MeshTrace(&config),
+		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
+		"MeshAccessLog":             delegated.MeshAccessLog(&config),
+		"MeshPassthrough":           delegated.MeshPassthrough(&config),
+	})
+	contextFor("delegated with MeshService", &configMs, map[string]func(){
+		"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&configMs),
+	})
 }

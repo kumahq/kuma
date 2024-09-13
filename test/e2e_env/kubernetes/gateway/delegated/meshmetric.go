@@ -75,7 +75,7 @@ spec:
 						return strings.Split(stdout, "\n")
 					},
 					ContainElement(MatchRegexp(
-						`envoy_cluster_external_upstream_rq_time_bucket\{.*service="delegated-gateway-admin_%s_svc_8444"`,
+						`envoy_cluster_external_upstream_rq_time_bucket\{.*service="%[1]s-gateway-admin_%[1]s_svc_8444"`,
 						config.Mesh,
 					)),
 				))

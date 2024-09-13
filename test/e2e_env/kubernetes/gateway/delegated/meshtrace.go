@@ -72,7 +72,7 @@ spec:
 				srvs, err := observabilityClient.TracedServices()
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(srvs).To(Equal([]string{
-					fmt.Sprintf("delegated-gateway-admin_%s_svc_8444", config.Mesh),
+					fmt.Sprintf("%[1]s-gateway-admin_%[1]s_svc_8444", config.Mesh),
 					"jaeger-query",
 					fmt.Sprintf("test-server_%s_svc_80", config.Mesh),
 				}))
