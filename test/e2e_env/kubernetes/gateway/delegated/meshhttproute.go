@@ -171,9 +171,9 @@ spec:
         kind: MeshService
         name: test-server
         namespace: %[3]s
-      rules: 
+      rules:
         - matches:
-            - path: 
+            - path:
                 type: PathPrefix
                 value: /
           default:
