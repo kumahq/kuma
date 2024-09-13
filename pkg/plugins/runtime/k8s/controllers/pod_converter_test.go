@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -52,7 +51,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 		dataplane         string
 		existingDataplane string
 		nodeLabelsToCopy  []string
-		unchanged         bool
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
 		func(given testCase) {
@@ -362,16 +360,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// then
 			err = converter.PodToIngress(context.Background(), ingress, pod, services)
-			if given.unchanged {
-				Expect(err).To(HaveOccurred())
-				Expect(err).To(Equal(k8s_util.UnchangedResourceError))
-			} else {
-				Expect(err).ToNot(HaveOccurred())
+			Expect(err).ToNot(HaveOccurred())
 
-				actual, err := yaml.Marshal(ingress)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
-			}
+			actual, err := yaml.Marshal(ingress)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
 		},
 		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
 			pod:            "01.pod.yaml",
@@ -409,7 +402,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:               "ingress-exists.pod.yaml",
 			servicesForPod:    "ingress-exists.services-for-pod.yaml",
 			existingDataplane: "ingress-exists.existing-dataplane.yaml",
-			unchanged:         true,
+			dataplane:         "ingress-exists.dataplane.yaml",
 		}),
 	)
 
