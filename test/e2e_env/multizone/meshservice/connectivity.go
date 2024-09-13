@@ -125,6 +125,18 @@ spec:
                 namespace: %s
                 port: 80
                 weight: 1
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /uni-2
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: test-server
+                  kuma.io/zone: kuma-5
+                port: 80
+                weight: 1
 `, Config.KumaNamespace, meshName, namespace)
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -245,7 +257,7 @@ spec:
 			address:          func() string { return "/local" },
 			expectedInstance: "kube-test-server-1",
 		}),
-		XEntry("should access service in the a Universal cluster", testCase{
+		Entry("should access service in the a Universal cluster", testCase{
 			address:          func() string { return "/uni-2" },
 			expectedInstance: "uni-test-server",
 		}),

@@ -116,6 +116,8 @@ func FromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	switch targetRef.Kind {
 	case common_api.MeshService:
 		service = targetRef.Name
+	case common_api.MeshExternalService:
+		service = targetRef.Name
 	case common_api.MeshServiceSubset:
 		service = targetRef.Name
 		tags = targetRef.Tags

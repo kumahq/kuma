@@ -76,167 +76,134 @@ func ApplicationProbeProxy() {
 		var grpcAppPodName string
 
 		By("first, we get the pod names")
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			var err error
 			httpAppPodName, err = PodNameOfApp(kubernetes.Cluster, httpAppName, namespace)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get pod of '%s'", httpAppName))
-			}
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get pod of '%s'", httpAppName)
 
 			tcpAppPodName, err = PodNameOfApp(kubernetes.Cluster, tcpAppName, namespace)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get pod of '%s'", tcpAppName))
-			}
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get pod of '%s'", tcpAppName)
 
 			grpcAppPodName, err = PodNameOfApp(kubernetes.Cluster, gRPCAppName, namespace)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get pod of '%s'", gRPCAppName))
-			}
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get pod of '%s'", gRPCAppName)
+		}, "30s", "1s").Should(Succeed())
 
 		By("second, assert probes are converted to HTTPGet")
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			httpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", httpAppPodName))
-			}
-			Expect(httpPod).ToNot(BeNil())
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", httpAppPodName)
+			g.Expect(httpPod).ToNot(BeNil())
 
 			probeProxyPortAnno := httpPod.Annotations[metadata.KumaApplicationProbeProxyPortAnnotation]
-			Expect(probeProxyPortAnno).ToNot(BeEmpty())
-			Expect(httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]).ToNot(BeEmpty())
+			g.Expect(probeProxyPortAnno).ToNot(BeEmpty())
+			g.Expect(httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]).ToNot(BeEmpty())
 
 			container := getAppContainer(httpPod, httpAppName)
-			Expect(container).ToNot(BeNil())
-			Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
+			g.Expect(container).ToNot(BeNil())
+			g.Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
 			probeProxyPort, _ := strconv.Atoi(probeProxyPortAnno)
-			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(probeProxyPort)))) //nolint:gosec  // we never overflow here
-			Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			g.Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(probeProxyPort)))) //nolint:gosec  // we never overflow here
+			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
+		}, "30s", "1s").Should(Succeed())
 
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			tcpPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), tcpAppPodName)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", tcpAppPodName))
-			}
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", tcpAppPodName)
 
 			container := getAppContainer(tcpPod, tcpAppName)
-			Expect(container.LivenessProbe.TCPSocket).To(BeNil())
-			Expect(container.LivenessProbe.HTTPGet).ToNot(BeNil())
-			Expect(container.LivenessProbe.HTTPGet.Path).To(Equal("/tcp/6379"))
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			g.Expect(container.LivenessProbe.TCPSocket).To(BeNil())
+			g.Expect(container.LivenessProbe.HTTPGet).ToNot(BeNil())
+			g.Expect(container.LivenessProbe.HTTPGet.Path).To(Equal("/tcp/6379"))
+		}, "30s", "1s").Should(Succeed())
 
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			grpcPod, err := k8s.GetPodE(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), grpcAppPodName)
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to get details of pod '%s'", grpcAppPodName))
-			}
+			g.Expect(err).ToNot(HaveOccurred(), "failed to get details of pod '%s'", grpcAppPodName)
 
 			container := getAppContainer(grpcPod, gRPCAppName)
-			Expect(container.StartupProbe.GRPC).To(BeNil())
-			Expect(container.StartupProbe.HTTPGet).ToNot(BeNil())
-			Expect(container.StartupProbe.HTTPGet.Path).To(Equal("/grpc/8080"))
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			g.Expect(container.StartupProbe.GRPC).To(BeNil())
+			g.Expect(container.StartupProbe.HTTPGet).ToNot(BeNil())
+			g.Expect(container.StartupProbe.HTTPGet.Path).To(Equal("/grpc/8080"))
+		}, "30s", "1s").Should(Succeed())
 
 		By("third, assert pods are ready and live")
-		Consistently(func() error {
-			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
-				httpAppPodName, httpAppName); err != nil {
-				return err
-			}
-			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
-				tcpAppPodName, tcpAppName); err != nil {
-				return err
-			}
-			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
-				grpcAppPodName, gRPCAppName); err != nil {
-				return err
-			}
-			return nil
-		}, "30s", "3s", MustPassRepeatedly(2)).ShouldNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			var err error
+			err = checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), httpAppPodName, httpAppName)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			err = checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), tcpAppPodName, tcpAppName)
+			g.Expect(err).ToNot(HaveOccurred())
+
+			err = checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), grpcAppPodName, gRPCAppName)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "3s").Should(Succeed())
 
 		By("fourth, assert Probes data is present for HTTP Probes")
-		Eventually(func() error {
-			checkDPProbes := func(podName string, shouldHasProbes bool) error {
+		Eventually(func(g Gomega) {
+			checkDPProbes := func(podName string, shouldHasProbes bool) {
 				dpName := fmt.Sprintf("%s.%s", podName, namespace)
 				dpYAML, err := kubernetes.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplane",
 					dpName, "--mesh", meshName, "-oyaml")
-				if err != nil {
-					return errors.Wrap(err, fmt.Sprintf("failed to get dataplane '%s'", dpName))
-				}
 
+				g.Expect(err).ToNot(HaveOccurred(), "failed to get dataplane '%s'", dpName)
 				dpRes, err := rest.YAML.UnmarshalCore([]byte(dpYAML))
-				Expect(err).ToNot(HaveOccurred())
+				g.Expect(err).ToNot(HaveOccurred(), "invalid dataplane object")
 				dp, ok := dpRes.(*core_mesh.DataplaneResource)
-				Expect(ok).To(BeTrue())
+				g.Expect(ok).To(BeTrue(), fmt.Errorf("invalid dataplane object type: %t", dpRes))
 
 				// 9000 is the default port of Virtual Probes
 				// Probes field should always be available regardless if it has any HTTP probes on the Pod
-				Expect(dp.Spec.Probes.Port).To(Equal(uint32(9000)))
+				g.Expect(dp.Spec.Probes.Port).To(Equal(uint32(9000)))
+
 				if shouldHasProbes {
-					Expect(dp.Spec.Probes.Endpoints).ToNot(BeEmpty())
+					g.Expect(dp.Spec.Probes.Endpoints).ToNot(BeEmpty())
 				} else {
-					Expect(dp.Spec.Probes.Endpoints).To(BeEmpty())
+					g.Expect(dp.Spec.Probes.Endpoints).To(BeEmpty())
 				}
-				return nil
 			}
 
-			if err := checkDPProbes(httpAppPodName, true); err != nil {
-				return err
-			}
-			if err := checkDPProbes(tcpAppPodName, false); err != nil {
-				return err
-			}
-			if err := checkDPProbes(grpcAppPodName, false); err != nil {
-				return err
-			}
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			checkDPProbes(httpAppPodName, true)
+			checkDPProbes(tcpAppPodName, false)
+			checkDPProbes(grpcAppPodName, false)
+		}, "30s", "1s").Should(Succeed())
 	})
 
 	It("should fallback to virtual probes when application probe proxy is disabled", func() {
 		By("patch the application pod and disabling application probe proxy using annotation")
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
-		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), kubernetes.Cluster, kubectlOptsApps, httpAppName,
+		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), Default, kubernetes.Cluster, kubectlOptsApps, httpAppName,
 			`[{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
 
 		By("checking virtual probes annotations on the new pod")
 		var nextRevPodName string
 		// assert the Pod has application probe proxy disabled and virtual probes replaces
-		Eventually(func() error {
+		Eventually(func(g Gomega) {
 			httpPods, err := k8s.ListPodsE(kubernetes.Cluster.GetTesting(), kubectlOptsApps,
 				metav1.ListOptions{LabelSelector: "pod-template-hash=" + nextTemplateHash})
-			if err != nil {
-				return errors.Wrap(err, fmt.Sprintf("failed to list new pods of '%s'", httpAppName))
-			}
 
-			Expect(httpPods).ToNot(BeEmpty())
+			g.Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed to list new pods of '%s'", httpAppName))
+			g.Expect(httpPods).ToNot(BeEmpty())
+
 			httpPod := httpPods[0]
 			nextRevPodName = httpPod.Name
 			virtualProbesPortAnno := httpPod.Annotations[metadata.KumaVirtualProbesPortAnnotation]
-			Expect(virtualProbesPortAnno).To(Equal("9000"))
+			g.Expect(virtualProbesPortAnno).To(Equal("9000"))
 
 			container := getAppContainer(&httpPod, httpAppName)
-			Expect(container).ToNot(BeNil())
-			Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
+			g.Expect(container).ToNot(BeNil())
+			g.Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
+
 			port, _ := strconv.Atoi(virtualProbesPortAnno)
-			Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(port)))) //nolint:gosec  // we never overflow here
-			Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+			g.Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(port)))) //nolint:gosec  // we never overflow here
+			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
+		}, "30s", "1s").Should(Succeed())
 
 		By("making sure the new pod is ready")
-		Consistently(func() error {
-			if err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace),
-				nextRevPodName, httpAppName); err != nil {
-				return err
-			}
-			return nil
-		}, "30s", "3s", MustPassRepeatedly(2)).ShouldNot(HaveOccurred())
+		Eventually(func(g Gomega) {
+			err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), nextRevPodName, httpAppName)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "3s").Should(Succeed())
 	})
 }
 
@@ -249,13 +216,13 @@ func getAppContainer(pod *corev1.Pod, appName string) *corev1.Container {
 	return nil
 }
 
-func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) string {
+func patchAndWait(t testing.TestingT, g Gomega, cluster Cluster, kubectlOpts *k8s.KubectlOptions, appName string, jsonPatch string) string {
 	kubeClient, err := k8s.GetKubernetesClientFromOptionsE(t, kubectlOpts)
-	Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 
 	prevDeployObj, err := kubeClient.AppsV1().Deployments(kubectlOpts.Namespace).
 		Patch(context.Background(), appName, types.JSONPatchType, []byte(jsonPatch), metav1.PatchOptions{})
-	Expect(err).ToNot(HaveOccurred())
+	g.Expect(err).ToNot(HaveOccurred())
 
 	prevRevision := prevDeployObj.Annotations["deployment.kubernetes.io/revision"]
 	prevRevisionNum, _ := strconv.Atoi(prevRevision)
@@ -276,7 +243,7 @@ func patchAndWait(t testing.TestingT, cluster Cluster, kubectlOpts *k8s.KubectlO
 	}, "30s", "2s").ShouldNot(HaveOccurred(), "failed to find the latest ReplicaSet for Deployment %s", appName)
 
 	nextRSHash := nextRS.Labels["pod-template-hash"]
-	Expect(WaitPodsAvailableWithLabel(kubectlOpts.Namespace, "pod-template-hash", nextRSHash)(cluster)).To(Succeed())
+	g.Expect(WaitPodsAvailableWithLabel(kubectlOpts.Namespace, "pod-template-hash", nextRSHash)(cluster)).To(Succeed())
 
 	return nextRSHash
 }
