@@ -17,7 +17,7 @@ func MeshPassthrough(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
-		AfterEach(func() {
+		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(kubernetes.Cluster, config.Mesh, meshpassthrough_api.MeshPassthroughResourceTypeDescriptor)).To(Succeed())
 			Expect(framework.DeleteMeshResources(kubernetes.Cluster, config.Mesh, meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor)).To(Succeed())
 		})

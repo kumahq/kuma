@@ -42,10 +42,6 @@ spec:
 `, config.CpNamespace, config.Mesh, zipkinUrl))
 		}
 
-		BeforeAll(func() {
-			observabilityClient = observability.From(config.ObservabilityDeploymentName, kubernetes.Cluster)
-		})
-
 		framework.AfterEachFailure(func() {
 			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
 		})
@@ -59,6 +55,8 @@ spec:
 		})
 
 		It("should emit traces to jaeger", func() {
+			observabilityClient = observability.From(config.ObservabilityDeploymentName, kubernetes.Cluster)
+
 			// given MeshTrace and with tracing backend
 			Expect(kubernetes.Cluster.Install(meshTrace(observabilityClient.ZipkinCollectorURL()))).
 				To(Succeed())

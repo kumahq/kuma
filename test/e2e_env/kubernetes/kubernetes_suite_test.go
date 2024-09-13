@@ -59,7 +59,7 @@ var (
 	_ = Describe("Gateway - Gateway API", gateway.GatewayAPI, Ordered)
 	_ = Describe("Gateway - mTLS", gateway.Mtls, Ordered)
 	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
-	_ = Describe("Delegated Gateway", Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
+	_ = FDescribe("Delegated Gateway", Label("kind-not-supported", "ipv6-not-supported"), gateway.Delegated, Ordered)
 	_ = Describe("Graceful", graceful.Graceful, Ordered)
 	_ = Describe("Eviction", graceful.Eviction, Ordered)
 	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)

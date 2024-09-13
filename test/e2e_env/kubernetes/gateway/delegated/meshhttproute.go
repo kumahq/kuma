@@ -2,12 +2,12 @@ package delegated
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -108,8 +108,32 @@ spec:
 				g.Expect(response.Instance).To(HavePrefix("external-service"))
 			}, "30s", "1s").Should(Succeed())
 		})
+	}
+}
 
-		FIt("should split traffic between MeshService and MeshExternalServices", func() {
+func MeshHTTPRouteMeshService(config *Config) func() {
+	GinkgoHelper()
+
+	return func() {
+		framework.AfterEachFailure(func() {
+			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
+		})
+
+		framework.E2EAfterEach(func() {
+			Expect(framework.DeleteMeshResources(
+				kubernetes.Cluster,
+				config.Mesh,
+				v1alpha1.MeshHTTPRouteResourceTypeDescriptor,
+			)).To(Succeed())
+
+			Expect(framework.DeleteMeshResources(
+				kubernetes.Cluster,
+				config.Mesh,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should split traffic between MeshService and MeshExternalServices", func() {
 			// given
 			Expect(framework.YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -145,6 +169,7 @@ spec:
     - targetRef:
         kind: MeshService
         name: test-server_%[2]s_svc_80
+		namespace: %s
       rules: 
         - matches:
             - path: 
@@ -156,9 +181,8 @@ spec:
                 name: plain-external-service-delegated
                 port: 80
                 weight: 100
-`, config.CpNamespace, config.Mesh))(kubernetes.Cluster)).To(Succeed())
+`, config.CpNamespace, config.Mesh, config.Namespace))(kubernetes.Cluster)).To(Succeed())
 
-			time.Sleep(1*time.Hour)
 			// and then receive responses from 'external-service'
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(

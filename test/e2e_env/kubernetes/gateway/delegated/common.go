@@ -8,4 +8,5 @@ type Config struct {
 	CpNamespace                 string
 	ObservabilityDeploymentName string
 	IPV6                        bool
+	MeshServiceMode             string
 }
