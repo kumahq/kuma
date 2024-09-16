@@ -17,12 +17,13 @@ func DisplayName(resType string) string {
 }
 
 func PluralType(resType string) string {
+	loweredResType := strings.ToLower(resType)
 	switch {
-	case strings.HasSuffix(resType, "ay"):
+	case strings.HasSuffix(loweredResType, "ay"):
 		return resType + "s"
-	case strings.HasSuffix(resType, "y"):
+	case strings.HasSuffix(loweredResType, "y"):
 		return strings.TrimSuffix(resType, "y") + "ies"
-	case strings.HasSuffix(resType, "s"), strings.HasSuffix(resType, "sh"), strings.HasSuffix(resType, "ch"):
+	case strings.HasSuffix(loweredResType, "s"), strings.HasSuffix(loweredResType, "sh"), strings.HasSuffix(loweredResType, "ch"):
 		return resType + "es"
 	default:
 		return resType + "s"

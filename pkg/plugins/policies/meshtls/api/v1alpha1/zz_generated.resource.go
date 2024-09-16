@@ -145,7 +145,7 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:                     true,
 	IsExperimental:               false,
 	SingularDisplayName:          "Mesh T L S",
-	PluralDisplayName:            "Mesh T L Ss",
+	PluralDisplayName:            "Mesh T L Ses",
 	IsPluginOriginated:           true,
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
