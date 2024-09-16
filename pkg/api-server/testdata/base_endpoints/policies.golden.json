@@ -181,7 +181,7 @@
    "readOnly": false,
    "path": "meshtlses",
    "singularDisplayName": "Mesh T L S",
-   "pluralDisplayName": "Mesh T L Ss",
+   "pluralDisplayName": "Mesh T L Ses",
    "isExperimental": false,
    "isTargetRefBased": true,
    "isInbound": true,

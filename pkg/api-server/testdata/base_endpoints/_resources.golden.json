@@ -327,7 +327,7 @@
    "includeInFederation": true,
    "name": "MeshTLS",
    "path": "meshtlses",
-   "pluralDisplayName": "Mesh T L Ss",
+   "pluralDisplayName": "Mesh T L Ses",
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,

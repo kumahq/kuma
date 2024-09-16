@@ -22,7 +22,7 @@ func PluralType(resType string) string {
 	case strings.HasSuffix(loweredResType, "ay"):
 		return resType + "s"
 	case strings.HasSuffix(loweredResType, "y"):
-		return strings.TrimSuffix(resType, "y") + "ies"
+		return resType[:len(resType)-1] + "ies"
 	case strings.HasSuffix(loweredResType, "s"), strings.HasSuffix(loweredResType, "sh"), strings.HasSuffix(loweredResType, "ch"):
 		return resType + "es"
 	default:
