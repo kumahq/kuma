@@ -62,6 +62,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
 		return err
 	}
+	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -136,6 +139,33 @@ func applyToOutbounds(
 		}
 	}
 
+	return nil
+}
+
+func applyToGateways(
+	gatewayRules core_rules.GatewayRules,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	ctx xds_context.Context,
+) error {
+	for serviceName, cluster := range gatewayClusters {
+		// we shouldn't modify ExternalService
+		// MeshExternalService has different origin
+		if ctx.Mesh.IsExternalService(serviceName) {
+			continue
+		}
+		// there is only one rule always because we're in `Mesh/Mesh`
+		var conf *api.Conf
+		for _, r := range gatewayRules.FromRules {
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			break
+		}
+		if conf == nil {
+			continue
+		}
+		if err := configureParams(conf, cluster); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
