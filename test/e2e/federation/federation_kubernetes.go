@@ -57,6 +57,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 	AfterEachFailure(func() {
 		DebugKube(global, "default", Config.KumaNamespace)
 		DebugKube(zone, "default", TestNamespace)
+		PrintLogs(global, zone)
 	})
 
 	E2EAfterAll(func() {
