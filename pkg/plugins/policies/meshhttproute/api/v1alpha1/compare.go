@@ -132,8 +132,6 @@ func SortRules(
 				if resolved := core_model.ResolveBackendRef(origin, br, labelResolver); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)
 				}
-			} else {
-				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
 			}
 		}
 		out = append(out, Route{

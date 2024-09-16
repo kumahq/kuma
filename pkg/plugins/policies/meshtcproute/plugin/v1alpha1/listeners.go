@@ -5,7 +5,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -32,11 +31,7 @@ func generateFromService(
 	serviceName := svc.ServiceName
 	protocol := svc.Protocol
 
-	fallbackBackendRef := model.ResolvedBackendRef{
-		LegacyBackendRef: &svc.BackendRef,
-		Resource:         svc.Outbound.Resource,
-	}
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, fallbackBackendRef, meshCtx)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
