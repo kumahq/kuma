@@ -14,6 +14,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -861,7 +862,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
-		matchesByHash := map[string][]meshhttproute_api.Match{}
+		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
 		// Get all the matching policies
 		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
@@ -963,7 +964,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		for k, v := range matchesByHash {
 			httpMatches = append(httpMatches, api_common.HttpMatch{
 				Match: v,
-				Hash:  k,
+				Hash:  string(k),
 			})
 		}
 		sort.Slice(httpMatches, func(i, j int) bool {

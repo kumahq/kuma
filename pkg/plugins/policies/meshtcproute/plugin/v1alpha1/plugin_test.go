@@ -190,7 +190,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								Name: "route-2",
 							},
 						},
-						BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
 							core_rules.EmptyMatches: 1,
 						},
 					},
@@ -469,7 +469,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							Origin: []core_rules.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 							},
-							BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+							BackendRefOriginIndex: map[common_api.MatchesHash]int{
 								core_rules.EmptyMatches: 0,
 							},
 							Conf: []interface{}{
@@ -612,7 +612,7 @@ var _ = Describe("MeshTCPRoute", func() {
 										Origin: []core_rules.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 										},
-										BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
 											core_rules.EmptyMatches: 0,
 										},
 										Conf: []interface{}{
