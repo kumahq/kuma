@@ -128,7 +128,10 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
-	if !ddpSelectedByNamespace(meta, dpp) {
+	if !dppSelectedByZone(meta, dpp) {
+		return []core_rules.InboundListener{}, nil, false, nil
+	}
+	if !dppSelectedByNamespace(meta, dpp) {
 		return []core_rules.InboundListener{}, nil, false, nil
 	}
 	switch ref.Kind {
@@ -175,11 +178,25 @@ func dppSelectedByPolicy(
 	}
 }
 
-func ddpSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
+func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
 	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
 	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
 		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
 		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
+	}
+}
+
+func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
+	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
+	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
+		origin, ok := meta.GetLabels()[string(mesh_proto.ResourceOriginLabel)]
+		if ok && origin == string(mesh_proto.ZoneResourceOrigin) {
+			zone, ok := meta.GetLabels()[string(mesh_proto.ZoneTag)]
+			return ok && dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
+		}
+		return true
 	default:
 		return true
 	}
