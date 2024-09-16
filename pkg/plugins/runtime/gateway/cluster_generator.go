@@ -179,7 +179,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 		edsClusterBuilder.Configure(clusters.Http())
 	default:
 	}
-	// Note: these tags are just used to get a hash!
+	// Note: these tags are just used to get a cluster name!
 	tags := map[string]string{
 		mesh_proto.ServiceTag: service,
 	}

@@ -157,13 +157,13 @@ func ApplyToGateway(
 }
 
 func sortRulesToHosts(
-	meshLocalResources xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []meshroute_gateway.Sublistener,
-	_ model.LabelResourceIdentifierResolver,
+	resolver model.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
@@ -185,7 +185,7 @@ func sortRulesToHosts(
 		if !ok {
 			continue
 		}
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener, resolver))
 		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,

@@ -28,7 +28,7 @@ type ruleByHostname struct {
 }
 
 func sortRulesToHosts(
-	meshLocalResources xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
@@ -147,7 +147,7 @@ func sortRulesToHosts(
 			for _, t := range plugin_gateway.ConnectionPolicyTypes {
 				matches := match.ConnectionPoliciesBySource(
 					host.Tags,
-					match.ToConnectionPolicies(meshLocalResources[t]))
+					match.ToConnectionPolicies(meshCtx.Resources.MeshLocalResources[t]))
 				host.Policies[t] = matches
 			}
 			hostInfo := plugin_gateway.GatewayHostInfo{
@@ -233,10 +233,14 @@ func makeHttpRouteEntry(
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		if ref == nil || ref.Resource == nil {
+			var ok bool
+			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+			if !ok {
+				// This should be caught by validation
+				continue
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
@@ -276,7 +280,7 @@ func makeHttpRouteEntry(
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
+			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}
