@@ -160,4 +160,5 @@ spec:
 	Context("MeshAccessLog", delegated.MeshAccessLog(&config))
 	XContext("MeshTCPRoute", delegated.MeshTCPRoute(&config))
 	Context("MeshPassthrough", delegated.MeshPassthrough(&config))
+	Context("MeshTLS", delegated.MeshTLS(&config))
 }
