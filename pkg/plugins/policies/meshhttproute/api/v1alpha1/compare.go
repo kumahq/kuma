@@ -95,7 +95,7 @@ type Route struct {
 	Match       Match
 	Filters     []Filter
 	BackendRefs []core_model.ResolvedBackendRef
-	Hash        string
+	Hash        common_api.MatchesHash
 }
 
 // SortRules orders the rules according to Gateway API precedence:
@@ -104,7 +104,7 @@ type Route struct {
 // same as prefix matches, the longer length match has priority.
 func SortRules(
 	rules []Rule,
-	backendRefToOrigin map[string]core_model.ResourceMeta,
+	backendRefToOrigin map[common_api.MatchesHash]core_model.ResourceMeta,
 	labelResolver core_model.LabelResourceIdentifierResolver,
 ) []Route {
 	type keyed struct {

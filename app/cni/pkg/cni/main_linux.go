@@ -1,6 +1,8 @@
 package cni
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -19,6 +21,8 @@ import (
 	"github.com/kumahq/kuma/app/cni/pkg/install"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
+	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	tproxy_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -173,12 +177,25 @@ func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
 		return conf, nil
 	}
 
-	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-		return nil, errors.Wrap(configErr, "pod intermediateConfig failed due to bad params")
-	} else {
-		if err := Inject(ctx, args.Netns, intermediateConfig, logger); err != nil {
-			return nil, errors.Wrap(err, "could not inject rules into namespace")
+	if v := annotations[k8s_metadata.KumaTrafficTransparentProxyConfig]; v != "" {
+		var logBuffer bytes.Buffer
+		logWriter := bufio.NewWriter(&logBuffer)
+		defer logWriter.Flush()
+
+		cfg, err := tproxy_k8s.ConfigFromAnnotations(annotations)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to retrieve transparent proxy configuration")
 		}
+
+		if err := injectIptables(ctx, args.Netns, cfg.WithStdout(logWriter)); err != nil {
+			return nil, errors.Wrap(err, "failed to inject iptables rules")
+		}
+
+		logger.V(1).Info("generated iptables rules", "output", logBuffer.String())
+	} else if intermediate, err := NewIntermediateConfig(annotations); err != nil {
+		return nil, errors.Wrap(err, "pod intermediate config failed due to bad params")
+	} else if err := legacyInjectIptables(ctx, args.Netns, intermediate, logger); err != nil {
+		return nil, errors.Wrap(err, "could not inject rules into namespace")
 	}
 
 	logger.Info("successfully injected iptables rules")

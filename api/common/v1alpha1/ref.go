@@ -140,6 +140,10 @@ func (b BackendRef) ReferencesRealObject() bool {
 	}
 }
 
+// MatchesHash is used to hash route matches to determine the origin resource
+// for a ref
+type MatchesHash string
+
 type BackendRefHash string
 
 // Hash returns a hash of the BackendRef

@@ -145,17 +145,17 @@ func generateListeners(
 	return resources, nil
 }
 
-func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[string]core_model.ResourceMeta) {
+func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
 	// compute for old MeshService
 	var conf *api.PolicyDefault
-	backendRefOrigin := map[string]core_model.ResourceMeta{}
+	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
 	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
 		for hash := range ruleHTTP.BackendRefOriginIndex {
 			if origin, ok := ruleHTTP.GetBackendRefOrigin(hash); ok {
-				backendRefOrigin[string(hash)] = origin
+				backendRefOrigin[hash] = origin
 			}
 		}
 	}
@@ -166,7 +166,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
 			for hash := range resourceConf.BackendRefOriginIndex {
 				if origin, ok := resourceConf.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[string(hash)] = origin
+					backendRefOrigin[hash] = origin
 				}
 			}
 		}

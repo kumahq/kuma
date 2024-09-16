@@ -1,7 +1,6 @@
 package mesh
 
 import (
-	"fmt"
 	"hash/fnv"
 	"net"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -237,29 +237,20 @@ func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentif
 	var outbounds xds_types.Outbounds
 	for _, o := range d.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
-			outbound := &xds_types.Outbound{
-				Address: o.Address,
-				Port:    o.Port,
-				Resource: &core_model.TypedResourceIdentifier{
-					ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
-						d.GetMeta(),
-						common_api.TargetRef{
-							Kind: common_api.TargetRefKind(o.BackendRef.Kind),
-							Name: o.BackendRef.Name,
-							// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
-						}),
-					ResourceType: core_model.ResourceType(o.BackendRef.Kind),
+			// convert proto BackendRef to common_api.BackendRef
+			backendRef := common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+					Name:   o.BackendRef.Name,
+					Labels: o.BackendRef.Labels,
 				},
+				Port: pointer.To(o.BackendRef.Port),
 			}
-			if len(o.BackendRef.Labels) > 0 {
-				resIdentifier := resolver(core_model.ResourceType(o.BackendRef.Kind), o.BackendRef.Labels)
-				if resIdentifier == nil {
-					continue
-				}
-				outbound.Resource.ResourceIdentifier = *resIdentifier
-			}
-			outbound.Resource.SectionName = fmt.Sprintf("%d", o.BackendRef.Port)
-			outbounds = append(outbounds, outbound)
+			outbounds = append(outbounds, &xds_types.Outbound{
+				Address:  o.Address,
+				Port:     o.Port,
+				Resource: core_model.ResolveBackendRef(d.GetMeta(), backendRef, resolver).Resource,
+			})
 		} else {
 			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
 		}
