@@ -1,0 +1,92 @@
+#/meshes/default/meshtimeouts/foo/_resources/dataplanes 200
+type: Mesh
+name: default
+---
+type: MeshTimeout
+name: foo
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+  kuma.io/policy-role: consumer
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: svc-2
+        namespace: consumer
+      default:
+        http:
+          requestTimeout: 15s
+---
+type: Dataplane
+name: dp-1
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/zone: zone-1
+  kuma.io/display-name: dp-1
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-1
+---
+type: Dataplane
+name: dp-2
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/zone: zone-2
+  kuma.io/display-name: dp-2
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-2
+---
+type: Dataplane
+name: dp-3
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: dp-3
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-3
+---
+type: Dataplane
+name: dp-4
+mesh: default
+labels:
+  k8s.kuma.io/namespace: other
+  k8s.kuma.io/namespace: zone-1
+  kuma.io/display-name: dp-4
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-4
+---
+type: Dataplane
+name: dp-5
+mesh: default
+labels:
+  k8s.kuma.io/namespace: other
+  k8s.kuma.io/namespace: zone-2
+  kuma.io/display-name: dp-4
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: svc-5
