@@ -3,7 +3,6 @@ package types
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 type Outbound struct {
@@ -24,7 +23,7 @@ func (o *Outbound) GetAddress() string {
 
 // TagsOrNil returns tags if Outbound is defined using 'kuma.io/service' tag and so LegacyOutbound field is set.
 // Otherwise, it returns nil.
-func (o *Outbound) TagsOrNil() envoy_tags.Tags {
+func (o *Outbound) TagsOrNil() map[string]string {
 	if o.LegacyOutbound != nil {
 		return o.LegacyOutbound.Tags
 	}

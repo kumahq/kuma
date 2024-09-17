@@ -12,6 +12,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -101,7 +102,7 @@ func buildOutboundListener(
 	)
 
 	tagsMetadata := envoy_listeners.TagsMetadata(
-		svc.Outbound.TagsOrNil().WithoutTags(mesh_proto.MeshTag),
+		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
 	)
 
 	return builder.Configure(
