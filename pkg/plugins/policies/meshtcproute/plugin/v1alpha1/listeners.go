@@ -12,7 +12,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -88,11 +87,6 @@ func buildOutboundListener(
 	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	var tags envoy_tags.Tags
-	if svc.Outbound.LegacyOutbound != nil {
-		tags = svc.Outbound.LegacyOutbound.Tags
-	}
-
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(
@@ -107,7 +101,7 @@ func buildOutboundListener(
 	)
 
 	tagsMetadata := envoy_listeners.TagsMetadata(
-		tags.WithoutTags(mesh_proto.MeshTag),
+		svc.Outbound.TagsOrNil().WithoutTags(mesh_proto.MeshTag),
 	)
 
 	return builder.Configure(

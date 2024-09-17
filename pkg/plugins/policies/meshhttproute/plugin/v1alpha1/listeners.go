@@ -20,7 +20,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -32,13 +31,9 @@ func generateFromService(
 	rules rules.ToRules,
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
-	var tags envoy_tags.Tags
-	if svc.Outbound.LegacyOutbound != nil {
-		tags = svc.Outbound.LegacyOutbound.GetTags()
-	}
 	listenerBuilder := envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, svc.Outbound.GetAddress(), svc.Outbound.GetPort(), core_xds.SocketAddressProtocolTCP).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Configure(envoy_listeners.TagsMetadata(tags.WithoutTags(mesh_proto.MeshTag)))
+		Configure(envoy_listeners.TagsMetadata(svc.Outbound.TagsOrNil().WithoutTags(mesh_proto.MeshTag)))
 
 	resourceName := svc.ServiceName
 
