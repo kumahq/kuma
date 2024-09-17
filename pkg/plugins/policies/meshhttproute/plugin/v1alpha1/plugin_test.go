@@ -702,13 +702,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
 									Origin: []core_model.ResourceMeta{&test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
-									BackendRefOriginIndex: map[core_rules.MatchesHash]int{
-										core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 0,
-										core_rules.MatchesHash(api.HashMatches([]api.Match{
+									BackendRefOriginIndex: map[common_api.MatchesHash]int{
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										api.HashMatches([]api.Match{
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}},
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v3"}},
-										})): 0,
-										core_rules.MatchesHash(api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}})): 0,
+										}): 0,
+										api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
 									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
