@@ -30,7 +30,7 @@ type listenersHostnames struct {
 }
 
 type MapGatewayRulesToHosts func(
-	resources xds_context.ResourceMap,
+	meshLocalResources xds_context.ResourceMap,
 	rules rules.GatewayRules,
 	address string,
 	port uint32,

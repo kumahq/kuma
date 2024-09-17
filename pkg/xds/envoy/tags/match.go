@@ -109,14 +109,12 @@ func (t Tags) String() string {
 	return strings.Join(pairs, ",")
 }
 
-func FromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
+func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
 	tags := Tags{}
 
 	switch targetRef.Kind {
 	case common_api.MeshService:
-		service = targetRef.Name
-	case common_api.MeshExternalService:
 		service = targetRef.Name
 	case common_api.MeshServiceSubset:
 		service = targetRef.Name
