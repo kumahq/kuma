@@ -234,7 +234,7 @@ func makeHttpRouteEntry(
 			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
 		var dest map[string]string
-		if ref == nil || ref.Resource == nil {
+		if ref == nil || ref.ResourceOrNil() == nil {
 			var ok bool
 			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
 			if !ok {
