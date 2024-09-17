@@ -32,7 +32,7 @@
         },
         "mesh": "default",
         "name": "mt-on-gateway",
-        "type": "Mesh"
+        "type": "MeshTimeout"
        },
        "ruleIndex": 0
       }

@@ -3,6 +3,8 @@ package gateway
 import (
 	"encoding/base64"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -1218,6 +1220,9 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).To(HaveLen(1))
+				g.Expect(responses).To(HaveKey(HavePrefix("mes-echo-server")))
+				counts := slices.Collect(maps.Values(responses))
+				g.Expect(counts[0]).To(Equal(10))
 			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})

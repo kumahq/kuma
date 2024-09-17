@@ -934,7 +934,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
 					Conf:                resourceRuleItem.Conf,
-					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(itemIdentifier.ResourceType, resourceRuleItem.Origin),
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
 					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
 					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
 				})
