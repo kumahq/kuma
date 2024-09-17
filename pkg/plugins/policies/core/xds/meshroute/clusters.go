@@ -39,44 +39,37 @@ func GenerateClusters(
 
 			clusterTags := []envoy_tags.Tags{cluster.Tags()}
 			if meshCtx.IsExternalService(serviceName) {
-				if meshCtx.Resource.ZoneEgressEnabled() {
-					endpoints := meshCtx.EndpointMap[serviceName]
+				switch {
+				case isMeshExternalService(meshCtx.EndpointMap[serviceName]):
+					// MeshExternalService is only available through egress
 					edsClusterBuilder.
-						Configure(envoy_clusters.EdsCluster())
-					if isMeshExternalService(endpoints) {
-						edsClusterBuilder.
-							Configure(envoy_clusters.ClientSideMTLSCustomSNI(
-								proxy.SecretsTracker,
-								meshCtx.Resource,
-								mesh_proto.ZoneEgressServiceName,
-								true,
-								SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
-							))
-					} else {
-						edsClusterBuilder.
-							Configure(envoy_clusters.ClientSideMTLS(
-								proxy.SecretsTracker,
-								meshCtx.Resource,
-								mesh_proto.ZoneEgressServiceName,
-								tlsReady,
-								clusterTags,
-							))
-					}
-				} else {
+						Configure(envoy_clusters.EdsCluster()).
+						Configure(envoy_clusters.ClientSideMTLSCustomSNI(
+							proxy.SecretsTracker,
+							meshCtx.Resource,
+							mesh_proto.ZoneEgressServiceName,
+							true,
+							SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+						))
+				case meshCtx.Resource.ZoneEgressEnabled():
+					// path for old ExternalService
+					edsClusterBuilder.
+						Configure(envoy_clusters.EdsCluster()).
+						Configure(envoy_clusters.ClientSideMTLS(
+							proxy.SecretsTracker,
+							meshCtx.Resource,
+							mesh_proto.ZoneEgressServiceName,
+							tlsReady,
+							clusterTags,
+						))
+				default:
+					// path for old ExternalService
 					endpoints := meshCtx.ExternalServicesEndpointMap[serviceName]
 					isIPv6 := proxy.Dataplane.IsIPv6()
 
 					edsClusterBuilder.
-						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...))
-					if isMeshExternalService(endpoints) {
-						edsClusterBuilder.WithName(serviceName)
-						edsClusterBuilder.Configure(
-							envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, proxy.Metadata.SystemCaPath, true),
-						)
-					} else {
-						edsClusterBuilder.
-							Configure(envoy_clusters.ClientSideTLS(endpoints))
-					}
+						Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPv6, isMeshExternalService(endpoints), endpoints...)).
+						Configure(envoy_clusters.ClientSideTLS(endpoints))
 				}
 
 				switch protocol {

@@ -35,11 +35,11 @@ func (p *EgressProxyBuilder) Build(
 		return nil, core_store.ErrorResourceNotFound(core_mesh.ZoneEgressType, key.Name, key.Mesh)
 	}
 
-	// As egress is using SNI to identify the services, we need to filter out
-	// meshes with no mTLS enabled and with ZoneEgress enabled
+	// As egress is using SNI to identify the services, we need to filter out meshes with no mTLS enabled
+	// We don't check egress enabled to take into account MeshExternalServices
 	var meshes []*core_mesh.MeshResource
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		if mesh.ZoneEgressEnabled() {
+		if mesh.MTLSEnabled() {
 			meshes = append(meshes, mesh)
 		}
 	}

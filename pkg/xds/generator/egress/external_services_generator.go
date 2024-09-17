@@ -28,7 +28,6 @@ func (g *ExternalServicesGenerator) Generate(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
-	zone := xdsCtx.ControlPlane.Zone
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
@@ -42,7 +41,7 @@ func (g *ExternalServicesGenerator) Generate(
 		"",
 		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
-	services := g.buildServices(endpointMap, zone, meshResources)
+	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(
 		apiVersion,
@@ -146,14 +145,11 @@ func (*ExternalServicesGenerator) generateCDS(
 
 func (*ExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	localZone string,
-	meshResources *core_xds.MeshResources,
 ) map[string]bool {
 	services := map[string]bool{}
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 && endpoints[0].IsExternalService() &&
-			(!meshResources.Mesh.ZoneEgressEnabled() || endpoints[0].IsReachableFromZone(localZone)) {
+		if len(endpoints) > 0 && endpoints[0].IsExternalService() {
 			services[serviceName] = true
 		}
 	}
