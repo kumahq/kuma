@@ -54,11 +54,6 @@ spec:
                     port:
                       format: int32
                       type: integer
-                    targetPort:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      x-kubernetes-int-or-string: true
                   required:
                   - port
                   type: object
