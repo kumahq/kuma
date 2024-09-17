@@ -1,0 +1,16 @@
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      tlsVersion:
+        min: TLS13
+        max: TLS13
+      tlsCiphers:
+        - "ECDHE-ECDSA-AES128-GCM-SHA256"
+        - "ECDHE-ECDSA-AES256-GCM-SHA384"
+        - "ECDHE-ECDSA-CHACHA20-POLY1305"
+        - "ECDHE-RSA-AES128-GCM-SHA256"
+        - "ECDHE-RSA-AES256-GCM-SHA384"
+        - "ECDHE-RSA-CHACHA20-POLY1305"
