@@ -28,7 +28,7 @@ type ruleByHostname struct {
 }
 
 func sortRulesToHosts(
-	meshCtx xds_context.MeshContext,
+	meshLocalResources xds_context.ResourceMap,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
@@ -147,7 +147,7 @@ func sortRulesToHosts(
 			for _, t := range plugin_gateway.ConnectionPolicyTypes {
 				matches := match.ConnectionPoliciesBySource(
 					host.Tags,
-					match.ToConnectionPolicies(meshCtx.Resources.MeshLocalResources[t]))
+					match.ToConnectionPolicies(meshLocalResources[t]))
 				host.Policies[t] = matches
 			}
 			hostInfo := plugin_gateway.GatewayHostInfo{

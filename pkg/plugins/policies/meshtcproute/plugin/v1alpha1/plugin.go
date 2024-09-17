@@ -157,7 +157,7 @@ func ApplyToGateway(
 }
 
 func sortRulesToHosts(
-	meshCtx xds_context.MeshContext,
+	_ xds_context.ResourceMap,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
