@@ -756,19 +756,20 @@ func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_
 type LabelResourceIdentifierResolver func(ResourceType, map[string]string) *ResourceIdentifier
 
 func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
-	resolved := ResolvedBackendRef{LegacyBackendRef: &br}
-
 	switch {
 	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
 	case br.Kind == common_api.MeshExternalService:
 	case br.Kind == common_api.MeshMultiZoneService:
 	default:
-		return &resolved
+		return &ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}
 	}
 
-	resolved.Resource = &TypedResourceIdentifier{
-		ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
-		ResourceType:       ResourceType(br.Kind),
+	rr := RealResourceBackendRef{
+		Resource: &TypedResourceIdentifier{
+			ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
+			ResourceType:       ResourceType(br.Kind),
+		},
+		Weight: pointer.DerefOr(br.Weight, 1),
 	}
 
 	if len(br.Labels) > 0 {
@@ -776,14 +777,14 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver Lab
 		if ri == nil {
 			return nil
 		}
-		resolved.Resource.ResourceIdentifier = *ri
+		rr.Resource.ResourceIdentifier = *ri
 	}
 
 	if br.Port != nil {
-		resolved.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
 	}
 
-	return &resolved
+	return &ResolvedBackendRef{Ref: &rr}
 }
 
 func (r ResourceIdentifier) String() string {
@@ -810,10 +811,61 @@ type TypedResourceIdentifier struct {
 	SectionName  string
 }
 
-type ResolvedBackendRef struct {
-	LegacyBackendRef *common_api.BackendRef
-	Resource         *TypedResourceIdentifier
+type IsResolvedBackendRef interface {
+	isResolvedBackendRef()
 }
+
+type ResolvedBackendRef struct {
+	// Ref is either LegacyBackendRef or RealResourceBackendRef
+	Ref IsResolvedBackendRef
+}
+
+func NewResolvedBackendRef(r IsResolvedBackendRef) *ResolvedBackendRef {
+	return &ResolvedBackendRef{Ref: r}
+}
+
+func (rbr *ResolvedBackendRef) ReferencesRealResource() bool {
+	if rbr == nil {
+		return false
+	}
+	if rbr.Ref == nil {
+		return false
+	}
+	_, ok := rbr.Ref.(*RealResourceBackendRef)
+	return ok
+}
+
+func (rbr *ResolvedBackendRef) ResourceOrNil() *TypedResourceIdentifier {
+	if rr := rbr.RealResourceBackendRef(); rr != nil {
+		return rr.Resource
+	}
+	return nil
+}
+
+func (rbr *ResolvedBackendRef) LegacyBackendRef() *LegacyBackendRef {
+	if lbr, ok := rbr.Ref.(*LegacyBackendRef); ok {
+		return lbr
+	}
+	return nil
+}
+
+func (rbr *ResolvedBackendRef) RealResourceBackendRef() *RealResourceBackendRef {
+	if rr, ok := rbr.Ref.(*RealResourceBackendRef); ok {
+		return rr
+	}
+	return nil
+}
+
+type LegacyBackendRef common_api.BackendRef
+
+func (lbr *LegacyBackendRef) isResolvedBackendRef() {}
+
+type RealResourceBackendRef struct {
+	Resource *TypedResourceIdentifier
+	Weight   uint
+}
+
+func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
 
 type NewTypedResourceIdentifierFunc func(id *TypedResourceIdentifier)
 
