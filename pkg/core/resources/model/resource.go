@@ -457,9 +457,9 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 }
 
 func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) (map[string]string, error) {
-	labels := r.GetMeta().GetLabels()
-	if len(labels) == 0 {
-		labels = map[string]string{}
+	labels := map[string]string{}
+	if r.GetMeta() != nil && len(r.GetMeta().GetLabels()) > 0 {
+		labels = r.GetMeta().GetLabels()
 	}
 
 	setIfNotExist := func(k, v string) {
@@ -469,8 +469,10 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 	}
 
 	getMeshOrDefault := func() string {
-		if mesh := r.GetMeta().GetMesh(); mesh != "" {
-			return mesh
+		if r.GetMeta() != nil {
+			if mesh := r.GetMeta().GetMesh(); mesh != "" {
+				return mesh
+			}
 		}
 		return DefaultMesh
 	}
@@ -496,25 +498,29 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 	}
 
 	if isK8s && IsLocallyOriginated(mode, labels) {
-		ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
-		if ok && ns != "" {
-			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
+		if r.GetMeta() != nil {
+			ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
+			if ok && ns != "" {
+				setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
+			}
 		}
 	}
 
-	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
-		var role mesh_proto.PolicyRole
-		switch ns {
-		case systemNamespace:
-			role = mesh_proto.SystemPolicyRole
-		default:
-			var err error
-			role, err = ComputePolicyRole(r.GetSpec().(Policy), ns)
-			if err != nil {
-				return nil, err
+	if r.GetMeta() != nil {
+		if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
+			var role mesh_proto.PolicyRole
+			switch ns {
+			case systemNamespace:
+				role = mesh_proto.SystemPolicyRole
+			default:
+				var err error
+				role, err = ComputePolicyRole(r.GetSpec().(Policy), ns)
+				if err != nil {
+					return nil, err
+				}
 			}
+			labels[mesh_proto.PolicyRoleLabel] = string(role)
 		}
-		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
 	return labels, nil
