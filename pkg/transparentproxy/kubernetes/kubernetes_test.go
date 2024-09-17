@@ -33,7 +33,7 @@ var _ = Describe("kubernetes", func() {
 	}
 
 	DescribeTable("should generate kumactl command line", func(given testCaseKumactl) {
-		podRedirect, err := kubernetes.NewPodRedirectForPod(given.pod)
+		podRedirect, err := kubernetes.NewPodRedirectFromAnnotations(given.pod.Annotations)
 		Expect(err).ToNot(HaveOccurred())
 
 		commandLine := podRedirect.AsKumactlCommandLine()

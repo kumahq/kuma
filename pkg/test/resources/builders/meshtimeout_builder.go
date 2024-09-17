@@ -2,6 +2,7 @@ package builders
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -36,6 +37,14 @@ func (m *MeshTimeoutBuilder) WithName(name string) *MeshTimeoutBuilder {
 
 func (m *MeshTimeoutBuilder) WithMesh(mesh string) *MeshTimeoutBuilder {
 	m.res.Meta.(*test_model.ResourceMeta).Mesh = mesh
+	return m
+}
+
+func (m *MeshTimeoutBuilder) WithNamespace(namespace string) *MeshTimeoutBuilder {
+	if m.res.Meta.(*test_model.ResourceMeta).NameExtensions == nil {
+		m.res.Meta.(*test_model.ResourceMeta).NameExtensions = core_model.ResourceNameExtensions{}
+	}
+	m.res.Meta.(*test_model.ResourceMeta).NameExtensions[v1alpha1.KubeNamespaceTag] = namespace
 	return m
 }
 

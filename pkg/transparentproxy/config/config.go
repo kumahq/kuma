@@ -88,7 +88,14 @@ func (p *Ports) Type() string { return "uint16[,...]" }
 
 func (p *Ports) Set(s string) error {
 	*p = nil
+	return p.append(s)
+}
 
+func (p *Ports) Append(s string) error {
+	return p.append(s)
+}
+
+func (p *Ports) append(s string) error {
 	if s = strings.TrimSpace(s); s == "" {
 		return nil
 	}
@@ -341,6 +348,30 @@ type Redirect struct {
 	VNet       VNet        `json:"vnet"`
 }
 
+// Custom Marshal logic to omit the VNet field from the JSON output if it contains
+// no networks. This approach ensures that empty fields are not rendered, since
+// we're working with a value type (Redirect) and not pointers, and we only include
+// VNet when it has meaningful data
+func (c Redirect) MarshalJSON() ([]byte, error) {
+	type ConfigAlias Redirect
+
+	type ConfigAliasOmitEmpty struct {
+		ConfigAlias
+		VNet any `json:"vnet,omitempty"`
+	}
+
+	result := ConfigAliasOmitEmpty{
+		ConfigAlias: ConfigAlias(c),
+		VNet:        c.VNet,
+	}
+
+	if len(c.VNet.Networks) == 0 {
+		result.VNet = nil
+	}
+
+	return json.Marshal(result)
+}
+
 type InitializedRedirect struct {
 	Redirect
 	DNS      InitializedDNS
@@ -570,6 +601,53 @@ type Config struct {
 	// the correct iptables rules are applied for the specified IP family
 	IPFamilyMode IPFamilyMode `json:"ipFamilyMode" envconfig:"ip_family_mode"` // KUMA_TRANSPARENT_PROXY_IP_FAMILY_MODE
 	CNIMode      bool         `json:"cniMode,omitempty" envconfig:"cni_mode"`  // KUMA_TRANSPARENT_PROXY_CNI_MODE
+}
+
+func (c Config) WithStdout(stdout io.Writer) Config {
+	c.RuntimeStdout = stdout
+	return c
+}
+
+// Custom Marshal logic to avoid rendering empty values for specific fields.
+// Since we're working with a value type (Config) rather than pointers, this approach
+// ensures that unnecessary fields (like ebpf, comments, log, and executables) are omitted
+// from the JSON output when they are not enabled or contain no meaningful data
+func (c Config) MarshalJSON() ([]byte, error) {
+	type ConfigAlias Config
+
+	type ConfigAliasOmitEmpty struct {
+		ConfigAlias
+		Ebpf        any `json:"ebpf,omitempty"`
+		Comments    any `json:"comments,omitempty"`
+		Log         any `json:"log,omitempty"`
+		Executables any `json:"iptablesExecutables,omitempty"`
+	}
+
+	result := ConfigAliasOmitEmpty{
+		ConfigAlias: ConfigAlias(c),
+		Ebpf:        c.Ebpf,
+		Comments:    c.Comments,
+		Log:         c.Log,
+		Executables: c.Executables,
+	}
+
+	if !c.Ebpf.Enabled {
+		result.Ebpf = nil
+	}
+
+	if !c.Comments.Disabled {
+		result.Comments = nil
+	}
+
+	if !c.Log.Enabled {
+		result.Log = nil
+	}
+
+	if len(getNonEmptyPaths(&c.Executables)) == 0 {
+		result.Executables = nil
+	}
+
+	return json.Marshal(result)
 }
 
 func (c Config) InitializeKumaDPUser() (string, error) {

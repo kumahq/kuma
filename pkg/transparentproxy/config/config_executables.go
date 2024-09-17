@@ -396,6 +396,8 @@ func (c InitializedExecutablesIPvX) RestoreTest(
 	return stdout.String(), nil
 }
 
+var _ executablesPaths = &Executables{}
+
 type Executables struct {
 	// Embedded structs to allow unmarshalling executable paths from a flat configuration file
 	// instead of requiring nested objects
@@ -414,6 +416,20 @@ func NewExecutables() Executables {
 		legacyIPv4: NewExecutablesIPvX(false, consts.IptablesModeLegacy),
 		legacyIPv6: NewExecutablesIPvX(true, consts.IptablesModeLegacy),
 	}
+}
+
+func (c *Executables) getPathsMap() map[string]string {
+	result := make(map[string]string, 6)
+
+	for name, path := range c.ExecutablesPathsIPv4.getPathsMap() {
+		result[name] = path
+	}
+
+	for name, path := range c.ExecutablesPathsIPv6.getPathsMap() {
+		result[name] = path
+	}
+
+	return result
 }
 
 func (c *Executables) InitializeIPv4(
@@ -551,10 +567,14 @@ func (c *Executables) Type() string {
 
 type executablesPaths interface {
 	getPathsMap() map[string]string
+}
+
+type executablesPathsConverter interface {
+	executablesPaths
 	convert() ExecutablesIPvX
 }
 
-var _ executablesPaths = ExecutablesPathsIPv4{}
+var _ executablesPathsConverter = ExecutablesPathsIPv4{}
 
 type ExecutablesPathsIPv4 struct {
 	Iptables        string `json:"iptables,omitempty"`
@@ -575,7 +595,7 @@ func (c ExecutablesPathsIPv4) convert() ExecutablesIPvX {
 		WithPaths(c.Iptables, c.IptablesSave, c.IptablesRestore)
 }
 
-var _ executablesPaths = ExecutablesPathsIPv6{}
+var _ executablesPathsConverter = ExecutablesPathsIPv6{}
 
 type ExecutablesPathsIPv6 struct {
 	Ip6tables        string `json:"ip6tables,omitempty"`
@@ -687,7 +707,7 @@ func tryInitializeExecutablePaths(
 	ctx context.Context,
 	l Logger,
 	cfg Config,
-	ep executablesPaths,
+	ep executablesPathsConverter,
 ) (InitializedExecutablesIPvX, bool, error) {
 	if reflect.ValueOf(ep).IsZero() {
 		return InitializedExecutablesIPvX{}, false, nil
