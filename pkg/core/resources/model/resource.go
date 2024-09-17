@@ -835,11 +835,11 @@ func (rbr *ResolvedBackendRef) ReferencesRealResource() bool {
 	return ok
 }
 
-func (rbr *ResolvedBackendRef) Kind() common_api.TargetRefKind {
-	if rbr.ReferencesRealResource() {
-		return common_api.TargetRefKind(rbr.RealResourceBackendRef().Resource.ResourceType)
+func (rbr *ResolvedBackendRef) ResourceOrNil() *TypedResourceIdentifier {
+	if rr := rbr.RealResourceBackendRef(); rr != nil {
+		return rr.Resource
 	}
-	return rbr.LegacyBackendRef().Kind
+	return nil
 }
 
 func (rbr *ResolvedBackendRef) LegacyBackendRef() *LegacyBackendRef {

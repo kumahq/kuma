@@ -128,16 +128,11 @@ func GenerateClusters(
 				return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 			}
 
-			var resourceOrigin *core_model.TypedResourceIdentifier
-			if service.BackendRef().ReferencesRealResource() {
-				resourceOrigin = service.BackendRef().RealResourceBackendRef().Resource
-			}
-
 			resources = resources.Add(&core_xds.Resource{
 				Name:           clusterName,
 				Origin:         generator.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: resourceOrigin,
+				ResourceOrigin: service.BackendRef().ResourceOrNil(),
 				Protocol:       protocol,
 			})
 		}
