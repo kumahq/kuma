@@ -9,7 +9,6 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -50,7 +49,7 @@ func GenerateClusters(
 								meshCtx.Resource,
 								mesh_proto.ZoneEgressServiceName,
 								true,
-								SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
+								SniForBackendRef(service.BackendRef().RealResourceBackendRef(), meshCtx, systemNamespace),
 							))
 					} else {
 						edsClusterBuilder.
@@ -103,9 +102,9 @@ func GenerateClusters(
 						}
 					}
 				} else {
-					if service.BackendRef().LegacyBackendRef.ReferencesRealObject() {
-						if service.BackendRef().LegacyBackendRef.Kind == common_api.MeshService {
-							if ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(service.BackendRef().Resource).ResourceIdentifier]; ms != nil {
+					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
+						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
+							if ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(realResourceRef.Resource).ResourceIdentifier]; ms != nil {
 								tlsReady = ms.Status.TLS.Status == meshservice_api.TLSReady
 							}
 						}
@@ -113,8 +112,8 @@ func GenerateClusters(
 							proxy.SecretsTracker,
 							meshCtx.Resource,
 							tlsReady,
-							SniForBackendRef(service.BackendRef(), meshCtx, systemNamespace),
-							ServiceTagIdentities(service.BackendRef(), meshCtx),
+							SniForBackendRef(realResourceRef, meshCtx, systemNamespace),
+							ServiceTagIdentities(realResourceRef, meshCtx),
 						))
 					} else {
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMTLS(
@@ -133,7 +132,7 @@ func GenerateClusters(
 				Name:           clusterName,
 				Origin:         generator.OriginOutbound,
 				Resource:       edsCluster,
-				ResourceOrigin: createResourceOrigin(service.BackendRef(), meshCtx),
+				ResourceOrigin: service.BackendRef().ResourceOrNil(),
 				Protocol:       protocol,
 			})
 		}
@@ -142,67 +141,44 @@ func GenerateClusters(
 	return resources, nil
 }
 
-func createResourceOrigin(
-	ref core_model.ResolvedBackendRef,
-	meshCtx xds_context.MeshContext,
-) *core_model.TypedResourceIdentifier {
-	switch {
-	case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
-		ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		port, ok := ms.FindPort(pointer.Deref(ref.LegacyBackendRef.Port))
-		if ok {
-			return pointer.To(core_rules.UniqueKey(ms, port.Name))
-		}
-		return pointer.To(core_rules.UniqueKey(ms, ""))
-	case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
-		mes := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		return pointer.To(core_rules.UniqueKey(mes, ""))
-	case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
-		mzs := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		port, ok := mzs.FindPort(pointer.Deref(ref.LegacyBackendRef.Port))
-		if ok {
-			return pointer.To(core_rules.UniqueKey(mzs, port.Name))
-		}
-		return pointer.To(core_rules.UniqueKey(mzs, ""))
-	}
-	return nil
-}
-
 func SniForBackendRef(
-	backendRef core_model.ResolvedBackendRef,
+	backendRef *core_model.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
 ) string {
 	var resource core_model.Resource
 	var name string
-	switch backendRef.LegacyBackendRef.Kind {
+	var port uint32
+	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
 		resource = ms
 		name = ms.SNIName(systemNamespace)
+		if p, ok := ms.FindPortByName(backendRef.Resource.SectionName); ok {
+			port = p.Port
+		}
 	case common_api.MeshExternalService:
 		mes := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
 		resource = mes
 		name = core_model.GetDisplayName(resource.GetMeta())
+		port = uint32(mes.Spec.Match.Port)
 	case common_api.MeshMultiZoneService:
-		resource = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		mzms := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		resource = mzms
 		name = core_model.GetDisplayName(resource.GetMeta())
+		if p, ok := mzms.FindPortByName(backendRef.Resource.SectionName); ok {
+			port = p.Port
+		}
 	}
-	return tls.SNIForResource(
-		name,
-		resource.GetMeta().GetMesh(),
-		resource.Descriptor().Name,
-		pointer.Deref(backendRef.LegacyBackendRef.Port),
-		nil,
-	)
+	return tls.SNIForResource(name, resource.GetMeta().GetMesh(), resource.Descriptor().Name, port, nil)
 }
 
 func ServiceTagIdentities(
-	backendRef core_model.ResolvedBackendRef,
+	backendRef *core_model.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []string {
 	var result []string
-	switch backendRef.LegacyBackendRef.Kind {
+	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
 		ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
 		for _, identity := range ms.Spec.Identities {

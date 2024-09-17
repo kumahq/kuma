@@ -233,10 +233,14 @@ func makeHttpRouteEntry(
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		if ref == nil || ref.ResourceOrNil() == nil {
+			var ok bool
+			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+			if !ok {
+				// This should be caught by validation
+				continue
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
@@ -276,7 +280,7 @@ func makeHttpRouteEntry(
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
+			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}

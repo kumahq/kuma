@@ -303,7 +303,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
 				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
 					Selector: meshmultizoneservice_api.Selector{},
-					Ports: []meshservice_api.Port{{
+					Ports: []meshmultizoneservice_api.Port{{
 						Port:        80,
 						AppProtocol: core_mesh.ProtocolHTTP,
 					}},
@@ -701,6 +701,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
+									Origin: []core_model.ResourceMeta{&test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
+									BackendRefOriginIndex: map[common_api.MatchesHash]int{
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										api.HashMatches([]api.Match{
+											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}},
+											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v3"}},
+										}): 0,
+										api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
+									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
