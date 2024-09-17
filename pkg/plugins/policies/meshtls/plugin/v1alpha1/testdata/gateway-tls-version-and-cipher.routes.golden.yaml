@@ -13,6 +13,24 @@ resources:
       name: '*'
       routes:
       - match:
+          headers:
+          - name: :method
+            stringMatch:
+              exact: GET
+          path: /another-route
+        name: L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: backend-26cb64fa4e85e7b7
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&kuma.io/service=sample-gateway&'
+              weight: 100
+      - match:
           path: /
         name: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
         route:
