@@ -3,20 +3,13 @@ Rules:
 - BackendRefOriginIndex: {}
   Conf:
     http:
-      requestTimeout: 3s
+      requestTimeout: 1s
       streamIdleTimeout: 5s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: aaa
-    type: MeshTimeout
-  - creationTime: "0001-01-01T00:00:00Z"
-    labels:
-      kuma.io/origin: zone
-    mesh: mesh-1
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: bbb
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1

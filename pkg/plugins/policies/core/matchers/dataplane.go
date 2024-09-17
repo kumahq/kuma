@@ -189,15 +189,15 @@ func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.Datapla
 }
 
 func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
-	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
+	switch core_model.PolicyRole(meta) {
+	case mesh_proto.ProducerPolicyRole:
+		return true
+	default:
 		origin, ok := meta.GetLabels()[string(mesh_proto.ResourceOriginLabel)]
 		if ok && origin == string(mesh_proto.ZoneResourceOrigin) {
 			zone, ok := meta.GetLabels()[string(mesh_proto.ZoneTag)]
 			return ok && dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
 		}
-		return true
-	default:
 		return true
 	}
 }
