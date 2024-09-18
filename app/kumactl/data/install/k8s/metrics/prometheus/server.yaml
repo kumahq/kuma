@@ -382,6 +382,7 @@ metadata:
   labels:
     component: "server"
     app: prometheus
+    kuma.io/mesh: {{ .Mesh }}
   name: prometheus-server
   namespace: {{ .Namespace }}
 spec:
