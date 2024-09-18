@@ -518,6 +518,7 @@ metadata:
   labels:
     component: "server"
     app: prometheus
+    kuma.io/mesh: default
   name: prometheus-server
   namespace: mesh-observability
 spec:
