@@ -164,6 +164,11 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		}
 	}
 
+	cpNamespace := Config.KumaNamespace
+	if !cpNamespaceExported(debugPath, cluster.Name(), cpNamespace) {
+		namespaces = append(namespaces, cpNamespace)
+	}
+
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
 		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
@@ -250,6 +255,21 @@ func prepareDebugDir() string {
 	))
 
 	return path
+}
+
+func cpNamespaceExported(path string, clusterName string, namespace string) bool {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return false
+	}
+
+	prefix := fmt.Sprintf("%s-namespace-%s-.json", clusterName, namespace)
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func CpRestarted(cluster Cluster) bool {
