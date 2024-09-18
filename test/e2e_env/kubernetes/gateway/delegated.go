@@ -195,6 +195,7 @@ spec:
 		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
 		"MeshAccessLog":             delegated.MeshAccessLog(&config),
 		"MeshPassthrough":           delegated.MeshPassthrough(&config),
+    "MeshTLS":                   delegated.MeshTLS(&config)),
 	})
 	contextFor("delegated with MeshService", &configMs, map[string]func(){
 		"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&configMs),
