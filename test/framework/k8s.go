@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -171,7 +172,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 	}
 
 	replicaSets, err := k8s.ListReplicaSetsE(testingT, kubectlOptions, metav1.ListOptions{
-		LabelSelector: "app=" + name,
+		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
 		deployDetails.RetrievalError = err
@@ -185,7 +186,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 	}
 
 	pods, err := k8s.ListPodsE(testingT, kubectlOptions, metav1.ListOptions{
-		LabelSelector: "app=" + name,
+		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
 		deployDetails.RetrievalError = err

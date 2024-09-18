@@ -52,7 +52,7 @@ func TestConformance(t *testing.T) {
 
 	t.Cleanup(func() {
 		//if t.Failed() || Config.Debug {
-		var namespaces []string
+		namespaces := []string{Config.KumaNamespace}
 		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
 		if err == nil {
 			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
@@ -137,7 +137,6 @@ func TestConformance(t *testing.T) {
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
-	conformanceSuite.Cleanup = false
 	g.Expect(err).ToNot(HaveOccurred())
 
 	conformanceSuite.Setup(t, tests.ConformanceTests)
