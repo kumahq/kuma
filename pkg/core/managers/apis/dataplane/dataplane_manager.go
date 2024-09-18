@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -51,16 +52,26 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
+	opts := core_store.NewCreateOptions(fs...)
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
-	labels, err := core_model.ComputeLabels(dp, m.mode, m.isK8s, m.systemNamespace, m.zone)
+	labels, err := core_model.ComputeLabels(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		map[string]string{},
+		model.ResourceNameExtensions{},
+		opts.Mesh,
+		m.mode,
+		m.isK8s,
+		m.systemNamespace,
+		m.zone,
+	)
 	if err != nil {
 		return err
 	}
 	fs = append(fs, core_store.CreateWithLabels(labels))
 
-	opts := core_store.NewCreateOptions(fs...)
 	owner := core_mesh.NewMeshResource()
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(opts.Mesh)
@@ -85,7 +96,17 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
-	labels, err := core_model.ComputeLabels(dp, m.mode, m.isK8s, m.systemNamespace, m.zone)
+	labels, err := core_model.ComputeLabels(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		resource.GetMeta().GetLabels(),
+		resource.GetMeta().GetNameExtensions(),
+		resource.GetMeta().GetMesh(),
+		m.mode,
+		m.isK8s,
+		m.systemNamespace,
+		m.zone,
+	)
 	if err != nil {
 		return err
 	}
