@@ -56,7 +56,7 @@ spec:
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
-name: uni-ms
+name: uni-ms-mal
 spec:
   template: '{{ .DisplayName }}.universal.ms'
   selector:

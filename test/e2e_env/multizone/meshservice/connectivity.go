@@ -84,14 +84,14 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshGateway
 metadata:
-  name: edge-gateway
+  name: edge-gateway-ms
   labels:
     kuma.io/origin: zone
 mesh: %s
 spec:
   selectors:
   - match:
-      kuma.io/service: edge-gateway_%s_svc
+      kuma.io/service: edge-gateway-ms_%s_svc
   conf:
     listeners:
     - port: 8080
@@ -101,7 +101,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshHTTPRoute
 metadata:
-  name: route
+  name: route-ms
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -109,7 +109,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshGateway
-    name: edge-gateway
+    name: edge-gateway-ms
   to:
     - targetRef:
         kind: Mesh
@@ -160,7 +160,7 @@ spec:
 			)).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(gatewayRoute)).
-			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway", namespace, meshName))).
+			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-ms", namespace, meshName))).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
@@ -223,6 +223,7 @@ spec:
 
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
@@ -245,7 +246,7 @@ spec:
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(
 					multizone.KubeZone1, "demo-client",
-					fmt.Sprintf("http://edge-gateway.%s:8080/%s", namespace, given.address()),
+					fmt.Sprintf("http://edge-gateway-ms.%s:8080/%s", namespace, given.address()),
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 
@@ -254,11 +255,11 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 		},
 		Entry("should access service in the same Kubernetes cluster via a mesh-targeted generator name", testCase{
-			address:          func() string { return "/local" },
+			address:          func() string { return "local" },
 			expectedInstance: "kube-test-server-1",
 		}),
 		Entry("should access service in the a Universal cluster", testCase{
-			address:          func() string { return "/uni-2" },
+			address:          func() string { return "uni-2" },
 			expectedInstance: "uni-test-server",
 		}),
 	)
@@ -270,7 +271,7 @@ spec:
 			}
 			Eventually(func(g Gomega) {
 				response, err := client.CollectEchoResponse(multizone.KubeZone1, "demo-client", given.address(),
-					client.FromKubernetesPod(meshName, "demo-client"),
+					client.FromKubernetesPod(namespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.Instance).To(Equal(given.expectedInstance))
