@@ -768,7 +768,6 @@ func fillExternalServicesOutboundsThroughEgress(
 	mesh *core_mesh.MeshResource,
 	localZone string,
 ) {
-
 	if mesh.ZoneEgressEnabled() {
 		for _, externalService := range externalServices {
 			// deep copy map to not modify tags in ExternalService.
