@@ -66,6 +66,9 @@ func (t Tags) DestinationClusterName(
 }
 
 func (t Tags) WithoutTags(tags ...string) Tags {
+	if t == nil {
+		return nil
+	}
 	tagSet := map[string]bool{}
 	for _, t := range tags {
 		tagSet[t] = true
@@ -109,7 +112,7 @@ func (t Tags) String() string {
 	return strings.Join(pairs, ",")
 }
 
-func FromTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
+func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 	var service string
 	tags := Tags{}
 

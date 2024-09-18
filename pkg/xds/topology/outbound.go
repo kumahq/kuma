@@ -650,7 +650,7 @@ func createMeshExternalServiceEndpoint(
 	zone string,
 ) error {
 	es := &core_xds.ExternalService{
-		Protocol:      core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+		Protocol:      mes.Spec.Match.Protocol,
 		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
@@ -658,7 +658,6 @@ func createMeshExternalServiceEndpoint(
 		tags = map[string]string{}
 	}
 	meshName := mesh.GetMeta().GetName()
-	name := mes.Meta.GetName()
 	tls := mes.Spec.Tls
 	if tls != nil && tls.Enabled {
 		var caCert, clientCert, clientKey []byte
@@ -741,7 +740,7 @@ func createMeshExternalServiceEndpoint(
 			Tags:            tags,
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
-		outbounds[name] = append(outbounds[name], *outboundEndpoint)
+		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
 	}
 	return nil
 }
@@ -799,7 +798,7 @@ func fillExternalServicesOutboundsThroughEgress(
 	for _, mes := range meshExternalServices {
 		// deep copy map to not modify tags in ExternalService.
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
-		serviceName := mes.Meta.GetName()
+		serviceName := mes.DestinationName(uint32(mes.Spec.Match.Port))
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
 		for _, ze := range zoneEgresses {
@@ -816,7 +815,8 @@ func fillExternalServicesOutboundsThroughEgress(
 				Weight:   1,
 				Locality: locality,
 				ExternalService: &core_xds.ExternalService{
-					Protocol: core_mesh.ParseProtocol(string(mes.Spec.Match.Protocol)),
+					Protocol:      mes.Spec.Match.Protocol,
+					OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 				},
 			}
 

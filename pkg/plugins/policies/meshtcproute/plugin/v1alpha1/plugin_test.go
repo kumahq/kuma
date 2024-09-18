@@ -190,7 +190,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								Name: "route-2",
 							},
 						},
-						BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
 							core_rules.EmptyMatches: 1,
 						},
 					},
@@ -275,6 +275,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -469,7 +475,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							Origin: []core_rules.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 							},
-							BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+							BackendRefOriginIndex: map[common_api.MatchesHash]int{
 								core_rules.EmptyMatches: 0,
 							},
 							Conf: []interface{}{
@@ -479,7 +485,7 @@ var _ = Describe("MeshTCPRoute", func() {
 											{
 												TargetRef: builders.TargetRefMeshExternalService("example2"),
 												Weight:    pointer.To(uint(100)),
-												Port:      pointer.To(uint32(80)),
+												Port:      pointer.To(uint32(9090)),
 											},
 										},
 									},
@@ -580,14 +586,14 @@ var _ = Describe("MeshTCPRoute", func() {
 				Items: []*meshservice_api.MeshServiceResource{&meshSvc},
 			}
 			outboundTargets := xds_builders.EndpointMap().
-				AddEndpoint("backend_msvc_80", xds_builders.Endpoint().
+				AddEndpoint("default_backend___msvc_80", xds_builders.Endpoint().
 					WithTarget("192.168.0.4").
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "app", "backend"))
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
-					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
+					AddServiceProtocol("default_backend___msvc_80", core_mesh.ProtocolHTTP).
 					WithResources(resources).
 					Build(),
 				proxy: xds_builders.Proxy().
@@ -612,7 +618,7 @@ var _ = Describe("MeshTCPRoute", func() {
 										Origin: []core_rules.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 										},
-										BackendRefOriginIndex: map[core_rules.MatchesHash]int{
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
 											core_rules.EmptyMatches: 0,
 										},
 										Conf: []interface{}{
@@ -651,6 +657,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -830,6 +842,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -935,6 +953,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{

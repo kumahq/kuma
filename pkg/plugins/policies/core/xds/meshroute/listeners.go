@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -59,12 +58,27 @@ func MakeHTTPSplit(
 }
 
 type DestinationService struct {
-	OutboundInterface mesh_proto.OutboundInterface
-	Resource          *core_model.TypedResourceIdentifier
-	Tags              envoy_tags.Tags
-	Protocol          core_mesh.Protocol
-	ServiceName       string
-	BackendRef        common_api.BackendRef
+	Outbound    *xds_types.Outbound
+	Protocol    core_mesh.Protocol
+	ServiceName string
+}
+
+func (ds *DestinationService) DefaultBackendRef() *core_model.ResolvedBackendRef {
+	if ds.Outbound.Resource != nil {
+		return core_model.NewResolvedBackendRef(&core_model.RealResourceBackendRef{
+			Resource: ds.Outbound.Resource,
+			Weight:   100,
+		})
+	} else {
+		return core_model.NewResolvedBackendRef(&core_model.LegacyBackendRef{
+			TargetRef: common_api.TargetRef{
+				Kind: common_api.MeshService,
+				Name: ds.Outbound.LegacyOutbound.GetService(),
+				Tags: ds.Outbound.LegacyOutbound.GetTags(),
+			},
+			Weight: pointer.To(uint(100)),
+		})
+	}
 }
 
 func CollectServices(
@@ -112,21 +126,9 @@ func collectMeshService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		OutboundInterface: mesh_proto.OutboundInterface{
-			DataplaneIP:   outbound.GetAddress(),
-			DataplanePort: outbound.GetPort(),
-		},
-		Tags:        outbound.LegacyOutbound.GetTags(),
-		Resource:    outbound.Resource,
+		Outbound:    outbound,
 		Protocol:    protocol,
 		ServiceName: ms.DestinationName(port.Port),
-		BackendRef: common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: ms.GetMeta().GetName(),
-			},
-			Port: &port.Port,
-		},
 	}
 }
 
@@ -138,22 +140,14 @@ func collectMeshExternalService(
 	if !mesOk {
 		return nil
 	}
+	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
+	if mes.Spec.Match.Protocol != "" {
+		protocol = mes.Spec.Match.Protocol
+	}
 	return &DestinationService{
-		OutboundInterface: mesh_proto.OutboundInterface{
-			DataplaneIP:   outbound.GetAddress(),
-			DataplanePort: outbound.GetPort(),
-		},
-		Tags:        outbound.LegacyOutbound.GetTags(),
-		Resource:    outbound.Resource,
-		Protocol:    mes.Spec.Match.Protocol,
+		Outbound:    outbound,
+		Protocol:    protocol,
 		ServiceName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
-		BackendRef: common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshExternalService,
-				Name: mes.GetMeta().GetName(),
-			},
-			Port: pointer.To(uint32(mes.Spec.Match.Port)),
-		},
 	}
 }
 
@@ -174,21 +168,9 @@ func collectMeshMultiZoneService(
 		protocol = port.AppProtocol
 	}
 	return &DestinationService{
-		OutboundInterface: mesh_proto.OutboundInterface{
-			DataplaneIP:   outbound.GetAddress(),
-			DataplanePort: outbound.GetPort(),
-		},
-		Tags:        outbound.LegacyOutbound.GetTags(),
-		Resource:    outbound.Resource,
+		Outbound:    outbound,
 		Protocol:    protocol,
 		ServiceName: svc.DestinationName(port.Port),
-		BackendRef: common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshMultiZoneService,
-				Name: svc.GetMeta().GetName(),
-			},
-			Port: &port.Port,
-		},
 	}
 }
 
@@ -198,66 +180,52 @@ func collectServiceTagService(
 ) *DestinationService {
 	serviceName := outbound.LegacyOutbound.GetService()
 	return &DestinationService{
-		OutboundInterface: mesh_proto.OutboundInterface{
-			DataplaneIP:   outbound.GetAddress(),
-			DataplanePort: outbound.GetPort(),
-		},
-		Tags:        outbound.LegacyOutbound.GetTags(),
-		Resource:    outbound.Resource,
+		Outbound:    outbound,
 		Protocol:    meshCtx.GetServiceProtocol(serviceName),
 		ServiceName: serviceName,
-		BackendRef: common_api.BackendRef{
-			TargetRef: common_api.TargetRef{
-				Kind: common_api.MeshService,
-				Name: serviceName,
-				Tags: outbound.LegacyOutbound.GetTags(),
-			},
-		},
 	}
 }
 
-func GetServiceAndProtocolFromRef(
+func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
-	ref core_model.ResolvedBackendRef,
-) (string, core_mesh.Protocol, bool) {
-	switch {
-	case ref.LegacyBackendRef.Kind == common_api.MeshExternalService:
+	ref *core_model.RealResourceBackendRef,
+) (string, core_mesh.Protocol, uint32, bool) {
+	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
+	case common_api.MeshExternalService:
 		mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 		if !ok {
-			return "", "", false
+			return "", "", 0, false
 		}
-		port := pointer.Deref(ref.LegacyBackendRef.Port)
+		port := uint32(mes.Spec.Match.Port)
 		service := mes.DestinationName(port)
 		protocol := meshCtx.GetServiceProtocol(service)
-		return service, protocol, true
-	case ref.LegacyBackendRef.Kind == common_api.MeshMultiZoneService:
+		return service, protocol, port, true
+	case common_api.MeshMultiZoneService:
 		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 		if !ok {
-			return "", "", false
+			return "", "", 0, false
 		}
-		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "", false
+			return "", "", 0, false
 		}
-		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		service := ms.DestinationName(port.Port)
 		protocol := port.AppProtocol
-		return service, protocol, true
-	case ref.LegacyBackendRef.Kind == common_api.MeshService && ref.LegacyBackendRef.ReferencesRealObject():
+		return service, protocol, port.Port, true
+	case common_api.MeshService:
 		ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
 		if !ok {
-			return "", "", false
+			return "", "", 0, false
 		}
-		port, ok := ms.FindPort(*ref.LegacyBackendRef.Port)
+		port, ok := ms.FindPortByName(ref.Resource.SectionName)
 		if !ok {
-			return "", "", false
+			return "", "", 0, false
 		}
-		service := ms.DestinationName(*ref.LegacyBackendRef.Port)
+		service := ms.DestinationName(port.Port)
 		protocol := port.AppProtocol // todo(jakubdyszkiewicz): do we need to default to TCP or will this be done by MeshService defaulter?
-		return service, protocol, true
+		return service, protocol, port.Port, true
 	default:
-		service := ref.LegacyBackendRef.Name
-		protocol := meshCtx.GetServiceProtocol(service)
-		return service, protocol, true
+		return "", "", 0, false
 	}
 }
 
@@ -271,86 +239,141 @@ func makeSplit(
 	var split []envoy_common.Split
 
 	for _, ref := range refs {
-		switch ref.LegacyBackendRef.Kind {
-		case common_api.MeshService, common_api.MeshExternalService, common_api.MeshServiceSubset, common_api.MeshMultiZoneService:
-		default:
-			continue
-		}
-
-		var service string
-		var protocol core_mesh.Protocol
-		if pointer.DerefOr(ref.LegacyBackendRef.Weight, 1) == 0 {
-			continue
-		}
-		service, protocol, ok := GetServiceAndProtocolFromRef(meshCtx, ref)
-		if !ok {
-			continue
-		}
-		if _, ok := protocols[protocol]; !ok {
-			return nil
-		}
-
-		var clusterName string
-		switch ref.LegacyBackendRef.Kind {
-		case common_api.MeshExternalService:
-			clusterName = envoy_names.GetMeshExternalServiceName(ref.LegacyBackendRef.Name) // todo shouldn't this be in destination name?
-		case common_api.MeshMultiZoneService:
-			clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
-		case common_api.MeshService:
-			if ref.LegacyBackendRef.Port != nil {
-				clusterName = meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(*ref.LegacyBackendRef.Port)
-				break
+		if ref.ReferencesRealResource() {
+			if s := handleRealResources(protocols, clusterCache, servicesAcc, ref.RealResourceBackendRef(), meshCtx); s != nil {
+				split = append(split, s)
 			}
-			fallthrough
-		default:
-			clusterName, _ = envoy_tags.Tags(ref.LegacyBackendRef.Tags).
-				WithTags(mesh_proto.ServiceTag, service).
-				DestinationClusterName(nil)
+		} else {
+			if s := handleLegacyBackendRef(protocols, clusterCache, servicesAcc, ref.LegacyBackendRef(), meshCtx); s != nil {
+				split = append(split, s)
+			}
 		}
-
-		// The mesh tag is present here if this destination is generated
-		// from a cross-mesh MeshGateway listener virtual outbound.
-		// It is not part of the service tags.
-		if mesh, ok := ref.LegacyBackendRef.Tags[mesh_proto.MeshTag]; ok {
-			// The name should be distinct to the service & mesh combination
-			clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
-		}
-
-		isExternalService := meshCtx.IsExternalService(service)
-		refHash := ref.LegacyBackendRef.Hash()
-
-		if existingClusterName, ok := clusterCache[refHash]; ok {
-			// cluster already exists, so adding only split
-			split = append(split, plugins_xds.NewSplitBuilder().
-				WithClusterName(existingClusterName).
-				WithWeight(uint32(pointer.DerefOr(ref.LegacyBackendRef.Weight, 1))).
-				WithExternalService(isExternalService).
-				Build())
-			continue
-		}
-
-		clusterCache[refHash] = clusterName
-
-		split = append(split, plugins_xds.NewSplitBuilder().
-			WithClusterName(clusterName).
-			WithWeight(uint32(pointer.DerefOr(ref.LegacyBackendRef.Weight, 1))).
-			WithExternalService(isExternalService).
-			Build())
-
-		clusterBuilder := plugins_xds.NewClusterBuilder().
-			WithService(service).
-			WithName(clusterName).
-			WithTags(envoy_tags.Tags(ref.LegacyBackendRef.Tags).
-				WithTags(mesh_proto.ServiceTag, ref.LegacyBackendRef.Name).
-				WithoutTags(mesh_proto.MeshTag)).
-			WithExternalService(isExternalService)
-
-		if mesh, ok := ref.LegacyBackendRef.Tags[mesh_proto.MeshTag]; ok {
-			clusterBuilder.WithMesh(mesh)
-		}
-
-		servicesAcc.AddBackendRef(ref, clusterBuilder.Build())
 	}
 
+	return split
+}
+
+func handleRealResources(
+	protocols map[core_mesh.Protocol]struct{},
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	ref *core_model.RealResourceBackendRef,
+	meshCtx xds_context.MeshContext,
+) envoy_common.Split {
+	if ref.Weight == 0 {
+		return nil
+	}
+
+	service, protocol, port, ok := GetServiceProtocolPortFromRef(meshCtx, ref)
+	if !ok {
+		return nil
+	}
+	if _, ok := protocols[protocol]; !ok {
+		return nil
+	}
+
+	var clusterName string
+	var isExternalService bool
+
+	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
+	case common_api.MeshExternalService:
+		clusterName = meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+		isExternalService = true
+	case common_api.MeshMultiZoneService:
+		clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+	case common_api.MeshService:
+		clusterName = meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+	}
+
+	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
+	refHash := common_api.BackendRefHash(ref.Resource.String())
+
+	splitTo := func(clusterName string) envoy_common.Split {
+		return plugins_xds.NewSplitBuilder().
+			WithClusterName(clusterName).
+			WithWeight(uint32(ref.Weight)).
+			WithExternalService(isExternalService).
+			Build()
+	}
+
+	if existingClusterName, ok := clusterCache[refHash]; ok {
+		// cluster already exists, so adding only split
+		return splitTo(existingClusterName)
+	}
+
+	clusterCache[refHash] = clusterName
+
+	clusterBuilder := plugins_xds.NewClusterBuilder().
+		WithService(service).
+		WithName(clusterName).
+		WithTags(envoy_tags.Tags{}.WithTags(mesh_proto.ServiceTag, service)). // todo(lobkovilya): do we need tags for real resource cluster?
+		WithExternalService(isExternalService)
+
+	servicesAcc.AddBackendRef(core_model.NewResolvedBackendRef(ref), clusterBuilder.Build())
+
+	return splitTo(clusterName)
+}
+
+func handleLegacyBackendRef(
+	protocols map[core_mesh.Protocol]struct{},
+	clusterCache map[common_api.BackendRefHash]string,
+	servicesAcc envoy_common.ServicesAccumulator,
+	ref *core_model.LegacyBackendRef,
+	meshCtx xds_context.MeshContext,
+) envoy_common.Split {
+	if ref.Weight != nil && *ref.Weight == 0 {
+		return nil
+	}
+
+	service := ref.Name
+	protocol := meshCtx.GetServiceProtocol(service)
+	if _, ok := protocols[protocol]; !ok {
+		return nil
+	}
+	clusterName, _ := envoy_tags.Tags(ref.Tags).
+		WithTags(mesh_proto.ServiceTag, service).
+		DestinationClusterName(nil)
+
+	// The mesh tag is present here if this destination is generated
+	// from a cross-mesh MeshGateway listener virtual outbound.
+	// It is not part of the service tags.
+	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+		// The name should be distinct to the service & mesh combination
+		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
+	}
+
+	isExternalService := meshCtx.IsExternalService(service)
+	refHash := common_api.BackendRef(*ref).Hash()
+
+	if existingClusterName, ok := clusterCache[refHash]; ok {
+		// cluster already exists, so adding only split
+		return plugins_xds.NewSplitBuilder().
+			WithClusterName(existingClusterName).
+			WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+			WithExternalService(isExternalService).
+			Build()
+	}
+
+	clusterCache[refHash] = clusterName
+
+	split := plugins_xds.NewSplitBuilder().
+		WithClusterName(clusterName).
+		WithWeight(uint32(pointer.DerefOr(ref.Weight, 1))).
+		WithExternalService(isExternalService).
+		Build()
+
+	clusterBuilder := plugins_xds.NewClusterBuilder().
+		WithService(service).
+		WithName(clusterName).
+		WithTags(envoy_tags.Tags(ref.Tags).
+			WithTags(mesh_proto.ServiceTag, ref.Name).
+			WithoutTags(mesh_proto.MeshTag)).
+		WithExternalService(isExternalService)
+
+	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+		clusterBuilder.WithMesh(mesh)
+	}
+
+	servicesAcc.AddBackendRef(core_model.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split
 }

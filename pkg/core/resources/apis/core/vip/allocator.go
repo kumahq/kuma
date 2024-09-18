@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
 type ResourceHoldingVIPs interface {
@@ -70,6 +71,8 @@ func NewAllocator(
 }
 
 func (a *Allocator) Start(stop <-chan struct{}) error {
+	// sleep to mitigate update conflicts with other components
+	util_time.SleepUpTo(a.interval)
 	a.logger.Info("starting")
 	ticker := time.NewTicker(a.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)

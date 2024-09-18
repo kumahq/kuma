@@ -271,7 +271,7 @@ type Rule struct {
 	BackendRefOriginIndex BackendRefOriginIndex
 }
 
-func (r *Rule) GetBackendRefOrigin(hash MatchesHash) (core_model.ResourceMeta, bool) {
+func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.ResourceMeta, bool) {
 	if r == nil {
 		return nil, false
 	}
@@ -440,7 +440,7 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshSubset,
 						Tags: map[string]string{
-							RuleMatchesHashTag: matchesHash,
+							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
 				default:
@@ -448,7 +448,7 @@ func buildToList(p core_model.Resource, httpRoutes []core_model.Resource) ([]cor
 						Kind: common_api.MeshServiceSubset,
 						Name: mhrRules.TargetRef.Name,
 						Tags: map[string]string{
-							RuleMatchesHashTag: matchesHash,
+							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
 				}

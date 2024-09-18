@@ -17,10 +17,12 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
 type HostnameGenerator interface {
@@ -68,6 +70,8 @@ func NewGenerator(
 }
 
 func (g *Generator) Start(stop <-chan struct{}) error {
+	// sleep to mitigate update conflicts with other components
+	util_time.SleepUpTo(g.interval)
 	g.logger.Info("starting")
 	ticker := time.NewTicker(g.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
@@ -204,6 +208,11 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 		}
 		for _, service := range resources {
+			logger := g.logger.WithValues(
+				"type", service.Descriptor().Name,
+				"name", service.GetMeta().GetName(),
+				"mesh", service.GetMeta().GetMesh(),
+			)
 			statuses := newStatuses[serviceKey{
 				name: service.GetMeta().GetName(),
 				mesh: service.GetMeta().GetMesh(),
@@ -236,14 +245,18 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
 			if changedErr != nil {
-				g.logger.Error(err, "couldn't check status", "type", resourceList.GetItemType())
+				logger.Error(err, "couldn't check status")
 				continue
 			}
 			if !changed {
 				continue
 			}
 			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
-				g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())
+				if errors.Is(err, &store.ResourceConflictError{}) {
+					logger.Info("couldn't update status, because it was modified in another place. Will try again in the next interval", "interval", g.interval)
+				} else {
+					g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())
+				}
 				continue
 			}
 		}

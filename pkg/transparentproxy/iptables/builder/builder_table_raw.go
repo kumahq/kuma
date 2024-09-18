@@ -20,14 +20,14 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 			rules.
 				NewAppendRule(
 					Protocol(Udp(DestinationPort(consts.DNSPort))),
-					Match(Owner(Uid(cfg.KumaDPUser.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(Ct(Zone("1"))),
 				).
-				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.KumaDPUser.UID),
+				WithCommentf("assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID %s)", cfg.KumaDPUser),
 			rules.
 				NewAppendRule(
 					Protocol(Udp(SourcePort(cfg.Redirect.DNS.Port))),
-					Match(Owner(Uid(cfg.KumaDPUser.UID))),
+					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(Ct(Zone("2"))),
 				).
 				WithComment("assign connection tracking zone 2 to DNS responses from the kuma-dp DNS proxy"),

@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path"
@@ -9,19 +10,26 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/plugin/v1alpha1"
+	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -124,6 +132,98 @@ var _ = Describe("MeshTLS", func() {
 			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
 		}),
 	)
+
+	DescribeTable("should generate proper Envoy config for builtin Gateway",
+		func(given testCase) {
+			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
+			resources := xds_context.NewResources()
+			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
+				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+
+			policy := getPolicy(given.caseName)
+
+			xdsCtx := *xds_builders.Context().
+				WithMeshBuilder(samples.MeshMTLSBuilder()).
+				WithResources(resources).
+				Build()
+			proxy := xds_builders.Proxy().
+				WithDataplane(samples.GatewayDataplaneBuilder()).
+				WithSecretsTracker(secretsTracker).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(policy.Spec.From)).
+					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, core_rules.GatewayRules{
+						ToRules: core_rules.GatewayToRules{
+							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+								core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+									{
+										Subset: core_rules.MeshSubset(),
+										Conf: meshhttproute_api.PolicyDefault{
+											Rules: []meshhttproute_api.Rule{
+												{
+													Matches: []meshhttproute_api.Match{{
+														Path: &meshhttproute_api.PathMatch{
+															Type:  meshhttproute_api.Exact,
+															Value: "/",
+														},
+													}},
+													Default: meshhttproute_api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+														}},
+													},
+												},
+												{
+													Matches: []meshhttproute_api.Match{{
+														Path: &meshhttproute_api.PathMatch{
+															Type:  meshhttproute_api.Exact,
+															Value: "/another-route",
+														},
+														Method: pointer.To[meshhttproute_api.Method]("GET"),
+													}},
+													Default: meshhttproute_api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{{
+															TargetRef: builders.TargetRefService("backend"),
+															Weight:    pointer.To(uint(100)),
+														}},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					})).
+				Build()
+			for n, p := range core_plugins.Plugins().ProxyPlugins() {
+				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
+			}
+			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
+			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
+			Expect(err).NotTo(HaveOccurred())
+
+			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+
+			// when
+			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(plugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+
+			// then
+			Expect(getResource(generatedResources, envoy_resource.ListenerType)).
+				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.listeners.golden.yaml", given.caseName)))
+			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
+				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.clusters.golden.yaml", given.caseName)))
+			Expect(getResource(generatedResources, envoy_resource.RouteType)).
+				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.routes.golden.yaml", given.caseName)))
+		},
+		Entry("tls version and cypher on gateway", testCase{
+			caseName:    "gateway-tls-version-and-cipher",
+			meshBuilder: samples.MeshDefaultBuilder(),
+		}),
+	)
 })
 
 func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
@@ -200,6 +300,30 @@ func getFromRules(froms []api.From) core_rules.FromRules {
 
 	return core_rules.FromRules{
 		Rules: map[core_rules.InboundListener]core_rules.Rules{
+			{
+				Address: "127.0.0.1",
+				Port:    17777,
+			}: rules,
+			{
+				Address: "127.0.0.1",
+				Port:    17778,
+			}: rules,
+		},
+	}
+}
+
+func getGatewayRules(froms []api.From) core_rules.GatewayRules {
+	var rules []*core_rules.Rule
+
+	for _, from := range froms {
+		rules = append(rules, &core_rules.Rule{
+			Subset: core_rules.Subset{},
+			Conf:   from.Default,
+		})
+	}
+
+	return core_rules.GatewayRules{
+		FromRules: map[core_rules.InboundListener]core_rules.Rules{
 			{
 				Address: "127.0.0.1",
 				Port:    17777,

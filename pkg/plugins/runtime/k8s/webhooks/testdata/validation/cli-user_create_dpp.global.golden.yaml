@@ -2,11 +2,6 @@ Patches: null
 allowed: false
 status:
   code: 403
-  details:
-    causes:
-    - field: metadata.annotations[kuma.io/synced]
-      message: cannot be empty
-      reason: FieldValueInvalid
   message: Operation not allowed. Kuma resources like Dataplane can be updated or
     deleted only from the ZONE control plane and not from a GLOBAL control plane.
   metadata: {}

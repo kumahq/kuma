@@ -212,3 +212,8 @@ const (
 	PathDevNull           = "/dev/null"
 	PathNSSwitchConf      = "/etc/nsswitch.conf"
 )
+
+// KubernetesConfigMapDataKey is the key used in Kubernetes ConfigMap to store
+// the transparent proxy configuration. It must match the key defined in
+// deployments/charts/kuma/templates/cp-configmap.yaml to ensure consistency
+const KubernetesConfigMapDataKey = "config.yaml"

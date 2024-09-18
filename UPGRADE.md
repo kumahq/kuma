@@ -215,6 +215,12 @@ Indeed `service` is a very common label and metrics were sometimes coliding with
 
 In this release, KDS Delta is used by default and the CP environment variable `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` doesn't exist anymore.
 
+### Deprecation of `yes/no` values for annotation switches
+
+The values `yes` and `no` are deprecated for specifying boolean values in switches based on pod annotations, and support for these values will be removed in a future release. Since these values were undocumented, they are not expected to be widely used.
+
+Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. [Check the documentation](https://kuma.io/docs/latest/reference/kubernetes-annotations/) for the specific annotation to confirm the correct replacements.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

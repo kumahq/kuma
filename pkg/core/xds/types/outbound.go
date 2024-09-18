@@ -21,6 +21,15 @@ func (o *Outbound) GetAddress() string {
 	return o.Address
 }
 
+// TagsOrNil returns tags if Outbound is defined using 'kuma.io/service' tag and so LegacyOutbound field is set.
+// Otherwise, it returns nil.
+func (o *Outbound) TagsOrNil() map[string]string {
+	if o.LegacyOutbound != nil {
+		return o.LegacyOutbound.Tags
+	}
+	return nil
+}
+
 func (o *Outbound) GetPort() uint32 {
 	if o.LegacyOutbound != nil {
 		return o.LegacyOutbound.Port

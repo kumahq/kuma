@@ -66,10 +66,10 @@ func sortRulesToHosts(
 		for _, rawRule := range rawRules {
 			conf := rawRule.Conf.(api.PolicyDefault)
 
-			backendRefOrigin := map[string]model.ResourceMeta{}
+			backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
 			for hash := range rawRule.BackendRefOriginIndex {
 				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[string(hash)] = origin
+					backendRefOrigin[hash] = origin
 				}
 			}
 			rule := ToRouteRule{
@@ -201,7 +201,7 @@ func generateEnvoyRouteEntries(
 			for _, m := range rule.Matches {
 				routeEntry := entry // Shallow copy.
 				routeEntry.Match = makeRouteMatch(m)
-				routeEntry.Name = hashedMatches
+				routeEntry.Name = string(hashedMatches)
 
 				switch {
 				case routeEntry.Match.ExactPath != "":
@@ -221,7 +221,7 @@ func generateEnvoyRouteEntries(
 func makeHttpRouteEntry(
 	name string,
 	rule api.Rule,
-	backendRefToOrigin map[string]model.ResourceMeta,
+	backendRefToOrigin map[common_api.MatchesHash]model.ResourceMeta,
 	resolver model.LabelResourceIdentifierResolver,
 ) route.Entry {
 	entry := route.Entry{
@@ -233,10 +233,14 @@ func makeHttpRouteEntry(
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		if ref == nil || ref.ResourceOrNil() == nil {
+			var ok bool
+			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+			if !ok {
+				// This should be caught by validation
+				continue
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
@@ -276,7 +280,7 @@ func makeHttpRouteEntry(
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
+			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}

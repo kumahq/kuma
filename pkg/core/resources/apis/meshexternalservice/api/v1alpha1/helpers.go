@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -9,7 +11,11 @@ import (
 )
 
 func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
-	return m.GetMeta().GetName()
+	id := model.NewResourceIdentifier(m)
+	if port == 0 {
+		port = uint32(m.Spec.Match.Port)
+	}
+	return fmt.Sprintf("%s_%s_%s_%s_extsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 
 func (m *MeshExternalServiceResource) IsReachableFromZone(zone string) bool {

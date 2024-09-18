@@ -360,8 +360,7 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null,
                 "labels": {
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "global",
-                  "kuma.io/policy-role": "workload-owner"
+                  "kuma.io/origin": "global"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
@@ -551,8 +550,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "kuma.io/mesh": "default",
                   "kuma.io/origin": "zone",
-                  "kuma.io/zone": "zone-1",
-                  "kuma.io/policy-role": "system"
+                  "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"

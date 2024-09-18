@@ -45,11 +45,11 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 		var r *core_xds.Resource
 		var err error
 
-		if dest.BackendRef != nil && dest.BackendRef.Resource != nil {
+		if dest.BackendRef != nil && dest.BackendRef.ReferencesRealResource() {
 			r, service, err = c.generateRealBackendRefCluster(
 				xdsCtx.Mesh,
 				info.Proxy,
-				*dest.BackendRef,
+				dest.BackendRef.RealResourceBackendRef(),
 				dest.RouteProtocol,
 				xdsCtx.ControlPlane.SystemNamespace,
 				hostTags,
@@ -58,7 +58,8 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 				log.Info("skipping backendRef", "backendRef", dest.BackendRef.LegacyBackendRef)
 				continue
 			}
-			isExternalCluster = dest.BackendRef.LegacyBackendRef.Kind == "MeshExternalService"
+			isExternalService := xdsCtx.Mesh.IsExternalService(service)
+			isExternalCluster = isExternalService && !xdsCtx.Mesh.Resource.ZoneEgressEnabled()
 		} else {
 			service = dest.Destination[mesh_proto.ServiceTag]
 
@@ -146,12 +147,12 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 func (c *ClusterGenerator) generateRealBackendRefCluster(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
-	backendRef model.ResolvedBackendRef,
+	backendRef *model.RealResourceBackendRef,
 	routeProtocol core_mesh.Protocol,
 	systemNamespace string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, string, error) {
-	service, destProtocol, ok := meshroute.GetServiceAndProtocolFromRef(meshCtx, backendRef)
+	service, destProtocol, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef)
 	if !ok {
 		return nil, "", nil
 	}
@@ -178,7 +179,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 		edsClusterBuilder.Configure(clusters.Http())
 	default:
 	}
-	// Note: these tags are just used to get a hash!
+	// Note: these tags are just used to get a cluster name!
 	tags := map[string]string{
 		mesh_proto.ServiceTag: service,
 	}

@@ -27,7 +27,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -144,7 +143,7 @@ func (p plugin) applyToRealResources(
 	rules core_rules.ResourceRules,
 	meshCtx xds_context.MeshContext,
 ) error {
-	for uri, resType := range rs.IndexByOrigin() {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
 			continue
@@ -193,6 +192,9 @@ func configureEndpoints(
 	egressEnabled bool,
 	origin string,
 ) error {
+	if cluster == nil {
+		return nil
+	}
 	if cluster.LoadAssignment != nil {
 		if err := ConfigureStaticEndpointsLocalityAware(tags, endpoints, cluster, conf, serviceName, localZone, apiVersion, egressEnabled, origin); err != nil {
 			return err
@@ -319,7 +321,9 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
 		for _, mes := range meshExternalServices.GetItems() {
-			policies, ok := meshResources.Dynamic[mes.GetMeta().GetName()]
+			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			destinationName := meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port))
+			policies, ok := meshResources.Dynamic[destinationName]
 			if !ok {
 				continue
 			}
@@ -344,7 +348,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 						}
 					}
 				}
-				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), mesID.Name, mesID.Mesh)
+				err := p.configureEgressListener(listeners.Egress, conf.Conf[0].(api.Conf), destinationName)
 				if err != nil {
 					return err
 				}
@@ -427,8 +431,7 @@ func (p plugin) configureListener(
 func (p plugin) configureEgressListener(
 	l *envoy_listener.Listener,
 	conf api.Conf,
-	name string,
-	meshName string,
+	filterChainName string,
 ) error {
 	if conf.LoadBalancer == nil {
 		return nil
@@ -456,18 +459,7 @@ func (p plugin) configureEgressListener(
 	}
 
 	for _, chain := range l.FilterChains {
-		matched := false
-		for _, serverName := range chain.FilterChainMatch.ServerNames {
-			tags, err := tls.TagsFromSNI(serverName)
-			if err != nil {
-				return err
-			}
-			if tags[mesh_proto.ServiceTag] == name && tags["mesh"] == meshName {
-				matched = true
-				break
-			}
-		}
-		if !matched {
+		if chain.Name != filterChainName {
 			continue
 		}
 		err := v3.UpdateHTTPConnectionManager(chain, func(hcm *envoy_hcm.HttpConnectionManager) error {

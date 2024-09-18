@@ -38,7 +38,6 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					GID:       5678,
 					DrainTime: config_types.Duration{Duration: 30 * time.Second},
 					EnvVars:   map[string]string{},
-
 					ReadinessProbe: SidecarReadinessProbe{
 						InitialDelaySeconds: 1,
 						TimeoutSeconds:      3,
@@ -234,6 +233,10 @@ type Injector struct {
 	IgnoredServiceSelectorLabels []string `json:"ignoredServiceSelectorLabels" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_IGNORED_SERVICE_SELECTOR_LABELS"`
 	// NodeLabelsToCopy defines a list of node labels that should be copied to the Pod.
 	NodeLabelsToCopy []string `json:"nodeLabelsToCopy" envconfig:"KUMA_RUNTIME_KUBERNETES_INJECTOR_NODE_LABELS_TO_COPY"`
+	// TransparentProxyConfigMapName is used to specify the name of the ConfigMap that contains transparent proxy
+	// configuration. If this value is left empty, the transparent proxy configuration will not be loaded from
+	// a ConfigMap. The actual value is expected to be provided via an environment variable
+	TransparentProxyConfigMapName string `json:"transparentProxyConfigMap" envconfig:"kuma_runtime_kubernetes_injector_transparent_proxy_configmap_name"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
