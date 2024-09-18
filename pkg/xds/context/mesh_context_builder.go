@@ -164,7 +164,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, ms := range meshServices {
 		ri := core_model.NewResourceIdentifier(ms)
 		meshServicesByName[ri] = ms
-		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels(), ms.Spec.Selector.DataplaneTags)
+		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
 	}
 
 	meshExternalServices := resources.MeshExternalServices().Items
@@ -181,7 +181,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, svc := range meshMultiZoneServices {
 		ri := core_model.NewResourceIdentifier(svc)
 		meshMultiZoneServicesByName[ri] = svc
-		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels(), svc.Spec.Selector.MeshService.MatchLabels)
+		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
 	}
 
 	var domains []xds_types.VIPDomains
@@ -532,19 +532,17 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	return nil
 }
 
-func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels ...map[string]string) {
-	for _, labelsSubset := range labels {
-		for label, value := range labelsSubset {
-			key := LabelValue{
-				Label: label,
-				Value: value,
-			}
-			if _, ok := resourceNamesByLabels[key]; ok {
-				resourceNamesByLabels[key][ri] = true
-			} else {
-				resourceNamesByLabels[key] = map[core_model.ResourceIdentifier]bool{
-					ri: true,
-				}
+func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
+	for label, value := range labels {
+		key := LabelValue{
+			Label: label,
+			Value: value,
+		}
+		if _, ok := resourceNamesByLabels[key]; ok {
+			resourceNamesByLabels[key][ri] = true
+		} else {
+			resourceNamesByLabels[key] = map[core_model.ResourceIdentifier]bool{
+				ri: true,
 			}
 		}
 	}
