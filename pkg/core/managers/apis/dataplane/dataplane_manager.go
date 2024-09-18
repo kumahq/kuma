@@ -59,7 +59,7 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	labels, err := core_model.ComputeLabels(
 		resource.Descriptor(),
 		resource.GetSpec(),
-		map[string]string{},
+		opts.Labels,
 		model.ResourceNameExtensions{},
 		opts.Mesh,
 		m.mode,
