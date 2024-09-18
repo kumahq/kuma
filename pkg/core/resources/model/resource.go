@@ -456,10 +456,20 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) (map[string]string, error) {
-	labels := r.GetMeta().GetLabels()
-	if len(labels) == 0 {
-		labels = map[string]string{}
+func ComputeLabels(
+	rd ResourceTypeDescriptor,
+	spec ResourceSpec,
+	existingLabels map[string]string,
+	resourceNameExtensions ResourceNameExtensions,
+	mesh string,
+	mode config_core.CpMode,
+	isK8s bool,
+	systemNamespace string,
+	localZone string,
+) (map[string]string, error) {
+	labels := map[string]string{}
+	if len(existingLabels) > 0 {
+		labels = existingLabels
 	}
 
 	setIfNotExist := func(k, v string) {
@@ -469,20 +479,20 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 	}
 
 	getMeshOrDefault := func() string {
-		if mesh := r.GetMeta().GetMesh(); mesh != "" {
+		if mesh != "" {
 			return mesh
 		}
 		return DefaultMesh
 	}
 
-	if r.Descriptor().Scope == ScopeMesh {
+	if rd.Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
 		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if r.Descriptor().KDSFlags.Has(AllowedOnZoneSelector) {
+		if rd.KDSFlags.Has(AllowedOnZoneSelector) {
 			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 				setIfNotExist(mesh_proto.ZoneTag, localZone)
@@ -496,20 +506,20 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 	}
 
 	if isK8s && IsLocallyOriginated(mode, labels) {
-		ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]
+		ns, ok := resourceNameExtensions[mesh_proto.KubeNamespaceTag]
 		if ok && ns != "" {
 			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
 		}
 	}
 
-	if ns, ok := r.GetMeta().GetNameExtensions()[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
+	if ns, ok := resourceNameExtensions[mesh_proto.KubeNamespaceTag]; ok && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
 		var role mesh_proto.PolicyRole
 		switch ns {
 		case systemNamespace:
 			role = mesh_proto.SystemPolicyRole
 		default:
 			var err error
-			role, err = ComputePolicyRole(r.GetSpec().(Policy), ns)
+			role, err = ComputePolicyRole(spec.(Policy), ns)
 			if err != nil {
 				return nil, err
 			}

@@ -70,6 +70,7 @@ type resourceEndpoints struct {
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
 	systemNamespace    string
+	isK8s              bool
 
 	disableOriginLabelValidation bool
 }
@@ -398,7 +399,17 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
-	labels, err := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
+	labels, err := model.ComputeLabels(
+		res.Descriptor(),
+		res.GetSpec(),
+		res.GetMeta().GetLabels(),
+		res.GetMeta().GetNameExtensions(),
+		meshName,
+		r.mode,
+		r.isK8s,
+		r.systemNamespace,
+		r.zoneName,
+	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return

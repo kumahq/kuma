@@ -8,6 +8,7 @@ import (
 
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -22,31 +23,16 @@ func MeshExternalServices() {
 	namespace := "mesh-external-services"
 	clientNamespace := "client-mesh-external-services"
 
-	mesh := func(name, passthroughEnabled, disallowMesTraffic string) InstallFunc {
-		return YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-  networking:
-    outbound:
-      passthrough: %s
-  routing:
-    zoneEgress: true
-    defaultForbidMeshExternalServiceAccess: %s
-`, name, passthroughEnabled, disallowMesTraffic))
-	}
-
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mesh(meshName, "true", "false")).
-			Install(mesh(meshNameEgress, "false", "true")).
+			Install(YamlK8s(samples.MeshMTLSBuilder().
+				WithName(meshName).
+				WithEgressRoutingEnabled().KubeYaml())).
+			Install(YamlK8s(samples.MeshMTLSBuilder().
+				WithName(meshNameEgress).
+				WithoutPassthrough().
+				WithMeshExternalServiceTrafficForbidden().
+				WithEgressRoutingEnabled().KubeYaml())).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -180,7 +166,12 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 
 			// when allow all traffic
-			Expect(kubernetes.Cluster.Install(mesh(meshNameEgress, "false", "false"))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(
+				samples.MeshMTLSBuilder().
+					WithName(meshNameEgress).
+					WithoutPassthrough().
+					WithEgressRoutingEnabled().KubeYaml()),
+			)).To(Succeed())
 
 			// then traffic works
 			Eventually(func(g Gomega) {

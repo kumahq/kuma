@@ -276,7 +276,17 @@ var _ = Describe("ComputeLabels", func() {
 
 	DescribeTable("should return correct label map",
 		func(given testCase) {
-			labels, err := core_model.ComputeLabels(given.r, given.mode, given.isK8s, "kuma-system", given.localZone)
+			labels, err := core_model.ComputeLabels(
+				given.r.Descriptor(),
+				given.r.GetSpec(),
+				given.r.GetMeta().GetLabels(),
+				given.r.GetMeta().GetNameExtensions(),
+				given.r.GetMeta().GetMesh(),
+				given.mode,
+				given.isK8s,
+				"kuma-system",
+				given.localZone,
+			)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(labels).To(Equal(given.expectedLabels))
 		},

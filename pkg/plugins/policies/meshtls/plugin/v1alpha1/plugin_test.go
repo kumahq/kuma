@@ -9,10 +9,12 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -52,6 +54,7 @@ var _ = Describe("MeshTLS", func() {
 	type testCase struct {
 		caseName    string
 		meshBuilder *builders.MeshBuilder
+		meshService bool
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
@@ -62,8 +65,11 @@ var _ = Describe("MeshTLS", func() {
 				Build()
 			resourceSet := core_xds.NewResourceSet()
 			secretsTracker := envoy_common.NewSecretsTracker("default", nil)
-			resources := getResources(secretsTracker, mesh)
-			resourceSet.Add(resources...)
+			if given.meshService {
+				resourceSet.Add(getMeshServiceResources(secretsTracker, mesh)...)
+			} else {
+				resourceSet.Add(getResources(secretsTracker, mesh)...)
+			}
 
 			policy := getPolicy(given.caseName)
 
@@ -131,6 +137,11 @@ var _ = Describe("MeshTLS", func() {
 			caseName:    "permissive-with-permissive-mtls",
 			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
 		}),
+		Entry("strict with permissive mTLS on the mesh for MeshService", testCase{
+			caseName:    "strict-with-permissive-mtls-meshservice",
+			meshBuilder: samples.MeshMTLSBuilder().WithPermissiveMTLSBackends(),
+			meshService: true,
+		}),
 	)
 
 	DescribeTable("should generate proper Envoy config for builtin Gateway",
@@ -139,6 +150,40 @@ var _ = Describe("MeshTLS", func() {
 			resources := xds_context.NewResources()
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
+			}
+			backendRefOriginIndex := map[common_api.MatchesHash]int{}
+			if given.meshService {
+				backendRefOriginIndex = map[common_api.MatchesHash]int{
+					meshhttproute_api.HashMatches([]meshhttproute_api.Match{
+						{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}},
+					}): 0,
+				}
+				meshSvc := meshservice_api.MeshServiceResource{
+					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{},
+						Ports: []meshservice_api.Port{{
+							Name:        "test-port",
+							Port:        80,
+							TargetPort:  intstr.FromInt(8084),
+							AppProtocol: core_mesh.ProtocolHTTP,
+						}},
+						Identities: []meshservice_api.MeshServiceIdentity{
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "backend",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{{
+							IP: "10.0.0.1",
+						}},
+					},
+				}
+				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+					Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+				}
 			}
 
 			policy := getPolicy(given.caseName)
@@ -157,6 +202,10 @@ var _ = Describe("MeshTLS", func() {
 							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
 								core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 									{
+										BackendRefOriginIndex: backendRefOriginIndex,
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
 										Subset: core_rules.MeshSubset(),
 										Conf: meshhttproute_api.PolicyDefault{
 											Rules: []meshhttproute_api.Rule{
@@ -169,22 +218,8 @@ var _ = Describe("MeshTLS", func() {
 													}},
 													Default: meshhttproute_api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefService("backend"),
-															Weight:    pointer.To(uint(100)),
-														}},
-													},
-												},
-												{
-													Matches: []meshhttproute_api.Match{{
-														Path: &meshhttproute_api.PathMatch{
-															Type:  meshhttproute_api.Exact,
-															Value: "/another-route",
-														},
-														Method: pointer.To[meshhttproute_api.Method]("GET"),
-													}},
-													Default: meshhttproute_api.RuleConf{
-														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefService("backend"),
+															TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
+															Port:      pointer.To[uint32](80),
 															Weight:    pointer.To(uint(100)),
 														}},
 													},
@@ -220,11 +255,66 @@ var _ = Describe("MeshTLS", func() {
 				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.routes.golden.yaml", given.caseName)))
 		},
 		Entry("tls version and cypher on gateway", testCase{
-			caseName:    "gateway-tls-version-and-cipher",
-			meshBuilder: samples.MeshDefaultBuilder(),
+			caseName: "gateway-tls-version-and-cipher",
+		}),
+		Entry("tls version and cypher on gateway with MeshService", testCase{
+			caseName:    "gateway-tls-version-and-cipher-meshservice",
+			meshService: true,
 		}),
 	)
 })
+
+func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
+	return []*core_xds.Resource{
+		{
+			Name:   "inbound:127.0.0.1:17777",
+			Origin: generator.OriginInbound,
+			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false)).
+					Configure(
+						listeners.HttpInboundRoutes(
+							"backend",
+							envoy_common.Routes{
+								{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
+								},
+							},
+						),
+					),
+				)).MustBuild(),
+		},
+		{
+			Name:   "inbound:127.0.0.1:17778",
+			Origin: generator.OriginInbound,
+			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+					Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+				)).MustBuild(),
+		},
+		{
+			Name:   "outbound",
+			Origin: generator.OriginOutbound,
+			Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "outgoing").
+				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil)).
+				MustBuild(),
+			Protocol: core_mesh.ProtocolHTTP,
+			ResourceOrigin: &core_model.TypedResourceIdentifier{
+				ResourceIdentifier: core_model.ResourceIdentifier{
+					Name:      "backend",
+					Mesh:      "default",
+					Namespace: "backend-ns",
+					Zone:      "zone-1",
+				},
+				ResourceType: "MeshService",
+				SectionName:  "",
+			},
+		},
+	}
+}
 
 func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBuilder) []*core_xds.Resource {
 	return []*core_xds.Resource{

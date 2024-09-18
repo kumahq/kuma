@@ -44,6 +44,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
@@ -56,7 +57,8 @@ func (p *PodConverter) PodToDataplane(
 	}
 
 	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh {
-		return util_k8s.UnchangedResourceError
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
 	}
 	dataplane.SetSpec(dataplaneProto)
 	return nil
@@ -80,7 +82,8 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 	if model.Equal(currentSpec, zoneIngressRes.Spec) {
-		return util_k8s.UnchangedResourceError
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
 	}
 	zoneIngress.SetSpec(zoneIngressRes.Spec)
 	return nil
@@ -103,7 +106,8 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		return err
 	}
 	if model.Equal(currentSpec, zoneEgressRes.Spec) {
-		return util_k8s.UnchangedResourceError
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
 	}
 
 	zoneEgress.SetSpec(zoneEgressRes.Spec)
