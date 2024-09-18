@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
@@ -139,6 +140,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	debugPath := prepareDebugDir()
 
+	randomId := uuid.New().String()
 	errorSeen := false
 
 	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
@@ -150,14 +152,14 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	} else {
 		for _, node := range nodes {
-			exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, uuid.New().String()))
+			nodeExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, randomId))
 			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
 			if e != nil {
 				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
 				errorSeen = true
 			} else {
-				Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), exportFilePath)
+				Expect(os.WriteFile(nodeExportPath, []byte(out), 0o600)).To(Succeed())
+				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), nodeExportPath)
 			}
 		}
 	}
@@ -180,10 +182,9 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
-		randomId := uuid.New().String()
-		exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.yaml", cluster.Name(), namespace, randomId))
-		Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), exportFilePath)
+		yamlExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.yaml", cluster.Name(), namespace, randomId))
+		Expect(os.WriteFile(yamlExportPath, []byte(out), 0o600)).To(Succeed())
+		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), yamlExportPath)
 
 		deployDetailsJson := ""
 		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
@@ -210,9 +211,28 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	}
 
-	exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
+	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), randomId))
+	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
+	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
+
+	dpInspectOut := ""
+	dpResp := dataplaneListResponse{}
+	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "-ojson")
+	if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
+		dpInspectOut = fmt.Sprintf("kumactl get dataplanes failed with error: %s", jsonErr.Error())
+	} else {
+		for _, dpObj := range dpResp.Items {
+			configDumpResp, err := kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
+			if err != nil {
+				dpInspectOut += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
+					dpObj.Name, dpObj.Mesh, err.Error())
+			} else {
+				dpXdsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-dp-xds-%s-%s-%s", cluster.Name(), dpObj.Name, dpObj.Mesh, randomId))
+				Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
+				Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
+			}
+		}
+	}
 
 	if errorSeen {
 		Logf("[WARNING]: some debug commands failed")
@@ -244,4 +264,14 @@ func CpRestarted(cluster Cluster) bool {
 	default:
 		return false
 	}
+}
+
+type dataplaneResponse struct {
+	Mesh string `json:"mesh"`
+	Name string `json:"name"`
+}
+
+type dataplaneListResponse struct {
+	Total int                 `json:"total"`
+	Items []dataplaneResponse `json:"items"`
 }
