@@ -26,16 +26,16 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-func (m *MeshMultiZoneServiceResource) FindPort(port uint32) (meshservice_api.Port, bool) {
+func (m *MeshMultiZoneServiceResource) FindPort(port uint32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
 		}
 	}
-	return meshservice_api.Port{}, false
+	return Port{}, false
 }
 
-func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (meshservice_api.Port, bool) {
+func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Name == name {
 			return p, true
@@ -44,7 +44,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (meshservice_
 			return p, true
 		}
 	}
-	return meshservice_api.Port{}, false
+	return Port{}, false
 }
 
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {

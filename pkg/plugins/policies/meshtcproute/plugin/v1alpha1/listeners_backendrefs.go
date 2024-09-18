@@ -24,8 +24,8 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 		}
 	}
 	// check if there is configuration for real MeshService and prioritize it
-	if svc.Resource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.Resource, meshCtx.Resources)
+	if svc.Outbound.Resource != nil {
+		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			tcpConf = pointer.To(resourceConf.Conf[0].(api.Rule))
 			if o, ok := resourceConf.GetBackendRefOrigin(core_xds.EmptyMatches); ok {
@@ -41,7 +41,6 @@ func getBackendRefs(
 	toRulesHTTP core_xds.ToRules,
 	svc meshroute_xds.DestinationService,
 	protocol core_mesh.Protocol,
-	fallbackBackendRef core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []core_model.ResolvedBackendRef {
 	tcpConf, backendRefOrigin := computeConf(toRulesTCP, svc, meshCtx)
@@ -68,12 +67,10 @@ func getBackendRefs(
 				if resolved := core_model.ResolveBackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)
 				}
-			} else {
-				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
 			}
 		}
 	} else {
-		return []core_model.ResolvedBackendRef{fallbackBackendRef}
+		return []core_model.ResolvedBackendRef{*svc.DefaultBackendRef()}
 	}
 
 	return backendRefs

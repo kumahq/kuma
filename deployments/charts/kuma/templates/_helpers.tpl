@@ -220,6 +220,14 @@ returns: formatted image string
 {{ join "," $list }}
 {{- end -}}
 
+{{- define "kuma.transparentProxyConfigMapName" -}}
+{{- if .Values.transparentProxy.configMap.name }}
+{{- .Values.transparentProxy.configMap.name | trunc 253 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-transparent-proxy-config" .Chart.Name }}
+{{- end }}
+{{- end }}
+
 {{- define "kuma.defaultEnv" -}}
 env:
 {{ include "kuma.parentEnv" . }}
@@ -256,6 +264,10 @@ env:
 {{- if .Values.dataPlane.dnsLogging }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"
+{{- end }}
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
+- name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
+  value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
 {{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/ca.crt

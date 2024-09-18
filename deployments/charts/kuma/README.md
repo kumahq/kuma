@@ -215,6 +215,51 @@ A Helm chart for the Kuma Control Plane
 | hooks.ebpfCleanup | object | `{"containerSecurityContext":{"readOnlyRootFilesystem":false},"podSecurityContext":{"runAsNonRoot":false}}` | ebpf-cleanup hook needs write access to the root filesystem to clean ebpf programs Changing below values will potentially break ebpf cleanup completely, so be cautious when doing so. |
 | hooks.ebpfCleanup.podSecurityContext | object | `{"runAsNonRoot":false}` | Security context at the pod level for crd/webhook/cleanup-ebpf |
 | hooks.ebpfCleanup.containerSecurityContext | object | `{"readOnlyRootFilesystem":false}` | Security context at the container level for crd/webhook/cleanup-ebpf |
+| transparentProxy.configMap.enabled | bool | `false` | If true, enables the use of a ConfigMap to manage transparent proxy configuration instead of directly configuring it within the Kuma system |
+| transparentProxy.configMap.name | string | `"kuma-transparent-proxy-config"` | The name of the ConfigMap used to store the transparent proxy configuration |
+| transparentProxy.configMap.config.kumaDPUser | string | `"5678"` | The username or UID of the user that will run kuma-dp. If not provided, the system will use the default UID ("5678") or the default username ("kuma-dp") |
+| transparentProxy.configMap.config.ipFamilyMode | string | `"dualstack"` | The IP family mode used for configuring traffic redirection in the transparent proxy Supports "dualstack" (for both IPv4 and IPv6) and "ipv4" modes |
+| transparentProxy.configMap.config.redirect.dns.enabled | bool | `true` | Enables DNS redirection in the transparent proxy |
+| transparentProxy.configMap.config.redirect.dns.captureAll | bool | `true` | Redirect all DNS queries |
+| transparentProxy.configMap.config.redirect.dns.port | int | `15053` | The port on which the DNS server listens |
+| transparentProxy.configMap.config.redirect.dns.resolvConfigPath | string | `"/etc/resolv.conf"` | Path to the system's resolv.conf file |
+| transparentProxy.configMap.config.redirect.dns.skipConntrackZoneSplit | bool | `false` | Disables conntrack zone splitting, which can prevent potential DNS issues |
+| transparentProxy.configMap.config.redirect.inbound.enabled | bool | `true` | Enables inbound traffic redirection |
+| transparentProxy.configMap.config.redirect.inbound.port | int | `15006` | Port used for redirecting inbound traffic |
+| transparentProxy.configMap.config.redirect.inbound.excludePorts | list | `[]` | List of ports to exclude from inbound traffic redirection |
+| transparentProxy.configMap.config.redirect.inbound.excludePortsForIPs | list | `[]` | List of IP addresses to exclude from inbound traffic redirection for specific ports |
+| transparentProxy.configMap.config.redirect.inbound.excludePortsForUIDs | list | `[]` | List of UIDs to exclude from inbound traffic redirection for specific ports |
+| transparentProxy.configMap.config.redirect.inbound.includePorts | list | `[]` | List of ports to include in inbound traffic redirection |
+| transparentProxy.configMap.config.redirect.inbound.insertRedirectInsteadOfAppend | bool | `false` | Inserts the redirection rule at the beginning of the chain instead of appending it |
+| transparentProxy.configMap.config.redirect.outbound.enabled | bool | `true` | Enables outbound traffic redirection |
+| transparentProxy.configMap.config.redirect.outbound.port | int | `15001` | Port used for redirecting outbound traffic |
+| transparentProxy.configMap.config.redirect.outbound.excludePorts | list | `[]` | List of ports to exclude from outbound traffic redirection |
+| transparentProxy.configMap.config.redirect.outbound.excludePortsForIPs | list | `[]` | List of IP addresses to exclude from outbound traffic redirection for specific ports |
+| transparentProxy.configMap.config.redirect.outbound.excludePortsForUIDs | list | `[]` | List of UIDs to exclude from outbound traffic redirection for specific ports |
+| transparentProxy.configMap.config.redirect.outbound.includePorts | list | `[]` | List of ports to include in outbound traffic redirection |
+| transparentProxy.configMap.config.redirect.outbound.insertRedirectInsteadOfAppend | bool | `false` | Inserts the redirection rule at the beginning of the chain instead of appending it |
+| transparentProxy.configMap.config.redirect.vnet.networks | list | `[]` | Specifies virtual networks using the format interfaceName:CIDR Allows matching traffic on specific network interfaces Examples: - "docker0:172.17.0.0/16" - "br+:172.18.0.0/16" (matches any interface starting with "br") - "iface:::1/64" (for IPv6) |
+| transparentProxy.configMap.config.ebpf.enabled | bool | `false` | Enables eBPF support for handling traffic redirection in the transparent proxy |
+| transparentProxy.configMap.config.ebpf.bpffsPath | string | `"/run/kuma/bpf"` | The path of the BPF filesystem |
+| transparentProxy.configMap.config.ebpf.cgroupPath | string | `"/sys/fs/cgroup"` | The path of cgroup2 |
+| transparentProxy.configMap.config.ebpf.instanceIPEnvVarName | string | `""` | The name of the environment variable containing the IP address of the instance (pod/vm) where transparent proxy will be installed |
+| transparentProxy.configMap.config.ebpf.programsSourcePath | string | `"/tmp/kuma-ebpf"` | Path where compiled eBPF programs and other necessary files for eBPF mode can be found |
+| transparentProxy.configMap.config.ebpf.tcAttachIface | string | `""` | The network interface for TC eBPF programs to bind to. If not provided, it will be automatically determined |
+| transparentProxy.configMap.config.retry.maxRetries | int | `4` | The maximum number of retry attempts for operations |
+| transparentProxy.configMap.config.retry.sleepBetweenRetries | string | `"2s"` | The time duration to wait between retry attempts |
+| transparentProxy.configMap.config.iptablesExecutables.iptables | string | `""` | Custom path for the iptables executable (IPv4) |
+| transparentProxy.configMap.config.iptablesExecutables.iptables-save | string | `""` | Custom path for the iptables-save executable (IPv4) |
+| transparentProxy.configMap.config.iptablesExecutables.iptables-restore | string | `""` | Custom path for the iptables-restore executable (IPv4) |
+| transparentProxy.configMap.config.iptablesExecutables.ip6tables | string | `""` | Custom path for the ip6tables executable (IPv6) |
+| transparentProxy.configMap.config.iptablesExecutables.ip6tables-save | string | `""` | Custom path for the ip6tables-save executable (IPv6) |
+| transparentProxy.configMap.config.iptablesExecutables.ip6tables-restore | string | `""` | Custom path for the ip6tables-restore executable (IPv6) |
+| transparentProxy.configMap.config.log.enabled | bool | `false` | Enables logging of iptables rules for diagnostics and monitoring |
+| transparentProxy.configMap.config.comments.disabled | bool | `false` | Disables comments in the generated iptables rules |
+| transparentProxy.configMap.config.wait | int | `5` | Time in seconds to wait for acquiring the xtables lock before failing Value 0 means wait indefinitely |
+| transparentProxy.configMap.config.waitInterval | int | `0` | Time interval between retries to acquire the xtables lock in seconds |
+| transparentProxy.configMap.config.dropInvalidPackets | bool | `false` | Drops invalid packets to avoid connection resets in high-throughput scenarios |
+| transparentProxy.configMap.config.storeFirewalld | bool | `false` | Enables firewalld support to store iptables rules |
+| transparentProxy.configMap.config.verbose | bool | `false` | Enables verbose mode with longer argument/flag names and additional comments |
 | experimental.ebpf.enabled | bool | `false` | If true, ebpf will be used instead of using iptables to install/configure transparent proxy |
 | experimental.ebpf.instanceIPEnvVarName | string | `"INSTANCE_IP"` | Name of the environmental variable which will contain the IP address of a pod |
 | experimental.ebpf.bpffsPath | string | `"/sys/fs/bpf"` | Path where BPF file system should be mounted |

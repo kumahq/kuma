@@ -1421,7 +1421,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				mesh: defaultMeshWithMTLSAndZoneEgress,
+				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
 					"default_another-mes___extsvc_10000": []core_xds.Endpoint{
 						{

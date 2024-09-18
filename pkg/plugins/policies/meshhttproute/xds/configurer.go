@@ -15,7 +15,7 @@ import (
 )
 
 type RoutesConfigurer struct {
-	Hash                    string
+	Hash                    common_api.MatchesHash
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
@@ -26,7 +26,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 	matches := c.routeMatch(c.Match)
 
 	for _, match := range matches {
-		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, c.Hash).
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, string(c.Hash)).
 			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				// todo: create configurers for Match and Action
 				envoyRoute.Match = match.routeMatch

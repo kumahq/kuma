@@ -10,6 +10,7 @@ import (
 	mcb_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	mr_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	mt_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway/delegated"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -57,8 +58,12 @@ spec:
   externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
 			}
 			BeforeAll(func() {
+				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh).WithMeshServicesEnabled(config.MeshServiceEnabled)
+				if config.UseEgress {
+					mesh.WithEgressRoutingEnabled()
+				}
 				err := NewClusterSetup().
-					Install(MTLSMeshWithMeshServicesAndEgressKubernetes(config.Mesh, config.MeshServiceEnabled.String(), config.UseEgress)).
+					Install(YamlK8s(mesh.KubeYaml())).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 					Install(NamespaceWithSidecarInjection(config.Namespace)).
 					Install(Namespace(config.NamespaceOutsideMesh)).

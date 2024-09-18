@@ -5,7 +5,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -62,6 +62,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
 		return err
 	}
+	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
+		return err
+	}
+	if err := applyToRealResources(policies.FromRules, rs); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -93,7 +99,7 @@ func applyToInbounds(
 			return err
 		}
 		if l != nil {
-			rs.Remove(resource.ListenerType, listener.GetName())
+			rs.Remove(envoy_resource.ListenerType, listener.GetName())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
 				Origin:   generator.OriginInbound,
@@ -136,6 +142,62 @@ func applyToOutbounds(
 		}
 	}
 
+	return nil
+}
+
+func applyToGateways(
+	gatewayRules core_rules.GatewayRules,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	ctx xds_context.Context,
+) error {
+	for serviceName, cluster := range gatewayClusters {
+		// we shouldn't modify ExternalService
+		// MeshExternalService has different origin
+		if ctx.Mesh.IsExternalService(serviceName) {
+			continue
+		}
+		// there is only one rule always because we're in `Mesh/Mesh`
+		var conf *api.Conf
+		for _, r := range gatewayRules.FromRules {
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			break
+		}
+		if conf == nil {
+			continue
+		}
+		if err := configureParams(conf, cluster); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToRealResources(
+	fromRules core_rules.FromRules,
+	rs *core_xds.ResourceSet,
+) error {
+	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+		// there is only one rule always because we're in `Mesh/Mesh`
+		var conf *api.Conf
+		for _, r := range fromRules.Rules {
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			break
+		}
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ClusterType:
+				for _, cluster := range resources {
+					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

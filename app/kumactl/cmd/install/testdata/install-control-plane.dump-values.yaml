@@ -721,6 +721,121 @@ hooks:
     containerSecurityContext:
       readOnlyRootFilesystem: false
 
+transparentProxy:
+  configMap:
+    # -- If true, enables the use of a ConfigMap to manage transparent proxy configuration
+    # instead of directly configuring it within the Kuma system
+    enabled: false
+    # -- The name of the ConfigMap used to store the transparent proxy configuration
+    name: kuma-transparent-proxy-config
+    config:
+      # -- The username or UID of the user that will run kuma-dp. If not provided, the system will
+      # use the default UID ("5678") or the default username ("kuma-dp")
+      kumaDPUser: "5678"
+      # -- The IP family mode used for configuring traffic redirection in the transparent proxy
+      # Supports "dualstack" (for both IPv4 and IPv6) and "ipv4" modes
+      ipFamilyMode: dualstack
+      redirect:
+        dns:
+          # -- Enables DNS redirection in the transparent proxy
+          enabled: true
+          # -- Redirect all DNS queries
+          captureAll: true
+          # -- The port on which the DNS server listens
+          port: 15053
+          # -- Path to the system's resolv.conf file
+          resolvConfigPath: /etc/resolv.conf
+          # -- Disables conntrack zone splitting, which can prevent potential DNS issues
+          skipConntrackZoneSplit: false
+        inbound:
+          # -- Enables inbound traffic redirection
+          enabled: true
+          # -- Port used for redirecting inbound traffic
+          port: 15006
+          # -- List of ports to exclude from inbound traffic redirection
+          excludePorts: []
+          # -- List of IP addresses to exclude from inbound traffic redirection for specific ports
+          excludePortsForIPs: []
+          # -- List of UIDs to exclude from inbound traffic redirection for specific ports
+          excludePortsForUIDs: []
+          # -- List of ports to include in inbound traffic redirection
+          includePorts: []
+          # -- Inserts the redirection rule at the beginning of the chain instead of appending it
+          insertRedirectInsteadOfAppend: false
+        outbound:
+          # -- Enables outbound traffic redirection
+          enabled: true
+          # -- Port used for redirecting outbound traffic
+          port: 15001
+          # -- List of ports to exclude from outbound traffic redirection
+          excludePorts: []
+          # -- List of IP addresses to exclude from outbound traffic redirection for specific ports
+          excludePortsForIPs: []
+          # -- List of UIDs to exclude from outbound traffic redirection for specific ports
+          excludePortsForUIDs: []
+          # -- List of ports to include in outbound traffic redirection
+          includePorts: []
+          # -- Inserts the redirection rule at the beginning of the chain instead of appending it
+          insertRedirectInsteadOfAppend: false
+        vnet:
+          # -- Specifies virtual networks using the format interfaceName:CIDR
+          # Allows matching traffic on specific network interfaces
+          # Examples:
+          # - "docker0:172.17.0.0/16"
+          # - "br+:172.18.0.0/16" (matches any interface starting with "br")
+          # - "iface:::1/64" (for IPv6)
+          networks: []
+      ebpf:
+        # -- Enables eBPF support for handling traffic redirection in the transparent proxy
+        enabled: false
+        # -- The path of the BPF filesystem
+        bpffsPath: /run/kuma/bpf
+        # -- The path of cgroup2
+        cgroupPath: /sys/fs/cgroup
+        # -- The name of the environment variable containing the IP address of the instance (pod/vm)
+        # where transparent proxy will be installed
+        instanceIPEnvVarName: ""
+        # -- Path where compiled eBPF programs and other necessary files for eBPF mode can be found
+        programsSourcePath: /tmp/kuma-ebpf
+        # -- The network interface for TC eBPF programs to bind to. If not provided, it will be
+        # automatically determined
+        tcAttachIface: ""
+      retry:
+        # -- The maximum number of retry attempts for operations
+        maxRetries: 4
+        # -- The time duration to wait between retry attempts
+        sleepBetweenRetries: 2s
+      iptablesExecutables:
+        # -- Custom path for the iptables executable (IPv4)
+        iptables: ""
+        # -- Custom path for the iptables-save executable (IPv4)
+        iptables-save: ""
+        # -- Custom path for the iptables-restore executable (IPv4)
+        iptables-restore: ""
+        # -- Custom path for the ip6tables executable (IPv6)
+        ip6tables: ""
+        # -- Custom path for the ip6tables-save executable (IPv6)
+        ip6tables-save: ""
+        # -- Custom path for the ip6tables-restore executable (IPv6)
+        ip6tables-restore: ""
+      log:
+        # -- Enables logging of iptables rules for diagnostics and monitoring
+        enabled: false
+      comments:
+        # -- Disables comments in the generated iptables rules
+        disabled: false
+      # -- Time in seconds to wait for acquiring the xtables lock before failing
+      # Value 0 means wait indefinitely
+      wait: 5
+      # -- Time interval between retries to acquire the xtables lock in seconds
+      waitInterval: 0
+      # -- Drops invalid packets to avoid connection resets in high-throughput scenarios
+      dropInvalidPackets: false
+      # -- Enables firewalld support to store iptables rules
+      storeFirewalld: false
+      # -- Enables verbose mode with longer argument/flag names and additional comments
+      verbose: false
+
 experimental:
   # Configuration for the experimental ebpf mode for transparent proxy
   ebpf:

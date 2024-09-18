@@ -21,13 +21,12 @@ import (
 	"slices"
 	"strings"
 
-	kube_core "k8s.io/api/core/v1"
-
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
 	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 )
 
+// Deprecated
 type PodRedirect struct {
 	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
 	// keep in mind to update all other places listed in the issue
@@ -54,11 +53,10 @@ type PodRedirect struct {
 	ExcludeOutboundIPs                       string
 }
 
-func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
+// Deprecated
+func NewPodRedirectFromAnnotations(annotations metadata.Annotations) (*PodRedirect, error) {
 	var err error
 	var pr PodRedirect
-
-	annotations := metadata.Annotations(pod.Annotations)
 
 	pr.BuiltinDNSEnabled, _, err = annotations.GetEnabled(metadata.KumaBuiltinDNS)
 	if err != nil {
@@ -90,7 +88,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 		pr.RedirectInbound = false
 	}
 
-	pr.ExcludeInboundPorts = excludeApplicationProbeProxyPort(pod.Annotations)
+	pr.ExcludeInboundPorts = excludeApplicationProbeProxyPort(annotations)
 	pr.RedirectPortInbound, _, err = annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
 	if err != nil {
 		return nil, err
@@ -161,6 +159,7 @@ func NewPodRedirectForPod(pod *kube_core.Pod) (*PodRedirect, error) {
 	return &pr, nil
 }
 
+// Deprecated
 func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 	// the annotations are validated/defaulted in a previous step in injector.NewAnnotations, so we can safely ignore the errors here
 	inboundPortsToExclude, _ := metadata.Annotations(annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
@@ -176,6 +175,7 @@ func excludeApplicationProbeProxyPort(annotations map[string]string) string {
 	return fmt.Sprintf("%s,%s", inboundPortsToExclude, appProbeProxyPort)
 }
 
+// Deprecated
 func flag[T string | bool | uint32](name string, values ...T) []string {
 	var result []string
 
@@ -192,6 +192,7 @@ func flag[T string | bool | uint32](name string, values ...T) []string {
 	return result
 }
 
+// Deprecated
 func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	if condition == *new(T) {
 		return nil
@@ -200,6 +201,7 @@ func flagsIf[T string | bool](condition T, flags ...[]string) []string {
 	return slices.Concat(flags...)
 }
 
+// Deprecated
 func (pr *PodRedirect) AsKumactlCommandLine() []string {
 	defaultConfig := tproxy_config.DefaultConfig()
 

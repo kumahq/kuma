@@ -180,26 +180,6 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MTLSMeshWithMeshServicesAndEgressKubernetes(name, meshServicesEnabled string, egress bool) InstallFunc {
-	mesh := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  meshServices:
-    enabled: %s
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-  routing:
-    zoneEgress: %t
-`, name, meshServicesEnabled, egress)
-	return YamlK8s(mesh)
-}
-
 func MeshTrafficPermissionAllowAllKubernetes(name string) InstallFunc {
 	mtp := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
