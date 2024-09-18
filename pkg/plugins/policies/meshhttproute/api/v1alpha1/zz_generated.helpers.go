@@ -11,7 +11,7 @@ import (
 )
 
 func (x *MeshHTTPRoute) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {

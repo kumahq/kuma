@@ -37,6 +37,8 @@ const FeatureHostnameGeneratorMzSelector string = "hg-mz-selector"
 // FeatureProducerPolicyFlow means that the zone control plane supports the producer policy flow.
 const FeatureProducerPolicyFlow string = "producer-policy-flow"
 
+const FeatureOptionalTopLevelTargetRef string = "optional-top-level-target-ref"
+
 func ContextHasFeature(ctx context.Context, feature string) bool {
 	md, _ := metadata.FromIncomingContext(ctx)
 	features := md.Get(FeaturesMetadataKey)

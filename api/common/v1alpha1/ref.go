@@ -80,6 +80,10 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
+	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
+	// This can be removed in 2.11.x
+	UsesSyntacticSugar bool `json:"-"`
+
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
