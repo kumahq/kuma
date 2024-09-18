@@ -51,7 +51,7 @@ metadata:
 spec:
   targetRef:
     kind: MeshService
-    name: delegated-gateway-admin_%[2]s_svc_8444
+    name: %[2]s-gateway-admin_%[2]s_svc_8444
   to:
     - targetRef:
         kind: MeshService
