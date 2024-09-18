@@ -176,10 +176,8 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
 		if err == nil {
 			for _, deployment := range deployments {
-				if !k8s.IsDeploymentAvailable(&deployment) {
-					deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
-					out += MarshalObjectDetails(deployDetails)
-				}
+				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+				out += MarshalObjectDetails(deployDetails)
 			}
 		} else {
 			out += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())

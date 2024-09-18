@@ -51,28 +51,28 @@ func TestConformance(t *testing.T) {
 	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
-		if t.Failed() || Config.Debug {
-			var namespaces []string
-			clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
-			if err == nil {
-				if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
-					metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
-					}); err == nil {
-					for _, ns := range nsList.Items {
-						namespaces = append(namespaces, ns.Name)
-					}
+		//if t.Failed() || Config.Debug {
+		var namespaces []string
+		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+		if err == nil {
+			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
+				metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
+				}); err == nil {
+				for _, ns := range nsList.Items {
+					namespaces = append(namespaces, ns.Name)
 				}
 			}
-
-			if len(namespaces) > 0 {
-				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
-					RegisterFailHandler(g.Fail)
-					DebugKube(cluster, "default", namespaces...)
-					return nil
-				}()).To(Succeed())
-			}
 		}
+
+		if len(namespaces) > 0 {
+			g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
+				RegisterFailHandler(g.Fail)
+				DebugKube(cluster, "default", namespaces...)
+				return nil
+			}()).To(Succeed())
+		}
+		//}
 
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
@@ -80,7 +80,8 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
-		return NewClusterSetup().Install(Kuma(config_core.Zone)).Setup(cluster)
+		return NewClusterSetup().Install(Kuma(config_core.Zone,
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS", "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL=debug"))).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	configPath, err := opts.GetConfigPath(t)
