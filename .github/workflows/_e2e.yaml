@@ -78,7 +78,7 @@ jobs:
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
         run: |
-          if [[ "${{ runner.debug }}" == "1" ]]; then
+          if [[ "${{ runner.debug }}" == "1" ]] || [[ "${{ vars.E2E_DEBUG_ENABLED }}" == "true" ]]; then
             export KUMA_DEBUG=true
           fi
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
@@ -137,6 +137,3 @@ jobs:
           path: |
             /tmp/e2e-debug/
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      - name: Setup tmate session
-        if: failure()
-        uses: mxschmitt/action-tmate@v3

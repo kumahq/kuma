@@ -232,7 +232,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 				dpInspectOut += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
 					dpObj.Name, dpObj.Mesh, err.Error())
 			} else {
-				dpXdsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-dp-xds-%s-%s-%s", cluster.Name(), dpObj.Name, dpObj.Mesh, randomId))
+				dpXdsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-xds-%s-%s-%s.json", cluster.Name(), dpObj.Name, dpObj.Mesh, randomId))
 				Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
 				Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
 			}
