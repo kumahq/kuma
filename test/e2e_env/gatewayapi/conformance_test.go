@@ -74,14 +74,14 @@ func TestConformance(t *testing.T) {
 		}
 		//}
 
-		g.Expect(cluster.DeleteKuma()).To(Succeed())
-		g.Expect(cluster.DismissCluster()).To(Succeed())
+		//g.Expect(cluster.DeleteKuma()).To(Succeed())
+		//g.Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(Kuma(config_core.Zone,
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS", "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL=debug"))).Setup(cluster)
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS", "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL:debug"))).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	configPath, err := opts.GetConfigPath(t)
@@ -107,7 +107,7 @@ func TestConformance(t *testing.T) {
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
-		CleanupBaseResources: true,
+		CleanupBaseResources: false,
 		Debug:                true,
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
@@ -137,6 +137,7 @@ func TestConformance(t *testing.T) {
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
+	conformanceSuite.Cleanup = false
 	g.Expect(err).ToNot(HaveOccurred())
 
 	conformanceSuite.Setup(t, tests.ConformanceTests)
