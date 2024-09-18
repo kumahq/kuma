@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway/delegated"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -40,7 +41,7 @@ spec:
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MTLSMeshKubernetes(config.Mesh)).
+			Install(YamlK8s(samples.MeshMTLSBuilder().WithName(config.Mesh).KubeYaml())).
 			Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 			Install(NamespaceWithSidecarInjection(config.Namespace)).
 			Install(Namespace(config.NamespaceOutsideMesh)).
