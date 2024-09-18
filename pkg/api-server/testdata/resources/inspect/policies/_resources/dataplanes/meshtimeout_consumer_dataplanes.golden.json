@@ -1,0 +1,15 @@
+{
+ "items": [
+  {
+   "labels": {
+    "k8s.kuma.io/namespace": "kuma-demo",
+    "kuma.io/display-name": "dp-1",
+    "kuma.io/zone": "zone-1"
+   },
+   "mesh": "default",
+   "name": "dp-1",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 1
+}
