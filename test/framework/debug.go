@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,13 +11,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 // DebugUniversal prints state of the cluster. Useful in case of failure.
@@ -147,7 +146,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	defaultKubeOptions.Logger = logger.Discard
 	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
 	if err != nil {
-		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err)
+		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err.Error())
 		errorSeen = true
 	} else {
 		for _, node := range nodes {
@@ -173,17 +172,6 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			errorSeen = true
 		}
 
-		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
-		if err == nil {
-			for _, deployment := range deployments {
-				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
-				out += MarshalObjectDetails(deployDetails)
-			}
-		} else {
-			out += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
-			errorSeen = true
-		}
-
 		// Ignore it if we don't have Gateway API resources installed
 		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
 		if err == nil {
@@ -192,9 +180,26 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
-		exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
+		randomId := uuid.New().String()
+		exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.yaml", cluster.Name(), namespace, randomId))
 		Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
 		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), exportFilePath)
+
+		deployDetailsJson := ""
+		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+		if err == nil {
+			for _, deployment := range deployments {
+				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+				deployDetailsJson += MarshalObjectDetails(deployDetails)
+			}
+		} else {
+			deployDetailsJson += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
+			errorSeen = true
+		}
+
+		detailsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.json", cluster.Name(), namespace, randomId))
+		Expect(os.WriteFile(detailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
+		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), detailsFilePath)
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
