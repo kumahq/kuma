@@ -62,7 +62,7 @@ import (
 )
 
 func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
-	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	return pointer.DerefOr(x.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 }
 
 {{ if .generateFrom }}

@@ -273,6 +273,12 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 		switch {
 		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllZonesFlag):
+			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+				policy := r.GetSpec().(core_model.Policy)
+				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
+					return false
+				}
+			}
 			return true
 		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
@@ -280,6 +286,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 					return false
 				}
 				policy := r.GetSpec().(core_model.Policy)
+				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
+					return false
+				}
 				role, err := core_model.ComputePolicyRole(policy, r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
 				if err != nil {
 					ri := core_model.NewResourceIdentifier(r)
