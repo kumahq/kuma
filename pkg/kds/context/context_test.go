@@ -438,7 +438,7 @@ var _ = Describe("Context", func() {
 				func(given testCase) {
 					ctx := stdcontext.Background()
 					// when
-					ok := predicate(ctx, clusterID, kds.Features{}, given.resource)
+					ok := predicate(ctx, clusterID, kds.Features{kds.FeatureOptionalTopLevelTargetRef: true}, given.resource)
 
 					// then
 					Expect(ok).To(BeTrue())
