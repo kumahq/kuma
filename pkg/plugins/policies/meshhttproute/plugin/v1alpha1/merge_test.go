@@ -141,9 +141,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "route-2",
 					},
 				},
-				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 1,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}}})): 1,
+				BackendRefOriginIndex: map[common_api.MatchesHash]int{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 1,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}}}): 1,
 				},
 			},
 		},
@@ -238,8 +238,8 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 				},
-				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}})): 1,
+				BackendRefOriginIndex: map[common_api.MatchesHash]int{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 1,
 				},
 			},
 		},
@@ -490,13 +490,13 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						Name: "a-route",
 					},
 				},
-				BackendRefOriginIndex: map[core_rules.MatchesHash]int{
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-first-prefix"}}})):                 1,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-second-prefix"}}})):                1,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-first-prefix"}}})):                 0,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-second-prefix"}}})):                0,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-first-shared-prefix"}}})):  1,
-					core_rules.MatchesHash(api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-second-shared-prefix"}}})): 1,
+				BackendRefOriginIndex: map[common_api.MatchesHash]int{
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-first-prefix"}}}):                 1,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/a-second-prefix"}}}):                1,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-first-prefix"}}}):                 0,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/b-second-prefix"}}}):                0,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-first-shared-prefix"}}}):  1,
+					api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/should-be-second-shared-prefix"}}}): 1,
 				},
 			},
 		},

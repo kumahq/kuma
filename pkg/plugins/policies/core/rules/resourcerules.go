@@ -31,7 +31,7 @@ type ResourceRule struct {
 	BackendRefOriginIndex BackendRefOriginIndex
 }
 
-func (r *ResourceRule) GetBackendRefOrigin(hash MatchesHash) (core_model.ResourceMeta, bool) {
+func (r *ResourceRule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.ResourceMeta, bool) {
 	if r == nil {
 		return nil, false
 	}
@@ -48,7 +48,7 @@ func (r *ResourceRule) GetBackendRefOrigin(hash MatchesHash) (core_model.Resourc
 	return r.Origin[index].Resource, true
 }
 
-type BackendRefOriginIndex map[MatchesHash]int
+type BackendRefOriginIndex map[common_api.MatchesHash]int
 
 func (originIndex BackendRefOriginIndex) Update(conf interface{}, newIndex int) {
 	switch conf := conf.(type) {
@@ -60,7 +60,7 @@ func (originIndex BackendRefOriginIndex) Update(conf interface{}, newIndex int) 
 		for _, rule := range conf.Rules {
 			if rule.Default.BackendRefs != nil {
 				hash := meshhttproute_api.HashMatches(rule.Matches)
-				originIndex[MatchesHash(hash)] = newIndex
+				originIndex[hash] = newIndex
 			}
 		}
 	default:
@@ -68,9 +68,7 @@ func (originIndex BackendRefOriginIndex) Update(conf interface{}, newIndex int) 
 	}
 }
 
-type MatchesHash string
-
-var EmptyMatches MatchesHash = ""
+var EmptyMatches common_api.MatchesHash = ""
 
 type Origin struct {
 	Resource core_model.ResourceMeta

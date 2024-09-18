@@ -52,10 +52,10 @@ type Rule struct {
 	Default RuleConf `json:"default"`
 }
 
-func HashMatches(m []Match) string {
+func HashMatches(m []Match) common_api.MatchesHash {
 	bytes, _ := json.Marshal(m)
 	h := sha256.Hash(string(bytes))
-	return h
+	return common_api.MatchesHash(h)
 }
 
 type Match struct {

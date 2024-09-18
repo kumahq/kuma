@@ -14,6 +14,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -69,6 +70,7 @@ type resourceEndpoints struct {
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
 	systemNamespace    string
+	isK8s              bool
 
 	disableOriginLabelValidation bool
 }
@@ -397,7 +399,17 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
-	labels, err := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
+	labels, err := model.ComputeLabels(
+		res.Descriptor(),
+		res.GetSpec(),
+		res.GetMeta().GetLabels(),
+		res.GetMeta().GetNameExtensions(),
+		meshName,
+		r.mode,
+		r.isK8s,
+		r.systemNamespace,
+		r.zoneName,
+	)
 	if err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
 		return
@@ -861,7 +873,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
-		matchesByHash := map[string][]meshhttproute_api.Match{}
+		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
 		// Get all the matching policies
 		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
@@ -933,7 +945,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
 					Conf:                resourceRuleItem.Conf,
-					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(itemIdentifier.ResourceType, resourceRuleItem.Origin),
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
 					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
 					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
 				})
@@ -963,7 +975,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		for k, v := range matchesByHash {
 			httpMatches = append(httpMatches, api_common.HttpMatch{
 				Match: v,
-				Hash:  k,
+				Hash:  string(k),
 			})
 		}
 		sort.Slice(httpMatches, func(i, j int) bool {
