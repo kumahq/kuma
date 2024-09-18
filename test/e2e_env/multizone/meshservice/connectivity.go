@@ -137,6 +137,17 @@ spec:
                   kuma.io/zone: kuma-5
                 port: 80
                 weight: 1
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /no-matching-backend
+          default:
+            backendRefs:
+              - kind: MeshService
+                labels:
+                  kuma.io/display-name: this-doesnt-exist
+                port: 80
+                weight: 1
 `, Config.KumaNamespace, meshName, namespace)
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
@@ -261,6 +272,29 @@ spec:
 		Entry("should access service in the a Universal cluster", testCase{
 			address:          func() string { return "uni-2" },
 			expectedInstance: "uni-test-server",
+		}),
+	)
+
+	type failureCase struct {
+		path         string
+		responseCode int
+	}
+	DescribeTable("Gateway in Kubernetes with incorrect routes",
+		func(given failureCase) {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					multizone.KubeZone1, "demo-client",
+					fmt.Sprintf("http://edge-gateway-ms.%s:8080/%s", namespace, given.path),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(given.responseCode))
+			}, "30s", "1s").Should(Succeed())
+		},
+		Entry("no matching backend should return 500", failureCase{
+			path:         "no-matching-backend",
+			responseCode: 500,
 		}),
 	)
 
