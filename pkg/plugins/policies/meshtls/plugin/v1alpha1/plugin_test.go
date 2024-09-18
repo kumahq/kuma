@@ -152,6 +152,7 @@ var _ = Describe("MeshTLS", func() {
 				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 			}
 			backendRefOriginIndex := map[common_api.MatchesHash]int{}
+			var backendRef common_api.BackendRef
 			if given.meshService {
 				backendRefOriginIndex = map[common_api.MatchesHash]int{
 					meshhttproute_api.HashMatches([]meshhttproute_api.Match{
@@ -183,6 +184,16 @@ var _ = Describe("MeshTLS", func() {
 				}
 				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
 					Items: []*meshservice_api.MeshServiceResource{&meshSvc},
+				}
+				backendRef = common_api.BackendRef{
+					TargetRef: builders.TargetRefMeshService("backend", "", ""),
+					Port:      pointer.To[uint32](80),
+					Weight:    pointer.To(uint(100)),
+				}
+			} else {
+				backendRef = common_api.BackendRef{
+					TargetRef: builders.TargetRefMeshService("backend", "", ""),
+					Weight:    pointer.To(uint(100)),
 				}
 			}
 
@@ -217,11 +228,7 @@ var _ = Describe("MeshTLS", func() {
 														},
 													}},
 													Default: meshhttproute_api.RuleConf{
-														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefMeshService("backend", "", "test-port"),
-															Port:      pointer.To[uint32](80),
-															Weight:    pointer.To(uint(100)),
-														}},
+														BackendRefs: &[]common_api.BackendRef{backendRef},
 													},
 												},
 											},
