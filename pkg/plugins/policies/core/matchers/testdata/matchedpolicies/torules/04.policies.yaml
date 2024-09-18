@@ -19,6 +19,7 @@ mesh: mesh-1
 name: bbb
 labels:
   kuma.io/origin: zone
+  kuma.io/zone: zone-1
 spec:
   targetRef:
     kind: Mesh
