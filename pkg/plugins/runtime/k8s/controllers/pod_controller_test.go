@@ -746,6 +746,16 @@ var _ = Describe("PodReconciler", func() {
 			ObjectMeta: kube_meta.ObjectMeta{
 				Namespace: "demo",
 				Name:      "pod-with-kuma-sidecar-and-ip",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						APIVersion:         "v1",
+						BlockOwnerDeletion: pointer.To(true),
+						Controller:         pointer.To(true),
+						Kind:               "Pod",
+						Name:               "pod-with-kuma-sidecar-and-ip",
+						UID:                "pod-with-kuma-sidecar-and-ip-demo",
+					},
+				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
@@ -852,6 +862,13 @@ var _ = Describe("PodReconciler", func() {
           creationTimestamp: null
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
+          ownerReferences:
+              - apiVersion: v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: Pod
+                name: pod-with-kuma-sidecar-and-ip
+                uid: pod-with-kuma-sidecar-and-ip-demo
           resourceVersion: "1"
         spec:
           networking:
