@@ -70,6 +70,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 	Context("on federation", func() {
 		BeforeAll(func() {
+			By("checking that the client is reachable on the zone")
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(zone, "demo-client", "test-server",
 					client.FromKubernetesPod(TestNamespace, "demo-client"),
@@ -77,9 +78,11 @@ func FederateKubeZoneCPToKubeGlobal() {
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
 
+			By("exporting the zone")
 			out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("export", "--profile", "federation", "--format", "kubernetes")
 			Expect(err).ToNot(HaveOccurred())
 
+			By("applying the exported zone resources to global")
 			err = k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)
 			Expect(err).ToNot(HaveOccurred())
 			err = zone.(*K8sCluster).UpgradeKuma(core.Zone,
