@@ -140,7 +140,6 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	debugPath := prepareDebugDir()
 
-	randomId := uuid.New().String()
 	errorSeen := false
 
 	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
@@ -152,7 +151,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	} else {
 		for _, node := range nodes {
-			nodeExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, randomId))
+			nodeExportPath := filepath.Join(debugPath, fmt.Sprintf("node-%s-%s", cluster.Name(), node.Name))
 			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
 			if e != nil {
 				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
@@ -165,12 +164,15 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	}
 
 	cpNamespace := Config.KumaNamespace
-	if !cpNamespaceExported(debugPath, cluster.Name(), cpNamespace) {
+	if !namespaceExported(debugPath, cluster.Name(), cpNamespace) {
 		namespaces = append(namespaces, cpNamespace)
 	}
 
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
+		nsDir := getNsDirPath(debugPath, cluster.Name(), namespace)
+		createDir(nsDir)
+
 		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 		kubeOptions.Logger = logger.Discard                  // to not print on stdout
 		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
@@ -187,9 +189,9 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
-		yamlExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.yaml", cluster.Name(), namespace, randomId))
-		Expect(os.WriteFile(yamlExportPath, []byte(out), 0o600)).To(Succeed())
-		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), yamlExportPath)
+		manifestsExportPath := filepath.Join(nsDir, fmt.Sprintf("manifests-%s.yaml", namespace))
+		Expect(os.WriteFile(manifestsExportPath, []byte(out), 0o600)).To(Succeed())
+		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), manifestsExportPath)
 
 		deployDetailsJson := ""
 		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
@@ -203,9 +205,10 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			errorSeen = true
 		}
 
-		detailsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.json", cluster.Name(), namespace, randomId))
-		Expect(os.WriteFile(detailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
-		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), detailsFilePath)
+		deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("details-%s.json", namespace))
+		Expect(os.WriteFile(deployDetailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
+		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), deployDetailsFilePath)
+		// todo: logs!
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
@@ -216,7 +219,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	}
 
-	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), randomId))
+	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("kuma-export-%s.yaml", cluster.Name()))
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
 	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
 
@@ -232,7 +235,19 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 				dpInspectOut += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
 					dpObj.Name, dpObj.Mesh, err.Error())
 			} else {
-				dpXdsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-xds-%s-%s-%s.json", cluster.Name(), dpObj.Name, dpObj.Mesh, randomId))
+				var dpNS string
+				dpNameParts := strings.Split(dpObj.Name, ".")
+				if len(dpNameParts) > 1 {
+					dpNS = dpNameParts[1]
+				}
+				if dpNS == "" {
+					continue
+				}
+				if !namespaceExported(debugPath, cluster.Name(), dpNS) {
+					continue
+				}
+
+				dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, cluster.Name(), dpNS), fmt.Sprintf("xds-%s.json", dpNameParts[0]))
 				Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
 				Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
 			}
@@ -246,30 +261,31 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 func prepareDebugDir() string {
 	ginkgo.GinkgoHelper()
-
 	path := filepath.Join(Config.DebugDir, uuid.New().String())
-
-	Expect(os.MkdirAll(path, 0o755)).To(Or(
-		Not(HaveOccurred()),
-		Satisfy(os.IsNotExist),
-	))
-
+	createDir(path)
 	return path
 }
 
-func cpNamespaceExported(path string, clusterName string, namespace string) bool {
-	files, err := os.ReadDir(path)
+func createDir(path string) {
+	ginkgo.GinkgoHelper()
+	Expect(os.MkdirAll(path, 0o755)).ToNot(HaveOccurred())
+}
+
+func namespaceExported(basePath string, clusterName string, namespace string) bool {
+	nsDirPath := getNsDirPath(basePath, clusterName, namespace)
+	info, err := os.Stat(nsDirPath)
+	if os.IsNotExist(err) {
+		return false
+	}
 	if err != nil {
 		return false
 	}
 
-	prefix := fmt.Sprintf("%s-namespace-%s-.json", clusterName, namespace)
-	for _, file := range files {
-		if !file.IsDir() && strings.HasPrefix(file.Name(), prefix) {
-			return true
-		}
-	}
-	return false
+	return info.IsDir()
+}
+
+func getNsDirPath(basePath string, clusterName string, namespace string) string {
+	return filepath.Join(basePath, fmt.Sprintf("%s-%s", clusterName, namespace))
 }
 
 func CpRestarted(cluster Cluster) bool {
