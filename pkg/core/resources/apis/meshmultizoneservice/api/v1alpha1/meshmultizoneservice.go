@@ -64,6 +64,6 @@ type MatchedMeshService struct {
 	Mesh      string `json:"mesh"`
 }
 
-func (m MatchedMeshService) Hash() string {
+func (m *MatchedMeshService) FullyQualifiedName() string {
 	return fmt.Sprintf("%s/%s/%s/%s", m.Name, m.Namespace, m.Zone, m.Mesh)
 }
