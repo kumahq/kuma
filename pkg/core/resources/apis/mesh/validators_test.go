@@ -273,6 +273,18 @@ sectionName: http-port
 				},
 			},
 		}),
+		Entry("MeshExternalService with name and namespace", testCase{
+			inputYaml: `
+kind: MeshExternalService
+name: backend
+namespace: test-ns
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshExternalService,
+				},
+			},
+		}),
 	)
 
 	DescribeTable("should return as much individual errors as possible with",
