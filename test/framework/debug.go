@@ -198,6 +198,23 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		if err == nil {
 			for _, deployment := range deployments {
 				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+
+				for _, pod := range deployDetails.Pods {
+					for container, log := range pod.Logs {
+						if log == "" {
+							continue
+						}
+
+						logFilePath := filepath.Join(nsDir, fmt.Sprintf("logs-%s-%s.log", pod.Name, container))
+						Expect(os.WriteFile(logFilePath, []byte(log), 0o600)).To(Succeed())
+						Logf("saving container logs of \"%s/%s\" in namespace %q of cluster %q to a file %q",
+							pod.Name, container, namespace, cluster.Name(), logFilePath)
+					}
+				}
+
+				for _, pod := range deployDetails.Pods {
+					pod.Logs = map[string]string{}
+				}
 				deployDetailsJson += MarshalObjectDetails(deployDetails)
 			}
 		} else {
@@ -205,10 +222,9 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			errorSeen = true
 		}
 
-		deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("details-%s.json", namespace))
+		deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("deploy-%s.json", namespace))
 		Expect(os.WriteFile(deployDetailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
 		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), deployDetailsFilePath)
-		// todo: logs!
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
