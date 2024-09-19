@@ -193,7 +193,15 @@ func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneRes
 	case mesh_proto.ProducerPolicyRole:
 		return true
 	default:
-		origin, ok := meta.GetLabels()[string(mesh_proto.ResourceOriginLabel)]
+		if dpp.GetMeta() == nil {
+			return true
+		}
+		// we should return true once dpp has no origin.
+		// Resource that cannot be created on zone(global one) doesn't have it
+		if _, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; !ok {
+			return true
+		}
+		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
 		if ok && origin == string(mesh_proto.ZoneResourceOrigin) {
 			zone, ok := meta.GetLabels()[string(mesh_proto.ZoneTag)]
 			return ok && dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
