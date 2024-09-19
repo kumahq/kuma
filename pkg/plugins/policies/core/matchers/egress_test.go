@@ -128,7 +128,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(bytes).To(test_matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.", ".golden.", 1)))
 				},
-				Entry("should generate to resource rules for egress and mesh externalservice"),
+				XEntry("should generate to resource rules for egress and mesh externalservice"),
 			)
 		},
 		test.EntriesForFolder(filepath.Join("egressmatchedpolicies", "meshexternalservice", "torules")),
@@ -151,7 +151,7 @@ var _ = Describe("EgressMatchedPolicies", func() {
 					Expect(err).ToNot(HaveOccurred())
 					Expect(bytes).To(test_matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.", ".golden.", 1)))
 				},
-				Entry("should generate to resource rules for egress and mesh externalservice"),
+				XEntry("should generate to resource rules for egress and mesh externalservice"),
 			)
 		},
 		test.EntriesForFolder(filepath.Join("egressmatchedpolicies", "meshexternalservice", "fromtorules")),

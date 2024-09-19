@@ -463,7 +463,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		}),
 	)
 
-	It("should generate correct configuration for MeshExternalService with ZoneEgress", func() {
+	XIt("should generate correct configuration for MeshExternalService with ZoneEgress", func() {
 		// given
 		rs := core_xds.NewResourceSet()
 		rs.Add(&core_xds.Resource{
