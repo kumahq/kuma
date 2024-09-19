@@ -9,15 +9,14 @@ import (
 	"github.com/onsi/gomega/types"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
+	server_types "github.com/kumahq/kuma/test/server/types"
 )
 
 func TrafficRoute() {
 	meshName := "trafficroute"
-	var esHttpHostPort string
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
@@ -47,7 +46,17 @@ func TrafficRoute() {
 			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
 			Setup(universal.Cluster)).To(Succeed())
 
-		esHttpHostPort = net.JoinHostPort(universal.Cluster.GetApp("route-es-http").GetContainerName(), "80")
+		err := universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: ExternalService
+name: route-es-http-1
+mesh: trafficroute
+networking:
+  address: %s
+tags:
+  kuma.io/service: route-es-http
+  kuma.io/protocol: http
+`, net.JoinHostPort(universal.Cluster.GetApp("route-es-http").GetContainerName(), "80"))))
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
@@ -57,6 +66,7 @@ func TrafficRoute() {
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp("route-es-http")).To(Succeed())
 	})
 
 	E2EAfterEach(func() {
@@ -70,7 +80,6 @@ func TrafficRoute() {
 			err := universal.Cluster.GetKumactlOptions().KumactlDelete("traffic-route", item, meshName)
 			Expect(err).ToNot(HaveOccurred())
 		}
-		Expect(DeleteMeshResources(universal.Cluster, meshName, mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
 	})
 
 	It("should access all instances of the service", func() {
@@ -99,7 +108,7 @@ conf:
     - weight: 1
       destination:
         kuma.io/service: test-server
-        version: v4
+        version: v3
 `
 		Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
@@ -110,7 +119,7 @@ conf:
 				HaveLen(3),
 				HaveKey(Equal(`echo-v1`)),
 				HaveKey(Equal(`echo-v2`)),
-				HaveKey(Equal(`echo-v4`)),
+				HaveKey(Equal(`echo-v3`)),
 			),
 		)
 	})
@@ -208,16 +217,6 @@ conf:
       destination:
         kuma.io/service: route-es-http
 `))).To(Succeed())
-		Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
-type: ExternalService
-name: route-es-http-1
-mesh: trafficroute
-networking:
-  address: %s
-tags:
-  kuma.io/service: route-es-http
-  kuma.io/protocol: http
-`, esHttpHostPort)))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
 			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
@@ -251,6 +250,16 @@ destinations:
       kuma.io/service: test-server
 conf:
   http:
+  - match: # this match is here to be able to check if the config was set
+      path:
+        prefix: /i-am-here
+    modify:
+      requestHeaders:
+        add:
+        - name: X-I-Am-Here
+          value: 'route-by-path'
+    destination:
+      kuma.io/service: test-server
   - match:
       path:
         prefix: /version1
@@ -277,18 +286,19 @@ conf:
 `
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version1")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version2")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version3")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
+			// Check and retry until the config got propagated to the client
+			Eventually(func() ([]server_types.EchoResponse, error) {
+				return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
+			}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"route-by-path"}))))
+
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version1", client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v1"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version2", client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v2"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/version3", client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v3"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
 		It("should route matching by header", func() {
@@ -677,40 +687,41 @@ destinations:
       kuma.io/service: test-server
 conf:
   http:
+  - match: # this match is here to be able to check if the config was set
+      path:
+        prefix: /i-am-here
+    modify:
+      requestHeaders:
+        add:
+        - name: X-I-Am-Here
+          value: 'route-internal-external'
+    destination:
+      kuma.io/service: test-server
   - match:
       path:
         prefix: /
     split:
-    - weight: 50
+    - weight: 1
       destination:
         kuma.io/service: test-server
         version: v1
-    - weight: 50
+    - weight: 1
       destination:
         kuma.io/service: route-es-http
   destination:
     kuma.io/service: test-server
 `)(universal.Cluster)).To(Succeed())
-			Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
-type: ExternalService
-name: route-es-http-1
-mesh: trafficroute
-networking:
-  address: %s
-tags:
-  kuma.io/service: route-es-http
-  kuma.io/protocol: http
-`, esHttpHostPort)))).To(Succeed())
 
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
-			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKey(Equal(`echo-v1`)),
-					HaveKey(Equal(`route-es-http`)),
-				),
-			)
+			// Check and retry until the config got propagated to the client
+			Eventually(func() ([]server_types.EchoResponse, error) {
+				return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
+			}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"route-internal-external"}))))
+
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))).
+				Should(And(
+					HaveKeyWithValue("echo-v1", BeNumerically("~", 50, 10)),
+					HaveKeyWithValue("route-es-http", BeNumerically("~", 50, 10)),
+				))
 		})
 	})
 }

@@ -81,16 +81,15 @@ networking:
 
 		return mes
 	}
+	esHttpName := "mes-http"
+	esHttpsName := "mes-https"
+	esHttp2Name := "mes-http-2"
 
 	var esHttpContainerName string
 	var esHttpsContainerName string
 	var esHttp2ContainerName string
 
 	BeforeAll(func() {
-		esHttpName := "mes-http"
-		esHttpsName := "mes-https"
-		esHttp2Name := "mes-http-2"
-
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, "mes-tcp-sink")
 
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
@@ -122,6 +121,10 @@ networking:
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshNameNoDefaults)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpsName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttp2Name)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp("mes-tcp-sink")).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshNameNoDefaults)).To(Succeed())
 	})
 
