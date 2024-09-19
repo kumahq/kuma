@@ -405,11 +405,8 @@ spec:
 `, trafficLogFormat, tcpSinkDockerName)
 		Expect(YamlUniversal(yaml)(universal.Cluster)).To(Succeed())
 
-		makeRequest := func(g Gomega) {
-			gateway.ProxySimpleRequests(universal.Cluster, "echo-v1",
-				GatewayAddressPort("edge-gateway", 8080), "example.kuma.io")
-		}
-		src, dst := expectTrafficLogged(makeRequest)
+		src, dst := expectTrafficLogged(gateway.ProxySimpleRequests(universal.Cluster, "echo-v1",
+			GatewayAddressPort("edge-gateway", 8080), "example.kuma.io"))
 
 		Expect(src).To(Equal("edge-gateway"))
 		Expect(dst).To(Equal("*"))
