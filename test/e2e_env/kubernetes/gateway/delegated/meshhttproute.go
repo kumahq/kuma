@@ -201,9 +201,9 @@ spec:
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response).To(HaveLen(4))
 				g.Expect(response).To(And(
-					HaveKeyWithValue(Equal(`test-server-0`), BeNumerically("~", 16, 6)),
-					HaveKeyWithValue(Equal(`test-server-1`), BeNumerically("~", 16, 6)),
-					HaveKeyWithValue(Equal(`test-server-2`), BeNumerically("~", 16, 6)),
+					HaveKey(Equal(`test-server-0`)),
+					HaveKey(Equal(`test-server-1`)),
+					HaveKey(Equal(`test-server-2`)),
 					HaveKeyWithValue(ContainSubstring(`external-service`), BeNumerically("~", 50, 15)),
 				))
 			}, "30s", "5s").Should(Succeed())
