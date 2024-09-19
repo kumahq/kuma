@@ -196,6 +196,8 @@ type ResourceTypeDescriptor struct {
 	DumpForGlobal bool
 	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
 	AllowedOnSystemNamespaceOnly bool
+	// IsReferenceableInTo whether this resource type can be used in spec.to[].targetRef
+	IsReferenceableInTo bool
 }
 
 func newObject(baseResource Resource) Resource {

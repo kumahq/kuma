@@ -152,4 +152,5 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: true,
+	IsReferenceableInTo:          false,
 }
