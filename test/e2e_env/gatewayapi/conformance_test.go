@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"slices"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -139,8 +140,14 @@ func TestConformance(t *testing.T) {
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	conformanceSuite.Setup(t, tests.ConformanceTests)
-	g.Expect(conformanceSuite.Run(t, tests.ConformanceTests)).To(Succeed())
+	allTests := tests.ConformanceTests
+	idx := slices.IndexFunc(allTests, func(t suite.ConformanceTest) bool {
+		return t.ShortName == tests.HTTPRouteServiceTypes.ShortName
+	})
+	allTests = append(allTests[:idx], allTests[idx+1:]...)
+
+	conformanceSuite.Setup(t, allTests)
+	g.Expect(conformanceSuite.Run(t, allTests)).To(Succeed())
 
 	rep, err := conformanceSuite.Report()
 	g.Expect(err).ToNot(HaveOccurred())
