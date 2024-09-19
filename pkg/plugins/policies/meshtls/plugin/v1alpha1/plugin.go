@@ -271,8 +271,11 @@ func configure(
 	xdsCtx xds_context.Context,
 ) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
-	// Default Strict
-	mode := pointer.DerefOr(conf.Mode, api.ModeStrict)
+	if !mesh.MTLSEnabled() {
+		log.V(1).Info("mTLS is disabled, skip", "proxy-name", proxy.Dataplane.GetMeta().GetName())
+		return nil, nil
+	}
+	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
@@ -310,4 +313,13 @@ func configure(
 			)
 	}
 	return listenerBuilder.Build()
+}
+
+func getMeshTLSMode(mesh *core_mesh.MeshResource) api.Mode {
+	switch mesh.GetEnabledCertificateAuthorityBackend().GetMode() {
+	case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
+		return api.ModePermissive
+	default:
+		return api.ModeStrict
+	}
 }
