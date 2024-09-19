@@ -8,16 +8,16 @@ import (
 	"slices"
 	"strings"
 
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 // DebugUniversal prints state of the cluster. Useful in case of failure.
