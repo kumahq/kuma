@@ -7,13 +7,15 @@ import (
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, r.Spec.TargetRef.Kind))
+	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
 	return verr.OrNil()
 }
 
