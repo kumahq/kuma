@@ -44,6 +44,5 @@ type Conf struct {
 	TlsCiphers common_tls.TlsCiphers `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
-	// Default: Strict.
 	Mode *Mode `json:"mode,omitempty"`
 }

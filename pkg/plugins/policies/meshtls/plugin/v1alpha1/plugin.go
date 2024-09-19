@@ -48,6 +48,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
+	if !ctx.Mesh.Resource.MTLSEnabled() {
+		log.V(1).Info("skip applying MeshTLS, MTLS is disabled",
+			"proxyName", proxy.Dataplane.GetMeta().GetName(),
+			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
+		return nil
+	}
+
 	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
 	policies, ok := proxy.Policies.Dynamic[api.MeshTLSType]
 	if !ok {
@@ -271,10 +278,6 @@ func configure(
 	xdsCtx xds_context.Context,
 ) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
-	if !mesh.MTLSEnabled() {
-		log.V(1).Info("mTLS is disabled, skip", "proxy-name", proxy.Dataplane.GetMeta().GetName())
-		return nil, nil
-	}
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
