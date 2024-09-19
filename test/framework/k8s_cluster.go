@@ -397,6 +397,10 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
 	}
 
+	for key, value := range c.opts.env {
+		values[fmt.Sprintf("controlPlane.envVars.%s", key)] = value
+	}
+
 	switch mode {
 	case core.Global:
 		if !Config.UseLoadBalancer {
