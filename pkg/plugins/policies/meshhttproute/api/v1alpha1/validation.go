@@ -380,6 +380,10 @@ func validateBackendRefs(
 				AllowedInvalidNames: []string{metadata.UnresolvedBackendServiceTag},
 			}),
 		)
+		errs.AddErrorAt(
+			validators.Root().Index(i),
+			validators.ValidateBackendRef(backendRef),
+		)
 	}
 
 	return errs

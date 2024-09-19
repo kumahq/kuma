@@ -116,6 +116,10 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 				},
 			),
 		)
+		verr.AddErrorAt(
+			validators.Root().Index(i),
+			validators.ValidateBackendRef(backendRef),
+		)
 	}
 
 	return verr
