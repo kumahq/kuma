@@ -80,6 +80,27 @@ to:
         tags:
           version: v1
 `),
+		ErrorCase("missing port in backendRefs",
+			validators.Violation{
+				Field:   "spec.to[0].rules[0].default.backendRefs[0].port",
+				Message: "must be defined with kind MeshMultiZoneService",
+			}, `
+type: MeshTCPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: backend
+  rules:
+  - default:
+      backendRefs:
+      - kind: MeshMultiZoneService
+        name: test-server
+`),
 	)
 	DescribeValidCases(
 		api.NewMeshTCPRouteResource,
