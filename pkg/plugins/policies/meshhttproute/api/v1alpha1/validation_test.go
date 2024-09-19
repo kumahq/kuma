@@ -305,6 +305,31 @@ to:
               version: v1
 
 `),
+		ErrorCases("missing port in backendRefs",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].port`,
+				Message: "must be defined with kind MeshMultiZoneService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshMultiZoneService
+            name: test-server
+`),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
 				Field:   `spec.to[0].hostnames`,
