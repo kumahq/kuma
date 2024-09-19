@@ -63,3 +63,7 @@ type MatchedMeshService struct {
 	Zone      string `json:"zone"`
 	Mesh      string `json:"mesh"`
 }
+
+func (m MatchedMeshService) Hash() string {
+	return fmt.Sprintf("%s/%s/%s/%s", m.Name, m.Namespace, m.Zone, m.Mesh)
+}
