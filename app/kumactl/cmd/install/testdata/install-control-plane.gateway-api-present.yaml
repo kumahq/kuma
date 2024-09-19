@@ -6589,9 +6589,8 @@ spec:
                         'targetRef'
                       properties:
                         mode:
-                          description: |-
-                            Mode defines the behavior of inbound listeners with regard to traffic encryption.
-                            Default: Strict.
+                          description: Mode defines the behavior of inbound listeners
+                            with regard to traffic encryption.
                           enum:
                           - Permissive
                           - Strict
