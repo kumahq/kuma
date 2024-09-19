@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
-	"slices"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -134,21 +133,16 @@ func TestConformance(t *testing.T) {
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
+		// We are seeing flaky runs which are related to headless service cases, so ignoring them temporarily
+		// See https://github.com/kumahq/kuma/pull/11463
+		SkipTests: []string{tests.HTTPRouteServiceTypes.ShortName},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)
 	g.Expect(err).ToNot(HaveOccurred())
 
-	// We are seeing flaky runs which are related to headless service cases, so ignoring them temporarily
-	// See this CI run: https://github.com/kumahq/kuma/actions/runs/10920125399/attempts/4
-	testCases := tests.ConformanceTests
-	idx := slices.IndexFunc(testCases, func(t suite.ConformanceTest) bool {
-		return t.ShortName == tests.HTTPRouteServiceTypes.ShortName
-	})
-	testCases = append(testCases[:idx], testCases[idx+1:]...)
-
-	conformanceSuite.Setup(t, testCases)
-	g.Expect(conformanceSuite.Run(t, testCases)).To(Succeed())
+	conformanceSuite.Setup(t, tests.ConformanceTests)
+	g.Expect(conformanceSuite.Run(t, tests.ConformanceTests)).To(Succeed())
 
 	rep, err := conformanceSuite.Report()
 	g.Expect(err).ToNot(HaveOccurred())
