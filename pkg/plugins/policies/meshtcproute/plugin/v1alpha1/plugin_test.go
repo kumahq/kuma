@@ -375,11 +375,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -414,11 +414,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -442,11 +442,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{

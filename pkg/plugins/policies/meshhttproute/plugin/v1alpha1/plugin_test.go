@@ -358,7 +358,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 				},
@@ -390,7 +390,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 				},
@@ -476,7 +476,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 				},
@@ -547,7 +547,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -582,7 +582,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -620,11 +620,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "example2.com",
-							Port:    pointer.To(meshexternalservice_api.Port(11111)),
+							Port:    meshexternalservice_api.Port(11111),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
