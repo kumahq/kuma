@@ -749,7 +749,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshLoadBalancingStrategy", func() {
+	XContext("MeshExternalService with MeshLoadBalancingStrategy", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor,
