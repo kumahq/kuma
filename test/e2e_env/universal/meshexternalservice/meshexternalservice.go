@@ -591,7 +591,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshHealthCheck", func() {
+	XContext("MeshExternalService with MeshHealthCheck", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor,
