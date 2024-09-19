@@ -35,7 +35,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithEnv("KUMA_DEFAULTS_SKIP_MESH_CREATION", "true"),
+				WithSkipDefaultMesh(true),
 			)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
