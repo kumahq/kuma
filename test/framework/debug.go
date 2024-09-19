@@ -1,7 +1,9 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"os"
 	"path/filepath"
 	"slices"
@@ -10,13 +12,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/kumahq/kuma/test/framework/kumactl"
+	"github.com/kumahq/kuma/test/framework/universal_logs"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 // DebugUniversal prints state of the cluster. Useful in case of failure.
@@ -140,6 +140,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	debugPath := prepareDebugDir()
 
+	randomId := uuid.New().String()
 	errorSeen := false
 
 	Logf("debug nodes and print resource usage of cluster %q", cluster.Name())
@@ -147,20 +148,25 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	defaultKubeOptions.Logger = logger.Discard
 	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
 	if err != nil {
-		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err)
+		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err.Error())
 		errorSeen = true
 	} else {
 		for _, node := range nodes {
-			exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, uuid.New().String()))
+			nodeExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, randomId))
 			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
 			if e != nil {
 				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
 				errorSeen = true
 			} else {
-				Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), exportFilePath)
+				Expect(os.WriteFile(nodeExportPath, []byte(out), 0o600)).To(Succeed())
+				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), nodeExportPath)
 			}
 		}
+	}
+
+	cpNamespace := Config.KumaNamespace
+	if !cpNamespaceExported(debugPath, cluster.Name(), cpNamespace) {
+		namespaces = append(namespaces, cpNamespace)
 	}
 
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
@@ -173,19 +179,6 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			errorSeen = true
 		}
 
-		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
-		if err == nil {
-			for _, deployment := range deployments {
-				if !k8s.IsDeploymentAvailable(&deployment) {
-					deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
-					out += MarshalObjectDetails(deployDetails)
-				}
-			}
-		} else {
-			out += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
-			errorSeen = true
-		}
-
 		// Ignore it if we don't have Gateway API resources installed
 		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
 		if err == nil {
@@ -194,9 +187,25 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
-		exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
-		Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), exportFilePath)
+		yamlExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.yaml", cluster.Name(), namespace, randomId))
+		Expect(os.WriteFile(yamlExportPath, []byte(out), 0o600)).To(Succeed())
+		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), yamlExportPath)
+
+		deployDetailsJson := ""
+		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+		if err == nil {
+			for _, deployment := range deployments {
+				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+				deployDetailsJson += MarshalObjectDetails(deployDetails)
+			}
+		} else {
+			deployDetailsJson += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
+			errorSeen = true
+		}
+
+		detailsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s.json", cluster.Name(), namespace, randomId))
+		Expect(os.WriteFile(detailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
+		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), detailsFilePath)
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
@@ -207,9 +216,28 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	}
 
-	exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
+	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), randomId))
+	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
+	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
+
+	dpInspectOut := ""
+	dpResp := dataplaneListResponse{}
+	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "-ojson")
+	if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
+		dpInspectOut = fmt.Sprintf("kumactl get dataplanes failed with error: %s", jsonErr.Error())
+	} else {
+		for _, dpObj := range dpResp.Items {
+			configDumpResp, err := kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
+			if err != nil {
+				dpInspectOut += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
+					dpObj.Name, dpObj.Mesh, err.Error())
+			} else {
+				dpXdsFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-xds-%s-%s-%s.json", cluster.Name(), dpObj.Name, dpObj.Mesh, randomId))
+				Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
+				Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
+			}
+		}
+	}
 
 	if errorSeen {
 		Logf("[WARNING]: some debug commands failed")
@@ -229,6 +257,21 @@ func prepareDebugDir() string {
 	return path
 }
 
+func cpNamespaceExported(path string, clusterName string, namespace string) bool {
+	files, err := os.ReadDir(path)
+	if err != nil {
+		return false
+	}
+
+	prefix := fmt.Sprintf("%s-namespace-%s-.json", clusterName, namespace)
+	for _, file := range files {
+		if !file.IsDir() && strings.HasPrefix(file.Name(), prefix) {
+			return true
+		}
+	}
+	return false
+}
+
 func CpRestarted(cluster Cluster) bool {
 	switch cluster.(type) {
 	case *UniversalCluster:
@@ -241,4 +284,14 @@ func CpRestarted(cluster Cluster) bool {
 	default:
 		return false
 	}
+}
+
+type dataplaneResponse struct {
+	Mesh string `json:"mesh"`
+	Name string `json:"name"`
+}
+
+type dataplaneListResponse struct {
+	Total int                 `json:"total"`
+	Items []dataplaneResponse `json:"items"`
 }
