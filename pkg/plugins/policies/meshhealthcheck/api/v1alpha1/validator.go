@@ -40,7 +40,6 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
-				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
 			},
 		}))

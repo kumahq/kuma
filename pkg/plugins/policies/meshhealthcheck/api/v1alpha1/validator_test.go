@@ -82,7 +82,7 @@ to:
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
 `),
-			Entry("to level MeshExternalService", `
+			XEntry("to level MeshExternalService", `
 targetRef:
   kind: Mesh
 to:
@@ -295,7 +295,7 @@ violations:
   - field: spec.to[0].default.http.expectedStatuses[1]
     message: must be in inclusive range [100, 599]`,
 			}),
-			Entry("cannot use MeshExternalService with other type than Mesh", testCase{
+			XEntry("cannot use MeshExternalService with other type than Mesh", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshSubset
