@@ -1,0 +1,7 @@
+type: Dataplane
+networking:
+  address: 127.0.0.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: edge-gateway
