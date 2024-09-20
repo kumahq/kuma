@@ -405,15 +405,16 @@ func ValidateTargetRef(
 		err.Add(disallowedField("namespace", ref.Namespace, ref.Kind))
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	case common_api.MeshExternalService:
-		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
-		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
-		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
-			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		if len(ref.Labels) == 0 {
+			err.Add(requiredField("name", ref.Name, ref.Kind))
 		}
-		err.Add(disallowedField("labels", ref.Labels, ref.Kind))
+		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
+			err.AddViolation("labels", "either labels or name must be specified")
+		}
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	}
 

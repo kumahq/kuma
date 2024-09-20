@@ -99,7 +99,13 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resDesc.Name)
 					}
-					otherResources = append(otherResources, list.GetItems()...)
+					for _, res := range list.GetItems() {
+						if res.Descriptor().Name == core_mesh.MeshType {
+							mesh := res.(*core_mesh.MeshResource)
+							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
+						}
+						otherResources = append(otherResources, res)
+					}
 				} else {
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
