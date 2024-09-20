@@ -1319,9 +1319,6 @@ spec:
 				counts := slices.Collect(maps.Values(responses))
 				g.Expect(counts[0]).To(Equal(10))
 			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
-
-			// fail this test case intentionally
-			Expect(true).To(BeFalse())
 		})
 	})
 }
