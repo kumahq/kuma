@@ -15,5 +15,6 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = Describe("Federation with Kube Global", Label("job-3"), federation.FederateKubeZoneCPToKubeGlobal, Ordered)
-	_ = Describe("Federation with Universal Global", Label("job-3"), federation.FederateKubeZoneCPToUniversalGlobal, Ordered)
+	// TODO: fix the flaky test in the future https://github.com/kumahq/kuma/issues/11420
+	_ = Describe("Federation with Universal Global", Label("job-3"), federation.FederateKubeZoneCPToUniversalGlobal, Ordered, FlakeAttempts(3))
 )
