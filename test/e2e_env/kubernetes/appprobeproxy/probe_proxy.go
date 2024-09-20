@@ -204,6 +204,9 @@ func ApplicationProbeProxy() {
 			err := checkIfAppReady(kubernetes.Cluster.GetTesting(), kubernetes.Cluster.GetKubectlOptions(namespace), nextRevPodName, httpAppName)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "3s").Should(Succeed())
+
+		// fail this test case intentionally
+		Expect(true).To(BeFalse())
 	})
 }
 
