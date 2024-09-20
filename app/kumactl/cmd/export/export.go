@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
@@ -90,7 +91,8 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var allResources []model.Resource
+			var meshSecrets []model.Resource
+			var otherResources []model.Resource
 			for _, resDesc := range resTypes {
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
@@ -102,7 +104,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
 						}
-						allResources = append(allResources, res)
+						otherResources = append(otherResources, res)
 					}
 				} else {
 					for _, mesh := range meshes.Items {
@@ -110,11 +112,18 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resDesc.Name)
 						}
-						allResources = append(allResources, list.GetItems()...)
+						for _, res := range list.GetItems() {
+							if res.Descriptor().Name == core_system.SecretType {
+								meshSecrets = append(meshSecrets, res)
+							} else {
+								otherResources = append(otherResources, res)
+							}
+						}
 					}
 				}
 			}
 
+			allResources := append(meshSecrets, otherResources...)
 			var resources []model.Resource
 			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
