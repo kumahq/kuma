@@ -64,7 +64,7 @@ networking:
 				},
 				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
-					Port:    pointer.To(meshexternalservice_api.Port(port)),
+					Port:    meshexternalservice_api.Port(port),
 				}},
 			},
 			Status: &meshexternalservice_api.MeshExternalServiceStatus{},

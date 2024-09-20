@@ -1331,7 +1331,7 @@ var _ = Describe("TrafficRoute", func() {
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1384,7 +1384,7 @@ var _ = Describe("TrafficRoute", func() {
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1482,7 +1482,7 @@ var _ = Describe("TrafficRoute", func() {
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1666,7 +1666,7 @@ var _ = Describe("TrafficRoute", func() {
 								Endpoints: []meshexternalservice_api.Endpoint{
 									{
 										Address: "192.168.1.1",
-										Port:    pointer.To(meshexternalservice_api.Port(10000)),
+										Port:    meshexternalservice_api.Port(10000),
 									},
 								},
 							},

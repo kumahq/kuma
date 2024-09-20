@@ -732,7 +732,7 @@ func createMeshExternalServiceEndpoint(
 		}
 		outboundEndpoint := &core_xds.Endpoint{
 			Target:          endpoint.Address,
-			Port:            uint32(*endpoint.Port),
+			Port:            uint32(endpoint.Port),
 			Weight:          1,
 			ExternalService: es,
 			Tags:            tags,
