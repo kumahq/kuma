@@ -242,7 +242,7 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	dpInspectError := ""
 	dpResp := dataplaneListResponse{}
-	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "-ojson")
+	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
 	if err != nil {
 		dpInspectError = fmt.Sprintf("kumactl get dataplanes failed with error: %s", err.Error())
 		errorSeen = true
@@ -252,24 +252,24 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			errorSeen = true
 		} else {
 			for _, dpObj := range dpResp.Items {
+				var dpNS string
+				dpNameParts := strings.Split(dpObj.Name, ".")
+				if len(dpNameParts) > 1 {
+					dpNS = dpNameParts[1]
+				}
+				if dpNS == "" {
+					continue
+				}
+				if !namespaceExported(debugPath, cluster.Name(), dpNS) {
+					continue
+				}
+
 				configDumpResp, err := kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
 				if err != nil {
 					dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
 						dpObj.Name, dpObj.Mesh, err.Error())
 					errorSeen = true
 				} else {
-					var dpNS string
-					dpNameParts := strings.Split(dpObj.Name, ".")
-					if len(dpNameParts) > 1 {
-						dpNS = dpNameParts[1]
-					}
-					if dpNS == "" {
-						continue
-					}
-					if !namespaceExported(debugPath, cluster.Name(), dpNS) {
-						continue
-					}
-
 					dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, cluster.Name(), dpNS), fmt.Sprintf("xds-%s.json", dpNameParts[0]))
 					Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
 					Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())

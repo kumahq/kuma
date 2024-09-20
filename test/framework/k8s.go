@@ -178,7 +178,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 		deployDetails.RetrievalError = err
 	}
 	for _, ars := range replicaSets {
-		deployDetails.ReplicaSets = append(deployDetails.ReplicaSets, ObjectDetails{
+		deployDetails.ReplicaSets = append(deployDetails.ReplicaSets, &ObjectDetails{
 			Name:       ars.Name,
 			Conditions: fromReplicaSetCondition(ars.Status.Conditions),
 			Events:     getObjectEvents(testingT, kubectlOptions, "ReplicaSet", ars.Name),
@@ -192,7 +192,7 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 		deployDetails.RetrievalError = err
 	}
 	for i := range pods {
-		deployDetails.Pods = append(deployDetails.Pods, ObjectDetails{
+		deployDetails.Pods = append(deployDetails.Pods, &ObjectDetails{
 			Name:       pods[i].Name,
 			Conditions: fromPodCondition(pods[i].Status.Conditions),
 			Events:     getObjectEvents(testingT, kubectlOptions, "Pod", pods[i].Name),
@@ -230,8 +230,8 @@ type ObjectDetails struct {
 	Logs           map[string]string  `json:"logs,omitempty"`
 	Conditions     []*objectCondition `json:"conditions,omitempty"`
 	Events         []*simplifiedEvent `json:"events,omitempty"`
-	ReplicaSets    []ObjectDetails    `json:"replicaSets,omitempty"`
-	Pods           []ObjectDetails    `json:"pods,omitempty"`
+	ReplicaSets    []*ObjectDetails   `json:"replicaSets,omitempty"`
+	Pods           []*ObjectDetails   `json:"pods,omitempty"`
 }
 
 type objectCondition struct {
