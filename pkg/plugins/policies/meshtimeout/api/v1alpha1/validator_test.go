@@ -90,6 +90,25 @@ to:
         requestTimeout: 1s
         streamIdleTimeout: 2s
 `),
+			Entry("example MeshExternalService", `
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/service: web-frontend
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: web-backend
+    default:
+      http:
+        requestTimeout: 1s
+  - targetRef:
+      kind: MeshExternalService
+      labels:
+        kuma.io/display-name: web-backend
+    default:
+      http:
+        requestTimeout: 1s`),
 		)
 
 		type testCase struct {
@@ -286,6 +305,24 @@ violations:
     message: must not be defined
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
+			}),
+			Entry("to TargetRef using labels and name for MeshExternalService", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: web-backend
+      labels:
+        kuma.io/display-name: web-backend
+    default:
+      connectionTimeout: 10s
+      idleTimeout: 1h`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.labels
+    message: either labels or name must be specified`,
 			}),
 		)
 	})
