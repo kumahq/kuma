@@ -405,6 +405,10 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.logLevel"] = "debug"
 	}
 
+	for key, value := range c.opts.env {
+		values[fmt.Sprintf("controlPlane.envVars.%s", key)] = value
+	}
+
 	switch mode {
 	case core.Global:
 		if !Config.UseLoadBalancer {
