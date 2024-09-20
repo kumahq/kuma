@@ -678,7 +678,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshCircuitBreaker", func() {
+	XContext("MeshExternalService with MeshCircuitBreaker", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,

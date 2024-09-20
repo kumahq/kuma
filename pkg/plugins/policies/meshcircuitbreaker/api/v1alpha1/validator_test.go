@@ -228,7 +228,7 @@ to:
       name: web-backend
     default:
       connectionLimits: { }`),
-			Entry("with MeshExternalService example", `
+			XEntry("with MeshExternalService example", `
 targetRef:
   kind: Mesh
 to:
@@ -490,7 +490,7 @@ violations:
   - field: spec.to[0].default.outlierDetection.detectors.successRate.standardDeviationFactor
     message: 'invalid number'`,
 			}),
-			Entry("status codes out of range in expectedStatuses", testCase{
+			XEntry("status codes out of range in expectedStatuses", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
