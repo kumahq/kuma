@@ -144,9 +144,9 @@ func (e *K8sDecoratedError) Error() string {
 func MarshalObjectDetails(e *ObjectDetails) string {
 	details := "none"
 	if e != nil {
-		b, err := json.Marshal(*e)
+		b, err := json.MarshalIndent(*e, "", "  ")
 		if err != nil {
-			details = fmt.Sprintf("failed to marshal details, err: %v", err)
+			details = fmt.Sprintf("failed to marshal details, err: %v", err.Error())
 		} else {
 			details = string(b)
 		}
