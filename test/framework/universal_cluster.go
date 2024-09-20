@@ -156,6 +156,9 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
+	if Config.Debug {
+		cmd = append(cmd, "--log-level", "debug")
+	}
 	if mode == core.Zone {
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.ZoneName()
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"

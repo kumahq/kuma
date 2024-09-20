@@ -48,7 +48,7 @@ func debugUniversalCopyLogs(debugPath string) []error {
 	srcPath := universal_logs.GetLogsPath(
 		ginkgo.CurrentSpecReport(),
 		Config.UniversalE2ELogsPath,
-	).Describe
+	).Root
 	destPath := filepath.Join(debugPath, "logs")
 
 	Logf("copying logs from %q to %q", srcPath, destPath)
