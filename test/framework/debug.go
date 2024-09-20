@@ -45,6 +45,21 @@ func DebugUniversal(cluster Cluster, mesh string) {
 	}
 }
 
+func DebugUniversalCPLogs(cluster Cluster) {
+	ginkgo.GinkgoHelper()
+
+	debugDir := prepareDebugDir()
+
+	logs, err := cluster.GetKumaCPLogs()
+	if err != nil {
+		Logf("[WARNING]: could not retrieve cp logs, error: %s", err.Error())
+	} else {
+		cpLogsExportPath := filepath.Join(debugDir, fmt.Sprintf("cp-log-%s.log", cluster.Name()))
+		Logf("saving CP logs of cluster %q to %q", cluster.Name(), cpLogsExportPath)
+		Expect(os.WriteFile(cpLogsExportPath, []byte(logs), 0o600)).To(Succeed())
+	}
+}
+
 func debugUniversalCopyLogs(debugPath string) []error {
 	srcPath := universal_logs.GetLogsPath(
 		ginkgo.CurrentSpecReport(),

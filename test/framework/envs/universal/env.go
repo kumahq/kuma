@@ -64,6 +64,7 @@ func PrintCPLogsOnFailure(report ginkgo.Report) {
 		if err != nil {
 			framework.Logf("could not retrieve cp logs")
 		} else {
+			framework.DebugUniversalCPLogs(Cluster)
 			framework.Logf(logs)
 		}
 	}
