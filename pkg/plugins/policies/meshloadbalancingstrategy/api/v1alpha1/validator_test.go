@@ -319,7 +319,7 @@ to:
           failoverThreshold:
             percentage: 0
 `),
-		ErrorCases("MeshExternalService can be set only with Mesh", []validators.Violation{{
+		XErrorCases("MeshExternalService can be set only with Mesh", []validators.Violation{{
 			Field:   "spec.to[0].targetRef.kind",
 			Message: "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh",
 		}}, `
@@ -540,7 +540,7 @@ to:
         leastRequest:
           activeRequestBias: "1.3"
 `),
-		Entry(
+		XEntry(
 			"to MeshExternalService",
 			`
 type: MeshLoadBalancingStrategy

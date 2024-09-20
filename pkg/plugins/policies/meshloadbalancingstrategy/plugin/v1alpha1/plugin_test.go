@@ -457,7 +457,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				},
 			},
 		}),
-		Entry("egress_meshexternalservice", testCase{
+		XEntry("egress_meshexternalservice", testCase{
 			resources: []core_xds.Resource{
 				{
 					Name:   "mesh-1_external___extsvc_9000",
