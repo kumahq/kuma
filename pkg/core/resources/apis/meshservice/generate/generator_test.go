@@ -266,23 +266,24 @@ var _ = Describe("MeshService generator", func() {
 		dp := core_mesh.NewDataplaneResource()
 		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
 
-		gracePeriodStartedAt := ""
+		labelGracePeriodStartedAt := ""
 		// Wait until the MeshService has been marked with grace period start
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
-			gracePeriodStartedAt = ms.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
+			labelGracePeriodStartedAt = ms.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 		}, "2s", "100ms").Should(Succeed())
 
-		labelExistedSince := time.Now()
-		err = labelExistedSince.UnmarshalText([]byte(gracePeriodStartedAt))
+		gracePeriodStartedAt := time.Now()
+		err = gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))
 		Expect(err).ToNot(HaveOccurred())
 
 		// Before the grace period it still exists and afterwards it eventually
 		// disappears
 		Consistently(func(g Gomega) {
-			if time.Now().Before(labelExistedSince.Add(gracePeriodInterval)) {
-				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			if time.Now().Before(gracePeriodStartedAt.Add(gracePeriodInterval)) {
+				g.Expect(err).To(Succeed())
 			}
 		}, gracePeriodInterval.String(), "50ms").Should(Succeed())
 		Eventually(func(g Gomega) {
