@@ -155,8 +155,12 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
 	}
 
+	verboseOutToStd := true
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if Config.Debug {
+		// in debug mode, we will CP debug level logs wil be enabled and will be dump logs into files
+		// so don't need to print onto stdout/stderr, otherwise the test output will be too verbose
+		verboseOutToStd = false
 		cmd = append(cmd, "--log-level", "debug")
 	}
 	if mode == core.Zone {
@@ -164,7 +168,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, verboseOutToStd, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
