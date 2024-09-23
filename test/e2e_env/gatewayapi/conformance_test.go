@@ -51,7 +51,7 @@ func TestConformance(t *testing.T) {
 	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
-		if t.Failed() || Config.Debug {
+		if t.Failed() {
 			var namespaces []string
 			clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
 			if err == nil {
@@ -106,7 +106,7 @@ func TestConformance(t *testing.T) {
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
-		CleanupBaseResources: true,
+		CleanupBaseResources: !Config.Debug,
 		Debug:                Config.Debug,
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
