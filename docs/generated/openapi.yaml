@@ -2483,6 +2483,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2521,6 +2522,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2548,6 +2550,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2565,6 +2568,8 @@ components:
       properties:
         tags:
           type: object
+          additionalProperties:
+            type: string
           x-go-type: map[string]string
         port:
           type: integer
