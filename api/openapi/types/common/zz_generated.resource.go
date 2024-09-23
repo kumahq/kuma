@@ -76,8 +76,8 @@ type PolicyDescription struct {
 // ProxyRule defines model for ProxyRule.
 type ProxyRule struct {
 	// Conf The actual conf generated
-	Conf   interface{} `json:"conf"`
-	Origin []Meta      `json:"origin"`
+	Conf   map[string]interface{} `json:"conf"`
+	Origin []Meta                 `json:"origin"`
 }
 
 // ResourceRule defines model for ResourceRule.

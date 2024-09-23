@@ -113,6 +113,8 @@ components:
       properties:
         tags:
           type: object
+          additionalProperties: 
+            type: string
           x-go-type: 'map[string]string'
         port:
           type: integer
@@ -123,7 +125,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
-          x-go-type: 'interface{}'
+          additionalProperties: true
         origin:
           type: array
           items:
