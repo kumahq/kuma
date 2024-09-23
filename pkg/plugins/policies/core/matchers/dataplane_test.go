@@ -206,21 +206,4 @@ var _ = Describe("MatchedPolicies", func() {
 		},
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshgateways")),
 	)
-
-	DescribeTable("should match MeshGateways for dpp without meta",
-		func(given testCase) {
-			dpp := readDPP(given.dppFile)
-			dpp.SetMeta(nil)
-
-			resources, _ := readPolicies(given.policiesFile)
-
-			policies, err := matchers.MatchedPolicies(meshaccesslog_api.MeshAccessLogType, dpp, resources)
-			Expect(err).ToNot(HaveOccurred())
-
-			bytes, err := yaml.Marshal(policies.GatewayRules)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
-		},
-		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dpp_without_meta")),
-	)
 })

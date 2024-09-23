@@ -48,7 +48,8 @@ func MatchedPolicies(
 	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname][]core_model.Resource{}
 	var dpPolicies []core_model.Resource
 
-	gateway := xds_topology.SelectGateway(resources.Gateways().Items, dpp.Spec.Matches)
+	zoneGateways := filterGatewaysByZone(resources.Gateways().Items, dpp)
+	gateway := xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
 	for _, policy := range policies.GetItems() {
 		if !mpOpts.IncludeShadow && core_model.IsShadowedResource(policy) {
 			continue
@@ -117,6 +118,25 @@ func MatchedPolicies(
 		SingleItemRules:   sr,
 		Warnings:          warnings,
 	}, nil
+}
+
+func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {
+	if gateways == nil {
+		return gateways
+	}
+	var filtered []*core_mesh.MeshGatewayResource
+	origin, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+	if !ok || origin != string(mesh_proto.ZoneResourceOrigin) {
+		return gateways
+	}
+
+	zone := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	for _, gateway := range gateways {
+		if gwZone, ok := gateway.GetMeta().GetLabels()[mesh_proto.ZoneTag]; ok && gwZone == zone {
+			filtered = append(filtered, gateway)
+		}
+	}
+	return filtered
 }
 
 // dppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
