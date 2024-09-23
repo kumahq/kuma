@@ -216,7 +216,6 @@ func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneRes
 		if dpp.GetMeta() == nil {
 			return true
 		}
-
 		// we should return true once dpp has no origin.
 		// Resource that cannot be created on zone(global one) doesn't have it
 		if _, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; !ok {
