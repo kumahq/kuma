@@ -3,6 +3,8 @@ package gateway
 import (
 	"encoding/base64"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 	"time"
 
@@ -1039,6 +1041,101 @@ spec:
 		})
 	})
 
+	Context("MeshTLS", func() {
+		httpRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-1-mtls
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: simple-gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: "/test"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: "echo-server_simple-gateway_svc_80"`, Config.KumaNamespace, meshName)
+
+		meshTls := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTLS
+metadata:
+  name: mesh-tls-1-gateway
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        tlsVersion:
+          min: TLS13
+          max: TLS13`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(YamlK8s(httpRoute)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			err := NewClusterSetup().
+				Install(DeleteYamlK8s(meshTls)).
+				Install(DeleteYamlK8s(httpRoute)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should not break traffic", func() {
+			// then
+			// can access test-server from a gateway
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/test",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
+			}, "30s", "1s").Should(Succeed())
+
+			// when
+			// applied MeshTLS policy to set 1.3 version on all dataplanes
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshTls))).To(Succeed())
+
+			// then
+			// still can access test-server from the gateway
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client",
+					"http://simple-gateway.simple-gateway:8080/test",
+					client.WithHeader("host", "example.kuma.io"),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Received.Headers["Host"]).To(HaveLen(1))
+				g.Expect(response.Received.Headers["Host"]).To(ContainElements("example.kuma.io"))
+			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		})
+	})
+
 	Context("External Service", func() {
 		externalService := `
 apiVersion: kuma.io/v1alpha1
@@ -1218,6 +1315,9 @@ spec:
 
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(responses).To(HaveLen(1))
+				g.Expect(responses).To(HaveKey(HavePrefix("mes-echo-server")))
+				counts := slices.Collect(maps.Values(responses))
+				g.Expect(counts[0]).To(Equal(10))
 			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})

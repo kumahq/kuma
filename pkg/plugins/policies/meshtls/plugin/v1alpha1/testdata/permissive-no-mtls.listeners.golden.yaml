@@ -6,46 +6,32 @@ resources:
       socketAddress:
         address: 127.0.0.1
         portValue: 17777
-    bindToPort: false
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.tcp_proxy
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17777
-          idleTimeout: 7200s
-          statPrefix: localhost_17777
-    - filterChainMatch:
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17777
-          idleTimeout: 7200s
-          statPrefix: localhost_17777
-    - filterChainMatch:
-        applicationProtocols:
-        - kuma
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17777
-          idleTimeout: 7200s
-          statPrefix: localhost_17777
-    listenerFilters:
-    - name: envoy.filters.listener.tls_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: backend
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: inbound:backend
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: backend
+                  timeout: 0s
+          statPrefix: "127_0_0_1_17777"
     name: inbound:127.0.0.1:17777
     trafficDirection: INBOUND
 - name: inbound:127.0.0.1:17778
@@ -55,45 +41,13 @@ resources:
       socketAddress:
         address: 127.0.0.1
         portValue: 17778
-    bindToPort: false
     enableReusePort: false
     filterChains:
-    - filterChainMatch:
-        transportProtocol: raw_buffer
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17778
-          idleTimeout: 7200s
-          statPrefix: localhost_17778
-    - filterChainMatch:
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17778
-          idleTimeout: 7200s
-          statPrefix: localhost_17778
-    - filterChainMatch:
-        applicationProtocols:
-        - kuma
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: localhost:17778
-          idleTimeout: 7200s
-          statPrefix: localhost_17778
-    listenerFilters:
-    - name: envoy.filters.listener.tls_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    metadata:
-      filterMetadata:
-        io.kuma.tags:
-          kuma.io/service: frontend
+          cluster: frontend
+          statPrefix: "127_0_0_1_17778"
     name: inbound:127.0.0.1:17778
     trafficDirection: INBOUND

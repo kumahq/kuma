@@ -15,6 +15,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
@@ -143,9 +144,9 @@ func (e *K8sDecoratedError) Error() string {
 func MarshalObjectDetails(e *ObjectDetails) string {
 	details := "none"
 	if e != nil {
-		b, err := json.Marshal(*e)
+		b, err := json.MarshalIndent(*e, "", "  ")
 		if err != nil {
-			details = fmt.Sprintf("failed to marshal details, err: %v", err)
+			details = fmt.Sprintf("failed to marshal details, err: %v", err.Error())
 		} else {
 			details = string(b)
 		}
@@ -171,13 +172,13 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 	}
 
 	replicaSets, err := k8s.ListReplicaSetsE(testingT, kubectlOptions, metav1.ListOptions{
-		LabelSelector: "app=" + name,
+		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
 		deployDetails.RetrievalError = err
 	}
 	for _, ars := range replicaSets {
-		deployDetails.ReplicaSets = append(deployDetails.ReplicaSets, ObjectDetails{
+		deployDetails.ReplicaSets = append(deployDetails.ReplicaSets, &ObjectDetails{
 			Name:       ars.Name,
 			Conditions: fromReplicaSetCondition(ars.Status.Conditions),
 			Events:     getObjectEvents(testingT, kubectlOptions, "ReplicaSet", ars.Name),
@@ -185,13 +186,13 @@ func ExtractDeploymentDetails(testingT testing.TestingT,
 	}
 
 	pods, err := k8s.ListPodsE(testingT, kubectlOptions, metav1.ListOptions{
-		LabelSelector: "app=" + name,
+		LabelSelector: labels.SelectorFromSet(deploy.Spec.Selector.MatchLabels).String(),
 	})
 	if err != nil {
 		deployDetails.RetrievalError = err
 	}
 	for i := range pods {
-		deployDetails.Pods = append(deployDetails.Pods, ObjectDetails{
+		deployDetails.Pods = append(deployDetails.Pods, &ObjectDetails{
 			Name:       pods[i].Name,
 			Conditions: fromPodCondition(pods[i].Status.Conditions),
 			Events:     getObjectEvents(testingT, kubectlOptions, "Pod", pods[i].Name),
@@ -229,8 +230,8 @@ type ObjectDetails struct {
 	Logs           map[string]string  `json:"logs,omitempty"`
 	Conditions     []*objectCondition `json:"conditions,omitempty"`
 	Events         []*simplifiedEvent `json:"events,omitempty"`
-	ReplicaSets    []ObjectDetails    `json:"replicaSets,omitempty"`
-	Pods           []ObjectDetails    `json:"pods,omitempty"`
+	ReplicaSets    []*ObjectDetails   `json:"replicaSets,omitempty"`
+	Pods           []*ObjectDetails   `json:"pods,omitempty"`
 }
 
 type objectCondition struct {

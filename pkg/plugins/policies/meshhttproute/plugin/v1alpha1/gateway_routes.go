@@ -16,6 +16,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -233,10 +234,22 @@ func makeHttpRouteEntry(
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
 		}
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		if ref == nil || ref.ResourceOrNil() == nil {
+			// We have a legacy backendRef
+			if !b.ReferencesRealObject() {
+				var ok bool
+				dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+				if !ok {
+					// This should be caught by validation
+					continue
+				}
+			} else {
+				// We have a real backendRef but it's not valid
+				dest = map[string]string{
+					mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+				}
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
@@ -276,7 +289,7 @@ func makeHttpRouteEntry(
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
+			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}

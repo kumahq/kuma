@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -18,20 +17,6 @@ func MeshTimeout(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
-		BeforeAll(func() {
-			Expect(framework.DeleteMeshResources(
-				kubernetes.Cluster,
-				config.Mesh,
-				v1alpha1.MeshTimeoutResourceTypeDescriptor,
-			)).To(Succeed())
-
-			Expect(framework.DeleteMeshResources(
-				kubernetes.Cluster,
-				config.Mesh,
-				meshretry_api.MeshRetryResourceTypeDescriptor,
-			)).To(Succeed())
-		})
-
 		framework.AfterEachFailure(func() {
 			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
 		})

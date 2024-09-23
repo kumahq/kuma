@@ -17,7 +17,6 @@ import (
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -164,7 +163,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, ms := range meshServices {
 		ri := core_model.NewResourceIdentifier(ms)
 		meshServicesByName[ri] = ms
-		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels(), ms.Spec.Selector.DataplaneTags)
+		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
 	}
 
 	meshExternalServices := resources.MeshExternalServices().Items
@@ -181,7 +180,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for _, svc := range meshMultiZoneServices {
 		ri := core_model.NewResourceIdentifier(svc)
 		meshMultiZoneServicesByName[ri] = svc
-		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels(), svc.Spec.Selector.MeshService.MatchLabels)
+		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
 	}
 
 	var domains []xds_types.VIPDomains
@@ -294,7 +293,7 @@ func (m *meshContextBuilder) BuildBaseMeshContextIfChanged(ctx context.Context, 
 		}
 		// Only pick the policies, gateways, external services and the vip config map
 		switch {
-		case desc.IsPolicy || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType || desc.Name == meshservice_api.MeshServiceType:
+		case desc.IsPolicy || desc.IsReferenceableInTo || desc.Name == core_mesh.MeshGatewayType || desc.Name == core_mesh.ExternalServiceType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, nil)
 		case desc.Name == system.ConfigType:
 			rmap[t], err = m.fetchResourceList(ctx, t, mesh, func(rs core_model.Resource) bool {
@@ -532,19 +531,17 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	return nil
 }
 
-func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels ...map[string]string) {
-	for _, labelsSubset := range labels {
-		for label, value := range labelsSubset {
-			key := LabelValue{
-				Label: label,
-				Value: value,
-			}
-			if _, ok := resourceNamesByLabels[key]; ok {
-				resourceNamesByLabels[key][ri] = true
-			} else {
-				resourceNamesByLabels[key] = map[core_model.ResourceIdentifier]bool{
-					ri: true,
-				}
+func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
+	for label, value := range labels {
+		key := LabelValue{
+			Label: label,
+			Value: value,
+		}
+		if _, ok := resourceNamesByLabels[key]; ok {
+			resourceNamesByLabels[key][ri] = true
+		} else {
+			resourceNamesByLabels[key] = map[core_model.ResourceIdentifier]bool{
+				ri: true,
 			}
 		}
 	}

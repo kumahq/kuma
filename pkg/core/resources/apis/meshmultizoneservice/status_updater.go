@@ -111,7 +111,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 
 		sort.Slice(matched, func(i, j int) bool {
-			return matched[i].Name < matched[j].Name
+			return matched[i].FullyQualifiedName() < matched[j].FullyQualifiedName()
 		})
 
 		if !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) {

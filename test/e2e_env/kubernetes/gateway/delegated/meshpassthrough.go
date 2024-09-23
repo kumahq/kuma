@@ -17,7 +17,7 @@ func MeshPassthrough(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
-		AfterEach(func() {
+		framework.E2EAfterEach(func() {
 			Expect(framework.DeleteMeshResources(kubernetes.Cluster, config.Mesh, meshpassthrough_api.MeshPassthroughResourceTypeDescriptor)).To(Succeed())
 			Expect(framework.DeleteMeshResources(kubernetes.Cluster, config.Mesh, meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor)).To(Succeed())
 		})
@@ -36,13 +36,13 @@ metadata:
   name: delegated-idle-connection
   namespace: %s
   labels:
-    kuma.io/mesh: %s
+    kuma.io/mesh: %[2]s
 spec:
   targetRef:
     kind: MeshSubset
     proxyTypes: ["Gateway"]
     tags:
-      kuma.io/service: delegated-gateway-admin_delegated-gateway_svc_8444
+      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     appendModifications:
       - networkFilter:
@@ -66,13 +66,13 @@ metadata:
   name: disable-passthrough-delegated
   namespace: %s
   labels:
-    kuma.io/mesh: %s
+    kuma.io/mesh: %[2]s
 spec:
   targetRef:
     kind: MeshSubset
     proxyTypes: ["Gateway"]
     tags:
-      kuma.io/service: delegated-gateway-admin_delegated-gateway_svc_8444
+      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     passthroughMode: None
 `, config.CpNamespace, config.Mesh)
@@ -99,13 +99,13 @@ metadata:
   name: allow-specified-delegated
   namespace: %s
   labels:
-    kuma.io/mesh: %s
+    kuma.io/mesh: %[2]s
 spec:
   targetRef:
     kind: MeshSubset
     proxyTypes: ["Gateway"]
     tags:
-      kuma.io/service: delegated-gateway-admin_delegated-gateway_svc_8444
+      kuma.io/service: %[2]s-gateway-admin_delegated-gateway_svc_8444
   default:
     passthroughMode: Matched
     appendMatch:

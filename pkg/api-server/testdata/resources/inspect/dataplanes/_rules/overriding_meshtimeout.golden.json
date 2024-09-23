@@ -61,7 +61,7 @@
         "labels": {},
         "mesh": "default",
         "name": "default",
-        "type": "Mesh"
+        "type": "MeshTimeout"
        },
        "ruleIndex": 0
       }

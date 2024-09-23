@@ -7,8 +7,7 @@ import (
 )
 
 // MeshTLS
-// +kuma:policy:is_policy=true
-// +kuma:policy:plural=MeshTLSes
+// +kuma:policy:singular_display_name=Mesh TLS
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -45,6 +44,5 @@ type Conf struct {
 	TlsCiphers common_tls.TlsCiphers `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
-	// Default: Strict.
 	Mode *Mode `json:"mode,omitempty"`
 }

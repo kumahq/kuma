@@ -101,7 +101,7 @@
         },
         "mesh": "default",
         "name": "the-other-http-route",
-        "type": "Mesh"
+        "type": "MeshHTTPRoute"
        },
        "ruleIndex": 0
       },
@@ -113,7 +113,7 @@
         },
         "mesh": "default",
         "name": "the-http-route",
-        "type": "Mesh"
+        "type": "MeshHTTPRoute"
        },
        "ruleIndex": 0
       }

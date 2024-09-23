@@ -66,7 +66,17 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		return resp
 	}
 
-	computed, err := core_model.ComputeLabels(resource, h.Mode, true, h.SystemNamespace, h.ZoneName)
+	computed, err := core_model.ComputeLabels(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		resource.GetMeta().GetLabels(),
+		resource.GetMeta().GetNameExtensions(),
+		resource.GetMeta().GetMesh(),
+		h.Mode,
+		true,
+		h.SystemNamespace,
+		h.ZoneName,
+	)
 	if err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
 	}

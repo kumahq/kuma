@@ -5,7 +5,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -48,6 +48,13 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if proxy.Dataplane == nil {
 		return nil
 	}
+	if !ctx.Mesh.Resource.MTLSEnabled() {
+		log.V(1).Info("skip applying MeshTLS, MTLS is disabled",
+			"proxyName", proxy.Dataplane.GetMeta().GetName(),
+			"mesh", ctx.Mesh.Resource.GetMeta().GetName())
+		return nil
+	}
+
 	log.V(1).Info("applying", "proxy-name", proxy.Dataplane.GetMeta().GetName())
 	policies, ok := proxy.Policies.Dynamic[api.MeshTLSType]
 	if !ok {
@@ -60,6 +67,12 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 	if err := applyToOutbounds(policies.FromRules, clusters.Outbound, clusters.OutboundSplit, proxy.Outbounds, ctx); err != nil {
+		return err
+	}
+	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, ctx); err != nil {
+		return err
+	}
+	if err := applyToRealResources(policies.FromRules, rs); err != nil {
 		return err
 	}
 
@@ -93,7 +106,7 @@ func applyToInbounds(
 			return err
 		}
 		if l != nil {
-			rs.Remove(resource.ListenerType, listener.GetName())
+			rs.Remove(envoy_resource.ListenerType, listener.GetName())
 			rs.Add(&core_xds.Resource{
 				Name:     listener.GetName(),
 				Origin:   generator.OriginInbound,
@@ -136,6 +149,62 @@ func applyToOutbounds(
 		}
 	}
 
+	return nil
+}
+
+func applyToGateways(
+	gatewayRules core_rules.GatewayRules,
+	gatewayClusters map[string]*envoy_cluster.Cluster,
+	ctx xds_context.Context,
+) error {
+	for serviceName, cluster := range gatewayClusters {
+		// we shouldn't modify ExternalService
+		// MeshExternalService has different origin
+		if ctx.Mesh.IsExternalService(serviceName) {
+			continue
+		}
+		// there is only one rule always because we're in `Mesh/Mesh`
+		var conf *api.Conf
+		for _, r := range gatewayRules.FromRules {
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			break
+		}
+		if conf == nil {
+			continue
+		}
+		if err := configureParams(conf, cluster); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func applyToRealResources(
+	fromRules core_rules.FromRules,
+	rs *core_xds.ResourceSet,
+) error {
+	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+		// there is only one rule always because we're in `Mesh/Mesh`
+		var conf *api.Conf
+		for _, r := range fromRules.Rules {
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			break
+		}
+		if conf == nil {
+			continue
+		}
+
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ClusterType:
+				for _, cluster := range resources {
+					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -209,8 +278,7 @@ func configure(
 	xdsCtx xds_context.Context,
 ) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
-	// Default Strict
-	mode := pointer.DerefOr(conf.Mode, api.ModeStrict)
+	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	localClusterName := envoy_names.GetLocalClusterName(iface.WorkloadPort)
 	cluster := envoy_common.NewCluster(envoy_common.WithService(localClusterName))
@@ -248,4 +316,13 @@ func configure(
 			)
 	}
 	return listenerBuilder.Build()
+}
+
+func getMeshTLSMode(mesh *core_mesh.MeshResource) api.Mode {
+	switch mesh.GetEnabledCertificateAuthorityBackend().GetMode() {
+	case mesh_proto.CertificateAuthorityBackend_PERMISSIVE:
+		return api.ModePermissive
+	default:
+		return api.ModeStrict
+	}
 }

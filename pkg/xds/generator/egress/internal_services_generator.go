@@ -23,6 +23,11 @@ func (g *InternalServicesGenerator) Generate(
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+
+	if !meshResources.Mesh.ZoneEgressEnabled() {
+		return resources, nil
+	}
+
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)

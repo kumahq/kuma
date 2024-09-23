@@ -14,6 +14,7 @@ import (
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:has_status=true
+// +kuma:policy:is_referenceable_in_to=true
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
 	Match Match `json:"match"`
@@ -62,7 +63,7 @@ type Endpoint struct {
 	// +kubebuilder:validation:MinLength=1
 	Address string `json:"address"`
 	// Port of the endpoint
-	Port *Port `json:"port,omitempty"`
+	Port Port `json:"port"`
 }
 
 type Tls struct {

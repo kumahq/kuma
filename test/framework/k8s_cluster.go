@@ -343,6 +343,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64")
 	}
 
+	if Config.Debug {
+		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.logLevel=debug", Config.HelmSubChartPrefix))
+	}
+
 	for k, v := range c.opts.env {
 		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
 	}
@@ -395,6 +399,14 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
+	}
+
+	if Config.Debug {
+		values["controlPlane.logLevel"] = "debug"
+	}
+
+	for key, value := range c.opts.env {
+		values[fmt.Sprintf("controlPlane.envVars.%s", key)] = value
 	}
 
 	switch mode {
@@ -494,6 +506,16 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	switch mode {
 	case core.Zone:
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
+	}
+
+	if Config.Debug {
+		dpEnvVarKey := "KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS"
+		debugEnv := "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL:debug"
+		if envVars, ok := c.opts.env[dpEnvVarKey]; ok {
+			c.opts.env[dpEnvVarKey] = envVars + "," + debugEnv
+		} else {
+			c.opts.env[dpEnvVarKey] = debugEnv
+		}
 	}
 
 	var err error

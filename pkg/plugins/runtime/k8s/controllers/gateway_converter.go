@@ -54,13 +54,15 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		return nil
 	}
 
+	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
 		currentSpec, err := dataplane.GetSpec()
 		if err != nil {
 			return errors.Wrap(err, "unable to get current Dataplane's spec")
 		}
 		if model.Equal(currentSpec, dataplaneProto) {
-			return k8s_util.UnchangedResourceError
+			log.V(1).Info("resource hasn't changed, skip")
+			return nil
 		}
 
 		dataplane.SetSpec(dataplaneProto)
@@ -70,13 +72,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 		}
 		return nil
 	})
-
-	log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
 	if err != nil {
-		if errors.Is(err, k8s_util.UnchangedResourceError) {
-			log.V(1).Info("resource hasn't changed, skip")
-			return nil
-		}
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
 		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err

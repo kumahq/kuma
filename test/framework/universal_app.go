@@ -477,6 +477,10 @@ func (s *UniversalApp) CreateDP(
 		args = append(args, "--proxy-type", proxyType)
 	}
 
+	if Config.Debug {
+		args = append(args, "--log-level", "debug")
+	}
+
 	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
 

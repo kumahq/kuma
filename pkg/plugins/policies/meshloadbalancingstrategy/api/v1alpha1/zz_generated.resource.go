@@ -152,4 +152,5 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	HasFromTargetRef:             false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
+	IsReferenceableInTo:          false,
 }

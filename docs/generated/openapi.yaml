@@ -10275,8 +10275,6 @@ components:
                         description: >-
                           Mode defines the behavior of inbound listeners with
                           regard to traffic encryption.
-
-                          Default: Strict.
                         enum:
                           - Permissive
                           - Strict
@@ -11182,6 +11180,7 @@ components:
                     type: integer
                 required:
                   - address
+                  - port
                 type: object
               type: array
             extension:
@@ -11523,11 +11522,6 @@ components:
                   port:
                     format: int32
                     type: integer
-                  targetPort:
-                    anyOf:
-                      - type: integer
-                      - type: string
-                    x-kubernetes-int-or-string: true
                 required:
                   - port
                 type: object

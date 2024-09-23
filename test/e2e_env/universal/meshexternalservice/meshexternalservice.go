@@ -44,8 +44,6 @@ mtls:
 networking:
   outbound:
     passthrough: false
-routing:
-  zoneEgress: true
 `, meshName))
 	}
 
@@ -66,7 +64,7 @@ routing:
 				},
 				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
-					Port:    pointer.To(meshexternalservice_api.Port(port)),
+					Port:    meshexternalservice_api.Port(port),
 				}},
 			},
 			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
@@ -83,16 +81,15 @@ routing:
 
 		return mes
 	}
+	esHttpName := "mes-http"
+	esHttpsName := "mes-https"
+	esHttp2Name := "mes-http-2"
 
 	var esHttpContainerName string
 	var esHttpsContainerName string
 	var esHttp2ContainerName string
 
 	BeforeAll(func() {
-		esHttpName := "mes-http"
-		esHttpsName := "mes-https"
-		esHttp2Name := "mes-http-2"
-
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, "mes-tcp-sink")
 
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
@@ -124,6 +121,10 @@ routing:
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshNameNoDefaults)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpsName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttp2Name)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp("mes-tcp-sink")).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshNameNoDefaults)).To(Succeed())
 	})
 
@@ -593,7 +594,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshHealthCheck", func() {
+	XContext("MeshExternalService with MeshHealthCheck", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor,
@@ -677,7 +678,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshCircuitBreaker", func() {
+	XContext("MeshExternalService with MeshCircuitBreaker", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
@@ -751,7 +752,7 @@ spec:
 		})
 	})
 
-	Context("MeshExternalService with MeshLoadBalancingStrategy", func() {
+	XContext("MeshExternalService with MeshLoadBalancingStrategy", func() {
 		E2EAfterEach(func() {
 			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
 				meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor,

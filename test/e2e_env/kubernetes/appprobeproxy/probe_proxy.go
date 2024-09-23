@@ -101,8 +101,8 @@ func ApplicationProbeProxy() {
 			container := getAppContainer(httpPod, httpAppName)
 			g.Expect(container).ToNot(BeNil())
 			g.Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
-			probeProxyPort, _ := strconv.Atoi(probeProxyPortAnno)
-			g.Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(probeProxyPort)))) //nolint:gosec  // we never overflow here
+			port := intstr.FromString(probeProxyPortAnno)
+			g.Expect(container.ReadinessProbe.HTTPGet.Port.IntValue()).To(Equal(port.IntValue()))
 			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
 		}, "30s", "1s").Should(Succeed())
 
@@ -194,8 +194,8 @@ func ApplicationProbeProxy() {
 			g.Expect(container).ToNot(BeNil())
 			g.Expect(container.ReadinessProbe.HTTPGet).ToNot(BeNil())
 
-			port, _ := strconv.Atoi(virtualProbesPortAnno)
-			g.Expect(container.ReadinessProbe.HTTPGet.Port).To(Equal(intstr.FromInt32(int32(port)))) //nolint:gosec  // we never overflow here
+			port := intstr.FromString(virtualProbesPortAnno)
+			g.Expect(container.ReadinessProbe.HTTPGet.Port.IntValue()).To(Equal(port.IntValue()))
 			g.Expect(container.ReadinessProbe.HTTPGet.Path).To(Equal("/80/probes?type=readiness"))
 		}, "30s", "1s").Should(Succeed())
 

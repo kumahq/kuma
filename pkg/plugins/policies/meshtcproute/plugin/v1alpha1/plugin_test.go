@@ -275,6 +275,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -369,11 +375,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -408,11 +414,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -436,11 +442,11 @@ var _ = Describe("MeshTCPRoute", func() {
 					Endpoints: []meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 						{
 							Address: "192.168.1.1",
-							Port:    pointer.To(meshexternalservice_api.Port(10000)),
+							Port:    meshexternalservice_api.Port(10000),
 						},
 					},
 					Tls: &meshexternalservice_api.Tls{
@@ -651,6 +657,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -830,6 +842,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
@@ -935,6 +953,12 @@ var _ = Describe("MeshTCPRoute", func() {
 			rules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
+						Origin: []core_model.ResourceMeta{
+							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
+						},
+						BackendRefOriginIndex: map[common_api.MatchesHash]int{
+							core_rules.EmptyMatches: 0,
+						},
 						Subset: core_rules.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{

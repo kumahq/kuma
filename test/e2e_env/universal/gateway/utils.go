@@ -174,11 +174,10 @@ func echoServerApp(mesh, name, service, instance string) InstallFunc {
 	}
 }
 
-func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts ...client.CollectResponsesOptsFn) {
-	targetPath := path.Join("test", GinkgoT().Name())
-
+func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts ...client.CollectResponsesOptsFn) func(Gomega) {
 	Logf("expecting 200 response from %q", gateway)
-	Eventually(func(g Gomega) {
+	return func(g Gomega) {
+		targetPath := path.Join("test", GinkgoT().Name())
 		var escaped []string
 		for _, segment := range strings.Split(targetPath, "/") {
 			escaped = append(escaped, url.PathEscape(segment))
@@ -187,18 +186,18 @@ func ProxySimpleRequests(cluster Cluster, instance, gateway, host string, opts .
 		target := fmt.Sprintf("http://%s/%s", gateway, path.Join(escaped...))
 
 		opts = append(opts, client.WithHeader("Host", host))
-		response, err := client.CollectEchoResponse(cluster, "gateway-client", target, opts...)
-
-		g.Expect(err).NotTo(HaveOccurred())
-		g.Expect(response.Instance).To(Equal(instance))
-		g.Expect(response.Received.Headers["Host"]).To(ContainElement(host))
-	}, "60s", "1s").Should(Succeed())
+		g.Expect(client.CollectEchoResponse(cluster, "gateway-client", target, opts...)).
+			Should(And(
+				HaveField("Instance", instance),
+				HaveField("Received.Headers", HaveKeyWithValue("Host", []string{host})),
+			))
+	}
 }
 
 // proxySecureRequests tests that basic HTTPS requests are proxied to the echo-server.
-func proxySecureRequests(cluster Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) {
+func proxySecureRequests(cluster Cluster, instance string, gateway string, opts ...client.CollectResponsesOptsFn) func(Gomega) {
 	Logf("expecting 200 response from %q", gateway)
-	Eventually(func(g Gomega) {
+	return func(g Gomega) {
 		target := fmt.Sprintf("https://%s/%s",
 			gateway, path.Join("https", "test", url.PathEscape(GinkgoT().Name())),
 		)
@@ -206,10 +205,10 @@ func proxySecureRequests(cluster Cluster, instance string, gateway string, opts 
 		opts = append(opts,
 			client.Insecure(),
 			client.WithHeader("Host", "example.kuma.io"))
-		response, err := client.CollectEchoResponse(cluster, "gateway-client", target, opts...)
-
-		g.Expect(err).To(Succeed())
-		g.Expect(response.Instance).To(Equal(instance))
-		g.Expect(response.Received.Headers["Host"]).To(ContainElement("example.kuma.io"))
-	}, "60s", "1s").Should(Succeed())
+		g.Expect(client.CollectEchoResponse(cluster, "gateway-client", target, opts...)).
+			Should(And(
+				HaveField("Instance", instance),
+				HaveField("Received.Headers", HaveKeyWithValue("Host", []string{"example.kuma.io"})),
+			))
+	}
 }
