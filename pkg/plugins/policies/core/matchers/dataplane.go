@@ -148,7 +148,7 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
-	if !dppSelectedByZone(meta, dpp, gateway) {
+	if !dppSelectedByZone(meta, dpp) {
 		return []core_rules.InboundListener{}, nil, false, nil
 	}
 	if !dppSelectedByNamespace(meta, dpp) {
@@ -208,28 +208,24 @@ func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.Datapla
 	}
 }
 
-func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) bool {
-	switch core_model.PolicyRole(policyMeta) {
+func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
+	switch core_model.PolicyRole(meta) {
 	case mesh_proto.ProducerPolicyRole:
 		return true
 	default:
-		if dpp.GetMeta() == nil && gateway == nil {
+		if dpp.GetMeta() == nil {
 			return true
-		}
-		meta := dpp.GetMeta()
-		if meta == nil {
-			meta = gateway.GetMeta()
 		}
 
 		// we should return true once dpp has no origin.
 		// Resource that cannot be created on zone(global one) doesn't have it
-		if _, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]; !ok {
+		if _, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; !ok {
 			return true
 		}
-		origin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
+		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
 		if ok && origin == string(mesh_proto.ZoneResourceOrigin) {
-			zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
-			return ok && meta.GetLabels()[mesh_proto.ZoneTag] == zone
+			zone, ok := meta.GetLabels()[mesh_proto.ZoneTag]
+			return ok && dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
 		}
 		return true
 	}
