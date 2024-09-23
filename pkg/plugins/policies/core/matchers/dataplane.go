@@ -213,7 +213,7 @@ func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.Datapl
 	case mesh_proto.ProducerPolicyRole:
 		return true
 	default:
-		if dpp.GetMeta() == nil && gateway.GetMeta() == nil {
+		if dpp.GetMeta() == nil && gateway == nil {
 			return true
 		}
 		meta := dpp.GetMeta()
