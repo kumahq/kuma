@@ -126,6 +126,7 @@ components:
           description: The actual conf generated
           type: object
           additionalProperties: true
+          x-go-type: 'interface{}'
         origin:
           type: array
           items:
