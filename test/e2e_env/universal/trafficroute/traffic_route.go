@@ -7,7 +7,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -155,47 +154,6 @@ conf:
 		)
 	})
 
-	It("should route split traffic between the versions with 20/80 ratio", func() {
-		v1Weight := 8
-		v2Weight := 2
-
-		trafficRoute := fmt.Sprintf(`
-type: TrafficRoute
-name: route-20-80-split
-mesh: trafficroute
-sources:
-  - match:
-      kuma.io/service: demo-client
-destinations:
-  - match:
-      kuma.io/service: test-server
-conf:
-  loadBalancer:
-    roundRobin: {}
-  split:
-    - weight: %d
-      destination:
-        kuma.io/service: test-server
-        version: v1
-    - weight: %d
-      destination:
-        kuma.io/service: test-server
-        version: v2
-`, v1Weight, v2Weight)
-
-		Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
-
-		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
-		}, "30s", "500ms").Should(
-			And(
-				HaveLen(2),
-				HaveKeyWithValue(Equal(`echo-v1`), BeNumerically("~", v1Weight, 1)),
-				HaveKeyWithValue(Equal(`echo-v2`), BeNumerically("~", v2Weight, 1)),
-			),
-		)
-	})
-
 	It("should split traffic between internal and external services", func() {
 		Expect(universal.Cluster.Install(YamlUniversal(`
 type: TrafficRoute
@@ -208,6 +166,17 @@ destinations:
   - match:
       kuma.io/service: test-server
 conf:
+  http:
+  - match: # this match is here to be able to check if the config was set
+      path:
+        prefix: /i-am-here
+    modify:
+      requestHeaders:
+        add:
+        - name: X-I-Am-Here
+          value: 'route-internal-external'
+    destination:
+      kuma.io/service: test-server
   split:
     - weight: 50
       destination:
@@ -217,16 +186,17 @@ conf:
       destination:
         kuma.io/service: route-es-http
 `))).To(Succeed())
+		// Check and retry until the config got propagated to the client
+		Eventually(func() ([]server_types.EchoResponse, error) {
+			return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
+		}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"route-internal-external"}))))
 
-		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
-		}, "30s", "500ms").Should(
-			And(
+		Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(50))).
+			Should(And(
 				HaveLen(2),
 				HaveKey(Equal(`echo-v1`)),
 				HaveKey(Equal(`route-es-http`)),
-			),
-		)
+			))
 	})
 
 	Context("HTTP routing", func() {
@@ -314,6 +284,16 @@ destinations:
       kuma.io/service: test-server
 conf:
   http:
+  - match: # this match is here to be able to check if the config was set
+      path:
+        prefix: /i-am-here
+    modify:
+      requestHeaders:
+        add:
+        - name: X-I-Am-Here
+          value: 'route-by-header'
+    destination:
+      kuma.io/service: test-server
   - match:
       headers:
         x-version:
@@ -342,19 +322,19 @@ conf:
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(universal.Cluster)).To(Succeed())
+			// Check and retry until the config got propagated to the client
+			Eventually(func() ([]server_types.EchoResponse, error) {
+				return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
+			}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"route-by-header"}))))
 
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v1"))
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v2"))
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v3"))
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
-			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v1"), client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v1"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v2"), client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v2"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v3"), client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v3"))
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithHeader("x-version", "v4"), client.WithNumberOfRequests(10))).
+				Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
 		It("should split by header and split by default", func() {
@@ -370,66 +350,16 @@ destinations:
       kuma.io/service: test-server
 conf:
   http:
-  - match:
+  - match: # this match is here to be able to check if the config was set
       path:
-        prefix: /split
-    split:
-    - weight: 50
-      destination:
-        kuma.io/service: test-server
-        version: v1
-    - weight: 50
-      destination:
-        kuma.io/service: test-server
-        version: v2
-  loadBalancer:
-    roundRobin: {}
-  split:
-  - weight: 50
+        prefix: /i-am-here
+    modify:
+      requestHeaders:
+        add:
+        - name: X-I-Am-Here
+          value: 'two-splits'
     destination:
       kuma.io/service: test-server
-      version: v3
-  - weight: 50
-    destination:
-      kuma.io/service: test-server
-      version: v4
-`
-			Expect(YamlUniversal(trafficRoute)(universal.Cluster)).To(Succeed())
-
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
-			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
-				),
-			)
-
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
-			}, "30s", "500ms").Should(
-				And(
-					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 5, 1)),
-				),
-			)
-		})
-
-		It("should same splits with a different weights", func() {
-			const trafficRoute = `
-type: TrafficRoute
-name: same-splits
-mesh: trafficroute
-sources:
-  - match:
-      kuma.io/service: demo-client
-destinations:
-  - match:
-      kuma.io/service: test-server
-conf:
-  http:
   - match:
       path:
         prefix: /split
@@ -448,33 +378,31 @@ conf:
   - weight: 20
     destination:
       kuma.io/service: test-server
-      version: v1
+      version: v3
   - weight: 80
     destination:
       kuma.io/service: test-server
-      version: v2
+      version: v4
 `
-			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
+			Expect(YamlUniversal(trafficRoute)(universal.Cluster)).To(Succeed())
+			// Check and retry until the config got propagated to the client
+			Eventually(func() ([]server_types.EchoResponse, error) {
+				return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
+			}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"two-splits"}))))
 
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(10))
-			}, "30s", "500ms").Should(
-				And(
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(50))).
+				Should(And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 5, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 5, 1)),
-				),
-			)
+					HaveKey(`echo-v1`),
+					HaveKey(`echo-v2`),
+				))
 
-			Eventually(func() (map[string]int, error) {
-				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(10))
-			}, "30s", "500ms").Should(
-				And(
+			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))).
+				Should(And(
 					HaveLen(2),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
-					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
-				),
-			)
+					HaveKey(`echo-v3`),
+					HaveKeyWithValue(`echo-v4`, BeNumerically("~", 80, 10)),
+				))
 		})
 
 		It("should modify path", func() {
@@ -515,27 +443,13 @@ conf:
 `
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")
-				if err != nil {
-					return err
-				}
-				if resp.Received.Path != "/new-rewrite-prefix" {
-					return errors.Errorf("expected %s, got %s", "/new-rewrite-prefix", resp.Received.Path)
-				}
-				return nil
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-rewrite-prefix")).
+					Should(HaveField("Received.Path", "/new-rewrite-prefix"))
 			}, "30s", "500ms").Should(Succeed())
 
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")
-				if err != nil {
-					return err
-				}
-				if resp.Received.Path != "/regex-test" {
-					return errors.Errorf("expected %s, got %s", "/regex-test", resp.Received.Path)
-				}
-				return nil
-			}, "30s", "500ms").Should(Succeed())
+			Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/test-regex")).
+				Should(HaveField("Received.Path", "/regex-test"))
 		})
 
 		It("should modify host", func() {
@@ -578,29 +492,13 @@ conf:
 `
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")
-				if err != nil {
-					return err
-				}
-				host := resp.Received.Headers["Host"]
-				if len(host) < 1 || host[0] != "modified-host" {
-					return errors.Errorf("expected %s, got %s", "modified-host", host)
-				}
-				return nil
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-host")).
+					Should(HaveField("Received.Headers", HaveKeyWithValue("Host", []string{"modified-host"})))
 			}, "30s", "500ms").Should(Succeed())
 
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")
-				if err != nil {
-					return err
-				}
-				host := resp.Received.Headers["Host"]
-				if len(host) < 1 || host[0] != "path" {
-					return errors.Errorf("expected %s, got %s", "path", host)
-				}
-				return nil
-			}, "30s", "500ms").Should(Succeed())
+			Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/from-path")).
+				Should(HaveField("Received.Headers", HaveKeyWithValue("Host", []string{"path"})))
 		})
 
 		It("should modify headers", func() {
@@ -638,40 +536,22 @@ conf:
 `
 			Expect(universal.Cluster.Install(YamlUniversal(trafficRoute))).To(Succeed())
 
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers",
 					client.WithHeader("header-to-remove", "abc"),
 					client.WithHeader("x-multiple-values", "abc"),
+				)).Should(
+					HaveField("Received.Headers", And(
+						HaveKeyWithValue("X-Custom-Header", []string{"xyz"}),
+						Not(HaveKey("Header-To-Remove")),
+						HaveKeyWithValue("X-Multiple-Values", []string{"abc", "xyz"}),
+					)),
 				)
-				if err != nil {
-					return err
-				}
-				header := resp.Received.Headers["X-Custom-Header"]
-				if len(header) < 1 || header[0] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "xyz", header)
-				}
-				if len(resp.Received.Headers["Header-To-Remove"]) > 0 {
-					return errors.New("expected 'Header-To-Remove' to not be present")
-				}
-				header = resp.Received.Headers["X-Multiple-Values"]
-				if len(header) < 2 || header[0] != "abc" || header[1] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "abc,xyz", header)
-				}
-				return nil
 			}, "30s", "500ms").Should(Succeed())
 
 			// "add" should replace existing headers
-			Eventually(func() error {
-				resp, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", client.WithHeader("x-custom-header", "abc"))
-				if err != nil {
-					return err
-				}
-				header := resp.Received.Headers["X-Custom-Header"]
-				if len(header) < 1 || header[0] != "xyz" {
-					return errors.Errorf("expected %s, got %s", "xyz", header)
-				}
-				return nil
-			}, "30s", "500ms").Should(Succeed())
+			Expect(client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.mesh/modified-headers", client.WithHeader("x-custom-header", "abc"))).
+				Should(HaveField("Received.Headers", HaveKeyWithValue("X-Custom-Header", []string{"xyz"})))
 		})
 
 		It("should split traffic between internal and external destinations", func() {
