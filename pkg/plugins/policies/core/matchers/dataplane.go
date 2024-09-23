@@ -125,14 +125,14 @@ func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_m
 		return gateways
 	}
 	var filtered []*core_mesh.MeshGatewayResource
-	origin, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
-	if !ok || origin != string(mesh_proto.ZoneResourceOrigin) {
-		return gateways
-	}
-
-	zone := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	dppZone := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 	for _, gateway := range gateways {
-		if gwZone, ok := gateway.GetMeta().GetLabels()[mesh_proto.ZoneTag]; ok && gwZone == zone {
+		gwOrigin, ok := gateway.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		if !ok || gwOrigin == string(mesh_proto.GlobalResourceOrigin) {
+			filtered = append(filtered, gateway)
+			continue
+		}
+		if gwZone, ok := gateway.GetMeta().GetLabels()[mesh_proto.ZoneTag]; ok && gwZone == dppZone {
 			filtered = append(filtered, gateway)
 		}
 	}
@@ -148,7 +148,7 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
-	if !dppSelectedByZone(meta, dpp) {
+	if !dppSelectedByZone(meta, dpp, gateway) {
 		return []core_rules.InboundListener{}, nil, false, nil
 	}
 	if !dppSelectedByNamespace(meta, dpp) {
@@ -208,23 +208,28 @@ func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.Datapla
 	}
 }
 
-func dppSelectedByZone(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch core_model.PolicyRole(meta) {
+func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) bool {
+	switch core_model.PolicyRole(policyMeta) {
 	case mesh_proto.ProducerPolicyRole:
 		return true
 	default:
-		if dpp.GetMeta() == nil {
+		if dpp.GetMeta() == nil && gateway == nil {
 			return true
+		}
+		meta := dpp.GetMeta()
+		if gateway != nil {
+			meta = gateway.GetMeta()
 		}
 		// we should return true once dpp has no origin.
 		// Resource that cannot be created on zone(global one) doesn't have it
-		if _, ok := dpp.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]; !ok {
+		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
+		if !ok || origin == string(mesh_proto.GlobalResourceOrigin) {
 			return true
 		}
-		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
-		if ok && origin == string(mesh_proto.ZoneResourceOrigin) {
-			zone, ok := meta.GetLabels()[mesh_proto.ZoneTag]
-			return ok && dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag] == zone
+		policyOrigin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
+		if ok && policyOrigin == string(mesh_proto.ZoneResourceOrigin) {
+			zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
+			return ok && meta.GetLabels()[mesh_proto.ZoneTag] == zone
 		}
 		return true
 	}
