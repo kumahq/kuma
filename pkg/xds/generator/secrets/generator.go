@@ -100,8 +100,14 @@ func (g Generator) Generate(
 	usedCas := proxy.SecretsTracker.UsedCas()
 	usedAllInOne := proxy.SecretsTracker.UsedAllInOne()
 
+	var otherMeshes []*core_mesh.MeshResource
+	for _, m := range xdsCtx.Mesh.Resources.Meshes().Items {
+		if xdsCtx.Mesh.Resource.GetMeta().GetName() != m.GetMeta().GetName() {
+			otherMeshes = append(otherMeshes, m)
+		}
+	}
+
 	if usedAllInOne {
-		otherMeshes := xdsCtx.Mesh.Resources.OtherMeshes().Items
 		identity, allInOneCa, err := xdsCtx.ControlPlane.Secrets.GetAllInOne(ctx, xdsCtx.Mesh.Resource, proxy.Dataplane, otherMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate all in one CA")
@@ -113,13 +119,13 @@ func (g Generator) Generate(
 	}
 
 	if usedIdentity || len(usedCas) > 0 {
-		var otherMeshes []*core_mesh.MeshResource
-		for _, otherMesh := range xdsCtx.Mesh.Resources.OtherMeshes().Items {
+		var usedCasMeshes []*core_mesh.MeshResource
+		for _, otherMesh := range otherMeshes {
 			if _, ok := usedCas[otherMesh.GetMeta().GetName()]; ok {
-				otherMeshes = append(otherMeshes, otherMesh)
+				usedCasMeshes = append(usedCasMeshes, otherMesh)
 			}
 		}
-		identity, generatedMeshCAs, err := xdsCtx.ControlPlane.Secrets.GetForDataPlane(ctx, proxy.Dataplane, xdsCtx.Mesh.Resource, otherMeshes)
+		identity, generatedMeshCAs, err := xdsCtx.ControlPlane.Secrets.GetForDataPlane(ctx, proxy.Dataplane, xdsCtx.Mesh.Resource, usedCasMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}

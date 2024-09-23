@@ -112,20 +112,6 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 	for resType := range m.typeSet {
 		rl, ok := globalContext.ResourceMap[resType]
 		if ok { // Exists in global context take it from there
-			switch resType {
-			case core_mesh.MeshType: // Remove our own mesh from the list
-				otherMeshes := rl.NewItem().Descriptor().NewList()
-				for _, rentry := range rl.GetItems() {
-					if rentry.GetMeta().GetName() != meshName {
-						err := otherMeshes.AddItem(rentry)
-						if err != nil {
-							return nil, err
-						}
-					}
-				}
-				otherMeshes.GetPagination().SetTotal(uint32(len(otherMeshes.GetItems())))
-				rl = otherMeshes
-			}
 			resources.MeshLocalResources[resType] = rl
 		} else {
 			rl, ok = baseMeshContext.ResourceMap[resType]
@@ -142,7 +128,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		}
 	}
 
-	if err := m.decorateWithCrossMeshResources(ctx, resources); err != nil {
+	if err := m.decorateWithCrossMeshResources(ctx, meshName, resources); err != nil {
 		return nil, errors.Wrap(err, "failed to retrieve cross mesh resources")
 	}
 
@@ -482,10 +468,13 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 	}
 }
 
-func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, resources Resources) error {
+func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, meshName string, resources Resources) error {
 	// Expand with crossMesh info
 	otherMeshesByName := map[string]*core_mesh.MeshResource{}
-	for _, m := range resources.OtherMeshes().GetItems() {
+	for _, m := range resources.Meshes().GetItems() {
+		if m.GetMeta().GetName() == meshName {
+			continue
+		}
 		otherMeshesByName[m.GetMeta().GetName()] = m.(*core_mesh.MeshResource)
 		resources.CrossMeshResources[m.GetMeta().GetName()] = map[core_model.ResourceType]core_model.ResourceList{
 			core_mesh.DataplaneType:   &core_mesh.DataplaneResourceList{},
