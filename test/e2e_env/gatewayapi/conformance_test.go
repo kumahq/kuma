@@ -106,8 +106,8 @@ func TestConformance(t *testing.T) {
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
-		CleanupBaseResources: !Config.Debug,
-		Debug:                Config.Debug,
+		CleanupBaseResources: !Config.Debug, // we need to keep the resources to collect logs when Debug is enabled
+		Debug:                Config.Debug,  // controls if request details should be printed to stdout
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},

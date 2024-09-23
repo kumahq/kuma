@@ -158,7 +158,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	verboseOutToStd := true
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if Config.Debug {
-		// in debug mode, we will CP debug level logs wil be enabled and will be dump logs into files
+		// in debug mode, we will enable debug level logs on CP, and they'll be dump logs into files
 		// so don't need to print onto stdout/stderr, otherwise the test output will be too verbose
 		verboseOutToStd = false
 		cmd = append(cmd, "--log-level", "debug")
