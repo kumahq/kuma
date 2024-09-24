@@ -185,6 +185,7 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	}
 	cluster, err := buildClusterResource(tags, edsClusterBuilder, identifyingTags)
 	cluster.ResourceOrigin = backendRef.Resource
+	cluster.Protocol = routeProtocol
 	return cluster, service, err
 }
 
