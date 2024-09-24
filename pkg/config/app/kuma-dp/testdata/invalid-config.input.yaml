@@ -12,3 +12,4 @@ dataplane:
   proxyType: not-a-proxy
 dataplaneRuntime:
   binaryPath:
+  xdsConfigType: a
