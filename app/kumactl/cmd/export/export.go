@@ -92,7 +92,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var meshDeclarations []model.Resource
 			var meshSecrets []model.Resource
 			var otherResources []model.Resource
 			for _, resDesc := range resTypes {
@@ -105,14 +104,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						if res.Descriptor().Name == core_mesh.MeshType {
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
-							meshDeclaration := core_mesh.NewMeshResource()
-							meshDeclaration.SetMeta(
-								v1alpha1.ResourceMeta{
-									Type: string(core_mesh.MeshType),
-									Name: res.GetMeta().GetName(),
-								},
-							)
-							meshDeclarations = append(meshDeclarations, meshDeclaration)
 						}
 						otherResources = append(otherResources, res)
 					}
@@ -133,7 +124,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				}
 			}
 
-			allResources := append(meshDeclarations, append(meshSecrets, otherResources...)...)
+			allResources := append(meshSecrets, otherResources...)
 			var resources []model.Resource
 			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
@@ -153,7 +144,20 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
+				var meshDeclarations []model.Resource
 				for _, res := range resources {
+					if res.Descriptor().Name == core_mesh.MeshType {
+						meshDeclaration := core_mesh.NewMeshResource()
+						meshDeclaration.SetMeta(
+							v1alpha1.ResourceMeta{
+								Type: string(core_mesh.MeshType),
+								Name: res.GetMeta().GetName(),
+							},
+						)
+						meshDeclarations = append(meshDeclarations, meshDeclaration)
+					}
+				}
+				for _, res := range append(meshDeclarations, resources...) {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
