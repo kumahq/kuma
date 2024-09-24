@@ -508,9 +508,9 @@ var _ = Describe("MeshHealthCheck", func() {
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -546,7 +546,7 @@ var _ = Describe("MeshHealthCheck", func() {
 									},
 									ReuseConnection: pointer.To(true),
 								},
-							},
+							}},
 						},
 					},
 				},
@@ -584,9 +584,9 @@ var _ = Describe("MeshHealthCheck", func() {
 			},
 			meshhttproutes: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
@@ -611,16 +611,16 @@ var _ = Describe("MeshHealthCheck", func() {
 								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
 									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
 								},
-							},
+							}},
 						},
 					},
 				},
 			},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -656,7 +656,7 @@ var _ = Describe("MeshHealthCheck", func() {
 									},
 									ReuseConnection: pointer.To(true),
 								},
-							},
+							}},
 						},
 					},
 				},
@@ -666,9 +666,9 @@ var _ = Describe("MeshHealthCheck", func() {
 			name: "basic-meshhttproute",
 			meshhttproutes: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
@@ -686,16 +686,16 @@ var _ = Describe("MeshHealthCheck", func() {
 										},
 									}},
 								},
-							},
+							}},
 						},
 					},
 				},
 			},
 			meshtcproutes: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.MeshSubset(),
 								Conf: meshtcproute_api.Rule{
 									Default: meshtcproute_api.RuleConf{
@@ -705,16 +705,16 @@ var _ = Describe("MeshHealthCheck", func() {
 										}},
 									},
 								},
-							},
+							}},
 						},
 					},
 				},
 			},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -750,10 +750,10 @@ var _ = Describe("MeshHealthCheck", func() {
 									},
 									ReuseConnection: pointer.To(true),
 								},
-							},
+							}},
 						},
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -770,7 +770,7 @@ var _ = Describe("MeshHealthCheck", func() {
 									NoTrafficInterval:            test.ParseDuration("16s"),
 									ReuseConnection:              pointer.To(true),
 								},
-							},
+							}},
 						},
 					},
 				},

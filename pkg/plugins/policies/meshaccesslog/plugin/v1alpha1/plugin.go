@@ -207,7 +207,7 @@ func applyToGateway(
 
 		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
 			if err := configureOutbound(
-				toListenerRules,
+				toListenerRules.Rules,
 				proxy.Dataplane,
 				core_rules.Subset{},
 				mesh_proto.MatchAllTag,

@@ -185,7 +185,9 @@ func sortRulesToHosts(
 		if !ok {
 			continue
 		}
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener, resolver))
+		// it's ok for us to ignore ResourceRules because MeshGateway routes
+		// target kind: Mesh
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver))
 		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,

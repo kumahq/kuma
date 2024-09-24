@@ -65,7 +65,9 @@ func sortRulesToHosts(
 		}
 		var ruleHostnames []string
 		rulesByHostname := map[string][]ruleByHostname{}
-		for _, rawRule := range rawRules {
+		// it's ok for us to ignore ResourceRules because MeshGateway routes
+		// target kind: Mesh
+		for _, rawRule := range rawRules.Rules {
 			conf := rawRule.Conf.(api.PolicyDefault)
 
 			backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}

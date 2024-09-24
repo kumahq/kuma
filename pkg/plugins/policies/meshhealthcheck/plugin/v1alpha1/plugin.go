@@ -117,7 +117,7 @@ func applyToGateways(
 
 					if err := configure(
 						proxy.Dataplane,
-						rules,
+						rules.Rules,
 						core_rules.MeshService(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
