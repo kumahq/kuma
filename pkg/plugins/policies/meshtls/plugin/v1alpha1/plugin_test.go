@@ -210,25 +210,27 @@ var _ = Describe("MeshTLS", func() {
 					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(policy.Spec.From)).
 					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, core_rules.GatewayRules{
 						ToRules: core_rules.GatewayToRules{
-							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 								core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-									{
-										BackendRefOriginIndex: backendRefOriginIndex,
-										Origin: []core_model.ResourceMeta{
-											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
-										},
-										Subset: core_rules.MeshSubset(),
-										Conf: meshhttproute_api.PolicyDefault{
-											Rules: []meshhttproute_api.Rule{
-												{
-													Matches: []meshhttproute_api.Match{{
-														Path: &meshhttproute_api.PathMatch{
-															Type:  meshhttproute_api.Exact,
-															Value: "/",
+									Rules: core_rules.Rules{
+										{
+											BackendRefOriginIndex: backendRefOriginIndex,
+											Origin: []core_model.ResourceMeta{
+												&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+											},
+											Subset: core_rules.MeshSubset(),
+											Conf: meshhttproute_api.PolicyDefault{
+												Rules: []meshhttproute_api.Rule{
+													{
+														Matches: []meshhttproute_api.Match{{
+															Path: &meshhttproute_api.PathMatch{
+																Type:  meshhttproute_api.Exact,
+																Value: "/",
+															},
+														}},
+														Default: meshhttproute_api.RuleConf{
+															BackendRefs: &[]common_api.BackendRef{backendRef},
 														},
-													}},
-													Default: meshhttproute_api.RuleConf{
-														BackendRefs: &[]common_api.BackendRef{backendRef},
 													},
 												},
 											},
