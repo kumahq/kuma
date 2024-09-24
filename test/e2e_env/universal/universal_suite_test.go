@@ -89,7 +89,11 @@ var (
 	_ = Describe("Mtls", mtls.Policy, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
+<<<<<<< HEAD
 	_ = Describe("Traffic Permission", trafficpermission.TrafficPermissionUniversal, Ordered)
+=======
+	_ = Describe("Traffic Permission", trafficpermission.TrafficPermission, Ordered)
+>>>>>>> a06022240 (test(e2e): traffic route test with default tr policy (#11523))
 	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
