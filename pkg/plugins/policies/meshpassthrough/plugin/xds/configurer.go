@@ -24,12 +24,18 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 	if err != nil {
 		return err
 	}
-	if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
-		return err
+
+	if hasIPv4Matches(orderedMatchers) {
+		if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
+			return err
+		}
 	}
-	if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
-		return err
+	if hasIPv6Matches(orderedMatchers) {
+		if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
+			return err
+		}
 	}
+
 	for name, protocol := range clustersAccumulator {
 		config, err := CreateCluster(c.APIVersion, name, protocol)
 		if err != nil {
@@ -51,13 +57,6 @@ func (c Configurer) configureListener(
 	isIPv6 bool,
 ) error {
 	if listener == nil {
-		return nil
-	}
-	// filter chains cannot be an empty list
-	if !isIPv6 && !hasIPv4Matches(orderedMatchers) {
-		return nil
-	}
-	if isIPv6 && !hasIPv6Matches(orderedMatchers) {
 		return nil
 	}
 	// remove default filter chain provided by `transparent_proxy_generator`
