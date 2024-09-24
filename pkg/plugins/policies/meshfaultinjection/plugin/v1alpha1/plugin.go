@@ -129,7 +129,7 @@ func applyToGateways(
 			protocol = core_mesh.ProtocolTCP
 		}
 		for _, filterChain := range gatewayListener.FilterChains {
-			if err := configure(rules, filterChain, protocol); err != nil {
+			if err := configure(rules.Rules, filterChain, protocol); err != nil {
 				return err
 			}
 		}

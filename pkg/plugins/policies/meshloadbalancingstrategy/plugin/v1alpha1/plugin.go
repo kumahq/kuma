@@ -264,7 +264,7 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
+					localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName))
 					if localityConf == nil {
 						continue
 					}
