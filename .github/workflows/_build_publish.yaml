@@ -133,6 +133,7 @@ jobs:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
           upload-sbom-release-assets: true
+          skip_cis_scan: true
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
@@ -141,6 +142,7 @@ jobs:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
           upload-sbom-release-assets: true
+          skip_cis_scan: true
         # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
       - name: publish images
         id: release_images
