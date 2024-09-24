@@ -275,8 +275,7 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 
 		gracePeriodStartedAt := time.Time{}
-		err := gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))
-		Expect(err).ToNot(HaveOccurred())
+		Expect(gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))).To(Succeed())
 
 		// Before the grace period it still exists and afterwards it eventually
 		// disappears
