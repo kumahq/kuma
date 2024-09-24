@@ -8,10 +8,12 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
@@ -70,6 +72,7 @@ func generateGatewayClusters(
 }
 
 func generateEnvoyRouteEntries(
+	meshCtx xds_context.MeshContext,
 	host plugin_gateway.GatewayHost,
 	toRules rules.Rules,
 	resolver model.LabelResourceIdentifierResolver,
@@ -91,7 +94,7 @@ func generateEnvoyRouteEntries(
 		}
 		entries = append(
 			entries,
-			makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.Rule), backendRefOrigin, resolver),
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), backendRefOrigin, resolver),
 		)
 	}
 
@@ -99,6 +102,7 @@ func generateEnvoyRouteEntries(
 }
 
 func makeTcpRouteEntry(
+	meshCtx xds_context.MeshContext,
 	name string,
 	rule api.Rule,
 	backendRefToOrigin map[common_api.MatchesHash]model.ResourceMeta,
@@ -109,11 +113,19 @@ func makeTcpRouteEntry(
 	}
 
 	for _, b := range rule.Default.BackendRefs {
+		var dest map[string]string
 		var ref *model.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[rules.EmptyMatches]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
+			if ref.ReferencesRealResource() {
+				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
+				if ok {
+					dest = map[string]string{
+						mesh_proto.ServiceTag: service,
+					}
+				}
+			}
 		}
-		var dest map[string]string
 		if ref == nil || ref.ResourceOrNil() == nil {
 			var ok bool
 			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
