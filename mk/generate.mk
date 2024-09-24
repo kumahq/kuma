@@ -9,6 +9,9 @@ HELM_VALUES_FILE ?= "deployments/charts/kuma/values.yaml"
 HELM_CRD_DIR ?= "deployments/charts/kuma/crds/"
 HELM_VALUES_FILE_POLICY_PATH ?= ".plugins.policies"
 
+OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
+API_DIRS="$(TOP)/api/openapi/specs:base"
+
 GENERATE_OAS_PREREQUISITES ?=
 EXTRA_GENERATE_DEPS_TARGETS ?= generate/envoy-imports
 
@@ -109,8 +112,22 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES)
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
 	done
 
-.PHONY: generate/oas-for-ts
-generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
+.PHONY: generate/openapi
+generate/openapi: generate/oas ## Generate combined OpenAPI spec from `/api/openapi/specs` and all policies/resources
+	rm -rf $(OAPI_TMP_DIR)
+	mkdir -p $(dir $@)
+	mkdir -p $(OAPI_TMP_DIR)/policies
+	mkdir -p $(OAPI_TMP_DIR)/resources
+	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -R $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
+	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
+	for i in $$( find $(RESOURCES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/resources/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
+
+ifdef BASE_API
+	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v0.12.0 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@
+else
+	docker run --rm -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v0.12.0 generate '/specs/**/*.yaml' > $@
+endif
+
 
 
 .PHONY: generate/builtin-crds
