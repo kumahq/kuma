@@ -53,6 +53,13 @@ func (c Configurer) configureListener(
 	if listener == nil {
 		return nil
 	}
+	// filter chains cannot be an empty list
+	if !isIPv6 && !hasIPv4Matches(orderedMatchers) {
+		return nil
+	}
+	if isIPv6 && !hasIPv6Matches(orderedMatchers) {
+		return nil
+	}
 	// remove default filter chain provided by `transparent_proxy_generator`
 	listener.FilterChains = []*envoy_listener.FilterChain{}
 	for _, matcher := range orderedMatchers {
@@ -98,4 +105,32 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 		err = configurer.Configure(listener)
 	}
 	return err
+}
+
+func hasIPv4Matches(orderedMatchers []FilterChainMatcher) bool {
+	for _, matcher := range orderedMatchers {
+		for _, route := range matcher.Routes {
+			if route.MatchType == Domain ||
+				route.MatchType == WildcardDomain ||
+				route.MatchType == CIDR ||
+				route.MatchType == IP {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasIPv6Matches(orderedMatchers []FilterChainMatcher) bool {
+	for _, matcher := range orderedMatchers {
+		for _, route := range matcher.Routes {
+			if route.MatchType == Domain ||
+				route.MatchType == WildcardDomain ||
+				route.MatchType == CIDRV6 ||
+				route.MatchType == IPV6 {
+				return true
+			}
+		}
+	}
+	return false
 }
