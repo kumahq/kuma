@@ -468,13 +468,10 @@ func (m *meshContextBuilder) resolveTLSReadiness(
 	}
 }
 
-func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, meshName string, resources Resources) error {
+func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context, localMesh string, resources Resources) error {
 	// Expand with crossMesh info
 	otherMeshesByName := map[string]*core_mesh.MeshResource{}
-	for _, m := range resources.Meshes().GetItems() {
-		if m.GetMeta().GetName() == meshName {
-			continue
-		}
+	for _, m := range resources.OtherMeshes(localMesh).GetItems() {
 		otherMeshesByName[m.GetMeta().GetName()] = m.(*core_mesh.MeshResource)
 		resources.CrossMeshResources[m.GetMeta().GetName()] = map[core_model.ResourceType]core_model.ResourceList{
 			core_mesh.DataplaneType:   &core_mesh.DataplaneResourceList{},

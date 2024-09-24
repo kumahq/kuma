@@ -100,12 +100,7 @@ func (g Generator) Generate(
 	usedCAs := proxy.SecretsTracker.UsedCas()
 	usedAllInOne := proxy.SecretsTracker.UsedAllInOne()
 
-	var otherMeshes []*core_mesh.MeshResource
-	for _, m := range xdsCtx.Mesh.Resources.Meshes().Items {
-		if xdsCtx.Mesh.Resource.GetMeta().GetName() != m.GetMeta().GetName() {
-			otherMeshes = append(otherMeshes, m)
-		}
-	}
+	otherMeshes := xdsCtx.Mesh.Resources.OtherMeshes(xdsCtx.Mesh.Resource.GetMeta().GetName()).Items
 
 	if usedAllInOne {
 		identity, allInOneCa, err := xdsCtx.ControlPlane.Secrets.GetAllInOne(ctx, xdsCtx.Mesh.Resource, proxy.Dataplane, otherMeshes)
