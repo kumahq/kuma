@@ -13,21 +13,28 @@ type reconciler struct {
 	hasher    util_xds_v3.NodeHash
 	cache     util_xds_v3.SnapshotCache
 	generator *SnapshotGenerator
-	versioner util_xds_v3.SnapshotVersioner
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_config_core_v3.Node) error {
-	new, err := r.generator.GenerateSnapshot(ctx, node)
+	newSnapshot, err := r.generator.GenerateSnapshot(ctx, node)
 	if err != nil {
 		return err
 	}
-	if err := new.Consistent(); err != nil {
+	if err := newSnapshot.Consistent(); err != nil {
 		return err
 	}
 	id := r.hasher.ID(node)
-	old, _ := r.cache.GetSnapshot(id)
-	new = r.versioner.Version(new, old)
-	return r.cache.SetSnapshot(id, new)
+	var snap util_xds_v3.Snapshot
+	oldSnapshot, _ := r.cache.GetSnapshot(id)
+	switch {
+	case oldSnapshot == nil:
+		snap = newSnapshot
+	case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
+		snap = newSnapshot
+	default:
+		snap = oldSnapshot
+	}
+	return r.cache.SetSnapshot(id, snap)
 }
 
 func (r *reconciler) Clear(node *envoy_config_core_v3.Node) error {
