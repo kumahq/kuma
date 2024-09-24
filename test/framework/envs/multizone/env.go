@@ -261,14 +261,9 @@ func AfterSuite(report ginkgo.Report) {
 
 func PrintCPLogsOnFailure(report ginkgo.Report) {
 	if !report.SuiteSucceeded {
+		framework.Logf("Please see full CP logs by downloading the debug artifacts")
 		for _, cluster := range append(Zones(), Global) {
-			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
-			logs, err := cluster.GetKumaCPLogs()
-			if err != nil {
-				Logf("could not retrieve cp logs")
-			} else {
-				Logf(logs)
-			}
+			framework.DebugUniversalCPLogs(cluster)
 		}
 	}
 }

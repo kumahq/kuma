@@ -63,7 +63,6 @@ func NewCallbacks(
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
-			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
 			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
 		},
 	}

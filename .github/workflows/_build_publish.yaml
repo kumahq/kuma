@@ -89,7 +89,7 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -128,7 +128,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@ecbcd7051e12e6e3dc37dc890820bbce457bc05f # v2.6.0
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -136,7 +136,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@ecbcd7051e12e6e3dc37dc890820bbce457bc05f # v2.6.0
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -184,7 +184,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@d4d6b2a7e202398f62eb37c554df9732b27d9d84 # v2.5.1
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@ecbcd7051e12e6e3dc37dc890820bbce457bc05f # v2.6.0
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -197,7 +197,7 @@ jobs:
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@65a9edc5881444af0b9093a5e628f2fe47ea3b2e # v4.1.7
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           pattern: "image_*.digest.json"
           path: ./digests
