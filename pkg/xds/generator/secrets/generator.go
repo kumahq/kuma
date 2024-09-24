@@ -97,7 +97,7 @@ func (g Generator) Generate(
 	}
 
 	usedIdentity := proxy.SecretsTracker.UsedIdentity()
-	usedCas := proxy.SecretsTracker.UsedCas()
+	usedCAs := proxy.SecretsTracker.UsedCas()
 	usedAllInOne := proxy.SecretsTracker.UsedAllInOne()
 
 	var otherMeshes []*core_mesh.MeshResource
@@ -118,14 +118,14 @@ func (g Generator) Generate(
 		log.V(1).Info("added all in one CA resources")
 	}
 
-	if usedIdentity || len(usedCas) > 0 {
-		var usedCasMeshes []*core_mesh.MeshResource
+	if usedIdentity || len(usedCAs) > 0 {
+		var usedCAsMeshes []*core_mesh.MeshResource
 		for _, otherMesh := range otherMeshes {
-			if _, ok := usedCas[otherMesh.GetMeta().GetName()]; ok {
-				usedCasMeshes = append(usedCasMeshes, otherMesh)
+			if _, ok := usedCAs[otherMesh.GetMeta().GetName()]; ok {
+				usedCAsMeshes = append(usedCAsMeshes, otherMesh)
 			}
 		}
-		identity, generatedMeshCAs, err := xdsCtx.ControlPlane.Secrets.GetForDataPlane(ctx, proxy.Dataplane, xdsCtx.Mesh.Resource, usedCasMeshes)
+		identity, generatedMeshCAs, err := xdsCtx.ControlPlane.Secrets.GetForDataPlane(ctx, proxy.Dataplane, xdsCtx.Mesh.Resource, usedCAsMeshes)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to generate dataplane identity cert and CAs")
 		}
@@ -133,7 +133,7 @@ func (g Generator) Generate(
 		resources.Add(createIdentitySecretResource(proxy.SecretsTracker.RequestIdentityCert().Name(), identity))
 
 		var addedCas []string
-		for mesh := range usedCas {
+		for mesh := range usedCAs {
 			if ca, ok := generatedMeshCAs[mesh]; ok {
 				resources.Add(createCaSecretResource(proxy.SecretsTracker.RequestCa(mesh).Name(), ca))
 			} else {
