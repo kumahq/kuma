@@ -116,7 +116,7 @@ spec:
 			// when start test server on Zone
 			err = NewClusterSetup().
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install()).Setup(zoneK8s)
+				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) (int, error) {
