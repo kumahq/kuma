@@ -54,10 +54,8 @@ var _ = Describe("MeshHealthCheck", func() {
 
 	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
+			Name: "backend",
+			Mesh: "default",
 		},
 		ResourceType: "MeshService",
 		SectionName:  "",
@@ -657,6 +655,119 @@ var _ = Describe("MeshHealthCheck", func() {
 									ReuseConnection: pointer.To(true),
 								},
 							}},
+						},
+					},
+				},
+			},
+		}),
+		Entry("real MeshService targeted HTTP HealthCheck to real MeshService", gatewayTestCase{
+			name: "real-mesh-service-target-real-mesh-service-meshhttproute",
+			meshservices: []*meshservice_api.MeshServiceResource{
+				{
+					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{},
+						Ports: []meshservice_api.Port{{
+							Port:        80,
+							TargetPort:  intstr.FromInt(8084),
+							AppProtocol: core_mesh.ProtocolHTTP,
+						}},
+						Identities: []meshservice_api.MeshServiceIdentity{
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "backend",
+							},
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "other-backend",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{{
+							IP: "10.0.0.1",
+						}},
+					},
+				},
+			},
+			meshhttproutes: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Port:      pointer.To(uint32(80)),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									}},
+								},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+								},
+								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
+								},
+							}},
+						},
+					},
+				},
+			},
+			rules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								backendMeshServiceIdentifier: {
+									Conf: []interface{}{
+										api.Conf{
+											Interval:                     test.ParseDuration("10s"),
+											Timeout:                      test.ParseDuration("2s"),
+											UnhealthyThreshold:           pointer.To[int32](3),
+											HealthyThreshold:             pointer.To[int32](1),
+											InitialJitter:                test.ParseDuration("13s"),
+											IntervalJitter:               test.ParseDuration("15s"),
+											IntervalJitterPercent:        pointer.To[int32](10),
+											HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+											FailTrafficOnPanic:           pointer.To(true),
+											EventLogPath:                 pointer.To("/tmp/log.txt"),
+											AlwaysLogHealthCheckFailures: pointer.To(false),
+											NoTrafficInterval:            test.ParseDuration("16s"),
+											Http: &api.HttpHealthCheck{
+												Disabled: pointer.To(false),
+												Path:     pointer.To("/health"),
+												RequestHeadersToAdd: &api.HeaderModifier{
+													Add: []api.HeaderKeyValue{
+														{
+															Name:  "x-some-header",
+															Value: "value",
+														},
+													},
+													Set: []api.HeaderKeyValue{
+														{
+															Name:  "x-some-other-header",
+															Value: "value",
+														},
+													},
+												},
+												ExpectedStatuses: &[]int32{200, 201},
+											},
+											ReuseConnection: pointer.To(true),
+										},
+									},
+								},
+							},
 						},
 					},
 				},
