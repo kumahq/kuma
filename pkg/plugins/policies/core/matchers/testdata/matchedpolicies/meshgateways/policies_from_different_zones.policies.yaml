@@ -1,7 +1,7 @@
 ---
 type: MeshAccessLog
 mesh: mesh-1
-name: mesh
+name: mesh-in-zone-1
 labels:
   kuma.io/origin: zone
   kuma.io/zone: zone-1
@@ -19,7 +19,7 @@ spec:
 ---
 type: MeshAccessLog
 mesh: mesh-1
-name: servicesubset
+name: in-zone-1
 labels:
   kuma.io/origin: zone
   kuma.io/zone: zone-1
@@ -40,7 +40,7 @@ spec:
 ---
 type: MeshAccessLog
 mesh: mesh-1
-name: gateway
+name: in-zone-2
 labels:
   kuma.io/origin: zone
   kuma.io/zone: zone-2
@@ -67,7 +67,7 @@ spec:
 ---
 type: MeshGateway
 mesh: mesh-1
-name: gateway-3
+name: gateway-in-zone-1
 labels:
   kuma.io/origin: zone
   kuma.io/zone: zone-1
