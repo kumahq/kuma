@@ -112,6 +112,7 @@ type InspectDataplanesForPolicy struct {
 // InspectRules A list of rules for a dataplane
 type InspectRules struct {
 	HttpMatches []externalRef0.HttpMatch   `json:"httpMatches"`
+	Outbounds   []externalRef0.Outbound    `json:"outbounds"`
 	Resource    externalRef0.Meta          `json:"resource"`
 	Rules       []externalRef0.InspectRule `json:"rules"`
 }

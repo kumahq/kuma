@@ -61,6 +61,18 @@ type Meta struct {
 	Type string `json:"type"`
 }
 
+// Outbound defines model for Outbound.
+type Outbound struct {
+	// Envoy The name of envoy resources that are generated from this resource.
+	Envoy string `json:"envoy"`
+
+	// Name The name of the resource, contains hash-suffix when resource is synced from zone to global or global to zone.
+	Name string `json:"name"`
+
+	// ResourceIdentifier ResourceIdentifier uniquely identifies resources across all clusters (zones and global). Regardless of the origin and where it was synced to, the combination of (mesh, zone, namespace, name) is unique.
+	ResourceIdentifier ResourceIdentifier `json:"resourceIdentifier"`
+}
+
 // PolicyDescription information about a policy
 type PolicyDescription struct {
 	// HasFromTargetRef indicates that this policy can be used as an inbound policy
@@ -78,6 +90,27 @@ type ProxyRule struct {
 	// Conf The actual conf generated
 	Conf   interface{} `json:"conf"`
 	Origin []Meta      `json:"origin"`
+}
+
+// ResourceIdentifier ResourceIdentifier uniquely identifies resources across all clusters (zones and global). Regardless of the origin and where it was synced to, the combination of (mesh, zone, namespace, name) is unique.
+type ResourceIdentifier struct {
+	// DisplayName The original name of the resource. The real field 'name' will be different after the resource is synced from the source cluster.
+	DisplayName string `json:"displayName"`
+
+	// Mesh The mesh the resource is part of.
+	Mesh string `json:"mesh"`
+
+	// Namespace The namespace the resource is part of.
+	Namespace string `json:"namespace"`
+
+	// SectionName The section name allows to address a specific section of a resource (i.e. a port of a MeshService).
+	SectionName string `json:"sectionName"`
+
+	// Type The type of the resource.
+	Type string `json:"type"`
+
+	// Zone The zone the resource is part of.
+	Zone string `json:"zone"`
 }
 
 // ResourceRule defines model for ResourceRule.

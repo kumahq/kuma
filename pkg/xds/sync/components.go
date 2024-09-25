@@ -1,7 +1,6 @@
 package sync
 
 import (
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -12,11 +11,11 @@ import (
 var xdsServerLog = core.Log.WithName("xds").WithName("server")
 
 func DefaultDataplaneProxyBuilder(
-	config kuma_cp.Config,
+	zoneName string,
 	apiVersion core_xds.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		Zone:       config.Multizone.Zone.Name,
+		Zone:       zoneName,
 		APIVersion: apiVersion,
 	}
 }
@@ -54,7 +53,7 @@ func DefaultDataplaneWatchdogFactory(
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
-		config,
+		config.Multizone.Zone.Name,
 		apiVersion,
 	)
 

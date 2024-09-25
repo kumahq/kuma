@@ -1,5 +1,43 @@
 {
  "httpMatches": [],
+ "outbounds": [
+  {
+   "envoy": "mesh-1_backend-1___msvc_80",
+   "name": "backend-1",
+   "resourceIdentifier": {
+    "displayName": "backend-1",
+    "mesh": "mesh-1",
+    "namespace": "",
+    "sectionName": "80",
+    "type": "MeshService",
+    "zone": ""
+   }
+  },
+  {
+   "envoy": "mesh-1_backend-2___msvc_80",
+   "name": "backend-2",
+   "resourceIdentifier": {
+    "displayName": "backend-2",
+    "mesh": "mesh-1",
+    "namespace": "",
+    "sectionName": "80",
+    "type": "MeshService",
+    "zone": ""
+   }
+  },
+  {
+   "envoy": "mesh-1_backend-3___msvc_80",
+   "name": "backend-3",
+   "resourceIdentifier": {
+    "displayName": "backend-3",
+    "mesh": "mesh-1",
+    "namespace": "",
+    "sectionName": "80",
+    "type": "MeshService",
+    "zone": ""
+   }
+  }
+ ],
  "resource": {
   "labels": {},
   "mesh": "mesh-1",

@@ -120,7 +120,7 @@ var _ = Describe("GenerateSnapshot", func() {
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
 		)
 
-		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg, envoy_common.APIV3)
+		proxyBuilder = sync.DefaultDataplaneProxyBuilder(cfg.Multizone.Zone.Name, envoy_common.APIV3)
 	})
 
 	create := func(r core_model.Resource) {

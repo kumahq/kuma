@@ -1,5 +1,19 @@
 {
  "httpMatches": [],
+ "outbounds": [
+  {
+   "envoy": "mesh-1_backend-3___msvc_80",
+   "name": "backend-3",
+   "resourceIdentifier": {
+    "displayName": "backend-3",
+    "mesh": "mesh-1",
+    "namespace": "",
+    "sectionName": "80",
+    "type": "MeshService",
+    "zone": ""
+   }
+  }
+ ],
  "resource": {
   "labels": {},
   "mesh": "mesh-1",

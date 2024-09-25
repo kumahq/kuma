@@ -1,7 +1,7 @@
 package api_server
 
 import (
-	"context"
+	context "context"
 	"errors"
 	"fmt"
 	"io"
@@ -25,6 +25,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/core/resources/access"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshextsvc "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -981,13 +984,67 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 		sort.Slice(httpMatches, func(i, j int) bool {
 			return httpMatches[i].Hash < httpMatches[j].Hash
 		})
+		outbounds, err := r.outboundsForDPP(request.Request.Context(), dp, meshName)
+		if err != nil {
+			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to get outbounds")
+			return
+		}
 		out := api_types.InspectRulesResponse{
 			HttpMatches: httpMatches,
 			Resource:    oapi_helpers.ResourceToMeta(resource),
 			Rules:       rules,
+			Outbounds:   outbounds,
 		}
 		if err := response.WriteAsJson(out); err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
 		}
 	}
+}
+
+func (r *resourceEndpoints) outboundsForDPP(
+	ctx context.Context,
+	dpp *core_mesh.DataplaneResource,
+	meshName string,
+) ([]api_common.Outbound, error) {
+	meshContext, err := r.meshContextBuilder.BuildIfChanged(ctx, meshName, nil)
+	if err != nil {
+		return nil, err
+	}
+	proxy, err := getMatchedPolicies(ctx, r.zoneName, *meshContext, core_model.MetaToResourceKey(dpp.GetMeta()))
+	if err != nil {
+		return nil, err
+	}
+
+	outbounds := []api_common.Outbound{}
+	for _, o := range proxy.Outbounds {
+		if o.LegacyOutbound != nil {
+			continue
+		}
+		var name string
+		var envoy string
+		switch o.Resource.ResourceType {
+		case meshservice_api.MeshServiceType:
+			ms := meshContext.MeshServiceByIdentifier[o.Resource.ResourceIdentifier]
+			name = ms.GetMeta().GetName()
+			if port, ok := ms.FindPortByName(o.Resource.SectionName); ok {
+				envoy = ms.DestinationName(port.Port)
+			}
+		case meshextsvc.MeshExternalServiceType:
+			mes := meshContext.MeshExternalServiceByIdentifier[o.Resource.ResourceIdentifier]
+			name = mes.GetMeta().GetName()
+			envoy = mes.DestinationName(uint32(mes.Spec.Match.Port))
+		case meshmzservice_api.MeshMultiZoneServiceType:
+			mmzs := meshContext.MeshMultiZoneServiceByIdentifier[o.Resource.ResourceIdentifier]
+			name = mmzs.GetMeta().GetName()
+			if port, ok := mmzs.FindPortByName(o.Resource.SectionName); ok {
+				envoy = mmzs.DestinationName(port.Port)
+			}
+		}
+		outbounds = append(outbounds, api_common.Outbound{
+			Name:               name,
+			Envoy:              envoy,
+			ResourceIdentifier: oapi_helpers.TypedResourceIdentifierToResourceIdentifier(o.Resource),
+		})
+	}
+	return outbounds, nil
 }

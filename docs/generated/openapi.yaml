@@ -2142,6 +2142,7 @@ components:
         - rules
         - resource
         - httpMatches
+        - outbounds
       properties:
         resource:
           $ref: '#/components/schemas/Meta'
@@ -2153,6 +2154,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/HttpMatch'
+        outbounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/Outbound'
     BaseStatus:
       type: object
       title: Status
@@ -2632,6 +2637,67 @@ components:
         match:
           type: object
           x-go-type: interface{}
+    ResourceIdentifier:
+      type: object
+      description: >-
+        ResourceIdentifier uniquely identifies resources across all clusters
+        (zones and global). Regardless of the origin and where it was synced to,
+        the combination of (mesh, zone, namespace, name) is unique.
+      required:
+        - type
+        - mesh
+        - displayName
+        - zone
+        - namespace
+        - sectionName
+      properties:
+        type:
+          type: string
+          example: MeshService
+          description: The type of the resource.
+        mesh:
+          type: string
+          example: default
+          description: The mesh the resource is part of.
+        displayName:
+          type: string
+          example: my-service
+          description: >-
+            The original name of the resource. The real field 'name' will be
+            different after the resource is synced from the source cluster.
+        zone:
+          type: string
+          example: zone-1
+          description: The zone the resource is part of.
+        namespace:
+          type: string
+          example: default
+          description: The namespace the resource is part of.
+        sectionName:
+          type: string
+          example: http-port
+          description: >-
+            The section name allows to address a specific section of a resource
+            (i.e. a port of a MeshService).
+    Outbound:
+      type: object
+      required:
+        - name
+        - resourceIdentifier
+        - envoy
+      properties:
+        name:
+          type: string
+          example: my-service-xv68564xbv2xwwfw
+          description: >-
+            The name of the resource, contains hash-suffix when resource is
+            synced from zone to global or global to zone.
+        envoy:
+          type: string
+          example: mesh-1_my-service_default_zone-1_msvc_5000
+          description: The name of envoy resources that are generated from this resource.
+        resourceIdentifier:
+          $ref: '#/components/schemas/ResourceIdentifier'
     JsonPatchItem:
       type: object
       required:

@@ -148,7 +148,7 @@ func NewApiServer(
 		xdsHooks,
 	)
 	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
-	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager())
+	addInspectEndpoints(ws, cfg.Multizone.Zone.Name, meshContextBuilder, rt.ResourceManager())
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
 	addZoneEndpoints(ws, rt.ResourceManager())
 	guiUrl := ""

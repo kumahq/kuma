@@ -12,6 +12,8 @@ networking:
       tags:
         app: backend
         kuma.io/service: foo
+  transparentProxying:
+    redirectPort: 15001
 ---
 type: MeshTimeout
 name: matched-for-rules-mt-1
@@ -43,6 +45,9 @@ spec:
     - port: 80
       targetPort: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 240.0.0.0
 ---
 type: MeshService
 name: backend-2
@@ -57,6 +62,9 @@ spec:
     - port: 80
       targetPort: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 240.0.0.1
 ---
 type: MeshService
 name: backend-3
@@ -71,3 +79,6 @@ spec:
     - port: 80
       targetPort: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 240.0.0.2

@@ -244,7 +244,7 @@ components:
       type: object
       title: InspectRules
       description: A list of rules for a dataplane
-      required: [rules, resource, httpMatches]
+      required: [rules, resource, httpMatches, outbounds]
       properties:
         resource:
           $ref: './common/resource.yaml#/components/schemas/Meta'
@@ -256,6 +256,10 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/HttpMatch'
+        outbounds:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/Outbound'
     BaseStatus:
       type: object
       title: Status

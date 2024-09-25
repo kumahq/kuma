@@ -1,5 +1,19 @@
 {
  "httpMatches": [],
+ "outbounds": [
+  {
+   "envoy": "mesh-1_backend-4___msvc_80",
+   "name": "backend-4",
+   "resourceIdentifier": {
+    "displayName": "backend-4",
+    "mesh": "mesh-1",
+    "namespace": "",
+    "sectionName": "super-port",
+    "type": "MeshService",
+    "zone": ""
+   }
+  }
+ ],
  "resource": {
   "labels": {},
   "mesh": "mesh-1",

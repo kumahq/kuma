@@ -1,6 +1,8 @@
 #/meshes/mesh-1/dataplanes/dp-1/_rules 200
 type: Mesh
 name: mesh-1
+meshServices:
+  enabled: Exclusive
 ---
 type: Dataplane
 name: dp-1
@@ -12,6 +14,8 @@ networking:
       tags:
         app: backend
         kuma.io/service: foo
+  transparentProxying:
+    redirectPort: 15001
 ---
 type: MeshTimeout
 name: matched-for-rules-mt-1
@@ -61,3 +65,6 @@ spec:
     - port: 80
       targetPort: 80
       appProtocol: http
+status:
+  vips:
+    - ip: 241.0.0.0

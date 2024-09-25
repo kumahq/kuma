@@ -12,6 +12,7 @@
    ]
   }
  ],
+ "outbounds": [],
  "resource": {
   "labels": {},
   "mesh": "default",

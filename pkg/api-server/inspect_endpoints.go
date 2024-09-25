@@ -8,7 +8,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 
 	api_server_types "github.com/kumahq/kuma/pkg/api-server/types"
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -32,11 +31,11 @@ import (
 // getMatchedPolicies returns information about either sidecar dataplanes or
 // builtin gateway dataplanes as well as the proxy and a potential error.
 func getMatchedPolicies(
-	ctx context.Context, cfg *kuma_cp.Config, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
+	ctx context.Context, zoneName string, meshContext xds_context.MeshContext, dataplaneKey core_model.ResourceKey,
 ) (
 	*core_xds.Proxy, error,
 ) {
-	proxyBuilder := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3)
+	proxyBuilder := sync.DefaultDataplaneProxyBuilder(zoneName, envoy.APIV3)
 	proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext)
 	if err != nil {
 		return nil, err
@@ -46,12 +45,12 @@ func getMatchedPolicies(
 
 func addInspectEndpoints(
 	ws *restful.WebService,
-	cfg *kuma_cp.Config,
+	zoneName string,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ResourceManager,
 ) {
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(cfg, builder)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/policies").To(inspectDataplane(zoneName, builder)).
 			Doc("inspect dataplane matched policies").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -59,7 +58,7 @@ func addInspectEndpoints(
 	)
 
 	ws.Route(
-		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").To(inspectRulesAttachment(cfg, builder)).
+		ws.GET("/meshes/{mesh}/dataplanes/{dataplane}/rules").To(inspectRulesAttachment(zoneName, builder)).
 			Doc("inspect dataplane matched rules").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("dataplane", "dataplane name").DataType("string")).
@@ -68,7 +67,7 @@ func addInspectEndpoints(
 
 	for _, desc := range registry.Global().ObjectDescriptors(core_model.AllowedToInspect()) {
 		ws.Route(
-			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, cfg)).
+			ws.GET(fmt.Sprintf("/meshes/{mesh}/%s/{name}/dataplanes", desc.WsPath)).To(inspectPolicies(desc.Name, builder, zoneName)).
 				Doc("inspect policies").
 				Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 				Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -84,7 +83,7 @@ func addInspectEndpoints(
 			Returns(200, "OK", nil),
 	)
 	ws.Route(
-		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(cfg, builder, rm)).
+		ws.GET("/meshes/{mesh}/meshgatewayroutes/{name}/dataplanes").To(inspectGatewayRouteDataplanes(zoneName, builder, rm)).
 			Doc("inspect MeshGatewayRoute").
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")).
 			Param(ws.PathParameter("name", "resource name").DataType("string")).
@@ -92,7 +91,7 @@ func addInspectEndpoints(
 	)
 }
 
-func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+func inspectDataplane(zoneName string, builder xds_context.MeshContextBuilder) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
@@ -105,7 +104,7 @@ func inspectDataplane(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilde
 		}
 
 		proxy, err := getMatchedPolicies(
-			request.Request.Context(), cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+			request.Request.Context(), zoneName, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")
@@ -175,7 +174,7 @@ func inspectGatewayDataplanes(
 }
 
 func inspectGatewayRouteDataplanes(
-	cfg *kuma_cp.Config,
+	zoneName string,
 	builder xds_context.MeshContextBuilder,
 	rm manager.ReadOnlyResourceManager,
 ) restful.RouteFunction {
@@ -203,7 +202,7 @@ func inspectGatewayRouteDataplanes(
 				continue
 			}
 			key := core_model.MetaToResourceKey(dp.GetMeta())
-			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, key)
+			proxy, err := getMatchedPolicies(request.Request.Context(), zoneName, meshContext, key)
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not generate listener info")
 				return
@@ -244,7 +243,7 @@ func inspectGatewayRouteDataplanes(
 func inspectPolicies(
 	resType core_model.ResourceType,
 	builder xds_context.MeshContextBuilder,
-	cfg *kuma_cp.Config,
+	zoneName string,
 ) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
@@ -265,7 +264,7 @@ func inspectPolicies(
 				Mesh: dpKey.Mesh,
 				Name: dpKey.Name,
 			}
-			proxy, err := getMatchedPolicies(request.Request.Context(), cfg, meshContext, dpKey)
+			proxy, err := getMatchedPolicies(request.Request.Context(), zoneName, meshContext, dpKey)
 			if err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, fmt.Sprintf("Could not get MatchedPolicies for %v", dpKey))
 				return
@@ -549,7 +548,7 @@ func gatewayEntriesByPolicy(
 	return policyMap
 }
 
-func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContextBuilder) restful.RouteFunction {
+func inspectRulesAttachment(zoneName string, builder xds_context.MeshContextBuilder) restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
 		ctx := request.Request.Context()
 		meshName := request.PathParameter("mesh")
@@ -562,7 +561,7 @@ func inspectRulesAttachment(cfg *kuma_cp.Config, builder xds_context.MeshContext
 		}
 
 		proxy, err := getMatchedPolicies(
-			ctx, cfg, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
+			ctx, zoneName, meshContext, core_model.ResourceKey{Mesh: meshName, Name: dataplaneName},
 		)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Could not get MatchedPolicies")

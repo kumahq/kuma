@@ -1,5 +1,6 @@
 {
  "httpMatches": [],
+ "outbounds": [],
  "resource": {
   "labels": {
    "k8s.kuma.io/namespace": "kuma-demo",

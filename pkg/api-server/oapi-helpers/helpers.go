@@ -52,3 +52,14 @@ func OriginListToResourceRuleOrigin(resType core_model.ResourceType, origins []c
 	}
 	return out
 }
+
+func TypedResourceIdentifierToResourceIdentifier(tri *core_model.TypedResourceIdentifier) api_common.ResourceIdentifier {
+	return api_common.ResourceIdentifier{
+		Type:        string(tri.ResourceType),
+		DisplayName: tri.Name,
+		Mesh:        tri.Mesh,
+		Namespace:   tri.Namespace,
+		Zone:        tri.Zone,
+		SectionName: tri.SectionName,
+	}
+}

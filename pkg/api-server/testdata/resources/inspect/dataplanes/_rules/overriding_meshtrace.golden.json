@@ -1,5 +1,6 @@
 {
  "httpMatches": [],
+ "outbounds": [],
  "resource": {
   "labels": {},
   "mesh": "default",
