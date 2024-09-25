@@ -87,6 +87,9 @@ func (p plugin) configureDPP(
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
 ) error {
+	if proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
 	serviceConfs := map[string]api.Conf{}
 
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
