@@ -34,7 +34,7 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 		// issue: https://github.com/kumahq/kuma/issues/8764
 		NewSyncTracker(reconciler, config.AssignmentRefreshInterval.Duration, log),
 		// For on-demand reconciliation
-		util_xds_v3.AdaptRestCallbacks(NewReconcilerRestCallbacks(reconciler)),
+		util_xds_v3.AdaptRestCallbacks(NewReconcilerRestCallbacks(reconciler, log)),
 	}
 	srv := NewServer(cache, callbacks)
 

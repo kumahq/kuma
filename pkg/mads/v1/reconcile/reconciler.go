@@ -7,6 +7,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/go-logr/logr"
 
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
@@ -35,7 +36,7 @@ func (r *reconciler) KnownClientIds() map[string]bool {
 	return maps.Clone(r.knownClientIds)
 }
 
-func (r *reconciler) Reconcile(ctx context.Context) error {
+func (r *reconciler) Reconcile(ctx context.Context, log logr.Logger) error {
 	newSnapshotPerClient, err := r.generator.GenerateSnapshot(ctx)
 	if err != nil {
 		return err
@@ -50,8 +51,10 @@ func (r *reconciler) Reconcile(ctx context.Context) error {
 		oldSnapshot, _ := r.cache.GetSnapshot(clientId)
 		switch {
 		case oldSnapshot == nil:
+			log.V(2).Info("no snapshot found", "clientId", clientId)
 			snap = newSnapshot
 		case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
+			log.V(2).Info("detected changes in the snapshots", "oldSnapshot", oldSnapshot, "newSnapshot", newSnapshot)
 			snap = newSnapshot
 		default:
 			snap = oldSnapshot

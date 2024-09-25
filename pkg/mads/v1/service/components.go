@@ -18,6 +18,7 @@ import (
 
 type restReconcilerCallbacks struct {
 	reconciler mads_reconcile.Reconciler
+	log        logr.Logger
 }
 
 func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request util_xds.DiscoveryRequest) error {
@@ -34,7 +35,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 	}
 
 	if r.reconciler.NeedsReconciliation(node) {
-		return r.reconciler.Reconcile(ctx)
+		return r.reconciler.Reconcile(ctx, r.log)
 	}
 	return nil
 }
@@ -42,8 +43,8 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 func (r *restReconcilerCallbacks) OnFetchResponse(request util_xds.DiscoveryRequest, response util_xds.DiscoveryResponse) {
 }
 
-func NewReconcilerRestCallbacks(reconciler mads_reconcile.Reconciler) util_xds.RestCallbacks {
-	return &restReconcilerCallbacks{reconciler: reconciler}
+func NewReconcilerRestCallbacks(reconciler mads_reconcile.Reconciler, log logr.Logger) util_xds.RestCallbacks {
+	return &restReconcilerCallbacks{reconciler: reconciler, log: log}
 }
 
 func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration, log logr.Logger) envoy_xds.Callbacks {
@@ -55,7 +56,7 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 			},
 			OnTick: func(ctx context.Context) error {
 				log.V(1).Info("on tick")
-				return reconciler.Reconcile(ctx)
+				return reconciler.Reconcile(ctx, log)
 			},
 			OnError: func(err error) {
 				log.Error(err, "OnTick() failed")

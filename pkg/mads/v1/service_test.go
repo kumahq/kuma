@@ -12,7 +12,6 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -22,11 +21,13 @@ import (
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
+	"github.com/kumahq/kuma/pkg/log"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 	"github.com/kumahq/kuma/pkg/mads/v1/service"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -57,7 +58,7 @@ var _ = Describe("MADS http service", func() {
 		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
 		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
-		svc := service.NewService(cfg, resManager, logr.Discard(), nil)
+		svc := service.NewService(cfg, resManager, core.NewLogger(log.DebugLevel), nil)
 
 		ws := new(restful.WebService)
 		svc.RegisterRoutes(ws)
