@@ -42,6 +42,7 @@ spec:
 		err := NewClusterSetup().
 			Install(YamlK8s(meshPassthroughEnabled)).
 			Install(Namespace(namespace)).
+			Install(TrafficRouteKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
@@ -177,7 +178,7 @@ apiVersion: kuma.io/v1alpha1
 kind: TrafficPermission
 mesh: external-services
 metadata:
-  name: traffic-to-es
+  name: traffic-to-es-tls
 spec:
   sources:
     - match:

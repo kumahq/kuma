@@ -155,7 +155,7 @@ func applyToGateways(
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
 					if err := configure(
-						rules,
+						rules.Rules,
 						core_rules.MeshService(serviceName),
 						cluster,
 					); err != nil {

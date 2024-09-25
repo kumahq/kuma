@@ -89,7 +89,7 @@ func applyToGateways(
 				continue
 			}
 
-			if err := configureGateway(rules, gatewayListener, route); err != nil {
+			if err := configureGateway(rules.Rules, gatewayListener, route); err != nil {
 				return err
 			}
 		}

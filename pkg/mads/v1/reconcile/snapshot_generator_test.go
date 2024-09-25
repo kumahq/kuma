@@ -19,6 +19,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
@@ -151,6 +152,10 @@ var _ = Describe("snapshotGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
+				for c := range snapshotPerClient {
+					// Cleanup the versions as they are UUIDs
+					snapshotPerClient[c] = snapshotPerClient[c].WithVersion(mads_v1.MonitoringAssignmentType, "")
+				}
 				Expect(snapshotPerClient).To(Equal(given.expectedSnapshots))
 			},
 			Entry("no Meshes, no Dataplanes, no MeshMetrics", testCase{

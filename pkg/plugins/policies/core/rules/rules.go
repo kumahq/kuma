@@ -90,10 +90,10 @@ type GatewayToRules struct {
 	// ByListener contains rules that are not specific to hostnames
 	// If the policy supports `GatewayListenerTagsAllowed: true`
 	// then it likely should use ByListenerAndHostname
-	ByListener map[InboundListener]Rules
+	ByListener map[InboundListener]ToRules
 	// ByListenerAndHostname contains rules for policies that are specific to hostnames
 	// This only relevant if the policy has `GatewayListenerTagsAllowed: true`
-	ByListenerAndHostname map[InboundListenerHostname]Rules
+	ByListenerAndHostname map[InboundListenerHostname]ToRules
 }
 
 type GatewayRules struct {
@@ -375,21 +375,21 @@ func BuildGatewayRules(
 	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
 	reader ResourceReader,
 ) (GatewayRules, error) {
-	toRulesByInbound := map[InboundListener]Rules{}
-	toRulesByListenerHostname := map[InboundListenerHostname]Rules{}
+	toRulesByInbound := map[InboundListener]ToRules{}
+	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
 	for listener, policies := range matchedPoliciesByListener {
 		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
-		toRulesByListenerHostname[listener] = toRules.Rules
+		toRulesByListenerHostname[listener] = toRules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
 		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
-		toRulesByInbound[inbound] = toRules.Rules
+		toRulesByInbound[inbound] = toRules
 	}
 
 	fromRules, err := BuildFromRules(matchedPoliciesByInbound)
