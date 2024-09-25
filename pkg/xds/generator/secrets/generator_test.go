@@ -67,7 +67,11 @@ var _ = Describe("SecretsGenerator", func() {
 		Entry("zone egress, Mesh has no mTLS configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &core_mesh.MeshResource{},
+					Resource: &core_mesh.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "default",
+						},
+					},
 				},
 				ControlPlane: &xds_context.ControlPlaneContext{
 					Secrets: &xds.TestSecrets{},
