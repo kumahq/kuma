@@ -66,14 +66,16 @@ type resourceWarmingForcer struct {
 	sync.Mutex
 	lastEndpointNonces map[xds.StreamID]string
 	nodeIDs            map[xds.StreamID]string
+	snapshotCacheMux   *sync.Mutex
 }
 
-func newResourceWarmingForcer(cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash) *resourceWarmingForcer {
+func newResourceWarmingForcer(cache envoy_cache.SnapshotCache, hasher envoy_cache.NodeHash, snapshotCacheMux *sync.Mutex) *resourceWarmingForcer {
 	return &resourceWarmingForcer{
 		cache:              cache,
 		hasher:             hasher,
 		lastEndpointNonces: map[xds.StreamID]string{},
 		nodeIDs:            map[xds.StreamID]string{},
+		snapshotCacheMux:   snapshotCacheMux,
 	}
 }
 
@@ -115,6 +117,8 @@ func (r *resourceWarmingForcer) OnStreamRequest(streamID xds.StreamID, request *
 }
 
 func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
+	r.snapshotCacheMux.Lock()
+	defer r.snapshotCacheMux.Unlock()
 	snapshot, err := r.cache.GetSnapshot(nodeID)
 	if err != nil {
 		return nil // GetSnapshot returns an error if there is no snapshot. We don't need to force on a new snapshot

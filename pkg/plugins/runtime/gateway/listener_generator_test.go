@@ -3,6 +3,7 @@ package gateway_test
 import (
 	"context"
 	"path"
+	"sync"
 
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo/v2"
@@ -26,7 +27,7 @@ var _ = Describe("Gateway Listener", func() {
 		if err != nil {
 			return nil, err
 		}
-		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks)
+		reconciler := xds_server.DefaultReconciler(rt, serverCtx, statsCallbacks, &sync.Mutex{})
 
 		Expect(StoreInlineFixture(rt, []byte(gateway))).To(Succeed())
 

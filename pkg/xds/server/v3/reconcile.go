@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -26,9 +27,10 @@ var reconcileLog = core.Log.WithName("xds").WithName("reconcile")
 var _ xds_sync.SnapshotReconciler = &reconciler{}
 
 type reconciler struct {
-	generator      snapshotGenerator
-	cacher         snapshotCacher
-	statsCallbacks util_xds.StatsCallbacks
+	generator        snapshotGenerator
+	cacher           snapshotCacher
+	statsCallbacks   util_xds.StatsCallbacks
+	snapshotCacheMux *sync.Mutex
 }
 
 func (r *reconciler) Clear(proxyId *model.ProxyId) error {
@@ -57,12 +59,29 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		return false, errors.Wrapf(err, "failed to generate a snapshot")
 	}
 
+	for _, resources := range snapshot.Resources {
+		for name, resource := range resources.Items {
+			if err := validateResource(resource.Resource); err != nil {
+				return false, errors.Wrapf(err, "invalid resource %q", name)
+			}
+		}
+	}
+
+	r.snapshotCacheMux.Lock()
+	defer r.snapshotCacheMux.Unlock()
+
 	// To avoid assigning a new version every time, compare with
 	// the previous snapshot and reuse its version whenever possible,
 	// fallback to UUID otherwise
 	previous, err := r.cacher.Get(node)
 	if err != nil {
 		previous = &envoy_cache.Snapshot{}
+	}
+
+	preserveDeletedResources(snapshot, previous)
+
+	if err := snapshot.Consistent(); err != nil {
+		return false, errors.Wrap(err, "inconsistent snapshot")
 	}
 
 	snapshot, changed := autoVersion(previous, snapshot)
@@ -79,17 +98,6 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		return false, nil
 	}
 
-	for _, resources := range snapshot.Resources {
-		for name, resource := range resources.Items {
-			if err := validateResource(resource.Resource); err != nil {
-				return false, errors.Wrapf(err, "invalid resource %q", name)
-			}
-		}
-	}
-
-	if err := snapshot.Consistent(); err != nil {
-		return false, errors.Wrap(err, "inconsistent snapshot")
-	}
 	log.Info("config has changed", "versions", changed)
 
 	if err := r.cacher.Cache(ctx, node, snapshot); err != nil {
@@ -100,6 +108,35 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 		r.statsCallbacks.ConfigReadyForDelivery(version)
 	}
 	return true, nil
+}
+
+func preserveDeletedResources(snapshot *envoy_cache.Snapshot, previous *envoy_cache.Snapshot) {
+	snapshotEndpoints := snapshot.GetResources(envoy_resource.EndpointType)
+	// core.Log.Info("preserveDeletedResources", "previous", previous.GetResources(envoy_resource.EndpointType), "current", snapshotEndpoints)
+	for name, res := range previous.GetResources(envoy_resource.EndpointType) {
+		if _, ok := snapshotEndpoints[name]; !ok {
+			// core.Log.Info("preserving endpoints", "clusterName", name)
+			if snapshot.Resources[envoy_types.Endpoint].Items == nil {
+				snapshot.Resources[envoy_types.Endpoint].Items = map[string]envoy_types.ResourceWithTTL{}
+			}
+			snapshot.Resources[envoy_types.Endpoint].Items[name] = envoy_types.ResourceWithTTL{
+				Resource: res,
+			}
+		}
+	}
+
+	snapshotClusters := snapshot.GetResources(envoy_resource.ClusterType)
+	for name, res := range previous.GetResources(envoy_resource.ClusterType) {
+		if _, ok := snapshotClusters[name]; !ok {
+			// core.Log.Info("preserving cluster", "clusterName", name)
+			if snapshot.Resources[envoy_types.Cluster].Items == nil {
+				snapshot.Resources[envoy_types.Cluster].Items = map[string]envoy_types.ResourceWithTTL{}
+			}
+			snapshot.Resources[envoy_types.Cluster].Items[name] = envoy_types.ResourceWithTTL{
+				Resource: res,
+			}
+		}
+	}
 }
 
 func validateResource(r envoy_types.Resource) error {

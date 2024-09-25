@@ -2,6 +2,7 @@ package v3
 
 import (
 	"context"
+	"sync"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -140,6 +141,7 @@ var _ = Describe("Reconcile", func() {
 				}),
 				&simpleSnapshotCacher{xdsContext.Hasher(), xdsContext.Cache()},
 				statsCallbacks,
+				&sync.Mutex{},
 			}
 
 			// given
@@ -227,14 +229,8 @@ var _ = Describe("Reconcile", func() {
 				Not(Equal(routeV1)),
 				Not(BeEmpty()),
 			))
-			Expect(snapshot.GetVersion(resource.ClusterType)).To(SatisfyAll(
-				Not(Equal(clusterV1)),
-				Not(BeEmpty()),
-			))
-			Expect(snapshot.GetVersion(resource.EndpointType)).To(SatisfyAll(
-				Not(Equal(endpointV1)),
-				Not(BeEmpty()),
-			))
+			Expect(snapshot.GetVersion(resource.ClusterType)).To(Equal(clusterV1))
+			Expect(snapshot.GetVersion(resource.EndpointType)).To(Equal(endpointV1))
 			Expect(snapshot.GetVersion(resource.SecretType)).To(SatisfyAll(
 				Not(Equal(secretV1)),
 				Not(BeEmpty()),
