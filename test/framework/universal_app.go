@@ -444,42 +444,43 @@ func (s *UniversalApp) CreateDP(
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	args := []string{
 		"runuser", "-u", "kuma-dp", "--",
-		"/usr/bin/kuma-dp", "run",
-		"--cp-address=" + cpAddress,
-		"--dataplane-token-file=/kuma/token-" + name,
-		"--binary-path", "/usr/local/bin/envoy",
+		"/bin/bash", "-c",
 	}
+
+	dpRun := "'/usr/bin/kuma-dp run " +
+			"--cp-address=" + cpAddress + " " +
+			"--dataplane-token-file=/kuma/token-" + name + " " +
+			"--binary-path /usr/local/bin/envoy "
 
 	if dpyaml != "" {
 		err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
 		if err != nil {
 			panic(err)
 		}
-		args = append(args,
-			"--dataplane-file=/kuma/dpyaml-"+name,
-			"--dataplane-var", "name="+name,
-			"--dataplane-var", "address="+ip)
+		dpRun += " --dataplane-file=/kuma/dpyaml-" + name + " --dataplane-var name=" + name + " --dataplane-var address="+ip
 	} else {
-		args = append(args,
-			"--name="+name,
-			"--mesh="+mesh)
+		dpRun += " --name="+ name + " --mesh=" + mesh
 	}
 
 	if concurrency > 0 {
-		args = append(args, "--concurrency", strconv.Itoa(concurrency))
+		dpRun += " --concurrency " + strconv.Itoa(concurrency)
 	}
 
 	if builtindns {
-		args = append(args, "--dns-enabled")
+		dpRun += " --dns-enabled "
 	}
 
 	if proxyType != "" {
-		args = append(args, "--proxy-type", proxyType)
+		dpRun += " --proxy-type " + proxyType
 	}
 
 	if Config.Debug {
-		args = append(args, "--log-level", "debug")
+		dpRun += "--log-level debug "
 	}
+
+	// we put the logs in the init process, so they are also available in 'docker logs...' command
+	dpRun += "' >> /proc/1/fd/1"
+	args = append(args, dpRun)
 
 	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
