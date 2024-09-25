@@ -8670,7 +8670,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be force traced
                         if the
@@ -8686,7 +8686,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests will be traced
 
@@ -8696,11 +8696,11 @@ components:
                         random sampling). This field functions as an upper limit
                         on the total
 
-                        configured sampling rate. For instance, setting
-                        client_sampling to 100%
+                        configured sampling rate. For instance, setting client
+                        to 100
 
-                        but overall_sampling to 1% will result in only 1% of
-                        client requests with
+                        but overall to 1 will result in only 1% of client
+                        requests with
 
                         the appropriate headers to be force traced. Mirror of
 
@@ -8714,7 +8714,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be randomly
                         selected for trace
