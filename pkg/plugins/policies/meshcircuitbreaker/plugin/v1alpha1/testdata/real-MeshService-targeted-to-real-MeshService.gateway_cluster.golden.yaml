@@ -2,6 +2,13 @@ resources:
 - name: default_backend___msvc_80-01804e3659fbd290
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - maxConnectionPools: 1111
+        maxConnections: 2222
+        maxPendingRequests: 3333
+        maxRequests: 4444
+        maxRetries: 5555
     edsClusterConfig:
       edsConfig:
         ads: {}
