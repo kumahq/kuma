@@ -167,6 +167,7 @@ func applyToGateways(
 						return err
 					}
 
+					// This happens when using MeshGatewayRoutes
 					if dest.BackendRef == nil {
 						continue
 					}
