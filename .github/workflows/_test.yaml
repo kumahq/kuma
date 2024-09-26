@@ -17,7 +17,6 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 20
-    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -33,10 +32,6 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
-      - run: |
-          make test
   gen_e2e_matrix:
     timeout-minutes: 2
     runs-on: ubuntu-latest
