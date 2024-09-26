@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	clusterv3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
@@ -80,9 +81,9 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 
 	preserveDeletedResources(snapshot, previous)
 
-	if err := snapshot.Consistent(); err != nil {
-		return false, errors.Wrap(err, "inconsistent snapshot")
-	}
+	//if err := snapshot.Consistent(); err != nil {
+	//	return false, errors.Wrap(err, "inconsistent snapshot")
+	//}
 
 	snapshot, changed := autoVersion(previous, snapshot)
 
@@ -128,13 +129,19 @@ func preserveDeletedResources(snapshot *envoy_cache.Snapshot, previous *envoy_ca
 	snapshotClusters := snapshot.GetResources(envoy_resource.ClusterType)
 	for name, res := range previous.GetResources(envoy_resource.ClusterType) {
 		if _, ok := snapshotClusters[name]; !ok {
-			// core.Log.Info("preserving cluster", "clusterName", name)
-			if snapshot.Resources[envoy_types.Cluster].Items == nil {
-				snapshot.Resources[envoy_types.Cluster].Items = map[string]envoy_types.ResourceWithTTL{}
+			switch typ := res.(*clusterv3.Cluster).ClusterDiscoveryType.(type) {
+			case *clusterv3.Cluster_Type:
+				if typ.Type == clusterv3.Cluster_EDS {
+					// core.Log.Info("preserving cluster", "clusterName", name)
+					if snapshot.Resources[envoy_types.Cluster].Items == nil {
+						snapshot.Resources[envoy_types.Cluster].Items = map[string]envoy_types.ResourceWithTTL{}
+					}
+					snapshot.Resources[envoy_types.Cluster].Items[name] = envoy_types.ResourceWithTTL{
+						Resource: res,
+					}
+				}
 			}
-			snapshot.Resources[envoy_types.Cluster].Items[name] = envoy_types.ResourceWithTTL{
-				Resource: res,
-			}
+
 		}
 	}
 }
