@@ -1,0 +1,110 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "labels": {
+   "kuma.io/origin": "zone",
+   "kuma.io/zone": "zone-1"
+  },
+  "mesh": "default",
+  "name": "the-gateway",
+  "type": "MeshGateway"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "connectionTimeout": "2s",
+       "idleTimeout": "20s",
+       "http": {
+        "requestTimeout": "10s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {
+         "k8s.kuma.io/namespace": "kuma-demo",
+         "kuma.io/display-name": "mt-on-gateway",
+         "kuma.io/origin": "zone",
+         "kuma.io/zone": "zone-1"
+        },
+        "mesh": "default",
+        "name": "mt-on-gateway",
+        "type": "MeshTimeout"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {},
+      "mesh": "",
+      "name": "default",
+      "type": "Mesh"
+     },
+     "resourceSectionName": ""
+    }
+   ],
+   "toRules": [
+    {
+     "conf": {
+      "connectionTimeout": "2s",
+      "idleTimeout": "20s",
+      "http": {
+       "requestTimeout": "10s"
+      }
+     },
+     "matchers": [],
+     "origin": [
+      {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "mt-on-gateway",
+        "kuma.io/origin": "zone",
+        "kuma.io/zone": "zone-1"
+       },
+       "mesh": "default",
+       "name": "mt-on-gateway",
+       "type": "MeshTimeout"
+      }
+     ]
+    }
+   ],
+   "type": "MeshTimeout",
+   "warnings": []
+  },
+  {
+   "fromRules": [],
+   "proxyRule": {
+    "conf": {
+     "appendModifications": [
+      {
+       "cluster": {
+        "operation": "Add",
+        "value": "name: test-cluster\nconnectTimeout: 5s\ntype: STATIC"
+       }
+      }
+     ]
+    },
+    "origin": [
+     {
+      "labels": {
+       "k8s.kuma.io/namespace": "kuma-demo",
+       "kuma.io/display-name": "mpp-on-gateway"
+      },
+      "mesh": "default",
+      "name": "mpp-on-gateway",
+      "type": "MeshProxyPatch"
+     }
+    ]
+   },
+   "toResourceRules": [],
+   "toRules": [],
+   "type": "MeshProxyPatch",
+   "warnings": []
+  }
+ ]
+}
