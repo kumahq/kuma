@@ -183,7 +183,7 @@ func (p plugin) applyToRealResource(
 			}
 		case envoy_resource.ClusterType:
 			for _, resource := range resources {
-				if resource.Origin != generator.OriginOutbound {
+				if resource.Origin != generator.OriginOutbound && resource.Origin != metadata.OriginGateway {
 					continue
 				}
 				cluster := resource.Resource.(*envoy_cluster.Cluster)
