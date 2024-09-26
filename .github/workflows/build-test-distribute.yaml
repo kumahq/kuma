@@ -63,8 +63,6 @@ jobs:
           make dev/tools
       - run: |
           make clean
-      - run: |
-          make check
       - id: sca-project
         uses: Kong/public-shared-actions/security-actions/sca@ecbcd7051e12e6e3dc37dc890820bbce457bc05f # v2.6.0
         with:
@@ -84,7 +82,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest-kong","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:

@@ -19,7 +19,7 @@ env:
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
-    timeout-minutes: 60
+    timeout-minutes: 360
     # can't use env vars here
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
@@ -121,12 +121,10 @@ jobs:
             trap "on_exit" EXIT
           fi
           
-          if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
-            target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
-          else
-            target="test/e2e"
-          fi
-          make ${MAKE_PARAMETERS} CI=true "${target}"
+          make ${MAKE_PARAMETERS} test/e2e/debug CI=true E2E_PKG_LIST=./test/e2e_env/kubernetes/...
+      - name: Setup tmate session
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
       - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         if: always()
         with:

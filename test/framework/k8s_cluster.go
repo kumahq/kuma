@@ -836,7 +836,11 @@ func (c *K8sCluster) GetKuma() ControlPlane {
 func (c *K8sCluster) GetKumaCPLogs() (string, error) {
 	logs := ""
 
-	pods := c.GetKuma().(*K8sControlPlane).GetKumaCPPods()
+	kuma := c.GetKuma().(*K8sControlPlane)
+	if kuma == nil {
+		return "", errors.Errorf("no kuma-cp registered")
+	}
+	pods := kuma.GetKumaCPPods()
 	if len(pods) < 1 {
 		return "", errors.Errorf("no kuma-cp pods found for logs")
 	}

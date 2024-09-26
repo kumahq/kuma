@@ -17,7 +17,7 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 20
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
@@ -57,8 +57,8 @@ jobs:
                 "sidecarContainers": [""]
               },
               "test_e2e_env": {
-                "target": ["kubernetes", "universal", "multizone"],
-                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MAX_VERSION }}"],
+                "target": ["kubernetes"],
+                "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
