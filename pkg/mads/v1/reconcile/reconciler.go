@@ -51,7 +51,7 @@ func (r *reconciler) Reconcile(ctx context.Context, log logr.Logger) error {
 		oldSnapshot, _ := r.cache.GetSnapshot(clientId)
 		switch {
 		case oldSnapshot == nil:
-			log.V(2).Info("no snapshot found", "clientId", clientId)
+			log.V(2).Info("no snapshot found", "clientId", clientId, "newSnapshot", newSnapshot)
 			snap = newSnapshot
 		case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
 			log.V(2).Info("detected changes in the snapshots", "oldSnapshot", oldSnapshot, "newSnapshot", newSnapshot)
