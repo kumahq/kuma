@@ -548,8 +548,7 @@ spec:
     name: simple-gateway
   to:
     - targetRef:
-        kind: MeshService
-        name: test-server-mlbs_%[2]s_svc_80
+        kind: Mesh
       default:
         loadBalancer:
           type: RingHash
