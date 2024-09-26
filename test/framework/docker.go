@@ -12,8 +12,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-const(
-	retries = 5
+const (
+	retries      = 5
 	retryTimeout = 500 * time.Millisecond
 )
 
@@ -32,7 +32,7 @@ func GetPublishedDockerPorts(
 		var err error
 		// Sometimes the port may not be available immediately, and it can take some time.
 		// Since we didn't retry, tests were failing with and an error
-		// `missing port in addres` on OSX.
+		// `missing port in address` on OSX.
 		retry.DoWithRetry(t, "get port", retries, retryTimeout, func() (string, error) {
 			out, err = shell.RunCommandAndGetStdOutE(t, cmd)
 			if err != nil {
