@@ -84,7 +84,7 @@ func GenerateClusters(
 					Configure(envoy_clusters.Http2())
 
 				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
-					for _, otherMesh := range append(meshCtx.Resources.OtherMeshes().Items, meshCtx.Resource) {
+					for _, otherMesh := range meshCtx.Resources.Meshes().Items {
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(

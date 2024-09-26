@@ -850,6 +850,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return
 			}
 			dp = &core_mesh.DataplaneResource{
+				Meta: gw.Meta,
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
