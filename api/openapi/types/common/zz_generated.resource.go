@@ -83,7 +83,7 @@ type ProxyRule struct {
 // ResourceRule defines model for ResourceRule.
 type ResourceRule struct {
 	// Conf The actual conf generated
-	Conf interface{} `json:"conf"`
+	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
 	Origin              []ResourceRuleOrigin `json:"origin"`

@@ -30,7 +30,7 @@ type listenersHostnames struct {
 }
 
 type MapGatewayRulesToHosts func(
-	meshLocalResources xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rules rules.GatewayRules,
 	address string,
 	port uint32,
@@ -99,7 +99,7 @@ func CollectListenerInfos(
 		}
 
 		hostInfos := mapRules(
-			meshCtx.Resources.MeshLocalResources,
+			meshCtx,
 			rawRules,
 			networking.Address,
 			listener.listener.GetPort(),

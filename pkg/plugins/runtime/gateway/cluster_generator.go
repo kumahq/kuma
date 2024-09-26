@@ -184,6 +184,8 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 		mesh_proto.ServiceTag: service,
 	}
 	cluster, err := buildClusterResource(tags, edsClusterBuilder, identifyingTags)
+	cluster.ResourceOrigin = backendRef.Resource
+	cluster.Protocol = routeProtocol
 	return cluster, service, err
 }
 

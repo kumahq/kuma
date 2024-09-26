@@ -24,12 +24,18 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 	if err != nil {
 		return err
 	}
-	if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
-		return err
+
+	if hasIPv4Matches(orderedMatchers) {
+		if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
+			return err
+		}
 	}
-	if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
-		return err
+	if hasIPv6Matches(orderedMatchers) {
+		if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
+			return err
+		}
 	}
+
 	for name, protocol := range clustersAccumulator {
 		config, err := CreateCluster(c.APIVersion, name, protocol)
 		if err != nil {
@@ -98,4 +104,32 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 		err = configurer.Configure(listener)
 	}
 	return err
+}
+
+func hasIPv4Matches(orderedMatchers []FilterChainMatcher) bool {
+	for _, matcher := range orderedMatchers {
+		for _, route := range matcher.Routes {
+			if route.MatchType == Domain ||
+				route.MatchType == WildcardDomain ||
+				route.MatchType == CIDR ||
+				route.MatchType == IP {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func hasIPv6Matches(orderedMatchers []FilterChainMatcher) bool {
+	for _, matcher := range orderedMatchers {
+		for _, route := range matcher.Routes {
+			if route.MatchType == Domain ||
+				route.MatchType == WildcardDomain ||
+				route.MatchType == CIDRV6 ||
+				route.MatchType == IPV6 {
+				return true
+			}
+		}
+	}
+	return false
 }
