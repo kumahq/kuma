@@ -448,18 +448,18 @@ func (s *UniversalApp) CreateDP(
 	}
 
 	dpRun := "'/usr/bin/kuma-dp run " +
-			"--cp-address=" + cpAddress + " " +
-			"--dataplane-token-file=/kuma/token-" + name + " " +
-			"--binary-path /usr/local/bin/envoy "
+		"--cp-address=" + cpAddress + " " +
+		"--dataplane-token-file=/kuma/token-" + name + " " +
+		"--binary-path /usr/local/bin/envoy "
 
 	if dpyaml != "" {
 		err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
 		if err != nil {
 			panic(err)
 		}
-		dpRun += " --dataplane-file=/kuma/dpyaml-" + name + " --dataplane-var name=" + name + " --dataplane-var address="+ip
+		dpRun += " --dataplane-file=/kuma/dpyaml-" + name + " --dataplane-var name=" + name + " --dataplane-var address=" + ip
 	} else {
-		dpRun += " --name="+ name + " --mesh=" + mesh
+		dpRun += " --name=" + name + " --mesh=" + mesh
 	}
 
 	if concurrency > 0 {
