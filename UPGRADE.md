@@ -11,7 +11,7 @@ does not have any particular instructions.
 ### MeshAccessLog
 
 Policies targeting `spec.targetRef.kind: MeshGateway` can now only target `kind: Mesh` in
-`to[].targetRef`. Previously this was allowed but the resulting configuration
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
 was ambiguous and nondeterministic.
 
 ### MeshExternalService
