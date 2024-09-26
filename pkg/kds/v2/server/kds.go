@@ -19,7 +19,7 @@ type Server interface {
 }
 
 func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger) Server {
-	deltaServer := delta.NewServer(context.Background(), config, callbacks)
+	deltaServer := delta.NewServer(context.Background(), config, callbacks, delta.WithDistinctResourceTypes(1000))
 	return &server{Server: deltaServer}
 }
 
