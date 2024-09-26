@@ -13,19 +13,20 @@ import (
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator *SnapshotGenerator) Reconciler {
 	return &reconciler{
+		reconcilerMutex:     &sync.Mutex{},
 		hasher:              hasher,
 		cache:               cache,
 		generator:           generator,
 		knownClientIds:      map[string]bool{},
 		knownClientIdsMutex: &sync.Mutex{},
-		cacheMutex:          &sync.Mutex{},
 	}
 }
 
 type reconciler struct {
+	reconcilerMutex *sync.Mutex
+
 	hasher              envoy_cache.NodeHash
 	cache               util_xds_v3.SnapshotCache
-	cacheMutex          *sync.Mutex
 	generator           *SnapshotGenerator
 	knownClientIds      map[string]bool
 	knownClientIdsMutex *sync.Mutex
@@ -38,8 +39,8 @@ func (r *reconciler) KnownClientIds() map[string]bool {
 }
 
 func (r *reconciler) Reconcile(ctx context.Context) error {
-	r.cacheMutex.Lock()
-	defer r.cacheMutex.Unlock()
+	r.reconcilerMutex.Lock()
+	defer r.reconcilerMutex.Unlock()
 	return r.reconcile(ctx)
 }
 
@@ -77,8 +78,8 @@ func (r *reconciler) reconcile(ctx context.Context) error {
 }
 
 func (r *reconciler) ReconcileIfNeeded(ctx context.Context, node *envoy_core.Node) error {
-	r.cacheMutex.Lock()
-	defer r.cacheMutex.Unlock()
+	r.reconcilerMutex.Lock()
+	defer r.reconcilerMutex.Unlock()
 	if r.NeedsReconciliation(node) {
 		return r.reconcile(ctx)
 	}
