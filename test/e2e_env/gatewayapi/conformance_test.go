@@ -51,29 +51,32 @@ func TestConformance(t *testing.T) {
 	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
-		if t.Failed() || Config.Debug {
-			var namespaces []string
-			clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
-			if err == nil {
-				if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
-					metav1.ListOptions{
-						LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
-					}); err == nil {
-					for _, ns := range nsList.Items {
-						namespaces = append(namespaces, ns.Name)
-					}
+		var meshNamespaces []string
+		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+		if err == nil {
+			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
+				metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
+				}); err == nil {
+				for _, ns := range nsList.Items {
+					meshNamespaces = append(meshNamespaces, ns.Name)
 				}
 			}
+		}
 
-			if len(namespaces) > 0 {
+		if t.Failed() {
+			if len(meshNamespaces) > 0 {
 				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
 					RegisterFailHandler(g.Fail)
-					DebugKube(cluster, "default", namespaces...)
+					DebugKube(cluster, "default", meshNamespaces...)
 					return nil
 				}()).To(Succeed())
 			}
 		}
 
+		for _, ns := range meshNamespaces {
+			g.Expect(cluster.DeleteNamespace(ns)).To(Succeed())
+		}
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -106,8 +109,8 @@ func TestConformance(t *testing.T) {
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
-		CleanupBaseResources: true,
-		Debug:                Config.Debug,
+		CleanupBaseResources: false,        // we want to collect details when test fails, so don't clean up here, we'll clean up resources by ourselves.
+		Debug:                Config.Debug, // controls if request details should be printed to stdout
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},

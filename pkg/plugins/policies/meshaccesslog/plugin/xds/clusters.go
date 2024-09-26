@@ -19,7 +19,7 @@ func xdsEndpoint(endpoint LoggingEndpoint) core_xds.Endpoint {
 	}
 }
 
-func HandleClusters(backendEndpoints EndpointAccumulator, rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+func AddLogBackendConf(backendEndpoints EndpointAccumulator, rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	for backendEndpoint := range backendEndpoints.endpoints {
 		endpoint := xdsEndpoint(backendEndpoint)
 

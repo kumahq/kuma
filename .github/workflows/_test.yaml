@@ -58,7 +58,7 @@ jobs:
               },
               "test_e2e_env": {
                 "target": ["kubernetes", "universal", "multizone"],
-                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
@@ -66,14 +66,13 @@ jobs:
                 "exclude":[
                   {"target": "kubernetes", "k8sVersion":"kind"},
                   {"target": "multizone", "k8sVersion":"kind"},
-                  {"target":"universal", "k8sVersion":"${{ env.K8S_MIN_VERSION }}"},
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
                   {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
-                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "arm64"},
-                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "arm64"},
-                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "universal", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "arm64"},
+                  {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
                 ]

@@ -115,7 +115,7 @@ func applyToGateway(
 			protocol = core_mesh.ProtocolTCP
 		}
 		configurer := plugin_xds.DeprecatedConfigurer{
-			Rules:    toRules,
+			Rules:    toRules.Rules,
 			Protocol: protocol,
 			Subset:   core_rules.MeshSubset(),
 		}

@@ -157,7 +157,7 @@ func ApplyToGateway(
 }
 
 func sortRulesToHosts(
-	_ xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
@@ -185,7 +185,9 @@ func sortRulesToHosts(
 		if !ok {
 			continue
 		}
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener, resolver))
+		// it's ok for us to ignore ResourceRules because MeshGateway routes
+		// target kind: Mesh
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver))
 		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,

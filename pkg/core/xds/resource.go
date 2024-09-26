@@ -178,8 +178,10 @@ func NonMeshExternalService(r *Resource) bool {
 	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType)
 }
 
-func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[core_model.TypedResourceIdentifier]map[string][]*Resource {
-	byOwner := map[core_model.TypedResourceIdentifier]map[string][]*Resource{}
+type ResourcesByType map[string][]*Resource
+
+func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[core_model.TypedResourceIdentifier]ResourcesByType {
+	byOwner := map[core_model.TypedResourceIdentifier]ResourcesByType{}
 	for typ, nameToRes := range s.typeToNamesIndex {
 		for _, resource := range nameToRes {
 			add := true

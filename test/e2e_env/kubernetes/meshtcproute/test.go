@@ -161,51 +161,23 @@ spec:
 
 		// then receive responses from "test-http-server_meshtcproute_svc_80"
 		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
+			response, err := client.CollectResponsesByInstance(
 				kubernetes.Cluster,
 				"test-client",
 				"test-http-server_meshtcproute_svc_80.mesh",
 				client.FromKubernetesPod(namespace, "test-client"),
+				client.WithNumberOfRequests(100),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("test-http-server"))
-		}, "30s", "1s").Should(Succeed())
-
-		// then receive responses from "test-tcp-server_meshtcproute_svc_80"
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("test-tcp-server"))
-		}, "30s", "1s").Should(Succeed())
-
-		// and then receive responses from "external-http-service"
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("external-http-service"))
-		}, "30s", "1s").Should(Succeed())
-
-		// and then receive responses from "external-tcp-service"
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
-				kubernetes.Cluster,
-				"test-client",
-				"test-http-server_meshtcproute_svc_80.mesh",
-				client.FromKubernetesPod(namespace, "test-client"),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("external-tcp-service"))
-		}, "30s", "1s").Should(Succeed())
+			g.Expect(response).To(HaveLen(4))
+			g.Expect(response).To(And(
+				//
+				HaveKey(ContainSubstring("test-tcp-server")),
+				HaveKey(ContainSubstring("test-http-server")),
+				HaveKey(ContainSubstring("external-http-service")),
+				HaveKey(ContainSubstring("external-tcp-service")),
+			))
+		}, "30s", "5s").Should(Succeed())
 	})
 
 	It("should use MeshHTTPRoute if both MeshTCPRoute and MeshHTTPRoute "+
@@ -259,7 +231,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
 metadata:
-  name: tcp-route
+  name: tcp-route-external-2
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -347,7 +319,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshTCPRoute
 metadata:
-  name: tcp-route
+  name: tcp-route-external
   namespace: %s
   labels:
     kuma.io/mesh: %s

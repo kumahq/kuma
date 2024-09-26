@@ -1475,9 +1475,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				),
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
@@ -1505,7 +1505,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 								},
-							},
+							}},
 						},
 					},
 				},
@@ -1526,9 +1526,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				),
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
@@ -1575,7 +1575,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 								},
-							},
+							}},
 						},
 					},
 				},
@@ -1596,9 +1596,9 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				),
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
@@ -1613,7 +1613,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 									},
 								},
-							},
+							}},
 						},
 					},
 				},

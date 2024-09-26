@@ -249,7 +249,7 @@ func (g OutboundProxyGenerator) generateCDS(ctx xds_context.Context, services en
 					Configure(envoy_clusters.Http2())
 
 				if upstreamMeshName := cluster.Mesh(); upstreamMeshName != "" {
-					for _, otherMesh := range append(ctx.Mesh.Resources.OtherMeshes().Items, ctx.Mesh.Resource) {
+					for _, otherMesh := range ctx.Mesh.Resources.Meshes().Items {
 						if otherMesh.GetMeta().GetName() == upstreamMeshName {
 							edsClusterBuilder.Configure(
 								envoy_clusters.CrossMeshClientSideMTLS(

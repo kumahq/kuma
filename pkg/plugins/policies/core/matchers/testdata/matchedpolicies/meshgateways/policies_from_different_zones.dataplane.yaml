@@ -1,0 +1,12 @@
+type: Dataplane
+mesh: mesh-1
+name: gateway-3
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+networking:
+  address: 127.0.0.1
+  gateway:
+    type: BUILTIN
+    tags:
+      kuma.io/service: edge-gateway

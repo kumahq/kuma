@@ -6,184 +6,202 @@ FromRules:
 ToRules:
   ByListener:
     127.0.0.1:8080:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8081:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8082:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8083:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /applied-only-to-hostname
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: only-one-hostname-listener
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /applied-only-to-hostname
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: only-one-hostname-listener
+          type: MeshAccessLog
+        Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8081:*:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8082:*:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8083:four-hostname-1:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /applied-only-to-hostname
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: only-one-hostname-listener
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /applied-only-to-hostname
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: only-one-hostname-listener
+          type: MeshAccessLog
+        Subset: []
     127.0.0.1:8083:four-hostname-2:
-    - BackendRefOriginIndex: {}
-      Conf:
-        backends:
-        - file:
-            path: /meshsubset
-          type: File
-      Origin:
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: mesh
-        type: MeshAccessLog
-      - creationTime: "0001-01-01T00:00:00Z"
-        mesh: mesh-1
-        modificationTime: "0001-01-01T00:00:00Z"
-        name: meshsubset
-        type: MeshAccessLog
-      Subset: []
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /meshsubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: meshsubset
+          type: MeshAccessLog
+        Subset: []
