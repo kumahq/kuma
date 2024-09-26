@@ -17,7 +17,7 @@ func (r *MeshAccessLogResource) validate() error {
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, r.Spec.To))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
 	return verr.OrNil()
 }
@@ -52,17 +52,27 @@ func validateFrom(from []From) validators.ValidationError {
 	return verr
 }
 
-func validateTo(to []To) validators.ValidationError {
+func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
+
+		var supportedKinds []common_api.TargetRefKind
+		switch topLevelKind {
+		case common_api.MeshGateway:
+			supportedKinds = []common_api.TargetRefKind{
+				common_api.Mesh,
+			}
+		default:
+			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshExternalService,
 				common_api.MeshMultiZoneService,
-			},
+			}
+		}
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.GetTargetRef(), &mesh.ValidateTargetRefOpts{
+			SupportedKinds: supportedKinds,
 		}))
 
 		defaultField := path.Field("default")
