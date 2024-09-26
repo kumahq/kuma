@@ -81,7 +81,7 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 
 	preserveDeletedResources(snapshot, previous)
 
-	//if err := snapshot.Consistent(); err != nil {
+	// if err := snapshot.Consistent(); err != nil {
 	//	return false, errors.Wrap(err, "inconsistent snapshot")
 	//}
 
@@ -141,7 +141,6 @@ func preserveDeletedResources(snapshot *envoy_cache.Snapshot, previous *envoy_ca
 					}
 				}
 			}
-
 		}
 	}
 }
