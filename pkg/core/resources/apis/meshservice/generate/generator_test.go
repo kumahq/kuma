@@ -277,14 +277,15 @@ var _ = Describe("MeshService generator", func() {
 		gracePeriodStartedAt := time.Time{}
 		Expect(gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))).To(Succeed())
 
+		gracePeriodEndsAt := gracePeriodStartedAt.Add(gracePeriodInterval)
 		// Before the grace period it still exists and afterwards it eventually
 		// disappears
 		Consistently(func(g Gomega) {
 			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
-			if time.Now().Before(gracePeriodStartedAt.Add(gracePeriodInterval)) {
+			if time.Now().Before(gracePeriodEndsAt) {
 				g.Expect(err).To(Succeed())
 			}
-		}, gracePeriodInterval.String(), "50ms").Should(Succeed())
+		}, gracePeriodEndsAt.Add(-50*time.Millisecond).Sub(time.Now()).String(), "50ms").Should(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
 		}, "2s", "100ms").Should(Succeed())
