@@ -13,4 +13,5 @@ type Reconciler interface {
 	// for a given node
 	NeedsReconciliation(node *envoy_core.Node) bool
 	KnownClientIds() map[string]bool
+	ReconcileIfNeeded(ctx context.Context, node *envoy_core.Node) error
 }
