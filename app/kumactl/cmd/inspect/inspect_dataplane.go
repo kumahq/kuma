@@ -101,7 +101,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				}
 				return tmpl.Execute(cmd.OutOrStdout(), entryList)
 			case InspectionTypeConfigDump:
-				bytes, err := client.ConfigDump(context.Background(), resourceKey)
+				bytes, err := client.ConfigDump(context.Background(), resourceKey, true)
 				if err != nil {
 					return err
 				}

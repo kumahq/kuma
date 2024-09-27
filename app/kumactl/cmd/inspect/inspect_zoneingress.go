@@ -38,7 +38,7 @@ func newInspectZoneIngressCmd(pctx *cmd.RootContext) *cobra.Command {
 
 			switch inspectionType {
 			case InspectionTypeConfigDump:
-				bytes, err := client.ConfigDump(context.Background(), resourceKey)
+				bytes, err := client.ConfigDump(context.Background(), resourceKey, true)
 				if err != nil {
 					return err
 				}
