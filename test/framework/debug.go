@@ -266,9 +266,11 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 type dpType string
 
-const dataplaneType dpType = "dataplane"
-const zoneegressType dpType = "zoneegress"
-const zoneingressType dpType = "zoneingress"
+const (
+	dataplaneType   dpType = "dataplane"
+	zoneegressType  dpType = "zoneegress"
+	zoneingressType dpType = "zoneingress"
+)
 
 func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
 	errorSeen := false
