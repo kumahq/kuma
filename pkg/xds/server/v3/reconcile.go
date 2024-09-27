@@ -66,6 +66,9 @@ func (r *reconciler) Reconcile(ctx context.Context, xdsCtx xds_context.Context, 
 	}
 
 	snapshot, changed := autoVersion(previous, snapshot)
+	if previous.GetVersion(envoy_resource.ClusterType) != snapshot.GetVersion(envoy_resource.ClusterType) {
+		snapshot.Resources[envoy_types.Endpoint].Version = core.NewUUID()
+	}
 
 	resKey := proxy.Id.ToResourceKey()
 	log := reconcileLog.WithValues("proxyName", resKey.Name, "mesh", resKey.Mesh)
