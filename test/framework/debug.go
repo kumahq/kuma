@@ -259,9 +259,9 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
 	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
 
-	configDump(kumactlOpts, debugPath, cluster, mesh, "dataplane")
-	configDump(kumactlOpts, debugPath, cluster, mesh, "zoneegress")
-	configDump(kumactlOpts, debugPath, cluster, mesh, "zoneingress")
+	configDump(kumactlOpts, debugPath, cluster, mesh, dataplaneType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneegressType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneingressType)
 }
 
 type dpType string
