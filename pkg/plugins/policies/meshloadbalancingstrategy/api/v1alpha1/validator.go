@@ -43,13 +43,34 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
-			SupportedKinds: []common_api.TargetRefKind{
+		var supportedKinds []common_api.TargetRefKind
+		var supportedKindsError string
+		switch topTargetRef.Kind {
+		case common_api.MeshGateway:
+			if toItem.Default.LoadBalancer != nil {
+				supportedKindsError = fmt.Sprintf("value is not supported, only %s is allowed if loadBalancer is set", common_api.Mesh)
+				supportedKinds = []common_api.TargetRefKind{
+					common_api.Mesh,
+				}
+			} else {
+				supportedKinds = []common_api.TargetRefKind{
+					common_api.Mesh,
+					common_api.MeshService,
+					common_api.MeshMultiZoneService,
+				}
+			}
+		default:
+			supportedKinds = []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshService,
 				common_api.MeshMultiZoneService,
-			},
-		}))
+			}
+		}
+		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+			SupportedKinds:      supportedKinds,
+			SupportedKindsError: supportedKindsError,
+		})
+		verr.AddErrorAt(path.Field("targetRef"), errs)
 		if toItem.TargetRef.Kind == common_api.MeshExternalService && topTargetRef.Kind != common_api.Mesh {
 			verr.AddViolationAt(path.Field("targetRef.kind"), "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh")
 		}

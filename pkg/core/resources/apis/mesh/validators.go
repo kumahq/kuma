@@ -50,6 +50,7 @@ type ValidateSelectorsOpts struct {
 
 type ValidateTargetRefOpts struct {
 	SupportedKinds             []common_api.TargetRefKind
+	SupportedKindsError        string
 	GatewayListenerTagsAllowed bool
 	// AllowedInvalidNames field allows to provide names that deviate from
 	// standard naming conventions in specific scenarios. I.e. normally,
@@ -357,7 +358,11 @@ func ValidateTargetRef(
 		return err
 	}
 	if !slices.Contains(opts.SupportedKinds, ref.Kind) {
-		err.AddViolation("kind", "value is not supported")
+		errMsg := "value is not supported"
+		if optsErr := opts.SupportedKindsError; optsErr != "" {
+			errMsg = optsErr
+		}
+		err.AddViolation("kind", errMsg)
 		return err
 	}
 

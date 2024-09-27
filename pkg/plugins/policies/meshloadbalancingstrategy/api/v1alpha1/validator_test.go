@@ -426,6 +426,29 @@ to:
                 type: AnyExcept
 
 `),
+		ErrorCases(
+			"invalid MeshGateway and to MeshService",
+			[]validators.Violation{{
+				Field:   "spec.to[0].targetRef.kind",
+				Message: "value is not supported, only Mesh is allowed if loadBalancer is set",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge-gateway
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
+`),
 	)
 
 	DescribeValidCases(
@@ -535,10 +558,6 @@ to:
     default:
       localityAwareness:
         disabled: true
-      loadBalancer:
-        type: LeastRequest
-        leastRequest:
-          activeRequestBias: "1.3"
 `),
 		XEntry(
 			"to MeshExternalService",

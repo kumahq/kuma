@@ -1,0 +1,19 @@
+resources:
+- name: default_backend___msvc_80-65ee15ea276ba345
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      localityWeightedLbConfig: {}
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        initialFetchTimeout: 0s
+        resourceApiVersion: V3
+    name: default_backend___msvc_80-65ee15ea276ba345
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          httpProtocolOptions: {}
