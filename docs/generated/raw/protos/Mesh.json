@@ -242,7 +242,7 @@
         },
         "kuma.mesh.v1alpha1.Mesh.MeshServices": {
             "properties": {
-                "enabled": {
+                "mode": {
                     "enum": [
                         "Disabled",
                         0,
@@ -261,7 +261,7 @@
                             "type": "integer"
                         }
                     ],
-                    "title": "Enabled"
+                    "title": "Mode"
                 }
             },
             "additionalProperties": true,
