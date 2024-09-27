@@ -6,8 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -42,7 +44,15 @@ spec:
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(MTLSMeshWithMeshServicesKubernetes(meshName, "Exclusive")).
+			Install(
+				YamlK8s(
+					builders.Mesh().
+						WithName(meshName).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+						KubeYaml(),
+				),
+			).
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
