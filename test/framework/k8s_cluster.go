@@ -283,6 +283,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		"--dataplane-repository":      Config.KumaDPImageRepo,
 		"--dataplane-init-repository": Config.KumaInitImageRepo,
 	}
+	var args []string
 	if Config.KumaImageRegistry != "" {
 		argsMap["--control-plane-registry"] = Config.KumaImageRegistry
 		argsMap["--dataplane-registry"] = Config.KumaImageRegistry
@@ -313,6 +314,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
+		args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
 	}
 
 	if c.opts.cni {
@@ -331,7 +333,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap[opt] = value
 	}
 
-	var args []string
 	for k, v := range argsMap {
 		args = append(args, k, v)
 	}
