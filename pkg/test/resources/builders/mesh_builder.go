@@ -131,6 +131,16 @@ func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServic
 	return m
 }
 
+func (m *MeshBuilder) WithoutInitialPolicies() *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = []string{"*"}
+	return m
+}
+
+func (m *MeshBuilder) WithSkipCreatingInitialPolicies(policies []string) *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = policies
+	return m
+}
+
 func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuilder {
 	fn(m.res)
 	return m
