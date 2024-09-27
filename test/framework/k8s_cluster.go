@@ -314,7 +314,9 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
-		args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
+		if Config.Debug {
+			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
+		}
 	}
 
 	if c.opts.cni {
