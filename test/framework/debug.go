@@ -280,9 +280,9 @@ func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cl
 	case dataplaneType:
 		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
 	case zoneegressType:
-		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneegresses", "--mesh", mesh, "-ojson")
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneegresses", "-ojson")
 	case zoneingressType:
-		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneingresses", "--mesh", mesh, "-ojson")
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneingresses", "-ojson")
 	default:
 		Logf("[WARNING]: unknown dp type " + string(dpType))
 		return
