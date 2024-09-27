@@ -19,7 +19,10 @@ type Server interface {
 }
 
 func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger) Server {
-	deltaServer := delta.NewServer(context.Background(), config, callbacks)
+	// Default resource types are length of XDS types. With KDS we have much more types.
+	// If we don't adjust this value, we can hit KDS deadlock.
+	// We could count exactly how many types we have, but overhead of larger map size is negligible for potential mistake here.
+	deltaServer := delta.NewServer(context.Background(), config, callbacks, delta.WithDistinctResourceTypes(1000))
 	return &server{Server: deltaServer}
 }
 

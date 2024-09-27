@@ -33,10 +33,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 		node.Id = meshmetrics_generator.DefaultKumaClientId
 	}
 
-	if r.reconciler.NeedsReconciliation(node) {
-		return r.reconciler.Reconcile(ctx)
-	}
-	return nil
+	return r.reconciler.ReconcileIfNeeded(ctx, node)
 }
 
 func (r *restReconcilerCallbacks) OnFetchResponse(request util_xds.DiscoveryRequest, response util_xds.DiscoveryResponse) {

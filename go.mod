@@ -231,4 +231,4 @@ require (
 )
 
 // remove once https://github.com/envoyproxy/go-control-plane/issues/875 is resolved
-replace github.com/envoyproxy/go-control-plane => github.com/envoyproxy/go-control-plane v0.11.2-0.20231010133108-1dfbe83bcebc
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.2
