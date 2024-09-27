@@ -271,7 +271,8 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
 		}, "2s", "100ms").Should(Succeed())
-		labelExistedSince := time.Now()
+		labelExistedSince, err := time.Parse(time.RFC3339, ms.GetMeta().GetLabels()["kuma.io/deletion-grace-period-started-at"])
+		Expect(err).ToNot(HaveOccurred())
 
 		// Before the grace period it still exists and afterwards it eventually
 		// disappears
