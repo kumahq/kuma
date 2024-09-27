@@ -285,7 +285,7 @@ var _ = Describe("MeshService generator", func() {
 			if time.Now().Before(gracePeriodEndsAt) {
 				g.Expect(err).To(Succeed())
 			}
-		}, gracePeriodEndsAt.Add(-50*time.Millisecond).Sub(time.Now()).String(), "50ms").Should(Succeed())
+		}, time.Until(gracePeriodEndsAt.Add(-50*time.Millisecond)).String(), "50ms").Should(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
 		}, "2s", "100ms").Should(Succeed())
