@@ -101,9 +101,9 @@ message Mesh {
   };
 
   message MeshServices {
-    Enabled enabled = 1;
+    Mode mode = 1;
 
-    enum Enabled {
+    enum Mode {
       // MeshServices are't generated
       Disabled = 0;
       // MeshServices are generated and used for configuration
