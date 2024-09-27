@@ -264,21 +264,27 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	configDump(kumactlOpts, debugPath, cluster, mesh, "zoneingress")
 }
 
-func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType string) {
+type dpType string
+
+const dataplaneType dpType = "dataplane"
+const zoneegressType dpType = "zoneegress"
+const zoneingressType dpType = "zoneingress"
+
+func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
 	errorSeen := false
 	dpInspectError := ""
 	dpResp := dataplaneListResponse{}
 	dpListJson := ""
 	var err error
 	switch dpType {
-	case "dataplane":
+	case dataplaneType:
 		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
-	case "zoneegress":
+	case zoneegressType:
 		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneegresses", "--mesh", mesh, "-ojson")
-	case "zoneingress":
+	case zoneingressType:
 		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneingresses", "--mesh", mesh, "-ojson")
 	default:
-		Logf("[WARNING]: unknown dp type " + dpType)
+		Logf("[WARNING]: unknown dp type " + string(dpType))
 		return
 	}
 	if err != nil {
@@ -304,18 +310,18 @@ func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cl
 
 				configDumpResp := ""
 				switch dpType {
-				case "dataplane":
+				case dataplaneType:
 					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
-				case "zoneegress":
+				case zoneegressType:
 					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneegress", dpObj.Name, "--type", "config-dump")
-				case "zoneingress":
+				case zoneingressType:
 					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneingresses", dpObj.Name, "--type", "config-dump")
 				default:
-					Logf("[WARNING]: unknown dp type " + dpType)
+					Logf("[WARNING]: unknown dp type " + string(dpType))
 					return
 				}
 				if err != nil {
-					if dpType == "dataplane" {
+					if dpType == dataplaneType {
 						dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
 							dpObj.Name, dpObj.Mesh, err.Error())
 					} else {
