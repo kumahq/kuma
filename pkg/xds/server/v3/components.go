@@ -59,7 +59,6 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
-		// newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
 	if cb := rt.XDS().ServerCallbacks; cb != nil {
