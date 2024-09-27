@@ -14,6 +14,12 @@ Policies targeting `spec.targetRef.kind: MeshGateway` can now only target `kind:
 `to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
 was ambiguous and nondeterministic.
 
+### MeshLoadBalancingStrategy
+
+Policies targeting `spec.targetRef.kind: MeshGateway` and setting the `spec.loadBalancer` field can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
 ### MeshExternalService
 
 #### Removal of unix sockets support
