@@ -10,6 +10,6 @@ type Config struct {
 	CpNamespace                 string
 	ObservabilityDeploymentName string
 	IPV6                        bool
-	MeshServiceEnabled          mesh_proto.Mesh_MeshServices_Enabled
+	MeshServiceMode             mesh_proto.Mesh_MeshServices_Mode
 	UseEgress                   bool
 }
