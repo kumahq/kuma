@@ -210,7 +210,7 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 				return "Failed to get Namespace " + namespace, err
 			}
 
-			nsLastCondition := ""
+			nsLastCondition := "unknown"
 			if len(nsObject.Status.Conditions) != 0 {
 				nsLastCondition = nsObject.Status.Conditions[len(nsObject.Status.Conditions)-1].String()
 			}
