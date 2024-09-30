@@ -87,4 +87,4 @@ metadata:
   name: default
 spec:
   meshServices:
-    enabled: Everywhere
+    mode: Everywhere

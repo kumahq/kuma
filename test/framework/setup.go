@@ -136,7 +136,7 @@ metadata:
   name: %s
 spec:
   meshServices:
-    enabled: %s
+    mode: %s
 `, name, meshServicesEnabled)
 	return YamlK8s(mesh)
 }
@@ -175,7 +175,7 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -183,13 +183,13 @@ metadata:
   name: %s
 spec:
   meshServices:
-    enabled: %s
+    mode: %s
   mtls:
     enabledBackend: ca-1
     backends:
       - name: ca-1
         type: builtin
-`, name, meshServicesEnabled)
+`, name, meshServicesMode)
 	return YamlK8s(mesh)
 }
 
@@ -213,13 +213,13 @@ spec:
 	return YamlK8s(mtp)
 }
 
-func MeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
+func MeshWithMeshServicesUniversal(name string, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
 meshServices:
-  enabled: %s
-`, name, meshServicesEnabled)
+  mode: %s
+`, name, meshServicesMode)
 	return YamlUniversal(mesh)
 }
 
@@ -241,7 +241,7 @@ func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) 
 type: Mesh
 name: %s
 meshServices:
-  enabled: %s
+  mode: %s
 mtls:
   enabledBackend: ca-1
   backends:

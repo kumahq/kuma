@@ -171,7 +171,7 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 
 	var domains []xds_types.VIPDomains
 	var outbounds []*xds_types.Outbound
-	if baseMeshContext.Mesh.Spec.MeshServicesEnabled() != mesh_proto.Mesh_MeshServices_Exclusive {
+	if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
 		virtualOutboundView, err := m.vipsPersistence.GetByMesh(ctx, meshName)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not fetch vips")

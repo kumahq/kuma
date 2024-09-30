@@ -25,7 +25,7 @@ metadata:
   name: default
 spec:
   meshServices:
-    enabled: Everywhere
+    mode: Everywhere
 ---
 apiVersion: kuma.io/v1alpha1
 kind: MeshService

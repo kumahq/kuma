@@ -111,7 +111,7 @@ spec:
 type: Mesh
 name: "%s"
 meshServices:
-  enabled: Everywhere
+  mode: Everywhere
 mtls:
   enabledBackend: ca-1
   backends:

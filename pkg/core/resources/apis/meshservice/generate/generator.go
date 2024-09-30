@@ -286,7 +286,7 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-				if meshCtx.Resource.Spec.MeshServicesEnabled() != mesh_proto.Mesh_MeshServices_Disabled {
+				if meshCtx.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Disabled {
 					dataplanes := meshCtx.Resources.Dataplanes()
 					meshServices := meshCtx.Resources.MeshServices()
 					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)

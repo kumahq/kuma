@@ -99,7 +99,7 @@ func (t *ZoneAvailableServicesTracker) getIngressExternalServices(
 	var externalServices []*core_mesh.ExternalServiceResource
 
 	for _, mesh := range aggregatedMeshCtxs.Meshes {
-		if !mesh.ZoneEgressEnabled() || mesh.Spec.MeshServicesEnabled() == mesh_proto.Mesh_MeshServices_Exclusive {
+		if !mesh.ZoneEgressEnabled() || mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive {
 			continue
 		}
 
@@ -128,7 +128,7 @@ func (t *ZoneAvailableServicesTracker) updateZoneIngresses(ctx context.Context) 
 	}
 	skipAvailableServices := map[xds.MeshName]struct{}{}
 	for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-		if meshCtx.Resource.Spec.MeshServicesEnabled() == mesh_proto.Mesh_MeshServices_Exclusive {
+		if meshCtx.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Exclusive {
 			skipAvailableServices[mesh] = struct{}{}
 		}
 	}
