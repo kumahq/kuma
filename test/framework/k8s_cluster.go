@@ -200,13 +200,21 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			_, err := k8s.GetNamespaceE(c.t,
+			nsObject, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
 				namespace)
 			if err != nil {
-				return "Namespace " + namespace + " deleted", nil
+				if k8s_errors.IsNotFound(err) {
+					return "Namespace " + namespace + " deleted", nil
+				}
+				return "Failed to get Namespace " + namespace, err
 			}
-			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active", namespace)
+
+			nsLastCondition := "unknown"
+			if len(nsObject.Status.Conditions) != 0 {
+				nsLastCondition = nsObject.Status.Conditions[len(nsObject.Status.Conditions)-1].String()
+			}
+			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active, last condition: %s", namespace, nsLastCondition)
 		})
 }
 
