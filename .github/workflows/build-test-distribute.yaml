@@ -1,0 +1,184 @@
+name: "build-test-distribute"
+on:
+  push:
+    branches: ["master", "release-*", "!*-merge-master"]
+    tags: ["*"]
+  pull_request:
+    branches: ["master", "release-*"]
+permissions:
+  contents: write # To upload assets
+  id-token: write # For using token to sign images
+  actions: read # For getting workflow run info to build provenance
+  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+env:
+  KUMA_DIR: "."
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+jobs:
+  check:
+    permissions:
+      contents: read
+      # golangci-lint-action
+      checks: write
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      BUILD: ${{ env.BUILD }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
+      REGISTRY: ${{ steps.metadata.outputs.registry }}
+      VERSION_NAME: ${{ steps.metadata.outputs.version }}
+      NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
+      CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
+    steps:
+      - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
+        if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
+        run: |
+          echo "::error title=Label 'ci/force-publish' cannot be used on PRs from forks::To prevent accidental exposure of secrets, CI won't use repository secrets on pull requests from forks"
+          exit 1
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+          cache: false
+      - uses: golangci/golangci-lint-action@aaa42aa0628b4ae2578232a66b541047968fac86 # v6.1.0
+        with:
+          args: --fix=false --verbose
+          version: v1.60.3
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make clean
+      - run: |
+          make check
+      - id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        with:
+          dir: .
+          config: .syft.yaml
+          upload-sbom-release-assets: true
+      - id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+          echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
+          echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
+          echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+  test:
+    permissions:
+      contents: read
+    needs: ["check"]
+    uses: ./.github/workflows/_test.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+    secrets: inherit
+  build_publish:
+    permissions:
+      contents: read
+      id-token: write
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
+    secrets: inherit
+  provenance:
+    needs: ["check", "build_publish"]
+    if: ${{ github.ref_type == 'tag' }}
+    uses: ./.github/workflows/_provenance.yaml
+    secrets: inherit
+    permissions:
+      contents: write
+      id-token: write # For using token to sign images
+      actions: read # For getting workflow run info to build provenance
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+    with:
+      BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
+  distributions:
+    needs: ["build_publish", "check", "test", "provenance"]
+    timeout-minutes: 10
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read # For getting workflow run info
+    env:
+      SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
+      SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
+    steps:
+      - name: "Halt due to previous failures"
+        run: |-
+          echo "results: ${{ toJson(needs.*.result) }}"
+          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
+          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
+          [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
+          echo "All dependent jobs succeeded"
+      - name: "Download all SBOM assets"
+        id: collect_sbom
+        if: ${{ needs.build_publish.result == 'success' }}
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          pattern: "*sbom.{cyclonedx,spdx}.json"
+          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Download binary artifact provenance"
+        if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
+        id: collect_provenance
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          pattern: ${{ github.event.repository.name }}.intoto.jsonl
+          merge-multiple: true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: "Generate security assets TAR"
+        if: ${{ needs.build_publish.result == 'success' }}
+        id: security_assets_metadata
+        run: |
+          cd ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
+          find . -maxdepth 1 -type f \( -name '*sbom.*.json' -o -name '*.intoto.jsonl' \) -print | tar -cvzf ${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz -T -
+          ls -alR .
+        # Publish aggregated zip file of SBOMs and/or Binary Provenance to artifact regstry
+      - name: Push security assets to cloudsmith
+        id: push_security_assets
+        if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
+        uses: cloudsmith-io/action@8fe2c21805b379148b31e94ef1b509d2a83342c3 # v0.6.13
+        with:
+          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
+          command: "push"
+          format: "raw"
+          owner: "kong"
+          repo: "${{ needs.check.outputs.CLOUDSMITH_REPOSITORY }}"
+          version: "${{ needs.check.outputs.VERSION_NAME }}"
+          file: "${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}/${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz"
+          name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
+          summary: "SLSA security artifacts for ${{ github.repository }}"
+          description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
+          use-executable: "false"

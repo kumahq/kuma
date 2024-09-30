@@ -1,0 +1,279 @@
+on:
+  workflow_call:
+    inputs:
+      FULL_MATRIX:
+        required: true
+        type: string
+      ALLOW_PUSH:
+        required: true
+        type: string
+      BINARY_ARTIFACT_NAME:
+        required: true
+        type: string
+      IMAGE_ARTIFACT_NAME:
+        required: true
+        type: string
+      IMAGES:
+        required: true
+        type: string
+      REGISTRY:
+        required: true
+        type: string
+      VERSION_NAME:
+        required: true
+        type: string
+      NOTARY_REPOSITORY:
+        required: true
+        type: string
+    outputs:
+      BINARY_ARTIFACT_DIGEST_BASE64:
+        value: ${{ jobs.build-binaries.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGE_DIGESTS:
+        value: ${{ jobs.digest-images.outputs.DIGESTS }}
+permissions:
+  contents: read
+  id-token: write # Required for image signing
+env:
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
+  ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
+  GH_OWNER: ${{ github.repository_owner }}
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+  GH_REPO: "charts"
+jobs:
+  build-binaries:
+    timeout-minutes: 40
+    runs-on: ubuntu-latest
+    outputs:
+      BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
+    steps:
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make build
+      - run: |
+          make -j build/distributions
+      - id: inspect-binary-output
+        run: |
+          for i in build/distributions/out/*.tar.gz; do echo $i; tar -tvf $i; done
+          echo "Artifact digest:"
+          cat ./build/distributions/artifact_digest_file.text
+          echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        id: binary-artifacts
+        with:
+          name: ${{ inputs.BINARY_ARTIFACT_NAME }}
+          path: |
+            ./build/distributions/out/*.tar.gz
+            ./build/distributions/out/*.sha256
+            !./build/distributions/out/*.tar.gz.sha256
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - name: publish binaries
+        env:
+          PULP_USERNAME: ${{ vars.PULP_USERNAME }}
+          PULP_PASSWORD: ${{ secrets.PULP_PASSWORD }}
+          CLOUDSMITH_API_KEY: ${{ secrets.CLOUDSMITH_API_KEY }}
+        run: |
+          make publish/pulp
+  build-images:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ${{ fromJSON(inputs.images) }}
+    steps:
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          fetch-depth: 0
+      - name: Install dependencies for cross builds
+        if: ${{ fromJSON(inputs.FULL_MATRIX) }}
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - id: image_meta
+        run: |
+          echo "Extracting image meta for ${{ matrix.image }}"
+          echo "image=${{ inputs.REGISTRY }}/${{ matrix.image }}:${{ inputs.VERSION_NAME }}" >> $GITHUB_OUTPUT
+      - run: |
+          make images/${{ matrix.image }}
+      - run: |
+          make docker/save/${{ matrix.image }}
+      - name: Run container structure test
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-container-structure-test') && !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+        run: |
+          make test/container-structure/${{ matrix.image }}
+      - name: scan amd64 image
+        id: scan_image-amd64
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        with:
+          asset_prefix: image_${{ matrix.image }}-amd64
+          image: ./build/docker/${{ matrix.image }}-amd64.tar
+          upload-sbom-release-assets: true
+          skip_cis_scan: true
+      - name: scan arm64 image
+        id: scan_image-arm64
+        if: ${{ fromJSON(inputs.FULL_MATRIX) }}
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        with:
+          asset_prefix: image_${{ matrix.image }}-arm64
+          image: ./build/docker/${{ matrix.image }}-arm64.tar
+          upload-sbom-release-assets: true
+          skip_cis_scan: true
+        # TODO in the future we may want to have prerelease images and use `regctl image copy` to move them to their final location
+      - name: publish images
+        id: release_images
+        env:
+          DOCKER_API_KEY: ${{ secrets.DOCKER_API_KEY }}
+          DOCKER_USERNAME: ${{ vars.DOCKER_USERNAME }}
+        run: |-
+          make docker/login
+          # ensure we always logout
+          function on_exit() {
+            make docker/logout
+          }
+          trap on_exit EXIT
+          make docker/push/${{ matrix.image }}
+          make docker/manifest/${{ matrix.image }}
+      - name: Install regctl
+        uses: regclient/actions/regctl-installer@d8097ee5dd5cdf150516315919b58509fc7f4cfa
+      - name: image digest
+        id: image_digest
+        if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+        run: |
+          echo "Fetching image digest for ${{ matrix.image }}"
+          digest=$(regctl image digest ${{ steps.image_meta.outputs.image }})
+          echo "Got digest: $digest"
+          echo "digest=${digest}" >> $GITHUB_OUTPUT
+          echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        id: image-artifacts
+        with:
+          name: image_${{ matrix.image }}
+          path: |
+            ./build/docker/*.tar
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        id: image-digest-artifacts
+        with:
+          name: image_${{ matrix.image }}.digest.json
+          path: |
+            ./build/docker/${{ matrix.image }}.digest.json
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      - name: sign image
+        if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+        id: sign
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        with:
+          image_digest: ${{ steps.image_digest.outputs.digest }}
+          tags: ${{ steps.image_meta.outputs.image }}
+          signature_registry: ${{ inputs.REGISTRY }}/${{inputs.NOTARY_REPOSITORY}}
+          registry_username: ${{ vars.DOCKER_USERNAME }}
+          registry_password: ${{ secrets.DOCKER_API_KEY }}
+  digest-images:
+    needs: [build-images]
+    runs-on: ubuntu-latest
+    outputs:
+      DIGESTS: ${{ steps.compute-digests.outputs.digests }}
+    steps:
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          pattern: "image_*.digest.json"
+          path: ./digests
+          merge-multiple: true
+      - id: compute-digests
+        run: |
+          # Create an object of digests indexed by image (.e.g: {"kuma-cp": "sha256:1234", "kuma-dp": "sha256:5678" ...})
+          echo "digests<<EOF" >> $GITHUB_OUTPUT
+          jq --slurp 'reduce .[] as $item ({}; . * $item)' ./digests/*.digest.json >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+  publish-helm:
+    needs: [build-images]
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          fetch-depth: 0
+      - name: Install dependencies for cross builds
+        if: ${{ fromJSON(inputs.FULL_MATRIX) }}
+        run: |
+          sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - name: package-helm-chart
+        id: package-helm
+        env:
+          HELM_DEV: ${{ github.ref_type != 'tag' }}
+        run: |
+          make helm/update-version
+
+          git config user.name "${GH_USER}"
+          git config user.email "${GH_EMAIL}"
+          git add -u deployments/charts
+          # This commit never ends up in the repo
+          git commit --allow-empty -m "ci(helm): update versions"
+          # To get an idea of what's in the commit to debug
+          git show
+
+          make helm/package
+          PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
+          echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
+      - name: Upload packaged chart
+        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        with:
+          name: ${{ steps.package-helm.outputs.filename }}
+          path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+      # Everything from here is only running on releases.
+      # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
+      - name: Generate GitHub app token
+        id: github-app-token
+        if: ${{ github.ref_type == 'tag' }}
+        uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
+        with:
+          app-id: ${{ secrets.APP_ID }}
+          private-key: ${{ secrets.APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.GH_REPO }}
+      - name: Release chart
+        if: ${{ github.ref_type == 'tag' }}
+        env:
+          GITHUB_APP: "true"
+          GH_TOKEN: ${{ steps.github-app-token.outputs.token }}
+        run: make helm/release
