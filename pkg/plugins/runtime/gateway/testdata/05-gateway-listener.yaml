@@ -51,7 +51,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
@@ -115,7 +114,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
@@ -179,7 +177,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
@@ -241,7 +238,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
