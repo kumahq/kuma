@@ -13,71 +13,6 @@ Listeners:
       filterChains:
       - filterChainMatch:
           serverNames:
-<<<<<<< HEAD
-=======
-          - bar.example.com
-          transportProtocol: tls
-        filters:
-        - name: envoy.filters.network.http_connection_manager
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-            commonHttpProtocolOptions:
-              headersWithUnderscoresAction: REJECT_REQUEST
-              idleTimeout: 300s
-            http2ProtocolOptions:
-              allowConnect: true
-              initialConnectionWindowSize: 1048576
-              initialStreamWindowSize: 65536
-              maxConcurrentStreams: 100
-            httpFilters:
-            - name: envoy.filters.http.local_ratelimit
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                statPrefix: rate_limit
-            - name: gzip-compress
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
-                compressorLibrary:
-                  name: gzip
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
-                responseDirectionConfig:
-                  disableOnEtagHeader: true
-            - name: envoy.filters.http.router
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-            mergeSlashes: true
-            normalizePath: true
-            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
-            rds:
-              configSource:
-                ads: {}
-                resourceApiVersion: V3
-              routeConfigName: default-gateway:HTTPS:443:bar.example.com
-            requestHeadersTimeout: 0.500s
-            serverName: Kuma Gateway
-            statPrefix: gateway-default
-            streamIdleTimeout: 5s
-            useRemoteAddress: true
-        transportSocket:
-          name: envoy.transport_sockets.tls
-          typedConfig:
-            '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
-            commonTlsContext:
-              alpnProtocols:
-              - h2
-              - http/1.1
-              tlsCertificateSdsSecretConfigs:
-              - name: cert.rsa:secret:server-certificate
-                sdsConfig:
-                  ads: {}
-                  resourceApiVersion: V3
-              tlsParams:
-                tlsMinimumProtocolVersion: TLSv1_2
-            requireClientCertificate: false
-      - filterChainMatch:
-          serverNames:
->>>>>>> a9bf4b8c8 (fix(xds): eds deadlock on initial fetch timeout (#11602))
           - foo.example.com
           transportProtocol: tls
         filters:
@@ -179,7 +114,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: default-gateway:HTTPS:443
             requestHeadersTimeout: 0.500s
