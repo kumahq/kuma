@@ -51,7 +51,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTPS:8080
             requestHeadersTimeout: 0.500s

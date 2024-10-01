@@ -11,7 +11,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: echo-service-4d89cd662308223d
       outlierDetection:
@@ -40,7 +39,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: echo-service-11405a82852416ac
       outlierDetection:
@@ -69,7 +67,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: echo-service-ff1f8bb571f3bfa4
       outlierDetection:
@@ -182,7 +179,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: gateway-multihost:HTTP:9080
             requestHeadersTimeout: 0.500s

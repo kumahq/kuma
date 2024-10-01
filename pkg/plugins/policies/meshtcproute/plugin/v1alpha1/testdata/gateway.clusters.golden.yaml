@@ -1,0 +1,45 @@
+resources:
+- name: backend-26cb64fa4e85e7b7
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend-26cb64fa4e85e7b7
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+- name: go-backend-1-a3e0f78d6b8a9607
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: go-backend-1-a3e0f78d6b8a9607
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+- name: go-backend-2-3568c8790af04ca0
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: go-backend-2-3568c8790af04ca0
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+- name: other-backend-d14e06e801b3b5d6
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: other-backend-d14e06e801b3b5d6
+    perConnectionBufferLimitBytes: 32768
+    type: EDS

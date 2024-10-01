@@ -64,7 +64,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocket:
@@ -126,7 +125,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
@@ -216,7 +214,6 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocket:

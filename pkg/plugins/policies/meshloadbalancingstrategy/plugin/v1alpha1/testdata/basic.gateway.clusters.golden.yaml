@@ -1,0 +1,24 @@
+resources:
+- name: backend-d230d75c0fcb71dc
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    lbPolicy: RING_HASH
+    name: backend-d230d75c0fcb71dc
+    perConnectionBufferLimitBytes: 32768
+    ringHashLbConfig:
+      hashFunction: MURMUR_HASH_2
+      maximumRingSize: "1000"
+      minimumRingSize: "100"
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}

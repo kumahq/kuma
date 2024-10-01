@@ -11,7 +11,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: api-service-ebbb1519109a5d70
       outlierDetection:
@@ -40,7 +39,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: echo-service-b70526a3f546ce4f
       outlierDetection:
@@ -137,7 +135,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTP:8080
             requestHeadersTimeout: 0.500s

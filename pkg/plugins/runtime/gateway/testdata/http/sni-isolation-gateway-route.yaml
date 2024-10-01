@@ -1,0 +1,261 @@
+Clusters:
+  Resources:
+    echo-service-4d89cd662308223d:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-4d89cd662308223d
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+    echo-service-ff1f8bb571f3bfa4:
+      circuitBreakers:
+        thresholds:
+        - maxConnections: 1024
+          maxPendingRequests: 1024
+          maxRequests: 1024
+          maxRetries: 3
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+          resourceApiVersion: V3
+      name: echo-service-ff1f8bb571f3bfa4
+      perConnectionBufferLimitBytes: 32768
+      type: EDS
+      typedExtensionProtocolOptions:
+        envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+          '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+          commonHttpProtocolOptions:
+            idleTimeout: 3600s
+            maxConnectionDuration: 0s
+            maxStreamDuration: 0s
+          explicitHttpConfig:
+            httpProtocolOptions: {}
+Endpoints:
+  Resources:
+    echo-service-4d89cd662308223d:
+      clusterName: echo-service-4d89cd662308223d
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+    echo-service-ff1f8bb571f3bfa4:
+      clusterName: echo-service-ff1f8bb571f3bfa4
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 192.168.1.6
+                portValue: 20006
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http
+              envoy.transport_socket_match:
+                kuma.io/protocol: http
+Listeners:
+  Resources:
+    gateway-multihost:HTTP:9080:
+      address:
+        socketAddress:
+          address: 192.168.1.1
+          portValue: 9080
+      enableReusePort: true
+      filterChains:
+      - filters:
+        - name: envoy.filters.network.http_connection_manager
+          typedConfig:
+            '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+            commonHttpProtocolOptions:
+              headersWithUnderscoresAction: REJECT_REQUEST
+              idleTimeout: 300s
+            http2ProtocolOptions:
+              allowConnect: true
+              initialConnectionWindowSize: 1048576
+              initialStreamWindowSize: 65536
+              maxConcurrentStreams: 100
+            httpFilters:
+            - name: envoy.filters.http.local_ratelimit
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                statPrefix: rate_limit
+            - name: gzip-compress
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor
+                compressorLibrary:
+                  name: gzip
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip
+                responseDirectionConfig:
+                  disableOnEtagHeader: true
+            - name: envoy.filters.http.router
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+            mergeSlashes: true
+            normalizePath: true
+            pathWithEscapedSlashesAction: UNESCAPE_AND_REDIRECT
+            rds:
+              configSource:
+                ads: {}
+                resourceApiVersion: V3
+              routeConfigName: gateway-multihost:HTTP:9080:*
+            requestHeadersTimeout: 0.500s
+            serverName: Kuma Gateway
+            statPrefix: gateway-multihost
+            streamIdleTimeout: 5s
+            useRemoteAddress: true
+      listenerFilters:
+      - name: envoy.filters.listener.tls_inspector
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+      name: gateway-multihost:HTTP:9080
+      perConnectionBufferLimitBytes: 32768
+      trafficDirection: INBOUND
+Routes:
+  Resources:
+    gateway-multihost:HTTP:9080:*:
+      ignorePortInHostMatching: true
+      name: gateway-multihost:HTTP:9080:*
+      requestHeadersToRemove:
+      - x-kuma-tags
+      validateClusters: false
+      virtualHosts:
+      - domains:
+        - two.example.com
+        name: two.example.com
+        routes:
+        - match:
+            path: /two
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-ff1f8bb571f3bfa4
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+        - match:
+            prefix: /two/
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-ff1f8bb571f3bfa4
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+      - domains:
+        - three.example.com
+        name: three.example.com
+        routes:
+        - directResponse:
+            body:
+              inlineString: |
+                This is a Kuma MeshGateway. No routes match this MeshGateway!
+            status: 404
+          match:
+            prefix: /
+      - domains:
+        - one.example.com
+        name: one.example.com
+        routes:
+        - match:
+            path: /one
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-4d89cd662308223d
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+        - match:
+            prefix: /one/
+          route:
+            clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+            idleTimeout: 5s
+            retryPolicy:
+              numRetries: 5
+              perTryTimeout: 16s
+              retryBackOff:
+                baseInterval: 0.025s
+                maxInterval: 0.250s
+              retryOn: gateway-error,connect-failure,refused-stream
+            timeout: 15s
+            weightedClusters:
+              clusters:
+              - name: echo-service-4d89cd662308223d
+                requestHeadersToAdd:
+                - header:
+                    key: x-kuma-tags
+                    value: '&kuma.io/service=gateway-multihost&'
+                weight: 1
+Runtimes:
+  Resources:
+    gateway.listeners:
+      layer: {}
+      name: gateway.listeners
+Secrets:
+  Resources: {}

@@ -1,0 +1,73 @@
+resources:
+- name: backend-89287678764ce0c5
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      healthyPanicThreshold:
+        value: 62.9
+      zoneAwareLbConfig:
+        failTrafficOnPanic: true
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    healthChecks:
+    - eventLogger:
+      - name: envoy.health_check.event_sinks.file
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.health_check.event_sinks.file.v3.HealthCheckEventFileSink
+          eventLogPath: /tmp/log.txt
+      healthyThreshold: 1
+      httpHealthCheck:
+        expectedStatuses:
+        - end: "201"
+          start: "200"
+        - end: "202"
+          start: "201"
+        path: /health
+        requestHeadersToAdd:
+        - header:
+            key: x-kuma-tags
+            value: '&kuma.io/service=sample-gateway&'
+        - header:
+            key: x-some-header
+            value: value
+        - appendAction: OVERWRITE_IF_EXISTS_OR_ADD
+          header:
+            key: x-some-other-header
+            value: value
+      initialJitter: 13s
+      interval: 10s
+      intervalJitter: 15s
+      intervalJitterPercent: 10
+      noTrafficInterval: 16s
+      reuseConnection: true
+      timeout: 2s
+      unhealthyThreshold: 3
+    name: backend-89287678764ce0c5
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
+- name: backend-945e63bff332f46a
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonLbConfig:
+      healthyPanicThreshold:
+        value: 72.9
+      zoneAwareLbConfig:
+        failTrafficOnPanic: true
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend-945e63bff332f46a
+    perConnectionBufferLimitBytes: 32768
+    type: EDS

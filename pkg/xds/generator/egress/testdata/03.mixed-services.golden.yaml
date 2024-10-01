@@ -93,7 +93,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:service-1-zone-2
     type: EDS
@@ -105,7 +104,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:service-2-zone-2
     type: EDS
