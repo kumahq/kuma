@@ -45,7 +45,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             type: EDS`,
@@ -74,7 +73,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -118,7 +116,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -161,7 +158,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -214,7 +210,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -283,7 +278,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -341,7 +335,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -382,7 +375,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -423,7 +415,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - healthyThreshold: 2
@@ -460,7 +451,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             healthChecks:
             - alwaysLogHealthCheckFailures: true

@@ -2,6 +2,7 @@ resources:
 - name: meshexternalservice_example
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+<<<<<<< HEAD
     dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: meshexternalservice_example
@@ -33,6 +34,22 @@ resources:
               privateKey:
                 inlineBytes: a2V5
             validationContext:
+=======
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: default_example___extsvc_9090
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+>>>>>>> a9bf4b8c8 (fix(xds): eds deadlock on initial fetch timeout (#11602))
               matchTypedSubjectAltNames:
               - matcher:
                   exact: example2.com

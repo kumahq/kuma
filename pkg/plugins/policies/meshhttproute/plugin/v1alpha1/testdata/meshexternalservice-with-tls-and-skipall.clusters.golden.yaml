@@ -2,6 +2,7 @@ resources:
 - name: meshexternalservice_example
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+<<<<<<< HEAD
     dnsLookupFamily: V4_ONLY
     loadAssignment:
       clusterName: meshexternalservice_example
@@ -22,6 +23,38 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           sni: example.com
     type: STRICT_DNS
+=======
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: default_example___extsvc_9090
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/zone-egress
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: afce62f771ed74b78.example.9090.default.mes
+    type: EDS
+>>>>>>> a9bf4b8c8 (fix(xds): eds deadlock on initial fetch timeout (#11602))
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
