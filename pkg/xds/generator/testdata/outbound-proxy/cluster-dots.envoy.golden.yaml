@@ -7,7 +7,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend.kuma-system
     type: EDS
@@ -23,7 +22,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: db-104dbb63d60dfdfa
     type: EDS
