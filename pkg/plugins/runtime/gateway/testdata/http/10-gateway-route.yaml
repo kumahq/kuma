@@ -11,7 +11,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: absent-header-match-327fbb6df03159bd
       perConnectionBufferLimitBytes: 32768
@@ -36,7 +35,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: exact-header-match-d7c910a2e5559eda
       perConnectionBufferLimitBytes: 32768
@@ -61,7 +59,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: present-header-match-b3e34381a1779ec6
       perConnectionBufferLimitBytes: 32768
@@ -86,7 +83,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: regex-header-match-70561bb2da83c870
       perConnectionBufferLimitBytes: 32768
@@ -211,7 +207,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTP:8080:*
             requestHeadersTimeout: 0.500s
