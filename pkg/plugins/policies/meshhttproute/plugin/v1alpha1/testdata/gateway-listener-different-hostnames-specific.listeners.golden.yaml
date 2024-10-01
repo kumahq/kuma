@@ -44,7 +44,6 @@ resources:
           rds:
             configSource:
               ads: {}
-              initialFetchTimeout: 0s
               resourceApiVersion: V3
             routeConfigName: sample-gateway:HTTP:8080:*
           requestHeadersTimeout: 0.500s
@@ -104,7 +103,6 @@ resources:
           rds:
             configSource:
               ads: {}
-              initialFetchTimeout: 0s
               resourceApiVersion: V3
             routeConfigName: sample-gateway:HTTP:8081:*
           requestHeadersTimeout: 0.500s
@@ -164,7 +162,6 @@ resources:
           rds:
             configSource:
               ads: {}
-              initialFetchTimeout: 0s
               resourceApiVersion: V3
             routeConfigName: sample-gateway:HTTP:8082:*
           requestHeadersTimeout: 0.500s
@@ -228,7 +225,6 @@ resources:
           rds:
             configSource:
               ads: {}
-              initialFetchTimeout: 0s
               resourceApiVersion: V3
             routeConfigName: sample-gateway:HTTPS:8083:*.secure.dev
           requestHeadersTimeout: 0.500s
@@ -292,7 +288,6 @@ resources:
           rds:
             configSource:
               ads: {}
-              initialFetchTimeout: 0s
               resourceApiVersion: V3
             routeConfigName: sample-gateway:HTTPS:8083:*.super-secure.dev
           requestHeadersTimeout: 0.500s
