@@ -1,4 +1,4 @@
-[![][kuma-logo]][kuma-url]
+x[![][kuma-logo]][kuma-url]
 
 **Builds**
 
