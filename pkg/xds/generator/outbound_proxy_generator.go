@@ -11,7 +11,11 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/user"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+<<<<<<< HEAD
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+=======
+	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
+>>>>>>> 205997054 (revert(kuma-cp): do not use additional addresses (#11601))
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -47,7 +51,11 @@ func (g OutboundProxyGenerator) Generate(ctx context.Context, xdsCtx xds_context
 	for _, outbound := range outbounds {
 		// Determine the list of destination subsets
 		// For one outbound listener it may contain many subsets (ex. TrafficRoute to many destinations)
+<<<<<<< HEAD
 		routes := g.determineRoutes(proxy, outbound, clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+=======
+		routes := g.determineRoutes(proxy, proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound), clusterCache, xdsCtx.Mesh.Resource.ZoneEgressEnabled())
+>>>>>>> 205997054 (revert(kuma-cp): do not use additional addresses (#11601))
 		clusters := routes.Clusters()
 
 		protocol := InferProtocol(proxy, clusters)
