@@ -6,7 +6,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:eds-cluster
     type: EDS

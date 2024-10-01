@@ -7,7 +7,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: default_backend___msvc_80-65ee15ea276ba345
     perConnectionBufferLimitBytes: 32768

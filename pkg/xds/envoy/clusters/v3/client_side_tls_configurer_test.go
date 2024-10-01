@@ -66,7 +66,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
-            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: testCluster
         transportSocketMatches:
@@ -99,7 +98,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
-            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: testCluster
         transportSocketMatches:
@@ -138,7 +136,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
@@ -197,7 +194,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
@@ -259,7 +255,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
               connectTimeout: 5s
               edsClusterConfig:
                   edsConfig:
-                      initialFetchTimeout: 0s
                       ads: {}
                       resourceApiVersion: V3
               name: testCluster

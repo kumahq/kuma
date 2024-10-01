@@ -6,7 +6,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-348a834721ead661
     perConnectionBufferLimitBytes: 32768
@@ -25,7 +24,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-6d0a1cf7605e8b1e
     perConnectionBufferLimitBytes: 32768
@@ -44,7 +42,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-a285094d9b0d7032
     perConnectionBufferLimitBytes: 32768
@@ -63,7 +60,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-dda53ef9426194b2
     perConnectionBufferLimitBytes: 32768
@@ -82,7 +78,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-ed49e74a1f66b25c
     perConnectionBufferLimitBytes: 32768
@@ -101,7 +96,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-wild-aac0221a73d6116a
     perConnectionBufferLimitBytes: 32768
@@ -120,7 +114,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: backend-wild-dev-52ee11d917faac3e
     perConnectionBufferLimitBytes: 32768
