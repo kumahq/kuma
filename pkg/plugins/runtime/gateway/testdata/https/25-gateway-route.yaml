@@ -11,7 +11,6 @@ Clusters:
       edsClusterConfig:
         edsConfig:
           ads: {}
-          initialFetchTimeout: 0s
           resourceApiVersion: V3
       name: external-http2-httpbin-b70cd456b09f96ac
       perConnectionBufferLimitBytes: 32768
@@ -115,7 +114,6 @@ Listeners:
             rds:
               configSource:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
               routeConfigName: edge-gateway:HTTPS:8080:echo.example.com
             requestHeadersTimeout: 0.500s
