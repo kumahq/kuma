@@ -43,9 +43,9 @@ func UpgradingWithHelmChartMultizone() {
 		}()
 		go func() {
 			defer grp.Done()
-			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 			Expect(zoneK8s.DeleteKuma()).To(Succeed())
 			Expect(zoneK8s.DismissCluster()).To(Succeed())
+			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 		}()
 		go func() {
 			defer grp.Done()
