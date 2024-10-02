@@ -78,12 +78,12 @@ components:
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
-          description: a set of rules for the outbounds of this proxy
+          description: a set of rules for the outbounds of this proxy. The field is not set when 'meshService.mode' is 'Exclusive'.
           items:
             $ref: '#/components/schemas/Rule'
         toResourceRules:
           type: array
-          description: a set of rules for the resources targeted by this proxy
+          description: a set of rules for the outbounds produced by real resources (i.e MeshService, MeshExternalService, MeshMultiZoneService).
           items:
             $ref: '#/components/schemas/ResourceRule'
         fromRules:
