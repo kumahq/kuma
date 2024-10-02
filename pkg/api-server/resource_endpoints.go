@@ -899,6 +899,8 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			}
 			toRules := []api_common.Rule{}
 			if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+				// Old 'ToRules' don't affect outbounds that were produced by real resources.
+				// That's why we don't have to set them when the mode is Exclusive
 				for _, ruleItem := range res.ToRules.Rules {
 					toRules = append(toRules, api_common.Rule{
 						Conf:     ruleItem.Conf,
