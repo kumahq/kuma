@@ -55,6 +55,17 @@ func (k TargetRefKind) IsRealResource() bool {
 	}
 }
 
+// These are the kinds that can be used in Kuma policies before support for
+// actual resources (e.g., MeshExternalService, MeshMultiZoneService, and MeshService) was introduced.
+func (k TargetRefKind) IsOldKind() bool {
+	switch k {
+	case Mesh, MeshSubset, MeshServiceSubset, MeshService, MeshGateway, MeshHTTPRoute:
+		return true
+	default:
+		return false
+	}
+}
+
 func AllTargetRefKinds() []TargetRefKind {
 	keys := maps.Keys(order)
 	sort.Sort(TargetRefKindSlice(keys))
@@ -69,8 +80,12 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
+	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
+	// This can be removed in 2.11.x
+	UsesSyntacticSugar bool `json:"-"`
+
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
@@ -121,10 +136,17 @@ func (b BackendRef) ReferencesRealObject() bool {
 		return b.Port != nil
 	case MeshServiceSubset:
 		return false
+	// empty targetRef should not be treated as real object
+	case "":
+		return false
 	default:
 		return true
 	}
 }
+
+// MatchesHash is used to hash route matches to determine the origin resource
+// for a ref
+type MatchesHash string
 
 type BackendRefHash string
 
@@ -136,9 +158,17 @@ func (in BackendRef) Hash() BackendRefHash {
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
+
+	keys = maps.Keys(in.Labels)
+	sort.Strings(keys)
+	orderedLabels := make([]string, 0, len(in.Labels))
+	for _, k := range keys {
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))
+	}
+
 	name := in.Name
 	if in.Port != nil {
 		name = fmt.Sprintf("%s_svc_%d", in.Name, *in.Port)
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
 }

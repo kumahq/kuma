@@ -21,18 +21,17 @@ func generateFromService(
 	proxy *core_xds.Proxy,
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAccumulator envoy_common.ServicesAccumulator,
-	toRulesTCP rules.Rules,
+	toRulesTCP rules.ToRules,
 	svc meshroute_xds.DestinationService,
 ) (*core_xds.ResourceSet, error) {
-	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].
-		ToRules.Rules
+	toRulesHTTP := proxy.Policies.Dynamic[meshhttproute_api.MeshHTTPRouteType].ToRules
 
 	resources := core_xds.NewResourceSet()
 
 	serviceName := svc.ServiceName
-	protocol := meshCtx.GetServiceProtocol(serviceName)
+	protocol := svc.Protocol
 
-	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, serviceName, protocol, svc.BackendRef)
+	backendRefs := getBackendRefs(toRulesTCP, toRulesHTTP, svc, protocol, meshCtx)
 	if len(backendRefs) == 0 {
 		return nil, nil
 	}
@@ -49,7 +48,7 @@ func generateFromService(
 		Name:           listener.GetName(),
 		Origin:         generator.OriginOutbound,
 		Resource:       listener,
-		ResourceOrigin: svc.OwnerResource,
+		ResourceOrigin: svc.Outbound.Resource,
 		Protocol:       protocol,
 	})
 	return resources, nil
@@ -57,7 +56,7 @@ func generateFromService(
 
 func generateListeners(
 	proxy *core_xds.Proxy,
-	toRulesTCP rules.Rules,
+	toRulesTCP rules.ToRules,
 	servicesAccumulator envoy_common.ServicesAccumulator,
 	meshCtx xds_context.MeshContext,
 ) (*core_xds.ResourceSet, error) {
@@ -89,14 +88,12 @@ func buildOutboundListener(
 	svc meshroute_xds.DestinationService,
 	opts ...envoy_listeners.ListenerBuilderOpt,
 ) (envoy_common.NamedResource, error) {
-	tags := svc.BackendRef.Tags
-
 	// build listener name in format: "outbound:[IP]:[Port]"
 	// i.e. "outbound:240.0.0.0:80"
 	builder := envoy_listeners.NewOutboundListenerBuilder(
 		proxy.APIVersion,
-		svc.Outbound.DataplaneIP,
-		svc.Outbound.DataplanePort,
+		svc.Outbound.GetAddress(),
+		svc.Outbound.GetPort(),
 		core_xds.SocketAddressProtocolTCP,
 	)
 
@@ -105,7 +102,7 @@ func buildOutboundListener(
 	)
 
 	tagsMetadata := envoy_listeners.TagsMetadata(
-		envoy_tags.Tags(tags).WithoutTags(mesh_proto.MeshTag),
+		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
 	)
 
 	return builder.Configure(

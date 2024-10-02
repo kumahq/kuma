@@ -1,5 +1,6 @@
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     backends:
     - datadog:
         url: http://ingest.datadoghq.eu:8126

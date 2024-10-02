@@ -1,3 +1,5 @@
+applicationProbeProxyServer:
+  port: 9001
 controlPlane:
   caCert: ""
   caCertFile: ""
@@ -8,6 +10,7 @@ controlPlane:
 dataplane:
   drainTime: 30s
   proxyType: dataplane
+  readinessPort: 9902
 dataplaneRuntime:
   binaryPath: envoy
   dynamicConfiguration:

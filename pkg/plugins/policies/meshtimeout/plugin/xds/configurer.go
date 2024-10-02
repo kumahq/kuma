@@ -25,13 +25,16 @@ import (
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
-type ListenerConfigurer struct {
+// DeprecatedListenerConfigurer should be only used for configuring old MeshService outbounds.
+// It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
+// Deprecated
+type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
 	Subset   rules.Subset
 }
 
-func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
+func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
 	if listener == nil {
 		return nil
 	}
@@ -69,7 +72,7 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 	return nil
 }
 
-func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
@@ -90,7 +93,7 @@ func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_r
 	}
 }
 
-func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
 	if conf := c.getConf(c.Subset); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
@@ -99,7 +102,7 @@ func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpC
 	}
 }
 
-func (c *ListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
+func (c *DeprecatedListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
@@ -217,4 +220,78 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 		return util_proto.Duration(defaultDuration)
 	}
 	return util_proto.Duration(d.Duration)
+}
+
+var DefaultTimeoutConf = api.Conf{
+	ConnectionTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
+	IdleTimeout:       &kube_meta.Duration{Duration: policies_defaults.DefaultIdleTimeout},
+	Http: &api.Http{
+		RequestTimeout:        &kube_meta.Duration{Duration: policies_defaults.DefaultRequestTimeout},
+		StreamIdleTimeout:     &kube_meta.Duration{Duration: policies_defaults.DefaultGatewayStreamIdleTimeout},
+		MaxStreamDuration:     &kube_meta.Duration{Duration: policies_defaults.DefaultMaxStreamDuration},
+		MaxConnectionDuration: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
+		RequestHeadersTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultRequestHeadersTimeout},
+	},
+}
+
+type ListenerConfigurer struct {
+	Conf     api.Conf
+	Protocol core_mesh.Protocol
+}
+
+func (rc *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
+	if listener == nil {
+		return nil
+	}
+
+	httpTimeouts := func(hcm *envoy_hcm.HttpConnectionManager) error {
+		rc.configureRequestTimeout(hcm.GetRouteConfig())
+		rc.configureRequestHeadersTimeout(hcm)
+		// old Timeout policy configures idleTimeout on listener while MeshTimeout sets this in cluster
+		if hcm.CommonHttpProtocolOptions == nil {
+			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
+		}
+
+		hcm.CommonHttpProtocolOptions.IdleTimeout = util_proto.Duration(0)
+		return nil
+	}
+	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
+		proxy.IdleTimeout = toProtoDurationOrDefault(rc.Conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
+		return nil
+	}
+	for _, filterChain := range listener.FilterChains {
+		switch rc.Protocol {
+		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+			if err := listeners_v3.UpdateHTTPConnectionManager(filterChain, httpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+			if err := listeners_v3.UpdateTCPProxy(filterChain, tcpTimeouts); err != nil && !errors.Is(err, &listeners_v3.UnexpectedFilterConfigTypeError{}) {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (rc *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
+	hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
+		pointer.Deref(rc.Conf.Http).RequestHeadersTimeout,
+		policies_defaults.DefaultRequestHeadersTimeout,
+	)
+}
+
+func (rc *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_route.RouteConfiguration) {
+	if routeConfiguration != nil {
+		for _, vh := range routeConfiguration.VirtualHosts {
+			for _, route := range vh.Routes {
+				ConfigureRouteAction(
+					route.GetRoute(),
+					pointer.Deref(rc.Conf.Http).RequestTimeout,
+					pointer.Deref(rc.Conf.Http).StreamIdleTimeout,
+				)
+			}
+		}
+	}
 }

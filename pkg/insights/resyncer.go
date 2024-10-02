@@ -83,8 +83,8 @@ type resyncer struct {
 	timeToProcessItem  prometheus.Summary
 	itemProcessingTime *prometheus.SummaryVec
 
-	allPolicyTypes []model.ResourceType
-	extensions     context.Context
+	allResourceTypes []model.ResourceType
+	extensions       context.Context
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -113,9 +113,9 @@ func NewResyncer(config *Config) component.Component {
 	}, []string{"reason", "result"})
 	config.Metrics.MustRegister(idleTime, timeToProcessItem, itemProcessingTime)
 
-	var allPolicyTypes []model.ResourceType
-	for _, desc := range config.Registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.IsPolicy()) {
-		allPolicyTypes = append(allPolicyTypes, desc.Name)
+	var allResourceTypes []model.ResourceType
+	for _, desc := range config.Registry.ObjectDescriptors(model.HasScope(model.ScopeMesh), model.Not(model.IsInsight())) {
+		allResourceTypes = append(allResourceTypes, desc.Name)
 	}
 
 	r := &resyncer{
@@ -132,7 +132,7 @@ func NewResyncer(config *Config) component.Component {
 		idleTime:              idleTime,
 		timeToProcessItem:     timeToProcessItem,
 		itemProcessingTime:    itemProcessingTime,
-		allPolicyTypes:        allPolicyTypes,
+		allResourceTypes:      allResourceTypes,
 		eventProcessors:       config.EventProcessors,
 		extensions:            config.Extensions,
 	}
@@ -424,7 +424,7 @@ func (r *resyncer) addMeshesToBatch(ctx context.Context, batch *eventBatch, tena
 		return
 	}
 	for _, mesh := range meshList.Items {
-		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh|FlagService, r.allPolicyTypes, reason)
+		batch.add(time.Now(), tenantID, mesh.GetMeta().GetName(), FlagMesh|FlagService, r.allResourceTypes, reason)
 	}
 }
 
@@ -568,7 +568,8 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			GatewayBuiltin:   &mesh_proto.MeshInsight_DataplaneStat{},
 			GatewayDelegated: &mesh_proto.MeshInsight_DataplaneStat{},
 		},
-		Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{},
+		Policies:  map[string]*mesh_proto.MeshInsight_PolicyStat{},
+		Resources: map[string]*mesh_proto.MeshInsight_ResourceStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
@@ -655,12 +656,15 @@ func (r *resyncer) createOrUpdateMeshInsight(
 	changed := false
 	err := manager.Upsert(ctx, r.rm, key, core_mesh.NewMeshInsightResource(), func(resource model.Resource) error {
 		oldInsight := resource.GetSpec().(*mesh_proto.MeshInsight)
+		for k, v := range oldInsight.Resources {
+			insight.Resources[k] = proto.Clone(v).(*mesh_proto.MeshInsight_ResourceStat)
+		}
 		for k, v := range oldInsight.Policies {
 			insight.Policies[k] = proto.Clone(v).(*mesh_proto.MeshInsight_PolicyStat)
 		}
 		if proto.Equal(oldInsight, &mesh_proto.MeshInsight{}) {
 			// insight was not yet computed, need to update all
-			for _, typ := range r.allPolicyTypes {
+			for _, typ := range r.allResourceTypes {
 				types[typ] = struct{}{}
 			}
 		}
@@ -670,21 +674,40 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			if err != nil {
 				return err
 			}
-			if !desc.IsPolicy {
+
+			if desc.IsInsight() {
+				// It's expensive to retrieve insights and the counter is not useful without the parent object.
 				continue
 			}
 
-			list := desc.NewList()
-			if err := r.rm.List(ctx, list, store.ListByMesh(mesh)); err != nil {
-				return err
+			var count int
+			// Reuse counter of resources that we already have
+			switch typ {
+			case core_mesh.ExternalServiceType:
+				count = len(externalServices)
+			case core_mesh.DataplaneType:
+				count = len(dpOverviews)
+			default:
+				list := desc.NewList()
+				if err := r.rm.List(ctx, list, store.ListByMesh(mesh)); err != nil {
+					return err
+				}
+				count = len(list.GetItems())
 			}
 
-			if len(list.GetItems()) != 0 {
-				insight.Policies[string(typ)] = &mesh_proto.MeshInsight_PolicyStat{
-					Total: uint32(len(list.GetItems())),
+			if count != 0 {
+				insight.Resources[string(typ)] = &mesh_proto.MeshInsight_ResourceStat{
+					Total: uint32(count),
+				}
+				if desc.IsPolicy {
+					// backwards compatibility
+					insight.Policies[string(typ)] = &mesh_proto.MeshInsight_PolicyStat{
+						Total: uint32(count),
+					}
 				}
 			}
-			if len(list.GetItems()) == 0 {
+			if count == 0 {
+				delete(insight.Resources, string(typ))
 				delete(insight.Policies, string(typ))
 			}
 		}

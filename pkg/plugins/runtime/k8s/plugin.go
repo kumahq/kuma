@@ -81,10 +81,8 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
-	if rt.Config().Experimental.GenerateMeshServices {
-		if err := addMeshServiceReconciler(mgr); err != nil {
-			return err
-		}
+	if err := addMeshServiceReconciler(mgr, converter); err != nil {
+		return err
 	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
@@ -140,12 +138,13 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshServiceReconciler(mgr kube_ctrl.Manager) error {
+func addMeshServiceReconciler(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
 	reconciler := &k8s_controllers.MeshServiceReconciler{
-		Client:        mgr.GetClient(),
-		Log:           core.Log.WithName("controllers").WithName("MeshService"),
-		Scheme:        mgr.GetScheme(),
-		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
+		Client:            mgr.GetClient(),
+		Log:               core.Log.WithName("controllers").WithName("MeshService"),
+		Scheme:            mgr.GetScheme(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
+		ResourceConverter: converter,
 	}
 	return reconciler.SetupWithManager(mgr)
 }

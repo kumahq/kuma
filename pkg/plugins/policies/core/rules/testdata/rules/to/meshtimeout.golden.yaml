@@ -1,6 +1,7 @@
 ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 15s
@@ -20,7 +21,8 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: foo
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 20s
@@ -40,7 +42,8 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: bar
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 10s

@@ -1,4 +1,6 @@
 creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/mesh: default
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: fault-injection-1

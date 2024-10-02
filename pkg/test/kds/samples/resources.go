@@ -375,7 +375,7 @@ var (
 		},
 	}
 	MeshTrafficPermission = &meshtrafficpermissions.MeshTrafficPermission{
-		TargetRef: common_api.TargetRef{
+		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",
 		},
 		From: []meshtrafficpermissions.From{
@@ -390,7 +390,7 @@ var (
 		},
 	}
 	MeshAccessLog = &meshaccesslog.MeshAccessLog{
-		TargetRef: common_api.TargetRef{
+		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",
 		},
 		From: []meshaccesslog.From{

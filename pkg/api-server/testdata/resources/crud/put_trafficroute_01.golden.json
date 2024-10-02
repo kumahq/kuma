@@ -5,8 +5,7 @@
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
  "labels": {
-  "kuma.io/origin": "zone",
-  "kuma.io/zone": "default"
+  "kuma.io/mesh": "default"
  },
  "sources": [
   {

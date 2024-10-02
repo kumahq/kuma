@@ -21,8 +21,8 @@ import (
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/context"
 	"github.com/kumahq/kuma/pkg/kds/hash"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -34,7 +34,7 @@ import (
 var _ = Describe("Context", func() {
 	Describe("ZoneResourceMapper", func() {
 		var rm manager.ResourceManager
-		var mapper reconcile.ResourceMapper
+		var mapper reconcile_v2.ResourceMapper
 
 		type testCase struct {
 			resource model.Resource
@@ -247,7 +247,7 @@ var _ = Describe("Context", func() {
 	})
 	Describe("GlobalProvidedFilter", func() {
 		var rm manager.ResourceManager
-		var predicate reconcile.ResourceFilter
+		var predicate reconcile_v2.ResourceFilter
 
 		clusterID := "cluster-id"
 		configs := map[string]bool{
@@ -324,6 +324,13 @@ var _ = Describe("Context", func() {
 			}),
 		)
 
+		zoneLabelsFn := func(zoneName string) map[string]string {
+			return map[string]string{
+				mesh_proto.ZoneTag:             zoneName,
+				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			}
+		}
+
 		DescribeTable("zone ingresses",
 			func(given testCase) {
 				ctx := stdcontext.Background()
@@ -345,7 +352,8 @@ var _ = Describe("Context", func() {
 			Entry("should not filter out zone ingresses from the different, enabled zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn("different-zone"),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: "different-zone",
@@ -365,7 +373,8 @@ var _ = Describe("Context", func() {
 			Entry("should filter out zone ingresses from the same zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn(clusterID),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: clusterID,
@@ -376,7 +385,8 @@ var _ = Describe("Context", func() {
 			Entry("should filter out zone ingresses from the different, not enabled zone", testCase{
 				resource: &core_mesh.ZoneIngressResource{
 					Meta: &test_model.ResourceMeta{
-						Name: "zone-ingress-1",
+						Name:   "zone-ingress-1",
+						Labels: zoneLabelsFn("different-zone"),
 					},
 					Spec: &mesh_proto.ZoneIngress{
 						Zone: "different-zone",
@@ -428,7 +438,7 @@ var _ = Describe("Context", func() {
 				func(given testCase) {
 					ctx := stdcontext.Background()
 					// when
-					ok := predicate(ctx, clusterID, kds.Features{}, given.resource)
+					ok := predicate(ctx, clusterID, kds.Features{kds.FeatureOptionalTopLevelTargetRef: true}, given.resource)
 
 					// then
 					Expect(ok).To(BeTrue())

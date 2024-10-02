@@ -7,10 +7,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type Watchdog interface {
-	Start(stop <-chan struct{})
-}
-
 type SimpleWatchdog struct {
 	NewTicker func() *time.Ticker
 	OnTick    func(context.Context) error
@@ -18,52 +14,40 @@ type SimpleWatchdog struct {
 	OnStop    func()
 }
 
-func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
+func (w *SimpleWatchdog) Start(ctx context.Context) {
 	ticker := w.NewTicker()
 	defer ticker.Stop()
 
 	for {
-		ctx, cancel := context.WithCancel(context.Background())
-		// cancel is called at the end of the loop
-		go func() {
-			select {
-			case <-stop:
-				cancel()
-			case <-ctx.Done():
+		if err := w.onTick(ctx); err != nil {
+			if !errors.Is(err, context.Canceled) && w.OnError != nil {
+				w.OnError(err)
 			}
-		}()
+		}
 		select {
+		case <-ctx.Done():
 		case <-ticker.C:
-			select {
-			case <-stop:
-			default:
-				if err := w.onTick(ctx); err != nil && !errors.Is(err, context.Canceled) {
-					w.OnError(err)
-				}
-			}
-		case <-stop:
+		}
+		// cases are non prioritized so we first check is the context is done
+		select {
+		case <-ctx.Done():
 			if w.OnStop != nil {
 				w.OnStop()
 			}
-			// cancel will be called by the above goroutine
 			return
+		default:
 		}
-		cancel()
 	}
 }
 
-func (w *SimpleWatchdog) onTick(ctx context.Context) error {
+func (w *SimpleWatchdog) onTick(ctx context.Context) (err error) {
 	defer func() {
 		if cause := recover(); cause != nil {
-			if w.OnError != nil {
-				var err error
-				switch typ := cause.(type) {
-				case error:
-					err = errors.WithStack(typ)
-				default:
-					err = errors.Errorf("%v", cause)
-				}
-				w.OnError(err)
+			switch typ := cause.(type) {
+			case error:
+				err = errors.WithStack(typ)
+			default:
+				err = errors.Errorf("%v", cause)
 			}
 		}
 	}()

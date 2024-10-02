@@ -1,14 +1,14 @@
 metadata:
   creationTimestamp: null
 spec:
+  availableServices:
+  - instances: 3
+    mesh: mesh-1
+    tags:
+      kuma.io/protocol: http
+      kuma.io/service: service-1-zone-2
   networking:
     address: 192.168.0.1
     advertisedAddress: 192.168.100.1
     advertisedPort: 10001
     port: 10001
-  availableServices:
-  - tags:
-      kuma.io/service: service-1-zone-2
-      kuma.io/protocol: http
-    instances: 3
-    mesh: mesh-1

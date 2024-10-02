@@ -2,11 +2,6 @@ Patches: null
 allowed: false
 status:
   code: 403
-  details:
-    causes:
-    - field: metadata.annotations[kuma.io/synced]
-      message: cannot be set
-      reason: FieldValueInvalid
   message: Operation not allowed. kuma.io/zone label should have zone-1 value, got
     wrong-zone
   metadata: {}

@@ -52,7 +52,6 @@ var _ = Describe("MeshService generator", func() {
 			".mesh",
 			80,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			false,
 		)
 		meshCache, err := cache_mesh.NewCache(
 			100*time.Millisecond,
@@ -76,7 +75,9 @@ var _ = Describe("MeshService generator", func() {
 			Expect(allocator.Start(stopCh)).To(Succeed())
 		}()
 
-		Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
+		Expect(
+			samples.MeshDefaultBuilder().WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Create(resManager),
+		).To(Succeed())
 	})
 
 	AfterEach(func() {
@@ -92,6 +93,32 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
+					Port:        80,
+					TargetPort:  intstr.FromInt(80),
+					AppProtocol: core_mesh.ProtocolTCP,
+				},
+			}))
+		}, "2s", "100ms").Should(Succeed())
+	})
+
+	It("should generate MeshService from a single Dataplane with inbound name", func() {
+		err := samples.DataplaneBackendBuilder().WithoutInbounds().
+			AddInbound(
+				builders.Inbound().
+					WithPort(builders.FirstInboundPort).
+					WithServicePort(builders.FirstInboundServicePort).
+					WithName("main").
+					WithTags(map[string]string{mesh_proto.ServiceTag: "backend", mesh_proto.ProtocolTag: "tcp"}),
+			).Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func(g Gomega) {
+			ms := meshservice_api.NewMeshServiceResource()
+			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
+				{
+					Name:        "main",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -110,6 +137,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -133,6 +161,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -151,6 +180,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -168,6 +198,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "81",
 					Port:        81,
 					TargetPort:  intstr.FromInt(81),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -186,6 +217,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -223,6 +255,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,
@@ -233,20 +266,26 @@ var _ = Describe("MeshService generator", func() {
 		dp := core_mesh.NewDataplaneResource()
 		Expect(resManager.Delete(context.Background(), dp, store.DeleteByKey("dp-1", model.DefaultMesh))).To(Succeed())
 
+		labelGracePeriodStartedAt := ""
 		// Wait until the MeshService has been marked with grace period start
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
-			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey("kuma.io/deletion-grace-period-started-at"))
+			g.Expect(ms.GetMeta().GetLabels()).To(HaveKey(mesh_proto.DeletionGracePeriodStartedLabel))
+			labelGracePeriodStartedAt = ms.GetMeta().GetLabels()[mesh_proto.DeletionGracePeriodStartedLabel]
 		}, "2s", "100ms").Should(Succeed())
-		labelExistedSince := time.Now()
 
+		gracePeriodStartedAt := time.Time{}
+		Expect(gracePeriodStartedAt.UnmarshalText([]byte(labelGracePeriodStartedAt))).To(Succeed())
+
+		gracePeriodEndsAt := gracePeriodStartedAt.Add(gracePeriodInterval)
 		// Before the grace period it still exists and afterwards it eventually
 		// disappears
 		Consistently(func(g Gomega) {
-			if time.Now().Before(labelExistedSince.Add(gracePeriodInterval)) {
-				g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
+			err := resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))
+			if time.Now().Before(gracePeriodEndsAt) {
+				g.Expect(err).To(Succeed())
 			}
-		}, "2s", "100ms").Should(Succeed())
+		}, time.Until(gracePeriodEndsAt.Add(-50*time.Millisecond)).String(), "50ms").Should(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).ToNot(Succeed())
 		}, "2s", "100ms").Should(Succeed())
@@ -262,6 +301,7 @@ var _ = Describe("MeshService generator", func() {
 			g.Expect(resManager.Get(context.Background(), ms, store.GetByKey("backend", model.DefaultMesh))).To(Succeed())
 			g.Expect(ms.Spec.Ports).To(Equal([]meshservice_api.Port{
 				{
+					Name:        "80",
 					Port:        80,
 					TargetPort:  intstr.FromInt(80),
 					AppProtocol: core_mesh.ProtocolTCP,

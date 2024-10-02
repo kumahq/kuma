@@ -1,0 +1,62 @@
+resources:
+- name: outbound:127.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          routeConfig:
+            name: outbound:default_backend___msvc_80
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: default_backend___msvc_80
+              routes:
+              - match:
+                  path: /version1
+                name: ExEgbKnY+1gXGsNYQ6CZ7dck4MNOIit5oX7HLROlnE4=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+              - match:
+                  prefix: /version1/
+                name: ExEgbKnY+1gXGsNYQ6CZ7dck4MNOIit5oX7HLROlnE4=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+              - match:
+                  path: /version2
+                name: mNuADh5d2QXFo3V0KWvZuj8EUfszOl6JoAaFFDm7ueU=
+                route:
+                  cluster: default_backend-second___msvc_80
+                  timeout: 0s
+              - match:
+                  prefix: /version2/
+                name: mNuADh5d2QXFo3V0KWvZuj8EUfszOl6JoAaFFDm7ueU=
+                route:
+                  cluster: default_backend-second___msvc_80
+                  timeout: 0s
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+          statPrefix: default_backend___msvc_80
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: outbound:127.0.0.1:10001
+    trafficDirection: OUTBOUND

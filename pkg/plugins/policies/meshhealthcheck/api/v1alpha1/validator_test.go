@@ -82,6 +82,30 @@ to:
       tcp: # it will pick the protocol as described in 'protocol selection' section
         disabled: true # new, default false, can be disabled for override
 `),
+			XEntry("to level MeshExternalService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: mes
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
+			Entry("to level MeshMultiZoneService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      name: web-backend
+    default:
+      interval: 10s
+      tcp: # it will pick the protocol as described in 'protocol selection' section
+        disabled: true # new, default false, can be disabled for override
+`),
 		)
 
 		type testCase struct {
@@ -270,6 +294,30 @@ violations:
     message: must be in inclusive range [100, 599]
   - field: spec.to[0].default.http.expectedStatuses[1]
     message: must be in inclusive range [100, 599]`,
+			}),
+			XEntry("cannot use MeshExternalService with other type than Mesh", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/service: backend
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: web-backend
+    default:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+      http:
+        path: /health
+        expectedStatuses: [200, 204]
+`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.kind
+    message: 'kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh'`,
 			}),
 		)
 	})

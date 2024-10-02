@@ -113,7 +113,6 @@ func SetupAndGetState() []byte {
 
 	kubeZone1Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1),
-		WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
 		WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 	)
 	if Config.IPV6 {
@@ -262,14 +261,9 @@ func AfterSuite(report ginkgo.Report) {
 
 func PrintCPLogsOnFailure(report ginkgo.Report) {
 	if !report.SuiteSucceeded {
+		framework.Logf("Please see full CP logs by downloading the debug artifacts")
 		for _, cluster := range append(Zones(), Global) {
-			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
-			logs, err := cluster.GetKumaCPLogs()
-			if err != nil {
-				Logf("could not retrieve cp logs")
-			} else {
-				Logf(logs)
-			}
+			framework.DebugUniversalCPLogs(cluster)
 		}
 	}
 }

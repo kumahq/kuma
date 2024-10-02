@@ -1,0 +1,86 @@
+resources:
+- name: outbound:127.0.0.1:10001
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 10001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          routeConfig:
+            name: outbound:default_backend___msvc_80
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: default_backend___msvc_80
+              routes:
+              - match:
+                  path: /v1
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  prefix: /v1/
+                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                route:
+                  cluster: backend
+                  timeout: 0s
+              - match:
+                  path: /v2
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                route:
+                  cluster: backend-c72efb5be46fae6b
+                  timeout: 0s
+              - match:
+                  prefix: /v2/
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                route:
+                  cluster: backend-c72efb5be46fae6b
+                  timeout: 0s
+              - match:
+                  path: /v3
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                route:
+                  cluster: backend-c72efb5be46fae6b
+                  timeout: 0s
+              - match:
+                  prefix: /v3/
+                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                route:
+                  cluster: backend-c72efb5be46fae6b
+                  timeout: 0s
+              - match:
+                  path: /v4
+                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+              - match:
+                  prefix: /v4/
+                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: default_backend___msvc_80
+                  timeout: 0s
+          statPrefix: default_backend___msvc_80
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: outbound:127.0.0.1:10001
+    trafficDirection: OUTBOUND

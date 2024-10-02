@@ -6,7 +6,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     lbPolicy: MAGLEV
     name: backend
@@ -67,19 +66,6 @@ resources:
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    additionalAddresses:
-    - address:
-        socketAddress:
-          address: 240.0.0.3
-          portValue: 80
-    - address:
-        socketAddress:
-          address: 240.0.0.4
-          portValue: 80
-    - address:
-        socketAddress:
-          address: 240.0.0.4
-          portValue: 8080
     address:
       socketAddress:
         address: 127.0.0.1
@@ -98,4 +84,52 @@ resources:
         io.kuma.tags:
           kuma.io/service: backend
     name: outbound:127.0.0.1:18080
+    trafficDirection: OUTBOUND
+- name: outbound:240.0.0.3:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.3
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:240.0.0.3:80
+    trafficDirection: OUTBOUND
+- name: outbound:240.0.0.4:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.4
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:240.0.0.4:80
+    trafficDirection: OUTBOUND
+- name: outbound:240.0.0.4:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.4
+        portValue: 8080
+    bindToPort: false
+    filterChains:
+    - {}
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: backend
+    name: outbound:240.0.0.4:8080
     trafficDirection: OUTBOUND

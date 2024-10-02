@@ -130,6 +130,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-cni-taint-controller").
 		For(&kube_core.Node{}, builder.WithPredicates(nodeEvents)).
 		Watches(
 			&kube_core.Pod{},

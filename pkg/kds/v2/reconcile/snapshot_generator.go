@@ -2,18 +2,24 @@ package reconcile
 
 import (
 	"context"
+	"strings"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
+	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/kds"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	cache_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
+)
+
+type (
+	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
+	ResourceMapper func(features kds.Features, r model.Resource) (model.Resource, error)
 )
 
 func NoopResourceMapper(_ kds.Features, r model.Resource) (model.Resource, error) {
@@ -24,7 +30,57 @@ func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, filter reconcile.ResourceFilter, mapper reconcile.ResourceMapper) SnapshotGenerator {
+func TypeIs(rtype model.ResourceType) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		return r.Descriptor().Name == rtype
+	}
+}
+
+func IsKubernetes(storeType config_store.StoreType) func(model.Resource) bool {
+	return func(_ model.Resource) bool {
+		return storeType == config_store.KubernetesStore
+	}
+}
+
+func ScopeIs(s model.ResourceScope) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		return r.Descriptor().Scope == s
+	}
+}
+
+func NameHasPrefix(prefix string) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		return strings.HasPrefix(r.GetMeta().GetName(), prefix)
+	}
+}
+
+func Not(f func(model.Resource) bool) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		return !f(r)
+	}
+}
+
+func And(fs ...func(model.Resource) bool) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		for _, f := range fs {
+			if !f(r) {
+				return false
+			}
+		}
+		return true
+	}
+}
+
+func If(condition func(model.Resource) bool, m ResourceMapper) ResourceMapper {
+	return func(features kds.Features, r model.Resource) (model.Resource, error) {
+		if condition(r) {
+			return m(features, r)
+		}
+		return r, nil
+	}
+}
+
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, filter ResourceFilter, mapper ResourceMapper) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager: resourceManager,
 		resourceFilter:  filter,
@@ -34,8 +90,8 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type snapshotGenerator struct {
 	resourceManager core_manager.ReadOnlyResourceManager
-	resourceFilter  reconcile.ResourceFilter
-	resourceMapper  reconcile.ResourceMapper
+	resourceFilter  ResourceFilter
+	resourceMapper  ResourceMapper
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(

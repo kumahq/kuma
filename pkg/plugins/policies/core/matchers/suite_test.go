@@ -71,10 +71,10 @@ func readES(file string) *core_mesh.ExternalServiceResource {
 }
 
 func readMES(file string) *meshexternalservice_api.MeshExternalServiceResource {
-	dppYaml, err := os.ReadFile(file)
+	mesYaml, err := os.ReadFile(file)
 	Expect(err).ToNot(HaveOccurred())
 
-	dpp, err := rest.YAML.UnmarshalCore(dppYaml)
+	mes, err := rest.YAML.UnmarshalCore(mesYaml)
 	Expect(err).ToNot(HaveOccurred())
-	return dpp.(*meshexternalservice_api.MeshExternalServiceResource)
+	return mes.(*meshexternalservice_api.MeshExternalServiceResource)
 }

@@ -1,0 +1,92 @@
+#/meshes/default/meshgateways/the-gateway/_rules 200
+type: Mesh
+name: default
+---
+type: MeshGateway
+name: the-gateway
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+selectors:
+  - match:
+      kuma.io/service: gw-1
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+---
+type: MeshGateway
+name: the-gateway-2
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-2
+selectors:
+  - match:
+      kuma.io/service: gw-1
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+---
+type: MeshTimeout
+name: mt-on-gateway
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: mt-on-gateway
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: the-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 10s
+---
+type: MeshTimeout
+name: mt-on-gateway-zone-2
+mesh: default
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: mt-on-gateway
+  kuma.io/origin: zone
+  kuma.io/zone: zone-2
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: the-gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        connectionTimeout: 2s
+        http:
+          requestTimeout: 10s
+---
+type: MeshProxyPatch
+mesh: default
+name: mpp-on-gateway
+labels:
+  k8s.kuma.io/namespace: kuma-demo
+  kuma.io/display-name: mpp-on-gateway
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: the-gateway
+  default:
+    appendModifications:
+      - cluster:
+          operation: Add
+          value: |
+            name: test-cluster
+            connectTimeout: 5s
+            type: STATIC

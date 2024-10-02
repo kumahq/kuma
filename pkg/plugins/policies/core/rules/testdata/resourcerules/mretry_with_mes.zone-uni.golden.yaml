@@ -1,0 +1,75 @@
+mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
+  Conf:
+  - http:
+      backOff:
+        baseInterval: 55s
+      numRetries: 99
+      retryOn:
+      - 5xx
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-bbbbbb
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-bbbbbb
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
+  ResourceSectionName: ""
+meshexternalservice:mesh/mesh-1:zone/zone-uni:name/external:
+  BackendRefOriginIndex: {}
+  Conf:
+  - http:
+      backOff:
+        baseInterval: 15s
+        maxInterval: 20m0s
+      numRetries: 10
+      retryOn:
+      - 5xx
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-bbbbbb
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-bbbbbb
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mr-aaaaaa
+        kuma.io/origin: zone
+        kuma.io/zone: zone-uni
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-aaaaaa
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      kuma.io/display-name: external
+      kuma.io/origin: zone
+      kuma.io/zone: zone-uni
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: external
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: ""

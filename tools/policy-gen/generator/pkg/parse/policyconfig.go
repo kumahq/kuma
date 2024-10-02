@@ -40,6 +40,7 @@ type PolicyConfig struct {
 	KDSFlags                     string
 	Scope                        ResourceScope
 	AllowedOnSystemNamespaceOnly bool
+	IsReferenceableInTo          bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -148,8 +149,14 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	if v, ok := parseBool(markers, "kuma:policy:allowed_on_system_namespace_only"); ok {
 		res.AllowedOnSystemNamespaceOnly = v
 	}
+	if v, ok := parseBool(markers, "kuma:policy:is_referenceable_in_to"); ok {
+		res.IsReferenceableInTo = v
+	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
+	} else if res.HasTo {
+		// potentially a producer policy, so we need to sync it from one zone to another
+		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag"
 	} else {
 		res.KDSFlags = "model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag"
 	}

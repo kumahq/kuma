@@ -11,41 +11,19 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/tables"
 )
 
-// BuildIPTablesForRestore constructs the complete set of iptables rules for
-// restoring based on the provided configuration.
-//
-// This function performs the following steps:
-//  1. Builds the rules for the raw, nat, and mangle tables using the
-//     `BuildRulesForRestore` function, and filters out any empty rule sets.
-//  2. Determines the separator based on the verbosity setting from the
-//     configuration.
-//  3. Joins the remaining rules with the determined separator and returns
-//     the result.
-//
-// Args:
-//
-//   - cfg (config.InitializedConfigIPvX): The configuration used to initialize
-//     the iptables rules.
-//
-// Returns:
-//
-//   - string: The complete set of iptables rules as a single string.
 func BuildIPTablesForRestore(cfg config.InitializedConfigIPvX) string {
-	// Build the rules for raw, NAT, and mangle tables, filtering out any empty
-	// sets.
+	// filter out any empty sets
 	result := slices.DeleteFunc([]string{
 		tables.BuildRulesForRestore(cfg, buildRawTable(cfg)),
 		tables.BuildRulesForRestore(cfg, buildNatTable(cfg)),
 		tables.BuildRulesForRestore(cfg, buildMangleTable(cfg)),
 	}, func(s string) bool { return s == "" })
 
-	// Determine the separator based on verbosity setting.
 	separator := "\n"
 	if cfg.Verbose {
 		separator = "\n\n"
 	}
 
-	// Join the rules with the determined separator and return.
 	return strings.Join(result, separator) + "\n"
 }
 

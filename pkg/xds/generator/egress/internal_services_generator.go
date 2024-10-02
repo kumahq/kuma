@@ -23,6 +23,11 @@ func (g *InternalServicesGenerator) Generate(
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
 	resources := core_xds.NewResourceSet()
+
+	if !meshResources.Mesh.ZoneEgressEnabled() {
+		return resources, nil
+	}
+
 	meshName := meshResources.Mesh.GetMeta().GetName()
 
 	servicesMap := g.buildServices(meshResources.EndpointMap, meshResources.Mesh.ZoneEgressEnabled(), xdsCtx.ControlPlane.Zone)
@@ -34,7 +39,9 @@ func (g *InternalServicesGenerator) Generate(
 		xds_context.Resources{MeshLocalResources: meshResources.Resources},
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
 		nil, // todo(jakubdyszkiewicz) add support for MeshService + egress
+		nil,
 		"",
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)

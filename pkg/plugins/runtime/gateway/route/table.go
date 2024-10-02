@@ -108,7 +108,9 @@ type Redirection struct {
 
 // Destination is a forwarding target (aka Cluster).
 type Destination struct {
-	Destination   tags.Tags
+	Destination tags.Tags
+	BackendRef  *model.ResolvedBackendRef
+
 	Weight        uint32
 	RouteProtocol core_mesh.Protocol
 

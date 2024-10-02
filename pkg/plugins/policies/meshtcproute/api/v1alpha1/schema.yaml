@@ -35,6 +35,7 @@ properties:
               - MeshGateway
               - MeshService
               - MeshExternalService
+              - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
             type: string
@@ -111,6 +112,7 @@ properties:
                                 - MeshGateway
                                 - MeshService
                                 - MeshExternalService
+                                - MeshMultiZoneService
                                 - MeshServiceSubset
                                 - MeshHTTPRoute
                               type: string
@@ -189,6 +191,7 @@ properties:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -241,6 +244,4 @@ properties:
           type: object
         minItems: 1
         type: array
-    required:
-      - targetRef
     type: object

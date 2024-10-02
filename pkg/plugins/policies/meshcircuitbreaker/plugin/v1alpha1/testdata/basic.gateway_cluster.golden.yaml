@@ -1,23 +1,26 @@
-circuitBreakers:
-  thresholds:
-  - maxConnectionPools: 1111
-    maxConnections: 2222
-    maxPendingRequests: 3333
-    maxRequests: 4444
-    maxRetries: 5555
-connectTimeout: 5s
-edsClusterConfig:
-  edsConfig:
-    ads: {}
-    initialFetchTimeout: 0s
-    resourceApiVersion: V3
-name: backend-26cb64fa4e85e7b7
-perConnectionBufferLimitBytes: 32768
-type: EDS
-typedExtensionProtocolOptions:
-  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
-    explicitHttpConfig:
-      httpProtocolOptions: {}
+resources:
+- name: backend-26cb64fa4e85e7b7
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    circuitBreakers:
+      thresholds:
+      - maxConnectionPools: 1111
+        maxConnections: 2222
+        maxPendingRequests: 3333
+        maxRequests: 4444
+        maxRetries: 5555
+    connectTimeout: 5s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: backend-26cb64fa4e85e7b7
+    perConnectionBufferLimitBytes: 32768
+    type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}

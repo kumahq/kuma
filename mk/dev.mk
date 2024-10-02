@@ -7,7 +7,7 @@ GIT_TAG = $(word 2, $(BUILD_INFO))
 GIT_COMMIT = $(word 3, $(BUILD_INFO))
 BUILD_DATE = $(word 4, $(BUILD_INFO))
 CI_TOOLS_VERSION = $(word 5, $(BUILD_INFO))
-ENVOY_VERSION ?= 1.30.4-k.1
+ENVOY_VERSION ?= 1.30.6
 KUMA_CHARTS_URL ?= https://kumahq.github.io/charts
 CHART_REPO_NAME ?= kuma
 PROJECT_NAME ?= kuma
@@ -24,7 +24,7 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 K8S_MIN_VERSION = v1.23.17-k3s1
 K8S_MAX_VERSION = v1.30.0-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.59.0
+export GOLANGCI_LINT_VERSION=v1.60.3
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 

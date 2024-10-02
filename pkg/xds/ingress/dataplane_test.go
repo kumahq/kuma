@@ -36,7 +36,7 @@ var _ = Describe("Ingress Dataplane", func() {
 				}
 			}
 
-			actual := ingress.GetIngressAvailableServices(dataplanes, given.tagFilters)
+			actual := ingress.GetIngressAvailableServices(nil, dataplanes, given.tagFilters)
 			actualYAML, err := yaml.Marshal(actual)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actualYAML).To(MatchYAML(given.expected))
@@ -302,7 +302,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 		Expect(
-			ingress.GetAvailableServices(others, nil, externalServices, nil),
+			ingress.GetAvailableServices(nil, others, nil, externalServices, nil),
 		).To(BeComparableTo(services, cmp.Comparer(proto.Equal)))
 	})
 
@@ -387,7 +387,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 
-		actual := ingress.GetIngressAvailableServices(dataplanes, nil)
+		actual := ingress.GetIngressAvailableServices(nil, dataplanes, nil)
 		Expect(actual).To(Equal(expectedAvailableServices))
 	})
 
@@ -447,7 +447,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			},
 		}
 
-		actual := ingress.GetIngressAvailableServices(dataplanes, nil)
+		actual := ingress.GetIngressAvailableServices(nil, dataplanes, nil)
 		Expect(actual).To(Equal(expectedAvailableServices))
 	})
 })

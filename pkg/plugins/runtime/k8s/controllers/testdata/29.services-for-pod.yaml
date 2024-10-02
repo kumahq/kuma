@@ -1,0 +1,9 @@
+metadata:
+  namespace: demo
+  name: example
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - # protocol defaults to TCP
+      port: 80
+      targetPort: 8080

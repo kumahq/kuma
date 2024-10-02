@@ -314,6 +314,48 @@ var _ = Describe("Dataplane", func() {
                     kind: MeshExternalService
                     name: xyz`,
 		),
+		Entry("dataplane with reachableBackendRefs", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              transparentProxying:
+                reachableBackends:
+                  refs:
+                  - kind: MeshService
+                    name: a
+                  - kind: MeshExternalService
+                    name: es
+                    namespace: es1
+                  - kind: MeshService
+                    labels:
+                      kuma.io/test: abc`,
+		),
+		Entry("dataplane with backend ref with labels", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  backendRef:
+                    kind: MeshService
+                    labels:
+                      kuma.io/display-name: redis
+                    port: 8080`,
+		),
 	)
 
 	type testCase struct {
@@ -1213,9 +1255,9 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: networking.outbound[0].backendRef.kind
-                  message: 'invalid value. Available values are: MeshExternalService,MeshService'
-                - field: networking.outbound[0].backendRef.name
-                  message: cannot be empty
+                  message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
+                - field: networking.outbound[0].backendRef
+                  message:  either 'name' or 'labels' should be specified
                 - field: networking.outbound[0].backendRef.port
                   message: port must be in the range [1, 65535]`,
 		}),
@@ -1255,6 +1297,59 @@ var _ = Describe("Dataplane", func() {
                   message: port must be in the range [1, 65535]
                 - field: networking.outbound[1].backendRef
                   message: both backendRef and tags/service cannot be defined`,
+		}),
+		Entry("transparent proxy with reachable backend refs", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: 192.168.0.1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              transparentProxying:
+                reachableBackends:
+                  refs:
+                  - kind: Something
+                    name: first
+                    labels:
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: second
+                    namespace: not-valid
+                    labels:
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: third
+                    labels:
+                      kuma.io/test: test
+                  - kind: MeshService
+                    name: first$-.kuma
+                  - kind: MeshService
+                  - kind: MeshService
+                    namespace: xyz
+`,
+			expected: `
+                violations:
+                - field: networking.transparentProxing.reachableBackends.refs[0].kind
+                  message: 'invalid value. Available values are: MeshExternalService,MeshMultiZoneService,MeshService'
+                - field: networking.transparentProxing.reachableBackends.refs[0].labels
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackends.refs[1].labels
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackends.refs[2].labels
+                  message: labels cannot be defined when name is specified
+                - field: networking.transparentProxing.reachableBackends.refs[3].name
+                  message: invalid characters. A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+                - field: networking.transparentProxing.reachableBackends.refs[4].name
+                  message: name or labels are required
+                - field: networking.transparentProxing.reachableBackends.refs[5].name
+                  message: name is required, when namespace is defined`,
 		}),
 	)
 })

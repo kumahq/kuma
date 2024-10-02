@@ -1,0 +1,49 @@
+# MeshExternalService from/to policy with targeting egress
+type: MeshCircuitBreaker
+name: mcb-1
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes
+      default:
+        connectionLimits:
+          maxPendingRequests: 1
+          maxRequests: 1
+          maxRetries: 1
+---
+type: MeshCircuitBreaker
+name: mcb-2
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        connectionLimits:
+          maxConnectionPools: 99
+          maxConnections: 99
+          maxPendingRequests: 99
+          maxRequests: 99
+          maxRetries: 99
+
+---
+type: MeshExternalService
+mesh: mesh-1
+name: mes
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: my-es.io
+      port: 80
+---
+type: Mesh
+name: mesh-1

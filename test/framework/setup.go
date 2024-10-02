@@ -128,6 +128,19 @@ metadata:
 	return YamlK8s(mesh)
 }
 
+func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: %s
+`, name, meshServicesEnabled)
+	return YamlK8s(mesh)
+}
+
 func MTLSMeshKubernetes(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -141,6 +154,42 @@ spec:
       - name: ca-1
         type: builtin
 `, name)
+	return YamlK8s(mesh)
+}
+
+func MTLSMeshKubernetesWithEgressRouting(name string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  routing:
+    zoneEgress: true
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name)
+	return YamlK8s(mesh)
+}
+
+func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesMode string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: %s
+  mtls:
+    enabledBackend: ca-1
+    backends:
+      - name: ca-1
+        type: builtin
+`, name, meshServicesMode)
 	return YamlK8s(mesh)
 }
 
@@ -164,6 +213,16 @@ spec:
 	return YamlK8s(mtp)
 }
 
+func MeshWithMeshServicesUniversal(name string, meshServicesMode string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+meshServices:
+  mode: %s
+`, name, meshServicesMode)
+	return YamlUniversal(mesh)
+}
+
 func MTLSMeshUniversal(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
@@ -174,6 +233,21 @@ mtls:
     - name: ca-1
       type: builtin
 `, name)
+	return YamlUniversal(mesh)
+}
+
+func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
+	mesh := fmt.Sprintf(`
+type: Mesh
+name: %s
+meshServices:
+  mode: %s
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+`, name, meshServicesEnabled)
 	return YamlUniversal(mesh)
 }
 

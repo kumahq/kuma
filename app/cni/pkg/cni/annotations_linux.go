@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Deprecated
 const (
 	defaultProxyStatusPort     = "9901"
 	defaultOutboundPort        = "15001"
@@ -16,9 +17,11 @@ const (
 	defaultIPFamilyMode        = "dualstack"
 	defaultBuiltinDNSPort      = "15053"
 	defaultNoRedirectUID       = "5678"
+	defaultAppProbeProxyPort   = "9001"
 	defaultRedirectExcludePort = defaultProxyStatusPort
 )
 
+// Deprecated
 var annotationRegistry = map[string]*annotationParam{
 	"inject":                      {"kuma.io/sidecar-injection", "", alwaysValidFunc},
 	"ports":                       {"kuma.io/envoy-admin-port", "", validatePortList},
@@ -36,8 +39,10 @@ var annotationRegistry = map[string]*annotationParam{
 	"iptablesLogs":                {"traffic.kuma.io/iptables-logs", "false", alwaysValidFunc},
 	"excludeInboundIPs":           {"traffic.kuma.io/exclude-inbound-ips", "", validateIPs},
 	"excludeOutboundIPs":          {"traffic.kuma.io/exclude-outbound-ips", "", validateIPs},
+	"applicationProbeProxyPort":   {"kuma.io/application-probe-proxy-port", defaultAppProbeProxyPort, validateSinglePort},
 }
 
+// Deprecated
 type IntermediateConfig struct {
 	// while https://github.com/kumahq/kuma/issues/8324 is not implemented, when changing the config,
 	// keep in mind to update all other places listed in the issue
@@ -58,22 +63,27 @@ type IntermediateConfig struct {
 	excludeOutboundIPs          string
 }
 
+// Deprecated
 type annotationValidationFunc func(value string) error
 
+// Deprecated
 type annotationParam struct {
 	key        string
 	defaultVal string
 	validator  annotationValidationFunc
 }
 
+// Deprecated
 func alwaysValidFunc(_ string) error {
 	return nil
 }
 
+// Deprecated
 func splitPorts(portsString string) []string {
 	return strings.Split(portsString, ",")
 }
 
+// Deprecated
 func parsePort(portStr string) (uint16, error) {
 	port, err := strconv.ParseUint(strings.TrimSpace(portStr), 10, 16)
 	if err != nil {
@@ -82,6 +92,7 @@ func parsePort(portStr string) (uint16, error) {
 	return uint16(port), nil
 }
 
+// Deprecated
 func parsePorts(portsString string) ([]int, error) {
 	portsString = strings.TrimSpace(portsString)
 	ports := make([]int, 0)
@@ -108,6 +119,8 @@ func parsePorts(portsString string) ([]int, error) {
 // Returns:
 //   - error: An error if the input string is empty or if any of the IP
 //     addresses or CIDR blocks are invalid.
+//
+// Deprecated
 func validateIPs(addresses string) error {
 	addresses = strings.TrimSpace(addresses)
 
@@ -141,6 +154,7 @@ func validateIPs(addresses string) error {
 	return nil
 }
 
+// Deprecated
 func validatePortList(ports string) error {
 	if _, err := parsePorts(ports); err != nil {
 		return errors.Wrapf(err, "portList %q", ports)
@@ -148,6 +162,15 @@ func validatePortList(ports string) error {
 	return nil
 }
 
+// Deprecated
+func validateSinglePort(portString string) error {
+	if _, err := parsePort(portString); err != nil {
+		return err
+	}
+	return nil
+}
+
+// Deprecated
 func validateIpFamilyMode(val string) error {
 	if val == "" {
 		return errors.New("value is empty")
@@ -162,6 +185,7 @@ func validateIpFamilyMode(val string) error {
 	return errors.New(fmt.Sprintf("value '%s' is not a valid IP family mode", val))
 }
 
+// Deprecated
 func getAnnotationOrDefault(name string, annotations map[string]string) (string, error) {
 	if _, ok := annotationRegistry[name]; !ok {
 		return "", errors.Errorf("no registered annotation with name %s", name)
@@ -179,8 +203,10 @@ func getAnnotationOrDefault(name string, annotations map[string]string) (string,
 }
 
 // NewIntermediateConfig returns a new IntermediateConfig Object constructed from a list of ports and annotations
+// Deprecated
 func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, error) {
 	intermediateConfig := &IntermediateConfig{}
+	valDefaultProbeProxyPort := defaultAppProbeProxyPort
 
 	allFields := map[string]*string{
 		"outboundPort":                &intermediateConfig.targetPort,
@@ -193,6 +219,7 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		"builtinDNSPort":              &intermediateConfig.builtinDNSPort,
 		"excludeOutboundPortsForUIDs": &intermediateConfig.excludeOutboundPortsForUIDs,
 		"noRedirectUID":               &intermediateConfig.noRedirectUID,
+		"applicationProbeProxyPort":   &valDefaultProbeProxyPort,
 		"dropInvalidPackets":          &intermediateConfig.dropInvalidPackets,
 		"iptablesLogs":                &intermediateConfig.iptablesLogs,
 		"excludeInboundIPs":           &intermediateConfig.excludeInboundIPs,
@@ -205,9 +232,11 @@ func NewIntermediateConfig(annotations map[string]string) (*IntermediateConfig, 
 		}
 	}
 
+	excludeAppProbeProxyPort(allFields)
 	return intermediateConfig, nil
 }
 
+// Deprecated
 func mapAnnotation(annotations map[string]string, field *string, fieldName string) error {
 	val, err := getAnnotationOrDefault(fieldName, annotations)
 	if err != nil {
@@ -215,4 +244,20 @@ func mapAnnotation(annotations map[string]string, field *string, fieldName strin
 	}
 	*field = val
 	return nil
+}
+
+// Deprecated
+func excludeAppProbeProxyPort(allFields map[string]*string) {
+	inboundPortsToExclude := allFields["excludeInboundPorts"]
+	applicationProbeProxyPort := *allFields["applicationProbeProxyPort"]
+	if applicationProbeProxyPort == "0" {
+		return
+	}
+
+	existingExcludes := *inboundPortsToExclude
+	if existingExcludes == "" {
+		*inboundPortsToExclude = applicationProbeProxyPort
+	} else {
+		*inboundPortsToExclude = fmt.Sprintf("%s,%s", existingExcludes, applicationProbeProxyPort)
+	}
 }

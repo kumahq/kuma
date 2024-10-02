@@ -13,9 +13,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -28,17 +30,18 @@ type ruleByHostname struct {
 }
 
 func sortRulesToHosts(
-	meshLocalResources xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	sublisteners []meshroute.Sublistener,
+	sublisteners []meshroute_gateway.Sublistener,
+	resolver model.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
 	// Iterate over the listeners in order
-	sublistenersByHostname := map[string]meshroute.Sublistener{}
+	sublistenersByHostname := map[string]meshroute_gateway.Sublistener{}
 	for _, sublistener := range sublisteners {
 		sublistenersByHostname[sublistener.Hostname] = sublistener
 	}
@@ -62,13 +65,23 @@ func sortRulesToHosts(
 		}
 		var ruleHostnames []string
 		rulesByHostname := map[string][]ruleByHostname{}
-		for _, rawRule := range rawRules {
+		// it's ok for us to ignore ResourceRules because MeshGateway routes
+		// target kind: Mesh
+		for _, rawRule := range rawRules.Rules {
 			conf := rawRule.Conf.(api.PolicyDefault)
+
+			backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
+			for hash := range rawRule.BackendRefOriginIndex {
+				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
+					backendRefOrigin[hash] = origin
+				}
+			}
 			rule := ToRouteRule{
-				Subset:    rawRule.Subset,
-				Rules:     conf.Rules,
-				Hostnames: conf.Hostnames,
-				Origin:    rawRule.Origin,
+				Subset:           rawRule.Subset,
+				Rules:            conf.Rules,
+				Hostnames:        conf.Hostnames,
+				Origins:          rawRule.Origin,
+				BackendRefOrigin: backendRefOrigin,
 			}
 			hostnames := rule.Hostnames
 			if len(rule.Hostnames) == 0 {
@@ -138,15 +151,15 @@ func sortRulesToHosts(
 			for _, t := range plugin_gateway.ConnectionPolicyTypes {
 				matches := match.ConnectionPoliciesBySource(
 					host.Tags,
-					match.ToConnectionPolicies(meshLocalResources[t]))
+					match.ToConnectionPolicies(meshCtx.Resources.MeshLocalResources[t]))
 				host.Policies[t] = matches
 			}
 			hostInfo := plugin_gateway.GatewayHostInfo{
 				Host: host,
 			}
-			hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rules))
+			hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rules, resolver))
 
-			meshroute.AddToListenerByHostname(
+			meshroute_gateway.AddToListenerByHostname(
 				hostInfosByHostname,
 				protocol,
 				hostnameTag.Hostname,
@@ -157,10 +170,15 @@ func sortRulesToHosts(
 		observedHostnames = append(observedHostnames, hostname)
 	}
 
-	return meshroute.SortByHostname(hostInfosByHostname)
+	return meshroute_gateway.SortByHostname(hostInfosByHostname)
 }
 
-func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleByHostname) []route.Entry {
+func generateEnvoyRouteEntries(
+	meshCtx xds_context.MeshContext,
+	host plugin_gateway.GatewayHost,
+	toRules []ruleByHostname,
+	resolver model.LabelResourceIdentifierResolver,
+) []route.Entry {
 	var entries []route.Entry
 
 	toRules = match.SortHostnamesOn(toRules, func(r ruleByHostname) string { return r.Hostname })
@@ -173,11 +191,12 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	for _, rules := range toRules {
 		for _, rule := range rules.Rule.Rules {
 			var names []string
-			for _, orig := range rules.Rule.Origin {
+			for _, orig := range rules.Rule.Origins {
 				names = append(names, orig.GetName())
 			}
 			slices.Sort(names)
-			entry := makeHttpRouteEntry(strings.Join(names, "_"), rule)
+
+			entry := makeHttpRouteEntry(meshCtx, strings.Join(names, "_"), rule, rules.Rule.BackendRefOrigin, resolver)
 
 			hashedMatches := api.HashMatches(rule.Matches)
 			// The rule matches if any of the matches is successful (it has OR
@@ -187,7 +206,7 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 			for _, m := range rule.Matches {
 				routeEntry := entry // Shallow copy.
 				routeEntry.Match = makeRouteMatch(m)
-				routeEntry.Name = hashedMatches
+				routeEntry.Name = string(hashedMatches)
 
 				switch {
 				case routeEntry.Match.ExactPath != "":
@@ -204,19 +223,50 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules []ruleBy
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, exactEntries, prefixEntries, entries)
 }
 
-func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
+func makeHttpRouteEntry(
+	meshCtx xds_context.MeshContext,
+	name string,
+	rule api.Rule,
+	backendRefToOrigin map[common_api.MatchesHash]model.ResourceMeta,
+	resolver model.LabelResourceIdentifierResolver,
+) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		var ref *model.ResolvedBackendRef
+		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
+			ref = model.ResolveBackendRef(origin, b, resolver)
+			if ref.ReferencesRealResource() {
+				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
+				if ok {
+					dest = map[string]string{
+						mesh_proto.ServiceTag: service,
+					}
+				}
+			}
+		}
+		if ref == nil || ref.ResourceOrNil() == nil {
+			// We have a legacy backendRef
+			if !b.ReferencesRealObject() {
+				var ok bool
+				dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+				if !ok {
+					// This should be caught by validation
+					continue
+				}
+			} else {
+				// We have a real backendRef but it's not valid
+				dest = map[string]string{
+					mesh_proto.ServiceTag: metadata.UnresolvedBackendServiceTag,
+				}
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
+			BackendRef:    ref,
 			Weight:        uint32(pointer.DerefOr(b.Weight, 1)),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolHTTP,
@@ -252,7 +302,7 @@ func makeHttpRouteEntry(name string, rule api.Rule) route.Entry {
 			if err != nil {
 				continue
 			}
-			tags, ok := tags.FromTargetRef(m.BackendRef.TargetRef)
+			tags, ok := tags.FromLegacyTargetRef(m.BackendRef.TargetRef)
 			if !ok {
 				continue
 			}

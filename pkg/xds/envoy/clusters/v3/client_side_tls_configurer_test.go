@@ -1,6 +1,7 @@
 package clusters_test
 
 import (
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -65,7 +66,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
-            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: testCluster
         transportSocketMatches:
@@ -98,7 +98,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
-            initialFetchTimeout: 0s
             resourceApiVersion: V3
         name: testCluster
         transportSocketMatches:
@@ -126,8 +125,8 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
 						ClientKey:          []byte("clientkey"),
 						AllowRenegotiation: true,
 						ServerName:         "custom",
-						MinTlsVersion:      pointer.To(xds.TLSVersion10),
-						MaxTlsVersion:      pointer.To(xds.TLSVersion13),
+						MinTlsVersion:      pointer.To(tlsv3.TlsParameters_TLSv1_0),
+						MaxTlsVersion:      pointer.To(tlsv3.TlsParameters_TLSv1_3),
 					},
 				},
 			},
@@ -137,7 +136,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
@@ -196,7 +194,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
@@ -258,7 +255,6 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
               connectTimeout: 5s
               edsClusterConfig:
                   edsConfig:
-                      initialFetchTimeout: 0s
                       ads: {}
                       resourceApiVersion: V3
               name: testCluster

@@ -273,6 +273,7 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/policy-role": "workload-owner",
                   "k8s.kuma.io/namespace": "example"
                 },
@@ -314,6 +315,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
@@ -357,10 +359,8 @@ var _ = Describe("Defaulter", func() {
                 "name": "empty",
                 "creationTimestamp": null,
                 "labels": {
-                  "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
-                  "kuma.io/origin": "global",
-                  "kuma.io/policy-role": "workload-owner"
+                  "kuma.io/origin": "global"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"
@@ -400,6 +400,7 @@ var _ = Describe("Defaulter", func() {
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1",
                   "kuma.io/policy-role": "workload-owner"
@@ -452,7 +453,8 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp":null,
                 "labels": {
                   "k8s.kuma.io/namespace": "example",
-                  "kuma.io/mesh": "default",
+                  "kuma.io/mesh": "demo",
+                  "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
                   "kuma.io/zone": "zone-1"
                 },
@@ -504,6 +506,51 @@ var _ = Describe("Defaulter", func() {
                   "k8s.kuma.io/namespace": "example",
                   "kuma.io/mesh": "default",
                   "kuma.io/policy-role": "workload-owner"
+                },
+                "annotations": {
+                  "kuma.io/display-name": "empty"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+		}),
+		Entry("should not add namespace label when resource originates from universal zone", testCase{
+			checker: globalChecker(),
+			kind:    string(v1alpha1.MeshTrafficPermissionType),
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1"
+                }
+              },
+              "spec": {
+                "targetRef": {}
+              }
+            }
+`,
+			expected: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "MeshTrafficPermission",
+              "metadata": {
+                "namespace": "kuma-system",
+                "name": "empty",
+                "creationTimestamp": null,
+                "labels": {
+                  "kuma.io/mesh": "default",
+                  "kuma.io/origin": "zone",
+                  "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
                   "kuma.io/display-name": "empty"

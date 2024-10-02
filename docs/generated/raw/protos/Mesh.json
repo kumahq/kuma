@@ -45,6 +45,10 @@
                     },
                     "type": "array",
                     "description": "List of policies to skip creating by default when the mesh is created. e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip all policies."
+                },
+                "meshServices": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.Mesh.MeshServices",
+                    "additionalProperties": true
                 }
             },
             "additionalProperties": true,
@@ -236,6 +240,34 @@
             "title": "Rules",
             "description": "Rules defines a set of rules for data plane proxies to be member of the mesh."
         },
+        "kuma.mesh.v1alpha1.Mesh.MeshServices": {
+            "properties": {
+                "mode": {
+                    "enum": [
+                        "Disabled",
+                        0,
+                        "Everywhere",
+                        1,
+                        "ReachableBackends",
+                        2,
+                        "Exclusive",
+                        3
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Mode"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Mesh Services"
+        },
         "kuma.mesh.v1alpha1.Mesh.Mtls": {
             "properties": {
                 "enabledBackend": {
@@ -334,6 +366,10 @@
                 "zoneEgress": {
                     "type": "boolean",
                     "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
+                },
+                "defaultForbidMeshExternalServiceAccess": {
+                    "type": "boolean",
+                    "description": "If true, blocks traffic to MeshExternalServices. Default: false"
                 }
             },
             "additionalProperties": true,

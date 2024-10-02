@@ -59,7 +59,7 @@ var programs = []*Program{
 		) ([]string, error) {
 			return Flags(map[string]string{
 				"--cgroup":            cgroup,
-				"--sidecar-user-id":   cfg.Owner.UID,
+				"--sidecar-user-id":   cfg.KumaDPUser,
 				"--out-redirect-port": strconv.Itoa(int(cfg.Redirect.Outbound.Port)),
 				"--in-redirect-port":  strconv.Itoa(int(cfg.Redirect.Inbound.Port)),
 				"--dns-capture-port":  strconv.Itoa(int(cfg.Redirect.DNS.Port)),
@@ -111,7 +111,7 @@ var programs = []*Program{
 		) ([]string, error) {
 			return Flags(map[string]string{
 				"--cgroup":            cgroup,
-				"--sidecar-user-id":   cfg.Owner.UID,
+				"--sidecar-user-id":   cfg.KumaDPUser,
 				"--out-redirect-port": strconv.Itoa(int(cfg.Redirect.Outbound.Port)),
 				"--dns-capture-port":  strconv.Itoa(int(cfg.Redirect.DNS.Port)),
 			})(cfg, cgroup, bpffs)

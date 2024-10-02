@@ -1,0 +1,19 @@
+altStatName: meshaccesslog_opentelemetry_0
+connectTimeout: 5s
+dnsLookupFamily: V4_ONLY
+loadAssignment:
+  clusterName: meshaccesslog:opentelemetry:0
+  endpoints:
+  - lbEndpoints:
+    - endpoint:
+        address:
+          socketAddress:
+            address: otel-collector
+            portValue: 4317
+name: meshaccesslog:opentelemetry:0
+type: STRICT_DNS
+typedExtensionProtocolOptions:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    explicitHttpConfig:
+      http2ProtocolOptions: {}

@@ -14,7 +14,9 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
@@ -90,25 +92,39 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var allResources []model.Resource
+			var meshSecrets []model.Resource
+			var otherResources []model.Resource
 			for _, resDesc := range resTypes {
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
 					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resDesc.Name)
 					}
-					allResources = append(allResources, list.GetItems()...)
+					for _, res := range list.GetItems() {
+						if res.Descriptor().Name == core_mesh.MeshType {
+							mesh := res.(*core_mesh.MeshResource)
+							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
+						}
+						otherResources = append(otherResources, res)
+					}
 				} else {
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resDesc.Name)
 						}
-						allResources = append(allResources, list.GetItems()...)
+						for _, res := range list.GetItems() {
+							if res.Descriptor().Name == core_system.SecretType {
+								meshSecrets = append(meshSecrets, res)
+							} else {
+								otherResources = append(otherResources, res)
+							}
+						}
 					}
 				}
 			}
 
+			allResources := append(meshSecrets, otherResources...)
 			var resources []model.Resource
 			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
@@ -128,7 +144,20 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
+				var meshDeclarations []model.Resource
 				for _, res := range resources {
+					if res.Descriptor().Name == core_mesh.MeshType {
+						meshDeclaration := core_mesh.NewMeshResource()
+						meshDeclaration.SetMeta(
+							v1alpha1.ResourceMeta{
+								Type: string(core_mesh.MeshType),
+								Name: res.GetMeta().GetName(),
+							},
+						)
+						meshDeclarations = append(meshDeclarations, meshDeclaration)
+					}
+				}
+				for _, res := range append(meshDeclarations, resources...) {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}

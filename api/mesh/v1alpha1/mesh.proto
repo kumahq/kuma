@@ -76,6 +76,8 @@ message Mesh {
   // policies.
   repeated string skipCreatingInitialPolicies = 8;
 
+  MeshServices meshServices = 9;
+
   message DataplaneProxyConstraints {
 
     // Rules defines a set of rules for data plane proxies to be member of the
@@ -97,6 +99,23 @@ message Mesh {
     // Restrictions takes precedence over requirements.
     repeated Rules restrictions = 2;
   };
+
+  message MeshServices {
+    Mode mode = 1;
+
+    enum Mode {
+      // MeshServices are't generated
+      Disabled = 0;
+      // MeshServices are generated and used for configuration
+      Everywhere = 1;
+      // MeshServices are generated but only used for configuration where
+      // configured via reachableBackends
+      ReachableBackends = 2;
+      // MeshServices are generated, used for configuration and kuma.io/services
+      // are not used
+      Exclusive = 3;
+    }
+  }
 }
 
 // CertificateAuthorityBackend defines Certificate Authority backend
@@ -275,4 +294,8 @@ message Routing {
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false
   bool zoneEgress = 2;
+
+  // If true, blocks traffic to MeshExternalServices.
+  // Default: false
+  bool defaultForbidMeshExternalServiceAccess = 3;
 }

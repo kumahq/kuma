@@ -61,6 +61,7 @@ type E2eConfig struct {
 	CleanupLogsOnSuccess              bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 	VersionsYamlPath                  string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
+	Debug                             bool              `json:"debug" envconfig:"KUMA_DEBUG"`
 	DebugDir                          string            `json:"debugDir" envconfig:"KUMA_DEBUG_DIR"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
@@ -209,7 +210,7 @@ var defaultConf = E2eConfig{
 	KumaZoneK8sCtlFlags:  map[string]string{},
 	SuiteConfig: SuiteConfig{
 		Compatibility: CompatibilitySuiteConfig{
-			HelmVersion: "2.3.3",
+			HelmVersion: "2.6.10",
 		},
 	},
 	K8sType:                      KindK8sType,

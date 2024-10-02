@@ -137,7 +137,7 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTCPRouteResource(),
 	ResourceList:                 &MeshTCPRouteResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
 	WsPath:                       "meshtcproutes",
 	KumactlArg:                   "meshtcproute",
 	KumactlListArg:               "meshtcproutes",
@@ -152,4 +152,5 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
+	IsReferenceableInTo:          false,
 }

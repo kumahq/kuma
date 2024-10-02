@@ -7,8 +7,6 @@ endpoints:
   - address: 1.1.1.2
     port: 999999
   - address: example.com
-  - address: unix:///tmp/example.sock
-    port: 80
   - port: 90
 tls:
   version:

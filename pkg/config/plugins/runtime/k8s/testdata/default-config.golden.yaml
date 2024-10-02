@@ -9,6 +9,7 @@ controlPlaneServiceName: kuma-control-plane
 controllersConcurrency:
   podController: 10
 injector:
+  applicationProbeProxyPort: 9001
   builtinDNS:
     enabled: true
     port: 15053
@@ -70,6 +71,7 @@ injector:
     excludeInboundPorts: []
     excludeOutboundIPs: []
     excludeOutboundPorts: []
+  transparentProxyConfigMap: ""
   virtualProbesEnabled: true
   virtualProbesPort: 9000
 leaderElection:

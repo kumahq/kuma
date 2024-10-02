@@ -31,6 +31,13 @@
                 "dataplanesByType": {
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.DataplanesByType",
                     "additionalProperties": true
+                },
+                "resources": {
+                    "additionalProperties": {
+                        "$ref": "#/definitions/kuma.mesh.v1alpha1.MeshInsight.ResourceStat",
+                        "additionalProperties": true
+                    },
+                    "type": "object"
                 }
             },
             "additionalProperties": true,
@@ -138,7 +145,17 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Policy Stat",
-            "description": "PolicyStat defines statistic for all policies in general"
+            "description": "PolicyStat defines statistic for all policies in general Deprecated: use resources"
+        },
+        "kuma.mesh.v1alpha1.MeshInsight.ResourceStat": {
+            "properties": {
+                "total": {
+                    "type": "integer"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resource Stat"
         },
         "kuma.mesh.v1alpha1.MeshInsight.ServiceStat": {
             "properties": {

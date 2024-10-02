@@ -244,12 +244,14 @@ runtime:
         labels:
           openshift.io/build.name: "*"
           openshift.io/deployer-pod-for.name: "*"
-      # VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
-      #	serves on sub-path of insecure port 'virtualProbesPort',
+      # (Deprecated, set ApplicationProbeProxyPort to 0 to disable probe proxying) VirtualProbesEnabled enables automatic converting HttpGet probes to virtual.
+      #	Virtual probe serves on sub-path of insecure port 'virtualProbesPort',
       #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
       virtualProbesEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
-      # VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
+      # (Deprecated, use ApplicationProbeProxyPort instead) VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
       virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
+      # ApplicationProbeProxyPort is a port for proxying application probes, it is not secured by mTLS. By setting to 0, probe proxying will be disabled.
+      applicationProbeProxyPort: 9001 # ENV: KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
       caCertFile: # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
       # SidecarContainer defines configuration of the Kuma sidecar container.
@@ -511,8 +513,6 @@ multizone:
       msgSendTimeout: 60s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_MSG_SEND_TIMEOUT
       # Backoff that is executed when the global control plane is sending the response that was previously rejected by zone control plane
       nackBackoff: 5s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF
-      # DisableSOTW if true doesn't expose SOTW version of KDS. Default: false
-      disableSOTW: false # ENV: KUMA_MULTIZONE_GLOBAL_KDS_DISABLE_SOTW
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
@@ -741,8 +741,6 @@ experimental:
   # you need to first disable this flag and redeploy cp, after config is rewritten to default
   # format you can downgrade your cp
   useTagFirstVirtualOutboundModel: false # ENV: KUMA_EXPERIMENTAL_USE_TAG_FIRST_VIRTUAL_OUTBOUND_MODEL
-  # If true, KDS will sync using incremental xDS updates
-  kdsDeltaEnabled: true # ENV: KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED
   # List of prefixes that will be used to filter out tags by keys from ingress' available services section.
   # This can trim the size of the ZoneIngress object significantly.
   # The drawback is that you cannot use filtered out tags for traffic routing.
@@ -798,6 +796,7 @@ policies:
     - meshretries
     - meshtcproutes
     - meshtimeouts
+    - meshtlses
     - meshtraces
     - meshtrafficpermissions
 coreResources:

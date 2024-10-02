@@ -362,7 +362,7 @@ spec:
                   kuma.io/mesh: mesh-name-from-ns`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("13. Adjust Pod's probes", testCase{
+		Entry("13. application probe proxy", testCase{
 			num: "13",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -379,7 +379,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("14. virtual probes: config - 9000, pod - 19000", testCase{
+		Entry("14. application probe proxy: config - 9000, pod - 19000", testCase{
 			num: "14",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -396,7 +396,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("15. virtual probes: config - enabled, pod - disabled", testCase{
+		Entry("15. application probe proxy: config - enabled, pod - disabled; fallback to virtual probe", testCase{
 			num: "15",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -464,7 +464,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config-ports.yaml",
 		}),
-		Entry("19. virtual probes: config - disabled, pod - empty", testCase{
+		Entry("19. application probe proxy - disabled, virtual probes - disabled, pod - empty", testCase{
 			num: "19",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -498,7 +498,7 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.vp-disabled.config.yaml",
 		}),
-		Entry("21. Adjust Pod's probes, named port", testCase{
+		Entry("21. application probe proxy: named port", testCase{
 			num: "21",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -809,6 +809,23 @@ spec:
                 labels:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
+		}),
+		Entry("40. application probe proxy: config - disabled, pod - enabled", testCase{
+			num: "40",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
 		}),
 	)
 

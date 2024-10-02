@@ -421,7 +421,14 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	customizableManager.Customize(
 		mesh.DataplaneType,
-		dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name, builder.ResourceValidators().Dataplane),
+		dataplane.NewDataplaneManager(
+			builder.ResourceStore(),
+			builder.Config().Multizone.Zone.Name,
+			builder.Config().Mode,
+			builder.Config().Environment == config_core.KubernetesEnvironment,
+			builder.Config().Store.Kubernetes.SystemNamespace,
+			builder.ResourceValidators().Dataplane,
+		),
 	)
 
 	customizableManager.Customize(
@@ -512,7 +519,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		rsGraphBuilder,
-		builder.Config().Experimental.SkipPersistedVIPs,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

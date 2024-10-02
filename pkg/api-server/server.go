@@ -290,6 +290,7 @@ func addResourcesEndpoints(
 			disableOriginLabelValidation: cfg.Multizone.Zone.DisableOriginLabelValidation,
 			xdsHooks:                     xdsHooks,
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
+			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
@@ -476,7 +477,6 @@ func SetupServer(rt runtime.Runtime) error {
 			cfg.DNSServer.Domain,
 			cfg.DNSServer.ServiceVipPort,
 			xds_context.AnyToAnyReachableServicesGraphBuilder,
-			cfg.Experimental.SkipPersistedVIPs,
 		),
 		registry.Global().ObjectDescriptors(model.HasWsEnabled()),
 		&cfg,

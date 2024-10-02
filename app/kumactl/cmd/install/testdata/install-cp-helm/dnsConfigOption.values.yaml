@@ -1,0 +1,24 @@
+controlPlane:
+  dns:
+    policy: None
+    config:
+      nameservers:
+      - 8.8.8.8
+      - 1.1.1.1
+      searches:
+      - test.com
+      - new.test.com
+ingress:
+  enabled: true
+  dns:
+    config:
+      nameservers:
+      - 8.8.8.8
+      - 1.1.1.1
+egress:
+  enabled: true
+  dns:
+    config:
+      searches:
+      - test.com
+      - new.test.com

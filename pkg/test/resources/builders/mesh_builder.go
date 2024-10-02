@@ -3,10 +3,14 @@ package builders
 import (
 	"context"
 
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"sigs.k8s.io/yaml"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -101,6 +105,14 @@ func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
 	return m
 }
 
+func (m *MeshBuilder) WithMeshExternalServiceTrafficForbidden() *MeshBuilder {
+	if m.res.Spec.Routing == nil {
+		m.res.Spec.Routing = &mesh_proto.Routing{}
+	}
+	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = true
+	return m
+}
+
 func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
 	if m.res.Spec.Networking == nil {
 		m.res.Spec.Networking = &mesh_proto.Networking{}
@@ -112,7 +124,43 @@ func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
 	return m
 }
 
+func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Mode) *MeshBuilder {
+	m.res.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
+		Mode: enabled,
+	}
+	return m
+}
+
+func (m *MeshBuilder) WithoutInitialPolicies() *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = []string{"*"}
+	return m
+}
+
+func (m *MeshBuilder) WithSkipCreatingInitialPolicies(policies []string) *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = policies
+	return m
+}
+
 func (m *MeshBuilder) With(fn func(resource *core_mesh.MeshResource)) *MeshBuilder {
 	fn(m.res)
 	return m
+}
+
+func (m *MeshBuilder) KubeYaml() string {
+	mesh := m.Build()
+	kubeMesh := mesh_k8s.Mesh{
+		TypeMeta: v1.TypeMeta{
+			Kind:       string(core_mesh.MeshType),
+			APIVersion: mesh_k8s.GroupVersion.String(),
+		},
+		ObjectMeta: v1.ObjectMeta{
+			Name: mesh.Meta.GetName(),
+		},
+	}
+	kubeMesh.SetSpec(mesh.Spec)
+	res, err := yaml.Marshal(kubeMesh)
+	if err != nil {
+		panic(err)
+	}
+	return string(res)
 }

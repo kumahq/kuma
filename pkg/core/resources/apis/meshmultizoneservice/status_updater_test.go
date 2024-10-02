@@ -46,53 +46,63 @@ var _ = Describe("Updater", func() {
 		close(stopCh)
 	})
 
+	matchedMeshServices := func() ([]meshmzservice_api.MatchedMeshService, error) {
+		mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+		err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
+		if err != nil {
+			return nil, err
+		}
+		return mzsvc.Status.MeshServices, nil
+	}
+
+	ms1Builder := samples.MeshServiceBackendBuilder().
+		WithName("backend").
+		WithDataplaneTagsSelectorKV("app", "backend").
+		WithLabels(map[string]string{
+			mesh_proto.DisplayName: "backend",
+			mesh_proto.ZoneTag:     "east",
+		})
+
+	ms2Builder := samples.MeshServiceBackendBuilder().
+		WithName("backend-syncedhash").
+		WithDataplaneTagsSelectorKV("app", "backend").
+		WithLabels(map[string]string{
+			mesh_proto.DisplayName: "backend",
+			mesh_proto.ZoneTag:     "west",
+		})
+
 	It("should add mesh services to the status of multizone service", func() {
 		// when
-		ms1Builder := samples.MeshServiceBackendBuilder().
-			WithName("backend").
-			WithDataplaneTagsSelector(map[string]string{
-				"app": "backend",
-			}).
-			WithLabels(map[string]string{
-				mesh_proto.DisplayName: "backend",
-				mesh_proto.ZoneTag:     "east",
-			})
 		Expect(ms1Builder.Create(resManager)).To(Succeed())
 		Expect(samples.MeshServiceWebBuilder().Create(resManager)).To(Succeed()) // to check if we ignore it
 		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) {
-			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
-
-			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{{Name: "backend"}}))
-		}, "10s", "100ms").Should(Succeed())
+		Eventually(matchedMeshServices, "10s", "100ms").Should(Equal([]meshmzservice_api.MatchedMeshService{
+			{Name: "backend", Zone: "east", Mesh: "default"},
+		}))
 
 		// when new service is added
-		ms2Builder := samples.MeshServiceBackendBuilder().
-			WithName("backend-syncedhash").
-			WithDataplaneTagsSelector(map[string]string{
-				"app": "backend",
-			}).
-			WithLabels(map[string]string{
-				mesh_proto.DisplayName: "backend",
-				mesh_proto.ZoneTag:     "west",
-			})
 		Expect(ms2Builder.Create(resManager)).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) {
-			mzsvc := meshmzservice_api.NewMeshMultiZoneServiceResource()
+		Eventually(matchedMeshServices, "10s", "100ms").Should(Equal([]meshmzservice_api.MatchedMeshService{
+			{Name: "backend", Zone: "east", Mesh: "default"},
+			{Name: "backend", Zone: "west", Mesh: "default"},
+		}))
+	})
 
-			err := resManager.Get(context.Background(), mzsvc, store.GetByKey("backend", model.DefaultMesh))
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(mzsvc.Status.MeshServices).To(Equal([]meshmzservice_api.MatchedMeshService{
-				{Name: "backend"},
-				{Name: "backend-syncedhash"},
-			}))
-		}, "10s", "100ms").Should(Succeed())
+	It("should result in the same list when services are added in a different order", func() {
+		// when
+		Expect(ms2Builder.Create(resManager)).To(Succeed())
+		Expect(ms1Builder.Create(resManager)).To(Succeed())
+		Expect(samples.MeshMultiZoneServiceBackendBuilder().Create(resManager)).To(Succeed())
+
+		// then
+		Eventually(matchedMeshServices, "10s", "100ms").Should(Equal([]meshmzservice_api.MatchedMeshService{
+			{Name: "backend", Zone: "east", Mesh: "default"},
+			{Name: "backend", Zone: "west", Mesh: "default"},
+		}))
 	})
 
 	It("should emit metric", func() {

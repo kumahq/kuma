@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	"github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -16,6 +17,14 @@ func MeshProxyPatch(config *Config) func() {
 	GinkgoHelper()
 
 	return func() {
+		framework.E2EAfterEach(func() {
+			Expect(framework.DeleteMeshResources(
+				kubernetes.Cluster,
+				config.Mesh,
+				v1alpha1.MeshProxyPatchResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
 		It("should add a header using Lua filter", func() {
 			// given
 			meshProxyPatch := fmt.Sprintf(`

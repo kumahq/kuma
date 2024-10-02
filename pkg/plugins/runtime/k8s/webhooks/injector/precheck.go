@@ -26,6 +26,7 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 			logger.Info("WARNING: using deprecated pod annotation", "key", d.Key, "message", d.Message)
 		}
 	}
+	logYesNoDeprecations(pod.Annotations, logger)
 
 	if inject, err := i.needToInject(pod, ns); err != nil {
 		return "", err
@@ -126,4 +127,41 @@ func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
 		}
 	}
 	return false
+}
+
+// these are all existing annotations that are supported by metadata.GetBooleanWithDefault
+var booleanAnnotations = map[string]bool{
+	metadata.KumaTrafficDropInvalidPackets:         true,
+	metadata.KumaTrafficIptablesLogs:               true,
+	metadata.KumaWaitForDataplaneReady:             true,
+	metadata.KumaTransparentProxyingEbpf:           true,
+	metadata.KumaBuiltinDNS:                        true,
+	metadata.KumaBuiltinDNSLogging:                 true,
+	metadata.KumaGatewayAnnotation:                 true,
+	metadata.KumaSidecarInjectionAnnotation:        true,
+	metadata.KumaIngressAnnotation:                 true,
+	metadata.KumaEgressAnnotation:                  true,
+	metadata.KumaSidecarInjectedAnnotation:         true,
+	metadata.KumaTransparentProxyingAnnotation:     true,
+	metadata.KumaMetricsPrometheusAggregateEnabled: true,
+	metadata.KumaVirtualProbesAnnotation:           true,
+	metadata.KumaIgnoreAnnotation:                  true,
+	metadata.KumaInitFirst:                         true,
+}
+
+func logYesNoDeprecations(podAnnotations map[string]string, logger logr.Logger) {
+	for key, value := range podAnnotations {
+		if _, isBooleanAnno := booleanAnnotations[key]; !isBooleanAnno {
+			continue
+		}
+
+		if value == "yes" || value == "no" {
+			replacement := "true"
+			if value == "no" {
+				replacement = "false"
+			}
+			logger.Info(fmt.Sprintf("WARNING: using '%s' for annotation '%s' is deprecated, please use '%s' instead",
+				value, key, replacement))
+		}
+	}
 }

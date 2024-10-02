@@ -124,6 +124,17 @@ to:
       http:
         numRetries: 5
 `),
+			Entry("minimalistic to MeshMultiZoneService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      name: web-backend
+    default:
+      http:
+        numRetries: 5
+`),
 			Entry("empty http arrays", `
 targetRef:
   kind: Mesh

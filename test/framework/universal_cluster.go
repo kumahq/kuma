@@ -4,6 +4,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -45,6 +46,7 @@ type UniversalCluster struct {
 	apps           map[string]*UniversalApp
 	verbose        bool
 	deployments    map[string]Deployment
+	dataplanes     []string
 	defaultTimeout time.Duration
 	defaultRetries int
 	opts           kumaDeploymentOptions
@@ -153,13 +155,20 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
 	}
 
+	verboseOutToStd := true
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
+	if Config.Debug {
+		// in debug mode, we will enable debug level logs on CP, and they'll be dump logs into files
+		// so don't need to print onto stdout/stderr, otherwise the test output will be too verbose
+		verboseOutToStd = false
+		cmd = append(cmd, "--log-level", "debug")
+	}
 	if mode == core.Zone {
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.ZoneName()
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, verboseOutToStd, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -215,7 +224,7 @@ func (c *UniversalCluster) GetKuma() ControlPlane {
 }
 
 func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
-	return c.apps[AppModeCP].mainApp.Out(), nil
+	return "stdout:\n" + c.apps[AppModeCP].mainApp.Out() + "\nstderr:\n" + c.apps[AppModeCP].mainApp.Err(), nil
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
@@ -250,6 +259,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, name, mesh, ip, dpyaml, t
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, app.dpEnv)
+	c.dataplanes = append(c.dataplanes, name)
 	return app.dpApp.Start()
 }
 
@@ -392,6 +402,10 @@ func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
 	return c.apps[appName]
 }
 
+func (c *UniversalCluster) GetDataplanes() []string {
+	return c.dataplanes
+}
+
 func (c *UniversalCluster) DeleteApp(appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {
@@ -401,6 +415,9 @@ func (c *UniversalCluster) DeleteApp(appname string) error {
 		return err
 	}
 	delete(c.apps, appname)
+	c.dataplanes = slices.DeleteFunc(c.dataplanes, func(s string) bool {
+		return s == appname
+	})
 	return nil
 }
 

@@ -200,13 +200,21 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 		c.defaultRetries,
 		c.defaultTimeout,
 		func() (string, error) {
-			_, err := k8s.GetNamespaceE(c.t,
+			nsObject, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
 				namespace)
 			if err != nil {
-				return "Namespace " + namespace + " deleted", nil
+				if k8s_errors.IsNotFound(err) {
+					return "Namespace " + namespace + " deleted", nil
+				}
+				return "Failed to get Namespace " + namespace, err
 			}
-			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active", namespace)
+
+			nsLastCondition := "unknown"
+			if len(nsObject.Status.Conditions) != 0 {
+				nsLastCondition = nsObject.Status.Conditions[len(nsObject.Status.Conditions)-1].String()
+			}
+			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active, last condition: %s", namespace, nsLastCondition)
 		})
 }
 
@@ -283,6 +291,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		"--dataplane-repository":      Config.KumaDPImageRepo,
 		"--dataplane-init-repository": Config.KumaInitImageRepo,
 	}
+	var args []string
 	if Config.KumaImageRegistry != "" {
 		argsMap["--control-plane-registry"] = Config.KumaImageRegistry
 		argsMap["--dataplane-registry"] = Config.KumaImageRegistry
@@ -313,6 +322,9 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 
 	if c.opts.zoneEgress {
 		argsMap["--egress-enabled"] = ""
+		if Config.Debug {
+			args = append(args, "--set", fmt.Sprintf("%segress.logLevel=debug", Config.HelmSubChartPrefix))
+		}
 	}
 
 	if c.opts.cni {
@@ -331,7 +343,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap[opt] = value
 	}
 
-	var args []string
 	for k, v := range argsMap {
 		args = append(args, k, v)
 	}
@@ -341,6 +352,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_SERVICE_CIDR=fd00:fd01::/64")
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR=fd00:fd02::/64")
 		args = append(args, "--env-var", "KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR=fd00:fd03::/64")
+	}
+
+	if Config.Debug {
+		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.logLevel=debug", Config.HelmSubChartPrefix))
 	}
 
 	for k, v := range c.opts.env {
@@ -395,6 +410,14 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		values["controlPlane.envVars.KUMA_IPAM_MESH_SERVICE_CIDR"] = "fd00:fd01::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"] = "fd00:fd02::/64"
 		values["controlPlane.envVars.KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR"] = "fd00:fd03::/64"
+	}
+
+	if Config.Debug {
+		values["controlPlane.logLevel"] = "debug"
+	}
+
+	for key, value := range c.opts.env {
+		values[fmt.Sprintf("controlPlane.envVars.%s", key)] = value
 	}
 
 	switch mode {
@@ -494,6 +517,16 @@ func (c *K8sCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOption) e
 	switch mode {
 	case core.Zone:
 		c.opts.env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
+	}
+
+	if Config.Debug {
+		dpEnvVarKey := "KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS"
+		debugEnv := "KUMA_DATAPLANE_RUNTIME_ENVOY_LOG_LEVEL:debug"
+		if envVars, ok := c.opts.env[dpEnvVarKey]; ok {
+			c.opts.env[dpEnvVarKey] = envVars + "," + debugEnv
+		} else {
+			c.opts.env[dpEnvVarKey] = debugEnv
+		}
 	}
 
 	var err error
@@ -1000,6 +1033,13 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 		return err
 	}
 
+	// speed up namespace termination by terminating pods without grace period.
+	// Namespace is then deleted in ~6s instead of ~43s.
+	err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
+	if err != nil {
+		return err
+	}
+
 	c.WaitNamespaceDelete(namespace)
 
 	return nil
@@ -1012,6 +1052,7 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 		}
 		return err
 	}
+
 	// speed up namespace termination by terminating pods without grace period.
 	// Namespace is then deleted in ~6s instead of ~43s.
 	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")

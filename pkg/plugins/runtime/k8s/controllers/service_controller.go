@@ -92,6 +92,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 
 func (r *ServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-service-controller").
 		For(&kube_core.Service{}, builder.WithPredicates(serviceEvents)).
 		Complete(r)
 }

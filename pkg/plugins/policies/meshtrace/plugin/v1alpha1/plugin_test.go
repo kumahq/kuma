@@ -14,6 +14,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
@@ -74,12 +75,14 @@ var _ = Describe("MeshTrace", func() {
 						AddInbound(builders.Inbound().
 							WithService("backend").
 							WithAddress("127.0.0.1").
-							WithPort(17777)).
-						AddOutbound(builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777)),
+							WithPort(17777)),
 				).
+				WithOutbounds(xds_types.Outbounds{
+					{LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build()},
+				}).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)

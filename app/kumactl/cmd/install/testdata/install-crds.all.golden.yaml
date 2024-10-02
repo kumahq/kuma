@@ -4,7 +4,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -54,7 +54,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -168,7 +168,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -218,7 +218,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -288,7 +288,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -338,7 +338,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -388,7 +388,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -438,7 +438,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -510,7 +510,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -721,6 +721,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -787,6 +788,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -1002,6 +1004,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1054,8 +1057,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -1066,7 +1067,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -1368,6 +1369,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1434,6 +1436,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -1740,6 +1743,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -1792,8 +1796,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -1804,7 +1806,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -1854,7 +1856,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -1899,9 +1901,8 @@ spec:
                   properties:
                     address:
                       description: Address defines an address to which a user want
-                        to send a request. Is possible to provide `domain`, `ip` and
-                        `unix` sockets.
-                      example: unix:///tmp/example.sock
+                        to send a request. Is possible to provide `domain`, `ip`.
+                      example: example.com
                       minLength: 1
                       type: string
                     port:
@@ -1911,6 +1912,7 @@ spec:
                       type: integer
                   required:
                   - address
+                  - port
                   type: object
                 type: array
               extension:
@@ -2140,12 +2142,7 @@ spec:
                             - Unknown
                             type: string
                           type:
-                            description: |-
-                              type of condition in CamelCase or in foo.example.com/CamelCase.
-                              ---
-                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                              useful (see .node.status.conditions), the ability to deconflict is important.
-                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -2187,7 +2184,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -2330,6 +2327,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -2396,6 +2394,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -2542,6 +2541,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -2594,8 +2594,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -2606,7 +2604,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -2717,10 +2715,8 @@ spec:
                       Claims lists the names of resources, defined in spec.resourceClaims,
                       that are used by this container.
 
-
                       This is an alpha field and requires enabling the
                       DynamicResourceAllocation feature gate.
-
 
                       This field is immutable. It can only be set for containers.
                     items:
@@ -2731,6 +2727,12 @@ spec:
                             Name must match the name of one entry in pod.spec.resourceClaims of
                             the Pod where this field is used. It makes that resource available
                             inside a container.
+                          type: string
+                        request:
+                          description: |-
+                            Request is the name chosen for a request in the referenced claim.
+                            If empty, everything from the claim is made available, otherwise
+                            only the result of this request.
                           type: string
                       required:
                       - name
@@ -2829,7 +2831,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -2935,10 +2937,8 @@ spec:
                       Claims lists the names of resources, defined in spec.resourceClaims,
                       that are used by this container.
 
-
                       This is an alpha field and requires enabling the
                       DynamicResourceAllocation feature gate.
-
 
                       This field is immutable. It can only be set for containers.
                     items:
@@ -2949,6 +2949,12 @@ spec:
                             Name must match the name of one entry in pod.spec.resourceClaims of
                             the Pod where this field is used. It makes that resource available
                             inside a container.
+                          type: string
+                        request:
+                          description: |-
+                            Request is the name chosen for a request in the referenced claim.
+                            If empty, everything from the claim is made available, otherwise
+                            only the result of this request.
                           type: string
                       required:
                       - name
@@ -3040,16 +3046,8 @@ spec:
               conditions:
                 description: Conditions is an array of gateway instance conditions.
                 items:
-                  description: "Condition contains details for one aspect of the current
-                    state of this API Resource.\n---\nThis struct is intended for
-                    direct use as an array at the field path .status.conditions.  For
-                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
-                    observations of a foo's current state.\n\t    // Known .status.conditions.type
-                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
-                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
-                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
-                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
-                    \   // other fields\n\t}"
+                  description: Condition contains details for one aspect of the current
+                    state of this API Resource.
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -3090,12 +3088,7 @@ spec:
                       - Unknown
                       type: string
                     type:
-                      description: |-
-                        type of condition in CamelCase or in foo.example.com/CamelCase.
-                        ---
-                        Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                        useful (see .node.status.conditions), the ability to deconflict is important.
-                        The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                      description: type of condition in CamelCase or in foo.example.com/CamelCase.
                       maxLength: 316
                       pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                       type: string
@@ -3157,8 +3150,6 @@ spec:
                                     CamelCase names
                                   - cloud provider specific error values must have names that comply with the
                                     format foo.example.com/CamelCase.
-                                  ---
-                                  The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                                 maxLength: 316
                                 pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                                 type: string
@@ -3168,12 +3159,12 @@ spec:
                                 format: int32
                                 type: integer
                               protocol:
-                                default: TCP
                                 description: |-
                                   Protocol is the protocol of the service port of which status is recorded here
                                   The supported values are: "TCP", "UDP", "SCTP"
                                 type: string
                             required:
+                            - error
                             - port
                             - protocol
                             type: object
@@ -3194,7 +3185,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -3244,7 +3235,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -3294,7 +3285,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -3352,6 +3343,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -3612,6 +3604,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -3664,8 +3657,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -3676,7 +3667,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -3734,6 +3725,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -3820,6 +3812,7 @@ spec:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
@@ -3934,7 +3927,8 @@ spec:
                                     requestMirror:
                                       properties:
                                         backendRef:
-                                          description: TODO forbid weight
+                                          description: BackendRef defines where to
+                                            forward traffic.
                                           properties:
                                             kind:
                                               description: Kind of the referenced
@@ -3945,6 +3939,7 @@ spec:
                                               - MeshGateway
                                               - MeshService
                                               - MeshExternalService
+                                              - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                               type: string
@@ -4021,7 +4016,6 @@ spec:
                                             PreciseHostname is the fully qualified domain name of a network host. This
                                             matches the RFC 1123 definition of a hostname with 1 notable exception that
                                             numeric IP addresses are not allowed.
-
 
                                             Note that as per RFC1035 and RFC1123, a *label* must consist of lower case
                                             alphanumeric characters or '-', and must start and end with an alphanumeric
@@ -4280,6 +4274,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -4340,7 +4335,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -4390,7 +4385,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -4449,6 +4444,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -4898,6 +4894,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -4950,8 +4947,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -4962,7 +4957,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -5195,6 +5190,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -5243,8 +5239,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -5255,7 +5249,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -5306,11 +5300,6 @@ spec:
                     port:
                       format: int32
                       type: integer
-                    targetPort:
-                      anyOf:
-                      - type: integer
-                      - type: string
-                      x-kubernetes-int-or-string: true
                   required:
                   - port
                   type: object
@@ -5392,12 +5381,7 @@ spec:
                             - Unknown
                             type: string
                           type:
-                            description: |-
-                              type of condition in CamelCase or in foo.example.com/CamelCase.
-                              ---
-                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                              useful (see .node.status.conditions), the ability to deconflict is important.
-                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -5426,11 +5410,20 @@ spec:
                 description: MeshServices is a list of matched MeshServices
                 items:
                   properties:
+                    mesh:
+                      type: string
                     name:
                       description: Name is a core name of MeshService
                       type: string
+                    namespace:
+                      type: string
+                    zone:
+                      type: string
                   required:
+                  - mesh
                   - name
+                  - namespace
+                  - zone
                   type: object
                 type: array
               vips:
@@ -5450,7 +5443,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -5555,6 +5548,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -5603,8 +5597,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -5615,7 +5607,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -5717,7 +5709,6 @@ spec:
                                   description: |-
                                     Origin is the name of the component or plugin that generated the resource.
 
-
                                     Here is the list of well-known origins:
                                     inbound - resources generated for handling incoming traffic.
                                     outbound - resources generated for handling outgoing traffic.
@@ -5727,7 +5718,6 @@ spec:
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
                                     gateway - resources generated for MeshGateway.
-
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5805,7 +5795,6 @@ spec:
                                   description: |-
                                     Origin is the name of the component or plugin that generated the resource.
 
-
                                     Here is the list of well-known origins:
                                     inbound - resources generated for handling incoming traffic.
                                     outbound - resources generated for handling outgoing traffic.
@@ -5815,7 +5804,6 @@ spec:
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
                                     gateway - resources generated for MeshGateway.
-
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5886,7 +5874,6 @@ spec:
                                   description: |-
                                     Origin is the name of the component or plugin that generated the resource.
 
-
                                     Here is the list of well-known origins:
                                     inbound - resources generated for handling incoming traffic.
                                     outbound - resources generated for handling outgoing traffic.
@@ -5896,7 +5883,6 @@ spec:
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
                                     gateway - resources generated for MeshGateway.
-
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -5978,7 +5964,6 @@ spec:
                                   description: |-
                                     Origin is the name of the component or plugin that generated the resource.
 
-
                                     Here is the list of well-known origins:
                                     inbound - resources generated for handling incoming traffic.
                                     outbound - resources generated for handling outgoing traffic.
@@ -5988,7 +5973,6 @@ spec:
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
                                     gateway - resources generated for MeshGateway.
-
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -6060,7 +6044,6 @@ spec:
                                   description: |-
                                     Origin is the name of the component or plugin that generated the resource.
 
-
                                     Here is the list of well-known origins:
                                     inbound - resources generated for handling incoming traffic.
                                     outbound - resources generated for handling outgoing traffic.
@@ -6070,7 +6053,6 @@ spec:
                                     ingress - resources generated for Zone Ingress.
                                     egress - resources generated for Zone Egress.
                                     gateway - resources generated for MeshGateway.
-
 
                                     The list is not complete, because policy plugins can introduce new resources.
                                     For example MeshTrace plugin can create Cluster with "mesh-trace" origin.
@@ -6114,6 +6096,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -6164,7 +6147,6 @@ spec:
                 type: object
             required:
             - default
-            - targetRef
             type: object
         type: object
     served: true
@@ -6175,7 +6157,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -6357,6 +6339,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -6423,6 +6406,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -6609,6 +6593,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -6661,8 +6646,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -6673,7 +6656,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -6731,6 +6714,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -7116,6 +7100,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7168,8 +7153,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7180,7 +7163,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -7344,12 +7327,7 @@ spec:
                             - Unknown
                             type: string
                           type:
-                            description: |-
-                              type of condition in CamelCase or in foo.example.com/CamelCase.
-                              ---
-                              Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                              useful (see .node.status.conditions), the ability to deconflict is important.
-                              The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                            description: type of condition in CamelCase or in foo.example.com/CamelCase.
                             maxLength: 316
                             pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                             type: string
@@ -7398,7 +7376,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -7456,6 +7434,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -7534,6 +7513,7 @@ spec:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                       type: string
@@ -7614,6 +7594,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7667,8 +7648,6 @@ spec:
                   type: object
                 minItems: 1
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -7679,7 +7658,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -7793,6 +7772,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -7859,6 +7839,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -7977,6 +7958,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -8029,8 +8011,6 @@ spec:
                   - targetRef
                   type: object
                 type: array
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -8041,7 +8021,246 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
+  name: meshtlses.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshTLS
+    listKind: MeshTLSList
+    plural: meshtlses
+    singular: meshtls
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshTLS resource.
+            properties:
+              from:
+                description: From list makes a match between clients and corresponding
+                  configurations
+                items:
+                  properties:
+                    default:
+                      description: |-
+                        Default is a configuration specific to the group of clients referenced in
+                        'targetRef'
+                      properties:
+                        mode:
+                          description: Mode defines the behavior of inbound listeners
+                            with regard to traffic encryption.
+                          enum:
+                          - Permissive
+                          - Strict
+                          type: string
+                        tlsCiphers:
+                          description: TlsCiphers section for providing ciphers specification.
+                          items:
+                            enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                            type: string
+                          type: array
+                        tlsVersion:
+                          description: Version section for providing version specification.
+                          properties:
+                            max:
+                              default: TLSAuto
+                              description: Max defines maximum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                            min:
+                              default: TLSAuto
+                              description: Min defines minimum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                          type: object
+                      type: object
+                    targetRef:
+                      description: |-
+                        TargetRef is a reference to the resource that represents a group of
+                        clients.
+                      properties:
+                        kind:
+                          description: Kind of the referenced resource
+                          enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshExternalService
+                          - MeshMultiZoneService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                          type: string
+                        labels:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Labels are used to select group of MeshServices that match labels. Either Labels or
+                            Name and Namespace can be used.
+                          type: object
+                        mesh:
+                          description: Mesh is reserved for future use to identify
+                            cross mesh resources.
+                          type: string
+                        name:
+                          description: |-
+                            Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                            `MeshServiceSubset` and `MeshGatewayRoute`
+                          type: string
+                        namespace:
+                          description: |-
+                            Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                            will be targeted.
+                          type: string
+                        proxyTypes:
+                          description: |-
+                            ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                            all data plane types are targeted by the policy.
+                          items:
+                            enum:
+                            - Sidecar
+                            - Gateway
+                            type: string
+                          minItems: 1
+                          type: array
+                        sectionName:
+                          description: |-
+                            SectionName is used to target specific section of resource.
+                            For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                          type: string
+                        tags:
+                          additionalProperties:
+                            type: string
+                          description: |-
+                            Tags used to select a subset of proxies by tags. Can only be used with kinds
+                            `MeshSubset` and `MeshServiceSubset`
+                          type: object
+                      type: object
+                  required:
+                  - targetRef
+                  type: object
+                type: array
+              targetRef:
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined in-place.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                      `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
+                    type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -8180,7 +8399,7 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100%
+                        default: 100
                         description: |-
                           Target percentage of requests that will be force traced if the
                           'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
@@ -8191,13 +8410,13 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100%
+                        default: 100
                         description: |-
                           Target percentage of requests will be traced
                           after all other sampling checks have been applied (client, force tracing,
                           random sampling). This field functions as an upper limit on the total
-                          configured sampling rate. For instance, setting client_sampling to 100%
-                          but overall_sampling to 1% will result in only 1% of client requests with
+                          configured sampling rate. For instance, setting client to 100
+                          but overall to 1 will result in only 1% of client requests with
                           the appropriate headers to be force traced. Mirror of
                           overall_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
@@ -8207,7 +8426,7 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100%
+                        default: 100
                         description: |-
                           Target percentage of requests that will be randomly selected for trace
                           generation, if not requested by the client or not forced.
@@ -8265,6 +8484,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -8313,8 +8533,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -8325,7 +8543,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8402,6 +8620,7 @@ spec:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                           type: string
@@ -8468,6 +8687,7 @@ spec:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                     type: string
@@ -8516,8 +8736,6 @@ spec:
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
                 type: object
-            required:
-            - targetRef
             type: object
         type: object
     served: true
@@ -8528,7 +8746,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -8578,7 +8796,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -8628,7 +8846,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -8678,7 +8896,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -8728,7 +8946,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -8778,7 +8996,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -8828,7 +9046,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -8878,7 +9096,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -8928,7 +9146,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -8978,7 +9196,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -9028,7 +9246,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -9084,7 +9302,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9134,7 +9352,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -9190,7 +9408,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -9241,7 +9459,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -9291,7 +9509,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.15.0
+    controller-gen.kubebuilder.io/version: v0.16.3
   name: zones.kuma.io
 spec:
   group: kuma.io

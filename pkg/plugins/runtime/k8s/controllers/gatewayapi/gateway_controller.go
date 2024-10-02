@@ -405,6 +405,7 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-gateway-controller").
 		For(&gatewayapi.Gateway{}).
 		Owns(&mesh_k8s.MeshGateway{}).
 		Owns(&mesh_k8s.MeshGatewayInstance{}).

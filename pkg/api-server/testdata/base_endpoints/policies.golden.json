@@ -177,6 +177,17 @@
    "isOutbound": true
   },
   {
+   "name": "MeshTLS",
+   "readOnly": false,
+   "path": "meshtlses",
+   "singularDisplayName": "Mesh TLS",
+   "pluralDisplayName": "Mesh TLSes",
+   "isExperimental": false,
+   "isTargetRefBased": true,
+   "isInbound": true,
+   "isOutbound": false
+  },
+  {
    "name": "MeshTimeout",
    "readOnly": false,
    "path": "meshtimeouts",

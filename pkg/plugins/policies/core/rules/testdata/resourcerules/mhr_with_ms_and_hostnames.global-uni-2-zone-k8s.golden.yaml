@@ -1,4 +1,6 @@
 mesh:name/mesh-1:
+  BackendRefOriginIndex:
+    9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=: 0
   Conf:
   - hostnames:
     - kuma.io

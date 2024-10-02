@@ -1,0 +1,47 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChains:
+    - filterChainMatch:
+        destinationPort: 80
+        prefixRanges:
+        - addressPrefix: 192.168.0.0
+          prefixLen: 32
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_192.168.0.0_80
+          statPrefix: meshpassthrough_192_168_0_0_80
+      name: meshpassthrough_192.168.0.0_80
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: outbound:passthrough:ipv6
+          statPrefix: outbound_passthrough_ipv6
+    name: outbound:passthrough:ipv6
+    trafficDirection: OUTBOUND

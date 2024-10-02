@@ -6,6 +6,13 @@ name: default
 type: Mesh
 ---
 creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: default
+type: Mesh
+skipCreatingInitialPolicies:
+- '*'
+---
+creationTime: "0001-01-01T00:00:00Z"
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: mal-1

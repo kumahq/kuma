@@ -35,6 +35,98 @@
  "rules": [
   {
    "fromRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "rules": [
+        {
+         "matches": [
+          {
+           "path": {
+            "value": "/api/v2",
+            "type": "PathPrefix"
+           }
+          }
+         ],
+         "default": {
+          "backendRefs": [
+           {
+            "kind": "MeshServiceSubset",
+            "name": "backend_kuma-demo_svc_3001",
+            "tags": {
+             "version": "1.0"
+            }
+           }
+          ]
+         }
+        },
+        {
+         "matches": [
+          {
+           "path": {
+            "value": "/api",
+            "type": "PathPrefix"
+           }
+          }
+         ],
+         "default": {
+          "backendRefs": [
+           {
+            "kind": "MeshServiceSubset",
+            "name": "other-svc",
+            "tags": {
+             "version": "1.0"
+            }
+           },
+           {
+            "kind": "MeshServiceSubset",
+            "name": "other-svc-2",
+            "tags": {
+             "version": "1.0"
+            }
+           }
+          ]
+         }
+        }
+       ]
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {
+         "k8s.kuma.io/namespace": "kuma-demo",
+         "kuma.io/display-name": "the-other-http-route"
+        },
+        "mesh": "default",
+        "name": "the-other-http-route",
+        "type": "MeshHTTPRoute"
+       },
+       "ruleIndex": 0
+      },
+      {
+       "resourceMeta": {
+        "labels": {
+         "k8s.kuma.io/namespace": "kuma-demo",
+         "kuma.io/display-name": "the-http-route"
+        },
+        "mesh": "default",
+        "name": "the-http-route",
+        "type": "MeshHTTPRoute"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {},
+      "mesh": "",
+      "name": "default",
+      "type": "Mesh"
+     },
+     "resourceSectionName": ""
+    }
+   ],
    "toRules": [
     {
      "conf": {
@@ -95,19 +187,19 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "the-http-route"
+        "kuma.io/display-name": "the-other-http-route"
        },
        "mesh": "default",
-       "name": "the-http-route",
+       "name": "the-other-http-route",
        "type": "MeshHTTPRoute"
       },
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "the-other-http-route"
+        "kuma.io/display-name": "the-http-route"
        },
        "mesh": "default",
-       "name": "the-other-http-route",
+       "name": "the-http-route",
        "type": "MeshHTTPRoute"
       }
      ]
@@ -118,6 +210,7 @@
   },
   {
    "fromRules": [],
+   "toResourceRules": [],
    "toRules": [
     {
      "conf": {
@@ -141,19 +234,19 @@
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "on-route"
+        "kuma.io/display-name": "on-service"
        },
        "mesh": "default",
-       "name": "on-route",
+       "name": "on-service",
        "type": "MeshTimeout"
       },
       {
        "labels": {
         "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "on-service"
+        "kuma.io/display-name": "on-route"
        },
        "mesh": "default",
-       "name": "on-service",
+       "name": "on-route",
        "type": "MeshTimeout"
       }
      ]

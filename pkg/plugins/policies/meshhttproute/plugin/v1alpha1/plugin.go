@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -26,7 +28,9 @@ type ToRouteRule struct {
 	Subset    rules.Subset
 	Rules     []api.Rule
 	Hostnames []string
-	Origin    []core_model.ResourceMeta
+
+	Origins          []core_model.ResourceMeta
+	BackendRefOrigin map[common_api.MatchesHash]core_model.ResourceMeta
 }
 
 type plugin struct{}
@@ -54,7 +58,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 		return nil
 	}
 
-	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules.Rules); err != nil {
+	if err := ApplyToOutbounds(proxy, rs, xdsCtx, policies.ToRules); err != nil {
 		return err
 	}
 
@@ -66,12 +70,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, xdsCtx xds_context.Context, prox
 	return nil
 }
 
-func ApplyToOutbounds(
-	proxy *core_xds.Proxy,
-	rs *core_xds.ResourceSet,
-	xdsCtx xds_context.Context,
-	rules rules.Rules,
-) error {
+func ApplyToOutbounds(proxy *core_xds.Proxy, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, rules rules.ToRules) error {
 	tlsReady := xdsCtx.Mesh.GetTLSReadiness()
 	servicesAcc := envoy_common.NewServicesAccumulator(tlsReady)
 
@@ -123,7 +122,7 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := meshroute.CollectListenerInfos(
+	listeners := meshroute_gateway.CollectListenerInfos(
 		ctx,
 		xdsCtx.Mesh,
 		gateway,

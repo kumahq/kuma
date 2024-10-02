@@ -47,7 +47,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 					MatchLabels: map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "false",
-						mesh_proto.ManagedByLabel:      "k8s-controller", // todo(jakubdyszkiewicz): consider introduing kuma.io/env instead
+						mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
 					},
 				},
 			},
@@ -63,7 +63,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 					MatchLabels: map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 						metadata.HeadlessService:       "true",
-						mesh_proto.ManagedByLabel:      "k8s-controller", // todo(jakubdyszkiewicz): consider introduing kuma.io/env instead
+						mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
 					},
 				},
 			},
@@ -78,7 +78,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 				MeshService: &hostnamegenerator_api.LabelSelector{
 					MatchLabels: map[string]string{
 						mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
-						mesh_proto.ManagedByLabel:      "meshservice-generator", // todo(jakubdyszkiewicz): consider introduing kuma.io/env instead
+						mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
 					},
 				},
 			},

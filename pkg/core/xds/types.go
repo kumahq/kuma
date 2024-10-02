@@ -2,13 +2,17 @@ package xds
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
@@ -50,32 +54,24 @@ type TagSelectorSet []mesh_proto.TagSelector
 // DestinationMap holds a set of selectors for all reachable Dataplanes grouped by service name.
 // DestinationMap is based on ServiceName and not on the OutboundInterface because TrafficRoute can introduce new service destinations that were not included in a outbound section.
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
-type DestinationMap map[ServiceName]TagSelectorSet
-
-type TlsVersion int32
-
-const (
-	TLSVersionAuto TlsVersion = 0
-	TLSVersion10   TlsVersion = 1
-	TLSVersion11   TlsVersion = 2
-	TLSVersion12   TlsVersion = 3
-	TLSVersion13   TlsVersion = 4
+type (
+	DestinationMap  map[ServiceName]TagSelectorSet
+	ExternalService struct {
+		Protocol                 core_mesh.Protocol
+		TLSEnabled               bool
+		FallbackToSystemCa       bool
+		CaCert                   []byte
+		ClientCert               []byte
+		ClientKey                []byte
+		AllowRenegotiation       bool
+		SkipHostnameVerification bool
+		ServerName               string
+		SANs                     []SAN
+		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
+		OwnerResource            *core_model.TypedResourceIdentifier
+	}
 )
-
-type ExternalService struct {
-	Protocol                 core_mesh.Protocol
-	TLSEnabled               bool
-	FallbackToSystemCa       bool
-	CaCert                   []byte
-	ClientCert               []byte
-	ClientKey                []byte
-	AllowRenegotiation       bool
-	SkipHostnameVerification bool
-	ServerName               string
-	SANs                     []SAN
-	MinTlsVersion            *TlsVersion
-	MaxTlsVersion            *TlsVersion
-}
 
 type MatchType string
 
@@ -174,6 +170,7 @@ type Proxy struct {
 	Id                  ProxyId
 	APIVersion          APIVersion
 	Dataplane           *core_mesh.DataplaneResource
+	Outbounds           xds_types.Outbounds
 	Metadata            *DataplaneMetadata
 	Routing             Routing
 	Policies            MatchedPolicies
@@ -239,6 +236,27 @@ type MeshResources struct {
 	Resources map[core_model.ResourceType]core_model.ResourceList
 }
 
+func (r MeshResources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
+	// todo: we can probably optimize it by using indexing on ResourceIdentifier
+	list := r.ListOrEmpty(resourceType).GetItems()
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+		return list[i]
+	}
+	return nil
+}
+
+func (r MeshResources) ListOrEmpty(resourceType core_model.ResourceType) core_model.ResourceList {
+	list, ok := r.Resources[resourceType]
+	if !ok {
+		list, err := registry.Global().NewList(resourceType)
+		if err != nil {
+			panic(err)
+		}
+		return list
+	}
+	return list
+}
+
 type ZoneEgressProxy struct {
 	ZoneEgressResource *core_mesh.ZoneEgressResource
 	ZoneIngresses      []*core_mesh.ZoneIngressResource
@@ -254,11 +272,6 @@ type MeshIngressResources struct {
 type ZoneIngressProxy struct {
 	ZoneIngressResource *core_mesh.ZoneIngressResource
 	MeshResourceList    []*MeshIngressResources
-}
-
-type VIPDomains struct {
-	Address string
-	Domains []string
 }
 
 type Routing struct {
@@ -302,7 +315,7 @@ func (e Endpoint) IsExternalService() bool {
 }
 
 func (e Endpoint) IsMeshExternalService() bool {
-	return e.ExternalService != nil && e.ExternalService.Protocol != ""
+	return e.ExternalService != nil && e.ExternalService.OwnerResource != nil
 }
 
 func (e Endpoint) LocalityString() string {

@@ -8,14 +8,17 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -41,10 +44,21 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
+	previousMesh := dataplane.Mesh
 	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err
+	}
+	currentSpec, err := dataplane.GetSpec()
+	if err != nil {
+		return err
+	}
+
+	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
 	}
 	dataplane.SetSpec(dataplaneProto)
 	return nil
@@ -63,6 +77,14 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return err
 	}
 
+	currentSpec, err := zoneIngress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneIngressRes.Spec) {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
+	}
 	zoneIngress.SetSpec(zoneIngressRes.Spec)
 	return nil
 }
@@ -78,6 +100,14 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 
 	if err := p.EgressFor(ctx, zoneEgressRes.Spec, pod, services); err != nil {
 		return err
+	}
+	currentSpec, err := zoneEgress.GetSpec()
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneEgressRes.Spec) {
+		logger.V(1).Info("resource hasn't changed, skip")
+		return nil
 	}
 
 	zoneEgress.SetSpec(zoneEgressRes.Spec)
@@ -144,6 +174,28 @@ func (p *PodConverter) dataplaneFor(
 		if reachableServicesValue, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
 			dataplane.Networking.TransparentProxying.ReachableServices = reachableServicesValue
 			reachableServices = reachableServicesValue
+		}
+		if reachableBackendsRef, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
+			refs := ReachableBackendRefs{}
+			err := yaml.Unmarshal([]byte(reachableBackendsRef), &refs)
+			if err != nil {
+				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
+			}
+			backendRefs := []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{}
+			for _, ref := range refs.Refs {
+				backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
+					Kind:   ref.Kind,
+					Labels: ref.Labels,
+				}
+				if ref.Port != nil {
+					backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
+				}
+				backendRef.Name = pointer.Deref(ref.Name)
+				backendRef.Namespace = pointer.Deref(ref.Namespace)
+				backendRefs = append(backendRefs, backendRef)
+			}
+			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			dataplane.Networking.TransparentProxying.ReachableBackends.Refs = backendRefs
 		}
 	}
 
@@ -310,4 +362,16 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 		aggregateConfig = append(aggregateConfig, config)
 	}
 	return aggregateConfig, nil
+}
+
+type ReachableBackendRefs struct {
+	Refs []*ReachableBackendRef `json:"refs,omitempty"`
+}
+
+type ReachableBackendRef struct {
+	Kind      string            `json:"kind,omitempty"`
+	Name      *string           `json:"name,omitempty"`
+	Namespace *string           `json:"namespace,omitempty"`
+	Port      *uint32           `json:"port,omitempty"`
+	Labels    map[string]string `json:"labels,omitempty"`
 }

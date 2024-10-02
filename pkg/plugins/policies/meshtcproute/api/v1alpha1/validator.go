@@ -6,6 +6,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTCPRouteResource) validate() error {
@@ -14,15 +15,18 @@ func (r *MeshTCPRouteResource) validate() error {
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(r.Spec.TargetRef, r.Spec.To))
+	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
 
 	return verr.OrNil()
 }
 
-func (r *MeshTCPRouteResource) validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
 	switch core_model.PolicyRole(r.GetMeta()) {
 	case mesh_proto.SystemPolicyRole:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -33,7 +37,7 @@ func (r *MeshTCPRouteResource) validateTop(targetRef common_api.TargetRef) valid
 			GatewayListenerTagsAllowed: true,
 		})
 	default:
-		return mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
@@ -57,6 +61,7 @@ func validateToRef(topTargetRef, targetRef common_api.TargetRef) validators.Vali
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.MeshService,
 				common_api.MeshExternalService,
+				common_api.MeshMultiZoneService,
 			},
 		})
 	}
@@ -106,9 +111,14 @@ func validateBackendRefs(backendRefs []common_api.BackendRef) validators.Validat
 						common_api.MeshService,
 						common_api.MeshServiceSubset,
 						common_api.MeshExternalService,
+						common_api.MeshMultiZoneService,
 					},
 				},
 			),
+		)
+		verr.AddErrorAt(
+			validators.Root().Index(i),
+			validators.ValidateBackendRef(backendRef),
 		)
 	}
 

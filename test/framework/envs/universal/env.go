@@ -58,17 +58,6 @@ func RestoreState(bytes []byte) {
 	Cluster.SetCp(cp)
 }
 
-func PrintCPLogsOnFailure(report ginkgo.Report) {
-	if !report.SuiteSucceeded {
-		logs, err := Cluster.GetKumaCPLogs()
-		if err != nil {
-			framework.Logf("could not retrieve cp logs")
-		} else {
-			framework.Logf(logs)
-		}
-	}
-}
-
 func ExpectCpToNotPanic() {
 	logs, err := Cluster.GetKumaCPLogs()
 	if err != nil {
@@ -88,5 +77,8 @@ func AfterSuite(report ginkgo.Report) {
 	if framework.Config.CleanupLogsOnSuccess {
 		universal_logs.CleanupIfSuccess(framework.Config.UniversalE2ELogsPath, report)
 	}
-	PrintCPLogsOnFailure(report)
+	if !report.SuiteSucceeded {
+		framework.Logf("Please see full CP logs by downloading the debug artifacts")
+		framework.DebugUniversalCPLogs(Cluster)
+	}
 }

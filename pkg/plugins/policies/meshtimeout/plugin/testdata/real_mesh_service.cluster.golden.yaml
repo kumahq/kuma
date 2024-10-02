@@ -1,0 +1,9 @@
+connectTimeout: 10s
+name: backend
+typedExtensionProtocolOptions:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    commonHttpProtocolOptions:
+      idleTimeout: 3600s
+      maxConnectionDuration: 600s
+      maxStreamDuration: 600s

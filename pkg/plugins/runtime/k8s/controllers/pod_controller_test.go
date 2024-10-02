@@ -419,6 +419,7 @@ var _ = Describe("PodReconciler", func() {
 			Log:           core.Log.WithName("test"),
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
+				ServiceGetter:     kubeClient,
 			},
 			SystemNamespace:   "kuma-system",
 			ResourceConverter: k8s.NewSimpleConverter(),
@@ -735,6 +736,187 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
+`))
+	})
+
+	It("should not update Dataplane if nothing has changed", func() {
+		// setup
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "poc",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "pod-with-kuma-sidecar-and-ip",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						APIVersion:         "v1",
+						BlockOwnerDeletion: pointer.To(true),
+						Controller:         pointer.To(true),
+						Kind:               "Pod",
+						Name:               "pod-with-kuma-sidecar-and-ip",
+						UID:                "pod-with-kuma-sidecar-and-ip-demo",
+					},
+				},
+			},
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:   8080,
+							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Tags: map[string]string{
+								"app":                      "sample",
+								"kuma.io/protocol":         "http",
+								"kuma.io/service":          "example_demo_svc_80",
+								"k8s.kuma.io/service-name": "example",
+								"k8s.kuma.io/service-port": "80",
+								"k8s.kuma.io/namespace":    "demo",
+							},
+						},
+						{
+							Port:   6060,
+							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Tags: map[string]string{
+								"app":                      "sample",
+								"kuma.io/protocol":         "tcp",
+								"kuma.io/service":          "example_demo_svc_6061",
+								"k8s.kuma.io/service-name": "example",
+								"k8s.kuma.io/service-port": "6061",
+								"k8s.kuma.io/namespace":    "demo",
+							},
+						},
+						{
+							Port:   9090,
+							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Tags: map[string]string{
+								"app":                      "sample",
+								"kuma.io/protocol":         "http",
+								"kuma.io/service":          "manual-example_demo_svc_90",
+								"k8s.kuma.io/service-name": "manual-example",
+								"k8s.kuma.io/service-port": "90",
+								"k8s.kuma.io/namespace":    "demo",
+							},
+						},
+					},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Address: "192.168.0.1",
+							Port:    6061,
+							Tags: map[string]string{
+								"kuma.io/service": "example_demo_svc_6061",
+							},
+						},
+						{
+							Address: "192.168.0.1",
+							Port:    80,
+							Tags: map[string]string{
+								"kuma.io/service": "example_demo_svc_80",
+							},
+						},
+						{
+							Address: "192.168.0.1",
+							Port:    90,
+							Tags: map[string]string{
+								"kuma.io/service": "manual-example_demo_svc_90",
+							},
+						},
+					},
+				},
+			}),
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(1))
+
+		// when
+		actual, err := json.Marshal(dataplanes.Items[0])
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and should not add owner reference
+		Expect(actual).To(MatchYAML(`
+        mesh: poc
+        metadata:
+          creationTimestamp: null
+          name: pod-with-kuma-sidecar-and-ip
+          namespace: demo
+          ownerReferences:
+              - apiVersion: v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: Pod
+                name: pod-with-kuma-sidecar-and-ip
+                uid: pod-with-kuma-sidecar-and-ip-demo
+          resourceVersion: "1"
+        spec:
+          networking:
+            address: 192.168.0.1
+            inbound:
+            - state: NotReady 
+              health: {}
+              port: 8080
+              tags:
+                app: sample
+                kuma.io/protocol: http
+                kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
+                k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 6060
+              tags:
+                app: sample
+                kuma.io/service: example_demo_svc_6061
+                kuma.io/protocol: tcp
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "6061"
+                k8s.kuma.io/namespace: demo
+            - state: NotReady
+              health: {}
+              port: 9090
+              tags:
+                app: sample
+                kuma.io/service: manual-example_demo_svc_90
+                kuma.io/protocol: http
+                k8s.kuma.io/service-name: manual-example
+                k8s.kuma.io/service-port: "90"
+                k8s.kuma.io/namespace: demo
+            outbound:
+            - address: 192.168.0.1
+              port: 6061
+              tags:
+                kuma.io/service: example_demo_svc_6061
+            - address: 192.168.0.1
+              port: 80
+              tags:
+                kuma.io/service: example_demo_svc_80
+            - address: 192.168.0.1
+              port: 90
+              tags:
+                kuma.io/service: manual-example_demo_svc_90
 `))
 	})
 

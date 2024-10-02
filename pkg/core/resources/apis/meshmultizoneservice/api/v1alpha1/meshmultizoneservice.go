@@ -2,7 +2,10 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
@@ -10,12 +13,27 @@ import (
 // It aggregates existing MeshServices by labels.
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
+// +kuma:policy:is_referenceable_in_to=true
 type MeshMultiZoneService struct {
 	// Selector is a way to select multiple MeshServices
 	Selector Selector `json:"selector"`
 	// Ports is a list of ports from selected MeshServices
 	// +kubebuilder:validation:MinItems=1
-	Ports []meshservice_api.Port `json:"ports,omitempty"`
+	Ports []Port `json:"ports,omitempty"`
+}
+
+type Port struct {
+	Name string `json:"name,omitempty"`
+	Port uint32 `json:"port"`
+	// +kubebuilder:default=tcp
+	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
+}
+
+func (p *Port) GetName() string {
+	if p.Name != "" {
+		return p.Name
+	}
+	return fmt.Sprintf("%d", p.Port)
 }
 
 type Selector struct {
@@ -41,5 +59,12 @@ type MeshMultiZoneServiceStatus struct {
 
 type MatchedMeshService struct {
 	// Name is a core name of MeshService
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	Zone      string `json:"zone"`
+	Mesh      string `json:"mesh"`
+}
+
+func (m *MatchedMeshService) FullyQualifiedName() string {
+	return fmt.Sprintf("%s/%s/%s/%s", m.Name, m.Namespace, m.Zone, m.Mesh)
 }

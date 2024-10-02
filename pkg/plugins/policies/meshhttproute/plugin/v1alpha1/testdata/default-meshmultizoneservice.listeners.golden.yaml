@@ -1,0 +1,38 @@
+resources:
+- name: outbound:10.0.0.2:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 10.0.0.2
+        portValue: 80
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          normalizePath: true
+          routeConfig:
+            name: outbound:default_multi-backend___mzsvc_80
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: default_multi-backend___mzsvc_80
+              routes:
+              - match:
+                  prefix: /
+                name: 9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=
+                route:
+                  cluster: default_multi-backend___mzsvc_80
+                  timeout: 0s
+          statPrefix: default_multi-backend___mzsvc_80
+    metadata:
+      filterMetadata:
+        io.kuma.tags: {}
+    name: outbound:10.0.0.2:80
+    trafficDirection: OUTBOUND

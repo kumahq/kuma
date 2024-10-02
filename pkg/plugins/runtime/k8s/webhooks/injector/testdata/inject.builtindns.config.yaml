@@ -37,6 +37,7 @@ builtinDNS:
   port: 25053
 virtualProbesEnabled: true
 virtualProbesPort: 9000
+applicationProbeProxyPort: 0
 exceptions:
   labels:
     "openshift.io/deployer-pod-for.name": "*"

@@ -26,6 +26,7 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/log"
 	"github.com/envoyproxy/go-control-plane/pkg/server/stream/v3"
+	"google.golang.org/protobuf/proto"
 )
 
 type Snapshot interface {
@@ -490,4 +491,25 @@ func (info *statusInfo) GetLastWatchRequestTime() time.Time {
 	info.mu.RLock()
 	defer info.mu.RUnlock()
 	return info.lastWatchRequestTime
+}
+
+// SingleTypeSnapshotEqual checks value equality of 2 snapshots that contain a single type.
+// This will panic if there is more than 1 type in the snapshot, it assumes the snapshots are equivalent
+func SingleTypeSnapshotEqual(newSnap, oldSnap Snapshot) bool {
+	supportedTypes := newSnap.GetSupportedTypes()
+	if len(supportedTypes) != 1 {
+		panic(fmt.Sprintf("expected 1 supported type, got %v", supportedTypes))
+	}
+	// For now there's a single resourceType so the diff is easy
+	newResources := newSnap.GetResources(supportedTypes[0])
+	oldResources := oldSnap.GetResources(supportedTypes[0])
+	if len(newResources) != len(oldResources) {
+		return false
+	}
+	for key, newValue := range newResources {
+		if oldValue, hasOldValue := oldResources[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
+			return false
+		}
+	}
+	return true
 }
