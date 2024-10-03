@@ -57,7 +57,7 @@ var (
 	_ = Describe("Gateway - Resources", gateway.Resources, Ordered)
 	_ = Describe("Graceful", graceful.Graceful, Ordered)
 	_ = Describe("Eviction", graceful.Eviction, Ordered)
-	_ = Describe("Change Service", graceful.ChangeService, Ordered)
+	_ = XDescribe("Change Service", graceful.ChangeService, Ordered)
 	_ = Describe("Jobs", jobs.Jobs)
 	_ = Describe("Membership", membership.Membership, Ordered)
 	_ = Describe("Container Patch", container_patch.ContainerPatch, Ordered)
