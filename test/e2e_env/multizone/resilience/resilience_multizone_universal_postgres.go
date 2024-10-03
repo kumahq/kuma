@@ -164,7 +164,8 @@ func ResilienceMultizoneUniversalPostgres() {
 		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 
-	It("should mark zone as offline when zone control-plane is down", func() {
+	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9345
+	XIt("should mark zone as offline when zone control-plane is down", func() {
 		// given zone connected to global
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
