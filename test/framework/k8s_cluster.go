@@ -1034,17 +1034,7 @@ func (c *K8sCluster) CreateNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteNamespace(namespace string) error {
-	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
-		if k8s_errors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-
-	// speed up namespace termination by terminating pods without grace period.
-	// Namespace is then deleted in ~6s instead of ~43s.
-	err := k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
-	if err != nil {
+	if err := c.TriggerDeleteNamespace(namespace); err != nil {
 		return err
 	}
 
