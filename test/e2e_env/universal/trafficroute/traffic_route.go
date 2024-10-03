@@ -22,6 +22,7 @@ func TrafficRoute() {
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
 			Install(MeshUniversal(meshName)).
+			Install(TrafficRouteUniversal(meshName)).
 			Install(TestServerUniversal("dp-echo-1", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceVersion("v1"),
