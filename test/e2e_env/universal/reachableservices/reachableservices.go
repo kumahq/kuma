@@ -42,7 +42,8 @@ func ReachableServices() {
 		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
 	})
 
-	It("should not be able to non reachable services", func() {
+	// Disabled because of flakiness: https://github.com/kumahq/kuma/issues/9349
+	XIt("should not be able to non reachable services", func() {
 		Consistently(func(g Gomega) {
 			// when
 			response, err := client.CollectFailure(
