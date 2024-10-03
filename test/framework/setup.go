@@ -196,6 +196,25 @@ func Kuma(mode core.CpMode, opt ...KumaDeploymentOption) InstallFunc {
 	}
 }
 
+func TrafficRouteUniversal(name string) InstallFunc {
+	tr := fmt.Sprintf(`
+type: TrafficRoute
+name: route-all-%[1]s
+mesh: %[1]s
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: '*'`, name)
+	return YamlUniversal(tr)
+}
+
 func WaitService(namespace, service string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilServiceAvailable(c.GetTesting(), c.GetKubectlOptions(namespace), service, 10, 3*time.Second)
