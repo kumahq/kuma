@@ -127,7 +127,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		}
 
 		resource := &core_xds.Resource{
-			Name:     serviceName,
+			Name:     clusterName,
 			Origin:   OriginEgress,
 			Resource: cluster,
 		}

@@ -234,5 +234,9 @@ var _ = Describe("EgressGenerator", func() {
 			fileWithResourcesName: "subsets-with-external-meshhttproute.yaml",
 			expected:              "subsets-with-external-meshhttproute.golden.yaml",
 		}),
+		Entry("same kuma.io/service", testCase{
+			fileWithResourcesName: "same-kuma-io-service.yaml",
+			expected:              "same-kuma-io-service.golden.yaml",
+		}),
 	)
 })
