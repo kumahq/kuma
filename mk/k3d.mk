@@ -43,6 +43,7 @@ K3D_NETWORK_CNI ?= flannel
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
+	--k3s-arg '--kubelet-arg=image-gc-high-threshold=100@server:0' \
 	--k3s-arg '--disable=servicelb@server:0' \
     --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
