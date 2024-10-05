@@ -1,5 +1,5 @@
 resources:
-- name: externalservice-1
+- name: mesh-1:externalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-1
@@ -30,7 +30,7 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           httpProtocolOptions: {}
-- name: meshexternalservice-1
+- name: mesh-1:meshexternalservice_meshexternalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_meshexternalservice_meshexternalservice-1
