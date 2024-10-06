@@ -1,12 +1,12 @@
 resources:
-- name: mesh-1:externalservice-1
+- name: mesh-1:externalservice
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_externalservice-1
+    altStatName: mesh-1_externalservice
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: mesh-1:externalservice-1
+      clusterName: mesh-1:externalservice
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -23,68 +23,44 @@ resources:
               envoy.transport_socket_match:
                 kuma.io/protocol: http
                 mesh: mesh-1
-    name: mesh-1:externalservice-1
+    name: mesh-1:externalservice
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
           httpProtocolOptions: {}
-- name: mesh-1:externalservice-2
+- name: mesh-2:externalservice
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: mesh-1_externalservice-2
+    altStatName: mesh-2_externalservice
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: mesh-1:externalservice-2
+      clusterName: mesh-2:externalservice
       endpoints:
       - lbEndpoints:
         - endpoint:
             address:
               socketAddress:
-                address: httpbin.io
-                portValue: 443
+                address: kuma.io
+                portValue: 80
           loadBalancingWeight: 1
           metadata:
             filterMetadata:
               envoy.lb:
-                kuma.io/external-service-name: externalservice-2
-                kuma.io/protocol: http2
-                mesh: mesh-1
+                kuma.io/protocol: http
+                mesh: mesh-2
               envoy.transport_socket_match:
-                kuma.io/external-service-name: externalservice-2
-                kuma.io/protocol: http2
-                mesh: mesh-1
-    name: mesh-1:externalservice-2
-    transportSocketMatches:
-    - match:
-        kuma.io/external-service-name: externalservice-2
-        kuma.io/protocol: http2
-        mesh: mesh-1
-      name: httpbin.io
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            validationContext:
-              matchTypedSubjectAltNames:
-              - matcher:
-                  exact: httpbin.io
-                sanType: DNS
-              - matcher:
-                  exact: httpbin.io
-                sanType: IP_ADDRESS
-              trustedCa:
-                inlineBytes: eHl6
-          sni: httpbin.io
+                kuma.io/protocol: http
+                mesh: mesh-2
+    name: mesh-2:externalservice
     type: STRICT_DNS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         explicitHttpConfig:
-          http2ProtocolOptions: {}
+          httpProtocolOptions: {}
 - name: inbound:192.168.0.1:10002
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -96,7 +72,7 @@ resources:
     filterChains:
     - filterChainMatch:
         serverNames:
-        - externalservice-2{mesh=mesh-1}
+        - externalservice{mesh=mesh-1}
         transportProtocol: tls
       filters:
       - name: envoy.filters.network.rbac
@@ -104,12 +80,12 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules:
             policies:
-              allow-all-traffic:
+              allow-all-traffic-1:
                 permissions:
                 - any: true
                 principals:
                 - any: true
-          statPrefix: externalservice-2.
+          statPrefix: externalservice.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
@@ -118,20 +94,20 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
-            name: outbound:externalservice-2
+            name: outbound:externalservice
             validateClusters: false
             virtualHosts:
             - domains:
               - '*'
-              name: externalservice-2
+              name: externalservice
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: mesh-1:externalservice-2
+                  cluster: mesh-1:externalservice
                   timeout: 0s
-          statPrefix: externalservice-2
-      name: externalservice-2_mesh-1
+          statPrefix: externalservice
+      name: externalservice_mesh-1
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
@@ -154,6 +130,66 @@ resources:
                 ads: {}
                 resourceApiVersion: V3
           requireClientCertificate: true
+    - filterChainMatch:
+        serverNames:
+        - externalservice{mesh=mesh-2}
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.rbac
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
+          rules:
+            policies:
+              allow-all-traffic-1:
+                permissions:
+                - any: true
+                principals:
+                - any: true
+          statPrefix: externalservice.
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:externalservice
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: externalservice
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: mesh-2:externalservice
+                  timeout: 0s
+          statPrefix: externalservice
+      name: externalservice_mesh-2
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
+          commonTlsContext:
+            combinedValidationContext:
+              defaultValidationContext:
+                matchTypedSubjectAltNames:
+                - matcher:
+                    prefix: spiffe://mesh-2/
+                  sanType: URI
+              validationContextSdsSecretConfig:
+                name: mesh_ca:secret:mesh-2
+                sdsConfig:
+                  ads: {}
+                  resourceApiVersion: V3
+            tlsCertificateSdsSecretConfigs:
+            - name: identity_cert:secret:mesh-2
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          requireClientCertificate: true
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
@@ -169,10 +205,26 @@ resources:
         inlineBytes: Q0VSVA==
       privateKey:
         inlineBytes: S0VZ
+- name: identity_cert:secret:mesh-2
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: identity_cert:secret:mesh-2
+    tlsCertificate:
+      certificateChain:
+        inlineBytes: Q0VSVA==
+      privateKey:
+        inlineBytes: S0VZ
 - name: mesh_ca:secret:mesh-1
   resource:
     '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
     name: mesh_ca:secret:mesh-1
+    validationContext:
+      trustedCa:
+        inlineBytes: Q0E=
+- name: mesh_ca:secret:mesh-2
+  resource:
+    '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret
+    name: mesh_ca:secret:mesh-2
     validationContext:
       trustedCa:
         inlineBytes: Q0E=
