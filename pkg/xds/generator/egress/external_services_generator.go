@@ -85,22 +85,20 @@ func (*ExternalServicesGenerator) generateCDS(
 			continue
 		}
 
-		// There is a case where multiple meshes contain services with
-		// the same names, so we cannot use just "serviceName" as a cluster
-		// name as we would overwrite some clusters with the latest one
-		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-
-		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
-
+		var clusterBuilder *envoy_clusters.ClusterBuilder
 		if isMeshExternalService(endpoints) {
-			clusterBuilder.WithName(envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName))
-			clusterBuilder.
+			clusterName := envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName)
+			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
 				Configure(
 					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
 				)
 		} else {
-			clusterBuilder.
+			// There is a case where multiple meshes contain services with
+			// the same names, so we cannot use just "serviceName" as a cluster
+			// name as we would overwrite some clusters with the latest one
+			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 				Configure(envoy_clusters.ProvidedEndpointCluster(
 					isIPV6,
 					endpoints...,
@@ -123,7 +121,7 @@ func (*ExternalServicesGenerator) generateCDS(
 		}
 
 		resources = append(resources, &core_xds.Resource{
-			Name:     serviceName,
+			Name:     cluster.GetName(),
 			Origin:   OriginEgress,
 			Resource: cluster,
 		})
