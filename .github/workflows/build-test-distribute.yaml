@@ -70,11 +70,7 @@ jobs:
       - run: |
           make check
       - id: sca-project
-<<<<<<< HEAD
-        uses: Kong/public-shared-actions/security-actions/sca@a2132654dffda2a5dd121bbd077a205b4cae8ec0 # v2.4.0
-=======
         uses: Kong/public-shared-actions/security-actions/sca@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
->>>>>>> daa042866 (chore(deps): bump Kong/public-shared-actions from 2.6.0 to 2.7.2 (#11598))
         with:
           dir: .
           config: .syft.yaml
