@@ -291,12 +291,11 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 					meshServices := meshCtx.Resources.MeshServices()
 					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
 				} else {
-					log := g.logger.WithValues("mesh", mesh)
 					for _, meshService := range meshCtx.Resources.MeshServices().Items {
 						if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
 							continue
 						}
-						log := log.WithValues("MeshService", meshService.GetMeta().GetName())
+						log := g.logger.WithValues("mesh", mesh, "MeshService", meshService.GetMeta().GetName())
 						if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
 							log.Error(err, "couldn't delete MeshService")
 							continue
