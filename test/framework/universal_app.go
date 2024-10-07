@@ -487,8 +487,6 @@ func (s *UniversalApp) CreateDP(
 func (s *UniversalApp) setupTransparent(builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
-		"--kuma-dp-user", "kuma-dp",
-		"--skip-dns-conntrack-zone-split",
 		"--exclude-inbound-ports", "22",
 	}
 
