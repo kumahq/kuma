@@ -14,8 +14,8 @@ env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 concurrency:
-  group: ${{github.workflow}}-${{ github.ref == 'refs/heads/master' && github.sha || github.event.pull_request.number }}
-  cancel-in-progress: ${{ github.ref == 'refs/heads/master' && false || true }}
+  group: ${{github.workflow}}-${{ github.event_name == 'push' && github.sha || github.event.pull_request.number }}
+  cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
   check:
     permissions:
