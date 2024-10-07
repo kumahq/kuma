@@ -36,7 +36,7 @@ kind: Pod
 metadata:
   name: to-be-evicted
   namespace: eviction
-  annotations:
+  labels:
     kuma.io/mesh: eviction
 spec:
   volumes:
