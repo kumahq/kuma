@@ -1,0 +1,28 @@
+resources:
+- name: sample-gateway:HTTP:8080:*
+  resource:
+    '@type': type.googleapis.com/envoy.config.route.v3.RouteConfiguration
+    ignorePortInHostMatching: true
+    name: sample-gateway:HTTP:8080:*
+    requestHeadersToRemove:
+    - x-kuma-tags
+    validateClusters: false
+    virtualHosts:
+    - domains:
+      - '*'
+      name: '*'
+      routes:
+      - match:
+          path: /
+        name: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+        route:
+          clusterNotFoundResponseCode: INTERNAL_SERVER_ERROR
+          idleTimeout: 5s
+          weightedClusters:
+            clusters:
+            - name: default_backend___msvc_80-65ee15ea276ba345
+              requestHeadersToAdd:
+              - header:
+                  key: x-kuma-tags
+                  value: '&k8s.io/az=test&&k8s.io/node=node1&&k8s.io/region=test&&kuma.io/service=sample-gateway&'
+              weight: 100

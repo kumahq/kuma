@@ -57,18 +57,109 @@ resources:
           idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
+- name: outbound:240.0.0.0:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.0
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:es2
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: es2
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  autoHostRewrite: true
+                  timeout: 0s
+                  weightedClusters:
+                    clusters:
+                    - name: es2-b5516780eaf1ed13
+                      weight: 10
+                    - name: es2-d79214c8b3a5805b
+                      weight: 90
+          statPrefix: es2
+          streamIdleTimeout: 0s
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: es2
+    name: outbound:240.0.0.0:80
+    trafficDirection: OUTBOUND
+- name: outbound:240.0.0.1:80
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 240.0.0.1
+        portValue: 80
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: outbound:es2
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: es2
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  autoHostRewrite: true
+                  timeout: 0s
+                  weightedClusters:
+                    clusters:
+                    - name: es2-b5516780eaf1ed13
+                      weight: 10
+                    - name: es2-d79214c8b3a5805b
+                      weight: 90
+          statPrefix: es2
+          streamIdleTimeout: 0s
+    metadata:
+      filterMetadata:
+        io.kuma.tags:
+          kuma.io/service: es2
+    name: outbound:240.0.0.1:80
+    trafficDirection: OUTBOUND
 - name: outbound:240.0.0.2:80
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
-    additionalAddresses:
-    - address:
-        socketAddress:
-          address: 240.0.0.1
-          portValue: 80
-    - address:
-        socketAddress:
-          address: 240.0.0.0
-          portValue: 80
     address:
       socketAddress:
         address: 240.0.0.2

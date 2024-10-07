@@ -246,11 +246,14 @@ func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentif
 				},
 				Port: pointer.To(o.BackendRef.Port),
 			}
-			outbounds = append(outbounds, &xds_types.Outbound{
-				Address:  o.Address,
-				Port:     o.Port,
-				Resource: core_model.ResolveBackendRef(d.GetMeta(), backendRef, resolver).ResourceOrNil(),
-			})
+			ref := core_model.ResolveBackendRef(d.GetMeta(), backendRef, resolver)
+			if ref.ReferencesRealResource() {
+				outbounds = append(outbounds, &xds_types.Outbound{
+					Address:  o.Address,
+					Port:     o.Port,
+					Resource: ref.RealResourceBackendRef().Resource,
+				})
+			}
 		} else {
 			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
 		}

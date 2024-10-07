@@ -251,13 +251,44 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	}
 
+	if errorSeen {
+		Logf("[WARNING]: some debug commands failed")
+	}
+
 	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("kuma-export-%s.yaml", cluster.Name()))
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
 	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
 
+	configDump(kumactlOpts, debugPath, cluster, mesh, dataplaneType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneegressType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneingressType)
+}
+
+type dpType string
+
+const (
+	dataplaneType   dpType = "dataplane"
+	zoneegressType  dpType = "zoneegress"
+	zoneingressType dpType = "zoneingress"
+)
+
+func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
+	errorSeen := false
 	dpInspectError := ""
 	dpResp := dataplaneListResponse{}
-	dpListJson, err := kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
+	dpListJson := ""
+	var err error
+	switch dpType {
+	case dataplaneType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
+	case zoneegressType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneegresses", "-ojson")
+	case zoneingressType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneingresses", "-ojson")
+	default:
+		Logf("[WARNING]: unknown dp type " + string(dpType))
+		return
+	}
 	if err != nil {
 		dpInspectError = fmt.Sprintf("kumactl get dataplanes failed with error: %s", err.Error())
 		errorSeen = true
@@ -279,10 +310,26 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 					continue
 				}
 
-				configDumpResp, err := kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
+				configDumpResp := ""
+				switch dpType {
+				case dataplaneType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
+				case zoneegressType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneegress", dpObj.Name, "--type", "config-dump")
+				case zoneingressType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneingresses", dpObj.Name, "--type", "config-dump")
+				default:
+					Logf("[WARNING]: unknown dp type " + string(dpType))
+					return
+				}
 				if err != nil {
-					dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
-						dpObj.Name, dpObj.Mesh, err.Error())
+					if dpType == dataplaneType {
+						dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
+							dpObj.Name, dpObj.Mesh, err.Error())
+					} else {
+						dpInspectError += fmt.Sprintf("'kumactl inspect %s %s --type config-dump' failed with error: %s",
+							dpObj.Name, dpType, err.Error())
+					}
 					errorSeen = true
 				} else {
 					dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, cluster.Name(), dpNS), fmt.Sprintf("xds-%s.json", dpNameParts[0]))

@@ -124,10 +124,20 @@ func (m *MeshBuilder) WithoutPassthrough() *MeshBuilder {
 	return m
 }
 
-func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Enabled) *MeshBuilder {
+func (m *MeshBuilder) WithMeshServicesEnabled(enabled mesh_proto.Mesh_MeshServices_Mode) *MeshBuilder {
 	m.res.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
-		Enabled: enabled,
+		Mode: enabled,
 	}
+	return m
+}
+
+func (m *MeshBuilder) WithoutInitialPolicies() *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = []string{"*"}
+	return m
+}
+
+func (m *MeshBuilder) WithSkipCreatingInitialPolicies(policies []string) *MeshBuilder {
+	m.res.Spec.SkipCreatingInitialPolicies = policies
 	return m
 }
 
