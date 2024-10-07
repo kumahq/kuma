@@ -484,13 +484,11 @@ func ConfigToAnnotations(
 	cfg tproxy_config.Config,
 	runtimeCfg k8s.Injector,
 	annotations map[string]string,
-	mesh string,
 	defaultAdminPort uint32,
 ) (map[string]string, error) {
 	result := map[string]string{
 		k8s_metadata.KumaSidecarInjectedAnnotation:                 k8s_metadata.AnnotationTrue,
 		k8s_metadata.KumaTransparentProxyingAnnotation:             k8s_metadata.AnnotationEnabled,
-		k8s_metadata.KumaMeshAnnotation:                            mesh, // either user-defined value or default
 		k8s_metadata.KumaSidecarUID:                                cfg.KumaDPUser,
 		k8s_metadata.KumaTransparentProxyingOutboundPortAnnotation: cfg.Redirect.Outbound.Port.String(),
 		k8s_metadata.KumaTransparentProxyingInboundPortAnnotation:  cfg.Redirect.Inbound.Port.String(),
