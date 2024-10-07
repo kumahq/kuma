@@ -62,6 +62,26 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 						).
 						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip.String()),
 				)
+
+				// IsLoopback checks if the address is local (e.g., 127.0.0.1 or 127.0.0.11, which is common
+				// in Docker containers within custom networks). This rule addresses an issue where the
+				// transparent proxy is installed in a Docker container that's part of a custom network.
+				// In such cases, Docker NATs the destination port to a random one. This rule is applied
+				// only when the source is a local address and the destination is localhost to prevent
+				// unexpected behavior in untested scenarios
+				if ip.IsLoopback() {
+					raw.Output().AddRules(
+						rules.
+							NewAppendRule(
+								Source(ip),
+								Destination(cfg.LocalhostCIDR),
+								Protocol(Udp()),
+								Jump(Ct(Zone("1"))),
+							).
+							WithComment("assign conntrack zone 1 to DNS responses from the local DNS server to localhost, needed when the DNS query port is altered by a DNAT iptables rule, such as with Docker containers in a custom network"),
+					)
+				}
+
 				raw.Prerouting().AddRules(
 					rules.
 						NewAppendRule(
