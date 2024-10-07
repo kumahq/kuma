@@ -27,7 +27,7 @@ func MeshCircuitBreaker() {
 				Yaml(
 					builders.Mesh().
 						WithName(mesh).
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
 				),
 			).
 			Install(NamespaceWithSidecarInjection(namespace)).
