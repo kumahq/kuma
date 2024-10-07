@@ -11,7 +11,7 @@ import (
 
 // Annotations that can be used by the end users.
 const (
-	// Deprecated: use KumaMeshLabel from pkg/plugins/runtime/k8s/metadata/labels.go instead.
+	// Deprecated: use KumaMeshLabel as a label from pkg/plugins/runtime/k8s/metadata/labels.go instead of this annotation.
 	//
 	// KumaMeshAnnotation defines a Pod annotation that
 	// associates a given Pod with a particular Mesh.

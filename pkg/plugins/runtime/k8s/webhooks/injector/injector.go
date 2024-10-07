@@ -168,13 +168,10 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			pod.Annotations[key] = value
 		}
 
-		if pod.Labels != nil {
-			pod.Labels[metadata.KumaMeshLabel] = meshName
-		} else {
-			pod.Labels = map[string]string{
-				metadata.KumaMeshLabel: meshName,
-			}
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
 		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
 
 		switch {
 		case !tproxyCfg.CNIMode:
@@ -204,13 +201,10 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			pod.Annotations[key] = value
 		}
 
-		if pod.Labels != nil {
-			pod.Labels[metadata.KumaMeshLabel] = meshName
-		} else {
-			pod.Labels = map[string]string{
-				metadata.KumaMeshLabel: meshName,
-			}
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
 		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
 
 		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(pod.Annotations)
 		if err != nil {
