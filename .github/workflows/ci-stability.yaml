@@ -2,9 +2,16 @@ name: Check CI stability for PRs with "ci/verify-stability" or "ci/verify-stabil
 
 on:
   schedule:
-    - cron: "0 */2 19-23 * * 1-5"  # From 7 PM to 11 PM Monday to Friday
-    - cron: "0 */2 0-7 * * 2-6"    # From 12 AM to 7 AM Tuesday to Saturday
-    - cron: "0 */2 * * 6,0"        # Every 2 hours on Saturday and Sunday
+    # Monday to Friday: Every 2 hours from 7 PM to 7 AM
+    - cron: "0 19 * * 1-5"
+    - cron: "0 21 * * 1-5"
+    - cron: "0 23 * * 1-5"
+    - cron: "0 1 * * 2-6"
+    - cron: "0 3 * * 2-6"
+    - cron: "0 5 * * 2-6"
+    - cron: "0 7 * * 2-6"
+    # Saturday and Sunday: Every 2 hours all day
+    - cron: "0 */2 * * 6,0"
   workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
 env:
   GH_USER: "github-actions[bot]"
