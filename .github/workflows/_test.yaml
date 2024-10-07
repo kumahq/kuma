@@ -12,7 +12,7 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.25.16-k3s1
+  K8S_MIN_VERSION: v1.25.16-k3s4
   K8S_MAX_VERSION: v1.31.1-k3s1
 jobs:
   test_unit:
