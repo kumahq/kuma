@@ -7,7 +7,6 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -135,19 +134,6 @@ func CopyStringMap(in map[string]string) map[string]string {
 		out[key] = value
 	}
 	return out
-}
-
-// MeshOfByAnnotation returns the mesh of the given object according to its own annotations
-// or those of its namespace.
-func MeshOfByAnnotation(obj kube_meta.Object, namespace *kube_core.Namespace) string {
-	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		return mesh
-	}
-	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		return mesh
-	}
-
-	return model.DefaultMesh
 }
 
 // MeshOfByLabelOrAnnotation returns the mesh of the given object according to its own
