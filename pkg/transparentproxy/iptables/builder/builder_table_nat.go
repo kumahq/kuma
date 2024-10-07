@@ -40,7 +40,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 		meshInbound.AddRules(
 			rules.
 				NewAppendRule(
-					Source(Address(exclusion.Address)),
+					Source(exclusion.Address),
 					Jump(Return()),
 				).
 				WithComment("skip further processing for configured IP address"),
@@ -139,7 +139,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 		AddRules(
 			rules.
 				NewAppendRule(
-					Source(Address(cfg.InboundPassthroughCIDR)),
+					Source(cfg.InboundPassthroughCIDR),
 					OutInterface(cfg.LoopbackInterfaceName),
 					Jump(Return()),
 				).
