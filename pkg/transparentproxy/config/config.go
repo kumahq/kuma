@@ -825,8 +825,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
-	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[false])
-	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[true])
+	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv4])
+	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv6])
 
 	loopbackInterfaceName, err := getLoopbackInterfaceName()
 	if err != nil {

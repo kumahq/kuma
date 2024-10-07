@@ -26,16 +26,16 @@ const (
 // (true) usage to the corresponding iptables command name. This allows for code
 // to be written generically without duplicating logic for both IPv4 and IPv6
 var IptablesCommandByFamily = map[bool]string{
-	false: Iptables,
-	true:  Ip6tables,
+	IPv4: Iptables,
+	IPv6: Ip6tables,
 }
 
 // IPTypeMap is a map that translates a boolean value to a string representing
 // the type of IP address (IPv4 or IPv6). The key is a boolean where 'false'
 // corresponds to "IPv4" and 'true' corresponds to "IPv6"
 var IPTypeMap = map[bool]string{
-	false: "IPv4",
-	true:  "IPv6",
+	IPv4: "IPv4",
+	IPv6: "IPv6",
 }
 
 // Default ports used for iptables redirection
