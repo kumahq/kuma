@@ -159,6 +159,3 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* is deprecated: use FullResyncInterval instead"
-    - linters:
-        - staticcheck
-      text: "SA1019: .* is deprecated: use KumaMeshLabel from pkg/plugins/runtime/k8s/metadata/labels.go instead."
