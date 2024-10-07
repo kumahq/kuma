@@ -65,7 +65,7 @@ func Migration() {
 
 	unmarshal := func(out string) *meshServiceList {
 		l := &meshServiceList{}
-		Expect(yaml.Unmarshal([]byte(out), l))
+		Expect(yaml.Unmarshal([]byte(out), l)).To(Succeed())
 		return l
 	}
 
