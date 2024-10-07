@@ -65,7 +65,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 				raw.Prerouting().AddRules(
 					rules.
 						NewAppendRule(
-							Destination(ip),
+							Source(ip),
 							Protocol(Udp(SourcePort(consts.DNSPort))),
 							Jump(Ct(Zone("1"))),
 						).
