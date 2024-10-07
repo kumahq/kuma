@@ -42,3 +42,23 @@ jobs:
           NO_BACKPORT_AUTOLABEL: no-backport-autolabel
         run: |
           tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
+      - name: Add checklist comment
+        if: github.event.action == 'opened' && github.event.pull_request.author != 'dependabot'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          CHECKLIST_MESSAGE: |
+            :mag: Each of these sections need to be checked by the reviewer of the PR :mag::
+            
+            If something doesn't apply please check the box and add a justification if the reason is non obvious.
+            
+            - [ ] Is the PR title satisfactory? Is this part of a larger feature and should be grouped using `> Changelog`?
+            - [ ] PR description is clear and complete. It [Link to relevant issue][1] as well as docs and UI issues
+            - [ ] This will not break child repos: it doesn't hardcode values (.e.g "kumahq" as a image registry) 
+            - [ ] IPv6 is taken into account (.e.g: no concatenation of host port)
+            - [ ] Tests (Unit test, E2E tests, manual test on universal and k8s)
+                - Don't forget `ci/` labels to run additional/fewer tests
+            - [ ] Does this contain a change that needs to be notified to users? In this case it [`UPGRADE.md`](../blob/master/UPGRADE.md) should be updated.
+            - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
+            [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
+
+        run: echo '${{ env.CHECKLIST_MESSAGE }}' | gh pr comment -R "${{ github.repository }}" "${{ github.event.pull_request.number }}" -F -
