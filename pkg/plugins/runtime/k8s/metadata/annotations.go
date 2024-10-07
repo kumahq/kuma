@@ -11,6 +11,13 @@ import (
 
 // Annotations that can be used by the end users.
 const (
+	// Deprecated: use KumaMeshLabel from pkg/plugins/runtime/k8s/metadata/labels.go instead.
+	//
+	// KumaMeshAnnotation defines a Pod annotation that
+	// associates a given Pod with a particular Mesh.
+	// Annotation value must be the name of a Mesh resource.
+	KumaMeshAnnotation = "kuma.io/mesh"
+
 	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
 	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"

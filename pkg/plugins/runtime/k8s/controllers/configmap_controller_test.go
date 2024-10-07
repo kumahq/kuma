@@ -201,7 +201,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 				},
 			},
 			[]kube_core.Pod{
-				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshLabel: "mesh1"}),
+				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh1"}),
 				podFn("pod2", map[string]string{"app": "app1"}, nil),
 			},
 			[]string{"kuma-mesh1-dns-vips"},
