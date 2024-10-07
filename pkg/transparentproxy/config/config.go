@@ -234,11 +234,13 @@ func (c DNS) Initialize(
 		return initialized, nil
 	}
 
-	if !c.SkipConntrackZoneSplit {
-		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
-		if !initialized.ConntrackZoneSplit {
-			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
-		}
+	switch {
+	case !c.SkipConntrackZoneSplit && !executables.Functionality.ConntrackZoneSplit():
+		l.Warn("conntrack zone splitting is disabled. This requires the 'conntrack' iptables module")
+	case !c.SkipConntrackZoneSplit && executables.Functionality.Chains.DockerOutput && c.CaptureAll:
+		l.Warn("conntrack zone splitting is unsupported when capturing all DNS traffic inside Docker containers with custom networks")
+	case !c.SkipConntrackZoneSplit:
+		initialized.ConntrackZoneSplit = true
 	}
 
 	// No need to retrieve DNS servers if all DNS traffic is being captured
