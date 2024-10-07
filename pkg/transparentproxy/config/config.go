@@ -222,9 +222,6 @@ type InitializedDNS struct {
 	Enabled            bool
 }
 
-// Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
-// the nameservers from the file specified in the ResolvConfigPath field of
-// the input DNS struct
 func (c DNS) Initialize(
 	l Logger,
 	executables InitializedExecutablesIPvX,
@@ -232,8 +229,7 @@ func (c DNS) Initialize(
 ) (InitializedDNS, error) {
 	initialized := InitializedDNS{DNS: c, Enabled: c.Enabled}
 
-	// We don't have to continue initialization if the DNS traffic shouldn't be
-	// redirected
+	// DNS redirection is disabled, no further initialization is needed
 	if !c.Enabled {
 		return initialized, nil
 	}
@@ -245,23 +241,22 @@ func (c DNS) Initialize(
 		}
 	}
 
-	// We don't have to get DNS servers if we want to capture all DNS traffic
+	// No need to retrieve DNS servers if all DNS traffic is being captured
 	if c.CaptureAll {
 		return initialized, nil
 	}
 
+	// Load DNS configuration from the resolv.conf file
 	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
 	if err != nil {
 		return initialized, errors.Wrapf(err, "unable to read file %s", c.ResolvConfigPath)
 	}
 
-	// Loop through each DNS server address parsed from the resolv.conf file
+	// Iterate over each DNS server address from the resolv.conf file
 	for _, address := range dnsConfig.Servers {
 		ip := net.ParseIP(address)
-		// Check if the address matches the expected IP version.
-		// - If config is not for IPv6 and the address is IPv4, add to the list.
-		// - If config is for IPv6 and the address is IPv6, add to the list.
-		if !ipv6 && ip.To4() != nil || ipv6 && ip.To4() == nil {
+		// Add the IP if it matches the expected IP version (IPv4 or IPv6)
+		if (!ipv6 && ip.To4() != nil) || (ipv6 && ip.To4() == nil) {
 			initialized.Servers = append(initialized.Servers, ip)
 		}
 	}
@@ -271,7 +266,7 @@ func (c DNS) Initialize(
 		initialized.ConntrackZoneSplit = false
 
 		l.Warnf(
-			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
+			"no %s DNS servers found in %s. DNS traffic capture for %[1]s will be disabled",
 			consts.IPTypeMap[ipv6],
 			c.ResolvConfigPath,
 		)
