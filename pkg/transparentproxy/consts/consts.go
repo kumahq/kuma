@@ -1,10 +1,16 @@
 package consts
 
 import (
+	"net"
 	"regexp"
 	"strings"
 
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
+)
+
+const (
+	IPv4 = false
+	IPv6 = true
 )
 
 const (
@@ -40,18 +46,20 @@ const (
 )
 
 const (
-	DNSPort           uint16 = 53
-	LocalhostIPv4            = "127.0.0.1"
-	LocalhostCIDRIPv4        = "127.0.0.1/32"
-	LocalhostIPv6            = "[::1]"
-	LocalhostCIDRIPv6        = "::1/128"
-	// InboundPassthroughSourceAddressCIDRIPv4
-	// TODO (bartsmykla): add some description
-	InboundPassthroughSourceAddressCIDRIPv4 = "127.0.0.6/32"
-	InboundPassthroughSourceAddressCIDRIPv6 = "::6/128"
-	OutputLogPrefix                         = "OUTPUT:"
-	PreroutingLogPrefix                     = "PREROUTING:"
+	DNSPort             uint16 = 53
+	OutputLogPrefix            = "OUTPUT:"
+	PreroutingLogPrefix        = "PREROUTING:"
 )
+
+var InboundPassthroughSourceAddress = map[bool]net.IPNet{
+	IPv4: {IP: net.ParseIP("127.0.0.6"), Mask: net.CIDRMask(32, 32)},
+	IPv6: {IP: net.ParseIP("::6"), Mask: net.CIDRMask(128, 128)},
+}
+
+var LocalhostAddress = map[bool]net.IPNet{
+	IPv4: {IP: net.ParseIP("127.0.0.1"), Mask: net.CIDRMask(32, 32)},
+	IPv6: {IP: net.ParseIP("::1"), Mask: net.CIDRMask(128, 128)},
+}
 
 type ProtocolL4 string
 

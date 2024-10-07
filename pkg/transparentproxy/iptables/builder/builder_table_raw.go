@@ -60,7 +60,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 							Protocol(Udp(DestinationPort(consts.DNSPort))),
 							Jump(Ct(Zone("2"))),
 						).
-						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip),
+						WithCommentf("assign connection tracking zone 2 to DNS requests destined for %s", ip.String()),
 				)
 				raw.Prerouting().AddRules(
 					rules.
@@ -69,7 +69,7 @@ func buildRawTable(cfg config.InitializedConfigIPvX) *tables.RawTable {
 							Protocol(Udp(SourcePort(consts.DNSPort))),
 							Jump(Ct(Zone("1"))),
 						).
-						WithCommentf("assign connection tracking zone 1 to DNS responses from %s", ip),
+						WithCommentf("assign connection tracking zone 1 to DNS responses from %s", ip.String()),
 				)
 			}
 		}

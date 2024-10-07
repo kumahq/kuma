@@ -217,7 +217,7 @@ type DNS struct {
 
 type InitializedDNS struct {
 	DNS
-	Servers            []string
+	Servers            []net.IP
 	ConntrackZoneSplit bool
 	Enabled            bool
 }
@@ -257,12 +257,12 @@ func (c DNS) Initialize(
 
 	// Loop through each DNS server address parsed from the resolv.conf file
 	for _, address := range dnsConfig.Servers {
-		parsed := net.ParseIP(address)
+		ip := net.ParseIP(address)
 		// Check if the address matches the expected IP version.
 		// - If config is not for IPv6 and the address is IPv4, add to the list.
 		// - If config is for IPv6 and the address is IPv6, add to the list.
-		if !ipv6 && parsed.To4() != nil || ipv6 && parsed.To4() == nil {
-			initialized.Servers = append(initialized.Servers, address)
+		if !ipv6 && ip.To4() != nil || ipv6 && ip.To4() == nil {
+			initialized.Servers = append(initialized.Servers, ip)
 		}
 	}
 
@@ -769,11 +769,11 @@ type InitializedConfigIPvX struct {
 	// LocalhostCIDR is a string representing the CIDR notation of the localhost
 	// address for the given IP version (IPv4 or IPv6). This is used to
 	// construct rules related to the loopback interface
-	LocalhostCIDR string
+	LocalhostCIDR net.IPNet
 	// InboundPassthroughCIDR is a string representing the CIDR notation of the
 	// address used for inbound passthrough traffic. This is used to construct
 	// rules allowing specific traffic to bypass normal proxying
-	InboundPassthroughCIDR string
+	InboundPassthroughCIDR net.IPNet
 	// Comments holds the processed configuration for iptables rule comments,
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
@@ -851,8 +851,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			Executables:            executablesIPv4,
 			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          consts.LocalhostCIDRIPv4,
-			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv4,
+			LocalhostCIDR:          consts.LocalhostAddress[consts.IPv4],
+			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddress[consts.IPv4],
 			Comments:               c.Comments.Initialize(executablesIPv4),
 			DropInvalidPackets:     c.DropInvalidPackets && executablesIPv4.Functionality.Tables.Mangle,
 			KumaDPUser:             kumaDPUser,
@@ -898,8 +898,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		Logger:                 loggerIPv6,
 		Executables:            executablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
-		LocalhostCIDR:          consts.LocalhostCIDRIPv6,
-		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv6,
+		LocalhostCIDR:          consts.LocalhostAddress[consts.IPv6],
+		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddress[consts.IPv6],
 		Comments:               c.Comments.Initialize(executablesIPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && executablesIPv6.Functionality.Tables.Mangle,
 		KumaDPUser:             kumaDPUser,
