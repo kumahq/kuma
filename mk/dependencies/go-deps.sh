@@ -8,15 +8,9 @@ OUTPUT_PROTO_DIR=$1/protos
 # Use go list -m for deps that are also on go.mod this way we use dependabot a live on the same version
 
 PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
-<<<<<<< HEAD
 PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -f '{{.Version}}' -m github.com/kumahq/protoc-gen-kumadoc)
-=======
-GINKGO=github.com/onsi/ginkgo/v2/ginkgo@$(go list -f '{{.Version}}' -m github.com/onsi/ginkgo/v2)
-CONTROLLER_GEN=sigs.k8s.io/controller-tools/cmd/controller-gen@$(go list -f '{{.Version}}' -m sigs.k8s.io/controller-tools)
 
-echo '' > mk/dependencies/go-deps.versions
 PIDS=()
->>>>>>> 4b3c0cd0e (fix(dev/tools): fail make dev/tools step if installing go deps returned error (#11703))
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 \
