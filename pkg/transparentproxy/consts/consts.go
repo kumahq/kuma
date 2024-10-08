@@ -1,10 +1,16 @@
 package consts
 
 import (
+	"net"
 	"regexp"
 	"strings"
 
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
+)
+
+const (
+	IPv4 = false
+	IPv6 = true
 )
 
 const (
@@ -20,16 +26,16 @@ const (
 // (true) usage to the corresponding iptables command name. This allows for code
 // to be written generically without duplicating logic for both IPv4 and IPv6
 var IptablesCommandByFamily = map[bool]string{
-	false: Iptables,
-	true:  Ip6tables,
+	IPv4: Iptables,
+	IPv6: Ip6tables,
 }
 
 // IPTypeMap is a map that translates a boolean value to a string representing
 // the type of IP address (IPv4 or IPv6). The key is a boolean where 'false'
 // corresponds to "IPv4" and 'true' corresponds to "IPv6"
 var IPTypeMap = map[bool]string{
-	false: "IPv4",
-	true:  "IPv6",
+	IPv4: "IPv4",
+	IPv6: "IPv6",
 }
 
 // Default ports used for iptables redirection
@@ -40,18 +46,20 @@ const (
 )
 
 const (
-	DNSPort           uint16 = 53
-	LocalhostIPv4            = "127.0.0.1"
-	LocalhostCIDRIPv4        = "127.0.0.1/32"
-	LocalhostIPv6            = "[::1]"
-	LocalhostCIDRIPv6        = "::1/128"
-	// InboundPassthroughSourceAddressCIDRIPv4
-	// TODO (bartsmykla): add some description
-	InboundPassthroughSourceAddressCIDRIPv4 = "127.0.0.6/32"
-	InboundPassthroughSourceAddressCIDRIPv6 = "::6/128"
-	OutputLogPrefix                         = "OUTPUT:"
-	PreroutingLogPrefix                     = "PREROUTING:"
+	DNSPort             uint16 = 53
+	OutputLogPrefix            = "OUTPUT:"
+	PreroutingLogPrefix        = "PREROUTING:"
 )
+
+var InboundPassthroughSourceAddress = map[bool]net.IPNet{
+	IPv4: {IP: net.ParseIP("127.0.0.6"), Mask: net.CIDRMask(32, 32)},
+	IPv6: {IP: net.ParseIP("::6"), Mask: net.CIDRMask(128, 128)},
+}
+
+var LocalhostAddress = map[bool]net.IPNet{
+	IPv4: {IP: net.ParseIP("127.0.0.1"), Mask: net.CIDRMask(32, 32)},
+	IPv6: {IP: net.ParseIP("::1"), Mask: net.CIDRMask(128, 128)},
+}
 
 type ProtocolL4 string
 
