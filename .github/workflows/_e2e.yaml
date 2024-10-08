@@ -135,3 +135,11 @@ jobs:
           path: |
             /tmp/e2e-debug/
           retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}
+      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        if: always()
+        with:
+          name: e2e-reports
+          if-no-files-found: ignore
+          path: |
+            build/reports
+          retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}
