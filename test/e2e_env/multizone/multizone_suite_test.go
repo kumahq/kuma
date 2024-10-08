@@ -77,6 +77,7 @@ var (
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
 	_ = Describe("MeshService Sync", meshservice.Sync, Ordered)
 	_ = Describe("MeshService Connectivity", meshservice.Connectivity, Ordered)
+	_ = Describe("MeshService Migration", meshservice.Migration, Ordered)
 	_ = Describe("Targeting real MeshService in policies", meshservice.MeshServiceTargeting, Ordered)
 	_ = Describe("MeshMultiZoneService Connectivity", meshmultizoneservice.Connectivity, Ordered)
 	_ = Describe("MeshMultiZoneService MeshLbStrategy", localityawarelb.MeshMzService, Ordered)

@@ -9,6 +9,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -159,6 +160,15 @@ func (m *MeshBuilder) KubeYaml() string {
 	}
 	kubeMesh.SetSpec(mesh.Spec)
 	res, err := yaml.Marshal(kubeMesh)
+	if err != nil {
+		panic(err)
+	}
+	return string(res)
+}
+
+func (m *MeshBuilder) UniYaml() string {
+	mesh := m.Build()
+	res, err := yaml.Marshal(rest.From.Resource(mesh))
 	if err != nil {
 		panic(err)
 	}

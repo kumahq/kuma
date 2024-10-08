@@ -506,6 +506,24 @@ func YamlUniversal(yaml string) InstallFunc {
 	}
 }
 
+type builder interface {
+	KubeYaml() string
+	UniYaml() string
+}
+
+func Yaml(b builder) InstallFunc {
+	return func(cluster Cluster) error {
+		switch c := cluster.(type) {
+		case *K8sCluster:
+			return YamlK8s(b.KubeYaml())(c)
+		case *UniversalCluster:
+			return YamlUniversal(b.UniYaml())(c)
+		default:
+			return errors.New("unknown cluster type")
+		}
+	}
+}
+
 func ResourceUniversal(resource model.Resource) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
