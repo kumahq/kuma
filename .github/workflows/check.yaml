@@ -43,7 +43,7 @@ jobs:
         run: |
           tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
       - name: Add checklist comment
-        if: github.event.action == 'opened' && github.event.pull_request.author != 'dependabot'
+        if: false # disable as it doesn't work github.event.action == 'opened' && github.event.pull_request.author != 'dependabot'
         env:
           GITHUB_TOKEN: ${{ github.token }}
           CHECKLIST_MESSAGE: |

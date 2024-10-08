@@ -7,7 +7,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/transparentproxy/iptables/parameters"
 )
 
-var _ = Describe("DestinationParameter", func() {
+var _ = Describe("EndpointParameter", func() {
 	Describe("Destination", func() {
 		Describe("should build valid destination parameter with, provided address", func() {
 			DescribeTable("when not negated",
@@ -98,6 +98,60 @@ var _ = Describe("DestinationParameter", func() {
 			Entry("IPv4 IP address with CIDR mask", "127.0.0.1/32"),
 			Entry("IPv6 IP address", "::1"),
 			Entry("IPv6 IP address with CIDR mask", "::1/128"),
+		)
+	})
+
+	Describe("Source", func() {
+		DescribeTable("should build valid source parameter with the built, provided Source",
+			func(address string, verbose bool, want []string) {
+				// when
+				got := Source(address).Build(verbose)
+
+				// then
+				Expect(got).To(Equal(want))
+			},
+			Entry("127.0.0.1/32",
+				"127.0.0.1/32", false,
+				[]string{"-s", "127.0.0.1/32"},
+			),
+			Entry("127.0.0.1/32 - verbose",
+				"127.0.0.1/32", true,
+				[]string{"--source", "127.0.0.1/32"},
+			),
+			Entry("254.254.254.254",
+				"254.254.254.254", false,
+				[]string{"-s", "254.254.254.254"},
+			),
+			Entry("254.254.254.254 - verbose",
+				"254.254.254.254", true,
+				[]string{"--source", "254.254.254.254"},
+			),
+		)
+
+		DescribeTable("should build valid source parameter with the built, provided address when negated",
+			func(address string, verbose bool, want []string) {
+				// when
+				got := Source(address).Negate().Build(verbose)
+
+				// then
+				Expect(got).To(Equal(want))
+			},
+			Entry("127.0.0.1/32",
+				"127.0.0.1/32", false,
+				[]string{"!", "-s", "127.0.0.1/32"},
+			),
+			Entry("127.0.0.1/32 - verbose",
+				"127.0.0.1/32", true,
+				[]string{"!", "--source", "127.0.0.1/32"},
+			),
+			Entry("254.254.254.254",
+				"254.254.254.254", false,
+				[]string{"!", "-s", "254.254.254.254"},
+			),
+			Entry("254.254.254.254 - verbose",
+				"254.254.254.254", true,
+				[]string{"!", "--source", "254.254.254.254"},
+			),
 		)
 	})
 })

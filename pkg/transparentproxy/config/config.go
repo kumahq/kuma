@@ -217,14 +217,11 @@ type DNS struct {
 
 type InitializedDNS struct {
 	DNS
-	Servers            []string
+	Servers            []net.IP
 	ConntrackZoneSplit bool
 	Enabled            bool
 }
 
-// Initialize initializes the ServersIPv4 and ServersIPv6 fields by parsing
-// the nameservers from the file specified in the ResolvConfigPath field of
-// the input DNS struct
 func (c DNS) Initialize(
 	l Logger,
 	executables InitializedExecutablesIPvX,
@@ -232,37 +229,37 @@ func (c DNS) Initialize(
 ) (InitializedDNS, error) {
 	initialized := InitializedDNS{DNS: c, Enabled: c.Enabled}
 
-	// We don't have to continue initialization if the DNS traffic shouldn't be
-	// redirected
+	// DNS redirection is disabled, no further initialization is needed
 	if !c.Enabled {
 		return initialized, nil
 	}
 
-	if !c.SkipConntrackZoneSplit {
-		initialized.ConntrackZoneSplit = executables.Functionality.ConntrackZoneSplit()
-		if !initialized.ConntrackZoneSplit {
-			l.Warn("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module")
-		}
+	switch {
+	case !c.SkipConntrackZoneSplit && !executables.Functionality.ConntrackZoneSplit():
+		l.Warn("conntrack zone splitting is disabled. This requires the 'conntrack' iptables module")
+	case !c.SkipConntrackZoneSplit && executables.Functionality.Chains.DockerOutput && c.CaptureAll:
+		l.Warn("conntrack zone splitting is unsupported when capturing all DNS traffic inside Docker containers with custom networks")
+	case !c.SkipConntrackZoneSplit:
+		initialized.ConntrackZoneSplit = true
 	}
 
-	// We don't have to get DNS servers if we want to capture all DNS traffic
+	// No need to retrieve DNS servers if all DNS traffic is being captured
 	if c.CaptureAll {
 		return initialized, nil
 	}
 
+	// Load DNS configuration from the resolv.conf file
 	dnsConfig, err := dns.ClientConfigFromFile(c.ResolvConfigPath)
 	if err != nil {
 		return initialized, errors.Wrapf(err, "unable to read file %s", c.ResolvConfigPath)
 	}
 
-	// Loop through each DNS server address parsed from the resolv.conf file
+	// Iterate over each DNS server address from the resolv.conf file
 	for _, address := range dnsConfig.Servers {
-		parsed := net.ParseIP(address)
-		// Check if the address matches the expected IP version.
-		// - If config is not for IPv6 and the address is IPv4, add to the list.
-		// - If config is for IPv6 and the address is IPv6, add to the list.
-		if !ipv6 && parsed.To4() != nil || ipv6 && parsed.To4() == nil {
-			initialized.Servers = append(initialized.Servers, address)
+		ip := net.ParseIP(address)
+		// Add the IP if it matches the expected IP version (IPv4 or IPv6)
+		if (!ipv6 && ip.To4() != nil) || (ipv6 && ip.To4() == nil) {
+			initialized.Servers = append(initialized.Servers, ip)
 		}
 	}
 
@@ -271,7 +268,7 @@ func (c DNS) Initialize(
 		initialized.ConntrackZoneSplit = false
 
 		l.Warnf(
-			"couldn't find any %s servers in %s file. Capturing %[1]s DNS traffic will be disabled",
+			"no %s DNS servers found in %s. DNS traffic capture for %[1]s will be disabled",
 			consts.IPTypeMap[ipv6],
 			c.ResolvConfigPath,
 		)
@@ -769,11 +766,11 @@ type InitializedConfigIPvX struct {
 	// LocalhostCIDR is a string representing the CIDR notation of the localhost
 	// address for the given IP version (IPv4 or IPv6). This is used to
 	// construct rules related to the loopback interface
-	LocalhostCIDR string
+	LocalhostCIDR net.IPNet
 	// InboundPassthroughCIDR is a string representing the CIDR notation of the
 	// address used for inbound passthrough traffic. This is used to construct
 	// rules allowing specific traffic to bypass normal proxying
-	InboundPassthroughCIDR string
+	InboundPassthroughCIDR net.IPNet
 	// Comments holds the processed configuration for iptables rule comments,
 	// indicating whether comments are enabled and the prefix to use for comment
 	// text. This helps in identifying and organizing iptables rules created by
@@ -825,8 +822,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		maxTry: c.Retry.MaxRetries + 1,
 	}
 
-	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[false])
-	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[true])
+	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv4])
+	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv6])
 
 	loopbackInterfaceName, err := getLoopbackInterfaceName()
 	if err != nil {
@@ -851,8 +848,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 			Logger:                 loggerIPv4,
 			Executables:            executablesIPv4,
 			LoopbackInterfaceName:  loopbackInterfaceName,
-			LocalhostCIDR:          consts.LocalhostCIDRIPv4,
-			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv4,
+			LocalhostCIDR:          consts.LocalhostAddress[consts.IPv4],
+			InboundPassthroughCIDR: consts.InboundPassthroughSourceAddress[consts.IPv4],
 			Comments:               c.Comments.Initialize(executablesIPv4),
 			DropInvalidPackets:     c.DropInvalidPackets && executablesIPv4.Functionality.Tables.Mangle,
 			KumaDPUser:             kumaDPUser,
@@ -898,8 +895,8 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		Logger:                 loggerIPv6,
 		Executables:            executablesIPv6,
 		LoopbackInterfaceName:  loopbackInterfaceName,
-		LocalhostCIDR:          consts.LocalhostCIDRIPv6,
-		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddressCIDRIPv6,
+		LocalhostCIDR:          consts.LocalhostAddress[consts.IPv6],
+		InboundPassthroughCIDR: consts.InboundPassthroughSourceAddress[consts.IPv6],
 		Comments:               c.Comments.Initialize(executablesIPv6),
 		DropInvalidPackets:     c.DropInvalidPackets && executablesIPv6.Functionality.Tables.Mangle,
 		KumaDPUser:             kumaDPUser,

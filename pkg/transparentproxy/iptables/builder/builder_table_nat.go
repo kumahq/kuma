@@ -40,7 +40,7 @@ func buildMeshInbound(cfg config.InitializedTrafficFlow) *Chain {
 		meshInbound.AddRules(
 			rules.
 				NewAppendRule(
-					Source(Address(exclusion.Address)),
+					Source(exclusion.Address),
 					Jump(Return()),
 				).
 				WithComment("skip further processing for configured IP address"),
@@ -139,11 +139,11 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 		AddRules(
 			rules.
 				NewAppendRule(
-					Source(Address(cfg.InboundPassthroughCIDR)),
+					Source(cfg.InboundPassthroughCIDR),
 					OutInterface(cfg.LoopbackInterfaceName),
 					Jump(Return()),
 				).
-				WithCommentf("prevent traffic loops by ensuring traffic from the sidecar proxy (using %s) to loopback interface is not redirected again", cfg.InboundPassthroughCIDR),
+				WithCommentf("prevent traffic loops by ensuring traffic from the sidecar proxy (using %s) to loopback interface is not redirected again", cfg.InboundPassthroughCIDR.String()),
 			rules.
 				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
@@ -152,7 +152,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 					Match(Owner(Uid(cfg.KumaDPUser))),
 					Jump(ToUserDefinedChain(cfg.Redirect.Inbound.RedirectChainName)),
 				).
-				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", consts.DNSPort, cfg.LocalhostCIDR, cfg.KumaDPUser, cfg.Redirect.Inbound.RedirectChainName),
+				WithCommentf("redirect outbound TCP traffic (except to DNS port %d) destined for loopback interface, but not targeting address %s, and owned by UID %s (kuma-dp user) to %s chain for proper handling", consts.DNSPort, cfg.LocalhostCIDR.String(), cfg.KumaDPUser, cfg.Redirect.Inbound.RedirectChainName),
 			rules.
 				NewAppendRule(
 					Protocol(Tcp(NotDestinationPortIfBool(cfg.Redirect.DNS.Enabled, consts.DNSPort))),
@@ -200,7 +200,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				Destination(cfg.LocalhostCIDR),
 				Jump(Return()),
 			).
-			WithCommentf("return traffic destined for localhost (%s) to avoid redirection", cfg.LocalhostCIDR),
+			WithCommentf("return traffic destined for localhost (%s) to avoid redirection", cfg.LocalhostCIDR.String()),
 	)
 
 	for _, port := range cfg.Redirect.Outbound.IncludePorts {
