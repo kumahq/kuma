@@ -6,7 +6,6 @@ metadata:
   name: mesh-observability
   labels:
     kuma.io/sidecar-injection: disabled
-  annotations:
     kuma.io/mesh: default
 ---
 apiVersion: v1

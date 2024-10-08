@@ -69,8 +69,8 @@ spec:
 	E2EAfterEach(func() {
 		Expect(cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())
 		Expect(cluster.TriggerDeleteNamespace(TestNamespace)).To(Succeed())
-		cluster.WaitNamespaceDelete(externalServicesNamespace)
-		cluster.WaitNamespaceDelete(TestNamespace)
+		Expect(cluster.WaitNamespaceDelete(externalServicesNamespace)).To(Succeed())
+		Expect(cluster.WaitNamespaceDelete(TestNamespace)).To(Succeed())
 
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

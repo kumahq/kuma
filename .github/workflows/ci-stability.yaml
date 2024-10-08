@@ -1,0 +1,74 @@
+name: Check CI stability for PRs with "ci/verify-stability" or "ci/verify-stability-merge-master" label
+
+on:
+  schedule:
+    # Monday to Friday: Every 2 hours from 7 PM to 7 AM
+    - cron: "0 19 * * 1-5"
+    - cron: "0 21 * * 1-5"
+    - cron: "0 23 * * 1-5"
+    - cron: "0 1 * * 2-6"
+    - cron: "0 3 * * 2-6"
+    - cron: "0 5 * * 2-6"
+    - cron: "0 7 * * 2-6"
+    # Saturday and Sunday: Every 2 hours all day
+    - cron: "0 */2 * * 6,0"
+  workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
+env:
+  GH_USER: "github-actions[bot]"
+  GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+jobs:
+  trigger-ci:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - name: Get open pull requests and save to file
+        run: |
+          gh pr list --json number,labels > open_prs.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Process PRs
+        id: process_prs
+        run: |
+          cat open_prs.json
+          pr_numbers_with_verify_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json)
+          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json)
+          echo "PRs with 'ci/verify-stability' label: $pr_numbers_with_verify_stability"
+          echo "PRs with 'ci/verify-stability-merge-master' label: $pr_numbers_with_verify_stability_merge_master"
+          echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> $GITHUB_OUTPUT
+          echo "pr_numbers_with_verify_stability_merge_master=$pr_numbers_with_verify_stability_merge_master" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Merge master branch (if applicable) and push a single commit
+        if: steps.process_prs.outputs.pr_numbers_with_verify_stability != ''
+        run: |
+          for pr_number in ${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }}; do
+            current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
+            echo "Processing PR #$pr_number"
+
+            # Fetch PR details to get the base branch (original branch name)
+            pr_branch=$(gh pr view $pr_number --json headRefName --jq '.headRefName')
+            echo "The original branch for PR #$pr_number is $pr_branch"
+            git fetch origin pull/$pr_number/head:$pr_branch
+            git checkout $pr_branch
+
+            git config user.name "${GH_USER}"
+            git config user.email "${GH_EMAIL}"
+          
+            # Check if the PR needs to merge with master
+            if echo "${{ steps.process_prs.outputs.pr_numbers_with_verify_stability_merge_master }}" | grep -wq "$pr_number"; then
+              echo "Merging master into PR #$pr_number"
+              git fetch origin master
+              git merge origin/master --no-ff --no-commit
+              git commit --allow-empty -m "Merge master into PR #$pr_number"
+            fi
+          
+            # Commit an empty commit to trigger the CI
+            echo "Pushing empty commit to trigger CI for PR #$pr_number on $current_datetime"
+            git commit --allow-empty -m "Trigger CI for PR #$pr_number on $current_datetime"
+            git push origin $pr_branch
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

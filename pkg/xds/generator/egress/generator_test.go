@@ -19,6 +19,7 @@ import (
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/xds"
+	"github.com/kumahq/kuma/pkg/util/maps"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -164,8 +165,8 @@ var _ = Describe("EgressGenerator", func() {
 			}
 
 			var meshResourcesList []*core_xds.MeshResources
-			for _, meshResources := range meshResourcesMap {
-				meshResourcesList = append(meshResourcesList, meshResources)
+			for _, meshName := range maps.SortedKeys(meshResourcesMap) {
+				meshResourcesList = append(meshResourcesList, meshResourcesMap[meshName])
 			}
 
 			proxy := &core_xds.Proxy{
@@ -233,6 +234,10 @@ var _ = Describe("EgressGenerator", func() {
 		Entry("subsets with MeshHTTPRoute, external", testCase{
 			fileWithResourcesName: "subsets-with-external-meshhttproute.yaml",
 			expected:              "subsets-with-external-meshhttproute.golden.yaml",
+		}),
+		Entry("same kuma.io/service", testCase{
+			fileWithResourcesName: "same-kuma-io-service.yaml",
+			expected:              "same-kuma-io-service.golden.yaml",
 		}),
 	)
 })

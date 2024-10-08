@@ -44,9 +44,9 @@ func Multiport() *MatchParameter {
 //
 // ref. iptables-extensions(8) > comment
 func Comment(comments ...string) *MatchParameter {
-	comment := fmt.Sprintf("%q", strings.Join(comments, "/"))
-	if len(comment) > 256 {
-		comment = comment[:256]
+	comment := strings.Join(comments, "/")
+	if len(comment) > 254 {
+		comment = comment[:254]
 	}
 
 	return &MatchParameter{
@@ -54,7 +54,7 @@ func Comment(comments ...string) *MatchParameter {
 		parameters: []ParameterBuilder{
 			&SimpleParameter{
 				long:  "--comment",
-				value: comment,
+				value: fmt.Sprintf("%q", comment),
 			},
 		},
 	}
