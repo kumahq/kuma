@@ -9,6 +9,8 @@ OUTPUT_PROTO_DIR=$1/protos
 
 PGV=github.com/envoyproxy/protoc-gen-validate@$(go list -f '{{.Version}}' -m github.com/envoyproxy/protoc-gen-validate)
 PGKUMADOC=github.com/kumahq/protoc-gen-kumadoc@$(go list -f '{{.Version}}' -m github.com/kumahq/protoc-gen-kumadoc)
+
+PIDS=()
 for i in \
     google.golang.org/protobuf/cmd/protoc-gen-go@v1.28.1 \
     google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1.0 \
@@ -24,8 +26,12 @@ for i in \
     ; do
   echo "install go dep: ${i}"
   GOBIN=${OUTPUT_BIN_DIR} go install "${i}" &
+  PIDS+=($!)
 done
-wait
+
+for PID in "${PIDS[@]}"; do
+    wait "${PID}"
+done
 
 set +x
 # Get the protos from some go dependencies
