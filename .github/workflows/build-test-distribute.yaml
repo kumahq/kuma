@@ -93,7 +93,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    needs: ["check", "test"]
+    needs: ["check"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     with:
