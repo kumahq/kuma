@@ -24,22 +24,21 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
-      - name: Get open pull requests
-        uses: octokit/request-action@v2.x
-        id: get_prs
-        with:
-          route: GET /repos/${{ github.repository }}/pulls
+      - name: Get open pull requests and save to file
+        run: |
+          gh pr list --json number,labels > open_prs.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Process PRs
         id: process_prs
         run: |
-          pr_numbers_with_verify_stability=$(echo '${{ steps.get_prs.outputs.data }}' | jq -r '.[] | select(.labels[].name == "ci/verify-stability") | .number')
-          pr_numbers_with_verify_stability_merge_master=$(echo '${{ steps.get_prs.outputs.data }}' | jq -r '.[] | select(.labels[].name == "ci/verify-stability-merge-master") | .number')
+          cat open_prs.json
+          pr_numbers_with_verify_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json)
+          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json)
           echo "PRs with 'ci/verify-stability' label: $pr_numbers_with_verify_stability"
           echo "PRs with 'ci/verify-stability-merge-master' label: $pr_numbers_with_verify_stability_merge_master"
-          echo "::set-output name=pr_numbers_with_verify_stability::$pr_numbers_with_verify_stability"
-          echo "::set-output name=pr_numbers_with_verify_stability_merge_master::$pr_numbers_with_verify_stability_merge_master"
+          echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> $GITHUB_OUTPUT
+          echo "pr_numbers_with_verify_stability_merge_master=$pr_numbers_with_verify_stability_merge_master" >> $GITHUB_OUTPUT
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Merge master branch (if applicable) and push a single commit
