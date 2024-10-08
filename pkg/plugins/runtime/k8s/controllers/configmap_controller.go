@@ -121,7 +121,7 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemN
 
 		meshSet := map[string]struct{}{}
 		for i := range pods.Items {
-			meshSet[k8s_util.MeshOfByAnnotation(&pods.Items[i], &ns)] = struct{}{}
+			meshSet[k8s_util.MeshOfByLabelOrAnnotation(l, &pods.Items[i], &ns)] = struct{}{}
 		}
 		var req []kube_reconile.Request
 		for mesh := range meshSet {

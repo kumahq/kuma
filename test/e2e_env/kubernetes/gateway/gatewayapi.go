@@ -119,7 +119,7 @@ kind: Gateway
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   gatewayClassName: ha-kuma
@@ -168,7 +168,7 @@ kind: Gateway
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   gatewayClassName: kuma
@@ -214,7 +214,7 @@ kind: HTTPRoute
 metadata:
   name: test-server-paths
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:
@@ -269,7 +269,7 @@ kind: HTTPRoute
 metadata:
   name: test-server-1
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:
@@ -286,7 +286,7 @@ kind: HTTPRoute
 metadata:
   name: test-server-2
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:
@@ -332,7 +332,7 @@ kind: HTTPRoute
 metadata:
   name: external-service
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:
@@ -388,7 +388,7 @@ kind: Gateway
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   gatewayClassName: kuma
@@ -428,7 +428,7 @@ kind: HTTPRoute
 metadata:
   name: test-server-paths
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:

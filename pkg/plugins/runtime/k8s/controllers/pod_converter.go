@@ -46,7 +46,7 @@ func (p *PodConverter) PodToDataplane(
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
-	dataplane.Mesh = util_k8s.MeshOfByAnnotation(pod, ns)
+	dataplane.Mesh = util_k8s.MeshOfByLabelOrAnnotation(logger, pod, ns)
 	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
 	if err != nil {
 		return err

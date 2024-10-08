@@ -115,7 +115,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			defaultNs,
 			[]kube_core.Pod{
 				podFn("pod1", map[string]string{"app": "app2"}, nil),
-				podFn("pod2", map[string]string{"app": "app2"}, map[string]string{metadata.KumaMeshAnnotation: "mesh2"}),
+				podFn("pod2", map[string]string{"app": "app2", metadata.KumaMeshLabel: "mesh2"}, map[string]string{}),
 			},
 			[]string{},
 		),
@@ -124,7 +124,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			defaultNs,
 			[]kube_core.Pod{
 				podFn("pod1", map[string]string{"app": "app1"}, nil),
-				podFn("pod2", map[string]string{"app": "app2"}, map[string]string{metadata.KumaMeshAnnotation: "mesh2"}),
+				podFn("pod2", map[string]string{"app": "app2", metadata.KumaMeshLabel: "mesh2"}, map[string]string{}),
 			},
 			[]string{"kuma-default-dns-vips"},
 		),
@@ -132,8 +132,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			serviceFn(map[string]string{"app": "app1"}),
 			defaultNs,
 			[]kube_core.Pod{
-				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh1"}),
-				podFn("pod2", map[string]string{"app": "app2"}, map[string]string{metadata.KumaMeshAnnotation: "mesh2"}),
+				podFn("pod1", map[string]string{"app": "app1", metadata.KumaMeshLabel: "mesh1"}, map[string]string{}),
+				podFn("pod2", map[string]string{"app": "app2", metadata.KumaMeshLabel: "mesh2"}, map[string]string{}),
 			},
 			[]string{"kuma-mesh1-dns-vips"},
 		),
@@ -141,8 +141,8 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			serviceFn(map[string]string{"app": "app1"}),
 			defaultNs,
 			[]kube_core.Pod{
-				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh1"}),
-				podFn("pod2", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh2"}),
+				podFn("pod1", map[string]string{"app": "app1", metadata.KumaMeshLabel: "mesh1"}, map[string]string{}),
+				podFn("pod2", map[string]string{"app": "app1", metadata.KumaMeshLabel: "mesh2"}, map[string]string{}),
 			},
 			[]string{"kuma-mesh1-dns-vips", "kuma-mesh2-dns-vips"},
 		),
@@ -151,7 +151,7 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			kube_core.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						metadata.KumaMeshAnnotation: "mesh1",
+						metadata.KumaMeshLabel: "mesh1",
 					},
 				},
 			},
@@ -166,15 +166,45 @@ var _ = Describe("ServiceToConfigMapMapper", func() {
 			kube_core.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
-						metadata.KumaMeshAnnotation: "mesh1",
+						metadata.KumaMeshLabel: "mesh1",
 					},
 				},
 			},
 			[]kube_core.Pod{
-				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh2"}),
+				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshLabel: "mesh2"}),
 				podFn("pod2", map[string]string{"app": "app1"}, nil),
 			},
 			[]string{"kuma-mesh1-dns-vips", "kuma-mesh2-dns-vips"},
+		),
+		Entry("namespace label pod has label",
+			serviceFn(map[string]string{"app": "app1"}),
+			kube_core.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						metadata.KumaMeshLabel: "mesh1",
+					},
+				},
+			},
+			[]kube_core.Pod{
+				podFn("pod1", map[string]string{"app": "app1", metadata.KumaMeshLabel: "mesh1"}, map[string]string{}),
+				podFn("pod2", map[string]string{"app": "app1"}, nil),
+			},
+			[]string{"kuma-mesh1-dns-vips"},
+		),
+		Entry("namespace label pod has annotation",
+			serviceFn(map[string]string{"app": "app1"}),
+			kube_core.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: map[string]string{
+						metadata.KumaMeshLabel: "mesh1",
+					},
+				},
+			},
+			[]kube_core.Pod{
+				podFn("pod1", map[string]string{"app": "app1"}, map[string]string{metadata.KumaMeshAnnotation: "mesh1"}), // nolint:staticcheck
+				podFn("pod2", map[string]string{"app": "app1"}, nil),
+			},
+			[]string{"kuma-mesh1-dns-vips"},
 		),
 	)
 })
