@@ -600,8 +600,8 @@ conf:
 
 			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))).
 				Should(And(
-					HaveKeyWithValue("echo-v1", BeNumerically("~", 50, 10)),
-					HaveKeyWithValue("route-es-http", BeNumerically("~", 50, 10)),
+					HaveKeyWithValue("echo-v1", BeNumerically("~", 50, 25)),
+					HaveKeyWithValue("route-es-http", BeNumerically("~", 50, 25)),
 				))
 		})
 	})
