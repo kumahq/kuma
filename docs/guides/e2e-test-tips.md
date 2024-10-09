@@ -28,7 +28,7 @@ When e2e tests are executed here are the steps
 K3D is faster than KIND and it is a default tool to run E2E tests. However, not all tests run with it.
 To use KIND in E2E tests add `K8S_CLUSTER_TOOL=kind`
 
-```
+```bash
 make test/e2e K8S_CLUSTER_TOOL=kind
 ```
 
@@ -39,7 +39,7 @@ Regular `make test/e2e` will execute all the tests in the project.
 If you want to execute single test you can change the code from `It()` to `FIt()` or `Describe()` to `FDescribe()` and then use `E2E_PKG_LIST`
 
 Example:
-```
+```bash
 FIt("should access service locally and remotely", func() {
 ...
 
@@ -49,15 +49,15 @@ make test/e2e E2E_PKG_LIST=./test/e2e/deploy/...
 ## Running e2e tests one at a time
 
 When you run `make test/e2e`, the Docker infrastructure will get torn down if any tests fail.
-In the case of failing tests, it can be useful to run one suit at a time, while leaving the Docker containers in place.
+In the case of failing tests, it can be useful to run one suite at a time, while leaving the Docker containers in place.
 
 To do this, first create the test environment:
-```
+```bash
 make images test/e2e/k8s/start
 ```
 
 Now you can run each test suite (exiting on any failures):
-```
+```bash
 (
     set -e
     for t in $(go list ./test/e2e/...); do
@@ -77,13 +77,13 @@ When you use `make test/e2e/debug` and the test fails, execution will immediatel
 ## Decide which Kubernetes clusters will be created
 
 If you know you are running only universal tests you can skip creating Kubernetes clusters by setting
-```
+```bash
 make test/e2e/debug K8SCLUSTERS= E2E_PKG_LIST=./test/e2e/trafficpermission/universal/...
 ```
 
 or if the test need only 1 Kuberenetes cluster do this
 
-```
+```bash
 make test/e2e/debug K8SCLUSTERS=kuma-1 E2E_PKG_LIST=./test/e2e/trafficpermission/universal/...
 ```
 
@@ -93,14 +93,14 @@ make test/e2e/debug K8SCLUSTERS=kuma-1 E2E_PKG_LIST=./test/e2e/trafficpermission
 
 Running `make test/e2e/debug` can intentionally leave resources if test fails. Clean them up with   
 
-```
+```bash
 make k3d/stop/all && docker stop $(docker ps -aq) # omit $ for fish
 ```
 
 ### Tests failing because of disk pressure
 
 From time to time when running tests your docker environment can run out of space. You will see k8s events like this:
-```
+```bash
 Warning  FailedScheduling  63s (x1 over 2m15s)  default-scheduler  0/1 nodes are available: 
 1 node(s) had taint {node.kubernetes.io/disk-pressure:}, that the pod didn't tolerate.
 ```
@@ -117,7 +117,7 @@ docker system prune --volumes --all
 The Kuma build has an optional `dev/envrc` target that generates a `.envrc` file to set the `$CI_TOOLS_DIR` and `$KUBECONFIG` environment variables.
 This is useful to keeping the Kuma CI tools installation tidy in your Kuma workspace, and for conveniently accessing the Kind clusters that are provisioned by the e2e tests.
 
-```
+```bash
 $ make dev/envrc
 direnv: loading ~/upstream/konghq/kuma/.envrc
 direnv: export +CI_TOOLS_DIR +KUBECONFIG
