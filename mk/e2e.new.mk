@@ -34,7 +34,7 @@ MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
 GINKGO_E2E_LABEL_FILTERS ?=
 
-GINKGO_TEST_E2E=$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --procs 10 --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
+GINKGO_TEST_E2E=$(GOENV) $(GINKGO_TEST) -v $(GINKGO_E2E_TEST_FLAGS) --procs 6 --label-filter="$(GINKGO_E2E_LABEL_FILTERS)"
 ifdef DEBUG
 GINKGO_TEST_E2E+=--procs 1 --keep-going=false --fail-fast
 endif
