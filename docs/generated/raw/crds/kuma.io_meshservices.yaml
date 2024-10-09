@@ -16,7 +16,11 @@ spec:
     singular: meshservice
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .status.addresses[0].hostname
+      name: Hostname
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
         properties:
@@ -211,3 +215,4 @@ spec:
         type: object
     served: true
     storage: true
+    subresources: {}
