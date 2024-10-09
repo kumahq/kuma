@@ -138,7 +138,7 @@ jobs:
       - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
         if: always()
         with:
-          name: e2e-reports
+          name: e2e-reports-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}-${{ matrix.parallelRunnerId }}
           if-no-files-found: ignore
           path: |
             build/reports
