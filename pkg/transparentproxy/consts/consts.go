@@ -38,17 +38,12 @@ var IPTypeMap = map[bool]string{
 	IPv6: "IPv6",
 }
 
-// Default ports used for iptables redirection
+// Ports used for iptables redirection
 const (
 	DefaultRedirectInbountPort  uint16 = 15006
 	DefaultRedirectOutboundPort uint16 = 15001
 	DefaultRedirectDNSPort      uint16 = 15053
-)
-
-const (
-	DNSPort             uint16 = 53
-	OutputLogPrefix            = "OUTPUT:"
-	PreroutingLogPrefix        = "PREROUTING:"
+	DNSPort                     uint16 = 53
 )
 
 var InboundPassthroughSourceAddress = map[bool]net.IPNet{
