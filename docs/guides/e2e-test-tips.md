@@ -2,11 +2,6 @@
 
 E2E tests are less stable and slower than unit tests therefore it's useful to know some tricks
 
-## Mac M1 and ARM support
-
-Currently, we don't support ARM architecture when building docker images which we rely on for e2e tests.
-This is tracked in [#3252](https://github.com/kumahq/kuma/issues/3252) and [#237](https://github.com/kumahq/kuma/issues/237).
-
 ## Using a VM
 
 If you are developing on a laptop e2e tests might be almost impossible to run.
