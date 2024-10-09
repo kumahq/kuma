@@ -330,6 +330,7 @@ var _ = Describe("Dataplane", func() {
                   refs:
                   - kind: MeshService
                     name: a
+                    port: 9090
                   - kind: MeshExternalService
                     name: es
                     namespace: es1
