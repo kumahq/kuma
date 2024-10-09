@@ -61,6 +61,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 		panic("unable to parse template")
 	}
 	var configDump bool
+	var includeEDS bool
 	var inspectionType string
 	var shadow bool
 	var include []string
@@ -80,6 +81,9 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 			}
 			if len(include) > 0 && inspectionType != InspectionConfig {
 				return errors.New("flag '--include' can be used only when '--type=config'")
+			}
+			if includeEDS && inspectionType != InspectionTypeConfigDump {
+				return errors.New(fmt.Sprintf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump))
 			}
 
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.DataplaneResourceTypeDescriptor)
@@ -101,7 +105,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 				}
 				return tmpl.Execute(cmd.OutOrStdout(), entryList)
 			case InspectionTypeConfigDump:
-				bytes, err := client.ConfigDump(context.Background(), resourceKey, true)
+				bytes, err := client.ConfigDump(context.Background(), resourceKey, includeEDS)
 				if err != nil {
 					return err
 				}
@@ -136,6 +140,7 @@ func newInspectDataplaneCmd(pctx *cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypePolicies, kuma_cmd.UsageOptions("inspection type", InspectionTypePolicies, InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters, InspectionConfig))
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
 	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
+	cmd.PersistentFlags().BoolVar(&includeEDS, "include-eds", false, "include EDS when dumping envoy config for dataplane")
 	cmd.PersistentFlags().StringVarP(&pctx.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().BoolVar(&shadow, "shadow", false, "when computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label")
 	cmd.PersistentFlags().StringSliceVar(&include, "include", []string{}, "an array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.")
