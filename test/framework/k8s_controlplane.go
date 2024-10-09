@@ -81,7 +81,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 func (c *K8sControlPlane) PortForwardKumaCP() {
 	kumaCpSvc := c.GetKumaCPSvc()
 	if k8s.IsServiceAvailable(&kumaCpSvc) {
-		k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpSvc.Name, 0, 5681)
+		c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpSvc.Name, 0, 5681)
 		c.portFwd.apiServerTunnel.ForwardPort(c.t)
 		c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
 
