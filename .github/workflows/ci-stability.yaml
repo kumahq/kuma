@@ -20,17 +20,17 @@ jobs:
   trigger-ci:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-          persist-credentials: false
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ steps.github-app-token.outputs.token }}
       - name: Get open pull requests and save to file
         run: |
           gh pr list --json number,labels > open_prs.json
