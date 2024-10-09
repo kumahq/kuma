@@ -41,6 +41,7 @@ type PolicyConfig struct {
 	Scope                        ResourceScope
 	AllowedOnSystemNamespaceOnly bool
 	IsReferenceableInTo          bool
+	KubebuilderMarkers           []string
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -85,28 +86,38 @@ func Policy(path string) (PolicyConfig, error) {
 		}
 	}
 
-	markers, err := parseMarkers(mainComment)
+	markers, kubebuilderMarkers, err := parseMarkers(mainComment)
 	if err != nil {
 		return PolicyConfig{}, err
 	}
 
-	return newPolicyConfig(packageName, mainStruct.Name.String(), markers, fields)
+	cfg, err := newPolicyConfig(packageName, mainStruct.Name.String(), markers, fields)
+	if err != nil {
+		return PolicyConfig{}, err
+	}
+	cfg.KubebuilderMarkers = kubebuilderMarkers
+	return cfg, nil
 }
 
-func parseMarkers(cg *ast.CommentGroup) (map[string]string, error) {
+func parseMarkers(cg *ast.CommentGroup) (map[string]string, []string, error) {
 	result := map[string]string{}
+	var kubebuilderMarkers []string
 	for _, comment := range cg.List {
 		if !strings.HasPrefix(comment.Text, "// +") {
+			continue
+		}
+		if strings.HasPrefix(comment.Text, "// +kubebuilder") {
+			kubebuilderMarkers = append(kubebuilderMarkers, comment.Text)
 			continue
 		}
 		trimmed := strings.TrimPrefix(comment.Text, "// +")
 		mrkr := strings.Split(trimmed, "=")
 		if len(mrkr) != 2 {
-			return nil, errors.Errorf("marker %s has wrong format", trimmed)
+			return nil, nil, errors.Errorf("marker %s has wrong format", trimmed)
 		}
 		result[mrkr[0]] = mrkr[1]
 	}
-	return result, nil
+	return result, kubebuilderMarkers, nil
 }
 
 func parseBool(markers map[string]string, key string) (bool, bool) {
