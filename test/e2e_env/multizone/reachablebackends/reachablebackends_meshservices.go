@@ -22,6 +22,7 @@ func MeshServicesWithReachableBackendsOption() {
           kuma.io/display-name: other-zone-test-server
       - kind: MeshService
         name: local-test-server
+        port: 80
 `
 
 	mesh := fmt.Sprintf(`

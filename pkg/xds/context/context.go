@@ -162,7 +162,7 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 				}),
 			}
 			if port := reachableBackend.Port; port != nil {
-				key.SectionName = fmt.Sprintf("%d", port.GetValue())
+				key.SectionName = mc.getSectionName(key.ResourceType, key.ResourceIdentifier, reachableBackend.Port.GetValue())
 			}
 			reachableBackends[key] = true
 		}
@@ -183,6 +183,33 @@ func (mc *MeshContext) resolveResourceIdentifiersForLabels(kind string, labels m
 		}
 	}
 	return result
+}
+
+func (mc *MeshContext) getSectionName(kind core_model.ResourceType, key core_model.ResourceIdentifier, port uint32) string {
+	switch kind {
+	case meshservice_api.MeshServiceType:
+		ms, found := mc.MeshServiceByIdentifier[key]
+		if !found {
+			return fmt.Sprintf("%d", port)
+		}
+		servicePort, portFound := ms.FindPort(port)
+		if !portFound {
+			return fmt.Sprintf("%d", port)
+		}
+		return servicePort.GetName()
+	case meshmzservice_api.MeshMultiZoneServiceType:
+		mmzs, found := mc.MeshMultiZoneServiceByIdentifier[key]
+		if !found {
+			return fmt.Sprintf("%d", port)
+		}
+		servicePort, portFound := mmzs.FindPort(port)
+		if !portFound {
+			return fmt.Sprintf("%d", port)
+		}
+		return servicePort.GetName()
+	default:
+		return fmt.Sprintf("%d", port)
+	}
 }
 
 func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[core_model.ResourceIdentifier]int {
