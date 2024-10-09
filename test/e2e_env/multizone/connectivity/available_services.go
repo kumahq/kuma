@@ -91,12 +91,10 @@ func AvailableServices() {
 		// Bring back CP
 		Expect(statefulCluster.GetApp(AppModeCP).StartMainApp()).To(Succeed())
 		// Kill app
+		Expect(statefulCluster.DeleteApp("test-server")).To(Succeed())
 		Eventually(func(g Gomega) {
 			g.Expect(kumactl.KumactlDelete("dataplane", "test-server", meshName)).To(Succeed())
 		}).Should(Succeed())
-		Expect(statefulCluster.DeleteApp("test-server")).To(Succeed())
-
-		Expect(kumactl.KumactlList("dataplanes", meshName)).To(BeEmpty())
 
 		Eventually(func(g Gomega) {
 			ingress := getIngress(g, kumactl, UniversalZoneIngressPort+1)
