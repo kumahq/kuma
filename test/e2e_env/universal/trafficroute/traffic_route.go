@@ -699,7 +699,6 @@ tags:
   kuma.io/protocol: http
 `, esHttpHostPort)))).To(Succeed())
 
-<<<<<<< HEAD
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(
@@ -709,18 +708,6 @@ tags:
 					HaveKey(Equal(`route-es-http`)),
 				),
 			)
-=======
-			// Check and retry until the config got propagated to the client
-			Eventually(func() ([]server_types.EchoResponse, error) {
-				return client.CollectResponses(universal.Cluster, "demo-client", "test-server.mesh/i-am-here")
-			}, "1m", "500ms").MustPassRepeatedly(5).Should(HaveEach(HaveField("Received.Headers", HaveKeyWithValue("X-I-Am-Here", []string{"route-internal-external"}))))
-
-			Expect(client.CollectResponsesByInstance(universal.Cluster, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))).
-				Should(And(
-					HaveKeyWithValue("echo-v1", BeNumerically("~", 50, 25)),
-					HaveKeyWithValue("route-es-http", BeNumerically("~", 50, 25)),
-				))
->>>>>>> 32f87a14f (test(lb): loosen up assertion lb weights (#11720))
 		})
 	})
 }
