@@ -78,28 +78,11 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 }
 
 func (c *K8sControlPlane) PortForwardKumaCP() {
-<<<<<<< HEAD
-	kumaCpPods := c.GetKumaCPPods()
-	// There could be multiple pods still starting so pick one that's available already
-	for i := range kumaCpPods {
-		if k8s.IsPodAvailable(&kumaCpPods[i]) {
-			c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
-			c.portFwd.apiServerTunnel.ForwardPort(c.t)
-			c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
-			return
-		}
-=======
 	kumaCpSvc := c.GetKumaCPSvc()
 	if k8s.IsServiceAvailable(&kumaCpSvc) {
 		c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
 		c.portFwd.apiServerTunnel.ForwardPort(c.t)
 		c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
-
-		c.madsFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5676)
-		c.madsFwd.apiServerTunnel.ForwardPort(c.t)
-		c.madsFwd.ApiServerEndpoint = c.madsFwd.apiServerTunnel.Endpoint()
-		return
->>>>>>> 7129c9496 (fix(e2e): port forward to service instead of pod of kuma-cp to improve test stability (#11737))
 	}
 
 	c.t.Fatalf("Failed finding an available service, service: %v", kumaCpSvc)
