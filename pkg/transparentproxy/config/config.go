@@ -210,9 +210,6 @@ type DNS struct {
 	CaptureAll             bool   `json:"captureAll" split_words:"true"`             // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_CAPTURE_ALL
 	SkipConntrackZoneSplit bool   `json:"skipConntrackZoneSplit" split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_SKIP_CONNTRACK_ZONE_SPLIT
 	ResolvConfigPath       string `json:"resolvConfigPath" split_words:"true"`       // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_RESOLV_CONFIG_PATH
-	// The iptables chain where the upstream DNS requests should be directed to.
-	// It is only applied for IP V4. Use with care. (default "RETURN")
-	UpstreamTargetChain string `json:"-" ignored:"true"`
 }
 
 type InitializedDNS struct {
