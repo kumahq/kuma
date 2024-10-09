@@ -151,6 +151,9 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
 			for _, tri := range mc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
+				if port := reachableBackend.Port; port != nil {
+					tri.SectionName = mc.getSectionName(tri.ResourceType, tri.ResourceIdentifier, reachableBackend.Port.GetValue())
+				}
 				reachableBackends[tri] = true
 			}
 		} else {
@@ -192,21 +195,19 @@ func (mc *MeshContext) getSectionName(kind core_model.ResourceType, key core_mod
 		if !found {
 			return fmt.Sprintf("%d", port)
 		}
-		servicePort, portFound := ms.FindPort(port)
-		if !portFound {
-			return fmt.Sprintf("%d", port)
+		if sectionName, portFound := ms.FindSectionNameByPort(port); portFound {
+			return sectionName
 		}
-		return servicePort.GetName()
+		return fmt.Sprintf("%d", port)
 	case meshmzservice_api.MeshMultiZoneServiceType:
 		mmzs, found := mc.MeshMultiZoneServiceByIdentifier[key]
 		if !found {
 			return fmt.Sprintf("%d", port)
 		}
-		servicePort, portFound := mmzs.FindPort(port)
-		if !portFound {
-			return fmt.Sprintf("%d", port)
+		if sectionName, portFound := mmzs.FindSectionNameByPort(port); portFound {
+			return sectionName
 		}
-		return servicePort.GetName()
+		return fmt.Sprintf("%d", port)
 	default:
 		return fmt.Sprintf("%d", port)
 	}

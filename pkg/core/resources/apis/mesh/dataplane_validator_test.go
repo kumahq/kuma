@@ -1334,10 +1334,6 @@ var _ = Describe("Dataplane", func() {
                   - kind: MeshService
                   - kind: MeshService
                     namespace: xyz
-                  - kind: MeshService
-                    labels:
-                      kuma.io/test: test
-                    port: 8080
 `,
 			expected: `
                 violations:
@@ -1354,9 +1350,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.transparentProxing.reachableBackends.refs[4].name
                   message: name or labels are required
                 - field: networking.transparentProxing.reachableBackends.refs[5].name
-                  message: name is required, when namespace is defined
-                - field: networking.transparentProxing.reachableBackends.refs[6].port
-                  message: port cannot be defined when labels are specified`,
+                  message: name is required, when namespace is defined`,
 		}),
 	)
 })

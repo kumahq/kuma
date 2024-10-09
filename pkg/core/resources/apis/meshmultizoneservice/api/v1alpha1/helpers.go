@@ -26,13 +26,20 @@ func (t *MeshMultiZoneServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-func (m *MeshMultiZoneServiceResource) FindPort(port uint32) (Port, bool) {
+func (m *MeshMultiZoneServiceResource) findPort(port uint32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
 		}
 	}
 	return Port{}, false
+}
+
+func (m *MeshMultiZoneServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
+	if port, found := m.findPort(port); found {
+		return port.GetName(), true
+	}
+	return "", false
 }
 
 func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) {

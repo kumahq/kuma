@@ -280,9 +280,6 @@ func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_Transparent
 			if (backendRef.Name != "" || backendRef.Namespace != "") && len(backendRef.Labels) > 0 {
 				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")
 			}
-			if len(backendRef.Labels) > 0 && backendRef.Port != nil {
-				result.AddViolationAt(path.Index(i).Field("port"), "port cannot be defined when labels are specified")
-			}
 		}
 	}
 	return result
