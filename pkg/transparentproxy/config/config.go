@@ -483,11 +483,23 @@ type Log struct {
 type Retry struct {
 	// MaxRetries specifies the number of retries after the initial attempt.
 	// A value of 0 means no retries, and only the initial attempt will be made.
-	MaxRetries int `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
+	MaxRetries uint `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
 	SleepBetweenRetries config_types.Duration `json:"sleepBetweenRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
+}
+
+type InitializedRetry struct {
+	MaxRetries          int
+	SleepBetweenRetries time.Duration
+}
+
+func (c Retry) Initialize() InitializedRetry {
+	return InitializedRetry{
+		MaxRetries:          int(c.MaxRetries),
+		SleepBetweenRetries: c.SleepBetweenRetries.Duration,
+	}
 }
 
 // Comments struct contains the configuration for iptables rule comments.
@@ -813,12 +825,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		return InitializedConfig{}, err
 	}
 
-	l := Logger{
-		stdout: c.RuntimeStdout,
-		stderr: c.RuntimeStderr,
-		maxTry: c.Retry.MaxRetries + 1,
-	}
-
+	l := Logger{stdout: c.RuntimeStdout, stderr: c.RuntimeStderr}
 	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv4])
 	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv6])
 
