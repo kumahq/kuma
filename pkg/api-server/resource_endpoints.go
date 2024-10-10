@@ -403,11 +403,10 @@ func (r *resourceEndpoints) createResource(
 		res.Descriptor(),
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
-		res.GetMeta().GetNameExtensions(),
+		model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
 		r.mode,
 		r.isK8s,
-		r.systemNamespace,
 		r.zoneName,
 	)
 	if err != nil {

@@ -9,7 +9,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -60,11 +59,10 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
-		model.ResourceNameExtensions{},
+		core_model.UnknownNamespace(),
 		opts.Mesh,
 		m.mode,
 		m.isK8s,
-		m.systemNamespace,
 		m.zone,
 	)
 	if err != nil {
@@ -100,11 +98,10 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
-		resource.GetMeta().GetNameExtensions(),
+		core_model.GetNamespace(resource.GetMeta(), m.systemNamespace),
 		resource.GetMeta().GetMesh(),
 		m.mode,
 		m.isK8s,
-		m.systemNamespace,
 		m.zone,
 	)
 	if err != nil {
