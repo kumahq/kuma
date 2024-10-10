@@ -63,7 +63,7 @@ spec:
 					mesh.WithEgressRoutingEnabled()
 				}
 				err := NewClusterSetup().
-					Install(YamlK8s(mesh.KubeYaml())).
+					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 					Install(NamespaceWithSidecarInjection(config.Namespace)).
 					Install(Namespace(config.NamespaceOutsideMesh)).

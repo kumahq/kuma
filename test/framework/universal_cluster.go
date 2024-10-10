@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
@@ -292,14 +293,14 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
-	transparent := opts.transparent != nil && *opts.transparent // default false
+	transparent := pointer.Deref(opts.transparent)
 	args := opts.appArgs
 
 	if opts.verbose == nil {
 		opts.verbose = &c.verbose
 	}
 
-	caps := []string{}
+	var caps []string
 	if transparent {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
@@ -342,7 +343,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			}
 		}
 
-		builtindns := opts.builtindns == nil || *opts.builtindns
+		builtindns := pointer.DerefOr(opts.builtindns, true)
 		if transparent {
 			app.setupTransparent(builtindns)
 		}

@@ -70,7 +70,7 @@ spec:
 			testserver.WithMesh(mesh2),
 			testserver.WithoutWaitingToBeReady(),
 		)(kubernetes.Cluster)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 
 		// then the client is not allowed to do it
 		// then it's not allowed
