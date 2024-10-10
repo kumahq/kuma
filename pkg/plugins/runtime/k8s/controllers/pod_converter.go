@@ -59,7 +59,7 @@ func (p *PodConverter) PodToDataplane(
 	if err != nil {
 		return err
 	}
-	// we need to validate if labels has changed
+	// we need to validate if the labels have changed
 	labels, err := model.ComputeLabels(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
@@ -99,6 +99,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	if err != nil {
 		return err
 	}
+	// we need to validate if the labels have changed
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
@@ -138,6 +139,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	if err != nil {
 		return err
 	}
+	// we need to validate if the labels have changed
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
