@@ -1,0 +1,137 @@
+FromRules:
+  127.0.0.1:8080: []
+  127.0.0.1:8081: []
+  127.0.0.1:8082: []
+ToRules:
+  ByListener:
+    127.0.0.1:8080:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /mesh
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        Subset: []
+    127.0.0.1:8081:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /servicesubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: in-zone-1
+          type: MeshAccessLog
+        Subset: []
+    127.0.0.1:8082:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /mesh
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        Subset: []
+  ByListenerAndHostname:
+    127.0.0.1:8080:*:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /mesh
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        Subset: []
+    127.0.0.1:8081:*:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /servicesubset
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: in-zone-1
+          type: MeshAccessLog
+        Subset: []
+    127.0.0.1:8082:*:
+      ResourceRules: {}
+      Rules:
+      - BackendRefOriginIndex: {}
+        Conf:
+          backends:
+          - file:
+              path: /mesh
+            type: File
+        Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          labels:
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
+          mesh: mesh-1
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mesh-in-zone-1
+          type: MeshAccessLog
+        Subset: []

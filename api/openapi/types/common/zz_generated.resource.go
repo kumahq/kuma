@@ -33,10 +33,10 @@ type InspectRule struct {
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
 	ProxyRule *ProxyRule  `json:"proxyRule,omitempty"`
 
-	// ToResourceRules a set of rules for the resources targeted by this proxy
+	// ToResourceRules a set of rules for the outbounds produced by real resources (i.e MeshService, MeshExternalService, MeshMultiZoneService).
 	ToResourceRules *[]ResourceRule `json:"toResourceRules,omitempty"`
 
-	// ToRules a set of rules for the outbounds of this proxy
+	// ToRules a set of rules for the outbounds of this proxy. The field is not set when 'meshService.mode' on Mesh is set to 'Exclusive'.
 	ToRules *[]Rule `json:"toRules,omitempty"`
 
 	// Type the type of the policy
@@ -83,7 +83,7 @@ type ProxyRule struct {
 // ResourceRule defines model for ResourceRule.
 type ResourceRule struct {
 	// Conf The actual conf generated
-	Conf interface{} `json:"conf"`
+	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
 	Origin              []ResourceRuleOrigin `json:"origin"`

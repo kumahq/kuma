@@ -50,8 +50,8 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 
 	meshName := meshContext.Resource.GetMeta().GetName()
 
-	allMeshNames := []string{meshName}
-	for _, mesh := range meshContext.Resources.OtherMeshes().Items {
+	allMeshNames := []string{}
+	for _, mesh := range meshContext.Resources.Meshes().Items {
 		allMeshNames = append(allMeshNames, mesh.GetMeta().GetName())
 	}
 

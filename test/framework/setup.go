@@ -128,6 +128,19 @@ metadata:
 	return YamlK8s(mesh)
 }
 
+func MeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+	mesh := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: %s
+spec:
+  meshServices:
+    mode: %s
+`, name, meshServicesEnabled)
+	return YamlK8s(mesh)
+}
+
 func MTLSMeshKubernetes(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -162,7 +175,7 @@ spec:
 	return YamlK8s(mesh)
 }
 
-func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesEnabled string) InstallFunc {
+func MTLSMeshWithMeshServicesKubernetes(name string, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -170,13 +183,13 @@ metadata:
   name: %s
 spec:
   meshServices:
-    enabled: %s
+    mode: %s
   mtls:
     enabledBackend: ca-1
     backends:
       - name: ca-1
         type: builtin
-`, name, meshServicesEnabled)
+`, name, meshServicesMode)
 	return YamlK8s(mesh)
 }
 
@@ -200,13 +213,13 @@ spec:
 	return YamlK8s(mtp)
 }
 
-func MeshWithMeshServicesUniversal(name string, meshServicesEnabled string) InstallFunc {
+func MeshWithMeshServicesUniversal(name string, meshServicesMode string) InstallFunc {
 	mesh := fmt.Sprintf(`
 type: Mesh
 name: %s
 meshServices:
-  enabled: %s
-`, name, meshServicesEnabled)
+  mode: %s
+`, name, meshServicesMode)
 	return YamlUniversal(mesh)
 }
 
@@ -228,7 +241,7 @@ func MTLSMeshWithMeshServicesUniversal(name string, meshServicesEnabled string) 
 type: Mesh
 name: %s
 meshServices:
-  enabled: %s
+  mode: %s
 mtls:
   enabledBackend: ca-1
   backends:
@@ -493,6 +506,24 @@ func YamlUniversal(yaml string) InstallFunc {
 	}
 }
 
+type builder interface {
+	KubeYaml() string
+	UniYaml() string
+}
+
+func Yaml(b builder) InstallFunc {
+	return func(cluster Cluster) error {
+		switch c := cluster.(type) {
+		case *K8sCluster:
+			return YamlK8s(b.KubeYaml())(c)
+		case *UniversalCluster:
+			return YamlUniversal(b.UniYaml())(c)
+		default:
+			return errors.New("unknown cluster type")
+		}
+	}
+}
+
 func ResourceUniversal(resource model.Resource) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
@@ -699,8 +730,8 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"kuma.io/mesh": mesh},
-					Labels:      map[string]string{"app": name},
+					Annotations: map[string]string{},
+					Labels:      map[string]string{"app": name, "kuma.io/mesh": mesh},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{

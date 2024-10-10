@@ -30,7 +30,7 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace",
 		IPV6:                        Config.IPV6,
-		MeshServiceEnabled:          mesh_proto.Mesh_MeshServices_Disabled,
+		MeshServiceMode:             mesh_proto.Mesh_MeshServices_Disabled,
 		UseEgress:                   false,
 	}
 
@@ -42,7 +42,7 @@ func Delegated() {
 		CpNamespace:                 Config.KumaNamespace,
 		ObservabilityDeploymentName: "observability-delegated-meshtrace-ms",
 		IPV6:                        Config.IPV6,
-		MeshServiceEnabled:          mesh_proto.Mesh_MeshServices_Exclusive,
+		MeshServiceMode:             mesh_proto.Mesh_MeshServices_Exclusive,
 		UseEgress:                   true,
 	}
 	contextFor := func(name string, config *delegated.Config, testMatrix map[string]func()) {
@@ -58,12 +58,12 @@ spec:
   externalName: %s.%s.svc.cluster.local`, serviceName, config.Namespace, serviceName, config.NamespaceOutsideMesh)
 			}
 			BeforeAll(func() {
-				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh).WithMeshServicesEnabled(config.MeshServiceEnabled)
+				mesh := samples.MeshMTLSBuilder().WithName(config.Mesh).WithMeshServicesEnabled(config.MeshServiceMode)
 				if config.UseEgress {
 					mesh.WithEgressRoutingEnabled()
 				}
 				err := NewClusterSetup().
-					Install(YamlK8s(mesh.KubeYaml())).
+					Install(Yaml(mesh)).
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 					Install(NamespaceWithSidecarInjection(config.Namespace)).
 					Install(Namespace(config.NamespaceOutsideMesh)).

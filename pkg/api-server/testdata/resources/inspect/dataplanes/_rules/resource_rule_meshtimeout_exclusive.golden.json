@@ -1,0 +1,81 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "labels": {},
+  "mesh": "mesh-1",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [],
+   "toResourceRules": [
+    {
+     "conf": [
+      {
+       "connectionTimeout": "11s",
+       "idleTimeout": "10s",
+       "http": {
+        "requestTimeout": "12s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {},
+        "mesh": "mesh-1",
+        "name": "matched-for-rules-mt-1",
+        "type": "MeshTimeout"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {
+       "env": "dev"
+      },
+      "mesh": "mesh-1",
+      "name": "backend-1",
+      "type": "MeshService"
+     },
+     "resourceSectionName": ""
+    },
+    {
+     "conf": [
+      {
+       "connectionTimeout": "11s",
+       "idleTimeout": "10s",
+       "http": {
+        "requestTimeout": "12s"
+       }
+      }
+     ],
+     "origin": [
+      {
+       "resourceMeta": {
+        "labels": {},
+        "mesh": "mesh-1",
+        "name": "matched-for-rules-mt-1",
+        "type": "MeshTimeout"
+       },
+       "ruleIndex": 0
+      }
+     ],
+     "resourceMeta": {
+      "labels": {
+       "env": "dev"
+      },
+      "mesh": "mesh-1",
+      "name": "backend-2",
+      "type": "MeshService"
+     },
+     "resourceSectionName": ""
+    }
+   ],
+   "toRules": [],
+   "type": "MeshTimeout",
+   "warnings": []
+  }
+ ]
+}

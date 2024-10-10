@@ -20,6 +20,7 @@ import (
 )
 
 func UpgradingWithHelmChartMultizone() {
+	namespace := "helm-upgrade-ns"
 	var global, zoneK8s, zoneUniversal Cluster
 	var globalCP ControlPlane
 
@@ -42,7 +43,7 @@ func UpgradingWithHelmChartMultizone() {
 		}()
 		go func() {
 			defer grp.Done()
-			Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
+			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 			Expect(zoneK8s.DeleteKuma()).To(Succeed())
 			Expect(zoneK8s.DismissCluster()).To(Succeed())
 		}()
@@ -114,8 +115,8 @@ spec:
 			By("Sync DPPs from Zone to Global")
 			// when start test server on Zone
 			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Install(testserver.Install()).Setup(zoneK8s)
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
 			Expect(err).ToNot(HaveOccurred())
 
 			Eventually(func(g Gomega) (int, error) {

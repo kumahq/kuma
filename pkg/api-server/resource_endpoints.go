@@ -850,6 +850,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return
 			}
 			dp = &core_mesh.DataplaneResource{
+				Meta: gw.Meta,
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
@@ -897,12 +898,16 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				continue
 			}
 			toRules := []api_common.Rule{}
-			for _, ruleItem := range res.ToRules.Rules {
-				toRules = append(toRules, api_common.Rule{
-					Conf:     ruleItem.Conf,
-					Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
-					Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
-				})
+			if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+				// Old 'ToRules' don't affect outbounds that were produced by real resources.
+				// That's why we don't have to set them when the mode is Exclusive
+				for _, ruleItem := range res.ToRules.Rules {
+					toRules = append(toRules, api_common.Rule{
+						Conf:     ruleItem.Conf,
+						Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
+						Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
+					})
+				}
 			}
 			var proxyRule *api_common.ProxyRule
 			if len(res.SingleItemRules.Rules) > 0 {

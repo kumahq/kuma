@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
 	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
@@ -143,7 +144,20 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
+				var meshDeclarations []model.Resource
 				for _, res := range resources {
+					if res.Descriptor().Name == core_mesh.MeshType {
+						meshDeclaration := core_mesh.NewMeshResource()
+						meshDeclaration.SetMeta(
+							v1alpha1.ResourceMeta{
+								Type: string(core_mesh.MeshType),
+								Name: res.GetMeta().GetName(),
+							},
+						)
+						meshDeclarations = append(meshDeclarations, meshDeclaration)
+					}
+				}
+				for _, res := range append(meshDeclarations, resources...) {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}

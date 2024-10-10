@@ -1,5 +1,5 @@
 resources:
-- name: externalservice-1
+- name: mesh-1:externalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-1
@@ -38,7 +38,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:externalservice-2
     type: EDS
@@ -50,7 +49,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:service-1-zone-2
     type: EDS
@@ -62,7 +60,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: mesh-1:service-2-zone-2
     type: EDS

@@ -232,7 +232,7 @@ var _ = Describe("Util", func() {
 				}
 
 				// then
-				Expect(util.MeshOfByAnnotation(pod, ns)).To(Equal(given.expected))
+				Expect(util.MeshOfByLabelOrAnnotation(logr.Discard(), pod, ns)).To(Equal(given.expected))
 			},
 			Entry("Pod without annotations", testCase{
 				podAnnotations: nil,

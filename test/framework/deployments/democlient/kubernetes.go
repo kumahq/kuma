@@ -43,7 +43,7 @@ func (k *k8SDeployment) deployment() *appsv1.Deployment {
 func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 	return corev1.PodTemplateSpec{
 		ObjectMeta: metav1.ObjectMeta{
-			Labels:      map[string]string{"app": k.Name()},
+			Labels:      map[string]string{"app": k.Name(), "kuma.io/mesh": k.opts.Mesh},
 			Annotations: k.getAnnotations(),
 		},
 		Spec: corev1.PodSpec{
@@ -97,7 +97,6 @@ func (k *k8SDeployment) service() *corev1.Service {
 
 func (k *k8SDeployment) getAnnotations() map[string]string {
 	annotations := make(map[string]string)
-	annotations["kuma.io/mesh"] = k.opts.Mesh
 	for key, value := range k.opts.PodAnnotations {
 		annotations[key] = value
 	}

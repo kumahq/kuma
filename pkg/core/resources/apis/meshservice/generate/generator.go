@@ -23,7 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+	mesh_cache "github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -39,7 +39,7 @@ type Generator struct {
 	deletionGracePeriod time.Duration
 	metric              prometheus.Summary
 	resManager          manager.ResourceManager
-	meshCache           *mesh.Cache
+	meshCache           *mesh_cache.Cache
 }
 
 var _ component.Component = &Generator{}
@@ -50,7 +50,7 @@ func New(
 	deletionGracePeriod time.Duration,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
-	meshCache *mesh.Cache,
+	meshCache *mesh_cache.Cache,
 ) (*Generator, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_meshservice_generator",
@@ -286,10 +286,22 @@ func (g *Generator) Start(stop <-chan struct{}) error {
 				return err
 			}
 			for mesh, meshCtx := range aggregatedMeshCtxs.MeshContextsByName {
-				if meshCtx.Resource.Spec.MeshServicesEnabled() != mesh_proto.Mesh_MeshServices_Disabled {
+				if meshCtx.Resource.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Disabled {
 					dataplanes := meshCtx.Resources.Dataplanes()
 					meshServices := meshCtx.Resources.MeshServices()
 					g.generate(ctx, mesh, dataplanes.Items, meshServices.Items)
+				} else {
+					for _, meshService := range meshCtx.Resources.MeshServices().Items {
+						if managedBy, ok := meshService.GetMeta().GetLabels()[mesh_proto.ManagedByLabel]; !ok || managedBy != managedByValue {
+							continue
+						}
+						log := g.logger.WithValues("mesh", mesh, "MeshService", meshService.GetMeta().GetName())
+						if err := g.resManager.Delete(ctx, meshservice_api.NewMeshServiceResource(), store.DeleteBy(model.MetaToResourceKey(meshService.GetMeta()))); err != nil {
+							log.Error(err, "couldn't delete MeshService")
+							continue
+						}
+						log.Info("deleted MeshService")
+					}
 				}
 			}
 			g.metric.Observe(float64(time.Since(start).Milliseconds()))

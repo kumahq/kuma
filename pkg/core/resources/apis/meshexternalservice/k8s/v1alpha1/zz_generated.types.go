@@ -18,6 +18,7 @@ import (
 
 // +kubebuilder:object:root=true
 // +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:printcolumn:name=Hostname,type=string,JSONPath=".status.addresses[0].hostname"
 type MeshExternalService struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

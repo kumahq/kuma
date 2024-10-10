@@ -1,6 +1,16 @@
 # Product: Kuma, Version: 0.0.0-testversion, Hostname: localhost, ClusterId: test-cluster, InstanceId: test-instance
 ---
 creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: default
+type: Mesh
+---
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: another-mesh
+type: Mesh
+---
+creationTime: "0001-01-01T00:00:00Z"
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
 name: dataplane-token-signing-key-1

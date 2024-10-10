@@ -25,7 +25,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
-		Mesh: k8s_util.MeshOfByAnnotation(pod, ns),
+		Mesh: k8s_util.MeshOfByLabelOrAnnotation(r.Log, pod, ns),
 	}
 
 	tagsAnnotation, ok := pod.Annotations[metadata.KumaTagsAnnotation]

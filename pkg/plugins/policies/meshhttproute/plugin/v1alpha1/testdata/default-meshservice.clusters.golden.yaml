@@ -5,7 +5,6 @@ resources:
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
     name: default_backend___msvc_80
     transportSocket:

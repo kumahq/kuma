@@ -10,6 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -137,7 +138,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		Interval:            util_proto.Duration(g.config.Interval.Duration),
 	}
 
-	return cache.NewSnapshot("", hcs), nil
+	return cache.NewSnapshot(core.NewUUID(), hcs), nil
 }
 
 // envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline

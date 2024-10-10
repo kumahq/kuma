@@ -76,5 +76,5 @@ func (t *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {
-	return cluster.DeleteNamespace(t.namespace)
+	return cluster.(*framework.K8sCluster).TriggerDeleteNamespace(t.namespace)
 }

@@ -8,6 +8,18 @@ does not have any particular instructions.
 
 ## Upgrade to `2.9.x`
 
+### MeshAccessLog
+
+Policies targeting `spec.targetRef.kind: MeshGateway` can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
+### MeshLoadBalancingStrategy
+
+Policies targeting `spec.targetRef.kind: MeshGateway` and setting the `spec.loadBalancer` field can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
 ### MeshExternalService
 
 #### Removal of unix sockets support
@@ -220,6 +232,12 @@ In this release, KDS Delta is used by default and the CP environment variable `K
 The values `yes` and `no` are deprecated for specifying boolean values in switches based on pod annotations, and support for these values will be removed in a future release. Since these values were undocumented, they are not expected to be widely used.
 
 Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. [Check the documentation](https://kuma.io/docs/latest/reference/kubernetes-annotations/) for the specific annotation to confirm the correct replacements.
+
+#### Deprecation of `kuma.io/mesh` annotation
+
+It was previously possible to create a resource in a `Mesh` by providing the `Mesh` name as an annotation, but this support has been deprecated and will be removed in the future.
+
+Please use the `kuma.io/mesh` label instead.
 
 ## Upgrade to `2.8.x`
 

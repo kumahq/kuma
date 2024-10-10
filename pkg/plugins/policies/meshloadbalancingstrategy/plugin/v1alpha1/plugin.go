@@ -14,6 +14,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -62,7 +63,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	endpoints := policies_xds.GatherOutboundEndpoints(rs)
 	routes := policies_xds.GatherRoutes(rs)
 
-	if err := p.configureGateway(proxy, policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
+	if err := p.configureGateway(ctx.Mesh, proxy, policies.GatewayRules, listeners.Gateway, clusters.Gateway, routes.Gateway, rs, ctx.Mesh.Resource.ZoneEgressEnabled()); err != nil {
 		return err
 	}
 
@@ -86,6 +87,9 @@ func (p plugin) configureDPP(
 	rs *core_xds.ResourceSet,
 	meshCtx xds_context.MeshContext,
 ) error {
+	if proxy.Dataplane.Spec.IsBuiltinGateway() {
+		return nil
+	}
 	serviceConfs := map[string]api.Conf{}
 
 	for _, outbound := range proxy.Outbounds.Filter(xds_types.NonBackendRefFilter) {
@@ -129,7 +133,7 @@ func (p plugin) configureDPP(
 		}
 	}
 
-	if err := p.applyToRealResources(proxy, endpoints, rs, toRules.ResourceRules, meshCtx); err != nil {
+	if err := p.applyToRealResources(meshCtx, rs, proxy, toRules.ResourceRules, endpoints); err != nil {
 		return err
 	}
 
@@ -137,42 +141,57 @@ func (p plugin) configureDPP(
 }
 
 func (p plugin) applyToRealResources(
-	proxy *core_xds.Proxy,
-	endpoints policies_xds.EndpointMap,
-	rs *core_xds.ResourceSet,
-	rules core_rules.ResourceRules,
 	meshCtx xds_context.MeshContext,
+	rs *core_xds.ResourceSet,
+	proxy *core_xds.Proxy,
+	rules core_rules.ResourceRules,
+	endpoints policies_xds.EndpointMap,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
-		conf := rules.Compute(uri, meshCtx.Resources)
-		if conf == nil {
-			continue
+		if err := p.applyToRealResource(meshCtx, proxy, rules, uri, rs, resType, endpoints); err != nil {
+			return err
 		}
-		apiConf := conf.Conf[0].(api.Conf)
+	}
+	return nil
+}
 
-		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ListenerType:
-				for _, resource := range resources {
-					if resource.Origin != generator.OriginOutbound {
-						continue
-					}
-					if err := p.configureListener(resource.Resource.(*envoy_listener.Listener), nil, &apiConf); err != nil {
-						return err
-					}
+func (p plugin) applyToRealResource(
+	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
+	rules core_rules.ResourceRules,
+	uri core_model.TypedResourceIdentifier,
+	rs *core_xds.ResourceSet,
+	resourcesByType core_xds.ResourcesByType,
+	endpoints policies_xds.EndpointMap,
+) error {
+	conf := rules.Compute(uri, meshCtx.Resources)
+	if conf == nil {
+		return nil
+	}
+	apiConf := conf.Conf[0].(api.Conf)
+
+	for typ, resources := range resourcesByType {
+		switch typ {
+		case envoy_resource.ListenerType:
+			for _, resource := range resources {
+				if resource.Origin != generator.OriginOutbound {
+					continue
 				}
-			case envoy_resource.ClusterType:
-				for _, resource := range resources {
-					if resource.Origin != generator.OriginOutbound {
-						continue
-					}
-					cluster := resource.Resource.(*envoy_cluster.Cluster)
-					if err := p.configureCluster(cluster, apiConf); err != nil {
-						return err
-					}
-					if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[cluster.Name], cluster.Name, apiConf, rs, proxy.Zone, proxy.APIVersion, false, generator.OriginOutbound); err != nil {
-						return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
-					}
+				if err := p.configureListener(resource.Resource.(*envoy_listener.Listener), nil, &apiConf); err != nil {
+					return err
+				}
+			}
+		case envoy_resource.ClusterType:
+			for _, resource := range resources {
+				if resource.Origin != generator.OriginOutbound && resource.Origin != metadata.OriginGateway {
+					continue
+				}
+				cluster := resource.Resource.(*envoy_cluster.Cluster)
+				if err := p.configureCluster(cluster, apiConf); err != nil {
+					return err
+				}
+				if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[cluster.Name], cluster.Name, apiConf, rs, proxy.Zone, proxy.APIVersion, false, generator.OriginOutbound); err != nil {
+					return errors.Wrapf(err, "failed to configure ClusterLoadAssignment for %s", cluster.Name)
 				}
 			}
 		}
@@ -218,6 +237,7 @@ func configureEndpoints(
 }
 
 func (p plugin) configureGateway(
+	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
 	rules core_rules.GatewayRules,
 	gatewayListeners map[core_rules.InboundListener]*envoy_listener.Listener,
@@ -230,6 +250,7 @@ func (p plugin) configureGateway(
 	if len(gatewayListenerInfos) == 0 {
 		return nil
 	}
+	resourcesByOrigin := rs.IndexByOrigin(core_xds.NonMeshExternalService)
 
 	endpoints := policies_xds.GatherGatewayEndpoints(rs)
 
@@ -264,18 +285,34 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
-					if localityConf == nil {
+					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)); localityConf != nil {
+						perServiceConfiguration[serviceName] = localityConf
+
+						if err := p.configureCluster(cluster, *localityConf); err != nil {
+							return err
+						}
+
+						if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
+							return err
+						}
+					}
+
+					if dest.BackendRef == nil {
 						continue
 					}
-					perServiceConfiguration[serviceName] = localityConf
-
-					if err := p.configureCluster(cluster, *localityConf); err != nil {
-						return err
-					}
-
-					if err := configureEndpoints(proxy.Dataplane.Spec.TagSet(), cluster, endpoints[serviceName], clusterName, *localityConf, rs, proxy.Zone, proxy.APIVersion, egressEnabled, metadata.OriginGateway); err != nil {
-						return err
+					if realRef := dest.BackendRef.ResourceOrNil(); realRef != nil {
+						resources := resourcesByOrigin[*realRef]
+						if err := p.applyToRealResource(
+							meshCtx,
+							proxy,
+							rules.ResourceRules,
+							*realRef,
+							rs,
+							resources,
+							endpoints,
+						); err != nil {
+							return err
+						}
 					}
 				}
 			}

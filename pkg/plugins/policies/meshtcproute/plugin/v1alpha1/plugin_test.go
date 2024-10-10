@@ -1128,10 +1128,10 @@ var _ = Describe("MeshTCPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshTCPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
-										core_rules.NewInboundListenerHostname("192.168.0.1", 9080, "*"):         {&rules, &tlsOtherRules},
-										core_rules.NewInboundListenerHostname("192.168.0.1", 9081, "other.dev"): {&tlsOtherRules},
-										core_rules.NewInboundListenerHostname("192.168.0.1", 9081, "go.dev"):    {&tlsGoRules},
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+										core_rules.NewInboundListenerHostname("192.168.0.1", 9080, "*"):         {Rules: core_rules.Rules{&rules, &tlsOtherRules}},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 9081, "other.dev"): {Rules: core_rules.Rules{&tlsOtherRules}},
+										core_rules.NewInboundListenerHostname("192.168.0.1", 9081, "go.dev"):    {Rules: core_rules.Rules{&tlsGoRules}},
 									},
 								},
 							}),

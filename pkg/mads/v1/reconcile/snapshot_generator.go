@@ -180,5 +180,5 @@ func (s *SnapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_
 }
 
 func createSnapshot(resources []*core_xds.Resource) *mads_v1_cache.Snapshot {
-	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex())
+	return mads_v1_cache.NewSnapshot(core.NewUUID(), core_xds.ResourceList(resources).ToIndex())
 }

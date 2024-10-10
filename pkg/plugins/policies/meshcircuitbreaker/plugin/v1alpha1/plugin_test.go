@@ -10,16 +10,22 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
+	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -42,10 +48,8 @@ import (
 var _ = Describe("MeshCircuitBreaker", func() {
 	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
+			Name: "backend",
+			Mesh: "default",
 		},
 		ResourceType: "MeshService",
 		SectionName:  "",
@@ -564,8 +568,12 @@ var _ = Describe("MeshCircuitBreaker", func() {
 	})
 
 	type gatewayTestCase struct {
-		name  string
-		rules core_rules.GatewayRules
+		name           string
+		gatewayRoutes  []*core_mesh.MeshGatewayRouteResource
+		meshhttproutes core_rules.GatewayRules
+		meshtcproutes  core_rules.GatewayRules
+		meshservices   []*meshservice_api.MeshServiceResource
+		rules          core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
 		func(given gatewayTestCase) {
@@ -574,8 +582,15 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 			}
-			resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
-				Items: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
+			if len(given.gatewayRoutes) > 0 {
+				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
+					Items: given.gatewayRoutes,
+				}
+			}
+			if len(given.meshservices) > 0 {
+				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+					Items: given.meshservices,
+				}
 			}
 
 			xdsCtx := *xds_builders.Context().
@@ -585,7 +600,11 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				Build()
 			proxy := xds_builders.Proxy().
 				WithDataplane(samples.GatewayDataplaneBuilder()).
-				WithPolicies(xds_builders.MatchedPolicies().WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules)).
+				WithPolicies(xds_builders.MatchedPolicies().
+					WithGatewayPolicy(api.MeshCircuitBreakerType, given.rules).
+					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, given.meshhttproutes).
+					WithGatewayPolicy(meshtcproute_api.MeshTCPRouteType, given.meshtcproutes),
+				).
 				Build()
 			for n, p := range core_plugins.Plugins().ProxyPlugins() {
 				Expect(p.Apply(context.Background(), xdsCtx.Mesh, proxy)).To(Succeed(), n)
@@ -593,6 +612,12 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			gatewayGenerator := gateway_plugin.NewGenerator("test-zone")
 			generatedResources, err := gatewayGenerator.Generate(context.Background(), nil, xdsCtx, proxy)
 			Expect(err).NotTo(HaveOccurred())
+
+			httpRoutePlugin := meshhttproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(httpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
+
+			tcpRoutePlugin := meshtcproute_plugin.NewPlugin().(core_plugins.PolicyPlugin)
+			Expect(tcpRoutePlugin.Apply(generatedResources, xdsCtx, proxy)).To(Succeed())
 
 			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -603,19 +628,104 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{
-			name: "basic",
+			name:          "basic",
+			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
-						{Address: "192.168.0.1", Port: 8080}: {{
-							Subset: core_rules.Subset{core_rules.Tag{
-								Key:   mesh_proto.ServiceTag,
-								Value: "backend",
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.Subset{core_rules.Tag{
+									Key:   mesh_proto.ServiceTag,
+									Value: "backend",
+								}},
+								Conf: api.Conf{
+									ConnectionLimits: genConnectionLimits(),
+								},
 							}},
-							Conf: api.Conf{
-								ConnectionLimits: genConnectionLimits(),
-							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("real MeshService targeted to real MeshService", gatewayTestCase{
+			name: "real-MeshService-targeted-to-real-MeshService",
+			meshservices: []*meshservice_api.MeshServiceResource{
+				{
+					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{},
+						Ports: []meshservice_api.Port{{
+							Port:        80,
+							TargetPort:  intstr.FromInt(8084),
+							AppProtocol: core_mesh.ProtocolHTTP,
 						}},
+						Identities: []meshservice_api.MeshServiceIdentity{
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "backend",
+							},
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "other-backend",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{{
+							IP: "10.0.0.1",
+						}},
+					},
+				},
+			},
+			meshhttproutes: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Port:      pointer.To(uint32(80)),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									}},
+								},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+								},
+								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
+								},
+							}},
+						},
+					},
+				},
+			},
+			rules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
+						{Address: "192.168.0.1", Port: 8080}: {
+							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								backendMeshServiceIdentifier: {
+									Conf: []interface{}{
+										api.Conf{
+											ConnectionLimits: genConnectionLimits(),
+										},
+									},
+								},
+							},
+						},
 					},
 				},
 			},

@@ -204,6 +204,8 @@ func (c ExecutablesIPvX) Initialize(
 		return InitializedExecutablesIPvX{}, errors.Wrap(err, "functionality verification failed")
 	}
 
+	retry := cfg.Retry.Initialize()
+
 	return InitializedExecutablesIPvX{
 		Iptables:        iptables,
 		IptablesSave:    iptablesSave,
@@ -212,8 +214,8 @@ func (c ExecutablesIPvX) Initialize(
 
 		mode: mode,
 
-		retry:  cfg.Retry,
-		logger: l,
+		retry:  retry,
+		logger: l.WithMaxTry(retry.MaxRetries + 1),
 	}, nil
 }
 
@@ -225,7 +227,7 @@ type InitializedExecutablesIPvX struct {
 
 	mode consts.IptablesMode
 
-	retry  Retry
+	retry  InitializedRetry
 	logger Logger
 }
 
@@ -265,7 +267,7 @@ func (c InitializedExecutablesIPvX) restore(
 				c.logger.InfoTry("will try again in", c.retry.SleepBetweenRetries)
 			}
 
-			time.Sleep(c.retry.SleepBetweenRetries.Duration)
+			time.Sleep(c.retry.SleepBetweenRetries)
 		}
 	}
 

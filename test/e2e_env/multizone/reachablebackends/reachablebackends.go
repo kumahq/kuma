@@ -6,6 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -107,27 +109,19 @@ spec:
         k8s.kuma.io/namespace: %s
 `, meshName, namespace)
 
-	meshWithEgress := fmt.Sprintf(`
-type: Mesh
-name: "%s"
-meshServices:
-  enabled: Everywhere
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: false
-routing:
-  zoneEgress: true
-`, meshName)
-
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
-			Install(YamlUniversal(meshWithEgress)).
+			Install(
+				Yaml(
+					builders.Mesh().
+						WithName(meshName).
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
+						WithEgressRoutingEnabled().
+						WithoutPassthrough(),
+				),
+			).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(mmzs)).
 			Install(YamlUniversal(mmzsNotAccessible)).
@@ -185,50 +179,6 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		// Zone Kube2
-		kubeServiceYAML := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: other-zone-test-server
-  namespace: %s
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: %s
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: other-zone-test-server
-      k8s.kuma.io/namespace: %s
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`, namespace, meshName, namespace)
-		kubeServiceNotAccessibleYAML := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: other-zone-not-accessible
-  namespace: %s
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: %s
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: other-zone-not-accessible
-      k8s.kuma.io/namespace: %s
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`, namespace, meshName, namespace)
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -243,8 +193,6 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
-			Install(YamlK8s(kubeServiceNotAccessibleYAML)).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
 	})
