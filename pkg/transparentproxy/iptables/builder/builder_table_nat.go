@@ -175,7 +175,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 				rules.
 					NewAppendRule(
 						Protocol(Tcp(DestinationPort(consts.DNSPort))),
-						Jump(ToPort(cfg.Redirect.DNS.Port)),
+						Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
 					).
 					WithCommentf("redirect all DNS requests sent via TCP to kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
 			)
@@ -186,7 +186,7 @@ func buildMeshOutbound(cfg config.InitializedConfigIPvX) *Chain {
 						NewAppendRule(
 							Destination(dnsIp),
 							Protocol(Tcp(DestinationPort(consts.DNSPort))),
-							Jump(ToPort(cfg.Redirect.DNS.Port)),
+							Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
 						).
 						WithCommentf("redirect DNS requests sent via TCP to %s to kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
 				)
@@ -235,7 +235,7 @@ func buildMeshRedirect(cfg config.InitializedTrafficFlow) *Chain {
 		rules.
 			NewAppendRule(
 				Protocol(Tcp()),
-				Jump(ToPort(cfg.Port)),
+				Jump(Redirect(ToPort(cfg.Port))),
 			).
 			WithCommentf("redirect TCP traffic to envoy (port %d)", cfg.Port),
 	)
@@ -245,7 +245,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 	if cfg.Log.Enabled {
 		nat.Output().AddRules(
 			rules.
-				NewInsertRule(Jump(Log(consts.OutputLogPrefix, cfg.Log.Level))).
+				NewInsertRule(Jump(Log(LogPrefix(consts.ChainOutput), LogLevel(cfg.Log.Level)))).
 				WithComment("log matching packets using kernel logging"),
 		)
 	}
@@ -304,7 +304,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 				rules.
 					NewInsertRule(
 						Protocol(Udp(DestinationPort(consts.DNSPort))),
-						Jump(ToPort(cfg.Redirect.DNS.Port)),
+						Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
 					).
 					WithCommentf("redirect all DNS requests to the kuma-dp DNS proxy (listening on port %d)", cfg.Redirect.DNS.Port),
 			)
@@ -315,7 +315,7 @@ func addOutputRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) {
 						NewInsertRule(
 							Destination(dnsIp),
 							Protocol(Udp(DestinationPort(consts.DNSPort))),
-							Jump(ToPort(cfg.Redirect.DNS.Port)),
+							Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
 						).
 						WithCommentf("redirect DNS requests to %s to the kuma-dp DNS proxy (listening on port %d)", dnsIp, cfg.Redirect.DNS.Port),
 				)
@@ -341,7 +341,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 	if cfg.Log.Enabled {
 		nat.Prerouting().AddRules(
 			rules.
-				NewAppendRule(Jump(Log(consts.PreroutingLogPrefix, cfg.Log.Level))).
+				NewAppendRule(Jump(Log(LogPrefix(consts.ChainPrerouting), LogLevel(cfg.Log.Level)))).
 				WithComment("log matching packets using kernel logging"),
 		)
 	}
@@ -365,7 +365,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 					InInterface(iface),
 					Match(MatchUdp()),
 					Protocol(Udp(DestinationPort(consts.DNSPort))),
-					Jump(ToPort(cfg.Redirect.DNS.Port)),
+					Jump(Redirect(ToPort(cfg.Redirect.DNS.Port))),
 				).
 				WithCommentf("redirect DNS requests on interface %s to the kuma-dp DNS proxy (listening on port %d)", iface, cfg.Redirect.DNS.Port),
 			rules.
@@ -373,7 +373,7 @@ func addPreroutingRules(cfg config.InitializedConfigIPvX, nat *tables.NatTable) 
 					NotDestination(cfg.Redirect.VNet.InterfaceCIDRs[iface]),
 					InInterface(iface),
 					Protocol(Tcp()),
-					Jump(ToPort(cfg.Redirect.Outbound.Port)),
+					Jump(Redirect(ToPort(cfg.Redirect.Outbound.Port))),
 				).
 				WithCommentf("redirect TCP traffic on interface %s, excluding destination %s, to the envoy's outbound passthrough port %d", iface, cfg.Redirect.VNet.InterfaceCIDRs[iface], cfg.Redirect.Outbound.Port),
 		)
