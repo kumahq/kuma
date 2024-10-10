@@ -31,10 +31,10 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 .PHONY: generate
 generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
-$(POLICY_GEN):
+$(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
-$(RESOURCE_GEN):
+$(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 .PHONY: resources/type
