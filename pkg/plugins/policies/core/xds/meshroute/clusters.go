@@ -96,9 +96,12 @@ func GenerateClusters(
 					}
 				} else {
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
+						tlsReady = true // tls readiness is only relevant for MeshService
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
 							if ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(realResourceRef.Resource).ResourceIdentifier]; ms != nil {
-								tlsReady = ms.Status.TLS.Status == meshservice_api.TLSReady
+								// we only check TLS status for local service
+								// services that are synced can be accessed only with TLS through ZoneIngress
+								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
 							}
 						}
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(
