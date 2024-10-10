@@ -83,6 +83,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() {
 		c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
 		c.portFwd.apiServerTunnel.ForwardPort(c.t)
 		c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
+		return
 	}
 
 	c.t.Fatalf("Failed finding an available service, service: %v", kumaCpSvc)
