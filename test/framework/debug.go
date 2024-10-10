@@ -350,15 +350,13 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, debugPath string, clu
 func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string, mesh string, inspectType string,
 	debugPath string, clusterName string) string {
 	var dpNS string
+	dpNameParts := strings.Split(dpName, ".")
+	if len(dpNameParts) > 1 {
+		dpNS = dpNameParts[1]
+	}
 
-	if dpType == dataplaneType {
-		dpNameParts := strings.Split(dpName, ".")
-		if len(dpNameParts) > 1 {
-			dpNS = dpNameParts[1]
-		}
-		if dpNS == "" || !namespaceExported(debugPath, clusterName, dpNS) {
-			return ""
-		}
+	if dpNS == "" || !namespaceExported(debugPath, clusterName, dpNS) {
+		return ""
 	}
 
 	var err error
@@ -384,7 +382,11 @@ func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string
 				dpName, dpType, inspectType, err.Error())
 		}
 	} else {
-		dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, clusterName, dpNS), fmt.Sprintf("%s-%s.json", inspectType, dpName))
+		fileExtension := "txt"
+		if inspectType == "config-dump" || inspectType == "config" {
+			fileExtension = "json"
+		}
+		dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, clusterName, dpNS), fmt.Sprintf("%s-%s.%s", inspectType, dpName, fileExtension))
 		Logf("saving inspect %s of dp %q from cluster %q for mesh %q to a file %q", inspectType, dpName, dpNS, mesh, dpXdsFilePath)
 		Expect(os.WriteFile(dpXdsFilePath, []byte(inspectResp), 0o600)).To(Succeed())
 	}
