@@ -174,7 +174,7 @@ var _ = Describe("IsReferenced", func() {
 var _ = Describe("ComputePolicyRole", func() {
 	type testCase struct {
 		policy       core_model.Policy
-		namespace    string
+		namespace    core_model.Namespace
 		expectedRole mesh_proto.PolicyRole
 		expectedErr  string
 	}
@@ -197,7 +197,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
+			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ConsumerPolicyRole,
 		}),
 		Entry("consumer policy with labels", testCase{
@@ -212,7 +212,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
+			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ConsumerPolicyRole,
 		}),
 		Entry("producer policy", testCase{
@@ -223,7 +223,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
+			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
 		Entry("producer policy with no namespace in to[]", testCase{
@@ -234,7 +234,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
+			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.ProducerPolicyRole,
 		}),
 		Entry("workload-owner policy with from", testCase{
@@ -245,7 +245,7 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
+			namespace:    core_model.NewNamespace("kuma-demo", false),
 			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
 		}),
 		Entry("workload-owner policy with both from and to", testCase{
@@ -259,8 +259,22 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:   "kuma-demo",
+			namespace:   core_model.NewNamespace("kuma-demo", false),
 			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
+		}),
+		Entry("system policy with both from and to", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:    core_model.NewNamespace("kuma-system", true),
+			expectedRole: mesh_proto.SystemPolicyRole,
 		}),
 	)
 })
@@ -280,11 +294,10 @@ var _ = Describe("ComputeLabels", func() {
 				given.r.Descriptor(),
 				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
-				given.r.GetMeta().GetNameExtensions(),
+				core_model.GetNamespace(given.r.GetMeta(), "kuma-system"),
 				given.r.GetMeta().GetMesh(),
 				given.mode,
 				given.isK8s,
-				"kuma-system",
 				given.localZone,
 			)
 			Expect(err).ToNot(HaveOccurred())
