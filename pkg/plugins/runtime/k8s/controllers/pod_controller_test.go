@@ -18,6 +18,7 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -84,6 +85,38 @@ var _ = Describe("PodReconciler", func() {
 						{
 							Ports: []kube_core.ContainerPort{
 								{ContainerPort: 9090},
+							},
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-with-custom-admin-port",
+					Annotations: map[string]string{
+						"kuma.io/mesh":             "poc",
+						"kuma.io/sidecar-injected": "true",
+						"kuma.io/envoy-admin-port": "9999",
+					},
+					Labels: map[string]string{
+						"app": "sample",
+					},
+					UID: "pod-with-custom-admin-port-demo",
+				},
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 8080},
 							},
 						},
 					},
@@ -420,6 +453,9 @@ var _ = Describe("PodReconciler", func() {
 			PodConverter: PodConverter{
 				ResourceConverter: k8s.NewSimpleConverter(),
 				ServiceGetter:     kubeClient,
+				Mode:              config_core.Zone,
+				Zone:              "zone-1",
+				SystemNamespace:   "kuma-system",
 			},
 			SystemNamespace:   "kuma-system",
 			ResourceConverter: k8s.NewSimpleConverter(),
@@ -626,6 +662,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
             - state: NotReady
               health: {}
               port: 6060
@@ -636,6 +673,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
             - state: NotReady
               health: {}
               port: 9090
@@ -646,6 +684,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
 `))
 	})
 
@@ -716,6 +755,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
             - state: NotReady
               health: {}
               port: 6060
@@ -726,6 +766,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
             - state: NotReady
               health: {}
               port: 9090
@@ -736,6 +777,7 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
                 k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
 `))
 	})
 
@@ -745,21 +787,32 @@ var _ = Describe("PodReconciler", func() {
 			Mesh: "poc",
 			ObjectMeta: kube_meta.ObjectMeta{
 				Namespace: "demo",
-				Name:      "pod-with-kuma-sidecar-and-ip",
+				Name:      "pod-with-custom-admin-port",
+				Labels: map[string]string{
+					mesh_proto.KubeNamespaceTag:    "demo",
+					mesh_proto.DisplayName:         "pod-with-custom-admin-port",
+					mesh_proto.ZoneTag:             "zone-1",
+					mesh_proto.MeshTag:             "poc",
+					mesh_proto.ResourceOriginLabel: "zone",
+					mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
+				},
 				OwnerReferences: []kube_meta.OwnerReference{
 					{
 						APIVersion:         "v1",
 						BlockOwnerDeletion: pointer.To(true),
 						Controller:         pointer.To(true),
 						Kind:               "Pod",
-						Name:               "pod-with-kuma-sidecar-and-ip",
-						UID:                "pod-with-kuma-sidecar-and-ip-demo",
+						Name:               "pod-with-custom-admin-port",
+						UID:                "pod-with-custom-admin-port-demo",
 					},
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
+					Admin: &mesh_proto.EnvoyAdmin{
+						Port: 9999,
+					},
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 						{
 							Port:   8080,
@@ -772,55 +825,16 @@ var _ = Describe("PodReconciler", func() {
 								"k8s.kuma.io/service-name": "example",
 								"k8s.kuma.io/service-port": "80",
 								"k8s.kuma.io/namespace":    "demo",
-							},
-						},
-						{
-							Port:   6060,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "tcp",
-								"kuma.io/service":          "example_demo_svc_6061",
-								"k8s.kuma.io/service-name": "example",
-								"k8s.kuma.io/service-port": "6061",
-								"k8s.kuma.io/namespace":    "demo",
-							},
-						},
-						{
-							Port:   9090,
-							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
-							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
-							Tags: map[string]string{
-								"app":                      "sample",
-								"kuma.io/protocol":         "http",
-								"kuma.io/service":          "manual-example_demo_svc_90",
-								"k8s.kuma.io/service-name": "manual-example",
-								"k8s.kuma.io/service-port": "90",
-								"k8s.kuma.io/namespace":    "demo",
+								"kuma.io/zone":             "zone-1",
 							},
 						},
 					},
 					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 						{
 							Address: "192.168.0.1",
-							Port:    6061,
-							Tags: map[string]string{
-								"kuma.io/service": "example_demo_svc_6061",
-							},
-						},
-						{
-							Address: "192.168.0.1",
 							Port:    80,
 							Tags: map[string]string{
 								"kuma.io/service": "example_demo_svc_80",
-							},
-						},
-						{
-							Address: "192.168.0.1",
-							Port:    90,
-							Tags: map[string]string{
-								"kuma.io/service": "manual-example_demo_svc_90",
 							},
 						},
 					},
@@ -832,7 +846,7 @@ var _ = Describe("PodReconciler", func() {
 
 		// given
 		req := kube_ctrl.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-and-ip"},
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-custom-admin-port"},
 		}
 
 		// when
@@ -860,19 +874,28 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
-          name: pod-with-kuma-sidecar-and-ip
+          name: pod-with-custom-admin-port
           namespace: demo
+          labels:
+            k8s.kuma.io/namespace: demo
+            kuma.io/display-name: pod-with-custom-admin-port
+            kuma.io/env: kubernetes
+            kuma.io/mesh: poc
+            kuma.io/origin: zone
+            kuma.io/zone: zone-1
           ownerReferences:
               - apiVersion: v1
                 blockOwnerDeletion: true
                 controller: true
                 kind: Pod
-                name: pod-with-kuma-sidecar-and-ip
-                uid: pod-with-kuma-sidecar-and-ip-demo
+                name: pod-with-custom-admin-port
+                uid: pod-with-custom-admin-port-demo
           resourceVersion: "1"
         spec:
           networking:
             address: 192.168.0.1
+            admin:
+              port: 9999
             inbound:
             - state: NotReady 
               health: {}
@@ -884,39 +907,128 @@ var _ = Describe("PodReconciler", func() {
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "80"
                 k8s.kuma.io/namespace: demo
-            - state: NotReady
-              health: {}
-              port: 6060
-              tags:
-                app: sample
-                kuma.io/service: example_demo_svc_6061
-                kuma.io/protocol: tcp
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "6061"
-                k8s.kuma.io/namespace: demo
-            - state: NotReady
-              health: {}
-              port: 9090
-              tags:
-                app: sample
-                kuma.io/service: manual-example_demo_svc_90
-                kuma.io/protocol: http
-                k8s.kuma.io/service-name: manual-example
-                k8s.kuma.io/service-port: "90"
-                k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
             outbound:
-            - address: 192.168.0.1
-              port: 6061
-              tags:
-                kuma.io/service: example_demo_svc_6061
             - address: 192.168.0.1
               port: 80
               tags:
                 kuma.io/service: example_demo_svc_80
-            - address: 192.168.0.1
-              port: 90
+`))
+	})
+
+	// test check if we have changed resourceVersion since we set labels in `dataplane_manager.go` on a create/update and we cannot set them here
+	It("should update Dataplane if labels were added", func() {
+		// setup
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "poc",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "pod-with-custom-admin-port",
+				OwnerReferences: []kube_meta.OwnerReference{
+					{
+						APIVersion:         "v1",
+						BlockOwnerDeletion: pointer.To(true),
+						Controller:         pointer.To(true),
+						Kind:               "Pod",
+						Name:               "pod-with-custom-admin-port",
+						UID:                "pod-with-custom-admin-port-demo",
+					},
+				},
+			},
+			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:   8080,
+							Health: &mesh_proto.Dataplane_Networking_Inbound_Health{},
+							State:  mesh_proto.Dataplane_Networking_Inbound_NotReady,
+							Tags: map[string]string{
+								"app":                      "sample",
+								"kuma.io/protocol":         "http",
+								"kuma.io/service":          "example_demo_svc_80",
+								"k8s.kuma.io/service-name": "example",
+								"k8s.kuma.io/service-port": "80",
+								"k8s.kuma.io/namespace":    "demo",
+								"kuma.io/zone":             "zone-1",
+							},
+						},
+					},
+					Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
+						{
+							Address: "192.168.0.1",
+							Port:    80,
+							Tags: map[string]string{
+								"kuma.io/service": "example_demo_svc_80",
+							},
+						},
+					},
+				},
+			}),
+		})
+
+		Expect(err).NotTo(HaveOccurred())
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-custom-admin-port"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(1))
+		// when
+		actual, err := json.Marshal(dataplanes.Items[0])
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and should not add owner reference
+		Expect(actual).To(MatchYAML(`
+        mesh: poc
+        metadata:
+          creationTimestamp: null
+          name: pod-with-custom-admin-port
+          namespace: demo
+          ownerReferences:
+              - apiVersion: v1
+                blockOwnerDeletion: true
+                controller: true
+                kind: Pod
+                name: pod-with-custom-admin-port
+                uid: pod-with-custom-admin-port-demo
+          resourceVersion: "2"
+        spec:
+          networking:
+            address: 192.168.0.1
+            admin:
+              port: 9999
+            inbound:
+            - state: NotReady 
+              health: {}
+              port: 8080
               tags:
-                kuma.io/service: manual-example_demo_svc_90
+                app: sample
+                kuma.io/protocol: http
+                kuma.io/service: example_demo_svc_80
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
+                k8s.kuma.io/namespace: demo
+                kuma.io/zone: zone-1
+            outbound:
+            - address: 192.168.0.1
+              port: 80
+              tags:
+                kuma.io/service: example_demo_svc_80
 `))
 	})
 
