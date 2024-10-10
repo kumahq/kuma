@@ -176,14 +176,14 @@ var _ = Describe("ComputePolicyRole", func() {
 		policy       core_model.Policy
 		namespace    string
 		expectedRole mesh_proto.PolicyRole
-		expectedErr  error
+		expectedErr  string
 	}
 
 	DescribeTable("should compute the correct policy role",
 		func(given testCase) {
 			role, err := core_model.ComputePolicyRole(given.policy, given.namespace)
-			if given.expectedErr != nil {
-				Expect(err).To(Equal(given.expectedErr))
+			if given.expectedErr != "" {
+				Expect(err.Error()).To(Equal(given.expectedErr))
 			} else {
 				Expect(err).ToNot(HaveOccurred())
 			}
@@ -259,8 +259,8 @@ var _ = Describe("ComputePolicyRole", func() {
 					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
 				}).
 				Build().Spec,
-			namespace:    "kuma-demo",
-			expectedRole: mesh_proto.WorkloadOwnerPolicyRole,
+			namespace:   "kuma-demo",
+			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
 		}),
 	)
 })

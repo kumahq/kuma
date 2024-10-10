@@ -543,6 +543,10 @@ func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
 		hasFrom = true
 	}
 
+	if hasFrom && hasTo {
+		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
+	}
+
 	if hasFrom || !(hasTo || hasFrom) {
 		// if there is 'from' or neither (single item)
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
