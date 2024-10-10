@@ -78,17 +78,15 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 }
 
 func (c *K8sControlPlane) PortForwardKumaCP() {
-	kumaCpPods := c.GetKumaCPPods()
-	// There could be multiple pods still starting so pick one that's available already
-	for i := range kumaCpPods {
-		if k8s.IsPodAvailable(&kumaCpPods[i]) {
-			c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypePod, kumaCpPods[i].Name, 0, 5681)
-			c.portFwd.apiServerTunnel.ForwardPort(c.t)
-			c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
-			return
-		}
+	kumaCpSvc := c.GetKumaCPSvc()
+	if k8s.IsServiceAvailable(&kumaCpSvc) {
+		c.portFwd.apiServerTunnel = k8s.NewTunnel(c.GetKubectlOptions(Config.KumaNamespace), k8s.ResourceTypeService, kumaCpSvc.Name, 0, 5681)
+		c.portFwd.apiServerTunnel.ForwardPort(c.t)
+		c.portFwd.ApiServerEndpoint = c.portFwd.apiServerTunnel.Endpoint()
+		return
 	}
-	c.t.Fatalf("Failed finding an available pod, allPods: %v", kumaCpPods)
+
+	c.t.Fatalf("Failed finding an available service, service: %v", kumaCpSvc)
 }
 
 func (c *K8sControlPlane) ClosePortForwards() {
