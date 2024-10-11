@@ -309,30 +309,20 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, debugPath string, clu
 
 	if dpInspectError == "" {
 		for _, dpObj := range dpResp.Items {
-			dumpErr := doInspect(kumactlOpts, dpType, dpObj.Name, mesh, "policies", debugPath, cluster.Name())
-			if dumpErr != "" {
-				dpInspectError += "\n" + dumpErr
-			}
+			for typ, extension := range map[string]string{
+				"config-dump": ".json",
+				"config":      ".json",
+				"policies":    "",
+				"stats":       "",
+				"clusters":    "",
+			} {
+				if dpType == dataplaneType && typ == "config" {
+					continue
+				}
 
-			dumpErr = doInspect(kumactlOpts, dpType, dpObj.Name, mesh, "config-dump", debugPath, cluster.Name())
-			if dumpErr != "" {
-				dpInspectError += "\n" + dumpErr
-			}
-
-			dumpErr = doInspect(kumactlOpts, dpType, dpObj.Name, mesh, "stats", debugPath, cluster.Name())
-			if dumpErr != "" {
-				dpInspectError += "\n" + dumpErr
-			}
-
-			dumpErr = doInspect(kumactlOpts, dpType, dpObj.Name, mesh, "clusters", debugPath, cluster.Name())
-			if dumpErr != "" {
-				dpInspectError += "\n" + dumpErr
-			}
-
-			if dpType == dataplaneType {
-				dumpErr = doInspect(kumactlOpts, dpType, dpObj.Name, mesh, "config", debugPath, cluster.Name())
-				if dumpErr != "" {
-					dpInspectError += "\n" + dumpErr
+				inspectErr := doInspect(kumactlOpts, dpType, dpObj.Name, mesh, typ, debugPath, cluster.Name(), extension)
+				if inspectErr != "" {
+					dpInspectError += "\n" + inspectErr
 				}
 			}
 		}
@@ -342,13 +332,13 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, debugPath string, clu
 		Logf("[WARNING]: some debug commands failed")
 
 		dpErrFilePath := filepath.Join(debugPath, "dp-xds-error.txt")
-		Logf("saving DP xds dump errors from cluster %q for mesh %q to a file %q", cluster.Name(), mesh, dpErrFilePath)
+		Logf("saving inspect DP errors from cluster %q for mesh %q to a file %q", cluster.Name(), mesh, dpErrFilePath)
 		Expect(os.WriteFile(dpErrFilePath, []byte(dpInspectError), 0o600)).To(Succeed())
 	}
 }
 
 func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string, mesh string, inspectType string,
-	debugPath string, clusterName string,
+	debugPath string, clusterName string, fileExtension string,
 ) string {
 	var dpNS string
 	dpNameParts := strings.Split(dpName, ".")
@@ -383,11 +373,7 @@ func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string
 				dpName, dpType, inspectType, err.Error())
 		}
 	} else {
-		fileExtension := "txt"
-		if inspectType == "config-dump" || inspectType == "config" {
-			fileExtension = "json"
-		}
-		dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, clusterName, dpNS), fmt.Sprintf("%s-%s.%s", inspectType, dpName, fileExtension))
+		dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, clusterName, dpNS), fmt.Sprintf("%s-%s%s", inspectType, dpName, fileExtension))
 		Logf("saving inspect %s of dp %q from cluster %q for mesh %q to a file %q", inspectType, dpName, dpNS, mesh, dpXdsFilePath)
 		Expect(os.WriteFile(dpXdsFilePath, []byte(inspectResp), 0o600)).To(Succeed())
 	}
