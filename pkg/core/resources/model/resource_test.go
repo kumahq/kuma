@@ -262,6 +262,20 @@ var _ = Describe("ComputePolicyRole", func() {
 			namespace:   core_model.NewNamespace("kuma-demo", false),
 			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
 		}),
+		Entry("consumer policy with from", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshService("backend", "backend-ns", ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				AddFrom(builders.TargetRefMesh(), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:   core_model.NewNamespace("kuma-demo", false),
+			expectedErr: "it's not allowed to mix 'to' and 'from' arrays in the same policy",
+		}),
 		Entry("system policy with both from and to", testCase{
 			policy: builders.MeshTimeout().
 				WithMesh("mesh-1").WithName("name-1").
