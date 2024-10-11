@@ -189,6 +189,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
+			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
+			Mode:                rt.Config().Mode,
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
