@@ -276,6 +276,20 @@ var _ = Describe("ComputePolicyRole", func() {
 			namespace:    core_model.NewNamespace("kuma-system", true),
 			expectedRole: mesh_proto.SystemPolicyRole,
 		}),
+		Entry("policy with consumer and producer to-itmes", testCase{
+			policy: builders.MeshTimeout().
+				WithMesh("mesh-1").WithName("name-1").
+				WithTargetRef(builders.TargetRefMesh()).
+				AddTo(builders.TargetRefMeshService("backend-1", "backend-1-ns", ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				AddTo(builders.TargetRefMeshService("backend-2", "backend-2-ns", ""), meshtimeout_api.Conf{
+					IdleTimeout: &kube_meta.Duration{Duration: 123 * time.Second},
+				}).
+				Build().Spec,
+			namespace:   core_model.NewNamespace("backend-1-ns", false),
+			expectedErr: "it's not allowed to mix producer and consumer items in the same policy",
+		}),
 	)
 })
 

@@ -59,7 +59,7 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		resource.Descriptor(),
 		resource.GetSpec(),
 		opts.Labels,
-		core_model.UnknownNamespace(),
+		core_model.UnsetNamespace,
 		opts.Mesh,
 		m.mode,
 		m.isK8s,

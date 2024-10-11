@@ -465,15 +465,13 @@ type Namespace struct {
 	system bool
 }
 
+var UnsetNamespace = Namespace{}
+
 func NewNamespace(value string, system bool) Namespace {
 	return Namespace{
 		value:  value,
 		system: system,
 	}
-}
-
-func UnknownNamespace() Namespace {
-	return Namespace{}
 }
 
 func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
@@ -483,7 +481,7 @@ func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
 			system: ns == systemNamespace,
 		}
 	}
-	return UnknownNamespace()
+	return UnsetNamespace
 }
 
 func ComputeLabels(
@@ -550,7 +548,7 @@ func ComputeLabels(
 }
 
 func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
-	if ns.system || ns.value == "" {
+	if ns.system || ns == UnsetNamespace {
 		// on Universal the value is always empty
 		return mesh_proto.SystemPolicyRole, nil
 	}
