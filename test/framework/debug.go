@@ -348,7 +348,8 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, debugPath string, clu
 }
 
 func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string, mesh string, inspectType string,
-	debugPath string, clusterName string) string {
+	debugPath string, clusterName string,
+) string {
 	var dpNS string
 	dpNameParts := strings.Split(dpName, ".")
 	if len(dpNameParts) > 1 {
