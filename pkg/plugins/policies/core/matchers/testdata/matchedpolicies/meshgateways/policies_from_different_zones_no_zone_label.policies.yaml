@@ -1,0 +1,89 @@
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: mesh-in-zone-1
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+spec:
+ targetRef:
+  kind: Mesh
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /mesh
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: in-zone-1
+labels:
+  kuma.io/origin: zone
+spec:
+ targetRef:
+  kind: MeshServiceSubset
+  name: edge-gateway
+  tags:
+    listener: two
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /servicesubset
+---
+type: MeshAccessLog
+mesh: mesh-1
+name: in-zone-2
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-2
+spec:
+ targetRef:
+  kind: MeshGateway
+  name: gateway-1
+ from:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /from-gateway
+ to:
+  - targetRef:
+     kind: Mesh
+    default:
+      backends:
+        - type: File
+          file:
+            path: /to-gateway
+---
+type: MeshGateway
+mesh: mesh-1
+name: gateway-in-zone-1
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: zone-1
+selectors:
+  - match:
+      kuma.io/service: edge-gateway
+conf:
+  listeners:
+    - port: 8080
+      protocol: HTTP
+      tags:
+        listener: one
+    - port: 8081
+      protocol: HTTP
+      tags:
+        listener: two
+    - port: 8082
+      protocol: HTTP
+      tags:
+        listener: three
