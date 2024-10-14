@@ -93,7 +93,7 @@ jobs:
       id-token: write
     needs: ["check"]
     uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    if: true
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
