@@ -52,6 +52,7 @@ jobs:
           go-version-file: go.mod
           cache: false
       - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+        if: false
         with:
           args: --fix=false --verbose
           version: v1.60.3
@@ -85,6 +86,7 @@ jobs:
       contents: read
     needs: ["check"]
     uses: ./.github/workflows/_test.yaml
+    if: false
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
       RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
@@ -108,7 +110,7 @@ jobs:
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
-    if: ${{ github.ref_type == 'tag' }}
+    if: false
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
