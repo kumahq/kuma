@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -55,6 +56,10 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
 		res.Spec = stat
+
+		mapperFn := removeDisplayNameLabel()
+		mapperFn(res)
+
 		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
 		}
@@ -99,13 +104,17 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 		}
 	}
 
-	items := s.expandInsights(serviceInsightList, nameContains, func(service *v1alpha1.ServiceInsight_Service) bool {
-		if len(filterMap) == 0 {
-			return true
-		}
-		_, exists := filterMap[service.ServiceType]
-		return exists
-	})
+	items := s.expandInsights(serviceInsightList, nameContains,
+		func(service *v1alpha1.ServiceInsight_Service) bool {
+			if len(filterMap) == 0 {
+				return true
+			}
+			_, exists := filterMap[service.ServiceType]
+			return exists
+		},
+		removeDisplayNameLabel(),
+	)
+
 	restList := rest.ResourceList{
 		Total: uint32(len(items)),
 		Items: items,
@@ -135,7 +144,12 @@ func (s *serviceInsightEndpoints) fillStaticInfo(name string, stat *v1alpha1.Ser
 // 2) Mesh+Name is a key on Universal, but not on Kubernetes, so if there are two services of the same name in different Meshes we would have problems with naming.
 // From the API perspective it's better to provide ServiceInsight per Service, not per Mesh.
 // For this reason, this method expand the one ServiceInsight resource for the mesh to resource per service
-func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.ServiceInsightResourceList, nameContains string, filterFn func(service *v1alpha1.ServiceInsight_Service) bool) []rest.Resource {
+func (s *serviceInsightEndpoints) expandInsights(
+	serviceInsightList *mesh.ServiceInsightResourceList,
+	nameContains string,
+	filterFn func(service *v1alpha1.ServiceInsight_Service) bool,
+	mapperFn unversionedResourceMapper,
+) []rest.Resource {
 	restItems := []rest.Resource{} // Needs to be set to avoid returning nil and have the api return []
 	for _, insight := range serviceInsightList.Items {
 		for serviceName, service := range insight.Spec.Services {
@@ -145,6 +159,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 				res := out.(*rest_unversioned.Resource)
 				res.Meta.Name = serviceName
 				res.Spec = service
+				mapperFn(res)
 				restItems = append(restItems, out)
 			}
 		}
@@ -195,4 +210,18 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 
 	restList.Next = nextLink(request, nextOffset)
 	return nil
+}
+
+type unversionedResourceMapper func(resource *rest_unversioned.Resource)
+
+// Since the value of label "kuma.io/display-name" is same with the ServiceInsight resource name,
+// in which it looks weird for the API to each service. Ref: https://github.com/kumahq/kuma/issues/9729
+func removeDisplayNameLabel() unversionedResourceMapper {
+	return func(resource *rest_unversioned.Resource) {
+		tmpMeta := resource.GetMeta()
+		maps.DeleteFunc(tmpMeta.Labels, func(key string, val string) bool {
+			return key == v1alpha1.DisplayName
+		})
+		resource.Meta = tmpMeta
+	}
 }
