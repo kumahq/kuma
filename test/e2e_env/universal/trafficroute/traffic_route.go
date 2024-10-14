@@ -458,10 +458,16 @@ conf:
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
+<<<<<<< HEAD
 					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 2, 1)),
 					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 8, 1)),
 				),
 			)
+=======
+					HaveKey(`echo-v3`),
+					HaveKeyWithValue(`echo-v4`, BeNumerically("~", 80, 20)),
+				))
+>>>>>>> 915de62b3 (fix(e2e): loosen up assertion on traffic route test (#11764))
 		})
 
 		It("should modify path", func() {
