@@ -35,7 +35,7 @@ permissions:
   id-token: write # Required for image signing
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
-  FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
+  FULL_MATRIX: 'true'
   ALLOW_PUSH: ${{ inputs.ALLOW_PUSH }}
   GH_OWNER: ${{ github.repository_owner }}
   GH_USER: "github-actions[bot]"
@@ -99,7 +99,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
-        if: ${{ fromJSON(inputs.FULL_MATRIX) }}
+        if: true
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
