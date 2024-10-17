@@ -64,11 +64,10 @@ func (p *PodConverter) PodToDataplane(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
 		map[string]string{},
-		k8s_common.ResourceNameExtensions(pod.Namespace, pod.Name),
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
 		p.Mode,
 		true,
-		p.SystemNamespace,
 		p.Zone,
 	)
 	if err != nil {
@@ -104,11 +103,10 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
 		map[string]string{},
-		k8s_common.ResourceNameExtensions(pod.Namespace, pod.Name),
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
 		true,
-		p.SystemNamespace,
 		p.Zone,
 	)
 	if err != nil {
@@ -144,11 +142,10 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
 		map[string]string{},
-		k8s_common.ResourceNameExtensions(pod.Namespace, pod.Name),
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
 		true,
-		p.SystemNamespace,
 		p.Zone,
 	)
 	if err != nil {
