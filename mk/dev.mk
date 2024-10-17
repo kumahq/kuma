@@ -21,8 +21,8 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 # Change here and `make check` ensures these are used for CI
 # Note: These are _docker image tags_
 # If changing min version, update mk/kind.mk as well
-K8S_MIN_VERSION = v1.23.17-k3s1
-K8S_MAX_VERSION = v1.30.0-k3s1
+K8S_MIN_VERSION = v1.25.16-k3s4
+K8S_MAX_VERSION = v1.31.1-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
 export GOLANGCI_LINT_VERSION=v1.60.3
 GOOS := $(shell go env GOOS)
@@ -130,10 +130,12 @@ dev/sync-demo:
 	rm app/kumactl/data/install/k8s/demo/*.yaml
 	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/demo.yaml | \
 		sed 's/"local"/"{{ .Zone }}"/g' | \
-		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' | \
+		sed 's/\([^/]\)kuma-system/\1{{ .SystemNamespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/demo.yaml
 	curl -s --fail https://raw.githubusercontent.com/kumahq/kuma-counter-demo/master/gateway.yaml | \
-		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' \
+		sed 's/\([^/]\)kuma-demo/\1{{ .Namespace }}/g' | \
+		sed 's/\([^/]\)kuma-system/\1{{ .SystemNamespace }}/g' \
 		> app/kumactl/data/install/k8s/demo/gateway.yaml
 
 .PHONY: dev/set-kuma-helm-repo

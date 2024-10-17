@@ -434,6 +434,20 @@ func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool
 	}
 }
 
+func IsLocalZoneResource(labels map[string]string, zone string) bool {
+	origin, ok := resourceOrigin(labels)
+	if ok && origin == mesh_proto.ZoneResourceOrigin {
+		resourceZone, ok := labels[mesh_proto.ZoneTag]
+		// backward compatibility: in kuma 2.7, a resource doesn't have the `kuma.io/zone` label but has the `kuma.io/origin` zone,
+		// indicating that the resource was created in this zone.
+		if !ok {
+			return true
+		}
+		return resourceZone == zone
+	}
+	return false
+}
+
 func GetDisplayName(rm ResourceMeta) string {
 	// prefer display name as it's more predictable, because
 	// * Kubernetes expects sorting to be by just a name. Considering suffix with namespace breaks this

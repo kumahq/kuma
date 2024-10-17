@@ -12,8 +12,8 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.23.17-k3s1
-  K8S_MAX_VERSION: v1.30.0-k3s1
+  K8S_MIN_VERSION: v1.25.16-k3s4
+  K8S_MAX_VERSION: v1.31.1-k3s1
 jobs:
   test_unit:
     timeout-minutes: 20
@@ -51,7 +51,7 @@ jobs:
               "test_e2e": {
                 "target": [""],
                 "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["arm64"],
+                "arch": ["amd64"],
                 "parallelism": [4],
                 "cniNetworkPlugin": ["flannel"],
                 "sidecarContainers": [""]
@@ -70,8 +70,8 @@ jobs:
                 ],
                 "include":[
                   {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
-                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "arm64"},
-                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
                   {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
                   {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
