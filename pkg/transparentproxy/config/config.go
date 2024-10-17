@@ -210,9 +210,6 @@ type DNS struct {
 	CaptureAll             bool   `json:"captureAll" split_words:"true"`             // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_CAPTURE_ALL
 	SkipConntrackZoneSplit bool   `json:"skipConntrackZoneSplit" split_words:"true"` // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_SKIP_CONNTRACK_ZONE_SPLIT
 	ResolvConfigPath       string `json:"resolvConfigPath" split_words:"true"`       // KUMA_TRANSPARENT_PROXY_REDIRECT_DNS_RESOLV_CONFIG_PATH
-	// The iptables chain where the upstream DNS requests should be directed to.
-	// It is only applied for IP V4. Use with care. (default "RETURN")
-	UpstreamTargetChain string `json:"-" ignored:"true"`
 }
 
 type InitializedDNS struct {
@@ -486,11 +483,23 @@ type Log struct {
 type Retry struct {
 	// MaxRetries specifies the number of retries after the initial attempt.
 	// A value of 0 means no retries, and only the initial attempt will be made.
-	MaxRetries int `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
+	MaxRetries uint `json:"maxRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_MAX_RETRIES
 	// SleepBetweenRetries defines the duration to wait between retry attempts.
 	// This delay helps in situations where immediate retries may not be
 	// beneficial, allowing time for transient issues to resolve.
 	SleepBetweenRetries config_types.Duration `json:"sleepBetweenRetries" split_words:"true"` // KUMA_TRANSPARENT_PROXY_RETRY_SLEEP_BETWEEN_RETRIES
+}
+
+type InitializedRetry struct {
+	MaxRetries          int
+	SleepBetweenRetries time.Duration
+}
+
+func (c Retry) Initialize() InitializedRetry {
+	return InitializedRetry{
+		MaxRetries:          int(c.MaxRetries),
+		SleepBetweenRetries: c.SleepBetweenRetries.Duration,
+	}
 }
 
 // Comments struct contains the configuration for iptables rule comments.
@@ -816,12 +825,7 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 		return InitializedConfig{}, err
 	}
 
-	l := Logger{
-		stdout: c.RuntimeStdout,
-		stderr: c.RuntimeStderr,
-		maxTry: c.Retry.MaxRetries + 1,
-	}
-
+	l := Logger{stdout: c.RuntimeStdout, stderr: c.RuntimeStderr}
 	loggerIPv4 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv4])
 	loggerIPv6 := l.WithPrefix(consts.IptablesCommandByFamily[consts.IPv6])
 
@@ -909,28 +913,35 @@ func (c Config) Initialize(ctx context.Context) (InitializedConfig, error) {
 
 func DefaultConfig() Config {
 	return Config{
-		KumaDPUser: "",
+		KumaDPUser:   "",
+		IPFamilyMode: IPFamilyModeDualStack,
 		Redirect: Redirect{
 			NamePrefix: consts.IptablesChainsPrefix,
 			Inbound: TrafficFlow{
-				Enabled:           true,
-				Port:              Port(consts.DefaultRedirectInbountPort),
-				ChainName:         "INBOUND",
-				RedirectChainName: "INBOUND_REDIRECT",
-				ExcludePorts:      Ports{},
-				IncludePorts:      Ports{},
+				Enabled:                       true,
+				Port:                          Port(consts.DefaultRedirectInbountPort),
+				ChainName:                     "INBOUND",
+				RedirectChainName:             "INBOUND_REDIRECT",
+				IncludePorts:                  Ports{},
+				ExcludePorts:                  Ports{},
+				ExcludePortsForUIDs:           []string{},
+				ExcludePortsForIPs:            []string{},
+				InsertRedirectInsteadOfAppend: false,
 			},
 			Outbound: TrafficFlow{
-				Enabled:           true,
-				Port:              Port(consts.DefaultRedirectOutboundPort),
-				ChainName:         "OUTBOUND",
-				RedirectChainName: "OUTBOUND_REDIRECT",
-				ExcludePorts:      Ports{},
-				IncludePorts:      Ports{},
+				Enabled:                       true,
+				Port:                          Port(consts.DefaultRedirectOutboundPort),
+				ChainName:                     "OUTBOUND",
+				RedirectChainName:             "OUTBOUND_REDIRECT",
+				IncludePorts:                  Ports{},
+				ExcludePorts:                  Ports{},
+				ExcludePortsForUIDs:           []string{},
+				ExcludePortsForIPs:            []string{},
+				InsertRedirectInsteadOfAppend: false,
 			},
 			DNS: DNS{
-				Port:                   Port(consts.DefaultRedirectDNSPort),
 				Enabled:                false,
+				Port:                   Port(consts.DefaultRedirectDNSPort),
 				CaptureAll:             false,
 				SkipConntrackZoneSplit: false,
 				ResolvConfigPath:       "/etc/resolv.conf",
@@ -940,16 +951,14 @@ func DefaultConfig() Config {
 			},
 		},
 		Ebpf: Ebpf{
-			Enabled:            false,
-			CgroupPath:         "/sys/fs/cgroup",
-			BPFFSPath:          "/run/kuma/bpf",
-			ProgramsSourcePath: "/tmp/kuma-ebpf",
+			Enabled:              false,
+			InstanceIP:           "",
+			InstanceIPEnvVarName: "",
+			BPFFSPath:            "/run/kuma/bpf",
+			CgroupPath:           "/sys/fs/cgroup",
+			ProgramsSourcePath:   "/tmp/kuma-ebpf",
+			TCAttachIface:        "",
 		},
-		DropInvalidPackets: false,
-		RuntimeStdout:      os.Stdout,
-		RuntimeStderr:      os.Stderr,
-		Verbose:            false,
-		DryRun:             false,
 		Log: Log{
 			Enabled: false,
 			Level:   consts.LogLevelDebug,
@@ -962,12 +971,16 @@ func DefaultConfig() Config {
 			MaxRetries:          4,
 			SleepBetweenRetries: config_types.Duration{Duration: 2 * time.Second},
 		},
-		Executables: NewExecutables(),
 		Comments: Comments{
 			Disabled: false,
 		},
-		IPFamilyMode:   IPFamilyModeDualStack,
-		StoreFirewalld: false,
-		CNIMode:        false,
+		Executables:        NewExecutables(),
+		RuntimeStdout:      os.Stdout,
+		RuntimeStderr:      os.Stderr,
+		DropInvalidPackets: false,
+		StoreFirewalld:     false,
+		CNIMode:            false,
+		Verbose:            false,
+		DryRun:             false,
 	}
 }

@@ -237,7 +237,6 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, flagRedirectDNS, cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
 	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, flagRedirectAllDNSTraffic, cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
-	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().BoolVar(
 		&cfg.Redirect.DNS.SkipConntrackZoneSplit,
@@ -262,7 +261,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 	cmd.Flags().UintVar(&cfg.Wait, "wait", cfg.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
 	cmd.Flags().UintVar(&cfg.WaitInterval, "wait-interval", cfg.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
-	cmd.Flags().IntVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().UintVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().Var(&cfg.Retry.SleepBetweenRetries, "sleep-between-retries", "flag can be used to specify the amount of time to sleep between retries")
 
 	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
@@ -305,7 +304,6 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&configValue, flagTransparentProxyConfig, configValue, "transparent proxy configuration provided in YAML or JSON format")
 	cmd.Flags().StringVar(&configFile, flagTransparentProxyConfigFile, configFile, "path to the file containing the transparent proxy configuration in YAML or JSON format")
 
-	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
 
 	// Manually define the `--help` flag since we are handling flag parsing ourselves due to

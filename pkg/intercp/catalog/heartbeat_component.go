@@ -136,7 +136,7 @@ func (h *heartbeatComponent) connectToLeader(ctx context.Context) error {
 	}
 	heartbeatLog.Info("leader has changed. Creating connection to the new leader.",
 		"previousLeaderAddress", h.leader.Address,
-		"newLeaderAddress", newLeader.Leader,
+		"newLeaderAddress", newLeader.Address,
 	)
 	_, err = h.getClientFn(h.leader.InterCpURL())
 	if err != nil {

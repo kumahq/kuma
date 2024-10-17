@@ -26,13 +26,13 @@ type Logger struct {
 // WithPrefix returns a new Logger instance with the specified prefix added to
 // the default prefixes.
 func (l Logger) WithPrefix(prefix string) Logger {
-	return Logger{
-		stdout:          l.stdout,
-		stderr:          l.stderr,
-		maxTry:          l.maxTry,
-		try:             l.try,
-		defaultPrefixes: append(l.defaultPrefixes, prefix),
-	}
+	l.defaultPrefixes = append(l.defaultPrefixes, prefix)
+	return l
+}
+
+func (l Logger) WithMaxTry(maxTry int) Logger {
+	l.maxTry = maxTry
+	return l
 }
 
 // tryPrefix generates a logging prefix based on the current retry attempt.

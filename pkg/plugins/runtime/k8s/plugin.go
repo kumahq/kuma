@@ -81,7 +81,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addServiceReconciler(mgr); err != nil {
 		return err
 	}
-	if err := addMeshServiceReconciler(mgr, converter); err != nil {
+	if err := addMeshServiceReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
@@ -138,7 +138,10 @@ func addServiceReconciler(mgr kube_ctrl.Manager) error {
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshServiceReconciler(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
+func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
 	reconciler := &k8s_controllers.MeshServiceReconciler{
 		Client:            mgr.GetClient(),
 		Log:               core.Log.WithName("controllers").WithName("MeshService"),
@@ -186,6 +189,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 				NodeLabelsToCopy: rt.Config().Runtime.Kubernetes.Injector.NodeLabelsToCopy,
 			},
 			Zone:                rt.Config().Multizone.Zone.Name,
+			SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
+			Mode:                rt.Config().Mode,
 			ResourceConverter:   converter,
 			KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
 		},
