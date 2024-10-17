@@ -109,7 +109,7 @@ func (c *ResourceAdmissionChecker) validateLabels(r core_model.Resource, ns stri
 	}
 
 	if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
-		if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), ns); err != nil {
+		if _, err := core_model.ComputePolicyRole(r.GetSpec().(core_model.Policy), core_model.NewNamespace(ns, ns == c.SystemNamespace)); err != nil {
 			return forbiddenResponse(err.Error())
 		}
 	}

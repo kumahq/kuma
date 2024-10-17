@@ -22,7 +22,8 @@ import (
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
 	var gateway *core_mesh.MeshGatewayResource
 	if dpp.Spec.IsBuiltinGateway() {
-		gateway = xds_topology.SelectGateway(referencableResources.Gateways().Items, dpp.Spec.Matches)
+		zoneGateways := filterGatewaysByZone(referencableResources.Gateways().Items, dpp)
+		gateway = xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
 	}
 	refPolicy, ok := resource.GetSpec().(core_model.Policy)
 	if !ok {

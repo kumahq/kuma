@@ -70,11 +70,10 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 		resource.Descriptor(),
 		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
-		resource.GetMeta().GetNameExtensions(),
+		core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace),
 		resource.GetMeta().GetMesh(),
 		h.Mode,
 		true,
-		h.SystemNamespace,
 		h.ZoneName,
 	)
 	if err != nil {

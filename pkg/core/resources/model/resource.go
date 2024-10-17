@@ -472,15 +472,40 @@ func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) 
 	return "", false
 }
 
+// Namespace type allows to avoid carrying both 'namespace' and 'systemNamespace' around the code base
+// and depend on this type instead
+type Namespace struct {
+	value  string
+	system bool
+}
+
+var UnsetNamespace = Namespace{}
+
+func NewNamespace(value string, system bool) Namespace {
+	return Namespace{
+		value:  value,
+		system: system,
+	}
+}
+
+func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
+	if ns, ok := rm.GetNameExtensions()[K8sNamespaceComponent]; ok && ns != "" {
+		return Namespace{
+			value:  ns,
+			system: ns == systemNamespace,
+		}
+	}
+	return UnsetNamespace
+}
+
 func ComputeLabels(
 	rd ResourceTypeDescriptor,
 	spec ResourceSpec,
 	existingLabels map[string]string,
-	resourceNameExtensions ResourceNameExtensions,
+	ns Namespace,
 	mesh string,
 	mode config_core.CpMode,
 	isK8s bool,
-	systemNamespace string,
 	localZone string,
 ) (map[string]string, error) {
 	labels := map[string]string{}
@@ -521,24 +546,14 @@ func ComputeLabels(
 		}
 	}
 
-	if isK8s && IsLocallyOriginated(mode, labels) {
-		ns, ok := resourceNameExtensions[mesh_proto.KubeNamespaceTag]
-		if ok && ns != "" {
-			setIfNotExist(mesh_proto.KubeNamespaceTag, ns)
-		}
+	if ns.value != "" && isK8s && IsLocallyOriginated(mode, labels) {
+		setIfNotExist(mesh_proto.KubeNamespaceTag, ns.value)
 	}
 
-	if ns, ok := resourceNameExtensions[mesh_proto.KubeNamespaceTag]; ok && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
-		var role mesh_proto.PolicyRole
-		switch ns {
-		case systemNamespace:
-			role = mesh_proto.SystemPolicyRole
-		default:
-			var err error
-			role, err = ComputePolicyRole(spec.(Policy), ns)
-			if err != nil {
-				return nil, err
-			}
+	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
+		role, err := ComputePolicyRole(spec.(Policy), ns)
+		if err != nil {
+			return nil, err
 		}
 		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
@@ -546,7 +561,12 @@ func ComputeLabels(
 	return labels, nil
 }
 
-func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
+func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
+	if ns.system || ns == UnsetNamespace {
+		// on Universal the value is always empty
+		return mesh_proto.SystemPolicyRole, nil
+	}
+
 	hasTo := false
 	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
 		hasTo = true
@@ -557,13 +577,17 @@ func ComputePolicyRole(p Policy, ns string) (mesh_proto.PolicyRole, error) {
 		hasFrom = true
 	}
 
+	if hasFrom && hasTo {
+		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
+	}
+
 	if hasFrom || !(hasTo || hasFrom) {
 		// if there is 'from' or neither (single item)
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
-		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns)
+		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns.value)
 	}
 
 	producerItems := 0
