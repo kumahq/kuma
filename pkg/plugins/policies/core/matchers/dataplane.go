@@ -125,14 +125,14 @@ func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_m
 		return gateways
 	}
 	var filtered []*core_mesh.MeshGatewayResource
-	dppZone := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	dppZone, dppZoneOk := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
 	for _, gateway := range gateways {
 		gwOrigin, ok := gateway.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 		if !ok || gwOrigin == string(mesh_proto.GlobalResourceOrigin) {
 			filtered = append(filtered, gateway)
 			continue
 		}
-		if gwZone, ok := gateway.GetMeta().GetLabels()[mesh_proto.ZoneTag]; ok && gwZone == dppZone {
+		if !dppZoneOk || core_model.IsLocalZoneResource(gateway.GetMeta().GetLabels(), dppZone) {
 			filtered = append(filtered, gateway)
 		}
 	}
@@ -199,8 +199,8 @@ func dppSelectedByPolicy(
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
-	switch meta.GetLabels()[mesh_proto.PolicyRoleLabel] {
-	case string(mesh_proto.ConsumerPolicyRole), string(mesh_proto.WorkloadOwnerPolicyRole):
+	switch core_model.PolicyRole(meta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
 		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
 		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
 	default:
@@ -229,7 +229,10 @@ func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.Datapl
 		policyOrigin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
 		if ok && policyOrigin == string(mesh_proto.ZoneResourceOrigin) {
 			zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
-			return ok && meta.GetLabels()[mesh_proto.ZoneTag] == zone
+			if !ok {
+				return true
+			}
+			return core_model.IsLocalZoneResource(meta.GetLabels(), zone)
 		}
 		return true
 	}
