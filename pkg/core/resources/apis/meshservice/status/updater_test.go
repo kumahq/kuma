@@ -72,7 +72,8 @@ var _ = Describe("Updater", func() {
 		// when
 		Expect(samples.MeshServiceBackendBuilder().
 			WithLabels(map[string]string{
-				v1alpha1.ZoneTag: "west",
+				v1alpha1.ZoneTag:             "west",
+				v1alpha1.ResourceOriginLabel: string(v1alpha1.GlobalResourceOrigin),
 			}).
 			AddServiceTagIdentity("backend").
 			Create(resManager)).To(Succeed())

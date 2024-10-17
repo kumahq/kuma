@@ -43,15 +43,15 @@ func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
 	return Port{}, false
 }
 
-func (m *MeshServiceResource) IsLocalMeshService(localZone string) bool {
+func (m *MeshServiceResource) IsLocalMeshService() bool {
 	if len(m.GetMeta().GetLabels()) == 0 {
 		return true // no labels mean that it's a local resource
 	}
-	resZone, ok := m.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	origin, ok := m.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
 		return true // no zone label mean that it's a local resource
 	}
-	return resZone == localZone
+	return origin == string(mesh_proto.ZoneResourceOrigin)
 }
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}

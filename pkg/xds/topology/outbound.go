@@ -130,7 +130,7 @@ func BuildEdsEndpointMap(
 	fillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
 
 	// it has to be last because it reuses endpoints for other cases
-	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices, localZone)
+	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices)
 
 	return outbound
 }
@@ -139,7 +139,6 @@ func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
 	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
-	localZone string,
 ) {
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
@@ -153,7 +152,7 @@ func fillMeshMultiZoneServices(
 			if !ok {
 				continue
 			}
-			if !ms.IsLocalMeshService(localZone) && ms.Spec.State != meshservice_api.StateAvailable {
+			if !ms.IsLocalMeshService() && ms.Spec.State != meshservice_api.StateAvailable {
 				// we don't want to load balance to zones that has no available endpoints.
 				// we check this only for non-local services, because if service is unavailable in the local zone it has no endpoints.
 				// if a new local endpoint just become healthy, we can add it immediately without waiting for state to be reconciled.
@@ -215,7 +214,7 @@ func fillRemoteMeshServices(
 	}
 
 	for _, ms := range services {
-		if ms.IsLocalMeshService(localZone) {
+		if ms.IsLocalMeshService() {
 			continue
 		}
 		msZone := ms.GetMeta().GetLabels()[mesh_proto.ZoneTag]
@@ -328,7 +327,7 @@ func fillLocalMeshServices(
 ) {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dataplanes, meshServices, true)
 	for meshSvc, dpps := range dppsForMs {
-		if !meshSvc.IsLocalMeshService(localZone) {
+		if !meshSvc.IsLocalMeshService() {
 			continue
 		}
 
