@@ -132,8 +132,7 @@ func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_m
 			filtered = append(filtered, gateway)
 			continue
 		}
-		gwZone, gwZoneOk := gateway.GetMeta().GetLabels()[mesh_proto.ZoneTag]
-		if !dppZoneOk || !gwZoneOk || gwZone == dppZone {
+		if !dppZoneOk || core_model.IsLocalZoneResource(gateway.GetMeta().GetLabels(), dppZone) {
 			filtered = append(filtered, gateway)
 		}
 	}
@@ -233,7 +232,7 @@ func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.Datapl
 			if !ok {
 				return true
 			}
-			return meta.GetLabels()[mesh_proto.ZoneTag] == zone
+			return core_model.IsLocalZoneResource(meta.GetLabels(), zone)
 		}
 		return true
 	}

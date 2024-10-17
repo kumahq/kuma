@@ -69,7 +69,6 @@ mesh: mesh-1
 name: gateway-in-zone-1
 labels:
   kuma.io/origin: zone
-  kuma.io/zone: zone-1
 selectors:
   - match:
       kuma.io/service: edge-gateway
