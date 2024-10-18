@@ -112,7 +112,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dpList.Items, msList.Items, false)
 
 	for ms, dpps := range dppsForMs {
-		if !ms.IsLocalMeshService(s.localZone) {
+		if !ms.IsLocalMeshService() {
 			// identities are already computed by the other zone
 			continue
 		}
