@@ -21,6 +21,7 @@ func SetupAndGetState() []byte {
 		framework.GatewayAPICRDs,
 	)).To(Succeed())
 
+<<<<<<< HEAD
 	kumaOptions := append([]framework.KumaDeploymentOption{
 		framework.WithCtlOpts(map[string]string{
 			"--experimental-gatewayapi": "true",
@@ -28,6 +29,26 @@ func SetupAndGetState() []byte {
 		framework.WithEgress(),
 	},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...)
+=======
+	kumaOptions := append(
+		[]framework.KumaDeploymentOption{
+			framework.WithEgress(),
+			framework.WithEgressEnvoyAdminTunnel(),
+			framework.WithCtlOpts(map[string]string{
+				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
+			}),
+			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
+			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
+			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
+		},
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
+	)
+	if framework.Config.KumaExperimentalSidecarContainers {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
+	}
+>>>>>>> bb904d04e (test(e2e): increase leader election lease and renew duration (#11796))
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))
