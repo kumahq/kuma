@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/pkg/errors"
@@ -11,6 +12,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -33,6 +35,8 @@ type PodConverter struct {
 	ResourceConverter   k8s_common.Converter
 	InboundConverter    InboundConverter
 	Zone                string
+	SystemNamespace     string
+	Mode                config_core.CpMode
 	KubeOutboundsAsVIPs bool
 }
 
@@ -55,8 +59,21 @@ func (p *PodConverter) PodToDataplane(
 	if err != nil {
 		return err
 	}
-
-	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh {
+	// we need to validate if the labels have changed
+	labels, err := model.ComputeLabels(
+		core_mesh.DataplaneResourceTypeDescriptor,
+		currentSpec,
+		map[string]string{},
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
+		dataplane.Mesh,
+		p.Mode,
+		true,
+		p.Zone,
+	)
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, dataplaneProto) && previousMesh == dataplane.Mesh && reflect.DeepEqual(labels, dataplane.GetLabels()) {
 		logger.V(1).Info("resource hasn't changed, skip")
 		return nil
 	}
@@ -81,7 +98,22 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	if err != nil {
 		return err
 	}
-	if model.Equal(currentSpec, zoneIngressRes.Spec) {
+	// we need to validate if the labels have changed
+	labels, err := model.ComputeLabels(
+		core_mesh.ZoneIngressResourceTypeDescriptor,
+		currentSpec,
+		map[string]string{},
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
+		model.NoMesh,
+		p.Mode,
+		true,
+		p.Zone,
+	)
+	if err != nil {
+		return err
+	}
+
+	if model.Equal(currentSpec, zoneIngressRes.Spec) && reflect.DeepEqual(labels, zoneIngress.GetLabels()) {
 		logger.V(1).Info("resource hasn't changed, skip")
 		return nil
 	}
@@ -105,7 +137,21 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	if err != nil {
 		return err
 	}
-	if model.Equal(currentSpec, zoneEgressRes.Spec) {
+	// we need to validate if the labels have changed
+	labels, err := model.ComputeLabels(
+		core_mesh.ZoneEgressResourceTypeDescriptor,
+		currentSpec,
+		map[string]string{},
+		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
+		model.NoMesh,
+		p.Mode,
+		true,
+		p.Zone,
+	)
+	if err != nil {
+		return err
+	}
+	if model.Equal(currentSpec, zoneEgressRes.Spec) && reflect.DeepEqual(labels, zoneEgress.GetLabels()) {
 		logger.V(1).Info("resource hasn't changed, skip")
 		return nil
 	}
