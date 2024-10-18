@@ -14,8 +14,8 @@ import (
 	"google.golang.org/grpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	hds_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	v3 "github.com/kumahq/kuma/pkg/hds/v3"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -133,10 +133,9 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 				watchCancellation()
 			}
 			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
-				Node:          node,
-				TypeUrl:       hds_cache.HealthCheckSpecifierType,
-				ResourceNames: []string{"hcs"},
-				VersionInfo:   lastVersion,
+				Node:        node,
+				TypeUrl:     v3.HealthCheckSpecifierType,
+				VersionInfo: lastVersion,
 			}, envoy_stream.NewStreamState(false, nil), responseChan)
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
@@ -168,10 +167,9 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 				watchCancellation()
 			}
 			watchCancellation = s.cache.CreateWatch(&envoy_cache.Request{
-				Node:          node,
-				TypeUrl:       hds_cache.HealthCheckSpecifierType,
-				ResourceNames: []string{"hcs"},
-				VersionInfo:   lastVersion,
+				Node:        node,
+				TypeUrl:     v3.HealthCheckSpecifierType,
+				VersionInfo: lastVersion,
 			}, envoy_stream.NewStreamState(false, nil), responseChan)
 		}
 	}
