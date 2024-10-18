@@ -9,7 +9,9 @@ import (
 	"github.com/onsi/gomega/types"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -29,8 +31,11 @@ func Connectivity() {
 	var testServerPodNames []string
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
-			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
+			Install(Yaml(samples.MeshMTLSBuilder().
+				WithName(meshName).
+				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
+				WithPermissiveMTLSBackends(),
+			)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: kube-mesh-specific-msconnectivity
