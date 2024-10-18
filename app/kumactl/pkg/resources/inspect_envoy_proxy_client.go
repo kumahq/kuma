@@ -15,7 +15,7 @@ import (
 )
 
 type InspectEnvoyProxyClient interface {
-	ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
+	ConfigDump(ctx context.Context, rk core_model.ResourceKey, includeEDS bool) ([]byte, error)
 	Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
 	Clusters(ctx context.Context, rk core_model.ResourceKey) ([]byte, error)
 	Config(ctx context.Context, rk core_model.ResourceKey, shadow bool, include []string) ([]byte, error)
@@ -35,8 +35,8 @@ type httpInspectEnvoyProxyClient struct {
 
 var _ InspectEnvoyProxyClient = &httpInspectEnvoyProxyClient{}
 
-func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
-	return h.executeInspectRequest(ctx, rk, "xds", url.Values{})
+func (h *httpInspectEnvoyProxyClient) ConfigDump(ctx context.Context, rk core_model.ResourceKey, includeEDS bool) ([]byte, error) {
+	return h.executeInspectRequest(ctx, rk, "xds", url.Values{"include_eds": {strconv.FormatBool(includeEDS)}})
 }
 
 func (h *httpInspectEnvoyProxyClient) Stats(ctx context.Context, rk core_model.ResourceKey) ([]byte, error) {
