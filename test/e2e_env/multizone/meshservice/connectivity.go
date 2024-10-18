@@ -36,6 +36,7 @@ func Connectivity() {
 				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).
 				WithPermissiveMTLSBackends(),
 			)).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(fmt.Sprintf(`
 type: HostnameGenerator
 name: kube-mesh-specific-msconnectivity
