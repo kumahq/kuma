@@ -295,6 +295,10 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 	return tlsReady
 }
 
+func (mc *MeshContext) IsXKumaTagsUsed() bool {
+	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
+}
+
 // AggregatedMeshContexts is an aggregate of all MeshContext across all meshes
 type AggregatedMeshContexts struct {
 	Hash               string
