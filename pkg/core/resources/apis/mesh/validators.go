@@ -394,9 +394,6 @@ func ValidateTargetRef(
 		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-		if len(ref.Labels) > 0 && ref.SectionName != "" {
-			err.AddViolation("sectionName", "sectionName should not be combined with labels")
-		}
 	case common_api.MeshServiceSubset, common_api.MeshGateway:
 		err.Add(requiredField("name", ref.Name, ref.Kind))
 		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))

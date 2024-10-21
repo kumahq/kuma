@@ -814,24 +814,6 @@ violations:
     message: must be set with kind MeshService
 `,
 		}),
-		Entry("MeshService should not have sectionName when labels are set", testCase{
-			inputYaml: `
-kind: MeshService
-sectionName: http-port
-labels:
-  kuma.io/zone: east
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.sectionName
-    message: sectionName should not be combined with labels
-`,
-		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
 			inputYaml: `
 kind: Mesh
