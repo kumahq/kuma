@@ -11,7 +11,7 @@ require (
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20231211113354-bfa42fa7e121
 	github.com/cilium/ebpf v0.16.0
 	github.com/containernetworking/cni v1.2.3
-	github.com/containernetworking/plugins v1.5.1
+	github.com/containernetworking/plugins v1.6.0
 	github.com/emicklei/go-restful/v3 v3.12.1
 	github.com/envoyproxy/go-control-plane v0.13.0
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
@@ -40,7 +40,7 @@ require (
 	github.com/onsi/gomega v1.34.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.20.4
+	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
 	github.com/prometheus/common v0.60.0
 	github.com/sethvargo/go-retry v0.3.0
