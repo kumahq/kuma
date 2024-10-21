@@ -97,6 +97,10 @@
   endOfLifeDate: "2025-06-24"
   branch: release-2.8
 - edition: kuma
+  version: 2.9.0
+  release: 2.9.x
+  branch: release-2.9
+- edition: kuma
   version: preview
   release: dev
   branch: master

@@ -402,7 +402,7 @@ conf:
 				Should(And(
 					HaveLen(2),
 					HaveKey(`echo-v3`),
-					HaveKeyWithValue(`echo-v4`, BeNumerically("~", 80, 10)),
+					HaveKeyWithValue(`echo-v4`, BeNumerically("~", 80, 20)),
 				))
 		})
 

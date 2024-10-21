@@ -125,15 +125,3 @@ kind/deploy/metrics-server:
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch -n kube-system deployment/metrics-server \
 		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=2m --for=condition=Available -n kube-system deployment/metrics-server
-
-.PHONY: run/k8s
-run/k8s: build/kuma-cp generate/builtin-crds ## Dev: Run Control Plane locally in Kubernetes mode
-	$(KUBECTL) diff -f pkg/plugins/resources/k8s/native/config/crd/bases || $(KUBECTL) apply -f pkg/plugins/resources/k8s/native/config/crd/bases
-	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KUMA_ENVIRONMENT=kubernetes \
-	KUMA_STORE_TYPE=kubernetes \
-	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-cp/cmd/testdata/tls.crt \
-	KUMA_SDS_SERVER_TLS_KEY_FILE=app/kuma-cp/cmd/testdata/tls.key \
-	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT=$(CP_K8S_ADMISSION_PORT) \
-	KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR=app/kuma-cp/cmd/testdata \
-	$(BUILD_ARTIFACTS_DIR)/kuma-cp/kuma-cp --log-level=debug
