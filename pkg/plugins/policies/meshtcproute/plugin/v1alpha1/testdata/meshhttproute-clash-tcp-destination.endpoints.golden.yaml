@@ -11,9 +11,3 @@ resources:
               address: 192.168.0.5
               portValue: 8005
         loadBalancingWeight: 1
-        metadata:
-          filterMetadata:
-            envoy.lb:
-              kuma.io/protocol: tcp
-            envoy.transport_socket_match:
-              kuma.io/protocol: tcp
