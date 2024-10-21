@@ -8,7 +8,7 @@ COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \
     /kuma/
 
-COPY /tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
+COPY /tools/releases/templates/NOTICE /kuma/NOTICE
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]
