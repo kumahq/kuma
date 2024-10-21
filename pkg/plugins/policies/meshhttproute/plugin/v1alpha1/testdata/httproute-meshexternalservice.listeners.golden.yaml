@@ -18,10 +18,6 @@ resources:
           normalizePath: true
           routeConfig:
             name: default_example___extsvc_9090
-            requestHeadersToAdd:
-            - header:
-                key: x-kuma-tags
-                value: '&kuma.io/protocol=http&&kuma.io/service=web&'
             validateClusters: false
             virtualHosts:
             - domains:
