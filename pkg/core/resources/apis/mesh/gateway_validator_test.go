@@ -166,6 +166,26 @@ conf:
     tags:
       name: https
 `),
+		ErrorCase("has tag with invalid characters",
+			validators.Violation{
+				Field:   `tags["port"]`,
+				Message: `tag value must consist of alphanumeric characters, dots, dashes and underscores`,
+			}, `
+type: MeshGateway
+name: gateway
+mesh: default
+selectors:
+  - match:
+      kuma.io/service: gateway
+tags:
+  port: http/443
+conf:
+  listeners:
+  - port: 443
+    protocol: HTTP
+    tags:
+      name: https
+`),
 
 		ErrorCase("doesn't have a configuration spec",
 			validators.Violation{
