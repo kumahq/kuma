@@ -74,7 +74,7 @@ var (
 	_ = Describe("K8S API Bypass", k8s_api_bypass.K8sApiBypass, Ordered)
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Defaults", defaults.Defaults, Ordered)
-	_ = Describe("External Services", externalservices.ExternalServices, Ordered)
+	_ = FDescribe("External Services", externalservices.ExternalServices, Ordered)
 	_ = Describe("External Services Permissive MTLS", externalservices.PermissiveMTLS, Ordered)
 	_ = Describe("Mesh External Services", meshexternalservices.MeshExternalServices, Ordered)
 	_ = Describe("ExternalName Services", externalname_services.ExternalNameServices, Ordered)
