@@ -11,6 +11,8 @@ import (
 
 // Annotations that can be used by the end users.
 const (
+	// Deprecated: use KumaMeshLabel as a label from pkg/plugins/runtime/k8s/metadata/labels.go instead of this annotation.
+	//
 	// KumaMeshAnnotation defines a Pod annotation that
 	// associates a given Pod with a particular Mesh.
 	// Annotation value must be the name of a Mesh resource.
@@ -79,13 +81,22 @@ const (
 	KumaBuiltinDNSPort    = "kuma.io/builtin-dns-port"
 	KumaBuiltinDNSLogging = "kuma.io/builtin-dns-logging"
 
-	KumaTrafficExcludeInboundPorts         = "traffic.kuma.io/exclude-inbound-ports"
-	KumaTrafficExcludeOutboundPorts        = "traffic.kuma.io/exclude-outbound-ports"
-	KumaTrafficExcludeOutboundPortsForUIDs = "traffic.kuma.io/exclude-outbound-ports-for-uids"
-	KumaTrafficDropInvalidPackets          = "traffic.kuma.io/drop-invalid-packets"
-	KumaTrafficIptablesLogs                = "traffic.kuma.io/iptables-logs"
-	KumaTrafficExcludeInboundIPs           = "traffic.kuma.io/exclude-inbound-ips"
-	KumaTrafficExcludeOutboundIPs          = "traffic.kuma.io/exclude-outbound-ips"
+	// KumaTrafficTransparentProxyConfig is an annotation used to pass a YAML with the transparent proxy
+	// configuration in CNI mode, allowing the new logic to retrieve the config from the annotation
+	// instead of processing the ConfigMap explicitly
+	KumaTrafficTransparentProxyConfig = "traffic.kuma.io/transparent-proxy-config"
+	// KumaTrafficTransparentProxyConfigMapName is an annotation used to specify the name of the
+	// ConfigMap containing the transparent proxy configuration. This allows the configuration to be
+	// retrieved by referencing the ConfigMap's name, enabling flexible and dynamic assignment of
+	// proxy settings
+	KumaTrafficTransparentProxyConfigMapName = "traffic.kuma.io/transparent-proxy-configmap-name"
+	KumaTrafficExcludeInboundPorts           = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts          = "traffic.kuma.io/exclude-outbound-ports"
+	KumaTrafficExcludeOutboundPortsForUIDs   = "traffic.kuma.io/exclude-outbound-ports-for-uids"
+	KumaTrafficDropInvalidPackets            = "traffic.kuma.io/drop-invalid-packets"
+	KumaTrafficIptablesLogs                  = "traffic.kuma.io/iptables-logs"
+	KumaTrafficExcludeInboundIPs             = "traffic.kuma.io/exclude-inbound-ips"
+	KumaTrafficExcludeOutboundIPs            = "traffic.kuma.io/exclude-outbound-ips"
 
 	// KumaSidecarTokenVolumeAnnotation allows to specify which volume contains the service account token
 	KumaSidecarTokenVolumeAnnotation = "kuma.io/service-account-token-volume"

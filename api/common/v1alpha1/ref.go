@@ -80,6 +80,10 @@ func (x TargetRefKindSlice) Swap(i, j int)      { x[i], x[j] = x[j], x[i] }
 
 // TargetRef defines structure that allows attaching policy to various objects
 type TargetRef struct {
+	// This is needed to not sync policies with empty topLevelTarget ref to old zones that does not support it
+	// This can be removed in 2.11.x
+	UsesSyntacticSugar bool `json:"-"`
+
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
 	Kind TargetRefKind `json:"kind,omitempty"`
@@ -140,6 +144,10 @@ func (b BackendRef) ReferencesRealObject() bool {
 	}
 }
 
+// MatchesHash is used to hash route matches to determine the origin resource
+// for a ref
+type MatchesHash string
+
 type BackendRefHash string
 
 // Hash returns a hash of the BackendRef
@@ -150,9 +158,17 @@ func (in BackendRef) Hash() BackendRefHash {
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
+
+	keys = maps.Keys(in.Labels)
+	sort.Strings(keys)
+	orderedLabels := make([]string, 0, len(in.Labels))
+	for _, k := range keys {
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))
+	}
+
 	name := in.Name
 	if in.Port != nil {
 		name = fmt.Sprintf("%s_svc_%d", in.Name, *in.Port)
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
 }

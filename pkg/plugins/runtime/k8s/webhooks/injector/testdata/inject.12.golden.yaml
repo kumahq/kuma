@@ -9,7 +9,6 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -17,6 +16,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: mesh-name-from-pod
     run: busybox
   name: busybox
 spec:
@@ -127,20 +127,8 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - "9000"
-    - --exclude-outbound-ports
-    - ""
+    - --exclude-inbound-ports=9000
     - --verbose
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install

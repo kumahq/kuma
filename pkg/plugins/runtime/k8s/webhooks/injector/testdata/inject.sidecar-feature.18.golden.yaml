@@ -5,11 +5,9 @@ metadata:
     kubectl.kubernetes.io/default-container: busybox
     kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
-    kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -19,6 +17,7 @@ metadata:
     traffic.kuma.io/exclude-outbound-ports: ""
   creationTimestamp: null
   labels:
+    kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:
@@ -32,20 +31,7 @@ spec:
       readOnly: true
   initContainers:
   - args:
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - ""
-    - --exclude-outbound-ports
-    - ""
     - --verbose
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install

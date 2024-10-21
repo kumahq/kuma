@@ -1,7 +1,6 @@
 package mesh
 
 import (
-	"fmt"
 	"hash/fnv"
 	"net"
 	"strconv"
@@ -13,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -233,25 +233,27 @@ func (d *DataplaneResource) Hash() []byte {
 	return hasher.Sum(nil)
 }
 
-func (d *DataplaneResource) AsOutbounds() xds_types.Outbounds {
+func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentifierResolver) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range d.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
-			outbounds = append(outbounds, &xds_types.Outbound{
-				Address: o.Address,
-				Port:    o.Port,
-				Resource: &core_model.TypedResourceIdentifier{
-					ResourceIdentifier: core_model.TargetRefToResourceIdentifier(
-						d.GetMeta(),
-						common_api.TargetRef{
-							Kind:        common_api.MeshService,
-							Name:        o.BackendRef.Name,
-							SectionName: fmt.Sprintf("%d", o.BackendRef.Port),
-							// todo(lobkovilya): add namespace to Dataplane_Networking_Outbound_BackendRef
-						}),
-					ResourceType: core_model.ResourceType(common_api.MeshService),
+			// convert proto BackendRef to common_api.BackendRef
+			backendRef := common_api.BackendRef{
+				TargetRef: common_api.TargetRef{
+					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
+					Name:   o.BackendRef.Name,
+					Labels: o.BackendRef.Labels,
 				},
-			})
+				Port: pointer.To(o.BackendRef.Port),
+			}
+			ref := core_model.ResolveBackendRef(d.GetMeta(), backendRef, resolver)
+			if ref.ReferencesRealResource() {
+				outbounds = append(outbounds, &xds_types.Outbound{
+					Address:  o.Address,
+					Port:     o.Port,
+					Resource: ref.RealResourceBackendRef().Resource,
+				})
+			}
 		} else {
 			outbounds = append(outbounds, &xds_types.Outbound{LegacyOutbound: o})
 		}

@@ -61,8 +61,8 @@ func Gateway() {
 
 	Context("when mTLS is disabled", func() {
 		It("should proxy simple HTTP requests", func() {
-			ProxySimpleRequests(universal.Cluster, "universal",
-				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
+			Eventually(ProxySimpleRequests(universal.Cluster, "universal",
+				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io"), "60s", "1s").Should(Succeed())
 		})
 	})
 
@@ -71,8 +71,8 @@ func Gateway() {
 			Expect(universal.Cluster.Install(MTLSMeshUniversal(mesh))).To(Succeed())
 			Expect(universal.Cluster.Install(MeshTrafficPermissionAllowAllUniversal(mesh))).To(Succeed())
 
-			ProxySimpleRequests(universal.Cluster, "universal",
-				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io")
+			Eventually(ProxySimpleRequests(universal.Cluster, "universal",
+				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io"), "60s", "1s").Should(Succeed())
 		})
 
 		AfterAll(func() {
@@ -82,15 +82,19 @@ func Gateway() {
 
 	Context("when targeting an external service", func() {
 		BeforeAll(func() {
-			Expect(
-				universal.Cluster.DeployApp(
-					WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", "external-echo"}),
-					WithName("external-echo-"+mesh),
-					WithMesh(mesh),
-					WithoutDataplane(),
-					WithVerbose()),
+			Expect(universal.Cluster.Install(TestServerExternalServiceUniversal("gateway-ext-service", 8080, false))).To(Succeed())
+			Expect(universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
+type: ExternalService
+mesh: %s
+name: external-service
+tags:
+  kuma.io/service: external-echo
+networking:
+  address: "%s"
+`, mesh, net.JoinHostPort(universal.Cluster.GetApp("gateway-ext-service").GetIP(), "8080")))),
 			).To(Succeed())
-
+			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
+			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
 type: MeshGatewayRoute
@@ -111,31 +115,19 @@ conf:
           kuma.io/service: external-echo
 `, mesh))),
 			).To(Succeed())
-
-			Expect(
-				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
-type: ExternalService
-mesh: %s
-name: external-service
-tags:
-  kuma.io/service: external-echo
-networking:
-  address: "%s"
-`, mesh, net.JoinHostPort(universal.Cluster.GetApp("external-echo-gateway").GetIP(), "8080")))),
-			).To(Succeed())
-			Expect(universal.Cluster.Install(TrafficRouteUniversal(mesh))).To(Succeed())
-			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
 		})
 
 		AfterAll(func() {
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficPermissionResourceTypeDescriptor)).To(Succeed())
 			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.TrafficRouteResourceTypeDescriptor)).To(Succeed())
+			Expect(DeleteMeshResources(universal.Cluster, mesh, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
+			Expect(universal.Cluster.DeleteApp("gateway-ext-service")).To(Succeed())
 		})
 
 		It("should proxy simple HTTP requests", func() {
-			ProxySimpleRequests(universal.Cluster, "external-echo",
+			Eventually(ProxySimpleRequests(universal.Cluster, "gateway-ext-service",
 				GatewayAddressPort("gateway-proxy", gatewayPort), "example.kuma.io",
-				client.WithPathPrefix("/external"))
+				client.WithPathPrefix("/external")), "60s", "1s").Should(Succeed())
 		})
 	})
 
@@ -402,20 +394,18 @@ conf:
 
 		It("should proxy simple HTTPS requests with Host header", func() {
 			addr := net.JoinHostPort("example.kuma.io", strconv.Itoa(9080))
-			proxySecureRequests(
+			Eventually(proxySecureRequests(
 				universal.Cluster,
 				"universal",
 				addr,
 				client.Resolve(addr, GatewayAddress("gateway-proxy")),
-			)
+			), "60s", "1s").Should(Succeed())
 		})
 
 		It("should proxy simple HTTPS requests without hostname", func() {
-			proxySecureRequests(
-				universal.Cluster,
-				"universal",
-				GatewayAddressPort("gateway-proxy", 9081),
-			)
+			Eventually(proxySecureRequests(
+				universal.Cluster, "universal",
+				GatewayAddressPort("gateway-proxy", 9081)), "1m", "1s").Should(Succeed())
 		})
 	})
 

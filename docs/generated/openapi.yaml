@@ -2483,6 +2483,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2521,6 +2522,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2547,8 +2549,11 @@ components:
           type: string
         conf:
           description: The actual conf generated
-          type: object
-          x-go-type: interface{}
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: interface{}
         origin:
           type: array
           description: >-
@@ -2565,6 +2570,8 @@ components:
       properties:
         tags:
           type: object
+          additionalProperties:
+            type: string
           x-go-type: map[string]string
         port:
           type: integer
@@ -2594,12 +2601,16 @@ components:
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
-          description: a set of rules for the outbounds of this proxy
+          description: >-
+            a set of rules for the outbounds of this proxy. The field is not set
+            when 'meshService.mode' on Mesh is set to 'Exclusive'.
           items:
             $ref: '#/components/schemas/Rule'
         toResourceRules:
           type: array
-          description: a set of rules for the resources targeted by this proxy
+          description: >-
+            a set of rules for the outbounds produced by real resources (i.e
+            MeshService, MeshExternalService, MeshMultiZoneService).
           items:
             $ref: '#/components/schemas/ResourceRule'
         fromRules:
@@ -3266,8 +3277,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
@@ -4477,8 +4486,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
@@ -4982,8 +4989,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
@@ -5461,8 +5466,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
@@ -7008,8 +7011,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
@@ -7332,8 +7333,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
@@ -7508,8 +7507,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
@@ -8217,7 +8214,6 @@ components:
               type: object
           required:
             - default
-            - targetRef
           type: object
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
@@ -8795,8 +8791,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
@@ -9433,8 +9427,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
@@ -9765,8 +9757,6 @@ components:
                 type: object
               minItems: 1
               type: array
-          required:
-            - targetRef
           type: object
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
@@ -10236,8 +10226,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
@@ -10508,8 +10496,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
@@ -10671,7 +10657,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be force traced
                         if the
@@ -10687,7 +10673,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests will be traced
 
@@ -10697,11 +10683,11 @@ components:
                         random sampling). This field functions as an upper limit
                         on the total
 
-                        configured sampling rate. For instance, setting
-                        client_sampling to 100%
+                        configured sampling rate. For instance, setting client
+                        to 100
 
-                        but overall_sampling to 1% will result in only 1% of
-                        client requests with
+                        but overall to 1 will result in only 1% of client
+                        requests with
 
                         the appropriate headers to be force traced. Mirror of
 
@@ -10715,7 +10701,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be randomly
                         selected for trace
@@ -10850,8 +10836,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
@@ -11083,8 +11067,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
@@ -11198,9 +11180,8 @@ components:
                   address:
                     description: >-
                       Address defines an address to which a user want to send a
-                      request. Is possible to provide `domain`, `ip` and `unix`
-                      sockets.
-                    example: unix:///tmp/example.sock
+                      request. Is possible to provide `domain`, `ip`.
+                    example: example.com
                     minLength: 1
                     type: string
                   port:
@@ -11210,6 +11191,7 @@ components:
                     type: integer
                 required:
                   - address
+                  - port
                 type: object
               type: array
             extension:
@@ -11551,11 +11533,6 @@ components:
                   port:
                     format: int32
                     type: integer
-                  targetPort:
-                    anyOf:
-                      - type: integer
-                      - type: string
-                    x-kubernetes-int-or-string: true
                 required:
                   - port
                 type: object

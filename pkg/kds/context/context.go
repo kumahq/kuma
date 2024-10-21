@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -102,6 +103,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
+			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
@@ -266,7 +268,51 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
 				zone_tokens.SigningKeyPrefix,
 			}...)
-		case r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+		}
+
+		isGlobal := core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
+
+		switch {
+		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllZonesFlag):
+			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+				policy := r.GetSpec().(core_model.Policy)
+				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
+					return false
+				}
+			}
+			return true
+		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
+				if !features.HasFeature(kds.FeatureProducerPolicyFlow) {
+					return false
+				}
+				policy := r.GetSpec().(core_model.Policy)
+				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
+					return false
+				}
+				// if declared role is not 'producer' then no syncing
+				if core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
+					return false
+				}
+				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
+				role, err := core_model.ComputePolicyRole(policy, core_model.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
+				if err != nil {
+					ri := core_model.NewResourceIdentifier(r)
+					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
+					return false
+				}
+				// if the actual role is not 'producer' then no syncing
+				if role != mesh_proto.ProducerPolicyRole {
+					return false
+				}
+				if policy.GetTargetRef().Kind == common_api.MeshSubset {
+					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
+					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
+						return false
+					}
+				}
+			}
+
 			// TODO (Icarus9913): replace the function by model.ZoneOfResource(r)
 			// Reference: https://github.com/kumahq/kuma/issues/10952
 			zoneTag := util.ZoneTag(r)
@@ -283,11 +329,10 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				// make any strong decisions which might affect connectivity
 				return true
 			}
-
 			return zone.Spec.IsEnabled()
-		default:
-			return core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
 		}
+
+		return false
 	}
 }
 

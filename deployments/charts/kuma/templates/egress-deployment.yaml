@@ -45,6 +45,7 @@ spec:
       tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
+      {{ include "kuma.dnsConfig" (dict "dns" .Values.egress.dns) | nindent 6 | trim }}
       containers:
         - name: egress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}

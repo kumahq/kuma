@@ -14,7 +14,7 @@ import (
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -304,9 +304,9 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				meshServiceByName := map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource{}
+				meshServiceByName := map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource{}
 				for _, ms := range given.meshServices {
-					meshServiceByName[model.NewResourceIdentifier(ms)] = ms
+					meshServiceByName[core_model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := BuildEdsEndpointMap(
 					given.mesh,
@@ -1259,7 +1259,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"redis_msvc_6379": []core_xds.Endpoint{
+					"default_redis___msvc_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -1268,7 +1268,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"redis-0_msvc_6379": []core_xds.Endpoint{
+					"default_redis-0___msvc_6379": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.1",
 							Port:     6379,
@@ -1286,7 +1286,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"kong_kong-system_msvc_8080": []core_xds.Endpoint{
+					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     80,
@@ -1304,7 +1304,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight:   1,
 						},
 					},
-					"kong_kong-system_msvc_8081": []core_xds.Endpoint{
+					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
 						{
 							Target:   "192.168.0.2",
 							Port:     8001,
@@ -1326,12 +1326,12 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.HttpProtocol,
+								Protocol: core_mesh.ProtocolHTTP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1379,12 +1379,12 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.TcpProtocol,
+								Protocol: core_mesh.ProtocolTCP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1406,24 +1406,6 @@ var _ = Describe("TrafficRoute", func() {
 							},
 						},
 					},
-					{
-						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
-							Name: "no-tls-mes",
-						},
-						Spec: &meshexternalservice_api.MeshExternalService{
-							Match: meshexternalservice_api.Match{
-								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
-								Port:     10000,
-								Protocol: meshexternalservice_api.GrpcProtocol,
-							},
-							Endpoints: []meshexternalservice_api.Endpoint{
-								{
-									Address: "unix://no-tls-mes",
-								},
-							},
-						},
-					},
 				},
 				zoneEgresses: []*core_mesh.ZoneEgressResource{
 					{
@@ -1439,9 +1421,9 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				mesh: defaultMeshWithMTLSAndZoneEgress,
+				mesh: defaultMeshWithMTLS,
 				expected: core_xds.EndpointMap{
-					"another-mes": []core_xds.Endpoint{
+					"default_another-mes___extsvc_10000": []core_xds.Endpoint{
 						{
 							Target: "1.1.1.1",
 							Port:   10002,
@@ -1453,22 +1435,17 @@ var _ = Describe("TrafficRoute", func() {
 							ExternalService: &core_xds.ExternalService{
 								Protocol:   core_mesh.ProtocolTCP,
 								TLSEnabled: false,
+								OwnerResource: &core_model.TypedResourceIdentifier{
+									ResourceIdentifier: core_model.ResourceIdentifier{
+										Name: "another-mes",
+										Mesh: "default",
+									},
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+								},
 							},
 						},
 					},
-					"no-tls-mes": []core_xds.Endpoint{
-						{
-							Target:   "1.1.1.1",
-							Port:     10002,
-							Locality: nil,
-							Weight:   1,
-							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolGRPC,
-								TLSEnabled: false,
-							},
-						},
-					},
-					"example-mes": []core_xds.Endpoint{
+					"default_example-mes___extsvc_10000": []core_xds.Endpoint{
 						{
 							Target:   "1.1.1.1",
 							Port:     10002,
@@ -1477,6 +1454,13 @@ var _ = Describe("TrafficRoute", func() {
 							ExternalService: &core_xds.ExternalService{
 								Protocol:   core_mesh.ProtocolHTTP,
 								TLSEnabled: false,
+								OwnerResource: &core_model.TypedResourceIdentifier{
+									ResourceIdentifier: core_model.ResourceIdentifier{
+										Name: "example-mes",
+										Mesh: "default",
+									},
+									ResourceType: meshexternalservice_api.MeshExternalServiceType,
+								},
 							},
 						},
 					},
@@ -1493,12 +1477,12 @@ var _ = Describe("TrafficRoute", func() {
 							Match: meshexternalservice_api.Match{
 								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
-								Protocol: meshexternalservice_api.HttpProtocol,
+								Protocol: core_mesh.ProtocolHTTP,
 							},
 							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
-									Port:    pointer.To(meshexternalservice_api.Port(443)),
+									Port:    meshexternalservice_api.Port(443),
 								},
 							},
 							Tls: &meshexternalservice_api.Tls{
@@ -1555,8 +1539,8 @@ var _ = Describe("TrafficRoute", func() {
 				},
 				meshMultiZoneService: []*meshmzservice_api.MeshMultiZoneServiceResource{
 					samples.MeshMultiZoneServiceBackendBuilder().
-						AddMatchedMeshServiceName(model.NewResourceIdentifier(samples.MeshServiceBackend())).
-						AddMatchedMeshServiceName(model.NewResourceIdentifier(samples.MeshServiceSyncedBackend())).
+						AddMatchedMeshServiceName(core_model.NewResourceIdentifier(samples.MeshServiceBackend())).
+						AddMatchedMeshServiceName(core_model.NewResourceIdentifier(samples.MeshServiceSyncedBackend())).
 						Build(),
 				},
 				mesh: defaultMeshWithMTLS,
@@ -1571,7 +1555,7 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"backend_msvc_80": []core_xds.Endpoint{
+					"default_backend___msvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -1581,19 +1565,19 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 					},
-					"backend-4v44xv7dwv4v8z2d_msvc_80": []core_xds.Endpoint{
+					"default_backend__east_msvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_msvc_80",
+								"kuma.io/service": "default_backend__east_msvc_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
 							Locality: &core_xds.Locality{Zone: "east", SubZone: "", Priority: 1, Weight: 0},
 						},
 					},
-					"backend_mzsvc_80": []core_xds.Endpoint{
+					"default_backend___mzsvc_80": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   80,
@@ -1606,7 +1590,7 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags: map[string]string{
-								"kuma.io/service": "backend-4v44xv7dwv4v8z2d_msvc_80",
+								"kuma.io/service": "default_backend__east_msvc_80",
 								"kuma.io/zone":    "east",
 							},
 							Weight:   1,
@@ -1677,12 +1661,12 @@ var _ = Describe("TrafficRoute", func() {
 								Match: meshexternalservice_api.Match{
 									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 									Port:     443,
-									Protocol: meshexternalservice_api.TcpProtocol,
+									Protocol: core_mesh.ProtocolTCP,
 								},
 								Endpoints: []meshexternalservice_api.Endpoint{
 									{
 										Address: "192.168.1.1",
-										Port:    pointer.To(meshexternalservice_api.Port(10000)),
+										Port:    meshexternalservice_api.Port(10000),
 									},
 								},
 							},
@@ -1717,15 +1701,25 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 							},
 						},
-						"example": []core_xds.Endpoint{
+						"default_example___extsvc_443": []core_xds.Endpoint{
 							{
 								Target: "192.168.1.1",
 								Port:   10000,
 								Tags: map[string]string{
 									"mesh": "default",
 								},
-								Weight:          1,
-								ExternalService: &core_xds.ExternalService{TLSEnabled: false, Protocol: core_mesh.ProtocolTCP},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									TLSEnabled: false,
+									Protocol:   core_mesh.ProtocolTCP,
+									OwnerResource: &core_model.TypedResourceIdentifier{
+										ResourceType: "MeshExternalService",
+										ResourceIdentifier: core_model.ResourceIdentifier{
+											Name: "example",
+											Mesh: "default",
+										},
+									},
+								},
 							},
 						},
 					},

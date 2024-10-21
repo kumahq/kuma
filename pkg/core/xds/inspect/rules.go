@@ -106,6 +106,12 @@ func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.D
 	byUniqueClusterName := map[string]*RuleAttachment{}
 	for _, outbound := range networking.Outbound {
 		outboundTags := outbound.GetTags()
+		if _, ok := outboundTags[mesh_proto.ServiceTag]; !ok {
+			// RuleAttachment is part of the old '/rules' API that doesn't support referencing real resources.
+			// That's why we're skipping outbounds with 'backendRef' (they don't have 'kuma.io/service' tag).
+			// For the real resource referencing check '/_rules' endpoint.
+			continue
+		}
 		name, err := tags.Tags(outboundTags).DestinationClusterName(nil)
 		if err != nil {
 			// Error is impossible here (there's always a service on Outbound)

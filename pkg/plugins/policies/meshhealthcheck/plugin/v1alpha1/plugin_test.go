@@ -3,6 +3,7 @@ package v1alpha1_test
 import (
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
 
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
@@ -14,6 +15,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -40,6 +43,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
 
 var _ = Describe("MeshHealthCheck", func() {
@@ -50,13 +54,23 @@ var _ = Describe("MeshHealthCheck", func() {
 
 	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
 		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
+			Name: "backend",
+			Mesh: "default",
 		},
 		ResourceType: "MeshService",
 		SectionName:  "",
+	}
+
+	backendMeshExternalServiceIdentifier := func(mesh string) *core_model.TypedResourceIdentifier {
+		return &core_model.TypedResourceIdentifier{
+			ResourceIdentifier: core_model.ResourceIdentifier{
+				Name:      "external",
+				Mesh:      mesh,
+				Namespace: "",
+				Zone:      "",
+			},
+			ResourceType: "MeshExternalService",
+		}
 	}
 
 	type testCase struct {
@@ -272,11 +286,128 @@ var _ = Describe("MeshHealthCheck", func() {
 		}),
 	)
 
+	XIt("should generate correct configuration for MeshExternalService with ZoneEgress", func() {
+		// given
+		rs := core_xds.NewResourceSet()
+		rs.Add(&core_xds.Resource{
+			Name:           "external-default",
+			Origin:         egress.OriginEgress,
+			Resource:       clusters.NewClusterBuilder(envoy_common.APIV3, "external").MustBuild(),
+			ResourceOrigin: backendMeshExternalServiceIdentifier("default"),
+			Protocol:       core_mesh.ProtocolTCP,
+		})
+		rs.Add(&core_xds.Resource{
+			Name:           "external-mesh2",
+			Origin:         egress.OriginEgress,
+			Resource:       clusters.NewClusterBuilder(envoy_common.APIV3, "external").MustBuild(),
+			ResourceOrigin: backendMeshExternalServiceIdentifier("mesh2"),
+			Protocol:       core_mesh.ProtocolTCP,
+		})
+
+		proxy := &core_xds.Proxy{
+			APIVersion: envoy_common.APIV3,
+			ZoneEgressProxy: &core_xds.ZoneEgressProxy{
+				ZoneEgressResource: &core_mesh.ZoneEgressResource{
+					Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "default"},
+					Spec: &mesh_proto.ZoneEgress{
+						Networking: &mesh_proto.ZoneEgress_Networking{
+							Address: "192.168.0.1",
+							Port:    10002,
+						},
+					},
+				},
+				ZoneIngresses: []*core_mesh.ZoneIngressResource{},
+				MeshResourcesList: []*core_xds.MeshResources{
+					{
+						Mesh: builders.Mesh().WithName("default").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
+						Resources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{
+									samples.MeshExternalServiceExampleBuilder().WithMesh("default").WithName("external").Build(),
+								},
+							},
+						},
+						Dynamic: core_xds.ExternalServiceDynamicPolicies{
+							"default_external___extsvc_9000": {
+								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
+									ToRules: core_rules.ToRules{
+										ResourceRules: core_rules.ResourceRules{
+											*backendMeshExternalServiceIdentifier("default"): {
+												Conf: []interface{}{
+													api.Conf{
+														Interval:           test.ParseDuration("11s"),
+														Timeout:            test.ParseDuration("99s"),
+														UnhealthyThreshold: pointer.To[int32](7),
+														HealthyThreshold:   pointer.To[int32](77),
+														Tcp: &api.TcpHealthCheck{
+															Disabled: pointer.To(false),
+															Send:     pointer.To("cGluZwo="),
+															Receive:  &[]string{"cG9uZwo="},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Mesh: builders.Mesh().WithName("mesh2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
+						Resources: map[core_model.ResourceType]core_model.ResourceList{
+							meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
+								Items: []*meshexternalservice_api.MeshExternalServiceResource{
+									samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-2").Build(),
+								},
+							},
+						},
+						Dynamic: core_xds.ExternalServiceDynamicPolicies{
+							"mesh-2_external___extsvc_9000": {
+								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
+									ToRules: core_rules.ToRules{
+										ResourceRules: core_rules.ResourceRules{
+											*backendMeshExternalServiceIdentifier("mesh2"): {
+												Conf: []interface{}{
+													api.Conf{
+														Interval:           test.ParseDuration("55s"),
+														Timeout:            test.ParseDuration("5s"),
+														UnhealthyThreshold: pointer.To[int32](122),
+														HealthyThreshold:   pointer.To[int32](311),
+														Tcp: &api.TcpHealthCheck{
+															Disabled: pointer.To(false),
+															Send:     pointer.To("cGluZwo="),
+															Receive:  &[]string{"cG9uZwo="},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// when
+		p := plugin.NewPlugin().(core_plugins.PolicyPlugin)
+		err := p.Apply(rs, xds_context.Context{}, proxy)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(getResource(rs, envoy_resource.ClusterType)).
+			To(matchers.MatchGoldenYAML(path.Join("testdata", "basic_egress_meshexternalservice_cluster.golden.yaml")))
+	})
+
 	type gatewayTestCase struct {
 		name           string
 		gatewayRoutes  []*core_mesh.MeshGatewayRouteResource
 		meshhttproutes core_rules.GatewayRules
 		meshtcproutes  core_rules.GatewayRules
+		meshservices   []*meshservice_api.MeshServiceResource
 		rules          core_rules.GatewayRules
 	}
 	DescribeTable("should generate proper Envoy config for MeshGateways",
@@ -320,6 +451,11 @@ var _ = Describe("MeshHealthCheck", func() {
 			if len(given.gatewayRoutes) > 0 {
 				resources.MeshLocalResources[core_mesh.MeshGatewayRouteType] = &core_mesh.MeshGatewayRouteResourceList{
 					Items: given.gatewayRoutes,
+				}
+			}
+			if len(given.meshservices) > 0 {
+				resources.MeshLocalResources[meshservice_api.MeshServiceType] = &meshservice_api.MeshServiceResourceList{
+					Items: given.meshservices,
 				}
 			}
 
@@ -370,9 +506,9 @@ var _ = Describe("MeshHealthCheck", func() {
 			gatewayRoutes: []*core_mesh.MeshGatewayRouteResource{samples.BackendGatewayRoute()},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -408,6 +544,229 @@ var _ = Describe("MeshHealthCheck", func() {
 									},
 									ReuseConnection: pointer.To(true),
 								},
+							}},
+						},
+					},
+				},
+			},
+		}),
+		Entry("HTTP HealthCheck to real MeshService", gatewayTestCase{
+			name: "real-mesh-service-meshhttproute",
+			meshservices: []*meshservice_api.MeshServiceResource{
+				{
+					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{},
+						Ports: []meshservice_api.Port{{
+							Port:        80,
+							TargetPort:  intstr.FromInt(8084),
+							AppProtocol: core_mesh.ProtocolHTTP,
+						}},
+						Identities: []meshservice_api.MeshServiceIdentity{
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "backend",
+							},
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "other-backend",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{{
+							IP: "10.0.0.1",
+						}},
+					},
+				},
+			},
+			meshhttproutes: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Port:      pointer.To(uint32(80)),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									}},
+								},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+								},
+								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
+								},
+							}},
+						},
+					},
+				},
+			},
+			rules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.Subset{},
+								Conf: api.Conf{
+									Interval:                     test.ParseDuration("10s"),
+									Timeout:                      test.ParseDuration("2s"),
+									UnhealthyThreshold:           pointer.To[int32](3),
+									HealthyThreshold:             pointer.To[int32](1),
+									InitialJitter:                test.ParseDuration("13s"),
+									IntervalJitter:               test.ParseDuration("15s"),
+									IntervalJitterPercent:        pointer.To[int32](10),
+									HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+									FailTrafficOnPanic:           pointer.To(true),
+									EventLogPath:                 pointer.To("/tmp/log.txt"),
+									AlwaysLogHealthCheckFailures: pointer.To(false),
+									NoTrafficInterval:            test.ParseDuration("16s"),
+									Http: &api.HttpHealthCheck{
+										Disabled: pointer.To(false),
+										Path:     pointer.To("/health"),
+										RequestHeadersToAdd: &api.HeaderModifier{
+											Add: []api.HeaderKeyValue{
+												{
+													Name:  "x-some-header",
+													Value: "value",
+												},
+											},
+											Set: []api.HeaderKeyValue{
+												{
+													Name:  "x-some-other-header",
+													Value: "value",
+												},
+											},
+										},
+										ExpectedStatuses: &[]int32{200, 201},
+									},
+									ReuseConnection: pointer.To(true),
+								},
+							}},
+						},
+					},
+				},
+			},
+		}),
+		Entry("real MeshService targeted HTTP HealthCheck to real MeshService", gatewayTestCase{
+			name: "real-mesh-service-target-real-mesh-service-meshhttproute",
+			meshservices: []*meshservice_api.MeshServiceResource{
+				{
+					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+					Spec: &meshservice_api.MeshService{
+						Selector: meshservice_api.Selector{},
+						Ports: []meshservice_api.Port{{
+							Port:        80,
+							TargetPort:  intstr.FromInt(8084),
+							AppProtocol: core_mesh.ProtocolHTTP,
+						}},
+						Identities: []meshservice_api.MeshServiceIdentity{
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "backend",
+							},
+							{
+								Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+								Value: "other-backend",
+							},
+						},
+					},
+					Status: &meshservice_api.MeshServiceStatus{
+						VIPs: []meshservice_api.VIP{{
+							IP: "10.0.0.1",
+						}},
+					},
+				},
+			},
+			meshhttproutes: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							Rules: core_rules.Rules{{
+								Subset: core_rules.MeshSubset(),
+								Conf: meshhttproute_api.PolicyDefault{
+									Rules: []meshhttproute_api.Rule{{
+										Matches: []meshhttproute_api.Match{{
+											Path: &meshhttproute_api.PathMatch{
+												Type:  meshhttproute_api.Exact,
+												Value: "/",
+											},
+										}},
+										Default: meshhttproute_api.RuleConf{
+											BackendRefs: &[]common_api.BackendRef{{
+												TargetRef: builders.TargetRefService("backend"),
+												Port:      pointer.To(uint32(80)),
+												Weight:    pointer.To(uint(100)),
+											}},
+										},
+									}},
+								},
+								Origin: []core_model.ResourceMeta{
+									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+								},
+								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
+								},
+							}},
+						},
+					},
+				},
+			},
+			rules: core_rules.GatewayRules{
+				ToRules: core_rules.GatewayToRules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
+						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
+							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								backendMeshServiceIdentifier: {
+									Conf: []interface{}{
+										api.Conf{
+											Interval:                     test.ParseDuration("10s"),
+											Timeout:                      test.ParseDuration("2s"),
+											UnhealthyThreshold:           pointer.To[int32](3),
+											HealthyThreshold:             pointer.To[int32](1),
+											InitialJitter:                test.ParseDuration("13s"),
+											IntervalJitter:               test.ParseDuration("15s"),
+											IntervalJitterPercent:        pointer.To[int32](10),
+											HealthyPanicThreshold:        pointer.To(intstr.FromString("62.9")),
+											FailTrafficOnPanic:           pointer.To(true),
+											EventLogPath:                 pointer.To("/tmp/log.txt"),
+											AlwaysLogHealthCheckFailures: pointer.To(false),
+											NoTrafficInterval:            test.ParseDuration("16s"),
+											Http: &api.HttpHealthCheck{
+												Disabled: pointer.To(false),
+												Path:     pointer.To("/health"),
+												RequestHeadersToAdd: &api.HeaderModifier{
+													Add: []api.HeaderKeyValue{
+														{
+															Name:  "x-some-header",
+															Value: "value",
+														},
+													},
+													Set: []api.HeaderKeyValue{
+														{
+															Name:  "x-some-other-header",
+															Value: "value",
+														},
+													},
+												},
+												ExpectedStatuses: &[]int32{200, 201},
+											},
+											ReuseConnection: pointer.To(true),
+										},
+									},
+								},
 							},
 						},
 					},
@@ -418,9 +777,9 @@ var _ = Describe("MeshHealthCheck", func() {
 			name: "basic-meshhttproute",
 			meshhttproutes: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
@@ -438,16 +797,16 @@ var _ = Describe("MeshHealthCheck", func() {
 										},
 									}},
 								},
-							},
+							}},
 						},
 					},
 				},
 			},
 			meshtcproutes: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.MeshSubset(),
 								Conf: meshtcproute_api.Rule{
 									Default: meshtcproute_api.RuleConf{
@@ -457,16 +816,16 @@ var _ = Describe("MeshHealthCheck", func() {
 										}},
 									},
 								},
-							},
+							}},
 						},
 					},
 				},
 			},
 			rules: core_rules.GatewayRules{
 				ToRules: core_rules.GatewayToRules{
-					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.Rules{
+					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -502,10 +861,10 @@ var _ = Describe("MeshHealthCheck", func() {
 									},
 									ReuseConnection: pointer.To(true),
 								},
-							},
+							}},
 						},
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
@@ -522,7 +881,7 @@ var _ = Describe("MeshHealthCheck", func() {
 									NoTrafficInterval:            test.ParseDuration("16s"),
 									ReuseConnection:              pointer.To(true),
 								},
-							},
+							}},
 						},
 					},
 				},
@@ -530,3 +889,15 @@ var _ = Describe("MeshHealthCheck", func() {
 		}),
 	)
 })
+
+func getResource(
+	resourceSet *core_xds.ResourceSet,
+	typ envoy_resource.Type,
+) []byte {
+	resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
+	Expect(err).ToNot(HaveOccurred())
+	actual, err := util_proto.ToYAML(resources)
+	Expect(err).ToNot(HaveOccurred())
+
+	return actual
+}

@@ -1,9 +1,13 @@
 package meshmultizoneservice
 
 import (
+	"fmt"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -13,11 +17,12 @@ import (
 
 func Connectivity() {
 	namespace := "mzmsconnectivity"
+	clientNamespace := "mzmsconnectivity-client"
 	meshName := "mzmsconnectivity"
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MTLSMeshUniversal(meshName)).
+			Install(MTLSMeshWithMeshServicesUniversal(meshName, "Everywhere")).
 			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(YamlUniversal(`
 type: MeshMultiZoneService
@@ -30,7 +35,6 @@ spec:
     meshService:
       matchLabels:
         kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: mzmsconnectivity
   ports:
   - port: 80
     appProtocol: http
@@ -38,6 +42,52 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		meshGateway := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshGateway
+metadata:
+  name: edge-gateway-mmzs
+  labels:
+    kuma.io/origin: zone
+mesh: %s
+spec:
+  selectors:
+  - match:
+      kuma.io/service: edge-gateway-mmzs_%s_svc
+  conf:
+    listeners:
+    - port: 8080
+      protocol: HTTP
+`, meshName, namespace)
+		gatewayRoute := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: route-mzms
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: edge-gateway-mmzs
+  to:
+    - targetRef:
+        kind: Mesh
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /mmzs
+          default:
+            backendRefs:
+              - kind: MeshMultiZoneService
+                labels:
+                  kuma.io/display-name: test-server
+                port: 80
+                weight: 1
+`, Config.KumaNamespace, meshName)
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -45,32 +95,18 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
+			Install(Namespace(clientNamespace)).
+			Install(testserver.Install(
+				testserver.WithName("demo-client"),
+				testserver.WithNamespace(clientNamespace),
+			)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			Install(YamlK8s(meshGateway)).
+			Install(YamlK8s(gatewayRoute)).
+			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-mmzs", namespace, meshName))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		kubeServiceYAML := `
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: mzmsconnectivity
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: mzmsconnectivity
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: mzmsconnectivity
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`
 		err = NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
@@ -78,33 +114,12 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Install(YamlK8s(kubeServiceYAML)).
 			Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
-
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: mzmsconnectivity
-labels:
-  kuma.io/origin: zone
-  kuma.io/env: universal
-  k8s.kuma.io/namespace: mzmsconnectivity # add a label to aggregate kube and uni service
-  kuma.io/display-name: test-server # add a label to aggregate kube and uni service
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
 
 		err = NewClusterSetup().
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			Setup(multizone.UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -119,6 +134,7 @@ spec:
 
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone1.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.UniZone1.DeleteMeshApps(meshName)).To(Succeed())
 		Expect(multizone.UniZone2.DeleteMeshApps(meshName)).To(Succeed())
@@ -138,6 +154,30 @@ spec:
 			return response.Instance, nil
 		}
 	}
+
+	type testCase struct {
+		address       string
+		instanceMatch types.GomegaMatcher
+	}
+
+	DescribeTable("Gateway in Kubernetes",
+		func(given testCase) {
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					multizone.KubeZone1, "demo-client",
+					fmt.Sprintf("http://edge-gateway-mmzs.%s:8080/%s", namespace, given.address),
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(given.instanceMatch)
+			}, "30s", "1s").Should(Succeed())
+		},
+		Entry("should access MeshMultiZoneService", testCase{
+			address:       "mmzs",
+			instanceMatch: Equal("kube-test-server-1"),
+		}),
+	)
 
 	It("should access app from kube cluster and fallback to other zones", func() {
 		// given traffic to local zone only

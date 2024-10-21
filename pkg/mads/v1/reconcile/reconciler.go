@@ -11,22 +11,23 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator *SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache, generator *SnapshotGenerator) Reconciler {
 	return &reconciler{
+		reconcilerMutex:     &sync.Mutex{},
 		hasher:              hasher,
 		cache:               cache,
 		generator:           generator,
-		versioner:           versioner,
 		knownClientIds:      map[string]bool{},
 		knownClientIdsMutex: &sync.Mutex{},
 	}
 }
 
 type reconciler struct {
+	reconcilerMutex *sync.Mutex
+
 	hasher              envoy_cache.NodeHash
 	cache               util_xds_v3.SnapshotCache
 	generator           *SnapshotGenerator
-	versioner           util_xds_v3.SnapshotVersioner
 	knownClientIds      map[string]bool
 	knownClientIdsMutex *sync.Mutex
 }
@@ -38,6 +39,12 @@ func (r *reconciler) KnownClientIds() map[string]bool {
 }
 
 func (r *reconciler) Reconcile(ctx context.Context) error {
+	r.reconcilerMutex.Lock()
+	defer r.reconcilerMutex.Unlock()
+	return r.reconcile(ctx)
+}
+
+func (r *reconciler) reconcile(ctx context.Context) error {
 	newSnapshotPerClient, err := r.generator.GenerateSnapshot(ctx)
 	if err != nil {
 		return err
@@ -48,9 +55,17 @@ func (r *reconciler) Reconcile(ctx context.Context) error {
 		if err := newSnapshot.Consistent(); err != nil {
 			return err
 		}
-		old, _ := r.cache.GetSnapshot(clientId)
-		newSnapshot = r.versioner.Version(newSnapshot, old)
-		err := r.cache.SetSnapshot(clientId, newSnapshot)
+		var snap util_xds_v3.Snapshot
+		oldSnapshot, _ := r.cache.GetSnapshot(clientId)
+		switch {
+		case oldSnapshot == nil:
+			snap = newSnapshot
+		case !util_xds_v3.SingleTypeSnapshotEqual(oldSnapshot, newSnapshot):
+			snap = newSnapshot
+		default:
+			snap = oldSnapshot
+		}
+		err := r.cache.SetSnapshot(clientId, snap)
 		if err != nil {
 			return err
 		}
@@ -59,6 +74,15 @@ func (r *reconciler) Reconcile(ctx context.Context) error {
 	r.knownClientIdsMutex.Lock()
 	r.knownClientIds = knownClients
 	r.knownClientIdsMutex.Unlock()
+	return nil
+}
+
+func (r *reconciler) ReconcileIfNeeded(ctx context.Context, node *envoy_core.Node) error {
+	r.reconcilerMutex.Lock()
+	defer r.reconcilerMutex.Unlock()
+	if r.NeedsReconciliation(node) {
+		return r.reconcile(ctx)
+	}
 	return nil
 }
 

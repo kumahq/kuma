@@ -49,8 +49,8 @@ metadata:
   namespace: %s
   labels:
     app: wait-for-envoy
-  annotations:
     kuma.io/mesh: %s
+  annotations:
     kuma.io/wait-for-dataplane-ready: "true"
 spec:
   restartPolicy: Never

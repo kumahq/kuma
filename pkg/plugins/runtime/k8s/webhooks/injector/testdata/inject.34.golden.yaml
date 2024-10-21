@@ -7,11 +7,9 @@ metadata:
     kuma.io/application-probe-proxy-port: "0"
     kuma.io/envoy-admin-port: "9901"
     kuma.io/init-first: "true"
-    kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15055"
     kuma.io/transparent-proxying-ip-family-mode: ipv4
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -19,6 +17,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:

@@ -19,6 +19,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
@@ -118,7 +119,6 @@ var _ = Describe("snapshotGenerator", func() {
 					".mesh",
 					80,
 					xds_context.AnyToAnyReachableServicesGraphBuilder,
-					false,
 				)
 				newMetrics, err := metrics.NewMetrics(zone)
 				Expect(err).ToNot(HaveOccurred())
@@ -152,6 +152,10 @@ var _ = Describe("snapshotGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
+				for c := range snapshotPerClient {
+					// Cleanup the versions as they are UUIDs
+					snapshotPerClient[c] = snapshotPerClient[c].WithVersion(mads_v1.MonitoringAssignmentType, "")
+				}
 				Expect(snapshotPerClient).To(Equal(given.expectedSnapshots))
 			},
 			Entry("no Meshes, no Dataplanes, no MeshMetrics", testCase{
@@ -292,7 +296,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -339,7 +343,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -398,7 +402,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -487,7 +491,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
 								Name: "backend-01",
 							},
@@ -559,7 +563,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -585,7 +589,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
 								Name: "backend-02",
 							},
@@ -679,7 +683,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.Mesh,
 							},
 							Default: v1alpha1.Conf{
@@ -705,7 +709,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Mesh: "default",
 						},
 						Spec: &v1alpha1.MeshMetric{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
 								Name: "backend-02",
 							},

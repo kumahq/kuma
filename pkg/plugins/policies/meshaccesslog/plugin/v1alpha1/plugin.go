@@ -67,8 +67,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 		return err
 	}
 
-	if err := plugin_xds.HandleClusters(*endpoints, rs, proxy); err != nil {
-		return errors.Wrap(err, "unable to handle clusters for policy")
+	if err := plugin_xds.AddLogBackendConf(*endpoints, rs, proxy); err != nil {
+		return errors.Wrap(err, "unable to add configuration for MeshAccessLog backends")
 	}
 
 	return nil
@@ -207,7 +207,7 @@ func applyToGateway(
 
 		if toListenerRules, ok := rules.ToRules.ByListener[listenerKey]; ok {
 			if err := configureOutbound(
-				toListenerRules,
+				toListenerRules.Rules,
 				proxy.Dataplane,
 				core_rules.Subset{},
 				mesh_proto.MatchAllTag,

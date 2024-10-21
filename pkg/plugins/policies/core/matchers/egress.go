@@ -44,6 +44,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	}
 
 	var fr core_rules.FromRules
+	var tr core_rules.ToRules
 	var err error
 
 	switch {
@@ -52,10 +53,18 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		// Picking "from" rules works for us today, because there is only MeshFaultInjection policy that has both "to"
 		// and "from" and is applied on zone egress. In the future, we might want to move the strategy down to the policy plugins.
 		fr, err = processFromRules(tags, policies)
+		if err != nil {
+			return core_xds.TypedMatchingPolicies{}, err
+		}
+		tr, err = processToResourceRules(policies, resources)
 	case isFrom:
 		fr, err = processFromRules(tags, policies)
 	case isTo:
 		fr, err = processToRules(tags, policies)
+		if err != nil {
+			return core_xds.TypedMatchingPolicies{}, err
+		}
+		tr, err = processToResourceRules(policies, resources)
 	}
 
 	if err != nil {
@@ -65,6 +74,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 	return core_xds.TypedMatchingPolicies{
 		Type:      rType,
 		FromRules: fr,
+		ToRules:   tr,
 	}, nil
 }
 
@@ -168,9 +178,24 @@ func processToRules(tags map[string]string, policies []core_model.Resource) (cor
 		return core_rules.FromRules{}, err
 	}
 
-	return core_rules.FromRules{Rules: map[core_rules.InboundListener]core_rules.Rules{
-		{}: rules,
-	}}, nil
+	return core_rules.FromRules{
+		Rules: map[core_rules.InboundListener]core_rules.Rules{{}: rules},
+	}, nil
+}
+
+func processToResourceRules(policies []core_model.Resource, resources xds_context.Resources) (core_rules.ToRules, error) {
+	toList, err := core_rules.BuildToList(policies, resources)
+	if err != nil {
+		return core_rules.ToRules{}, err
+	}
+
+	resourceRules, err := core_rules.BuildResourceRules(toList, resources)
+	if err != nil {
+		return core_rules.ToRules{}, err
+	}
+	return core_rules.ToRules{
+		ResourceRules: resourceRules,
+	}, nil
 }
 
 type artificialPolicyItem struct {

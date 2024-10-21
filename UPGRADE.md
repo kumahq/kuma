@@ -8,6 +8,24 @@ does not have any particular instructions.
 
 ## Upgrade to `2.9.x`
 
+### MeshAccessLog
+
+Policies targeting `spec.targetRef.kind: MeshGateway` can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
+### MeshLoadBalancingStrategy
+
+Policies targeting `spec.targetRef.kind: MeshGateway` and setting the `spec.loadBalancer` field can now only target `kind: Mesh` in
+`to[].targetRef`. Previously MeshService, MeshExternalService, MeshMultiZoneService were allowed but the resulting configuration
+was ambiguous and nondeterministic.
+
+### MeshExternalService
+
+#### Removal of unix sockets support
+
+It's no longer possible to define a unix domain socket on the `address` field.
+
 ### Upgrading Transparent Proxy Configuration
 
 #### Removal of Deprecated IPv6 Redirection Flag and Annotation
@@ -176,26 +194,24 @@ Migration step:
 
 ### Introduction to Application Probe Proxy and deprecation of Virtual Probes
 
-To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports HTTP Get, TCP Socket and gRPC application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
+To support more types of application probes on Kubernetes, in version 2.9, we introduced a new feature named "Application Probe Proxy" which supports `HTTPGet`, `TCPSocket` and `gRPC` application probes. Starting from `2.9.x`, Virtual Probes is deprecated, and Application Probe Proxy is enabled by default.
 
 Application workloads using Virtual Probes will be migrated to Application Probe Proxy automatically on next restart/redeploy on Kubernetes, without other operations. 
 
-Application Probe Proxy will by default listen on port `9001`. If you'd customized the Virtual Probes port, you might also want to customize the port of Application Probe Proxy. You may do so using one of these methods:
+Application Probe Proxy will by default listen on port `9001`. To prevent potential conflicts with applications, you may customize this port using one of these methods:
 
-1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.sidecarContainer.applicationProbeProxyPort` 
+1. Configuring on the control plane to apply on all dataplanes: set the port onto configuration key `runtime.kubernetes.injector.applicationProbeProxyPort` 
 1. Configuring on the control plane to apply on all dataplanes: set the port using environment variable `KUMA_RUNTIME_KUBERNETES_APPLICATION_PROBE_PROXY_PORT` 
 1. Configuring for certain dataplanes: set the port using pod annotation `kuma.io/application-probe-proxy-port`
 
-By setting the port to `0`, Application Probe Proxy feature will be disabled.
-
-When the Application Probe Proxy is disabled, Virtual Probes still works as usual before Virtual Probes is removed.
+By setting the port to `0`, Application Probe Proxy feature will be disabled, and when it's disabled, Virtual Probes still works as usual until the deprecation period ends.
 
 Because of deprecation of Virtual Probes, the following items are considered deprecated:
 
 - Pod annotation `kuma.io/virtual-probes`
 - Pod annotation `kuma.io/virtual-probes-port`
-- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesEnabled`
-- Control plane configuration key `runtime.kubernetes.injector.sidecarContainer.virtualProbesPort`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesEnabled`
+- Control plane configuration key `runtime.kubernetes.injector.virtualProbesPort`
 - Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED`
 - Control plane environment variable `KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT`
 - Data field `probes` on `Dataplane` objects
@@ -210,6 +226,18 @@ Indeed `service` is a very common label and metrics were sometimes coliding with
 ### Removal of KDS `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` configuration option
 
 In this release, KDS Delta is used by default and the CP environment variable `KUMA_EXPERIMENTAL_KDS_DELTA_ENABLED` doesn't exist anymore.
+
+### Deprecation of `yes/no` values for annotation switches
+
+The values `yes` and `no` are deprecated for specifying boolean values in switches based on pod annotations, and support for these values will be removed in a future release. Since these values were undocumented, they are not expected to be widely used.
+
+Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. [Check the documentation](https://kuma.io/docs/latest/reference/kubernetes-annotations/) for the specific annotation to confirm the correct replacements.
+
+#### Deprecation of `kuma.io/mesh` annotation
+
+It was previously possible to create a resource in a `Mesh` by providing the `Mesh` name as an annotation, but this support has been deprecated and will be removed in the future.
+
+Please use the `kuma.io/mesh` label instead.
 
 ## Upgrade to `2.8.x`
 

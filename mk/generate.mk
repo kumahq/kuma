@@ -31,10 +31,10 @@ clean/protos: ## Dev: Remove auto-generated Protobuf files
 .PHONY: generate
 generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIRS)),resources/type generate/builtin-crds) generate/policies generate/oas $(EXTRA_GENERATE_DEPS_TARGETS) ## Dev: Run all code generation
 
-$(POLICY_GEN):
+$(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
-$(RESOURCE_GEN):
+$(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 .PHONY: resources/type
@@ -108,6 +108,10 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES)
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
 	done
+
+.PHONY: generate/oas-for-ts
+generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
+
 
 .PHONY: generate/builtin-crds
 generate/builtin-crds: $(RESOURCE_GEN)

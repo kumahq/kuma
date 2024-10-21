@@ -13,7 +13,7 @@ type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// MeshTrace configuration.
 	Default Conf `json:"default,omitempty"`
 }
@@ -103,26 +103,26 @@ type Sampling struct {
 	// Target percentage of requests will be traced
 	// after all other sampling checks have been applied (client, force tracing,
 	// random sampling). This field functions as an upper limit on the total
-	// configured sampling rate. For instance, setting client_sampling to 100%
-	// but overall_sampling to 1% will result in only 1% of client requests with
+	// configured sampling rate. For instance, setting client to 100
+	// but overall to 1 will result in only 1% of client requests with
 	// the appropriate headers to be force traced. Mirror of
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 	// Either int or decimal represented as string.
-	// +kubebuilder:default="100%"
+	// +kubebuilder:default=100
 	Overall *intstr.IntOrString `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 	// Either int or decimal represented as string.
-	// +kubebuilder:default="100%"
+	// +kubebuilder:default=100
 	Client *intstr.IntOrString `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced.
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 	// Either int or decimal represented as string.
-	// +kubebuilder:default="100%"
+	// +kubebuilder:default=100
 	Random *intstr.IntOrString `json:"random,omitempty"`
 }
 

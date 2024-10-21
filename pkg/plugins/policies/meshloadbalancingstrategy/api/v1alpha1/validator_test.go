@@ -319,6 +319,27 @@ to:
           failoverThreshold:
             percentage: 0
 `),
+		XErrorCases("MeshExternalService can be set only with Mesh", []validators.Violation{{
+			Field:   "spec.to[0].targetRef.kind",
+			Message: "kind MeshExternalService is only allowed with targetRef.kind: Mesh as it is configured on the Zone Egress and shared by all clients in the mesh",
+		}}, `
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/service: test
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: svc-1
+    default:
+      localityAwareness:
+        disabled: true
+      loadBalancer:
+        type: LeastRequest
+`),
 		ErrorCases("percentage is not a parseable number", []validators.Violation{{
 			Field:   "spec.to[0].default.localityAwareness.crossZone.failoverThreshold.percentage",
 			Message: "string must be a valid number",
@@ -404,6 +425,29 @@ to:
             - to:
                 type: AnyExcept
 
+`),
+		ErrorCases(
+			"invalid MeshGateway and to MeshService",
+			[]validators.Violation{{
+				Field:   "spec.to[0].targetRef.kind",
+				Message: "value is not supported, only Mesh is allowed if loadBalancer is set",
+			}},
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshGateway
+  name: edge-gateway
+to:
+  - targetRef:
+      kind: MeshService
+      name: svc-1
+    default:
+      loadBalancer:
+        type: LeastRequest
+        leastRequest:
+          activeRequestBias: "1.3"
 `),
 	)
 
@@ -511,6 +555,22 @@ to:
   - targetRef:
       kind: MeshService
       name: svc-2
+    default:
+      localityAwareness:
+        disabled: true
+`),
+		XEntry(
+			"to MeshExternalService",
+			`
+type: MeshLoadBalancingStrategy
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshExternalService
+      name: mes
     default:
       localityAwareness:
         disabled: true

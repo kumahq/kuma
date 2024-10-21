@@ -6,8 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -15,8 +17,8 @@ import (
 
 func AutoReachableMeshServices() {
 	var k8sCluster Cluster
-	meshName := "reachable-backends"
-	namespace := "reachable-backends"
+	meshName := "auto-reachable-backends"
+	namespace := "auto-reachable-backends"
 
 	hostnameGenerator := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -40,11 +42,16 @@ spec:
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Zone,
 				WithEnv("KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES", "true"),
-				WithEnv("KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(MTLSMeshKubernetes(meshName)).
+			Install(
+				Yaml(
+					builders.Mesh().
+						WithName(meshName).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				),
+			).
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
@@ -98,7 +105,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace))))
+			g.Expect(stdout).To(Not(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_defaul_msvc_80", meshName, namespace))))
 		}, "30s", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
@@ -106,7 +113,7 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			stdout, err := k8sCluster.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplane", pod+"."+namespace, "--type=clusters", fmt.Sprintf("--mesh=%s", meshName))
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("first-test-server_%s_msvc_80", namespace)))
+			g.Expect(stdout).To(ContainSubstring(fmt.Sprintf("%s_first-test-server_%s_default_msvc_80", meshName, namespace)))
 		}, "30s", "1s").Should(Succeed())
 
 		Consistently(func(g Gomega) {

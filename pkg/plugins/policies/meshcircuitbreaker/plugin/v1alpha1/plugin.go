@@ -7,6 +7,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -19,7 +21,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-var _ core_plugins.PolicyPlugin = &plugin{}
+var _ core_plugins.EgressPolicyPlugin = &plugin{}
 
 type plugin struct{}
 
@@ -35,11 +37,18 @@ func (p plugin) MatchedPolicies(
 	return matchers.MatchedPolicies(api.MeshCircuitBreakerType, dataplane, resources, opts...)
 }
 
+func (p plugin) EgressMatchedPolicies(tags map[string]string, resources xds_context.Resources, opts ...core_plugins.MatchedPoliciesOption) (core_xds.TypedMatchingPolicies, error) {
+	return matchers.EgressMatchedPolicies(api.MeshCircuitBreakerType, tags, resources, opts...)
+}
+
 func (p plugin) Apply(
 	rs *core_xds.ResourceSet,
 	ctx xds_context.Context,
 	proxy *core_xds.Proxy,
 ) error {
+	if proxy.ZoneEgressProxy != nil {
+		return applyToEgressRealResources(rs, proxy)
+	}
 	policies, ok := proxy.Policies.Dynamic[api.MeshCircuitBreakerType]
 	if !ok {
 		return nil
@@ -55,11 +64,11 @@ func (p plugin) Apply(
 		return err
 	}
 
-	if err := applyToGateways(policies.GatewayRules, clusters.Gateway, proxy); err != nil {
+	if err := applyToGateways(ctx.Mesh, proxy, rs, policies.GatewayRules, clusters.Gateway); err != nil {
 		return err
 	}
 
-	if err := applyToRealResources(rs, policies.ToRules.ResourceRules, ctx.Mesh); err != nil {
+	if err := applyToRealResources(ctx.Mesh, rs, policies.ToRules.ResourceRules); err != nil {
 		return err
 	}
 
@@ -119,10 +128,14 @@ func applyToOutbounds(
 }
 
 func applyToGateways(
+	meshCtx xds_context.MeshContext,
+	proxy *core_xds.Proxy,
+	rs *core_xds.ResourceSet,
 	gatewayRules core_rules.GatewayRules,
 	gatewayClusters map[string]*envoy_cluster.Cluster,
-	proxy *core_xds.Proxy,
 ) error {
+	resourcesByOrigin := rs.IndexByOrigin(core_xds.NonMeshExternalService)
+
 	for _, listenerInfo := range gateway.ExtractGatewayListeners(proxy) {
 		rules, ok := gatewayRules.ToRules.ByListener[core_rules.InboundListener{
 			Address: proxy.Dataplane.Spec.GetNetworking().Address,
@@ -147,11 +160,27 @@ func applyToGateways(
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
 					if err := configure(
-						rules,
+						rules.Rules,
 						core_rules.MeshService(serviceName),
 						cluster,
 					); err != nil {
 						return err
+					}
+
+					// This happens when using MeshGatewayRoutes
+					if dest.BackendRef == nil {
+						continue
+					}
+					if realRef := dest.BackendRef.ResourceOrNil(); realRef != nil {
+						resources := resourcesByOrigin[*realRef]
+						if err := applyToRealResource(
+							meshCtx,
+							rules.ResourceRules,
+							*realRef,
+							resources,
+						); err != nil {
+							return err
+						}
 					}
 				}
 			}
@@ -173,21 +202,72 @@ func configure(
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
-	for uri, resType := range rs.IndexByOrigin() {
-		conf := rules.Compute(uri, meshCtx.Resources)
-		if conf == nil {
-			continue
-		}
+func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
+	indexed := rs.IndexByOrigin()
+	for _, meshResources := range proxy.ZoneEgressProxy.MeshResourcesList {
+		meshExternalServices := meshResources.ListOrEmpty(meshexternalservice_api.MeshExternalServiceType)
+		for _, mes := range meshExternalServices.GetItems() {
+			meshExtSvc := mes.(*meshexternalservice_api.MeshExternalServiceResource)
+			policies, ok := meshResources.Dynamic[meshExtSvc.DestinationName(uint32(meshExtSvc.Spec.Match.Port))]
+			if !ok {
+				continue
+			}
+			mhc, ok := policies[api.MeshCircuitBreakerType]
+			if !ok {
+				continue
+			}
+			for mesID, typedResources := range indexed {
+				conf := mhc.ToRules.ResourceRules.Compute(mesID, meshResources)
+				if conf == nil {
+					continue
+				}
 
-		for typ, resources := range resType {
-			switch typ {
-			case envoy_resource.ClusterType:
-				err := configureClusters(resources, conf.Conf[0].(api.Conf))
-				if err != nil {
-					return err
+				for typ, resources := range typedResources {
+					switch typ {
+					case envoy_resource.ClusterType:
+						err := configureClusters(resources, conf.Conf[0].(api.Conf))
+						if err != nil {
+							return err
+						}
+					}
 				}
 			}
+		}
+	}
+	return nil
+}
+
+func applyToRealResource(
+	meshCtx xds_context.MeshContext,
+	rules core_rules.ResourceRules,
+	uri core_model.TypedResourceIdentifier,
+	resourcesByType core_xds.ResourcesByType,
+) error {
+	conf := rules.Compute(uri, meshCtx.Resources)
+	if conf == nil {
+		return nil
+	}
+
+	for typ, resources := range resourcesByType {
+		switch typ {
+		case envoy_resource.ClusterType:
+			err := configureClusters(resources, conf.Conf[0].(api.Conf))
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func applyToRealResources(
+	meshCtx xds_context.MeshContext,
+	rs *core_xds.ResourceSet,
+	rules core_rules.ResourceRules,
+) error {
+	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -104,8 +104,6 @@ type: MeshHealthCheck
 mesh: %s
 name: everything-to-backend
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService
@@ -152,7 +150,7 @@ spec:
 				Install(YamlUniversal(uniServiceYAML)).
 				Install(YamlUniversal(`
 type: HostnameGenerator
-name: uni-ms
+name: uni-ms-mhc
 spec:
   template: '{{ .DisplayName }}.universal.ms'
   selector:

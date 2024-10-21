@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
@@ -155,13 +156,20 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
 	}
 
+	verboseOutToStd := true
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
+	if Config.Debug {
+		// in debug mode, we will enable debug level logs on CP, and they'll be dump logs into files
+		// so don't need to print onto stdout/stderr, otherwise the test output will be too verbose
+		verboseOutToStd = false
+		cmd = append(cmd, "--log-level", "debug")
+	}
 	if mode == core.Zone {
 		env["KUMA_MULTIZONE_ZONE_NAME"] = c.ZoneName()
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, true, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, verboseOutToStd, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -285,14 +293,14 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
-	transparent := opts.transparent != nil && *opts.transparent // default false
+	transparent := pointer.Deref(opts.transparent)
 	args := opts.appArgs
 
 	if opts.verbose == nil {
 		opts.verbose = &c.verbose
 	}
 
-	caps := []string{}
+	var caps []string
 	if transparent {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
@@ -335,7 +343,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			}
 		}
 
-		builtindns := opts.builtindns == nil || *opts.builtindns
+		builtindns := pointer.DerefOr(opts.builtindns, true)
 		if transparent {
 			app.setupTransparent(builtindns)
 		}

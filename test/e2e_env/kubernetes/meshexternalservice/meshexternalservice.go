@@ -6,6 +6,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -20,31 +23,16 @@ func MeshExternalServices() {
 	namespace := "mesh-external-services"
 	clientNamespace := "client-mesh-external-services"
 
-	mesh := func(name, passthroughEnabled, disallowMesTraffic string) InstallFunc {
-		return YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Mesh
-metadata:
-  name: %s
-spec:
-  mtls:
-    enabledBackend: ca-1
-    backends:
-      - name: ca-1
-        type: builtin
-  networking:
-    outbound:
-      passthrough: %s
-  routing:
-    zoneEgress: true
-    defaultForbidMeshExternalServiceAccess: %s
-`, name, passthroughEnabled, disallowMesTraffic))
-	}
-
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(mesh(meshName, "true", "false")).
-			Install(mesh(meshNameEgress, "false", "true")).
+			Install(YamlK8s(samples.MeshMTLSBuilder().
+				WithName(meshName).
+				WithEgressRoutingEnabled().KubeYaml())).
+			Install(YamlK8s(samples.MeshMTLSBuilder().
+				WithName(meshNameEgress).
+				WithoutPassthrough().
+				WithMeshExternalServiceTrafficForbidden().
+				WithEgressRoutingEnabled().KubeYaml())).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
 			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
@@ -92,9 +80,9 @@ spec:
 		})
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshName,
-			"meshexternalservice_http-external-service",
+			"http-external-service",
 			Config.KumaNamespace,
 		)
 
@@ -150,9 +138,9 @@ spec:
 `, Config.KumaNamespace, meshNameEgress)
 
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshNameEgress,
-			"meshexternalservice_mesh-external-service-egress",
+			"mesh-external-service-egress",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -178,7 +166,12 @@ spec:
 			}, "30s", "1s").Should(Succeed())
 
 			// when allow all traffic
-			Expect(kubernetes.Cluster.Install(mesh(meshNameEgress, "false", "false"))).To(Succeed())
+			Expect(kubernetes.Cluster.Install(YamlK8s(
+				samples.MeshMTLSBuilder().
+					WithName(meshNameEgress).
+					WithoutPassthrough().
+					WithEgressRoutingEnabled().KubeYaml()),
+			)).To(Succeed())
 
 			// then traffic works
 			Eventually(func(g Gomega) {
@@ -218,9 +211,9 @@ spec:
       port: 80
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s.upstream_rq_total",
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
 			meshName,
-			"meshexternalservice_tcp-external-service",
+			"tcp-external-service",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -288,9 +281,9 @@ spec:
       mode: SkipCA # test-server certificate is not signed by a CA that is in the system trust store
 `, Config.KumaNamespace, meshName)
 		filter := fmt.Sprintf(
-			"cluster.%s_%s_%s.upstream_rq_total", // cx
+			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total", // cx
 			meshName,
-			"meshexternalservice_tls-external-service",
+			"tls-external-service",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
@@ -320,6 +313,128 @@ spec:
 				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	Context("http service with MeshHTTPRoute", func() {
+		meshExternalService := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: plain-external-service
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    hostname: "true"
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: plain-external-service.mesh-external-services.svc.cluster.local
+      port: 80
+`, Config.KumaNamespace, meshName)
+
+		meshExternalService2 := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshExternalService
+metadata:
+  name: external-service-with-httproute
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    hostname: "true"
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: external-service-with-httproute.mesh-external-services.svc.cluster.local
+      port: 80
+`, Config.KumaNamespace, meshName)
+
+		meshHttpRoutePolicy := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHTTPRoute
+metadata:
+  name: http-route-mes-policy
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: plain-external-service
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /
+          default:
+            backendRefs:
+              - kind: MeshExternalService
+                name: external-service-with-httproute
+                port: 80
+                weight: 100
+`, Config.KumaNamespace, meshName)
+
+		BeforeAll(func() {
+			err := NewClusterSetup().
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("plain-external-service"),
+					testserver.WithEchoArgs("echo", "--instance", "plain-external-service"),
+				)).
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("external-service-with-httproute"),
+					testserver.WithEchoArgs("echo", "--instance", "external-service-with-httproute"),
+				)).
+				Setup(kubernetes.Cluster)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(kubernetes.Cluster, meshName,
+				meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should route to http external-service", func() {
+			// when external service added
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService))).To(Succeed())
+
+			// then communication works
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("plain-external-service"))
+			}, "30s", "1s").Should(Succeed())
+
+			// when
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService2))).To(Succeed())
+
+			// and added route
+			Expect(kubernetes.Cluster.Install(YamlK8s(meshHttpRoutePolicy))).To(Succeed())
+
+			// then traffic is routed to the 2nd MeshExternalService
+			Eventually(func(g Gomega) {
+				resp, err := client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", "plain-external-service.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(resp.Instance).To(Equal("external-service-with-httproute"))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})

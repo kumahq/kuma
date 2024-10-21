@@ -42,7 +42,7 @@ spec:
 			Install(YamlUniversal(uniServiceYAML)).
 			Install(YamlUniversal(`
 type: HostnameGenerator
-name: uni-ms
+name: uni-ms-retry
 spec:
   template: '{{ .DisplayName }}.universal.ms'
   selector:
@@ -172,8 +172,6 @@ type: MeshRetry
 mesh: "%s"
 name: meshretry-policy
 spec:
-  targetRef:
-    kind: Mesh
   to:
     - targetRef:
         kind: MeshService

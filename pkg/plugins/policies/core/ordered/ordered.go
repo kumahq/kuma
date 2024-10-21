@@ -24,6 +24,8 @@ var Policies = []plugins.PluginName{
 	// Routes have to come first
 	plugins.PluginName(meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtcproute_api.MeshTCPRouteResourceTypeDescriptor.KumactlArg),
+	// MeshTLS needs to come before everything because it rebuilds the inbound listeners
+	plugins.PluginName(meshtls_api.MeshTLSResourceTypeDescriptor.KumactlArg),
 	// For other policies order isn't important at the moment
 	plugins.PluginName(meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor.KumactlArg),
 	// has to be before MeshAccessLog so the plugin can access log filters that are added to the filter chains
@@ -38,7 +40,6 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshretry_api.MeshRetryResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshmetric_api.MeshMetricResourceTypeDescriptor.KumactlArg),
-	plugins.PluginName(meshtls_api.MeshTLSResourceTypeDescriptor.KumactlArg),
 	// MeshProxyPatch comes after all others
 	plugins.PluginName(meshproxypatch_api.MeshProxyPatchResourceTypeDescriptor.KumactlArg),
 }

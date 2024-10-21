@@ -146,7 +146,7 @@ type Service struct {
 	clusters           []Cluster
 	hasExternalService bool
 	tlsReady           bool
-	backendRef         model.ResolvedBackendRef
+	backendRef         *model.ResolvedBackendRef
 }
 
 func (c *Service) Add(cluster Cluster) {
@@ -176,7 +176,7 @@ func (c *Service) TLSReady() bool {
 	return c.tlsReady
 }
 
-func (c *Service) BackendRef() model.ResolvedBackendRef {
+func (c *Service) BackendRef() *model.ResolvedBackendRef {
 	return c.backendRef
 }
 
@@ -219,7 +219,7 @@ func (sa ServicesAccumulator) Add(clusters ...Cluster) {
 	}
 }
 
-func (sa ServicesAccumulator) AddBackendRef(backendRef model.ResolvedBackendRef, cluster Cluster) {
+func (sa ServicesAccumulator) AddBackendRef(backendRef *model.ResolvedBackendRef, cluster Cluster) {
 	if sa.services[cluster.Service()] == nil {
 		sa.services[cluster.Service()] = &Service{
 			tlsReady:   sa.tlsReadiness[cluster.Service()],
@@ -228,7 +228,7 @@ func (sa ServicesAccumulator) AddBackendRef(backendRef model.ResolvedBackendRef,
 		}
 	}
 	// prioritize backendRef pointing to real resource
-	if backendRef.LegacyBackendRef.ReferencesRealObject() && !sa.services[cluster.Service()].backendRef.LegacyBackendRef.ReferencesRealObject() {
+	if backendRef.ReferencesRealResource() && !sa.services[cluster.Service()].backendRef.ReferencesRealResource() {
 		sa.services[cluster.Service()].backendRef = backendRef
 	}
 	sa.services[cluster.Service()].Add(cluster)

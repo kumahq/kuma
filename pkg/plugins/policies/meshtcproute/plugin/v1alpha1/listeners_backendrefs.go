@@ -41,7 +41,6 @@ func getBackendRefs(
 	toRulesHTTP core_xds.ToRules,
 	svc meshroute_xds.DestinationService,
 	protocol core_mesh.Protocol,
-	fallbackBackendRef core_model.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []core_model.ResolvedBackendRef {
 	tcpConf, backendRefOrigin := computeConf(toRulesTCP, svc, meshCtx)
@@ -65,13 +64,13 @@ func getBackendRefs(
 	if tcpConf != nil {
 		for _, br := range tcpConf.Default.BackendRefs {
 			if backendRefOrigin != nil {
-				backendRefs = append(backendRefs, core_model.ResolveBackendRef(backendRefOrigin, br))
-			} else {
-				backendRefs = append(backendRefs, core_model.ResolvedBackendRef{LegacyBackendRef: &br})
+				if resolved := core_model.ResolveBackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
+					backendRefs = append(backendRefs, *resolved)
+				}
 			}
 		}
 	} else {
-		return []core_model.ResolvedBackendRef{fallbackBackendRef}
+		return []core_model.ResolvedBackendRef{*svc.DefaultBackendRef()}
 	}
 
 	return backendRefs

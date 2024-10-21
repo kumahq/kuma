@@ -67,6 +67,10 @@ networking:
 		return res
 	}
 
+	esHttpName := "es-http"
+	esHttpsName := "es-https"
+	esHttp2Name := "es-http-2"
+
 	var esHttpHostPort string
 	var esHttp2HostPort string
 	var esHttpsHostPort string
@@ -76,10 +80,6 @@ networking:
 	var esHttp2ContainerName string
 
 	BeforeAll(func() {
-		esHttpName := "es-http"
-		esHttpsName := "es-https"
-		esHttp2Name := "es-http-2"
-
 		esHttpContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttpName)
 		esHttpsContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttpsName)
 		esHttp2ContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshName, esHttp2Name)
@@ -108,6 +108,9 @@ networking:
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpsName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttp2Name)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 

@@ -3,6 +3,7 @@ package context
 import (
 	"encoding/base64"
 	"fmt"
+	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -105,22 +106,55 @@ type ServiceInformation struct {
 
 type ReachableBackends map[core_model.TypedResourceIdentifier]bool
 
+// ResolveResourceIdentifier resolves one resource identifier based on the labels.
+// If multiple resources match the labels, the oldest one is returned.
+// The reason is that picking the oldest one is the less likely to break existing traffic after introducing new resources.
+func (mc *MeshContext) ResolveResourceIdentifier(resType core_model.ResourceType, labels map[string]string) *core_model.ResourceIdentifier {
+	if len(labels) == 0 {
+		return nil
+	}
+	var oldestCreationTime *time.Time
+	var oldestTri *core_model.TypedResourceIdentifier
+	for _, tri := range mc.resolveResourceIdentifiersForLabels(string(resType), labels) {
+		var resource core_model.Resource
+		var found bool
+		switch tri.ResourceType {
+		case meshexternalservice_api.MeshExternalServiceType:
+			resource, found = mc.MeshExternalServiceByIdentifier[tri.ResourceIdentifier]
+		case meshservice_api.MeshServiceType:
+			resource, found = mc.MeshServiceByIdentifier[tri.ResourceIdentifier]
+		case meshmzservice_api.MeshMultiZoneServiceType:
+			resource, found = mc.MeshMultiZoneServiceByIdentifier[tri.ResourceIdentifier]
+		}
+		if found {
+			resCreationTime := resource.GetMeta().GetCreationTime()
+			if oldestCreationTime == nil || resCreationTime.Before(*oldestCreationTime) {
+				oldestCreationTime = &resCreationTime
+				oldestTri = &tri
+			}
+		}
+	}
+	if oldestTri != nil {
+		return &oldestTri.ResourceIdentifier
+	}
+	return nil
+}
+
 func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResource) *ReachableBackends {
 	if dataplane.Spec.Networking.TransparentProxying.GetReachableBackends() == nil {
+		if mc.Resource.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_ReachableBackends {
+			return &ReachableBackends{}
+		}
 		return nil
 	}
 	reachableBackends := ReachableBackends{}
 	for _, reachableBackend := range dataplane.Spec.Networking.TransparentProxying.GetReachableBackends().GetRefs() {
 		if len(reachableBackend.Labels) > 0 {
-			reachable := mc.getResourceNamesForLabels(reachableBackend.Kind, reachableBackend.Labels)
-			for ri, count := range reachable {
-				tri := core_model.TypedResourceIdentifier{
-					ResourceType:       core_model.ResourceType(reachableBackend.Kind),
-					ResourceIdentifier: ri,
+			for _, tri := range mc.resolveResourceIdentifiersForLabels(reachableBackend.Kind, reachableBackend.Labels) {
+				if port := reachableBackend.Port; port != nil {
+					tri.SectionName = mc.getSectionName(tri.ResourceType, tri.ResourceIdentifier, reachableBackend.Port.GetValue())
 				}
-				if count == len(reachableBackend.Labels) {
-					reachableBackends[tri] = true
-				}
+				reachableBackends[tri] = true
 			}
 		} else {
 			key := core_model.TypedResourceIdentifier{
@@ -131,12 +165,52 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 				}),
 			}
 			if port := reachableBackend.Port; port != nil {
-				key.SectionName = fmt.Sprintf("%d", port.GetValue())
+				key.SectionName = mc.getSectionName(key.ResourceType, key.ResourceIdentifier, reachableBackend.Port.GetValue())
 			}
 			reachableBackends[key] = true
 		}
 	}
 	return &reachableBackends
+}
+
+func (mc *MeshContext) resolveResourceIdentifiersForLabels(kind string, labels map[string]string) []core_model.TypedResourceIdentifier {
+	var result []core_model.TypedResourceIdentifier
+	reachable := mc.getResourceNamesForLabels(kind, labels)
+	for ri, count := range reachable {
+		tri := core_model.TypedResourceIdentifier{
+			ResourceType:       core_model.ResourceType(kind),
+			ResourceIdentifier: ri,
+		}
+		if count == len(labels) {
+			result = append(result, tri)
+		}
+	}
+	return result
+}
+
+func (mc *MeshContext) getSectionName(kind core_model.ResourceType, key core_model.ResourceIdentifier, port uint32) string {
+	switch kind {
+	case meshservice_api.MeshServiceType:
+		ms, found := mc.MeshServiceByIdentifier[key]
+		if !found {
+			return fmt.Sprintf("%d", port)
+		}
+		if sectionName, portFound := ms.FindSectionNameByPort(port); portFound {
+			return sectionName
+		}
+		return fmt.Sprintf("%d", port)
+	case meshmzservice_api.MeshMultiZoneServiceType:
+		mmzs, found := mc.MeshMultiZoneServiceByIdentifier[key]
+		if !found {
+			return fmt.Sprintf("%d", port)
+		}
+		if sectionName, portFound := mmzs.FindSectionNameByPort(port); portFound {
+			return sectionName
+		}
+		return fmt.Sprintf("%d", port)
+	default:
+		return fmt.Sprintf("%d", port)
+	}
 }
 
 func (mc *MeshContext) getResourceNamesForLabels(kind string, labels map[string]string) map[core_model.ResourceIdentifier]int {

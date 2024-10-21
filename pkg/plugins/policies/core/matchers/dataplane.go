@@ -14,6 +14,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
@@ -21,7 +22,8 @@ import (
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
 	var gateway *core_mesh.MeshGatewayResource
 	if dpp.Spec.IsBuiltinGateway() {
-		gateway = xds_topology.SelectGateway(referencableResources.Gateways().Items, dpp.Spec.Matches)
+		zoneGateways := filterGatewaysByZone(referencableResources.Gateways().Items, dpp)
+		gateway = xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
 	}
 	refPolicy, ok := resource.GetSpec().(core_model.Policy)
 	if !ok {
@@ -47,7 +49,8 @@ func MatchedPolicies(
 	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname][]core_model.Resource{}
 	var dpPolicies []core_model.Resource
 
-	gateway := xds_topology.SelectGateway(resources.Gateways().Items, dpp.Spec.Matches)
+	zoneGateways := filterGatewaysByZone(resources.Gateways().Items, dpp)
+	gateway := xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
 	for _, policy := range policies.GetItems() {
 		if !mpOpts.IncludeShadow && core_model.IsShadowedResource(policy) {
 			continue
@@ -118,6 +121,25 @@ func MatchedPolicies(
 	}, nil
 }
 
+func filterGatewaysByZone(gateways []*core_mesh.MeshGatewayResource, dpp *core_mesh.DataplaneResource) []*core_mesh.MeshGatewayResource {
+	if gateways == nil {
+		return gateways
+	}
+	var filtered []*core_mesh.MeshGatewayResource
+	dppZone, dppZoneOk := dpp.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	for _, gateway := range gateways {
+		gwOrigin, ok := gateway.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
+		if !ok || gwOrigin == string(mesh_proto.GlobalResourceOrigin) {
+			filtered = append(filtered, gateway)
+			continue
+		}
+		if !dppZoneOk || core_model.IsLocalZoneResource(gateway.GetMeta().GetLabels(), dppZone) {
+			filtered = append(filtered, gateway)
+		}
+	}
+	return filtered
+}
+
 // dppSelectedByPolicy returns a list of inbounds of DPP that are selected by the top-level targetRef
 // and whether a delegated gateway is selected
 func dppSelectedByPolicy(
@@ -127,6 +149,12 @@ func dppSelectedByPolicy(
 	gateway *core_mesh.MeshGatewayResource,
 	referencableResources xds_context.Resources,
 ) ([]core_rules.InboundListener, []core_rules.InboundListenerHostname, bool, error) {
+	if !dppSelectedByZone(meta, dpp, gateway) {
+		return []core_rules.InboundListener{}, nil, false, nil
+	}
+	if !dppSelectedByNamespace(meta, dpp) {
+		return []core_rules.InboundListener{}, nil, false, nil
+	}
 	switch ref.Kind {
 	case common_api.Mesh:
 		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
@@ -165,9 +193,49 @@ func dppSelectedByPolicy(
 		if mhr == nil {
 			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", ref.Name)
 		}
-		return dppSelectedByPolicy(mhr.Meta, mhr.Spec.TargetRef, dpp, gateway, referencableResources)
+		return dppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
 	default:
 		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
+	}
+}
+
+func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {
+	switch core_model.PolicyRole(meta) {
+	case mesh_proto.ConsumerPolicyRole, mesh_proto.WorkloadOwnerPolicyRole:
+		ns, ok := meta.GetLabels()[mesh_proto.KubeNamespaceTag]
+		return ok && ns == dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
+	default:
+		return true
+	}
+}
+
+func dppSelectedByZone(policyMeta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource, gateway *core_mesh.MeshGatewayResource) bool {
+	switch core_model.PolicyRole(policyMeta) {
+	case mesh_proto.ProducerPolicyRole:
+		return true
+	default:
+		if dpp.GetMeta() == nil && gateway == nil {
+			return true
+		}
+		meta := dpp.GetMeta()
+		if gateway != nil {
+			meta = gateway.GetMeta()
+		}
+		// we should return true once dpp has no origin.
+		// Resource that cannot be created on zone(global one) doesn't have it
+		origin, ok := meta.GetLabels()[mesh_proto.ResourceOriginLabel]
+		if !ok || origin == string(mesh_proto.GlobalResourceOrigin) {
+			return true
+		}
+		policyOrigin, ok := policyMeta.GetLabels()[mesh_proto.ResourceOriginLabel]
+		if ok && policyOrigin == string(mesh_proto.ZoneResourceOrigin) {
+			zone, ok := policyMeta.GetLabels()[mesh_proto.ZoneTag]
+			if !ok {
+				return true
+			}
+			return core_model.IsLocalZoneResource(meta.GetLabels(), zone)
+		}
+		return true
 	}
 }
 

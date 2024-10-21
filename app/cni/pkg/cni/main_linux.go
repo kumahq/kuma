@@ -1,13 +1,14 @@
 package cni
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
 	"path"
-	"strconv"
 	"time"
 
 	"github.com/containernetworking/cni/pkg/skel"
@@ -16,13 +17,12 @@ import (
 	"github.com/containernetworking/cni/pkg/version"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-retry"
 
 	"github.com/kumahq/kuma/app/cni/pkg/install"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
+	k8s_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	tproxy_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -32,6 +32,7 @@ const (
 	defaultLogLocation     = "/tmp/kuma-cni.log"
 	defaultLogLevel        = kuma_log.DebugLevel
 	defaultLogName         = "kuma-cni"
+	installCNIBinary       = "/install-cni"
 )
 
 var log = core.NewLoggerWithRotation(defaultLogLevel, defaultLogLocation, 100, 0, 0).WithName(defaultLogName)
@@ -66,239 +67,159 @@ type K8sArgs struct {
 
 // parseConfig parses the supplied configuration (and prevResult) from stdin
 func parseConfig(stdin []byte) (*PluginConf, error) {
-	conf := PluginConf{}
+	var conf PluginConf
 
 	if err := json.Unmarshal(stdin, &conf); err != nil {
-		return nil, errors.Wrapf(err, "could not parse network configuration")
+		return nil, errors.Wrap(err, "failed to parse network configuration from stdin")
 	}
 
 	if conf.RawPrevResult != nil {
 		resultBytes, err := json.Marshal(conf.RawPrevResult)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not serialize prevResult")
+			return nil, errors.Wrap(err, "failed to serialize previous result")
 		}
+
 		res, err := version.NewResult(conf.CNIVersion, resultBytes)
 		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse prevResult")
+			return nil, errors.Wrap(err, "failed to parse previous result")
 		}
+
 		conf.RawPrevResult = nil
-		conf.PrevResult, err = current.NewResultFromResult(res)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not convert result to current version")
+
+		if conf.PrevResult, err = current.NewResultFromResult(res); err != nil {
+			return nil, errors.Wrap(err, "failed to convert previous result to current version")
 		}
 	}
 
 	return &conf, nil
 }
 
-func hijackMainProcessStderr(logLevel string) (*os.File, error) {
+func hijackMainCNIProcessStderr(l logr.Logger) (*os.File, error) {
 	file, err := getCniProcessStderr()
 	if err != nil {
-		log.Error(err, "could not hijack main process file - continue logging to "+defaultLogLocation)
-		return nil, err
-	}
-	log.V(0).Info("successfully hijacked stderr of cni process - logs will be available in 'kubectl logs'")
-	os.Stderr = file
-	if err := install.SetLogLevel(&log, logLevel, defaultLogName); err != nil {
-		return file, errors.Wrap(err, "wrong set the right log level")
+		l.Error(err, "failed to hijack stderr of the CNI process, continuing to log to the default location: "+defaultLogLocation)
+		return nil, errors.Wrap(err, "unable to open CNI process stderr file")
 	}
 
-	return file, err
+	os.Stderr = file
+
+	l.Info("successfully hijacked stderr of the CNI process; logs will be visible via 'kubectl logs'")
+
+	return file, nil
 }
 
 func getCniProcessStderr() (*os.File, error) {
-	pids, err := pidOf("/install-cni")
+	pid, err := pidOf(installCNIBinary)
 	if err != nil {
 		return nil, err
 	}
-	if len(pids) != 1 {
-		return nil, errors.New("more than one process '/install-cni' running on a node, this should not happen")
-	}
 
-	file, err := os.OpenFile(path.Join("/proc", strconv.Itoa(pids[0]), "fd", "2"), os.O_WRONLY, 0)
-	return file, err
+	return os.OpenFile(path.Join("/proc", pid, "fd", "2"), os.O_WRONLY, 0)
 }
 
 // cmdAdd is called for ADD requests
 func cmdAdd(args *skel.CmdArgs) error {
-	ctx := context.Background()
-	conf, err := parseConfig(args.StdinData)
+	conf, err := add(context.Background(), args)
 	if err != nil {
-		return errorLogged(log, err, "error parsing kuma-cni cmdAdd config")
-	}
-
-	mainProcessStderr, err := hijackMainProcessStderr(conf.LogLevel)
-	if mainProcessStderr != nil {
-		defer mainProcessStderr.Close()
-	}
-	if err != nil {
+		log.Info("[WARNING]: pod excluded", "reason", err)
 		return err
 	}
-	logPrevResult(conf)
 
-	// Determine if running under k8s by checking the CNI args
-	k8sArgs := K8sArgs{}
-	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
-		return errorLogged(log, err, "error loading kuma-cni cmdAdd args")
-	}
-	logger := log.WithValues(
-		"pod", string(k8sArgs.K8S_POD_NAME),
-		"namespace", string(k8sArgs.K8S_POD_NAMESPACE),
-		"podInfraContainerId", string(k8sArgs.K8S_POD_INFRA_CONTAINER_ID),
-		"ip", string(k8sArgs.IP),
-		"containerId", args.ContainerID,
-		"args", args.Args,
-	)
-
-	if string(k8sArgs.K8S_POD_NAMESPACE) == "" || string(k8sArgs.K8S_POD_NAME) == "" {
-		logger.Info("pod excluded - no kubernetes data")
-		return prepareResult(conf, logger)
-	}
-
-	if shouldExcludePod(conf.Kubernetes.ExcludeNamespaces, k8sArgs.K8S_POD_NAMESPACE) {
-		logger.Info(`pod excluded - is in the namespace excluded by "exclude_namespaces"`)
-		return prepareResult(conf, logger)
-	}
-
-	containerCount, initContainersMap, annotations, err := getPodInfoWithRetries(ctx, conf, k8sArgs)
-	if err != nil {
-		return errorLogged(logger, err, "pod excluded - error getting pod info")
-	}
-
-	if isInitContainerPresent(initContainersMap) {
-		logger.Info("pod excluded - already injected with kuma-init container")
-		return prepareResult(conf, logger)
-	}
-
-	if _, sidecarInInitContainers := initContainersMap[util.KumaSidecarContainerName]; containerCount < 2 && !sidecarInInitContainers {
-		logger.Info("pod excluded - not enough containers in pod. Kuma-sidecar container required")
-		return prepareResult(conf, logger)
-	}
-
-	logger.V(1).Info("checking annotations prior to injecting redirect",
-		"netns", args.Netns,
-		"annotations", annotations)
-	if excludeByMissingSidecarInjectedAnnotation(annotations) {
-		logger.Info("pod excluded due to lack of 'kuma.io/sidecar-injected: true' annotation")
-		return prepareResult(conf, logger)
-	}
-
-	if intermediateConfig, configErr := NewIntermediateConfig(annotations); configErr != nil {
-		return errorLogged(logger, configErr, "pod excluded - pod intermediateConfig failed due to bad params")
-	} else {
-		if err := Inject(ctx, args.Netns, intermediateConfig, logger); err != nil {
-			return errorLogged(logger, err, "pod excluded - could not inject rules into namespace")
-		}
-	}
-	logger.Info("successfully injected iptables rules")
-	return prepareResult(conf, logger)
-}
-
-func prepareResult(conf *PluginConf, logger logr.Logger) error {
-	var result *current.Result
+	result := conf.PrevResult
 	if conf.PrevResult == nil {
-		result = &current.Result{
-			CNIVersion: current.ImplementedSpecVersion,
-		}
-	} else {
-		// Pass through the result for the next plugin
-		result = conf.PrevResult
+		result = &current.Result{CNIVersion: current.ImplementedSpecVersion}
 	}
-	logger.Info("result", "result", result)
+
+	log.Info("cmdAdd result", "result", result)
+
 	return types.PrintResult(result, conf.CNIVersion)
 }
 
-func errorLogged(logger logr.Logger, err error, message string) error {
-	logger.Info(fmt.Sprintf("[WARNING] %s", message), "err", err)
-	return errors.Wrap(err, message)
-}
-
-func excludeByMissingSidecarInjectedAnnotation(annotations map[string]string) bool {
-	excludePod := false
-	val, ok := annotations[metadata.KumaSidecarInjectedAnnotation]
-	if !ok || val != "true" {
-		excludePod = true
-	}
-	return excludePod
-}
-
-func isInitContainerPresent(initContainersMap map[string]struct{}) bool {
-	excludePod := false
-	// Check if kuma-init container is present; in that case exclude pod
-	if _, present := initContainersMap[util.KumaInitContainerName]; present {
-		excludePod = true
-	}
-	return excludePod
-}
-
-func getPodInfoWithRetries(ctx context.Context, conf *PluginConf, k8sArgs K8sArgs) (int, map[string]struct{}, map[string]string, error) {
-	client, err := newKubeClient(*conf)
+func add(ctx context.Context, args *skel.CmdArgs) (*PluginConf, error) {
+	conf, err := parseConfig(args.StdinData)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "could not create kube client")
+		return nil, errors.Wrap(err, "failed to parse kuma-cni configuration in cmdAdd")
 	}
 
-	var containerCount int
-	var initContainersMap map[string]struct{}
-	var annotations map[string]string
-	var k8sErr error
-
-	backoff := retry.WithMaxRetries(podRetrievalMaxRetries, retry.NewConstant(podRetrievalInterval))
-	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		containerCount, initContainersMap, annotations, k8sErr = getKubePodInfo(ctx, client, string(k8sArgs.K8S_POD_NAME), string(k8sArgs.K8S_POD_NAMESPACE))
-		if k8sErr != nil {
-			log.Error(k8sErr, "error getting pod info", "retries", podRetrievalMaxRetries)
-			return retry.RetryableError(k8sErr)
-		}
-		log.V(1).Info("pod container info",
-			"count count", containerCount,
-			"initContainers", initContainersMap,
-			"annotations", annotations,
-		)
-		return nil
-	})
+	stderr, err := hijackMainCNIProcessStderr(log)
 	if err != nil {
-		return 0, nil, nil, errors.Wrap(err, "failed to get pod data")
+		return nil, errors.Wrap(err, "failed to hijack main process stderr")
+	}
+	defer stderr.Close()
+
+	if err := install.SetLogLevel(&log, conf.LogLevel, defaultLogName); err != nil {
+		return nil, errors.Wrap(err, "failed to set log level")
 	}
 
-	return containerCount, initContainersMap, annotations, nil
-}
+	log.V(1).Info("cmdAdd config parsed", "version", conf.CNIVersion, "prevResult", conf.PrevResult)
 
-func shouldExcludePod(excludedNamespaces []string, podNamespace types.UnmarshallableString) bool {
-	excludePod := false
-	for _, excludeNs := range excludedNamespaces {
-		if string(podNamespace) == excludeNs {
-			excludePod = true
-			break
+	// Determine if running under k8s by checking the CNI args
+	var k8sArgs K8sArgs
+	if err := types.LoadArgs(args.Args, &k8sArgs); err != nil {
+		return nil, errors.Wrap(err, "failed to load CNI arguments")
+	}
+
+	logger := log.WithValues(
+		"pod", k8sArgs.K8S_POD_NAME,
+		"namespace", k8sArgs.K8S_POD_NAMESPACE,
+		"infraContainerId", k8sArgs.K8S_POD_INFRA_CONTAINER_ID,
+		"ip", k8sArgs.IP,
+		"containerId", args.ContainerID,
+		"args", args.Args,
+		"netns", args.Netns,
+	)
+
+	annotations, ok, err := getAndValidatePodAnnotations(ctx, logger, conf, k8sArgs)
+	if err != nil && !ok {
+		return nil, errors.Wrap(err, "failed to get pod annotations")
+	} else if err != nil {
+		logger.Info("pod excluded", "reason", err)
+		return conf, nil
+	}
+
+	if v := annotations[k8s_metadata.KumaTrafficTransparentProxyConfig]; v != "" {
+		var logBuffer bytes.Buffer
+		logWriter := bufio.NewWriter(&logBuffer)
+		defer logWriter.Flush()
+
+		cfg, err := tproxy_k8s.ConfigFromAnnotations(annotations)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to retrieve transparent proxy configuration")
 		}
+
+		if err := injectIptables(ctx, args.Netns, cfg.WithStdout(logWriter)); err != nil {
+			return nil, errors.Wrap(err, "failed to inject iptables rules")
+		}
+
+		logger.V(1).Info("generated iptables rules", "output", logBuffer.String())
+	} else if intermediate, err := NewIntermediateConfig(annotations); err != nil {
+		return nil, errors.Wrap(err, "pod intermediate config failed due to bad params")
+	} else if err := legacyInjectIptables(ctx, args.Netns, intermediate, logger); err != nil {
+		return nil, errors.Wrap(err, "could not inject rules into namespace")
 	}
-	return excludePod
+
+	logger.Info("successfully injected iptables rules")
+
+	return conf, nil
 }
 
-func logPrevResult(conf *PluginConf) {
-	var loggedPrevResult interface{}
-	if conf.PrevResult == nil {
-		loggedPrevResult = "none"
-	} else {
-		loggedPrevResult = conf.PrevResult
-	}
-
-	log.V(1).Info("cmdAdd config parsed", "version", conf.CNIVersion, "prevResult", loggedPrevResult)
-}
-
-func cmdCheck(args *skel.CmdArgs) error {
+func cmdCheck(*skel.CmdArgs) error {
 	return nil
 }
 
 // cmdDel is called for DELETE requests
-func cmdDel(args *skel.CmdArgs) error {
+func cmdDel(*skel.CmdArgs) error {
 	return nil
 }
 
 func Run() {
-	cniFuncs := skel.CNIFuncs{
-		Add:   cmdAdd,
-		Del:   cmdDel,
-		Check: cmdCheck,
-	}
-	skel.PluginMainFuncs(cniFuncs, version.All, fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version))
+	skel.PluginMainFuncs(
+		skel.CNIFuncs{
+			Add:   cmdAdd,
+			Del:   cmdDel,
+			Check: cmdCheck,
+		},
+		version.All,
+		fmt.Sprintf("kuma-cni %v", kuma_version.Build.Version),
+	)
 }

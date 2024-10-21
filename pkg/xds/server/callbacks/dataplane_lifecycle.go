@@ -38,6 +38,7 @@ type DataplaneLifecycle struct {
 	appCtx              context.Context
 	deregistrationDelay time.Duration
 	cpInstanceID        string
+	cacheExpirationTime time.Duration
 }
 
 type proxyInfo struct {
@@ -55,6 +56,7 @@ func NewDataplaneLifecycle(
 	authenticator xds_auth.Authenticator,
 	deregistrationDelay time.Duration,
 	cpInstanceID string,
+	cacheExpirationTime time.Duration,
 ) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:          resManager,
@@ -63,6 +65,7 @@ func NewDataplaneLifecycle(
 		appCtx:              appCtx,
 		deregistrationDelay: deregistrationDelay,
 		cpInstanceID:        cpInstanceID,
+		cacheExpirationTime: cacheExpirationTime,
 	}
 }
 
@@ -142,6 +145,10 @@ func (d *DataplaneLifecycle) register(
 		return errors.Wrap(err, "could not register proxy passed in kuma-dp run")
 	}
 
+	// We should wait for Cache ExpirationTime to let MeshContext sync the latest data
+	// in which the latter DataplaneSyncTracker callback relies on it to generate the XDS configuration.
+	// This only happens on Universal Dataplane because the k8s Dataplane object is created by the controller.
+	time.Sleep(d.cacheExpirationTime)
 	info.connected = true
 
 	return nil

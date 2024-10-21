@@ -398,11 +398,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
 		}),
-		Entry("Existing ZoneIngress with load balancer and ip", testCase{
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
 			pod:               "ingress-exists.pod.yaml",
 			servicesForPod:    "ingress-exists.services-for-pod.yaml",
 			existingDataplane: "ingress-exists.existing-dataplane.yaml",
-			dataplane:         "ingress-exists.golden.yaml",
+			dataplane:         "ingress-exists.dataplane.yaml",
 		}),
 	)
 

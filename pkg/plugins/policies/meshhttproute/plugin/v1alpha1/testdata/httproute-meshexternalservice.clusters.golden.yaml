@@ -1,13 +1,12 @@
 resources:
-- name: meshexternalservice_example
+- name: default_example___extsvc_9090
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: meshexternalservice_example
+    name: default_example___extsvc_9090
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -31,7 +30,7 @@ resources:
             sdsConfig:
               ads: {}
               resourceApiVersion: V3
-        sni: example{mesh=default}
+        sni: afce62f771ed74b78.example.9090.default.mes
     type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:

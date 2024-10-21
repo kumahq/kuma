@@ -31,7 +31,7 @@ var _ = Describe("MeshExternalService Hostname Generator", func() {
 		Expect(err).ToNot(HaveOccurred())
 		resManager = manager.NewResourceManager(memory.NewStore())
 		allocator, err := hostname.NewGenerator(
-			logr.Discard(), m, resManager, 50*time.Millisecond,
+			logr.Discard(), m, resManager, "", 50*time.Millisecond,
 			[]hostname.HostnameGenerator{mes_hostname.NewMeshExternalServiceHostnameGenerator(resManager)},
 		)
 		Expect(err).ToNot(HaveOccurred())

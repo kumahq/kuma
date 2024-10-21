@@ -42,7 +42,6 @@ var _ = Describe("LbSubset", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             name: backend
             type: EDS`,
@@ -58,7 +57,6 @@ var _ = Describe("LbSubset", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
-                initialFetchTimeout: 0s
                 resourceApiVersion: V3
             lbSubsetConfig:
               fallbackPolicy: ANY_ENDPOINT

@@ -589,7 +589,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Host: "kuma.internal",
 			},
 			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["fd00:a123::1" "localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
-1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
+1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
 3) Restart the control plane to read the new certificate and start kuma-dp.`,
 		}),

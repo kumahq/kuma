@@ -12,10 +12,13 @@ import (
 	"github.com/onsi/gomega/types"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshaccesslog_api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshcircuitbreaker_api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
+	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshloadbalancingstrategy_api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -41,8 +44,6 @@ mtls:
 networking:
   outbound:
     passthrough: false
-routing:
-  zoneEgress: true
 `, meshName))
 	}
 
@@ -59,11 +60,11 @@ routing:
 				Match: meshexternalservice_api.Match{
 					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 					Port:     80,
-					Protocol: meshexternalservice_api.HttpProtocol,
+					Protocol: core_mesh.ProtocolHTTP,
 				},
 				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
-					Port:    pointer.To(meshexternalservice_api.Port(port)),
+					Port:    meshexternalservice_api.Port(port),
 				}},
 			},
 			Status: &meshexternalservice_api.MeshExternalServiceStatus{},
@@ -80,16 +81,15 @@ routing:
 
 		return mes
 	}
+	esHttpName := "mes-http"
+	esHttpsName := "mes-https"
+	esHttp2Name := "mes-http-2"
 
 	var esHttpContainerName string
 	var esHttpsContainerName string
 	var esHttp2ContainerName string
 
 	BeforeAll(func() {
-		esHttpName := "mes-http"
-		esHttpsName := "mes-https"
-		esHttp2Name := "mes-http-2"
-
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, "mes-tcp-sink")
 
 		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
@@ -121,6 +121,10 @@ routing:
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshNameNoDefaults)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttpsName)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp(esHttp2Name)).To(Succeed())
+		Expect(universal.Cluster.DeleteApp("mes-tcp-sink")).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshNameNoDefaults)).To(Succeed())
 	})
 
@@ -587,6 +591,236 @@ spec:
 			src, dst := expectTrafficLogged(makeRequest)
 			Expect(src).To(Equal("mes-demo-client-no-defaults"))
 			Expect(dst).To(Equal("mes-access-log"))
+		})
+	})
+
+	XContext("MeshExternalService with MeshHealthCheck", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-health-check
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			healthCheck := fmt.Sprintf(`
+type: MeshHealthCheck
+mesh: %s
+name: mes-health-check-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-health-check
+      default:
+        interval: 10s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuseConnection: true
+        http:
+          path: /test
+          expectedStatuses:
+          - 500`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshHealthCheck
+			By("check if service is healthy")
+			Eventually(func(g Gomega) {
+				response, err := client.CollectEchoResponse(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-health-check.extsvc.mesh.local/test",
+				)
+
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.Instance).To(Equal("mes-http"))
+			}, "30s", "1s").Should(Succeed())
+
+			// when MeshHealthCheck applied
+			Expect(universal.Cluster.Install(YamlUniversal(healthCheck))).To(Succeed())
+
+			// wait cluster mes-health-check to be marked as unhealthy
+			Eventually(func(g Gomega) {
+				egressClusters, err := universal.Cluster.GetZoneEgressEnvoyTunnel().GetClusters()
+				g.Expect(err).ToNot(HaveOccurred())
+				cluster := egressClusters.GetCluster(fmt.Sprintf("%s_mes-health-check__kuma-3_extsvc_80", meshNameNoDefaults))
+				g.Expect(cluster).ToNot(BeNil())
+				g.Expect(cluster.HostStatuses).To(HaveLen(1))
+				g.Expect(cluster.HostStatuses[0].HealthStatus.FailedActiveHealthCheck).To(BeTrue())
+			}, "30s", "1s").Should(Succeed())
+
+			// check that mes-health-check is unhealthy
+			Consistently(func(g Gomega) {
+				response, err := client.CollectFailure(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-health-check.extsvc.mesh.local/test",
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(503))
+			}, "30s", "1s").Should(Succeed())
+		})
+	})
+
+	XContext("MeshExternalService with MeshCircuitBreaker", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-circuit-breaker
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+`, meshNameNoDefaults, esHttpContainerName)
+			circuitBreaker := fmt.Sprintf(`
+type: MeshCircuitBreaker
+mesh: %s
+name: mes-circuit-breaker-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-circuit-breaker
+      default:
+        connectionLimits:
+          maxConnectionPools: 1
+          maxConnections: 1
+          maxPendingRequests: 1
+          maxRequests: 1
+          maxRetries: 1`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshCircuitBreaker
+			By("check if service is healthy")
+			Eventually(func() ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-circuit-breaker.extsvc.mesh.local",
+					client.WithNumberOfRequests(10),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				HaveEach(HaveField("ResponseCode", 200)),
+			))
+
+			// when MeshHealthCheck applied
+			Expect(universal.Cluster.Install(YamlUniversal(circuitBreaker))).To(Succeed())
+
+			By("should return 503")
+			Eventually(func(g Gomega) ([]client.FailureResponse, error) {
+				return client.CollectResponsesAndFailures(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-circuit-breaker.extsvc.mesh.local",
+					client.WithNumberOfRequests(10),
+					// increase processing time of a request to increase a probability of triggering maxPendingRequest limit
+					client.WithHeader("x-set-response-delay-ms", "1000"),
+					client.WithoutRetries(),
+				)
+			}, "30s", "1s").Should(And(
+				HaveLen(10),
+				ContainElement(HaveField("ResponseCode", 503)),
+			))
+		})
+	})
+
+	XContext("MeshExternalService with MeshLoadBalancingStrategy", func() {
+		E2EAfterEach(func() {
+			Expect(DeleteMeshResources(universal.Cluster, meshNameNoDefaults,
+				meshloadbalancingstrategy_api.MeshLoadBalancingStrategyResourceTypeDescriptor,
+				meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+			)).To(Succeed())
+		})
+
+		It("should target real MeshExternalService resource", func() {
+			meshExternalService := fmt.Sprintf(`
+type: MeshExternalService
+name: mes-load-balancing
+mesh: %s
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: %s
+      port: 80
+    - address: %s
+      port: 81  
+`, meshNameNoDefaults, esHttpContainerName, esHttp2ContainerName)
+			loadBalancing := fmt.Sprintf(`
+type: MeshLoadBalancingStrategy
+mesh: %s
+name: mes-load-balancing-policy
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes-load-balancing
+      default:
+        loadBalancer:
+          type: RingHash
+          ringHash:
+            hashPolicies:
+              - type: Header
+                header:
+                  name: x-header`, meshNameNoDefaults)
+
+			Expect(universal.Cluster.Install(YamlUniversal(meshExternalService))).To(Succeed())
+
+			// given no MeshLoadBalancingStrategy
+			By("check if responses comes from 2 endpoints")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(2))
+			}, "30s", "1s").Should(Succeed())
+
+			// when MeshLoadBalancingStrategy applied
+			Expect(universal.Cluster.Install(YamlUniversal(loadBalancing))).To(Succeed())
+
+			By("should return responses only from 1 instance")
+			Eventually(func(g Gomega) {
+				responses, err := client.CollectResponsesByInstance(
+					universal.Cluster, "mes-demo-client-no-defaults", "mes-load-balancing.extsvc.mesh.local",
+					client.WithHeader("x-header", "value"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(responses).To(HaveLen(1))
+			}, "30s", "500ms").Should(Succeed())
 		})
 	})
 

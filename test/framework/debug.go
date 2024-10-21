@@ -1,12 +1,12 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
-	"syscall"
 
 	"github.com/google/uuid"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -14,6 +14,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/test/framework/kumactl"
 	"github.com/kumahq/kuma/test/framework/universal_logs"
@@ -33,32 +34,46 @@ func DebugUniversal(cluster Cluster, mesh string) {
 	kumactlOpts := *cluster.GetKumactlOptions()
 	kumactlOpts.Verbose = false
 
-	seenErrors := []bool{
+	errs := slices.Concat(
 		debugUniversalCopyLogs(debugDir),
 		debugUniversalExport(cluster, mesh, debugDir, kumactlOpts),
 		debugUniversalInspectDPs(cluster, mesh, debugDir, kumactlOpts),
-	}
+	)
 
-	Expect(seenErrors).ToNot(ContainElement(true), "some debug commands failed")
+	for _, err := range errs {
+		Logf("[WARNING]: %s", err)
+	}
 }
 
-func debugUniversalCopyLogs(debugPath string) bool {
-	currPath := universal_logs.GetLogsPath(
+func DebugUniversalCPLogs(cluster Cluster) {
+	ginkgo.GinkgoHelper()
+
+	debugDir := prepareDebugDir()
+
+	logs, err := cluster.GetKumaCPLogs()
+	if err != nil {
+		Logf("[WARNING]: could not retrieve cp logs, error: %s", err.Error())
+	} else {
+		cpLogsExportPath := filepath.Join(debugDir, fmt.Sprintf("cp-log-%s.log", cluster.Name()))
+		Logf("saving CP logs of cluster %q to %q", cluster.Name(), cpLogsExportPath)
+		Expect(os.WriteFile(cpLogsExportPath, []byte(logs), 0o600)).To(Succeed())
+	}
+}
+
+func debugUniversalCopyLogs(debugPath string) []error {
+	srcPath := universal_logs.GetLogsPath(
 		ginkgo.CurrentSpecReport(),
 		Config.UniversalE2ELogsPath,
 	).Describe
-	copyPath := filepath.Join(debugPath, "logs")
+	destPath := filepath.Join(debugPath, "logs")
 
-	logMsg := fmt.Sprintf("copying logs from %q to %q", currPath, copyPath)
+	Logf("copying logs from %q to %q", srcPath, destPath)
 
-	Logf(logMsg)
-
-	if err := CopyDirectory(currPath, copyPath); err != nil {
-		Logf("%s failed with error: %s", logMsg, err)
-		return true
+	if err := os.CopyFS(destPath, os.DirFS(srcPath)); err != nil {
+		return []error{errors.Wrapf(err, "failed to copy logs from %q to %q", srcPath, destPath)}
 	}
 
-	return false
+	return nil
 }
 
 func debugUniversalExport(
@@ -66,33 +81,28 @@ func debugUniversalExport(
 	mesh string,
 	debugPath string,
 	kumactlOpts kumactl.KumactlOptions,
-) bool {
-	var errorSeen bool
+) []error {
+	var errs []error
 
 	filePath := filepath.Join(
 		debugPath,
 		fmt.Sprintf("%s-export.yaml", cluster.Name()),
 	)
 
-	logMsg := fmt.Sprintf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, filePath)
-
-	Logf(logMsg)
+	Logf("saving export for cluster %q and mesh %q to file %q", cluster.Name(), mesh, filePath)
 
 	out, err := kumactlOpts.RunKumactlAndGetOutput("export", "--profile", "all")
 	if err != nil {
-		// We don't want to fail in the middle.
-		errorSeen = true
-		msg := fmt.Sprintf("kumactl export --profile all failed with error: %s", err)
-		out = fmt.Sprintf("# %s", msg)
-		Logf(fmt.Sprintf("%s failed: %s", logMsg, msg))
+		wrappedErr := errors.Wrap(err, "failed to run 'kumactl export --profile all'")
+		errs = append(errs, wrappedErr)
+		out = fmt.Sprintf("# export failed: %s", wrappedErr)
 	}
 
 	if err := os.WriteFile(filePath, []byte(out), 0o600); err != nil {
-		errorSeen = true
-		Logf("%s failed with error: %s", logMsg, err)
+		errs = append(errs, errors.Wrapf(err, "failed to write export to file %q", filePath))
 	}
 
-	return errorSeen
+	return errs
 }
 
 func debugUniversalInspectDPs(
@@ -100,8 +110,8 @@ func debugUniversalInspectDPs(
 	mesh string,
 	debugPath string,
 	kumactlOpts kumactl.KumactlOptions,
-) bool {
-	var errorSeen bool
+) []error {
+	var errs []error
 
 	Logf("saving dataplane inspections from cluster %q for mesh %q", cluster.Name(), mesh)
 
@@ -122,10 +132,9 @@ func debugUniversalInspectDPs(
 				"--type", typ,
 			); err != nil {
 				// We don't want to fail in the middle.
-				errorSeen = true
-				msg := fmt.Sprintf("kumactl inspect dataplane %s --mesh %s --type %s failed with error: %s", dpName, mesh, typ, err)
-				out = fmt.Sprintf("%q", msg)
-				Logf(msg)
+				err := errors.Wrapf(err, "kumactl inspect dataplane %s --mesh %s --type %s failed", dpName, mesh, typ)
+				errs = append(errs, err)
+				out = fmt.Sprintf("%q", err)
 			}
 
 			filePath := filepath.Join(
@@ -134,13 +143,12 @@ func debugUniversalInspectDPs(
 			)
 
 			if err := os.WriteFile(filePath, []byte(out), 0o600); err != nil {
-				errorSeen = true
-				Logf("saving %q for dataplane %q to file %q failed with error: %s", typ, dpName, filePath, err)
+				errs = append(errs, errors.Wrapf(err, "failed to write file %q", filePath))
 			}
 		}
 	}
 
-	return errorSeen
+	return errs
 }
 
 func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
@@ -155,31 +163,40 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	defaultKubeOptions.Logger = logger.Discard
 	nodes, err := k8s.GetNodesE(cluster.GetTesting(), &defaultKubeOptions)
 	if err != nil {
-		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err)
+		Logf("get nodes from cluster %q failed with error: %s", cluster.Name(), err.Error())
 		errorSeen = true
 	} else {
 		for _, node := range nodes {
-			exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-node-%s-%s", cluster.Name(), node.Name, uuid.New().String()))
+			nodeExportPath := filepath.Join(debugPath, fmt.Sprintf("node-%s-%s", cluster.Name(), node.Name))
 			out, e := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &defaultKubeOptions, "describe", "node", node.Name)
 			if e != nil {
 				Logf("kubectl describe node %s failed with error: %s", node.Name, err)
 				errorSeen = true
 			} else {
-				Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), exportFilePath)
+				Expect(os.WriteFile(nodeExportPath, []byte(out), 0o600)).To(Succeed())
+				Logf("saving state of the node %q of cluster %q to a file %q", node.Name, cluster.Name(), nodeExportPath)
 			}
 		}
 	}
 
+	cpNamespace := Config.KumaNamespace
+	if !namespaceExported(debugPath, cluster.Name(), cpNamespace) {
+		namespaces = append(namespaces, cpNamespace)
+	}
+
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
+		nsDir := getNsDirPath(debugPath, cluster.Name(), namespace)
+		createDir(nsDir)
+
 		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
 		kubeOptions.Logger = logger.Discard                  // to not print on stdout
 		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
 		if err != nil {
-			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err)
+			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err.Error())
 			errorSeen = true
 		}
+
 		// Ignore it if we don't have Gateway API resources installed
 		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
 		if err == nil {
@@ -188,9 +205,42 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
 		}
 
-		exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-namespace-%s-%s", cluster.Name(), namespace, uuid.New().String()))
-		Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), exportFilePath)
+		manifestsExportPath := filepath.Join(nsDir, fmt.Sprintf("manifests-%s.yaml", namespace))
+		Expect(os.WriteFile(manifestsExportPath, []byte(out), 0o600)).To(Succeed())
+		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), manifestsExportPath)
+
+		deployDetailsJson := ""
+		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+		if err == nil {
+			for _, deployment := range deployments {
+				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+
+				for _, pod := range deployDetails.Pods {
+					for container, log := range pod.Logs {
+						if log == "" {
+							continue
+						}
+
+						logFilePath := filepath.Join(nsDir, fmt.Sprintf("logs-%s-%s.log", pod.Name, container))
+						Expect(os.WriteFile(logFilePath, []byte(log), 0o600)).To(Succeed())
+						Logf("saving container logs of \"%s/%s\" in namespace %q of cluster %q to a file %q",
+							pod.Name, container, namespace, cluster.Name(), logFilePath)
+					}
+				}
+
+				for _, pod := range deployDetails.Pods {
+					pod.Logs = map[string]string{}
+				}
+				deployDetailsJson += MarshalObjectDetails(deployDetails)
+			}
+		} else {
+			deployDetailsJson += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
+			errorSeen = true
+		}
+
+		deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("deploy-%s.json", namespace))
+		Expect(os.WriteFile(deployDetailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
+		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), deployDetailsFilePath)
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
@@ -201,23 +251,133 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 		errorSeen = true
 	}
 
-	exportFilePath := filepath.Join(debugPath, fmt.Sprintf("%s-export-%s", cluster.Name(), uuid.New().String()))
-	Expect(os.WriteFile(exportFilePath, []byte(out), 0o600)).To(Succeed())
-	Expect(errorSeen).NotTo(BeTrue(), "some debug commands failed")
-	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, exportFilePath)
+	if errorSeen {
+		Logf("[WARNING]: some debug commands failed")
+	}
+
+	kumaExportPath := filepath.Join(debugPath, fmt.Sprintf("kuma-export-%s.yaml", cluster.Name()))
+	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
+	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
+
+	configDump(kumactlOpts, debugPath, cluster, mesh, dataplaneType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneegressType)
+	configDump(kumactlOpts, debugPath, cluster, mesh, zoneingressType)
+}
+
+type dpType string
+
+const (
+	dataplaneType   dpType = "dataplane"
+	zoneegressType  dpType = "zoneegress"
+	zoneingressType dpType = "zoneingress"
+)
+
+func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
+	errorSeen := false
+	dpInspectError := ""
+	dpResp := dataplaneListResponse{}
+	dpListJson := ""
+	var err error
+	switch dpType {
+	case dataplaneType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "dataplanes", "--mesh", mesh, "-ojson")
+	case zoneegressType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneegresses", "-ojson")
+	case zoneingressType:
+		dpListJson, err = kumactlOpts.RunKumactlAndGetOutput("get", "zoneingresses", "-ojson")
+	default:
+		Logf("[WARNING]: unknown dp type " + string(dpType))
+		return
+	}
+	if err != nil {
+		dpInspectError = fmt.Sprintf("kumactl get dataplanes failed with error: %s", err.Error())
+		errorSeen = true
+	} else {
+		if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
+			dpInspectError = fmt.Sprintf("json Unmarshal dataplane list failed with error: %s", jsonErr.Error())
+			errorSeen = true
+		} else {
+			for _, dpObj := range dpResp.Items {
+				var dpNS string
+				dpNameParts := strings.Split(dpObj.Name, ".")
+				if len(dpNameParts) > 1 {
+					dpNS = dpNameParts[1]
+				}
+				if dpNS == "" {
+					continue
+				}
+				if !namespaceExported(debugPath, cluster.Name(), dpNS) {
+					continue
+				}
+
+				configDumpResp := ""
+				switch dpType {
+				case dataplaneType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
+				case zoneegressType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneegress", dpObj.Name, "--type", "config-dump")
+				case zoneingressType:
+					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneingresses", dpObj.Name, "--type", "config-dump")
+				default:
+					Logf("[WARNING]: unknown dp type " + string(dpType))
+					return
+				}
+				if err != nil {
+					if dpType == dataplaneType {
+						dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
+							dpObj.Name, dpObj.Mesh, err.Error())
+					} else {
+						dpInspectError += fmt.Sprintf("'kumactl inspect %s %s --type config-dump' failed with error: %s",
+							dpObj.Name, dpType, err.Error())
+					}
+					errorSeen = true
+				} else {
+					dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, cluster.Name(), dpNS), fmt.Sprintf("xds-%s.json", dpNameParts[0]))
+					Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
+					Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
+				}
+			}
+		}
+	}
+
+	if dpInspectError != "" {
+		dpErrFilePath := filepath.Join(debugPath, "dp-xds-error.txt")
+		Logf("saving DP xds dump errors from cluster %q for mesh %q to a file %q", cluster.Name(), mesh, dpErrFilePath)
+		Expect(os.WriteFile(dpErrFilePath, []byte(dpInspectError), 0o600)).To(Succeed())
+	}
+
+	if errorSeen {
+		Logf("[WARNING]: some debug commands failed")
+	}
 }
 
 func prepareDebugDir() string {
 	ginkgo.GinkgoHelper()
-
 	path := filepath.Join(Config.DebugDir, uuid.New().String())
-
-	Expect(os.MkdirAll(path, 0o755)).To(Or(
-		Not(HaveOccurred()),
-		Satisfy(os.IsNotExist),
-	))
-
+	createDir(path)
 	return path
+}
+
+func createDir(path string) {
+	ginkgo.GinkgoHelper()
+	Expect(os.MkdirAll(path, 0o755)).ToNot(HaveOccurred())
+}
+
+func namespaceExported(basePath string, clusterName string, namespace string) bool {
+	nsDirPath := getNsDirPath(basePath, clusterName, namespace)
+	info, err := os.Stat(nsDirPath)
+	if os.IsNotExist(err) {
+		return false
+	}
+	if err != nil {
+		return false
+	}
+
+	return info.IsDir()
+}
+
+func getNsDirPath(basePath string, clusterName string, namespace string) string {
+	return filepath.Join(basePath, fmt.Sprintf("%s-%s", clusterName, namespace))
 }
 
 func CpRestarted(cluster Cluster) bool {
@@ -234,113 +394,12 @@ func CpRestarted(cluster Cluster) bool {
 	}
 }
 
-// When we'll update our package to Go 1.23, below helper functions are can be replaced with
-// err = os.CopyFS(destDir, os.DirFS(srcDir))
-// ref#1. https://stackoverflow.com/a/56314145
-// ref#2. https://github.com/golang/go/issues/62484
-
-func CopyDirectory(scrDir, dest string) error {
-	entries, err := os.ReadDir(scrDir)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		sourcePath := filepath.Join(scrDir, entry.Name())
-		destPath := filepath.Join(dest, entry.Name())
-
-		fileInfo, err := os.Stat(sourcePath)
-		if err != nil {
-			return err
-		}
-
-		stat, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return errors.Errorf("failed to get raw syscall.Stat_t data for '%s'", sourcePath)
-		}
-
-		switch fileInfo.Mode() & os.ModeType {
-		case os.ModeDir:
-			if err := CreateIfNotExists(destPath, 0o755); err != nil {
-				return err
-			}
-			if err := CopyDirectory(sourcePath, destPath); err != nil {
-				return err
-			}
-		case os.ModeSymlink:
-			if err := CopySymLink(sourcePath, destPath); err != nil {
-				return err
-			}
-		default:
-			if err := Copy(sourcePath, destPath); err != nil {
-				return err
-			}
-		}
-
-		if err := os.Lchown(destPath, int(stat.Uid), int(stat.Gid)); err != nil {
-			return err
-		}
-
-		fInfo, err := entry.Info()
-		if err != nil {
-			return err
-		}
-
-		isSymlink := fInfo.Mode()&os.ModeSymlink != 0
-		if !isSymlink {
-			if err := os.Chmod(destPath, fInfo.Mode()); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
+type dataplaneResponse struct {
+	Mesh string `json:"mesh"`
+	Name string `json:"name"`
 }
 
-func Copy(srcFile, dstFile string) error {
-	out, err := os.Create(dstFile)
-	if err != nil {
-		return err
-	}
-
-	defer out.Close()
-
-	in, err := os.Open(srcFile)
-	if err != nil {
-		return err
-	}
-
-	defer in.Close()
-
-	if _, err = io.Copy(out, in); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func Exists(filePath string) bool {
-	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		return false
-	}
-
-	return true
-}
-
-func CreateIfNotExists(dir string, perm os.FileMode) error {
-	if Exists(dir) {
-		return nil
-	}
-
-	if err := os.MkdirAll(dir, perm); err != nil {
-		return errors.Wrapf(err, "failed to create directory: '%s'", dir)
-	}
-
-	return nil
-}
-
-func CopySymLink(source, dest string) error {
-	link, err := os.Readlink(source)
-	if err != nil {
-		return err
-	}
-	return os.Symlink(link, dest)
+type dataplaneListResponse struct {
+	Total int                 `json:"total"`
+	Items []dataplaneResponse `json:"items"`
 }

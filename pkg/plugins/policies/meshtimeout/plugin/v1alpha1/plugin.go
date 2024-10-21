@@ -196,14 +196,14 @@ func applyToGateway(
 			continue
 		}
 
-		conf = getConf(toRules, core_rules.MeshSubset())
+		conf = getConf(toRules.Rules, core_rules.MeshSubset())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
 			if ok {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
-						routeConf := getConf(toRules, core_rules.MeshSubset().WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
+						routeConf := getConf(toRules.Rules, core_rules.MeshSubset().WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
 						if routeConf == nil {
 							if conf == nil {
 								continue
@@ -236,13 +236,13 @@ func applyToGateway(
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-					conf := getConf(toRules, core_rules.MeshService(serviceName))
+					conf := getConf(toRules.Rules, core_rules.MeshService(serviceName))
 					if conf == nil {
 						continue
 					}
 
 					if err := applyToClusters(
-						toRules,
+						toRules.Rules,
 						serviceName,
 						meshCtx.GetServiceProtocol(serviceName),
 						cluster,

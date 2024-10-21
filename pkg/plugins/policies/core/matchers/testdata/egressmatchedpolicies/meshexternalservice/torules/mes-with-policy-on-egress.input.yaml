@@ -1,0 +1,50 @@
+# MeshExternalService policy with targeting egress
+type: MeshHealthCheck
+name: mhc-1
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes
+      default:
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        http:
+          path: /health
+          expectedStatuses: [200, 201]
+---
+type: MeshHealthCheck
+name: mhc-2
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        interval: 8s
+        timeout: 7s
+        unhealthyThreshold: 10
+        healthyThreshold: 99
+        http:
+          path: /health/test
+          expectedStatuses: [200, 201, 204]
+---
+type: MeshExternalService
+mesh: mesh-1
+name: mes
+spec:
+  match:
+    type: HostnameGenerator
+    port: 80
+    protocol: http
+  endpoints:
+    - address: my-es.io
+      port: 80
+---
+type: Mesh
+name: mesh-1

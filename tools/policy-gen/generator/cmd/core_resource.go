@@ -222,5 +222,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		HasFromTargetRef: {{.HasFrom}},
 		HasStatus: {{.HasStatus}},
 		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
+		IsReferenceableInTo: {{.IsReferenceableInTo}},
 	}
 `))

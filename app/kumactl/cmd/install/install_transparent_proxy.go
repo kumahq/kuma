@@ -15,8 +15,8 @@ import (
 	core_config "github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/transparentproxy"
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 )
 
 const (
@@ -24,6 +24,9 @@ const (
 	flagDryRun                     = "dry-run"
 	flagTransparentProxyConfig     = "config"
 	flagTransparentProxyConfigFile = "config-file"
+	flagIptablesExecutables        = "iptables-executables"
+	flagRedirectDNS                = "redirect-dns"
+	flagRedirectAllDNSTraffic      = "redirect-all-dns-traffic"
 )
 
 const (
@@ -112,7 +115,8 @@ runuser -u kuma-dp -- \
 
 			parseConfigFlags := func(flag *pflag.Flag, value string) error {
 				switch flag.Name {
-				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile:
+				case flagHelp, flagDryRun, flagTransparentProxyConfig, flagTransparentProxyConfigFile,
+					flagRedirectDNS, flagRedirectAllDNSTraffic:
 					return flag.Value.Set(value)
 				default:
 					return nil
@@ -152,6 +156,14 @@ runuser -u kuma-dp -- \
 				)
 			}
 
+			if cfg.Redirect.DNS.Enabled && cfg.Redirect.DNS.CaptureAll {
+				return errors.Errorf(
+					"only one of '--%s' or '--%s' should be specified",
+					flagRedirectDNS,
+					flagRedirectAllDNSTraffic,
+				)
+			}
+
 			// After parsing the config flags, we load the configuration, which involves parsing
 			// the provided YAML or JSON, and including environment variables if present
 			if err := cfgLoader.Load(cmd.InOrStdin(), []byte(configValue), configFile); err != nil {
@@ -163,22 +175,6 @@ runuser -u kuma-dp -- \
 			// other parsing errors for all other flags
 			if err := cmd.Flags().Parse(args); err != nil {
 				return err
-			}
-
-			// Ensure the Set method is called manually if the --kuma-dp-user flag is not specified
-			// or if the value was not set in the config file. The Set method contains logic to check
-			// for the existence of a user with the default UID "5678". If that does not exist, it
-			// checks for the default username "kuma-dp". Since the Cobra library does not call
-			// the Set method when --kuma-dp-user is not specified, we need to invoke it manually
-			// here to ensure the proper user is set.
-			if !cfg.KumaDPUser.Changed() {
-				if err := cfg.KumaDPUser.Set(""); err != nil {
-					return errors.Wrap(err, "failed to set default owner for transparent proxy")
-				}
-			}
-
-			if cfg.Redirect.DNS.CaptureAll && cfg.Redirect.DNS.Enabled {
-				return errors.Errorf("one of --redirect-dns or --redirect-all-dns-traffic should be specified")
 			}
 
 			if cfg.Redirect.DNS.CaptureAll {
@@ -236,14 +232,21 @@ runuser -u kuma-dp -- \
 	cmd.Flags().Var(&cfg.Redirect.Inbound.Port, "redirect-inbound-port", `inbound port redirected to Envoy, as specified in dataplane's "networking.transparentProxying.redirectPortInbound"`)
 	cmd.Flags().Var(&cfg.Redirect.Inbound.ExcludePorts, "exclude-inbound-ports", "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().Var(&cfg.Redirect.Outbound.ExcludePorts, "exclude-outbound-ports", "a comma separated list of outbound ports to exclude from redirect to Envoy")
-	cmd.Flags().Var(&cfg.KumaDPUser, "kuma-dp-user", fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
-	cmd.Flags().Var(&cfg.KumaDPUser, "kuma-dp-uid", "the uid of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, "redirect-dns", cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
-	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, "redirect-all-dns-traffic", cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
+	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-user", cfg.KumaDPUser, fmt.Sprintf("the username or UID of the user that will run kuma-dp. If not provided, the system will search for a user with the default UID ('%s') or the default username ('%s')", consts.OwnerDefaultUID, consts.OwnerDefaultUsername))
+	cmd.Flags().StringVar(&cfg.KumaDPUser, "kuma-dp-uid", cfg.KumaDPUser, "the uid of the user that will run kuma-dp")
+	cmd.Flags().BoolVar(&cfg.Redirect.DNS.Enabled, flagRedirectDNS, cfg.Redirect.DNS.Enabled, "redirect only DNS requests targeted to the servers listed in /etc/resolv.conf to a specified port")
+	cmd.Flags().BoolVar(&cfg.Redirect.DNS.CaptureAll, flagRedirectAllDNSTraffic, cfg.Redirect.DNS.CaptureAll, "redirect all DNS traffic to a specified port, unlike --redirect-dns this will not be limited to the dns servers identified in /etc/resolve.conf")
 	cmd.Flags().Var(&cfg.Redirect.DNS.Port, "redirect-dns-port", "the port where the DNS agent is listening")
-	cmd.Flags().StringVar(&cfg.Redirect.DNS.UpstreamTargetChain, "redirect-dns-upstream-target-chain", cfg.Redirect.DNS.UpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&cfg.StoreFirewalld, "store-firewalld", cfg.StoreFirewalld, "store the iptables changes with firewalld")
-	cmd.Flags().BoolVar(&cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip-dns-conntrack-zone-split", cfg.Redirect.DNS.SkipConntrackZoneSplit, "skip applying conntrack zone splitting iptables rules")
+	cmd.Flags().BoolVar(
+		&cfg.Redirect.DNS.SkipConntrackZoneSplit,
+		"skip-dns-conntrack-zone-split",
+		cfg.Redirect.DNS.SkipConntrackZoneSplit,
+		fmt.Sprintf(
+			"Disables the conntrack zone splitting feature, which is used to avoid DNS resolution errors when applications make numerous DNS UDP requests. Normally, we separate conntrack zones to ensure proper handling of DNS traffic: Zone 2 handles DNS packets between the application and the local proxy, while Zone 1 manages packets between the proxy and upstream DNS resolvers. Disabling this feature should only be done if necessary, for example, in environments where custom iptables rules are already manipulating DNS traffic (e.g., inside Docker containers in custom networks when redirecting all DNS traffic [%s is enabled])",
+			flagRedirectAllDNSTraffic,
+		),
+	)
 	cmd.Flags().BoolVar(&cfg.DropInvalidPackets, "drop-invalid-packets", cfg.DropInvalidPackets, "This flag enables dropping of packets in invalid states, improving application stability by preventing them from reaching the backend. This is particularly beneficial during high-throughput requests where out-of-order packets might bypass DNAT. Note: Enabling this flag may introduce slight performance overhead. Weigh the trade-off between connection stability and performance before enabling it.")
 
 	// ebpf
@@ -258,7 +261,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringArrayVar(&cfg.Redirect.VNet.Networks, "vnet", cfg.Redirect.VNet.Networks, "virtual networks in a format of interfaceNameRegex:CIDR split by ':' where interface name doesn't have to be exact name e.g. docker0:172.17.0.0/16, br+:172.18.0.0/16, iface:::1/64")
 	cmd.Flags().UintVar(&cfg.Wait, "wait", cfg.Wait, "specify the amount of time, in seconds, that the application should wait for the xtables exclusive lock before exiting. If the lock is not available within the specified time, the application will exit with an error")
 	cmd.Flags().UintVar(&cfg.WaitInterval, "wait-interval", cfg.WaitInterval, "flag can be used to specify the amount of time, in microseconds, that iptables should wait between each iteration of the lock acquisition loop. This can be useful if the xtables lock is being held by another application for a long time, and you want to reduce the amount of CPU that iptables uses while waiting for the lock")
-	cmd.Flags().IntVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
+	cmd.Flags().UintVar(&cfg.Retry.MaxRetries, "max-retries", cfg.Retry.MaxRetries, "flag can be used to specify the maximum number of times to retry an installation before giving up")
 	cmd.Flags().Var(&cfg.Retry.SleepBetweenRetries, "sleep-between-retries", "flag can be used to specify the amount of time to sleep between retries")
 
 	cmd.Flags().BoolVar(&cfg.Log.Enabled, "iptables-logs", cfg.Log.Enabled, "enable logs for iptables rules using the LOG chain. This option activates kernel logging for packets matching the rules, where details about the IP/IPv6 headers are logged. This information can be accessed via dmesg(1) or syslog.")
@@ -287,10 +290,20 @@ runuser -u kuma-dp -- \
 		),
 	)
 
+	cmd.Flags().Var(
+		&cfg.Executables,
+		flagIptablesExecutables,
+		fmt.Sprintf(
+			"specify custom paths for iptables executables in the format name:path[,name:path...]. Valid names are 'iptables', 'iptables-save', 'iptables-restore', 'ip6tables', 'ip6tables-save', and 'ip6tables-restore'. You must provide all three executables for each IP version you want to customize (IPv4 or IPv6), meaning if you configure one for IPv6 (e.g., 'ip6tables'), you must also specify 'ip6tables-save' and 'ip6tables-restore'. Partial configurations for either IPv4 or IPv6 are not allowed. Configuration values can be set through a combination of sources: config file (via --%s or --%s), environment variables, and the '--%s' flag. For example, you can specify 'ip6tables' in the config file, 'ip6tables-save' as an environment variable, and 'ip6tables-restore' via the '--%[3]s' flag. [WARNING] Provided paths are not extensively validated, so ensure you specify correct paths and that the executables are actual iptables binaries to avoid misconfigurations and unexpected behavior",
+			flagTransparentProxyConfig,
+			flagTransparentProxyConfigFile,
+			flagIptablesExecutables,
+		),
+	)
+
 	cmd.Flags().StringVar(&configValue, flagTransparentProxyConfig, configValue, "transparent proxy configuration provided in YAML or JSON format")
 	cmd.Flags().StringVar(&configFile, flagTransparentProxyConfigFile, configFile, "path to the file containing the transparent proxy configuration in YAML or JSON format")
 
-	_ = cmd.Flags().MarkDeprecated("redirect-dns-upstream-target-chain", "This flag has no effect anymore. Will be removed in 2.9.x version")
 	_ = cmd.Flags().MarkDeprecated("kuma-dp-uid", "please use --kuma-dp-user, which accepts both UIDs and usernames")
 
 	// Manually define the `--help` flag since we are handling flag parsing ourselves due to
