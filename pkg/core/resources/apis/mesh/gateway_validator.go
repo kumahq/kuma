@@ -26,7 +26,7 @@ func (g *MeshGatewayResource) Validate() error {
 
 	// The top-level selector is used to bind the gateway to a set
 	// of dataplanes, so the service tag must not be used here.
-	err.Add(ValidateTags(
+	err.Add(ValidateSelector(
 		validators.RootedAt("tags"),
 		g.Spec.GetTags(),
 		ValidateTagsOpts{
