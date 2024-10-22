@@ -42,6 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prometheus/client_model v0.6.1
+<<<<<<< HEAD
 	github.com/prometheus/common v0.52.2
 	github.com/sethvargo/go-retry v0.2.4
 	github.com/shopspring/decimal v1.3.1
@@ -51,6 +52,18 @@ require (
 	github.com/testcontainers/testcontainers-go v0.32.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.2
 	github.com/vishvananda/netlink v1.2.1-beta.2
+=======
+	github.com/prometheus/common v0.60.0
+	github.com/sethvargo/go-retry v0.3.0
+	github.com/shopspring/decimal v1.4.0
+	github.com/slok/go-http-metrics v0.13.0
+	github.com/spf13/cobra v1.8.1
+	github.com/spf13/pflag v1.0.5
+	github.com/spiffe/go-spiffe/v2 v2.4.0
+	github.com/testcontainers/testcontainers-go v0.34.0
+	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
+	github.com/vishvananda/netlink v1.3.0
+>>>>>>> 40097dadf (chore(deps): bump github.com/testcontainers/testcontainers-go from 0.33.0 to 0.34.0 (#11812))
 	github.com/vishvananda/netns v0.0.4
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.50.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.50.0
@@ -110,9 +123,16 @@ require (
 	github.com/containerd/containerd v1.7.18 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
+<<<<<<< HEAD
 	github.com/cpuguy83/dockercfg v0.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.4 // indirect
+=======
+	github.com/containerd/platforms v0.2.1 // indirect
+	github.com/cpuguy83/dockercfg v0.3.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
+	github.com/cyphar/filepath-securejoin v0.3.1 // indirect
+>>>>>>> 40097dadf (chore(deps): bump github.com/testcontainers/testcontainers-go from 0.33.0 to 0.34.0 (#11812))
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.1.1+incompatible // indirect
