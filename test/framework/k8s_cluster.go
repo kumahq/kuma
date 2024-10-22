@@ -194,8 +194,8 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 		})
 }
 
-func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
-	retry.DoWithRetry(c.t,
+func (c *K8sCluster) WaitNamespaceDelete(namespace string) error {
+	_, err := retry.DoWithRetryE(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		c.defaultRetries,
 		c.defaultTimeout,
@@ -210,12 +210,22 @@ func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 				return "Failed to get Namespace " + namespace, err
 			}
 
-			nsLastCondition := "unknown"
-			if len(nsObject.Status.Conditions) != 0 {
-				nsLastCondition = nsObject.Status.Conditions[len(nsObject.Status.Conditions)-1].String()
+			var conditions []string
+			for _, condition := range nsObject.Status.Conditions {
+				conditions = append(conditions, condition.String())
 			}
-			return "Namespace available " + namespace, fmt.Errorf("Namespace %s still active, last condition: %s", namespace, nsLastCondition)
+			return "Namespace available " + namespace, fmt.Errorf("namespace %s still active, conditions: %s", namespace, strings.Join(conditions, ","))
 		})
+	if err != nil {
+		var namespaceStr string
+		nsObject, err := k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), namespace)
+		if err == nil {
+			namespaceStr = "namespace object: " + nsObject.String()
+		}
+		all, _ := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(namespace), "get", "all")
+		return errors.Wrapf(err, "debug data: %s, all in namespace: %s", namespaceStr, all)
+	}
+	return err
 }
 
 func (c *K8sCluster) WaitNodeDelete(node string) (string, error) {
@@ -273,6 +283,9 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod, podLogOpts v1.PodLogOptions) (string
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string) error {
+	if err := c.installCRDs(); err != nil {
+		return err
+	}
 	yaml, err := c.yamlForKumaViaKubectl(mode)
 	if err != nil {
 		return err
@@ -281,6 +294,37 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string) error {
 	return k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
 		yaml)
+}
+
+// installCRDs installs Kuma CRDs and waits until it's ready
+// Usually it's immediately, but when we were installing CRDs and Kuma CP at the same time, sometimes we hit
+// a problem when CP could not recognize CRDs in Kubernetes and CP was restarted.
+func (c *K8sCluster) installCRDs() error {
+	crds, err := c.GetKumactlOptions().RunKumactlAndGetOutputV(false, "install", "crds")
+	if err != nil {
+		return err
+	}
+	if err := k8s.KubectlApplyFromStringE(c.t, c.GetKubectlOptions(), crds); err != nil {
+		return err
+	}
+
+	regexPattern := `(?m)^\s*name:\s*([^\s]+\.kuma\.io)\b`
+	re := regexp.MustCompile(regexPattern)
+	matches := re.FindAllStringSubmatch(crds, -1)
+	if matches == nil {
+		return fmt.Errorf("no matches found")
+	}
+
+	for _, match := range matches {
+		if len(match) > 1 {
+			crdName := match[1]
+			err := k8s.RunKubectlE(c.t, c.GetKubectlOptions(), "wait", "--for", "condition=established", "--timeout=60s", "crd/"+crdName)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
@@ -952,9 +996,7 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 		c.GetKubectlOptions(),
 		yaml)
 
-	c.WaitNamespaceDelete(Config.KumaNamespace)
-
-	return nil
+	return c.WaitNamespaceDelete(Config.KumaNamespace)
 }
 
 func (c *K8sCluster) DeleteKuma() error {
@@ -1026,16 +1068,11 @@ func (c *K8sCluster) CreateNamespace(namespace string) error {
 }
 
 func (c *K8sCluster) DeleteNamespace(namespace string) error {
-	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
-		if k8s_errors.IsNotFound(err) {
-			return nil
-		}
+	if err := c.TriggerDeleteNamespace(namespace); err != nil {
 		return err
 	}
 
-	c.WaitNamespaceDelete(namespace)
-
-	return nil
+	return c.WaitNamespaceDelete(namespace)
 }
 
 func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
@@ -1045,6 +1082,7 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 		}
 		return err
 	}
+
 	// speed up namespace termination by terminating pods without grace period.
 	// Namespace is then deleted in ~6s instead of ~43s.
 	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")

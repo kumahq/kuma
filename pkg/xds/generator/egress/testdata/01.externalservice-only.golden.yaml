@@ -1,5 +1,5 @@
 resources:
-- name: externalservice-1
+- name: mesh-1:externalservice-1
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: mesh-1_externalservice-1

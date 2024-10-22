@@ -91,8 +91,7 @@ var (
 	_ = Describe("Reachable Services", reachableservices.ReachableServices, Ordered)
 	_ = Describe("Apis", api.Api, Ordered)
 	_ = Describe("Traffic Permission", trafficpermission.TrafficPermission, Ordered)
-	// FlakeAttempts to cover https://github.com/kumahq/kuma/issues/11546
-	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered, FlakeAttempts(3))
+	_ = Describe("Traffic Route", trafficroute.TrafficRoute, Ordered)
 	_ = Describe("Zone Egress", zoneegress.ExternalServices, Ordered)
 	_ = Describe("Virtual Outbound", virtualoutbound.VirtualOutbound, Ordered)
 	_ = Describe("Transparent Proxy", transparentproxy.TransparentProxy, Ordered)

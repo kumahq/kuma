@@ -29,7 +29,9 @@ jobs:
         run: |
           echo "branch=$(make dev/print-latest-release-branch)" >> $GITHUB_OUTPUT
       - run: |
-          make dev/merge-release
+          if [[ "refs/heads/${{ steps.latest-branch.outputs.branch }}" == "${{ github.ref }}" ]]; then
+            make dev/merge-release
+          fi
       - id: commit-changes
         run: |
           git status

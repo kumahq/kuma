@@ -91,10 +91,10 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr string) bool {
 				return !strings.Contains(
 					stderr,
-					"conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module",
+					"conntrack zone splitting is disabled. This requires the 'conntrack' iptables module",
 				)
 			},
-			errorMatcher: ContainSubstring("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module"),
+			errorMatcher: ContainSubstring("conntrack zone splitting is disabled. This requires the 'conntrack' iptables module"),
 			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
@@ -106,7 +106,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr string) bool {
 				return strings.Contains(
 					stderr,
-					"conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module",
+					"conntrack zone splitting is disabled. This requires the 'conntrack' iptables module",
 				)
 			},
 			goldenFile: "install-transparent-proxy.dns.golden.txt",

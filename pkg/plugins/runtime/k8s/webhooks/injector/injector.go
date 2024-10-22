@@ -159,7 +159,6 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			tproxyCfg,
 			i.cfg,
 			pod.Annotations,
-			meshName,
 			i.defaultAdminPort,
 		); err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
@@ -168,6 +167,11 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		for key, value := range annotations {
 			pod.Annotations[key] = value
 		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
 
 		switch {
 		case !tproxyCfg.CNIMode:
@@ -189,13 +193,18 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
 		}
 	} else { // this is legacy and deprecated - will be removed soon
-		if annotations, err = i.NewAnnotations(pod, meshName, logger); err != nil {
+		if annotations, err = i.NewAnnotations(pod, logger); err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
 		for key, value := range annotations {
 			pod.Annotations[key] = value
 		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
 
 		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(pod.Annotations)
 		if err != nil {
@@ -662,12 +671,11 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 }
 
 // Deprecated
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh string, logger logr.Logger) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (map[string]string, error) {
 	portOutbound := i.cfg.SidecarContainer.RedirectPortOutbound
 	portInbound := i.cfg.SidecarContainer.RedirectPortInbound
 
 	result := map[string]string{
-		metadata.KumaMeshAnnotation:                            mesh, // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                 metadata.AnnotationTrue,
 		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
 		metadata.KumaSidecarUID:                                fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),

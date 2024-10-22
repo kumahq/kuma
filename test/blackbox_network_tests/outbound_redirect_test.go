@@ -758,7 +758,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 			// then
 			Eventually(ns.UnsafeExec(func() {
-				Expect(tcp.DialIPWithPortAndGetReply(net.ParseIP(consts.LocalhostIPv4), randomPort)).
+				Expect(tcp.DialIPWithPortAndGetReply(consts.LocalhostAddress[consts.IPv4].IP, randomPort)).
 					To(Equal("randomPort"))
 			})).Should(BeClosed())
 
@@ -836,7 +836,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 			// then
 			Eventually(ns.UnsafeExec(func() {
-				Expect(tcp.DialIPWithPortAndGetReply(net.ParseIP(consts.LocalhostIPv6), randomPort)).
+				Expect(tcp.DialIPWithPortAndGetReply(consts.LocalhostAddress[consts.IPv6].IP, randomPort)).
 					To(Equal("randomPort"))
 			})).Should(BeClosed())
 

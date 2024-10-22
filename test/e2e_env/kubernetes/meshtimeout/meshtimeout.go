@@ -27,11 +27,10 @@ func MeshTimeout() {
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(YamlK8s(builders.Mesh().
+				Install(Yaml(builders.Mesh().
 					WithName(mesh).
 					WithoutInitialPolicies().
-					WithMeshServicesEnabled(mode).
-					KubeYaml())).
+					WithMeshServicesEnabled(mode))).
 				Install(NamespaceWithSidecarInjection(namespace)).
 				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 				Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).

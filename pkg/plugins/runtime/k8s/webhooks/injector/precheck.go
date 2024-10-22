@@ -35,7 +35,7 @@ func (i *KumaInjector) preCheck(ctx context.Context, pod *kube_core.Pod, logger 
 		return "", nil
 	}
 
-	meshName := k8s_util.MeshOfByAnnotation(pod, ns)
+	meshName := k8s_util.MeshOfByLabelOrAnnotation(logger, pod, ns)
 	logger = logger.WithValues("mesh", meshName)
 	// Check mesh exists
 	if err := i.client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &mesh_k8s.Mesh{}); err != nil {

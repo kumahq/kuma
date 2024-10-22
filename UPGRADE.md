@@ -233,6 +233,12 @@ The values `yes` and `no` are deprecated for specifying boolean values in switch
 
 Please use `true` and `false` as replacements; some boolean switches also support `enabled` and `disabled`. [Check the documentation](https://kuma.io/docs/latest/reference/kubernetes-annotations/) for the specific annotation to confirm the correct replacements.
 
+#### Deprecation of `kuma.io/mesh` annotation
+
+It was previously possible to create a resource in a `Mesh` by providing the `Mesh` name as an annotation, but this support has been deprecated and will be removed in the future.
+
+Please use the `kuma.io/mesh` label instead.
+
 ## Upgrade to `2.8.x`
 
 ### MeshFaultInjection responseBandwidth.limit

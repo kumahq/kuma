@@ -113,7 +113,10 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
-		log.V(1).Info("MeshServices not enabled on Mesh, ignoring")
+		log.V(1).Info("MeshServices not enabled on Mesh, deleting existing")
+		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+			return kube_ctrl.Result{}, err
+		}
 		return kube_ctrl.Result{}, nil
 	}
 
