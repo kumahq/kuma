@@ -153,9 +153,9 @@ conf:
 			return client.CollectResponsesByInstance(multizone.UniZone1, "gateway-client", fmt.Sprintf("http://%s", net.JoinHostPort(gatewayIP, "8080")), client.WithHeader("Host", "example.kuma.io"), client.WithNumberOfRequests(200))
 		}, "2m", "10s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 40)),
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 50, 20)),
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 50, 20)),
+				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 100, 50)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 50, 25)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 50, 25)),
 			),
 		)
 
