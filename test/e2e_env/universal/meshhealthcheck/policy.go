@@ -8,7 +8,9 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -123,31 +125,17 @@ spec:
           - %s`, mesh, method, status)
 		}
 
-		uniServiceYAML := fmt.Sprintf(`
-type: MeshService
-name: test-server
-mesh: %s
-labels:
-  kuma.io/origin: zone
-  kuma.io/env: universal
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`, meshName)
 		BeforeAll(func() {
 			err := NewClusterSetup().
-				Install(MeshUniversal(meshName)).
+				Install(Yaml(samples.MeshDefaultBuilder().
+					WithName(meshName).
+					WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+				)).
 				Install(YamlUniversal(healthCheck(meshName, "health", "200"))).
 				Install(DemoClientUniversal("dp-demo-client", meshName,
 					WithTransparentProxy(true)),
 				).
 				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"health-check", "http"}), WithProtocol(mesh.ProtocolHTTP))).
-				Install(YamlUniversal(uniServiceYAML)).
 				Install(YamlUniversal(`
 type: HostnameGenerator
 name: uni-ms-mhc
@@ -175,7 +163,7 @@ spec:
 			// check that test-server is healthy
 			Eventually(func(g Gomega) {
 				stdout, _, err := client.CollectResponse(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.universal.ms/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stdout).To(ContainSubstring("response"))
@@ -195,7 +183,7 @@ spec:
 			// check that test-server is unhealthy
 			Consistently(func(g Gomega) {
 				response, err := client.CollectFailure(
-					universal.Cluster, "dp-demo-client", "test-server.mesh/content",
+					universal.Cluster, "dp-demo-client", "test-server.universal.ms/content",
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(response.ResponseCode).To(Equal(503))
