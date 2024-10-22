@@ -63,6 +63,10 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make build
+      - id: annotate-image-tag
+        name: Image tag
+        run: |
+          echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
           make -j build/distributions
       - id: inspect-binary-output
