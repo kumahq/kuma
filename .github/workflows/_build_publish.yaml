@@ -196,6 +196,7 @@ jobs:
   digest-images:
     needs: [build-images]
     runs-on: ubuntu-latest
+    if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
