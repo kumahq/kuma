@@ -62,6 +62,7 @@ jobs:
         with:
           max_attempts: 3
           retry_wait_seconds: 15s
+          timeout_minutes: 30
           command: make -j images && make -j docker/save
       - run: |
           make dev/set-kuma-helm-repo
