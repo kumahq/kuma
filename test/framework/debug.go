@@ -356,8 +356,7 @@ func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string
 	switch dpType {
 	case dataplaneType:
 		inspectResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", string(dataplaneType), dpName, "--mesh", mesh, "--type", inspectType)
-	case zoneegressType:
-	case zoneingressType:
+	case zoneegressType, zoneingressType:
 		inspectResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", string(dpType), dpName, "--type", inspectType)
 	default:
 		Logf("[WARNING]: unknown dp type " + string(dpType))
