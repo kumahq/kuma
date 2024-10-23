@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: demo
+  name: example
+  annotations:
+    kuma.io/ignore: "true"
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - name: http-port
+      appProtocol: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: tcp-port
+      port: 443
+      targetPort: 8443
+      protocol: TCP
+    - port: 1234 # ignored because it's UDP
+      targetPort: 4444
+      protocol: UDP
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo
+  labels:
+    kuma.io/sidecar-injection: enabled
+---
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  meshServices:
+    mode: Everywhere
