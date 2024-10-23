@@ -324,7 +324,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 			zone := system.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
-				log.Error(err, "failed to get zone", "zone", zoneTag)
+				if !errors.Is(err, context.Canceled) {
+					log.Error(err, "failed to get zone", "zone", zoneTag)
+				}
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
 				return true
