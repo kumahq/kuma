@@ -57,9 +57,13 @@ jobs:
           make build
       - run: |
           make -j build/distributions
-      - run: |
-          make -j images
-          make -j docker/save
+      - uses: nick-fields/retry@v3
+        id: retry
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15s
+          timeout_minutes: 30
+          command: make -j images && make -j docker/save
       - run: |
           make dev/set-kuma-helm-repo
       - name: "Enable ipv6 for docker"
