@@ -45,12 +45,11 @@ spec:
 			)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(
-				YamlK8s(
+				Yaml(
 					builders.Mesh().
 						WithName(meshName).
 						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1").
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
-						KubeYaml(),
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				),
 			).
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).

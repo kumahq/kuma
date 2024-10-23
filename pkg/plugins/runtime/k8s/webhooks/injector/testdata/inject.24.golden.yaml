@@ -9,7 +9,6 @@ metadata:
     kuma.io/builtin-dns-logging: "false"
     kuma.io/builtin-dns-port: "25053"
     kuma.io/envoy-admin-port: "9901"
-    kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-proxy-concurrency: "99"
@@ -22,6 +21,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:

@@ -115,8 +115,8 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
-{{- if .IsPolicy }} 
+// +kubebuilder:resource:categories=kuma,scope=Namespaced{{ range $marker := .KubebuilderMarkers }}
+{{ $marker }}{{ end }}{{- if .IsPolicy }} 
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"
 // +kubebuilder:printcolumn:name="TargetRef Name",type="string",JSONPath=".spec.targetRef.name"
 {{- end }}

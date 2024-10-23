@@ -204,7 +204,7 @@ kind: Gateway
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   gatewayClassName: kuma-cross-mesh
@@ -220,7 +220,7 @@ kind: HTTPRoute
 metadata:
   name: %s
   namespace: %s
-  annotations:
+  labels:
     kuma.io/mesh: %s
 spec:
   parentRefs:

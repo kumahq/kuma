@@ -14,6 +14,7 @@ import (
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:is_referenceable_in_to=true
+// +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshMultiZoneService struct {
 	// Selector is a way to select multiple MeshServices
 	Selector Selector `json:"selector"`

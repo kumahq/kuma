@@ -82,7 +82,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
 	}
 
-	mesh := k8s_util.MeshOfByAnnotation(gateway, &ns)
+	mesh := k8s_util.MeshOfByLabelOrAnnotation(r.Log, gateway, &ns)
 	gatewaySpec, listenerConditions, err := r.gapiToKumaGateway(ctx, mesh, gateway, config)
 	if err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "error generating MeshGateway.kuma.io")
@@ -146,7 +146,7 @@ func (r *GatewayReconciler) createOrUpdateInstance(ctx context.Context, mesh str
 		if instance.Labels == nil {
 			instance.Labels = map[string]string{}
 		}
-		instance.Labels[metadata.KumaMeshAnnotation] = mesh
+		instance.Labels[metadata.KumaMeshLabel] = mesh
 
 		instance.Spec = mesh_k8s.MeshGatewayInstanceSpec{
 			Tags:                    config.Tags,

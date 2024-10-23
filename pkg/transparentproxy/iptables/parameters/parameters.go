@@ -137,3 +137,24 @@ func (p *SimpleParameter) Build(verbose bool) []string {
 func (p *SimpleParameter) Negate() ParameterBuilder {
 	return p
 }
+
+var _ ParameterBuilder = &WrappingParameter{}
+
+// WrappingParameter is a utility type that encapsulates a slice of strings,
+// allowing for flexible parameter handling in scenarios where only raw string
+// arguments are needed
+type WrappingParameter struct {
+	parameters []string
+}
+
+func NewWrappingParameter(param string, params ...string) *WrappingParameter {
+	return &WrappingParameter{parameters: append([]string{param}, params...)}
+}
+
+func (p *WrappingParameter) Build(bool) []string {
+	return p.parameters
+}
+
+func (p *WrappingParameter) Negate() ParameterBuilder {
+	return p
+}

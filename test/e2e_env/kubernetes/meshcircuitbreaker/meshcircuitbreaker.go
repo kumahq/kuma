@@ -6,8 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -19,36 +21,18 @@ func MeshCircuitBreaker() {
 	namespace := "meshcircuitbreaker-namespace"
 	mesh := "meshcircuitbreaker"
 
-	kubeMeshServiceYAML := fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshService
-metadata:
-  name: test-server
-  namespace: %s
-  labels:
-    kuma.io/origin: zone
-    kuma.io/mesh: %s
-    kuma.io/managed-by: k8s-controller
-    k8s.kuma.io/is-headless-service: "false"
-spec:
-  selector:
-    dataplaneTags:
-      app: test-server
-      k8s.kuma.io/namespace: %s
-  ports:
-  - port: 80
-    name: main
-    targetPort: main
-    appProtocol: http
-`, namespace, mesh, namespace)
-
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshKubernetes(mesh)).
+			Install(
+				Yaml(
+					builders.Mesh().
+						WithName(mesh).
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere),
+				),
+			).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
-			Install(YamlK8s(kubeMeshServiceYAML)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator

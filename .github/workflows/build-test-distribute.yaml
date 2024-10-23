@@ -55,7 +55,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v1.60.3
-      - uses: actions/cache@2cdf405574d6ef1f33a1d12acccd3ae82f47b3f2 # v4.1.0
+      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -172,7 +172,7 @@ jobs:
       - name: Push security assets to cloudsmith
         id: push_security_assets
         if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@8fe2c21805b379148b31e94ef1b509d2a83342c3 # v0.6.13
+        uses: cloudsmith-io/action@7af394e0f8add4867bce109385962dafecad1b8d # v0.6.14
         with:
           api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
           command: "push"

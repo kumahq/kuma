@@ -15,13 +15,20 @@ func (m *MeshServiceResource) DestinationName(port uint32) string {
 	return fmt.Sprintf("%s_%s_%s_%s_msvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
 }
 
-func (m *MeshServiceResource) FindPort(port uint32) (Port, bool) {
+func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
 	for _, p := range m.Spec.Ports {
 		if p.Port == port {
 			return p, true
 		}
 	}
 	return Port{}, false
+}
+
+func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
+	if port, found := m.findPort(port); found {
+		return port.GetName(), true
+	}
+	return "", false
 }
 
 func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
@@ -36,15 +43,15 @@ func (m *MeshServiceResource) FindPortByName(name string) (Port, bool) {
 	return Port{}, false
 }
 
-func (m *MeshServiceResource) IsLocalMeshService(localZone string) bool {
+func (m *MeshServiceResource) IsLocalMeshService() bool {
 	if len(m.GetMeta().GetLabels()) == 0 {
 		return true // no labels mean that it's a local resource
 	}
-	resZone, ok := m.GetMeta().GetLabels()[mesh_proto.ZoneTag]
+	origin, ok := m.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]
 	if !ok {
 		return true // no zone label mean that it's a local resource
 	}
-	return resZone == localZone
+	return origin == string(mesh_proto.ZoneResourceOrigin)
 }
 
 var _ core_vip.ResourceHoldingVIPs = &MeshServiceResource{}
