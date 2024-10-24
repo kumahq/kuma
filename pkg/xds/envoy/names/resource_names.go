@@ -66,7 +66,7 @@ func GetMetricsHijackerClusterName() string {
 }
 
 func GetDPPReadinessClusterName() string {
-	return Join("_kuma", "readiness")
+	return Join("kuma", "readiness")
 }
 
 func GetInternalClusterNamePrefix() string {
