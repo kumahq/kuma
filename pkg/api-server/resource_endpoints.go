@@ -628,31 +628,9 @@ func (r *resourceEndpoints) readOnlyMessage() string {
 
 func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
-		policyName := request.PathParameter("name")
-		page, err := pagination(request)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
-			return
-		}
-		nameContains := request.QueryParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-			return
-		}
-
-		if err := r.resourceAccess.ValidateGet(
-			request.Request.Context(),
-			model.ResourceKey{Mesh: meshName, Name: policyName},
-			r.descriptor,
-			user.FromCtx(request.Request.Context()),
-		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-			return
-		}
-		policyResource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
 			return
 		}
 
@@ -675,54 +653,97 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			dependentResources.MeshLocalResources[dependentType] = hl
 		}
-		filter := func(rs model.Resource) bool {
-			dpp := rs.(*core_mesh.DataplaneResource)
-			if r.descriptor.IsTargetRefBased {
-				res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
-				return res
-			} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
-				for _, s := range dpPolicy.Selectors() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
+		matchingDataplanesForFilter(
+			request,
+			response,
+			r.descriptor,
+			r.resManager,
+			r.resourceAccess,
+			func(policyResource core_model.Resource) store.ListFilterFunc {
+				return func(rs core_model.Resource) bool {
+					dpp := rs.(*core_mesh.DataplaneResource)
+					if r.descriptor.IsTargetRefBased {
+						res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
+						return res
+					} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
+						for _, s := range dpPolicy.Selectors() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
+					} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
+						for _, s := range connPolicy.Sources() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
+						for _, s := range connPolicy.Destinations() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
 					}
+					return false
 				}
-			} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
-				for _, s := range connPolicy.Sources() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
-					}
-				}
-				for _, s := range connPolicy.Destinations() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
-					}
-				}
-			}
-			return false
-		}
-		dppList := registry.Global().MustNewList(core_mesh.DataplaneType)
-		err = r.resManager.List(request.Request.Context(), dppList,
-			store.ListByMesh(meshName),
-			store.ListByNameContains(nameContains),
-			store.ListByFilterFunc(filter),
-			store.ListByPage(page.size, page.offset),
+			},
 		)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
-			return
-		}
-		items := make([]api_common.Meta, len(dppList.GetItems()))
-		for i, elt := range dppList.GetItems() {
-			items[i] = oapi_helpers.ResourceToMeta(elt)
-		}
-		out := api_types.InspectDataplanesForPolicyResponse{
-			Total: int(dppList.GetPagination().Total),
-			Items: items,
-			Next:  nextLink(request, dppList.GetPagination().NextOffset),
-		}
-		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
-		}
+	}
+}
+
+func matchingDataplanesForFilter(
+	request *restful.Request,
+	response *restful.Response,
+	descriptor core_model.ResourceTypeDescriptor,
+	resManager manager.ResourceManager,
+	resourceAccess access.ResourceAccess,
+	dpFilterForResource func(resource model.Resource) store.ListFilterFunc,
+) {
+	policyName := request.PathParameter("name")
+	page, err := pagination(request)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+		return
+	}
+	nameContains := request.QueryParameter("name")
+	meshName := request.PathParameter("mesh")
+
+	if err := resourceAccess.ValidateGet(
+		request.Request.Context(),
+		model.ResourceKey{Mesh: meshName, Name: policyName},
+		descriptor,
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+		return
+	}
+	policyResource := descriptor.NewObject()
+	if err := resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+		return
+	}
+
+	dppList := registry.Global().MustNewList(core_mesh.DataplaneType)
+	err = resManager.List(request.Request.Context(), dppList,
+		store.ListByMesh(meshName),
+		store.ListByNameContains(nameContains),
+		store.ListByFilterFunc(dpFilterForResource(policyResource)),
+		store.ListByPage(page.size, page.offset),
+	)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+		return
+	}
+	items := make([]api_common.Meta, len(dppList.GetItems()))
+	for i, elt := range dppList.GetItems() {
+		items[i] = oapi_helpers.ResourceToMeta(elt)
+	}
+	out := api_types.InspectDataplanesForPolicyResponse{
+		Total: int(dppList.GetPagination().Total),
+		Items: items,
+		Next:  nextLink(request, dppList.GetPagination().NextOffset),
+	}
+	if err := response.WriteAsJson(out); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
 	}
 }
 
