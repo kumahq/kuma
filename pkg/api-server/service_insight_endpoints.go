@@ -108,7 +108,6 @@ func (s *serviceInsightEndpoints) listResources(request *restful.Request, respon
 		_, exists := filterMap[service.ServiceType]
 		return exists
 	})
-
 	restList := rest.ResourceList{
 		Total: uint32(len(items)),
 		Items: items,
