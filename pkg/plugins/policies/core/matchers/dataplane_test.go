@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"sigs.k8s.io/yaml"
 
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -22,6 +23,7 @@ import (
 var _ = Describe("MatchedPolicies", func() {
 	type testCase struct {
 		dppFile      string
+		mesFile      string
 		policiesFile string
 		goldenFile   string
 	}
@@ -47,6 +49,8 @@ var _ = Describe("MatchedPolicies", func() {
 				testCaseMap[num].policiesFile = filepath.Join(testDir, f.Name())
 			case "golden":
 				testCaseMap[num].goldenFile = filepath.Join(testDir, f.Name())
+			case "mes":
+				testCaseMap[num].mesFile = filepath.Join(testDir, f.Name())
 			}
 		}
 
@@ -146,6 +150,45 @@ var _ = Describe("MatchedPolicies", func() {
 			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
 		},
 		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "torules")),
+	)
+
+	DescribeTable("should return ToRules for MeshExternalService",
+		func(given testCase) {
+			// given DPP resource
+			dpp := readDPP(given.dppFile)
+
+			// given policies
+			resources, resTypes := readPolicies(given.policiesFile)
+
+			// given MeshExternalService resource
+			mes := readMES(given.mesFile)
+			resources.MeshLocalResources[meshexternalservice_api.MeshExternalServiceType] = &meshexternalservice_api.MeshExternalServiceResourceList{
+				Items: []*meshexternalservice_api.MeshExternalServiceResource{mes},
+			}
+
+			// we're expecting all policies in the file to have the same type or to be mixed with MeshHTTPRoutes
+			Expect(resTypes).To(Or(HaveLen(1), HaveLen(2)))
+
+			var resType core_model.ResourceType
+			switch {
+			case len(resTypes) == 1:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[1] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[0]
+			case len(resTypes) == 2 && resTypes[0] == v1alpha1.MeshHTTPRouteType:
+				resType = resTypes[1]
+			}
+
+			// when
+			policies, err := matchers.MatchedPolicies(resType, dpp, resources)
+			Expect(err).ToNot(HaveOccurred())
+
+			// then
+			bytes, err := yaml.Marshal(policies.ToRules)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(bytes).To(test_matchers.MatchGoldenYAML(given.goldenFile))
+		},
+		generateTableEntries(filepath.Join("testdata", "matchedpolicies", "meshexternalservice")),
 	)
 
 	DescribeTable("should match MeshGateways",

@@ -1,4 +1,5 @@
 mesh:name/mesh-1:
+  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 1m41s
     http:
@@ -24,6 +25,7 @@ mesh:name/mesh-1:
     type: Mesh
   ResourceSectionName: ""
 meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
+  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
     http:

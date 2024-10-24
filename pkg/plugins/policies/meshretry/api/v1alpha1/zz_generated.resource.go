@@ -137,7 +137,7 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshRetryResource(),
 	ResourceList:                 &MeshRetryResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
 	WsPath:                       "meshretries",
 	KumactlArg:                   "meshretry",
 	KumactlListArg:               "meshretries",
@@ -152,4 +152,5 @@ var MeshRetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
+	IsReferenceableInTo:          false,
 }

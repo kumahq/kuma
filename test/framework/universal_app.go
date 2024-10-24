@@ -477,14 +477,16 @@ func (s *UniversalApp) CreateDP(
 		args = append(args, "--proxy-type", proxyType)
 	}
 
+	if Config.Debug {
+		args = append(args, "--log-level", "debug")
+	}
+
 	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
 }
 
 func (s *UniversalApp) setupTransparent(builtindns bool) {
 	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
-		"--kuma-dp-user", "kuma-dp",
-		"--skip-dns-conntrack-zone-split",
 		"--exclude-inbound-ports", "22",
 	}
 
@@ -524,5 +526,5 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	if isipv6 {
 		errString = "No IPv6 address found"
 	}
-	return "", errors.Errorf(errString)
+	return "", errors.New(errString)
 }

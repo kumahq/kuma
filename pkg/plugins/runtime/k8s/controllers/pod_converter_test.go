@@ -292,10 +292,25 @@ var _ = Describe("PodToDataplane(..)", func() {
 			dataplane:        "27.dataplane.yaml",
 			nodeLabelsToCopy: []string{"topology.kubernetes.io/region"},
 		}),
+		Entry("28. Pod with reachable backend refs", testCase{
+			pod:            "28.pod.yaml",
+			servicesForPod: "28.services-for-pod.yaml",
+			dataplane:      "28.dataplane.yaml",
+		}),
+		Entry("29. Pod with empty reachable backend refs", testCase{
+			pod:            "29.pod.yaml",
+			servicesForPod: "29.services-for-pod.yaml",
+			dataplane:      "29.dataplane.yaml",
+		}),
 		Entry("should create dataplane even if service ports don't match", testCase{
 			pod:            "mismatch-ports.pod.yaml",
 			servicesForPod: "mismatch-ports.services-for-pod.yaml",
 			dataplane:      "mismatch-ports.dataplane.yaml",
+		}),
+		Entry("30. Pod using application probe proxy", testCase{
+			pod:            "30.pod.yaml",
+			servicesForPod: "30.services-for-pod.yaml",
+			dataplane:      "30.dataplane.yaml",
 		}),
 	)
 
@@ -383,11 +398,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "06.services-for-pod.yaml",
 			dataplane:      "06.dataplane.yaml",
 		}),
-		Entry("Existing ZoneIngress with load balancer and ip", testCase{
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
 			pod:               "ingress-exists.pod.yaml",
 			servicesForPod:    "ingress-exists.services-for-pod.yaml",
 			existingDataplane: "ingress-exists.existing-dataplane.yaml",
-			dataplane:         "ingress-exists.golden.yaml",
+			dataplane:         "ingress-exists.dataplane.yaml",
 		}),
 	)
 

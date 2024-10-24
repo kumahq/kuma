@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -18,7 +19,7 @@ var _ = Describe("Dataplane Manager", func() {
 	It("should create a new dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "zone-1", dataplane.NewMembershipValidator())
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -51,12 +52,18 @@ var _ = Describe("Dataplane Manager", func() {
 		// then
 		Expect(actual.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+
+		Expect(actual.Meta.GetLabels()).To(And(
+			HaveKeyWithValue(mesh_proto.ZoneTag, "zone-1"),
+			HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"),
+			HaveKeyWithValue(mesh_proto.EnvTag, "universal"),
+			HaveKeyWithValue(mesh_proto.MeshTag, "default")))
 	})
 
 	It("should update a dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "zone-1", dataplane.NewMembershipValidator())
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -99,12 +106,18 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
+
+		Expect(actual.Meta.GetLabels()).To(And(
+			HaveKeyWithValue(mesh_proto.ZoneTag, "zone-1"),
+			HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"),
+			HaveKeyWithValue(mesh_proto.EnvTag, "universal"),
+			HaveKeyWithValue(mesh_proto.MeshTag, "default")))
 	})
 
 	It("should create a new gateway with zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "zone-1", dataplane.NewMembershipValidator())
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -138,7 +151,7 @@ var _ = Describe("Dataplane Manager", func() {
 	It("should update a dataplane with gateway zone tag", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "zone-1", dataplane.NewMembershipValidator())
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -183,7 +196,7 @@ var _ = Describe("Dataplane Manager", func() {
 	It("should set health.ready to false if serviceProbe is provided and health is nil", func() {
 		// setup
 		s := memory.NewStore()
-		manager := dataplane.NewDataplaneManager(s, "zone-1", dataplane.NewMembershipValidator())
+		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
 		err := s.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 

@@ -4,17 +4,16 @@ metadata:
   annotations:
     docs: Documentation
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "0"
     kuma.io/builtin-dns: enabled
     kuma.io/builtin-dns-logging: "false"
     kuma.io/builtin-dns-port: "25053"
     kuma.io/envoy-admin-port: "9901"
-    kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-proxy-concurrency: "99"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -22,6 +21,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:
@@ -36,6 +36,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "0"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -147,25 +149,9 @@ spec:
     name: init
     resources: {}
   - args:
-    - --config-file
-    - /tmp/kumactl/config
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - ""
-    - --exclude-outbound-ports
-    - ""
-    - --verbose
-    - --ip-family-mode
-    - dualstack
     - --redirect-all-dns-traffic
-    - --redirect-dns-port
-    - "25053"
+    - --redirect-dns-port=25053
+    - --verbose
     command:
     - /usr/bin/kumactl
     - install

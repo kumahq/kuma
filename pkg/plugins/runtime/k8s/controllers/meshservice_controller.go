@@ -30,6 +30,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshservice_k8s "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/k8s/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -54,8 +55,9 @@ const (
 type MeshServiceReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Log    logr.Logger
-	Scheme *kube_runtime.Scheme
+	Log               logr.Logger
+	Scheme            *kube_runtime.Scheme
+	ResourceConverter k8s_common.Converter
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -82,6 +84,42 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
 	}
 
+	_, ok := svc.GetLabels()[mesh_proto.MeshTag]
+	if !ok && !injectedLabel {
+		log.V(1).Info("service is not considered to be service in a mesh")
+		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
+	}
+
+	meshName := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
+
+	k8sMesh := v1alpha1.Mesh{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			log.V(1).Info("mesh not found")
+			if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+				return kube_ctrl.Result{}, err
+			}
+			return kube_ctrl.Result{}, nil
+		}
+		return kube_ctrl.Result{}, err
+	}
+
+	mesh := core_mesh.NewMeshResource()
+	if err := r.ResourceConverter.ToCoreResource(&k8sMesh, mesh); err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	if mesh.Spec.MeshServicesMode() == mesh_proto.Mesh_MeshServices_Disabled {
+		log.V(1).Info("MeshServices not enabled on Mesh, deleting existing")
+		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
+	}
+
 	if len(svc.GetAnnotations()) > 0 {
 		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
 			log.V(1).Info("service is for gateway. Ignoring.")
@@ -94,34 +132,12 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		return kube_ctrl.Result{}, nil
 	}
 
-	_, ok := svc.GetLabels()[mesh_proto.MeshTag]
-	if !ok && !injectedLabel {
-		log.V(1).Info("service is not considered to be service in a mesh")
-		if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
-			return kube_ctrl.Result{}, err
-		}
-		return kube_ctrl.Result{}, nil
-	}
-
-	mesh := util.MeshOfByLabelOrAnnotation(log, svc, namespace)
-
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: mesh}, &v1alpha1.Mesh{}); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			log.V(1).Info("mesh not found")
-			if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
-				return kube_ctrl.Result{}, err
-			}
-			return kube_ctrl.Result{}, nil
-		}
-		return kube_ctrl.Result{}, err
-	}
-
 	if svc.Spec.ClusterIP != kube_core.ClusterIPNone {
 		name := kube_client.ObjectKeyFromObject(svc)
 		op, err := r.manageMeshService(
 			ctx,
 			svc,
-			mesh,
+			meshName,
 			r.setFromClusterIPSvc,
 			name,
 		)
@@ -222,7 +238,7 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 		op, err := r.manageMeshService(
 			ctx,
 			svc,
-			mesh,
+			meshName,
 			r.setFromPodAndHeadlessSvc(endpoint),
 			kube_types.NamespacedName{Namespace: current.Namespace, Name: canonicalName},
 		)
@@ -371,8 +387,12 @@ func (r *MeshServiceReconciler) manageMeshService(
 				unsupportedPorts = append(unsupportedPorts, portName)
 				continue
 			}
+			portName := port.Name
+			if portName == "" {
+				portName = strconv.Itoa(int(port.Port))
+			}
 			ms.Spec.Ports = append(ms.Spec.Ports, meshservice_api.Port{
-				Name:        port.Name,
+				Name:        portName,
 				Port:        uint32(port.Port),
 				TargetPort:  port.TargetPort,
 				AppProtocol: core_mesh.Protocol(pointer.DerefOr(port.AppProtocol, "tcp")),
@@ -408,6 +428,7 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-mesh-service-controller").
 		For(&kube_core.Service{}).
 		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
 		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).

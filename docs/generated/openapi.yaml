@@ -1417,6 +1417,99 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTimeoutList'
+  /meshes/{mesh}/meshtlses/{name}:
+    get:
+      summary: Returns MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTLSItem'
+    put:
+      summary: Creates or Updates MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTLSItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+    delete:
+      summary: Deletes MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshtlses:
+    get:
+      summary: Returns a list of MeshTLS in the mesh.
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTLSList'
   /meshes/{mesh}/meshtraces/{name}:
     get:
       summary: Returns MeshTrace entity
@@ -2172,6 +2265,17 @@ components:
           type: integer
           description: Number of policies
           example: 30
+    ResourceStats:
+      type: object
+      title: Resource Stats
+      description: Resource statistics
+      required:
+        - total
+      properties:
+        total:
+          type: integer
+          description: Number of resources
+          example: 30
     MeshesStats:
       type: object
       title: Meshes Stats
@@ -2194,6 +2298,7 @@ components:
         - dataplanes
         - policies
         - meshes
+        - resources
       properties:
         createdAt:
           type: string
@@ -2220,6 +2325,11 @@ components:
           description: Mesh statistics
           allOf:
             - $ref: '#/components/schemas/MeshesStats'
+        resources:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResourceStats'
+          description: A map of resource names to their corresponding statistics
     PolicyDescription:
       type: object
       required:
@@ -2373,6 +2483,7 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
@@ -2411,11 +2522,46 @@ components:
         conf:
           description: The actual conf generated
           type: object
+          additionalProperties: true
           x-go-type: interface{}
         origin:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
+    ResourceRuleOrigin:
+      type: object
+      properties:
+        resourceMeta:
+          $ref: '#/components/schemas/Meta'
+        ruleIndex:
+          description: index of the to-item in the policy
+          type: integer
+    ResourceRule:
+      type: object
+      required:
+        - resourceMeta
+        - conf
+        - origin
+      properties:
+        resourceMeta:
+          $ref: '#/components/schemas/Meta'
+        resourceSectionName:
+          type: string
+        conf:
+          description: The actual conf generated
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: interface{}
+        origin:
+          type: array
+          description: >-
+            The list of policies that contributed to the 'conf'. The order is
+            important as it reflects in what order confs were merged to get the
+            resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
     Inbound:
       type: object
       required:
@@ -2424,6 +2570,8 @@ components:
       properties:
         tags:
           type: object
+          additionalProperties:
+            type: string
           x-go-type: map[string]string
         port:
           type: integer
@@ -2453,9 +2601,18 @@ components:
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
-          description: a set of rules for the outbounds of this proxy
+          description: >-
+            a set of rules for the outbounds of this proxy. The field is not set
+            when 'meshService.mode' on Mesh is set to 'Exclusive'.
           items:
             $ref: '#/components/schemas/Rule'
+        toResourceRules:
+          type: array
+          description: >-
+            a set of rules for the outbounds produced by real resources (i.e
+            MeshService, MeshExternalService, MeshMultiZoneService).
+          items:
+            $ref: '#/components/schemas/ResourceRule'
         fromRules:
           type: array
           description: a set of rules for each inbound of this proxy
@@ -2717,6 +2874,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -2802,6 +2960,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -3050,6 +3209,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3117,8 +3277,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
@@ -3636,6 +3794,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -3721,6 +3880,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4258,6 +4418,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4325,8 +4486,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
@@ -4492,6 +4651,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4577,6 +4737,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -4760,6 +4921,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -4827,8 +4989,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
@@ -4890,6 +5050,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5237,6 +5398,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -5304,8 +5466,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
@@ -5367,6 +5527,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -5475,6 +5636,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -5614,7 +5776,9 @@ components:
                                   requestMirror:
                                     properties:
                                       backendRef:
-                                        description: TODO forbid weight
+                                        description: >-
+                                          BackendRef defines where to forward
+                                          traffic.
                                         properties:
                                           kind:
                                             description: Kind of the referenced resource
@@ -5624,6 +5788,7 @@ components:
                                               - MeshGateway
                                               - MeshService
                                               - MeshExternalService
+                                              - MeshMultiZoneService
                                               - MeshServiceSubset
                                               - MeshHTTPRoute
                                             type: string
@@ -5726,7 +5891,6 @@ components:
                                           hostname with 1 notable exception that
 
                                           numeric IP addresses are not allowed.
-
 
 
                                           Note that as per RFC1035 and RFC1123, a
@@ -6030,6 +6194,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -6158,6 +6323,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -6777,6 +6943,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -6844,8 +7011,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
@@ -7106,6 +7271,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -7167,8 +7333,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
@@ -7281,6 +7445,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -7342,8 +7507,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
@@ -7453,7 +7616,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7477,7 +7639,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7574,7 +7735,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7598,7 +7758,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7683,7 +7842,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7707,7 +7865,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7808,7 +7965,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7832,7 +7988,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7919,7 +8074,6 @@ components:
                                   that generated the resource.
 
 
-
                                   Here is the list of well-known origins:
 
                                   inbound - resources generated for handling
@@ -7943,7 +8097,6 @@ components:
                                   egress - resources generated for Zone Egress.
 
                                   gateway - resources generated for MeshGateway.
-
 
 
                                   The list is not complete, because policy
@@ -7997,6 +8150,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8060,7 +8214,6 @@ components:
               type: object
           required:
             - default
-            - targetRef
           type: object
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
@@ -8263,6 +8416,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8348,6 +8502,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -8568,6 +8723,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -8635,8 +8791,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
@@ -8698,6 +8852,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9204,6 +9359,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9271,8 +9427,6 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
@@ -9334,6 +9488,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -9430,6 +9585,7 @@ components:
                                       - MeshGateway
                                       - MeshService
                                       - MeshExternalService
+                                      - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
                                     type: string
@@ -9532,6 +9688,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9600,8 +9757,6 @@ components:
                 type: object
               minItems: 1
               type: array
-          required:
-            - targetRef
           type: object
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
@@ -9750,6 +9905,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -9835,6 +9991,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10001,6 +10158,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10068,10 +10226,278 @@ components:
                   - targetRef
                 type: object
               type: array
-          required:
-            - targetRef
           type: object
     MeshTimeoutCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshTLSItem:
+      type: object
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - MeshTLS
+        mesh:
+          description: >-
+            Mesh is the name of the Kuma mesh this resource belongs to. It may
+            be omitted for cluster-scoped resources.
+          type: string
+          default: default
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma MeshTLS resource.
+          properties:
+            from:
+              description: >-
+                From list makes a match between clients and corresponding
+                configurations
+              items:
+                properties:
+                  default:
+                    description: >-
+                      Default is a configuration specific to the group of
+                      clients referenced in
+
+                      'targetRef'
+                    properties:
+                      mode:
+                        description: >-
+                          Mode defines the behavior of inbound listeners with
+                          regard to traffic encryption.
+                        enum:
+                          - Permissive
+                          - Strict
+                        type: string
+                      tlsCiphers:
+                        description: >-
+                          TlsCiphers section for providing ciphers
+                          specification.
+                        items:
+                          enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                          type: string
+                        type: array
+                      tlsVersion:
+                        description: Version section for providing version specification.
+                        properties:
+                          max:
+                            default: TLSAuto
+                            description: >-
+                              Max defines maximum supported version. One of
+                              `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                          min:
+                            default: TLSAuto
+                            description: >-
+                              Min defines minimum supported version. One of
+                              `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                        type: object
+                    type: object
+                  targetRef:
+                    description: >-
+                      TargetRef is a reference to the resource that represents a
+                      group of
+
+                      clients.
+                    properties:
+                      kind:
+                        description: Kind of the referenced resource
+                        enum:
+                          - Mesh
+                          - MeshSubset
+                          - MeshGateway
+                          - MeshService
+                          - MeshExternalService
+                          - MeshMultiZoneService
+                          - MeshServiceSubset
+                          - MeshHTTPRoute
+                        type: string
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Labels are used to select group of MeshServices that
+                          match labels. Either Labels or
+
+                          Name and Namespace can be used.
+                        type: object
+                      mesh:
+                        description: >-
+                          Mesh is reserved for future use to identify cross mesh
+                          resources.
+                        type: string
+                      name:
+                        description: >-
+                          Name of the referenced resource. Can only be used with
+                          kinds: `MeshService`,
+
+                          `MeshServiceSubset` and `MeshGatewayRoute`
+                        type: string
+                      namespace:
+                        description: >-
+                          Namespace specifies the namespace of target resource.
+                          If empty only resources in policy namespace
+
+                          will be targeted.
+                        type: string
+                      proxyTypes:
+                        description: >-
+                          ProxyTypes specifies the data plane types that are
+                          subject to the policy. When not specified,
+
+                          all data plane types are targeted by the policy.
+                        items:
+                          enum:
+                            - Sidecar
+                            - Gateway
+                          type: string
+                        minItems: 1
+                        type: array
+                      sectionName:
+                        description: >-
+                          SectionName is used to target specific section of
+                          resource.
+
+                          For example, you can target port from
+                          MeshService.ports[] by its name. Only traffic to this
+                          port will be affected.
+                        type: string
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags used to select a subset of proxies by tags. Can
+                          only be used with kinds
+
+                          `MeshSubset` and `MeshServiceSubset`
+                        type: object
+                    type: object
+                required:
+                  - targetRef
+                type: object
+              type: array
+            targetRef:
+              description: >-
+                TargetRef is a reference to the resource the policy takes an
+                effect on.
+
+                The resource could be either a real store object or virtual
+                resource
+
+                defined in-place.
+              properties:
+                kind:
+                  description: Kind of the referenced resource
+                  enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                  type: string
+                labels:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Labels are used to select group of MeshServices that match
+                    labels. Either Labels or
+
+                    Name and Namespace can be used.
+                  type: object
+                mesh:
+                  description: >-
+                    Mesh is reserved for future use to identify cross mesh
+                    resources.
+                  type: string
+                name:
+                  description: >-
+                    Name of the referenced resource. Can only be used with
+                    kinds: `MeshService`,
+
+                    `MeshServiceSubset` and `MeshGatewayRoute`
+                  type: string
+                namespace:
+                  description: >-
+                    Namespace specifies the namespace of target resource. If
+                    empty only resources in policy namespace
+
+                    will be targeted.
+                  type: string
+                proxyTypes:
+                  description: >-
+                    ProxyTypes specifies the data plane types that are subject
+                    to the policy. When not specified,
+
+                    all data plane types are targeted by the policy.
+                  items:
+                    enum:
+                      - Sidecar
+                      - Gateway
+                    type: string
+                  minItems: 1
+                  type: array
+                sectionName:
+                  description: >-
+                    SectionName is used to target specific section of resource.
+
+                    For example, you can target port from MeshService.ports[] by
+                    its name. Only traffic to this port will be affected.
+                  type: string
+                tags:
+                  additionalProperties:
+                    type: string
+                  description: >-
+                    Tags used to select a subset of proxies by tags. Can only be
+                    used with kinds
+
+                    `MeshSubset` and `MeshServiceSubset`
+                  type: object
+              type: object
+          type: object
+    MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
@@ -10231,7 +10657,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be force traced
                         if the
@@ -10247,7 +10673,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests will be traced
 
@@ -10257,11 +10683,11 @@ components:
                         random sampling). This field functions as an upper limit
                         on the total
 
-                        configured sampling rate. For instance, setting
-                        client_sampling to 100%
+                        configured sampling rate. For instance, setting client
+                        to 100
 
-                        but overall_sampling to 1% will result in only 1% of
-                        client requests with
+                        but overall to 1 will result in only 1% of client
+                        requests with
 
                         the appropriate headers to be force traced. Mirror of
 
@@ -10275,7 +10701,7 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100%
+                      default: 100
                       description: >-
                         Target percentage of requests that will be randomly
                         selected for trace
@@ -10348,6 +10774,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10409,8 +10836,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
@@ -10494,6 +10919,7 @@ components:
                           - MeshGateway
                           - MeshService
                           - MeshExternalService
+                          - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
                         type: string
@@ -10579,6 +11005,7 @@ components:
                     - MeshGateway
                     - MeshService
                     - MeshExternalService
+                    - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
                   type: string
@@ -10640,8 +11067,6 @@ components:
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
               type: object
-          required:
-            - targetRef
           type: object
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
@@ -10755,9 +11180,8 @@ components:
                   address:
                     description: >-
                       Address defines an address to which a user want to send a
-                      request. Is possible to provide `domain`, `ip` and `unix`
-                      sockets.
-                    example: unix:///tmp/example.sock
+                      request. Is possible to provide `domain`, `ip`.
+                    example: example.com
                     minLength: 1
                     type: string
                   port:
@@ -10767,6 +11191,7 @@ components:
                     type: integer
                 required:
                   - address
+                  - port
                 type: object
               type: array
             extension:
@@ -11018,18 +11443,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
@@ -11120,11 +11533,6 @@ components:
                   port:
                     format: int32
                     type: integer
-                  targetPort:
-                    anyOf:
-                      - type: integer
-                      - type: string
-                    x-kubernetes-int-or-string: true
                 required:
                   - port
                 type: object
@@ -11219,18 +11627,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
@@ -11260,11 +11656,20 @@ components:
               description: MeshServices is a list of matched MeshServices
               items:
                 properties:
+                  mesh:
+                    type: string
                   name:
                     description: Name is a core name of MeshService
                     type: string
+                  namespace:
+                    type: string
+                  zone:
+                    type: string
                 required:
+                  - mesh
                   - name
+                  - namespace
+                  - zone
                 type: object
               type: array
             vips:
@@ -11464,18 +11869,6 @@ components:
                           description: >-
                             type of condition in CamelCase or in
                             foo.example.com/CamelCase.
-
-                            ---
-
-                            Many .condition.type values are consistent across
-                            resources like Available, but because arbitrary
-                            conditions can be
-
-                            useful (see .node.status.conditions), the ability to
-                            deconflict is important.
-
-                            The regex it matches is
-                            (dns1123SubdomainFmt/)?(qualifiedNameFmt)
                           maxLength: 316
                           pattern: >-
                             ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
@@ -11884,6 +12277,29 @@ components:
               next:
                 type: string
                 description: URL to the next page
+    MeshTLSItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshTLSItem'
+    MeshTLSList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshTLSItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
     MeshTraceItem:
       description: Successful response
       content:
@@ -12054,6 +12470,11 @@ components:
             total: 100
           meshes:
             total: 3
+          resources:
+            MeshTrafficPermission:
+              total: 42
+            MeshService:
+              total: 84
     InspectDataplanesForPolicyExample:
       value:
         total: 100

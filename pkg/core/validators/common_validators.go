@@ -262,3 +262,14 @@ func ValidateLength(path PathBuilder, maxLength int, v string) ValidationError {
 
 	return err
 }
+
+func ValidateBackendRef(b common_api.BackendRef) ValidationError {
+	verr := OK()
+	switch b.Kind {
+	case common_api.MeshMultiZoneService:
+		if b.Port == nil {
+			verr.AddViolationAt(RootedAt("port"), MustBeDefined+" with kind MeshMultiZoneService")
+		}
+	}
+	return verr
+}

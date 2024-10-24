@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -52,20 +53,19 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(metadataTracker)),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(
-			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId())),
+			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration)),
 		),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New))),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
-		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
 	if cb := rt.XDS().ServerCallbacks; cb != nil {
 		callbacks = append(callbacks, util_xds_v3.AdaptCallbacks(cb))
 	}
 
-	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks)
+	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks, sotw.WithOrderedADS())
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
 	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)

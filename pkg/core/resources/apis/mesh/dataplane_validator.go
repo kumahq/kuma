@@ -8,16 +8,16 @@ import (
 
 	"github.com/asaskevich/govalidator"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
-const meshExternalServiceKind = "MeshExternalService"
-
 var allowedKinds = map[string]struct{}{
-	"MeshService":           {},
-	meshExternalServiceKind: {},
+	string(common_api.MeshService):          {},
+	string(common_api.MeshExternalService):  {},
+	string(common_api.MeshMultiZoneService): {},
 }
 
 func (d *DataplaneResource) Validate() error {
@@ -102,6 +102,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
 	}
+	err.AddErrorAt(path.Field("transparentProxing"), validateTransparentProxying(networking.GetTransparentProxying()))
 	return err
 }
 
@@ -232,11 +233,11 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		if _, allowed := allowedKinds[outbound.BackendRef.Kind]; !allowed {
 			result.AddViolation("backendRef.kind", fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
 		}
-		if outbound.BackendRef.Name == "" {
-			result.AddViolation("backendRef.name", "cannot be empty")
+		if outbound.BackendRef.Name == "" && len(outbound.BackendRef.Labels) == 0 {
+			result.AddViolation("backendRef", "either 'name' or 'labels' should be specified")
 		}
 		// for MeshExternalService the port does not matter because it's taken from endpoints
-		if outbound.BackendRef.Kind != meshExternalServiceKind {
+		if outbound.BackendRef.Kind != string(common_api.MeshExternalService) {
 			result.Add(ValidatePort(validators.RootedAt("backendRef").Field("port"), outbound.BackendRef.Port))
 		}
 	case len(outbound.Tags) == 0:
@@ -254,6 +255,33 @@ func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) valida
 		result.AddViolationAt(validators.RootedAt("backendRef"), "both backendRef and tags/service cannot be defined")
 	}
 
+	return result
+}
+
+func validateTransparentProxying(tp *mesh_proto.Dataplane_Networking_TransparentProxying) validators.ValidationError {
+	var result validators.ValidationError
+	path := validators.RootedAt("reachableBackends.refs")
+	if tp != nil && tp.ReachableBackends != nil {
+		for i, backendRef := range tp.ReachableBackends.Refs {
+			switch backendRef.Kind {
+			case string(common_api.MeshMultiZoneService), string(common_api.MeshService), string(common_api.MeshExternalService):
+			default:
+				result.AddViolationAt(path.Index(i).Field("kind"), fmt.Sprintf("invalid value. Available values are: %s", strings.Join(maps.SortedKeys(allowedKinds), ",")))
+			}
+			if backendRef.Name != "" {
+				result.AddErrorAt(path.Index(i).Field("name"), validateIdentifier(backendRef.Name, identifierRegexp, identifierErrMsg))
+			}
+			if backendRef.Name == "" && backendRef.Namespace == "" && len(backendRef.Labels) == 0 {
+				result.AddViolationAt(path.Index(i).Field("name"), "name or labels are required")
+			}
+			if backendRef.Name == "" && backendRef.Namespace != "" {
+				result.AddViolationAt(path.Index(i).Field("name"), "name is required, when namespace is defined")
+			}
+			if (backendRef.Name != "" || backendRef.Namespace != "") && len(backendRef.Labels) > 0 {
+				result.AddViolationAt(path.Index(i).Field("labels"), "labels cannot be defined when name is specified")
+			}
+		}
+	}
 	return result
 }
 

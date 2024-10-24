@@ -6,7 +6,6 @@ metadata:
   name: kuma
   labels:
     kuma.io/sidecar-injection: disabled
-  annotations:
     kuma.io/mesh: mesh-1
 ---
 apiVersion: v1
@@ -11909,6 +11908,7 @@ metadata:
   namespace: kuma
   labels:
     app: grafana
+    kuma.io/mesh: mesh-1
 spec:
   type: ClusterIP
   ports:
@@ -11951,6 +11951,7 @@ metadata:
   labels:
     component: "server"
     app: prometheus
+    kuma.io/mesh: mesh-1
   name: prometheus-server
   namespace: kuma
 spec:

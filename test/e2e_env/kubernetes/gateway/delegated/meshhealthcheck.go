@@ -46,17 +46,6 @@ spec:
           - %s`, config.CpNamespace, config.Mesh, path, status)
 		}
 
-		BeforeAll(func() {
-			Expect(framework.DeleteMeshResources(
-				kubernetes.Cluster,
-				config.Mesh,
-				v1alpha1.MeshHealthCheckResourceTypeDescriptor,
-			)).To(Succeed())
-
-			Expect(framework.YamlK8s(healthCheck("/probes?type=liveness", "200"))(kubernetes.Cluster)).
-				To(Succeed())
-		})
-
 		framework.AfterEachFailure(func() {
 			framework.DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.ObservabilityDeploymentName)
 		})

@@ -175,7 +175,6 @@ func initializeMeshCache(builder *core_runtime.Builder) error {
 		builder.Config().DNSServer.Domain,
 		builder.Config().DNSServer.ServiceVipPort,
 		xds_context.AnyToAnyReachableServicesGraphBuilder,
-		builder.Config().Experimental.SkipPersistedVIPs,
 	)
 
 	meshSnapshotCache, err := mesh_cache.NewCache(

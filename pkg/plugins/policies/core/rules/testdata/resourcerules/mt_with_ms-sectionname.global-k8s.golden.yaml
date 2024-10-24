@@ -1,4 +1,5 @@
 meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
+  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 1m51s
     idleTimeout: 9s
@@ -34,6 +35,7 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:
     Version: ""
   ResourceSectionName: ""
 meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend:section/http-port:
+  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
     http:

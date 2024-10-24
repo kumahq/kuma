@@ -215,6 +215,7 @@ metadata:
   namespace: {{ .Namespace }}
   labels:
     app: grafana
+    kuma.io/mesh: {{ .Mesh }}
 spec:
   type: ClusterIP
   ports:

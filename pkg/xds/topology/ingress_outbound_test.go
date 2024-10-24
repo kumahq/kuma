@@ -28,9 +28,9 @@ var _ = Describe("IngressTrafficRoute", func() {
 		DescribeTable("should generate ingress outbounds matching given selectors",
 			func(given testCase) {
 				// when
-				meshServicesByName := make(map[string]*v1alpha1.MeshServiceResource, len(given.meshServices))
+				meshServicesByName := make(map[model.ResourceIdentifier]*v1alpha1.MeshServiceResource, len(given.meshServices))
 				for _, ms := range given.meshServices {
-					meshServicesByName[ms.Meta.GetName()] = ms
+					meshServicesByName[model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := topology.BuildIngressEndpointMap(
 					given.mesh,
@@ -267,7 +267,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 									{
 										Tags:        map[string]string{mesh_proto.ServiceTag: "kong_kong-system_svc_80", "app": "kong"},
-										Port:        8080,
+										Port:        80,
 										ServicePort: 18080,
 									},
 									{
@@ -284,8 +284,8 @@ var _ = Describe("IngressTrafficRoute", func() {
 					builders.MeshService().
 						WithName("kong.kong-system").
 						WithDataplaneTagsSelectorKV("app", "kong").
-						AddIntPort(80, 8080, "http").
-						AddIntPort(81, 8081, "http").
+						AddIntPort(8080, 80, "http").
+						AddIntPort(8081, 8001, "http").
 						Build(),
 					builders.MeshService().
 						WithName("redis").
@@ -303,7 +303,21 @@ var _ = Describe("IngressTrafficRoute", func() {
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",
-							Port:           8080,
+							Port:           80,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_80",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"default_kong.kong-system___msvc_8080": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           80,
 							Tags: map[string]string{
 								"kuma.io/service": "kong_kong-system_svc_80",
 								"app":             "kong",
@@ -326,7 +340,20 @@ var _ = Describe("IngressTrafficRoute", func() {
 							ExternalService: nil,
 						},
 					},
-					"redis-0_svc_6379": []core_xds.Endpoint{
+					"default_redis___msvc_6379": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.1",
+							UnixDomainPath: "",
+							Port:           6379,
+							Tags: map[string]string{
+								"kuma.io/service": "redis_svc_6379",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"default_redis-0___msvc_6379": []core_xds.Endpoint{
 						{
 							Target: "192.168.0.1",
 							Port:   6379,
@@ -335,6 +362,20 @@ var _ = Describe("IngressTrafficRoute", func() {
 						},
 					},
 					"kong_kong-system_svc_8001": []core_xds.Endpoint{
+						{
+							Target:         "192.168.0.2",
+							UnixDomainPath: "",
+							Port:           8001,
+							Tags: map[string]string{
+								"kuma.io/service": "kong_kong-system_svc_8001",
+								"app":             "kong",
+							},
+							Weight:          1,
+							Locality:        nil,
+							ExternalService: nil,
+						},
+					},
+					"default_kong.kong-system___msvc_8081": []core_xds.Endpoint{
 						{
 							Target:         "192.168.0.2",
 							UnixDomainPath: "",

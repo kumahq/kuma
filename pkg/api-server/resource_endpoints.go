@@ -14,6 +14,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	"k8s.io/apimachinery/pkg/util/validation"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_types "github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -69,6 +70,7 @@ type resourceEndpoints struct {
 	meshContextBuilder xds_context.MeshContextBuilder
 	xdsHooks           []xds_hooks.ResourceSetHook
 	systemNamespace    string
+	isK8s              bool
 
 	disableOriginLabelValidation bool
 }
@@ -397,7 +399,20 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
-	labels := model.ComputeLabels(res, r.mode, false, r.systemNamespace, r.zoneName)
+	labels, err := model.ComputeLabels(
+		res.Descriptor(),
+		res.GetSpec(),
+		res.GetMeta().GetLabels(),
+		model.GetNamespace(res.GetMeta(), r.systemNamespace),
+		meshName,
+		r.mode,
+		r.isK8s,
+		r.zoneName,
+	)
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+		return
+	}
 
 	if err := r.resManager.Create(ctx, res, store.CreateByKey(name, meshName), store.CreateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not create a resource")
@@ -834,6 +849,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return
 			}
 			dp = &core_mesh.DataplaneResource{
+				Meta: gw.Meta,
 				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Gateway: &mesh_proto.Dataplane_Networking_Gateway{
@@ -857,7 +873,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			CrossMeshResources: map[core_xds.MeshName]xds_context.ResourceMap{},
 			MeshLocalResources: baseMeshContext.ResourceMap,
 		}
-		matchesByHash := map[string][]meshhttproute_api.Match{}
+		matchesByHash := map[common_api.MatchesHash][]meshhttproute_api.Match{}
 		// Get all the matching policies
 		allPlugins := core_plugins.Plugins().PolicyPlugins(ordered.Policies)
 		rules := []api_common.InspectRule{}
@@ -881,12 +897,16 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				continue
 			}
 			toRules := []api_common.Rule{}
-			for _, ruleItem := range res.ToRules.Rules {
-				toRules = append(toRules, api_common.Rule{
-					Conf:     ruleItem.Conf,
-					Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
-					Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
-				})
+			if baseMeshContext.Mesh.Spec.MeshServicesMode() != mesh_proto.Mesh_MeshServices_Exclusive {
+				// Old 'ToRules' don't affect outbounds that were produced by real resources.
+				// That's why we don't have to set them when the mode is Exclusive
+				for _, ruleItem := range res.ToRules.Rules {
+					toRules = append(toRules, api_common.Rule{
+						Conf:     ruleItem.Conf,
+						Matchers: oapi_helpers.SubsetToRuleMatcher(ruleItem.Subset),
+						Origin:   oapi_helpers.ResourceMetaListToMetaList(res.Type, ruleItem.Origin),
+					})
+				}
 			}
 			var proxyRule *api_common.ProxyRule
 			if len(res.SingleItemRules.Rules) > 0 {
@@ -925,8 +945,20 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 			}
+			toResourceRules := []api_common.ResourceRule{}
+			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
+				toResourceRules = append(toResourceRules, api_common.ResourceRule{
+					Conf:                resourceRuleItem.Conf,
+					Origin:              oapi_helpers.OriginListToResourceRuleOrigin(res.Type, resourceRuleItem.Origin),
+					ResourceMeta:        oapi_helpers.ResourceMetaToMeta(itemIdentifier.ResourceType, resourceRuleItem.Resource),
+					ResourceSectionName: &resourceRuleItem.ResourceSectionName,
+				})
+			}
+			sort.Slice(toResourceRules, func(i, j int) bool {
+				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
+			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -935,18 +967,19 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				warnings = []string{}
 			}
 			rules = append(rules, api_common.InspectRule{
-				Type:      string(res.Type),
-				ToRules:   &toRules,
-				FromRules: &fromRules,
-				ProxyRule: proxyRule,
-				Warnings:  &warnings,
+				Type:            string(res.Type),
+				ToRules:         &toRules,
+				ToResourceRules: &toResourceRules,
+				FromRules:       &fromRules,
+				ProxyRule:       proxyRule,
+				Warnings:        &warnings,
 			})
 		}
 		httpMatches := []api_common.HttpMatch{}
 		for k, v := range matchesByHash {
 			httpMatches = append(httpMatches, api_common.HttpMatch{
 				Match: v,
-				Hash:  k,
+				Hash:  string(k),
 			})
 		}
 		sort.Slice(httpMatches, func(i, j int) bool {

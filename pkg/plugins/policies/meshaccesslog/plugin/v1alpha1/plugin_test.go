@@ -14,9 +14,10 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -35,9 +36,30 @@ import (
 )
 
 var _ = Describe("MeshAccessLog", func() {
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
+	}
+
+	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "example",
+			Mesh:      "default",
+			Namespace: "",
+			Zone:      "",
+		},
+		ResourceType: "MeshExternalService",
+	}
+
 	type sidecarTestCase struct {
 		resources         []core_xds.Resource
-		outbounds         []*builders.OutboundBuilder
+		outbounds         xds_types.Outbounds
 		toRules           core_rules.ToRules
 		fromRules         core_rules.FromRules
 		expectedListeners []string
@@ -45,6 +67,7 @@ var _ = Describe("MeshAccessLog", func() {
 	}
 	DescribeTable("should generate proper Envoy config",
 		func(given sidecarTestCase) {
+			// given
 			resourceSet := core_xds.NewResourceSet()
 			for _, res := range given.resources {
 				r := res
@@ -65,23 +88,30 @@ var _ = Describe("MeshAccessLog", func() {
 							WithService("backend").
 							WithAddress("127.0.0.1").
 							WithPort(17777),
-						).
-						AddOutbound(builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777),
-						).
-						AddOutbounds(given.outbounds),
+						),
 				).
+				WithOutbounds(append(given.outbounds, &xds_types.Outbound{
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
+				})).
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
 				Build()
+
+			// when
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
+			// then
 			Expect(plugin.Apply(resourceSet, xdsCtx, proxy)).To(Succeed())
-			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ListenerType), given.expectedListeners)
-			policies_xds.ResourceArrayShouldEqual(resourceSet.ListOf(envoy_resource.ClusterType), given.expectedClusters)
+			for i, expectedListener := range given.expectedListeners {
+				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ListenerType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", expectedListener)))
+			}
+			for i, expectedCluster := range given.expectedClusters {
+				Expect(util_proto.ToYAML(resourceSet.ListOf(envoy_resource.ClusterType)[i].Resource)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", expectedCluster)))
+			}
 		},
 		Entry("basic outbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -122,51 +152,93 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-            - filters:
-              - name: envoy.filters.network.http_connection_manager
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  accessLog:
-                  - name: envoy.access_loggers.file
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      logFormat:
-                          textFormatSource:
-                              inlineString: |
-                                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "backend" "other-service" "127.0.0.1" "%UPSTREAM_HOST%"
-                      path: /tmp/log
-                  httpFilters:
-                  - name: envoy.filters.http.router
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                  routeConfig:
-                    name: outbound:backend
-                    validateClusters: false
-                    requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=web&'
-                    virtualHosts:
-                    - domains:
-                      - '*'
-                      name: backend
-                      routes:
-                      - match:
-                          prefix: /
-                        route:
-                          cluster: backend
-                          timeout: 0s
-                  statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
+			expectedListeners: []string{"basic_outbound.listener.golden.yaml"},
+		}),
+		Entry("basic outbound route from real MeshService", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(
+							HttpOutboundRoute(
+								"backend",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshServiceIdentifier,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
+						},
+					},
+				},
 			},
+			expectedListeners: []string{"basic_outbound_real_meshservice.listener.golden.yaml"},
+		}),
+		Entry("basic outbound route from real MeshExternalService", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(
+							HttpOutboundRoute(
+								"example",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("example"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshExternalServiceIdentifier,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_real_meshexternalservice.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -197,31 +269,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    textFormatSource:
-                                        inlineString: |
-                                            [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-                                path: /tmp/log
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_file_backend_default_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with file backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -255,31 +303,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    textFormatSource:
-                                        inlineString: |
-                                            custom format [%START_TIME%] %RESPONSE_FLAGS%
-                                path: /tmp/log
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_file_backend_plain_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with file backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -316,31 +340,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    jsonFormat:
-                                      duration: '%DURATION%'
-                                      protocol: '%PROTOCOL%'
-                                path: /tmp/log
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_file_backend_json_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with tcp backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -371,32 +371,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    jsonFormat:
-                                        address: logging.backend
-                                        message: |
-                                            [%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-                                path: /tmp/kuma-al-backend-default.sock
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_tcp_backend_default_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with opentelemetry backend and plain format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -439,15 +414,15 @@ var _ = Describe("MeshAccessLog", func() {
 						)),
 					)).MustBuild(),
 			}},
-			outbounds: []*builders.OutboundBuilder{
-				builders.Outbound().
+			outbounds: xds_types.Outbounds{
+				{LegacyOutbound: builders.Outbound().
 					WithService("foo-service").
 					WithAddress("127.0.0.1").
-					WithPort(27778),
-				builders.Outbound().
+					WithPort(27778).Build()},
+				{LegacyOutbound: builders.Outbound().
 					WithService("bar-service").
 					WithAddress("127.0.0.1").
-					WithPort(27779),
+					WithPort(27779).Build()},
 			},
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
@@ -505,132 +480,13 @@ var _ = Describe("MeshAccessLog", func() {
 				},
 			},
 			expectedClusters: []string{
-				`
-            altStatName: meshaccesslog_opentelemetry_0
-            connectTimeout: 5s
-            dnsLookupFamily: V4_ONLY
-            loadAssignment:
-                clusterName: meshaccesslog:opentelemetry:0
-                endpoints:
-                    - lbEndpoints:
-                        - endpoint:
-                            address:
-                                socketAddress:
-                                    address: otel-collector
-                                    portValue: 4317
-            name: meshaccesslog:opentelemetry:0
-            type: STRICT_DNS
-            typedExtensionProtocolOptions:
-                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-                    explicitHttpConfig:
-                        http2ProtocolOptions: {}
-            `, `
-            altStatName: meshaccesslog_opentelemetry_1
-            connectTimeout: 5s
-            dnsLookupFamily: V4_ONLY
-            loadAssignment:
-                clusterName: meshaccesslog:opentelemetry:1
-                endpoints:
-                    - lbEndpoints:
-                        - endpoint:
-                            address:
-                                socketAddress:
-                                    address: other-otel-collector
-                                    portValue: 5317
-            name: meshaccesslog:opentelemetry:1
-            type: STRICT_DNS
-            typedExtensionProtocolOptions:
-                envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-                    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-                    explicitHttpConfig:
-                        http2ProtocolOptions: {}
-            `,
+				"outbound_otel_backend_plain_format.cluster.golden.yaml",
+				"outbound_otel_backend_plain_format_1.cluster.golden.yaml",
 			},
 			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27779
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.open_telemetry
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
-                                body:
-                                    kvlistValue:
-                                        values:
-                                            - key: mesh
-                                              value:
-                                                  stringValue: default
-                                attributes: {}
-                                commonConfig:
-                                    grpcService:
-                                        envoyGrpc:
-                                            clusterName: meshaccesslog:opentelemetry:1
-                                    logName: MeshAccessLog
-                                    transportApiVersion: V3
-                        cluster: bar-service
-                        statPrefix: "127_0_0_1_27779"
-            name: outbound:127.0.0.1:27779
-            trafficDirection: OUTBOUND`, `
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27778
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.open_telemetry
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
-                                body:
-                                    stringValue: default
-                                attributes: {}
-                                commonConfig:
-                                    grpcService:
-                                        envoyGrpc:
-                                            clusterName: meshaccesslog:opentelemetry:0
-                                    logName: MeshAccessLog
-                                    transportApiVersion: V3
-                        cluster: foo-service
-                        statPrefix: "127_0_0_1_27778"
-            name: outbound:127.0.0.1:27778
-            trafficDirection: OUTBOUND`, `
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.open_telemetry
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.open_telemetry.v3.OpenTelemetryAccessLogConfig
-                                body:
-                                    stringValue: '[%START_TIME%] %RESPONSE_FLAGS% default 127.0.0.1(backend)->%UPSTREAM_HOST%(other-service) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes'
-                                attributes: {}
-                                commonConfig:
-                                    grpcService:
-                                        envoyGrpc:
-                                            clusterName: meshaccesslog:opentelemetry:0
-                                    logName: MeshAccessLog
-                                    transportApiVersion: V3
-                        cluster: other-service
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
+				"outbound_otel_backend_plain_format.listener.golden.yaml",
+				"outbound_otel_backend_plain_format_1.listener.golden.yaml",
+				"outbound_otel_backend_plain_format_2.listener.golden.yaml",
 			},
 		}),
 		Entry("outbound tcpproxy with tcp backend and plain format", sidecarTestCase{
@@ -665,32 +521,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    jsonFormat:
-                                        address: logging.backend
-                                        message: |
-                                            custom format [%START_TIME%] %RESPONSE_FLAGS%
-                                path: /tmp/kuma-al-backend-default.sock
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_tcp_backend_plain_format.listener.golden.yaml"},
 		}),
 		Entry("outbound tcpproxy with tcp backend and json format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -727,33 +558,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-                - filters:
-                    - name: envoy.filters.network.tcp_proxy
-                      typedConfig:
-                        '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-                        accessLog:
-                            - name: envoy.access_loggers.file
-                              typedConfig:
-                                '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                                logFormat:
-                                    jsonFormat:
-                                        address: logging.backend
-                                        message: 
-                                            duration: '%DURATION%'
-                                            protocol: '%PROTOCOL%'
-                                path: /tmp/kuma-al-backend-default.sock
-                        cluster: backend
-                        statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_tcp_backend_json_format.listener.golden.yaml"},
 		}),
 		Entry("basic outbound route without match", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -799,42 +604,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 27777
-            filterChains:
-            - filters:
-              - name: envoy.filters.network.http_connection_manager
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  httpFilters:
-                  - name: envoy.filters.http.router
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                  routeConfig:
-                    name: outbound:backend
-                    validateClusters: false
-                    requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=web&'
-                    virtualHosts:
-                    - domains:
-                      - '*'
-                      name: backend
-                      routes:
-                      - match:
-                          prefix: /
-                        route:
-                          cluster: backend
-                          timeout: 0s
-                  statPrefix: "127_0_0_1_27777"
-            name: outbound:127.0.0.1:27777
-            trafficDirection: OUTBOUND`,
-			},
+			expectedListeners: []string{"outbound_route_without_match.listener.golden.yaml"},
 		}),
 		Entry("basic inbound route", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -872,50 +642,7 @@ var _ = Describe("MeshAccessLog", func() {
 					}},
 				},
 			},
-			expectedListeners: []string{
-				`
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 17777
-            enableReusePort: false
-            filterChains:
-            - filters:
-              - name: envoy.filters.network.http_connection_manager
-                typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  accessLog:
-                  - name: envoy.access_loggers.file
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      logFormat:
-                          textFormatSource:
-                              inlineString: |
-                                [%START_TIME%] default "%REQ(:METHOD)% %REQ(X-ENVOY-ORIGINAL-PATH?:PATH)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(X-ENVOY-UPSTREAM-SERVICE-TIME)% "%REQ(X-FORWARDED-FOR)%" "%REQ(USER-AGENT)%" "%REQ(X-B3-TRACEID?X-DATADOG-TRACEID)%" "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "unknown" "backend" "127.0.0.1" "%UPSTREAM_HOST%"
-                      path: /tmp/log
-                  httpFilters:
-                  - name: envoy.filters.http.router
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-                  routeConfig:
-                    name: inbound:backend
-                    validateClusters: false
-                    requestHeadersToRemove:
-                    - x-kuma-tags
-                    virtualHosts:
-                    - domains:
-                      - '*'
-                      name: backend
-                      routes:
-                      - match:
-                          prefix: /
-                        route:
-                          cluster: backend
-                          timeout: 0s
-                  statPrefix: "127_0_0_1_17777"
-            name: inbound:127.0.0.1:17777
-            trafficDirection: INBOUND`,
-			},
+			expectedListeners: []string{"inbound_route.listener.golden.yaml"},
 		}),
 	)
 	type gatewayTestCase struct {
@@ -1010,9 +737,9 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 				ToRules: core_rules.GatewayToRules{
-					ByListener: map[core_rules.InboundListener]core_rules.Rules{
+					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "127.0.0.1", Port: 8080}: {
-							{
+							Rules: core_rules.Rules{{
 								Subset: core_rules.Subset{},
 								Conf: api.Conf{
 									Backends: &[]api.Backend{{
@@ -1021,7 +748,7 @@ var _ = Describe("MeshAccessLog", func() {
 										},
 									}},
 								},
-							},
+							}},
 						},
 					},
 				},

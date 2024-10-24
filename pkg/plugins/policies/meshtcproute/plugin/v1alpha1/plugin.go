@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
+	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
@@ -72,7 +73,7 @@ func ApplyToOutbounds(
 	tlsReady := ctx.Mesh.GetTLSReadiness()
 	servicesAccumulator := envoy_common.NewServicesAccumulator(tlsReady)
 
-	listeners, err := generateListeners(proxy, policies.ToRules.Rules, servicesAccumulator, ctx.Mesh)
+	listeners, err := generateListeners(proxy, policies.ToRules, servicesAccumulator, ctx.Mesh)
 	if err != nil {
 		return errors.Wrap(err, "couldn't generate listener resources")
 	}
@@ -120,7 +121,7 @@ func ApplyToGateway(
 		return nil
 	}
 
-	listeners := meshroute.CollectListenerInfos(
+	listeners := meshroute_gateway.CollectListenerInfos(
 		ctx,
 		xdsCtx.Mesh,
 		gateway,
@@ -156,12 +157,13 @@ func ApplyToGateway(
 }
 
 func sortRulesToHosts(
-	meshLocalResources xds_context.ResourceMap,
+	meshCtx xds_context.MeshContext,
 	rawRules rules.GatewayRules,
 	address string,
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	sublisteners []meshroute.Sublistener,
+	sublisteners []meshroute_gateway.Sublistener,
+	resolver model.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 	for _, hostnameTag := range sublisteners {
@@ -183,8 +185,10 @@ func sortRulesToHosts(
 		if !ok {
 			continue
 		}
-		hostInfo.AppendEntries(generateEnvoyRouteEntries(host, rulesForListener))
-		meshroute.AddToListenerByHostname(
+		// it's ok for us to ignore ResourceRules because MeshGateway routes
+		// target kind: Mesh
+		hostInfo.AppendEntries(generateEnvoyRouteEntries(meshCtx, host, rulesForListener.Rules, resolver))
+		meshroute_gateway.AddToListenerByHostname(
 			hostInfosByHostname,
 			protocol,
 			hostnameTag.Hostname,
@@ -193,5 +197,5 @@ func sortRulesToHosts(
 		)
 	}
 
-	return meshroute.SortByHostname(hostInfosByHostname)
+	return meshroute_gateway.SortByHostname(hostInfosByHostname)
 }

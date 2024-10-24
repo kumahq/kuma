@@ -7,8 +7,11 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
+	graph_services "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/services"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
@@ -32,7 +35,10 @@ var _ = Describe("Reachable Services Graph", func() {
 	DescribeTable("should check reachability of the graph",
 		func(given testCase) {
 			// when
-			g := graph.BuildGraph(services, given.mtps)
+			g := graph.NewGraph(
+				graph_services.BuildRules(services, given.mtps),
+				map[model.TypedResourceIdentifier]rules.Rules{},
+			)
 
 			// then
 			for from := range services {
@@ -206,14 +212,17 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := graph.BuildGraph(services, mtps)
+		g := graph.NewGraph(
+			graph_services.BuildRules(services, mtps),
+			map[model.TypedResourceIdentifier]rules.Rules{},
+		)
 
 		// then
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{mesh_proto.ServiceTag: "b", "version": "v1"},
 			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeTrue())
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
 			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeFalse())
@@ -231,18 +240,21 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		graph := graph.BuildGraph(services, mtps)
+		g := graph.NewGraph(
+			graph_services.BuildRules(services, mtps),
+			map[model.TypedResourceIdentifier]rules.Rules{},
+		)
 
 		// then
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{"kuma.io/zone": "east"},
 			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeTrue())
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{"kuma.io/zone": "west"},
 			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeFalse())
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{"othertag": "other"},
 			map[string]string{mesh_proto.ServiceTag: "a"},
 		)).To(BeFalse())
@@ -250,10 +262,13 @@ var _ = Describe("Reachable Services Graph", func() {
 
 	It("should always allow cross mesh", func() {
 		// when
-		graph := graph.BuildGraph(nil, nil)
+		g := graph.NewGraph(
+			graph_services.BuildRules(nil, nil),
+			map[model.TypedResourceIdentifier]rules.Rules{},
+		)
 
 		// then
-		Expect(graph.CanReach(
+		Expect(g.CanReach(
 			map[string]string{mesh_proto.ServiceTag: "b"},
 			map[string]string{mesh_proto.ServiceTag: "a", mesh_proto.MeshTag: "other"},
 		)).To(BeTrue())
@@ -267,6 +282,7 @@ var _ = Describe("Reachable Services Graph", func() {
 					mesh_proto.KubeNamespaceTag: "kuma-demo",
 					mesh_proto.KubeServiceTag:   "a",
 					mesh_proto.KubePortTag:      "1234",
+					mesh_proto.ServiceTag:       "a_kuma-demo_svc_1234",
 				},
 				"b": map[string]string{},
 			}
@@ -278,14 +294,17 @@ var _ = Describe("Reachable Services Graph", func() {
 			}
 
 			// when
-			graph := graph.BuildGraph(services, mtps)
+			g := graph.NewGraph(
+				graph_services.BuildRules(services, mtps),
+				map[model.TypedResourceIdentifier]rules.Rules{},
+			)
 
 			// then
-			Expect(graph.CanReach(
+			Expect(g.CanReach(
 				map[string]string{mesh_proto.ServiceTag: "b"},
 				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
 			)).To(BeTrue())
-			Expect(graph.CanReach(
+			Expect(g.CanReach(
 				map[string]string{mesh_proto.ServiceTag: "a_kuma-demo_svc_1234"},
 				map[string]string{mesh_proto.ServiceTag: "b"},
 			)).To(BeFalse()) // it's not selected by top-level target ref
@@ -293,6 +312,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		Entry("MeshSubset by kube namespace", builders.TargetRefMeshSubset(mesh_proto.KubeNamespaceTag, "kuma-demo")),
 		Entry("MeshSubset by kube service name", builders.TargetRefMeshSubset(mesh_proto.KubeServiceTag, "a")),
 		Entry("MeshSubset by kube service port", builders.TargetRefMeshSubset(mesh_proto.KubePortTag, "1234")),
+		Entry("MeshSubset by kuma.io/service", builders.TargetRefMeshSubset(mesh_proto.ServiceTag, "a_kuma-demo_svc_1234")),
 		Entry("MeshServiceSubset by kube namespace", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeNamespaceTag, "kuma-demo")),
 		Entry("MeshServiceSubset by kube service name", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubeServiceTag, "a")),
 		Entry("MeshServiceSubset by kube service port", builders.TargetRefServiceSubset("a_kuma-demo_svc_1234", mesh_proto.KubePortTag, "1234")),
@@ -312,7 +332,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		_ = graph.BuildGraph(services, mtps)
+		_ = graph_services.BuildRules(services, mtps)
 
 		// then
 		Expect(mtps[0].Spec.TargetRef.Tags).NotTo(BeNil())
@@ -358,7 +378,7 @@ var _ = Describe("Reachable Services Graph", func() {
 		}
 
 		// when
-		services := graph.BuildServices("default", dpps, es, zis)
+		services := graph_services.BuildServices("default", dpps, es, zis)
 
 		// then
 		Expect(services).To(Equal(map[string]mesh_proto.SingleValueTagSet{
@@ -366,12 +386,23 @@ var _ = Describe("Reachable Services Graph", func() {
 				mesh_proto.KubeNamespaceTag: "kuma-demo",
 				mesh_proto.KubeServiceTag:   "a",
 				mesh_proto.KubePortTag:      "1234",
+				mesh_proto.ServiceTag:       "a_kuma-demo_svc_1234",
 			},
-			"b":    map[string]string{},
-			"c":    map[string]string{},
-			"d":    map[string]string{},
-			"e":    map[string]string{},
-			"es-1": map[string]string{},
+			"b": map[string]string{
+				mesh_proto.ServiceTag: "b",
+			},
+			"c": map[string]string{
+				mesh_proto.ServiceTag: "c",
+			},
+			"d": map[string]string{
+				mesh_proto.ServiceTag: "d",
+			},
+			"e": map[string]string{
+				mesh_proto.ServiceTag: "e",
+			},
+			"es-1": map[string]string{
+				mesh_proto.ServiceTag: "es-1",
+			},
 		}))
 	})
 })

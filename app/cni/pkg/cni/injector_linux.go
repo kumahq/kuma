@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
+// Deprecated
 func convertToUint16(field string, value string) (uint16, error) {
 	converted, err := strconv.ParseUint(value, 10, 16)
 	if err != nil {
@@ -23,22 +24,24 @@ func convertToUint16(field string, value string) (uint16, error) {
 	return uint16(converted), nil
 }
 
-func convertCommaSeparatedString(list string) ([]uint16, error) {
+// Deprecated
+func convertCommaSeparatedString(list string) (config.Ports, error) {
 	split := strings.Split(list, ",")
-	mapped := make([]uint16, len(split))
+	mapped := make(config.Ports, len(split))
 
 	for i, value := range split {
 		converted, err := convertToUint16(strconv.Itoa(i), value)
 		if err != nil {
 			return nil, err
 		}
-		mapped[i] = converted
+		mapped[i] = config.Port(converted)
 	}
 
 	return mapped, nil
 }
 
-func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateConfig, logger logr.Logger) error {
+// Deprecated
+func legacyInjectIptables(ctx context.Context, netns string, intermediateConfig *IntermediateConfig, logger logr.Logger) error {
 	var logBuffer bytes.Buffer
 	logWriter := bufio.NewWriter(&logBuffer)
 	cfg, err := mapToConfig(intermediateConfig, logWriter)
@@ -73,13 +76,10 @@ func Inject(ctx context.Context, netns string, intermediateConfig *IntermediateC
 	})
 }
 
+// Deprecated
 func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer) (*config.Config, error) {
 	cfg := config.DefaultConfig()
 
-	port, err := convertToUint16("inbound port", intermediateConfig.targetPort)
-	if err != nil {
-		return nil, err
-	}
 	excludePorts, err := convertCommaSeparatedString(intermediateConfig.excludeOutboundPorts)
 	if err != nil {
 		return nil, err
@@ -93,11 +93,14 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 	cfg.CNIMode = true
 	cfg.Verbose = true
 	cfg.RuntimeStdout = logWriter
-	cfg.Owner.UID = intermediateConfig.noRedirectUID
+	cfg.KumaDPUser = intermediateConfig.noRedirectUID
 	cfg.Redirect.Outbound.Enabled = true
-	cfg.Redirect.Outbound.Port = port
 	cfg.Redirect.Outbound.ExcludePorts = excludePorts
 	cfg.Redirect.Outbound.ExcludePortsForUIDs = excludePortsForUIDs
+
+	if err := cfg.Redirect.Outbound.Port.Set(intermediateConfig.targetPort); err != nil {
+		return nil, errors.Wrapf(err, "failed to set outbound port to '%s'", intermediateConfig.targetPort)
+	}
 
 	if intermediateConfig.excludeOutboundIPs != "" {
 		cfg.Redirect.Outbound.ExcludePortsForIPs = strings.Split(intermediateConfig.excludeOutboundIPs, ",")
@@ -124,9 +127,8 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 
 	cfg.Redirect.Inbound.Enabled = !isGateway
 	if cfg.Redirect.Inbound.Enabled {
-		inboundPort, err := convertToUint16("inbound port", intermediateConfig.inboundPort)
-		if err != nil {
-			return nil, err
+		if err := cfg.Redirect.Inbound.Port.Set(intermediateConfig.inboundPort); err != nil {
+			return nil, errors.Wrapf(err, "failed to set inbound port to '%s'", intermediateConfig.inboundPort)
 		}
 
 		excludedPorts, err := convertCommaSeparatedString(intermediateConfig.excludeInboundPorts)
@@ -134,7 +136,6 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 			return nil, err
 		}
 
-		cfg.Redirect.Inbound.Port = inboundPort
 		cfg.Redirect.Inbound.ExcludePorts = excludedPorts
 
 		if intermediateConfig.excludeInboundIPs != "" {
@@ -147,19 +148,18 @@ func mapToConfig(intermediateConfig *IntermediateConfig, logWriter *bufio.Writer
 		return nil, err
 	}
 	if cfg.Redirect.DNS.Enabled {
-		builtinDnsPort, err := convertToUint16("builtin dns port", intermediateConfig.builtinDNSPort)
-		if err != nil {
-			return nil, err
+		if err := cfg.Redirect.DNS.Port.Set(intermediateConfig.builtinDNSPort); err != nil {
+			return nil, errors.Wrapf(err, "failed to set builtin dns port to '%s'", intermediateConfig.builtinDNSPort)
 		}
 
-		cfg.Redirect.DNS.Port = builtinDnsPort
 		cfg.Redirect.DNS.CaptureAll = true
-		cfg.Redirect.DNS.ConntrackZoneSplit = true
+		cfg.Redirect.DNS.SkipConntrackZoneSplit = false
 	}
 
 	return &cfg, nil
 }
 
+// Deprecated
 func GetEnabled(value string) (bool, error) {
 	switch strings.ToLower(value) {
 	case "enabled", "true":
@@ -169,4 +169,25 @@ func GetEnabled(value string) (bool, error) {
 	default:
 		return false, errors.Errorf(`wrong value "%s", available values are: "enabled", "disabled", "true", "false"`, value)
 	}
+}
+
+func injectIptables(ctx context.Context, netns string, cfg config.Config) error {
+	namespace, err := ns.GetNS(netns)
+	if err != nil {
+		return errors.Wrapf(err, "failed to open network namespace '%s'", netns)
+	}
+	defer namespace.Close()
+
+	return namespace.Do(func(ns.NetNS) error {
+		initializedConfig, err := cfg.Initialize(ctx)
+		if err != nil {
+			return errors.Wrap(err, "failed to initialize transparent proxy configuration")
+		}
+
+		if _, err := transparentproxy.Setup(ctx, initializedConfig); err != nil {
+			return errors.Wrap(err, "failed to set up transparent proxy")
+		}
+
+		return nil
+	})
 }

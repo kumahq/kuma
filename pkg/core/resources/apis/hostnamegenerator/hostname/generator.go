@@ -17,17 +17,19 @@ import (
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
 type HostnameGenerator interface {
 	GetResources(context.Context) (model.ResourceList, error)
 	UpdateResourceStatus(context.Context, model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) error
 	HasStatusChanged(model.Resource, []hostnamegenerator_api.HostnameGeneratorStatus, []hostnamegenerator_api.Address) (bool, error)
-	GenerateHostname(*hostnamegenerator_api.HostnameGeneratorResource, model.Resource) (string, error)
+	GenerateHostname(localZone string, generator *hostnamegenerator_api.HostnameGeneratorResource, resource model.Resource) (string, error)
 }
 
 type Generator struct {
@@ -35,6 +37,7 @@ type Generator struct {
 	interval   time.Duration
 	metric     prometheus.Summary
 	resManager manager.ResourceManager
+	zone       string
 	generators []HostnameGenerator
 }
 
@@ -44,6 +47,7 @@ func NewGenerator(
 	logger logr.Logger,
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
+	zone string,
 	interval time.Duration,
 	generators []HostnameGenerator,
 ) (*Generator, error) {
@@ -58,6 +62,7 @@ func NewGenerator(
 	return &Generator{
 		logger:     logger,
 		resManager: resManager,
+		zone:       zone,
 		interval:   interval,
 		metric:     metric,
 		generators: generators,
@@ -65,6 +70,8 @@ func NewGenerator(
 }
 
 func (g *Generator) Start(stop <-chan struct{}) error {
+	// sleep to mitigate update conflicts with other components
+	util_time.SleepUpTo(g.interval)
 	g.logger.Info("starting")
 	ticker := time.NewTicker(g.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
@@ -153,7 +160,7 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 					generatorStatuses = map[string]status{}
 				}
 
-				generated, err := generatorType.GenerateHostname(generator, service)
+				generated, err := generatorType.GenerateHostname(g.zone, generator, service)
 
 				var conditions []hostnamegenerator_api.Condition
 				if generated != "" || err != nil {
@@ -201,6 +208,11 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 		}
 		for _, service := range resources {
+			logger := g.logger.WithValues(
+				"type", service.Descriptor().Name,
+				"name", service.GetMeta().GetName(),
+				"mesh", service.GetMeta().GetMesh(),
+			)
 			statuses := newStatuses[serviceKey{
 				name: service.GetMeta().GetName(),
 				mesh: service.GetMeta().GetMesh(),
@@ -233,14 +245,18 @@ func (g *Generator) generateHostnames(ctx context.Context) error {
 			}
 			changed, changedErr := generatorType.HasStatusChanged(service, generatorStatuses, addresses)
 			if changedErr != nil {
-				g.logger.Error(err, "couldn't check status", "type", resourceList.GetItemType())
+				logger.Error(err, "couldn't check status")
 				continue
 			}
 			if !changed {
 				continue
 			}
 			if err := generatorType.UpdateResourceStatus(ctx, service, generatorStatuses, addresses); err != nil {
-				g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())
+				if errors.Is(err, &store.ResourceConflictError{}) {
+					logger.Info("couldn't update status, because it was modified in another place. Will try again in the next interval", "interval", g.interval)
+				} else {
+					g.logger.Error(err, "couldn't update status", "type", resourceList.GetItemType())
+				}
 				continue
 			}
 		}
@@ -252,7 +268,7 @@ func (g *Generator) NeedLeaderElection() bool {
 	return true
 }
 
-func EvaluateTemplate(generatorTemplate string, meta model.ResourceMeta) (string, error) {
+func EvaluateTemplate(localZone string, generatorTemplate string, meta model.ResourceMeta) (string, error) {
 	sb := strings.Builder{}
 	tmpl := template.New("").Funcs(
 		map[string]any{
@@ -284,12 +300,16 @@ func EvaluateTemplate(generatorTemplate string, meta model.ResourceMeta) (string
 	if !ok {
 		displayName = name
 	}
+	zone := meta.GetLabels()[mesh_proto.ZoneTag]
+	if zone == "" {
+		zone = localZone
+	}
 	err = tmpl.Execute(&sb, meshedName{
 		Name:        name,
 		DisplayName: displayName,
 		Namespace:   meta.GetLabels()[mesh_proto.KubeNamespaceTag],
 		Mesh:        meta.GetMesh(),
-		Zone:        meta.GetLabels()[mesh_proto.ZoneTag],
+		Zone:        zone,
 	})
 	if err != nil {
 		return "", fmt.Errorf("pre evaluation of template with parameters failed with error=%q", err.Error())

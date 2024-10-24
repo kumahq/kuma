@@ -1,0 +1,90 @@
+type: ZoneEgress
+name: zoneegress-1
+zone: zone-1
+networking:
+  address: 192.168.0.1
+  port: 10002
+---
+type: Mesh
+name: mesh-1
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+---
+type: TrafficPermission
+name: allow-all-traffic-1
+mesh: mesh-1
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+---
+type: TrafficRoute
+name: trafficroute-1
+mesh: mesh-1
+sources:
+  - match:
+      kuma.io/service: "*"
+destinations:
+  - match:
+      kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"
+---
+type: ExternalService
+name: externalservice-1
+mesh: mesh-1
+tags:
+  kuma.io/service: externalservice # same kuma.io/service
+  kuma.io/protocol: http
+networking:
+  address: kuma.io:80
+---
+type: Mesh
+name: mesh-2
+mtls:
+  enabledBackend: ca-1
+  backends:
+    - name: ca-1
+      type: builtin
+---
+type: TrafficPermission
+name: allow-all-traffic-2
+mesh: mesh-2
+sources:
+  - match:
+      kuma.io/service: '*'
+destinations:
+  - match:
+      kuma.io/service: '*'
+---
+type: TrafficRoute
+name: trafficroute-2
+mesh: mesh-2
+sources:
+  - match:
+      kuma.io/service: "*"
+destinations:
+  - match:
+      kuma.io/service: "*"
+conf:
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: "*"
+---
+type: ExternalService
+name: externalservice-2
+mesh: mesh-2
+tags:
+  kuma.io/service: externalservice # same kuma.io/service
+  kuma.io/protocol: http
+networking:
+  address: kuma.io:80

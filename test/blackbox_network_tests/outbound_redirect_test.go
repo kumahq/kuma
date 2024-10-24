@@ -11,8 +11,8 @@ import (
 	"github.com/vishvananda/netlink"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
+	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/builder"
-	"github.com/kumahq/kuma/pkg/transparentproxy/iptables/consts"
 	"github.com/kumahq/kuma/test/blackbox_network_tests"
 	"github.com/kumahq/kuma/test/framework/network/ip"
 	"github.com/kumahq/kuma/test/framework/network/netns"
@@ -45,7 +45,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 					},
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 				},
 				RuntimeStdout: io.Discard,
@@ -121,7 +121,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -213,15 +213,15 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except excluded 
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						ExcludePorts: []uint16{excludedPort},
+						Port:         config.Port(serverPort),
+						ExcludePorts: config.Ports{config.Port(excludedPort)},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
 					},
 				},
 				RuntimeStdout: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())
@@ -326,7 +326,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port except ports exc
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 						ExcludePortsForUIDs: []string{
 							fmt.Sprintf("tcp:%d:%d", excludedPort, dnsUserUid),
 						},
@@ -435,8 +435,8 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						ExcludePorts: []uint16{excludedPort},
+						Port:         config.Port(serverPort),
+						ExcludePorts: config.Ports{config.Port(excludedPort)},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -444,7 +444,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except excluded 
 				},
 				IPFamilyMode:  config.IPFamilyModeDualStack,
 				RuntimeStdout: io.Discard,
-				Log: config.LogConfig{
+				Log: config.Log{
 					Enabled: true,
 				},
 			}.Initialize(context.Background())
@@ -536,9 +536,9 @@ var _ = Describe("Outbound IPv4 TCP traffic only to included port", func() {
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						IncludePorts: []uint16{includedPort},
-						ExcludePorts: []uint16{includedPort},
+						Port:         config.Port(serverPort),
+						IncludePorts: config.Ports{config.Port(includedPort)},
+						ExcludePorts: config.Ports{config.Port(includedPort)},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -633,9 +633,9 @@ var _ = Describe("Outbound IPv6 TCP traffic only to included port", func() {
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled:      true,
-						Port:         serverPort,
-						IncludePorts: []uint16{includedPort},
-						ExcludePorts: []uint16{includedPort},
+						Port:         config.Port(serverPort),
+						IncludePorts: config.Ports{config.Port(includedPort)},
+						ExcludePorts: config.Ports{config.Port(includedPort)},
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -732,7 +732,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: false,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -758,7 +758,7 @@ var _ = Describe("Outbound IPv4 TCP traffic to any address:port", func() {
 
 			// then
 			Eventually(ns.UnsafeExec(func() {
-				Expect(tcp.DialIPWithPortAndGetReply(net.ParseIP(consts.LocalhostIPv4), randomPort)).
+				Expect(tcp.DialIPWithPortAndGetReply(consts.LocalhostAddress[consts.IPv4].IP, randomPort)).
 					To(Equal("randomPort"))
 			})).Should(BeClosed())
 
@@ -809,7 +809,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: false,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -836,7 +836,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port", func() {
 
 			// then
 			Eventually(ns.UnsafeExec(func() {
-				Expect(tcp.DialIPWithPortAndGetReply(net.ParseIP(consts.LocalhostIPv6), randomPort)).
+				Expect(tcp.DialIPWithPortAndGetReply(consts.LocalhostAddress[consts.IPv6].IP, randomPort)).
 					To(Equal("randomPort"))
 			})).Should(BeClosed())
 
@@ -900,7 +900,7 @@ var _ = Describe("Outbound IPv6 TCP traffic to any address:port except ports exc
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 						ExcludePortsForUIDs: []string{
 							fmt.Sprintf("tcp:%d:%d", excludedPort, dnsUserUid),
 						},
@@ -1010,7 +1010,7 @@ var _ = Describe("Outbound IPv4 TCP traffic from specific interface to other ip 
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,
@@ -1101,7 +1101,7 @@ var _ = Describe("Outbound IPv6 TCP traffic from specific interface to other ip 
 				Redirect: config.Redirect{
 					Outbound: config.TrafficFlow{
 						Enabled: true,
-						Port:    serverPort,
+						Port:    config.Port(serverPort),
 					},
 					Inbound: config.TrafficFlow{
 						Enabled: true,

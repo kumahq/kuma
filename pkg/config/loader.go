@@ -1,56 +1,133 @@
 package config
 
 import (
+	"io"
 	"os"
+	"reflect"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
-
-	"github.com/kumahq/kuma/pkg/core"
 )
 
-func Load(file string, cfg Config) error {
-	return LoadWithOption(file, cfg, false, true, true)
+type Loader struct {
+	cfg Config
+
+	strict        bool
+	includeEnv    bool
+	validate      bool
+	envVarsPrefix string
 }
 
-func LoadWithOption(file string, cfg Config, strict bool, includeEnv bool, validate bool) error {
-	if file == "" {
-		core.Log.WithName("config").Info("skipping reading config from file")
-	} else if err := loadFromFile(file, cfg, strict); err != nil {
-		return err
+func NewLoader(cfg Config) *Loader {
+	return &Loader{cfg: cfg}
+}
+
+func (l *Loader) WithStrictParsing() *Loader {
+	l.strict = true
+	return l
+}
+
+func (l *Loader) WithEnvVarsLoading(envVarsPrefix string) *Loader {
+	l.includeEnv = true
+	l.envVarsPrefix = envVarsPrefix
+	return l
+}
+
+func (l *Loader) WithValidation() *Loader {
+	l.validate = true
+	return l
+}
+
+func (l *Loader) Load(stdin io.Reader, content []byte, filename string) error {
+	switch filename {
+	case "-":
+		return l.LoadReader(stdin)
+	case "":
+		return l.LoadBytes(content)
+	default:
+		return l.LoadFile(filename)
+	}
+}
+
+func (l *Loader) LoadFile(filename string) error {
+	if filename == "" {
+		return l.postProcess()
 	}
 
-	if includeEnv {
-		if err := envconfig.Process("", cfg); err != nil {
-			return err
-		}
+	if _, err := os.Stat(filename); err != nil {
+		return errors.Errorf("unable to access configuration file '%s', please check if the file exists and has the correct permissions", filename)
 	}
 
-	if err := cfg.PostProcess(); err != nil {
-		return errors.Wrap(err, "configuration post processing failed")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		return errors.Wrapf(err, "reading configuration from file '%s' failed", filename)
 	}
 
-	if validate {
-		if err := cfg.Validate(); err != nil {
-			return errors.Wrapf(err, "Invalid configuration")
-		}
+	if err := l.LoadBytes(content); err != nil {
+		return errors.Wrapf(err, "parsing configuration from file '%s' failed", filename)
 	}
+
 	return nil
 }
 
-func loadFromFile(file string, cfg Config, strict bool) error {
-	if _, err := os.Stat(file); err != nil {
-		return errors.Errorf("Failed to access configuration file %q", file)
+func (l *Loader) LoadReader(r io.Reader) error {
+	if r == nil {
+		return nil
 	}
-	contents, err := os.ReadFile(file)
+
+	content, err := io.ReadAll(r)
 	if err != nil {
-		return errors.Wrapf(err, "Failed to read configuration from file %q", file)
+		return errors.Wrap(err, "reading configuration from reader failed")
 	}
-	if strict {
-		err = yaml.UnmarshalStrict(contents, cfg)
-	} else {
-		err = yaml.Unmarshal(contents, cfg)
+
+	return l.LoadBytes(content)
+}
+
+func (l *Loader) LoadBytes(content []byte) error {
+	if reflect.ValueOf(l.cfg).Kind() != reflect.Ptr {
+		return errors.New("configuration must be a pointer; ensure the Config instance is passed by reference")
 	}
-	return errors.Wrapf(err, "Failed to parse configuration from file %q", file)
+
+	if content == nil {
+		return nil
+	}
+
+	if err := l.unmarshal(content); err != nil {
+		return errors.Wrap(err, "unable to parse configuration")
+	}
+
+	return l.postProcess()
+}
+
+func (l *Loader) unmarshal(content []byte) error {
+	if l.strict {
+		return yaml.UnmarshalStrict(content, l.cfg)
+	}
+
+	return yaml.Unmarshal(content, l.cfg)
+}
+
+func (l *Loader) postProcess() error {
+	if l.includeEnv {
+		if err := envconfig.Process(l.envVarsPrefix, l.cfg); err != nil {
+			return errors.Wrap(err, "processing environment variables failed")
+		}
+	}
+
+	if err := l.cfg.PostProcess(); err != nil {
+		return errors.Wrap(err, "configuration post-processing failed")
+	}
+
+	if l.validate {
+		if err := l.cfg.Validate(); err != nil {
+			return errors.Wrap(err, "configuration validation failed")
+		}
+	}
+
+	return nil
+}
+
+func Load(file string, cfg Config) error {
+	return NewLoader(cfg).WithEnvVarsLoading("").WithValidation().LoadFile(file)
 }

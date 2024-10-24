@@ -135,11 +135,11 @@
    "origins": [
     {
      "mesh": "default",
-     "name": "mtp-1"
+     "name": "mtp-2"
     },
     {
      "mesh": "default",
-     "name": "mtp-2"
+     "name": "mtp-1"
     }
    ]
   },

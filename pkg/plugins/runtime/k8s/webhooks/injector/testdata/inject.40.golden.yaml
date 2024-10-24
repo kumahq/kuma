@@ -1,0 +1,192 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "9000"
+    kuma.io/envoy-admin-port: "9901"
+    kuma.io/sidecar-injected: "true"
+    kuma.io/sidecar-uid: "5678"
+    kuma.io/transparent-proxying: enabled
+    kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-ip-family-mode: dualstack
+    kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/virtual-probes: disabled
+    kuma.io/virtual-probes-port: "9000"
+  creationTimestamp: null
+  labels:
+    kuma.io/mesh: default
+    run: busybox
+  name: busybox
+spec:
+  containers:
+  - args:
+    - run
+    - --log-level=info
+    - --concurrency=2
+    env:
+    - name: INSTANCE_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "9000"
+    - name: KUMA_CONTROL_PLANE_CA_CERT
+      value: |
+        -----BEGIN CERTIFICATE-----
+        MIIDMzCCAhugAwIBAgIQDhlInfsXYHamKN+29qnQvzANBgkqhkiG9w0BAQsFADAP
+        MQ0wCwYDVQQDEwRrdW1hMB4XDTIxMDQwMjEwMjIyNloXDTMxMDMzMTEwMjIyNlow
+        DzENMAsGA1UEAxMEa3VtYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+        AL4GGg+e2O7eA12F0F6v2rr8j2iVSFKepnZtL15lrCds6lqK50sXWOw8PKZp2ihA
+        XJVTSZzKasyLDTAR9VYQjTpE526EzvtdthSagf32QWW+wY6LMpEdexKOOCx2se55
+        Rd97L33yYPfgX15OYliHPD056jjhotHLdN2lpy7+STDvQyRnXAu73YkY37Ed4hI4
+        t/V6soHyEGNcDhm9p5fBGqz0njBbQkp2lTY5/kj42qB7Q6rCM2tbPsEMooeAAw5m
+        hyY4xj0tP9ucqlUz8gc+6o8HDNst8NeJXZktWn+COytjr/NzGgS22kvSDphisJot
+        o0FyoIOdAtxC1qxXXR+XuUUCAwEAAaOBijCBhzAOBgNVHQ8BAf8EBAMCAqQwHQYD
+        VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYD
+        VR0OBBYEFKRLkgIzX/OjKw9idepuQ/RMtT+AMCYGA1UdEQQfMB2CCWxvY2FsaG9z
+        dIcQ/QChIwAAAAAAAAAAAAAAATANBgkqhkiG9w0BAQsFAAOCAQEAPs5yJZhoYlGW
+        CpA8dSISivM8/8iBNQ3fVwP63ft0EJLMVGu2RFZ4/UAJ/rUPSGN8xhXSk5+1d56a
+        /kaH9rX0HaRIHHlxA7iPUKxAj44x9LKmqPHToL3XlWY1AXzvicW9d+GM2FaQee+I
+        leaqLbz0AZvlnu271Z1CeaACuU9GljujvyiTTE9naHUEqvHgSpPtilJalyJ5/zIl
+        Z9F0+UWt3TOYMs5g+SCt0MwHTNbisbmewpcFFJzjt2kvtrc9t9dkF81xhcS19w7q
+        h1AeP3RRlLl7bv9EAVXEmIavih/29PA3ZSy+pbYNW7jNJHjMQ4hQ0E+xcCazU/O4
+        ypWGaanvPg==
+        -----END CERTIFICATE-----
+    - name: KUMA_CONTROL_PLANE_URL
+      value: http://kuma-control-plane.kuma-system:5681
+    - name: KUMA_DATAPLANE_DRAIN_TIME
+      value: 31s
+    - name: KUMA_DATAPLANE_MESH
+      value: default
+    - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+      value: /var/run/secrets/kubernetes.io/serviceaccount/token
+    - name: KUMA_DNS_ENABLED
+      value: "false"
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
+    image: kuma/kuma-sidecar:latest
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      failureThreshold: 212
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 260
+      periodSeconds: 25
+      successThreshold: 1
+      timeoutSeconds: 23
+    name: kuma-sidecar
+    readinessProbe:
+      failureThreshold: 112
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 11
+      periodSeconds: 15
+      successThreshold: 11
+      timeoutSeconds: 13
+    resources:
+      limits:
+        cpu: 1100m
+        ephemeral-storage: 1G
+        memory: 1512Mi
+      requests:
+        cpu: 150m
+        ephemeral-storage: 50M
+        memory: 164Mi
+    securityContext:
+      capabilities:
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 5678
+      runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+    - mountPath: /tmp
+      name: kuma-sidecar-tmp
+  - image: busybox
+    livenessProbe:
+      httpGet:
+        httpHeaders:
+        - name: X-Kuma-Probes-GRPC-Service
+          value: grpc-service
+        path: /grpc/3333
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    name: busybox
+    readinessProbe:
+      httpGet:
+        path: /3001/metrics
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    resources: {}
+    startupProbe:
+      httpGet:
+        path: /tcp/8081
+        port: 9000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  initContainers:
+  - args:
+    - --exclude-inbound-ports=9000
+    - --verbose
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    env:
+    - name: XTABLES_LOCKFILE
+      value: /tmp/xtables.lock
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        cpu: 100m
+        memory: 50M
+      requests:
+        cpu: 20m
+        memory: 20M
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+        - NET_RAW
+        drop:
+        - ALL
+      readOnlyRootFilesystem: true
+      runAsGroup: 0
+      runAsUser: 0
+    volumeMounts:
+    - mountPath: /tmp
+      name: kuma-init-tmp
+  volumes:
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-init-tmp
+  - emptyDir:
+      sizeLimit: 10M
+    name: kuma-sidecar-tmp
+status: {}

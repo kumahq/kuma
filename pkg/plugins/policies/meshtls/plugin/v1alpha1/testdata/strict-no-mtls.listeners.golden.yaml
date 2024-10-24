@@ -1,0 +1,53 @@
+resources:
+- name: inbound:127.0.0.1:17777
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17777
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: inbound:backend
+            requestHeadersToRemove:
+            - x-kuma-tags
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: backend
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: backend
+                  timeout: 0s
+          statPrefix: "127_0_0_1_17777"
+    name: inbound:127.0.0.1:17777
+    trafficDirection: INBOUND
+- name: inbound:127.0.0.1:17778
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17778
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: frontend
+          statPrefix: "127_0_0_1_17778"
+    name: inbound:127.0.0.1:17778
+    trafficDirection: INBOUND

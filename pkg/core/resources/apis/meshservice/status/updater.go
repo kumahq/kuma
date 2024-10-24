@@ -15,10 +15,12 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
 type StatusUpdater struct {
@@ -59,6 +61,8 @@ func NewStatusUpdater(
 }
 
 func (s *StatusUpdater) Start(stop <-chan struct{}) error {
+	// sleep to mitigate update conflicts with other components
+	util_time.SleepUpTo(s.interval)
 	s.logger.Info("starting")
 	ticker := time.NewTicker(s.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
@@ -108,7 +112,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 	dppsForMs := meshservice.MatchDataplanesWithMeshServices(dpList.Items, msList.Items, false)
 
 	for ms, dpps := range dppsForMs {
-		if !ms.IsLocalMeshService(s.localZone) {
+		if !ms.IsLocalMeshService() {
 			// identities are already computed by the other zone
 			continue
 		}
@@ -147,7 +151,11 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		if len(changeReasons) > 0 {
 			log.Info("updating mesh service", "reason", changeReasons)
 			if err := s.resManager.Update(ctx, ms); err != nil {
-				log.Error(err, "could not update mesh service", "reason", changeReasons)
+				if errors.Is(err, &store.ResourceConflictError{}) {
+					log.Info("couldn't update mesh service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
+				} else {
+					log.Error(err, "could not update mesh service", "reason", changeReasons)
+				}
 			}
 		}
 	}

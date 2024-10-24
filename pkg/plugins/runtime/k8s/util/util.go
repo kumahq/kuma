@@ -7,7 +7,6 @@ import (
 	"github.com/go-logr/logr"
 	"golang.org/x/exp/maps"
 	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -137,19 +136,6 @@ func CopyStringMap(in map[string]string) map[string]string {
 	return out
 }
 
-// MeshOfByAnnotation returns the mesh of the given object according to its own annotations
-// or those of its namespace.
-func MeshOfByAnnotation(obj kube_meta.Object, namespace *kube_core.Namespace) string {
-	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		return mesh
-	}
-	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		return mesh
-	}
-
-	return model.DefaultMesh
-}
-
 // MeshOfByLabelOrAnnotation returns the mesh of the given object according to its own
 // annotations or labels or the annotations of its namespace. It treats the annotation
 // directly on the object as deprecated.
@@ -157,18 +143,18 @@ func MeshOfByLabelOrAnnotation(log logr.Logger, obj kube_client.Object, namespac
 	if mesh, exists := metadata.Annotations(obj.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
 		return mesh
 	}
-	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		log.Info("WARNING: The kuma.io/mesh annotation is deprecated for this object kind. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
+	if mesh, exists := metadata.Annotations(obj.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" { // nolint:staticcheck
+		log.Info("WARNING: The kuma.io/mesh annotation is no longer supported. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 
 	// Label wasn't found on the object, let's look on the namespace instead
-	if mesh, exists := metadata.Annotations(namespace.GetLabels()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
+	if mesh, exists := metadata.Annotations(namespace.GetLabels()).GetString(metadata.KumaMeshLabel); exists && mesh != "" {
 		return mesh
 	}
 
-	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" {
-		log.Info("WARNING: The kuma.io/mesh annotation is deprecated for this object kind. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
+	if mesh, exists := metadata.Annotations(namespace.GetAnnotations()).GetString(metadata.KumaMeshAnnotation); exists && mesh != "" { // nolint:staticcheck
+		log.Info("WARNING: The kuma.io/mesh annotation is no longer supported. Use label instead", "name", obj.GetName(), "namespace", obj.GetNamespace(), "kind", obj.GetObjectKind().GroupVersionKind().Kind)
 		return mesh
 	}
 

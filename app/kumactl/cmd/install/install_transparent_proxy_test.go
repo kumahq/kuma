@@ -10,8 +10,10 @@ import (
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/install"
 	"github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 var _ = Context("kumactl install transparent proxy", func() {
@@ -27,10 +29,8 @@ var _ = Context("kumactl install transparent proxy", func() {
 			slices.DeleteFunc(
 				strings.Split(stderr.String(), "\n"),
 				func(line string) bool {
-					return strings.Contains(
-						line,
-						"no valid iptables executables found",
-					)
+					return strings.Contains(line, config.WarningDryRunNoValidIptablesFound) ||
+						strings.Contains(line, install.WarningDryRunRunningAsNonRoot)
 				},
 			),
 			"\n",
@@ -91,10 +91,10 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr string) bool {
 				return !strings.Contains(
 					stderr,
-					"conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module",
+					"conntrack zone splitting is disabled. This requires the 'conntrack' iptables module",
 				)
 			},
-			errorMatcher: ContainSubstring("conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module"),
+			errorMatcher: ContainSubstring("conntrack zone splitting is disabled. This requires the 'conntrack' iptables module"),
 			goldenFile:   "install-transparent-proxy.dns.no-conntrack.golden.txt",
 		}),
 		Entry("should generate defaults with user id and DNS redirected", testCase{
@@ -106,7 +106,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 			skip: func(stdout, stderr string) bool {
 				return strings.Contains(
 					stderr,
-					"conntrack zone splitting is disabled. Functionality requires the 'conntrack' iptables module",
+					"conntrack zone splitting is disabled. This requires the 'conntrack' iptables module",
 				)
 			},
 			goldenFile: "install-transparent-proxy.dns.golden.txt",
@@ -203,7 +203,7 @@ var _ = Context("kumactl install transparent proxy", func() {
 				"--redirect-all-dns-traffic",
 			},
 			goldenFile:   "install-transparent-proxy.defaults.golden.txt",
-			errorMatcher: Equal("Error: one of --redirect-dns or --redirect-all-dns-traffic should be specified\n"),
+			errorMatcher: Equal("Error: only one of '--redirect-dns' or '--redirect-all-dns-traffic' should be specified\n"),
 		}),
 		Entry("should error out on invalid port value", testCase{
 			extraArgs: []string{

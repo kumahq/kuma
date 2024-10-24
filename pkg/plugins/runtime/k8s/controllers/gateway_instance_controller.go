@@ -309,7 +309,6 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 			podAnnotations := map[string]string{
 				metadata.KumaGatewayAnnotation: metadata.AnnotationBuiltin,
 				metadata.KumaTagsAnnotation:    string(jsonTags),
-				metadata.KumaMeshAnnotation:    mesh,
 			}
 
 			if obj != nil {
@@ -324,6 +323,7 @@ func (r *GatewayInstanceReconciler) createOrUpdateDeployment(
 
 			podLabels := k8sSelector(gatewayInstance.Name)
 			podLabels[metadata.KumaSidecarInjectionAnnotation] = metadata.AnnotationDisabled
+			podLabels[metadata.KumaMeshLabel] = mesh
 
 			for k, v := range gatewayInstance.Spec.PodTemplate.Metadata.Labels {
 				podLabels[k] = v
@@ -470,6 +470,7 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 	}
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-gateway-instance-controller").
 		For(&mesh_k8s.MeshGatewayInstance{}).
 		Owns(&kube_core.Service{}).
 		Owns(&kube_apps.Deployment{}).

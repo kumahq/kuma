@@ -13,20 +13,33 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func NewDataplaneManager(store core_store.ResourceStore, zone string, validator Validator) core_manager.ResourceManager {
+func NewDataplaneManager(
+	store core_store.ResourceStore,
+	zone string,
+	mode string,
+	isK8s bool,
+	systemNamespace string,
+	validator Validator,
+) core_manager.ResourceManager {
 	return &dataplaneManager{
 		ResourceManager: core_manager.NewResourceManager(store),
 		store:           store,
 		zone:            zone,
+		mode:            mode,
+		isK8s:           isK8s,
+		systemNamespace: systemNamespace,
 		validator:       validator,
 	}
 }
 
 type dataplaneManager struct {
 	core_manager.ResourceManager
-	store     core_store.ResourceStore
-	zone      string
-	validator Validator
+	store           core_store.ResourceStore
+	zone            string
+	mode            string
+	isK8s           bool
+	systemNamespace string
+	validator       Validator
 }
 
 func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resource, fs ...core_store.CreateOptionsFunc) error {
@@ -38,11 +51,25 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 		return err
 	}
 
+	opts := core_store.NewCreateOptions(fs...)
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
+	labels, err := core_model.ComputeLabels(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		opts.Labels,
+		core_model.UnsetNamespace,
+		opts.Mesh,
+		m.mode,
+		m.isK8s,
+		m.zone,
+	)
+	if err != nil {
+		return err
+	}
+	fs = append(fs, core_store.CreateWithLabels(labels))
 
-	opts := core_store.NewCreateOptions(fs...)
 	owner := core_mesh.NewMeshResource()
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(opts.Mesh)
@@ -67,6 +94,20 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
+	labels, err := core_model.ComputeLabels(
+		resource.Descriptor(),
+		resource.GetSpec(),
+		resource.GetMeta().GetLabels(),
+		core_model.GetNamespace(resource.GetMeta(), m.systemNamespace),
+		resource.GetMeta().GetMesh(),
+		m.mode,
+		m.isK8s,
+		m.zone,
+	)
+	if err != nil {
+		return err
+	}
+	fs = append(fs, core_store.UpdateWithLabels(labels))
 
 	owner := core_mesh.NewMeshResource()
 	if err := m.store.Get(ctx, owner, core_store.GetByKey(resource.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {

@@ -1,0 +1,25 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/transparent-proxying: "enabled"
+    kuma.io/transparent-proxying-inbound-port: 15006
+    kuma.io/transparent-proxying-outbound-port: 15001
+    kuma.io/reachable-backends: "{}"
+spec:
+  containers:
+    - ports: []
+      # when a 'targetPort' in a ServicePort is a number,
+      # it should not be mandatory to list container ports explicitly
+      #
+      # containerPort: 8080
+      # containerPort: 8443
+    - ports:
+        - containerPort: 7070
+        - containerPort: 6060
+          name: metrics
+status:
+  podIP: 192.168.0.1

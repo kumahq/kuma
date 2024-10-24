@@ -44,6 +44,14 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			// The transparent proxy does not rely on any of the features below.
+			// Since it handles its own flag parsing, processing the parent flags
+			// like `--config-file` is unnecessary and would add unnecessary
+			// complexity
+			if cmd.Name() == "transparent-proxy" {
+				return nil
+			}
+
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err

@@ -293,7 +293,7 @@ func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.
 	}
 
 	// only consider Dataplanes in the same Mesh as Pod
-	mesh := util_k8s.MeshOfByAnnotation(pod, ns)
+	mesh := util_k8s.MeshOfByLabelOrAnnotation(converterLog, pod, ns)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
@@ -422,6 +422,7 @@ func (r *PodReconciler) createOrUpdateEgress(ctx context.Context, pod *kube_core
 
 func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentReconciles int) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-pod-controller").
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
 		For(&kube_core.Pod{}).
 		// on Service update reconcile affected Pods (all Pods selected by this service)

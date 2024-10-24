@@ -7,9 +7,13 @@ import (
 
 	"github.com/pkg/errors"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
@@ -67,7 +71,12 @@ func generateGatewayClusters(
 	return resources, nil
 }
 
-func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Rules) []route.Entry {
+func generateEnvoyRouteEntries(
+	meshCtx xds_context.MeshContext,
+	host plugin_gateway.GatewayHost,
+	toRules rules.Rules,
+	resolver model.LabelResourceIdentifierResolver,
+) []route.Entry {
 	var entries []route.Entry
 
 	for _, rule := range toRules {
@@ -76,25 +85,58 @@ func generateEnvoyRouteEntries(host plugin_gateway.GatewayHost, toRules rules.Ru
 			names = append(names, orig.GetName())
 		}
 		slices.Sort(names)
-		entries = append(entries, makeTcpRouteEntry(strings.Join(names, "_"), rule.Conf.(api.Rule)))
+
+		backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
+		for hash := range rule.BackendRefOriginIndex {
+			if origin, ok := rule.GetBackendRefOrigin(rules.EmptyMatches); ok {
+				backendRefOrigin[hash] = origin
+			}
+		}
+		entries = append(
+			entries,
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), backendRefOrigin, resolver),
+		)
 	}
 
 	return plugin_gateway.HandlePrefixMatchesAndPopulatePolicies(host, nil, nil, entries)
 }
 
-func makeTcpRouteEntry(name string, rule api.Rule) route.Entry {
+func makeTcpRouteEntry(
+	meshCtx xds_context.MeshContext,
+	name string,
+	rule api.Rule,
+	backendRefToOrigin map[common_api.MatchesHash]model.ResourceMeta,
+	resolver model.LabelResourceIdentifierResolver,
+) route.Entry {
 	entry := route.Entry{
 		Route: name,
 	}
 
 	for _, b := range rule.Default.BackendRefs {
-		dest, ok := tags.FromTargetRef(b.TargetRef)
-		if !ok {
-			// This should be caught by validation
-			continue
+		var dest map[string]string
+		var ref *model.ResolvedBackendRef
+		if origin, ok := backendRefToOrigin[rules.EmptyMatches]; ok {
+			ref = model.ResolveBackendRef(origin, b, resolver)
+			if ref.ReferencesRealResource() {
+				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
+				if ok {
+					dest = map[string]string{
+						mesh_proto.ServiceTag: service,
+					}
+				}
+			}
+		}
+		if ref == nil || ref.ResourceOrNil() == nil {
+			var ok bool
+			dest, ok = tags.FromLegacyTargetRef(b.TargetRef)
+			if !ok {
+				// This should be caught by validation
+				continue
+			}
 		}
 		target := route.Destination{
 			Destination:   dest,
+			BackendRef:    ref,
 			Weight:        uint32(*b.Weight),
 			Policies:      nil,
 			RouteProtocol: core_mesh.ProtocolTCP,

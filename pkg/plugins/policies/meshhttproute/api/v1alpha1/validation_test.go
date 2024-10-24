@@ -305,6 +305,31 @@ to:
               version: v1
 
 `),
+		ErrorCases("missing port in backendRefs",
+			[]validators.Violation{{
+				Field:   `spec.to[0].rules[0].default.backendRefs[0].port`,
+				Message: "must be defined with kind MeshMultiZoneService",
+			}}, `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: MeshService
+  name: frontend
+to:
+- targetRef:
+    kind: MeshService
+    name: frontend
+  rules:
+    - matches:
+      - path:
+          type: PathPrefix
+          value: /
+      default:
+        backendRefs:
+          - kind: MeshMultiZoneService
+            name: test-server
+`),
 		ErrorCases("hostnames and hostname to backend rewrite not allowed with services",
 			[]validators.Violation{{
 				Field:   `spec.to[0].hostnames`,
@@ -636,6 +661,39 @@ to:
         backendRefs:
           - kind: MeshService
             name: backend
+`),
+		Entry("MeshService and MeshMultiZoneService", `
+type: MeshHTTPRoute
+mesh: mesh-1
+name: route-1
+targetRef:
+  kind: Mesh
+to:
+- targetRef:
+    kind: MeshService
+    labels:
+      kuma.io/display-name: backend
+  rules:
+    - matches:
+      - path:
+          value: /v1
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshService
+            labels:
+              kuma.io/display-name: backend
+            port: 8080
+    - matches:
+      - path:
+          value: /v2
+          type: PathPrefix
+      default:
+        backendRefs:
+          - kind: MeshMultiZoneService
+            labels:
+              kuma.io/display-name: backend
+            port: 8080
 `),
 	)
 })

@@ -2,14 +2,16 @@ package validators
 
 import (
 	"encoding/json"
+	"fmt"
 
-	"github.com/kumahq/kuma/api/common/v1alpha1"
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func ValidateJsonPatchBlock(
 	rootPath validators.PathBuilder,
-	patchBlock []v1alpha1.JsonPatchBlock,
+	patchBlock []common_api.JsonPatchBlock,
 ) validators.ValidationError {
 	var err validators.ValidationError
 
@@ -115,4 +117,16 @@ func validatePath(path *string, op string) validators.ValidationError {
 	}
 
 	return err
+}
+
+func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
+	if targetRef == nil {
+		return nil
+	}
+	if targetRef.Kind == common_api.MeshService {
+		return []string{
+			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with '%s' tag instead", common_api.MeshService, common_api.MeshSubset, mesh_proto.ServiceTag),
+		}
+	}
+	return nil
 }

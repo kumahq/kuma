@@ -104,15 +104,17 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 				KumaDpCompatible: request.Version.Envoy.KumaDpCompatible,
 			},
 		},
-		DynamicMetadata: request.DynamicMetadata,
-		DNSPort:         request.DNSPort,
-		ProxyType:       request.ProxyType,
-		Features:        request.Features,
-		Resources:       request.Resources,
-		Workdir:         request.Workdir,
-		MetricsCertPath: request.MetricsResources.CertPath,
-		MetricsKeyPath:  request.MetricsResources.KeyPath,
-		SystemCaPath:    request.SystemCaPath,
+		DynamicMetadata:      request.DynamicMetadata,
+		DNSPort:              request.DNSPort,
+		ReadinessPort:        request.ReadinessPort,
+		AppProbeProxyEnabled: request.AppProbeProxyEnabled,
+		ProxyType:            request.ProxyType,
+		Features:             request.Features,
+		Resources:            request.Resources,
+		Workdir:              request.Workdir,
+		MetricsCertPath:      request.MetricsResources.CertPath,
+		MetricsKeyPath:       request.MetricsResources.KeyPath,
+		SystemCaPath:         request.SystemCaPath,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -192,7 +194,7 @@ var NotCA = errors.New("A data plane proxy is trying to verify the control plane
 func SANMismatchErr(host string, sans []string) error {
 	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
-		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=%s'\n"+
+		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --hostname=%s'\n"+
 		"2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.\n"+
 		"3) Restart the control plane to read the new certificate and start kuma-dp.", host, sans, host)
 }

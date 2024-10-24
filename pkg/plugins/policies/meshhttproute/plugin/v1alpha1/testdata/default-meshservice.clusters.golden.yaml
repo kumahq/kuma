@@ -1,13 +1,12 @@
 resources:
-- name: backend_svc_80
+- name: default_backend___msvc_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     edsClusterConfig:
       edsConfig:
         ads: {}
-        initialFetchTimeout: 0s
         resourceApiVersion: V3
-    name: backend_svc_80
+    name: default_backend___msvc_80
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:

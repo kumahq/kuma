@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"strings"
 
 	"github.com/asaskevich/govalidator"
 
+	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var (
-	allMatchProtocols    = []string{string(TcpProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
-	allTlsVersions       = []string{string(TLSVersionAuto), string(TLSVersion10), string(TLSVersion11), string(TLSVersion12), string(TLSVersion13)}
+	allMatchProtocols    = []string{core_mesh.ProtocolTCP, core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}
 	allVerificationModes = []string{string(TLSVerificationSkipSAN), string(TLSVerificationSkipCA), string(TLSVerificationSkipAll), string(TLSVerificationSecured)}
 	allSANMatchTypes     = []string{string(SANMatchPrefix), string(SANMatchExact)}
 )
@@ -49,7 +49,7 @@ func validateTls(tls *Tls) validators.ValidationError {
 	var verr validators.ValidationError
 
 	if tls.Version != nil {
-		verr.AddError(validators.RootedAt("version").String(), validateVersion(tls.Version))
+		verr.AddError(validators.RootedAt("version").String(), common_tls.ValidateVersion(tls.Version))
 	}
 
 	if tls.Verification != nil {
@@ -79,33 +79,6 @@ func validateTls(tls *Tls) validators.ValidationError {
 	return verr
 }
 
-func validateVersion(version *Version) validators.ValidationError {
-	var verr validators.ValidationError
-	path := validators.Root()
-	specificMin := false
-	specificMax := false
-	if version.Min != nil {
-		if !slices.Contains(allTlsVersions, string(*version.Min)) {
-			verr.AddErrorAt(path.Field("min"), validators.MakeFieldMustBeOneOfErr("min", allTlsVersions...))
-		} else if *version.Min != TLSVersionAuto {
-			specificMin = true
-		}
-	}
-	if version.Max != nil {
-		if !slices.Contains(allTlsVersions, string(*version.Max)) {
-			verr.AddErrorAt(path.Field("max"), validators.MakeFieldMustBeOneOfErr("max", allTlsVersions...))
-		} else if *version.Max != TLSVersionAuto {
-			specificMax = true
-		}
-	}
-
-	if specificMin && specificMax && tlsVersionOrder[*version.Min] > tlsVersionOrder[*version.Max] {
-		verr.AddViolationAt(path.Field("min"), "min version must be lower than max")
-	}
-
-	return verr
-}
-
 func validateMatch(match Match) validators.ValidationError {
 	var verr validators.ValidationError
 	if match.Type != nil && *match.Type != HostnameGeneratorType {
@@ -126,39 +99,21 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 
 	for i, endpoint := range endpoints {
 		if govalidator.IsIP(endpoint.Address) {
-			if endpoint.Port == nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined+" when endpoint is an IP")
-			} else if *endpoint.Port == 0 || *endpoint.Port > math.MaxUint16 {
+			if endpoint.Port == 0 || endpoint.Port > math.MaxUint16 {
 				verr.AddViolationAt(validators.Root().Index(i).Field("port"), "port must be a valid (1-65535)")
 			}
 		}
 
-		if isValidUnixPath(endpoint.Address) {
-			if endpoint.Port != nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustNotBeDefined+" when endpoint is a unix path")
-			}
-		}
-
 		if govalidator.IsDNSName(endpoint.Address) {
-			if endpoint.Port == nil {
-				verr.AddViolationAt(validators.Root().Index(i).Field("port"), validators.MustBeDefined+" when endpoint is a hostname")
+			if endpoint.Port == 0 || endpoint.Port > math.MaxUint16 {
+				verr.AddViolationAt(validators.Root().Index(i).Field("port"), "port must be a valid (1-65535)")
 			}
 		}
 
-		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address) || isValidUnixPath(endpoint.Address)) {
-			verr.AddViolationAt(validators.Root().Index(i).Field("address"), "address has to be a valid IP or hostname or a unix path")
+		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address)) {
+			verr.AddViolationAt(validators.Root().Index(i).Field("address"), "address has to be a valid IP or hostname")
 		}
 	}
 
 	return verr
-}
-
-func isValidUnixPath(path string) bool {
-	if strings.HasPrefix(path, "unix://") {
-		parts := strings.Split(path, "unix://")
-		filePath := parts[1]
-		return govalidator.IsUnixFilePath(filePath)
-	} else {
-		return false
-	}
 }

@@ -118,10 +118,10 @@ var _ = Describe("SortRules", func() {
 		}},
 	}
 	It("handles base cases", func() {
-		Expect(api.SortRules(makeSingleMatchRules([]api.Match{}))).To(Equal(makeRoutes([]api.Match{})))
+		Expect(api.SortRules(makeSingleMatchRules([]api.Match{}), nil, nil)).To(Equal(makeRoutes([]api.Match{})))
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			exactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactMatch,
 		})))
 	})
@@ -131,7 +131,7 @@ var _ = Describe("SortRules", func() {
 			longerPrefixMatch,
 			regexMatch,
 			exactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactMatch,
 			longerPrefixMatch,
 			prefixMatch,
@@ -142,21 +142,21 @@ var _ = Describe("SortRules", func() {
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			methodMatch,
 			exactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactMatch,
 			methodMatch,
 		})))
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			singleHeaderMatch,
 			exactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactMatch,
 			singleHeaderMatch,
 		})))
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			singleHeaderMatch,
 			prefixMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			prefixMatch,
 			singleHeaderMatch,
 		})))
@@ -165,14 +165,14 @@ var _ = Describe("SortRules", func() {
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			exactMatch,
 			exactAndMethodMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactAndMethodMatch,
 			exactMatch,
 		})))
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			exactSingleHeaderMatch,
 			exactDoubleHeaderMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactDoubleHeaderMatch,
 			exactSingleHeaderMatch,
 		})))
@@ -181,14 +181,14 @@ var _ = Describe("SortRules", func() {
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			exactMatch,
 			otherExactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			exactMatch,
 			otherExactMatch,
 		})))
 		Expect(api.SortRules(makeSingleMatchRules([]api.Match{
 			otherExactMatch,
 			exactMatch,
-		}))).To(Equal(makeRoutes([]api.Match{
+		}), nil, nil)).To(Equal(makeRoutes([]api.Match{
 			otherExactMatch,
 			exactMatch,
 		})))
@@ -199,7 +199,7 @@ var _ = Describe("SortRules", func() {
 		Expect(api.SortRules(makeMultiMatchRules([][]api.Match{
 			prefixMatchOnly,
 			singleOrExact,
-		}))).To(Equal([]api.Route{{
+		}), nil, nil)).To(Equal([]api.Route{{
 			Match: exactMatch,
 			Hash:  api.HashMatches(singleOrExact),
 		}, {

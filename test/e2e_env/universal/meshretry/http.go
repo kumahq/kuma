@@ -16,11 +16,41 @@ import (
 
 func HttpRetry() {
 	meshName := "meshretry-http"
+
+	uniServiceYAML := fmt.Sprintf(`
+type: MeshService
+name: test-server
+mesh: %s
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+  - port: 80
+    targetPort: 80
+    appProtocol: http
+`, meshName)
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(MeshUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(YamlUniversal(uniServiceYAML)).
+			Install(YamlUniversal(`
+type: HostnameGenerator
+name: uni-ms-retry
+spec:
+  template: '{{ .DisplayName }}.universal.ms'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/env: universal
+`)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -114,6 +144,75 @@ spec:
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+	})
+
+	It("should retry on HTTP connection failure with real MeshService", func() {
+		meshFaultInjection := fmt.Sprintf(`
+type: MeshFaultInjection
+mesh: "%s"
+name: mesh-fault-injecton
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: "50.0"
+`, meshName)
+		meshRetryPolicy := fmt.Sprintf(`
+type: MeshRetry
+mesh: "%s"
+name: meshretry-policy
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"
+`, meshName)
+
+		By("Checking requests succeed")
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.universal.ms",
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
+
+		By("Adding a MeshFaultInjection for test-server")
+		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
+
+		By("Check some errors happen")
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				universal.Cluster, "demo-client", "test-server.universal.ms",
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+			)
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
+		}, "10s", "100ms").Should(Succeed())
+
+		By("Apply a MeshRetry policy")
+		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+		By("Eventually all requests succeed consistently")
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				universal.Cluster, "demo-client", "test-server.universal.ms",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())

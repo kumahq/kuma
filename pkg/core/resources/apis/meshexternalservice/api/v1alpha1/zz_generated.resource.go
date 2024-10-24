@@ -163,4 +163,5 @@ var MeshExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasFromTargetRef:             false,
 	HasStatus:                    true,
 	AllowedOnSystemNamespaceOnly: true,
+	IsReferenceableInTo:          true,
 }

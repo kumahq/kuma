@@ -7,3 +7,10 @@ func (m *Mesh) IsPassthrough() bool {
 	}
 	return passthrough.GetValue()
 }
+
+func (m *Mesh) MeshServicesMode() Mesh_MeshServices_Mode {
+	if m.MeshServices == nil {
+		return Mesh_MeshServices_Disabled
+	}
+	return m.MeshServices.Mode
+}

@@ -13,9 +13,12 @@ import (
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	util_time "github.com/kumahq/kuma/pkg/util/time"
 )
 
 type StatusUpdater struct {
@@ -53,6 +56,8 @@ func NewStatusUpdater(
 }
 
 func (s *StatusUpdater) Start(stop <-chan struct{}) error {
+	// sleep to mitigate update conflicts with other components
+	util_time.SleepUpTo(s.interval)
 	s.logger.Info("starting")
 	ticker := time.NewTicker(s.interval)
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
@@ -92,8 +97,12 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		ports := map[uint32]meshservice_api.Port{}
 		for _, svc := range msList.Items {
 			if matchesService(mzSvc, svc) {
+				ri := model.NewResourceIdentifier(svc)
 				matched = append(matched, meshmzservice_api.MatchedMeshService{
-					Name: svc.Meta.GetName(),
+					Name:      ri.Name,
+					Namespace: ri.Namespace,
+					Zone:      ri.Zone,
+					Mesh:      ri.Mesh,
 				})
 				for _, port := range svc.Spec.Ports {
 					ports[port.Port] = port
@@ -102,7 +111,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		}
 
 		sort.Slice(matched, func(i, j int) bool {
-			return matched[i].Name < matched[j].Name
+			return matched[i].FullyQualifiedName() < matched[j].FullyQualifiedName()
 		})
 
 		if !reflect.DeepEqual(mzSvc.Status.MeshServices, matched) {
@@ -110,7 +119,11 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			mzSvc.Status.MeshServices = matched
 			log.Info("updating matched mesh services", "matchedMeshServices", matched)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
-				log.Error(err, "could not update ports and mesh services")
+				if errors.Is(err, &store.ResourceConflictError{}) {
+					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
+				} else {
+					log.Error(err, "could not update matched mesh services mesh services")
+				}
 			}
 		}
 	}

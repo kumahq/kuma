@@ -6,7 +6,6 @@ metadata:
   name: mesh-observability
   labels:
     kuma.io/sidecar-injection: disabled
-  annotations:
     kuma.io/mesh: default
 ---
 apiVersion: v1
@@ -518,6 +517,7 @@ metadata:
   labels:
     component: "server"
     app: prometheus
+    kuma.io/mesh: default
   name: prometheus-server
   namespace: mesh-observability
 spec:

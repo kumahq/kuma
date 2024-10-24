@@ -1,6 +1,7 @@
 ResourceRules: {}
 Rules:
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 1s
   Origin:
@@ -16,19 +17,20 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: another-test-server
-- Conf:
+- BackendRefOriginIndex: {}
+  Conf:
     http:
       requestTimeout: 1s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-    name: mtp-1
+    name: mtp-2
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-    name: mtp-2
+    name: mtp-1
     type: MeshTimeout
   Subset:
   - Key: __rule-matches-hash__

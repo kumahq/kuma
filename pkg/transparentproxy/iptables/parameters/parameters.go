@@ -41,8 +41,7 @@ func (p *Parameter) Build(verbose bool) []string {
 
 	flag := p.short
 
-	// If verbose is true or the short version is not available, use the long
-	// version.
+	// If verbose is true or the short version is not available, use the long version
 	if verbose || p.short == "" {
 		flag = p.long
 	}
@@ -63,7 +62,7 @@ func (p *Parameter) Build(verbose bool) []string {
 	// Some parameters for flags like "--wait" or "--wait-interval" require an
 	// equal sign to be set, so "--wait 5" is invalid and should be "--wait=5"
 	// to work. If the `Parameter` object has a `connector` property and only
-	// one value, we will use it when joining the flag with the value.
+	// one value, we will use it when joining the flag with the value
 	if p.connector != "" && len(parameters) == 1 {
 		lastElem := result[len(result)-1]
 		resultWithoutLastElem := result[: len(result)-1 : len(result)-1] // full slice expression to protect before append overwrites
@@ -113,7 +112,7 @@ var _ ParameterBuilder = &SimpleParameter{}
 
 // SimpleParameter represents a straightforward iptables parameter that doesn't
 // involve nested parameters or complex logic. It holds both the short and long
-// versions of the parameter name, as well as its value.
+// versions of the parameter name, as well as its value
 type SimpleParameter struct {
 	short string // Short version of the parameter (e.g., "-j").
 	long  string // Long version of the parameter (e.g., "--jump").
@@ -122,18 +121,10 @@ type SimpleParameter struct {
 
 // Build constructs the command-line representation of the SimpleParameter.
 // It returns a slice of strings containing the flag (short or long based on
-// verbosity) followed by the parameter value.
-//
-// Args:
-//   - verbose (bool): If true, use the long version of the parameter;
-//     otherwise, use the short version if available.
-//
-// Returns:
-// - []string: A slice containing the flag and value for the parameter.
+// verbosity) followed by the parameter value
 func (p *SimpleParameter) Build(verbose bool) []string {
 	flag := p.short
-	// If verbose is true or the short version is not available, use the long
-	// version.
+	// If verbose is true or the short version is not available, use the long version
 	if verbose || p.short == "" {
 		flag = p.long
 	}
@@ -142,10 +133,28 @@ func (p *SimpleParameter) Build(verbose bool) []string {
 }
 
 // Negate is a no-op for SimpleParameter since negation does not apply to simple
-// parameters. It simply returns the receiver.
-//
-// Returns:
-// - ParameterBuilder: The same SimpleParameter instance.
+// parameters. It simply returns the receiver
 func (p *SimpleParameter) Negate() ParameterBuilder {
+	return p
+}
+
+var _ ParameterBuilder = &WrappingParameter{}
+
+// WrappingParameter is a utility type that encapsulates a slice of strings,
+// allowing for flexible parameter handling in scenarios where only raw string
+// arguments are needed
+type WrappingParameter struct {
+	parameters []string
+}
+
+func NewWrappingParameter(param string, params ...string) *WrappingParameter {
+	return &WrappingParameter{parameters: append([]string{param}, params...)}
+}
+
+func (p *WrappingParameter) Build(bool) []string {
+	return p.parameters
+}
+
+func (p *WrappingParameter) Negate() ParameterBuilder {
 	return p
 }

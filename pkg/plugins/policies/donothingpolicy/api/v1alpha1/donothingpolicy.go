@@ -11,7 +11,7 @@ type DoNothingPolicy struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined inplace.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
 	To []To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations

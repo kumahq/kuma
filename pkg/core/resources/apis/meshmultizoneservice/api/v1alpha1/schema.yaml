@@ -34,11 +34,6 @@ properties:
             port:
               format: int32
               type: integer
-            targetPort:
-              anyOf:
-                - type: integer
-                - type: string
-              x-kubernetes-int-or-string: true
           required:
             - port
           type: object
@@ -117,12 +112,7 @@ properties:
                       - Unknown
                     type: string
                   type:
-                    description: |-
-                      type of condition in CamelCase or in foo.example.com/CamelCase.
-                      ---
-                      Many .condition.type values are consistent across resources like Available, but because arbitrary conditions can be
-                      useful (see .node.status.conditions), the ability to deconflict is important.
-                      The regex it matches is (dns1123SubdomainFmt/)?(qualifiedNameFmt)
+                    description: type of condition in CamelCase or in foo.example.com/CamelCase.
                     maxLength: 316
                     pattern: ^([a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*/)?(([A-Za-z0-9][-A-Za-z0-9_.]*)?[A-Za-z0-9])$
                     type: string
@@ -151,11 +141,20 @@ properties:
         description: MeshServices is a list of matched MeshServices
         items:
           properties:
+            mesh:
+              type: string
             name:
               description: Name is a core name of MeshService
               type: string
+            namespace:
+              type: string
+            zone:
+              type: string
           required:
+            - mesh
             - name
+            - namespace
+            - zone
           type: object
         type: array
       vips:

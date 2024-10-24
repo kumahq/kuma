@@ -4,6 +4,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -62,6 +63,11 @@ func (p *ProxyBuilder) WithSecretsTracker(secretsTracker core_xds.SecretsTracker
 
 func (p *ProxyBuilder) WithPolicies(policies *MatchedPoliciesBuilder) *ProxyBuilder {
 	p.res.Policies = *policies.Build()
+	return p
+}
+
+func (p *ProxyBuilder) WithOutbounds(outbounds xds_types.Outbounds) *ProxyBuilder {
+	p.res.Outbounds = outbounds
 	return p
 }
 

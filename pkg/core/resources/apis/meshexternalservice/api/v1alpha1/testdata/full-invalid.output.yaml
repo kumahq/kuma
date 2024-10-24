@@ -6,15 +6,13 @@ violations:
 - field: spec.match.protocol
   message: '"protocol" must be one of ["tcp", "grpc", "http", "http2"]'
 - field: spec.endpoints[0].port
-  message: must be defined when endpoint is an IP
+  message: port must be a valid (1-65535)
 - field: spec.endpoints[1].port
   message: port must be a valid (1-65535)
 - field: spec.endpoints[2].port
-  message: must be defined when endpoint is a hostname
-- field: spec.endpoints[3].port
-  message: must not be defined when endpoint is a unix path
-- field: spec.endpoints[4].address
-  message: address has to be a valid IP or hostname or a unix path
+  message: port must be a valid (1-65535)
+- field: spec.endpoints[3].address
+  message: address has to be a valid IP or hostname
 - field: spec.tls.version.min
   message: '"min" must be one of ["TLSAuto", "TLS10", "TLS11", "TLS12", "TLS13"]'
 - field: spec.tls.version.max

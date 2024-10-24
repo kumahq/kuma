@@ -3,15 +3,14 @@ kind: Pod
 metadata:
   annotations:
     kubectl.kubernetes.io/default-container: busybox
+    kuma.io/application-probe-proxy-port: "9000"
     kuma.io/container-patches: container-patch-1
     kuma.io/envoy-admin-port: "9901"
     kuma.io/envoy-log-level: trace
-    kuma.io/mesh: default
     kuma.io/sidecar-drain-time: 10s
     kuma.io/sidecar-injected: "true"
     kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-ebpf: disabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-ip-family-mode: dualstack
     kuma.io/transparent-proxying-outbound-port: "15001"
@@ -19,6 +18,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: default
     run: busybox
   name: busybox
 spec:
@@ -28,22 +28,8 @@ spec:
     resources: {}
   initContainers:
   - args:
-    - --config-file
-    - /tmp/kumactl/config
-    - --redirect-outbound-port
-    - "15001"
-    - --redirect-inbound=true
-    - --redirect-inbound-port
-    - "15006"
-    - --kuma-dp-user
-    - "5678"
-    - --exclude-inbound-ports
-    - ""
-    - --exclude-outbound-ports
-    - ""
+    - --exclude-inbound-ports=9000
     - --verbose
-    - --ip-family-mode
-    - dualstack
     command:
     - /usr/bin/kumactl
     - install
@@ -83,6 +69,8 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
+    - name: KUMA_APPLICATION_PROBE_PROXY_PORT
+      value: "9000"
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----

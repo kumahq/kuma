@@ -43,6 +43,8 @@ K3D_NETWORK_CNI ?= flannel
 K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
+	--k3s-arg '--disable=metrics-server@server:0' \
+	--k3s-arg '--kubelet-arg=image-gc-high-threshold=100@server:0' \
 	--k3s-arg '--disable=servicelb@server:0' \
     --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
@@ -72,6 +74,34 @@ endif
 KIND_NETWORK_OPTS =  -o com.docker.network.bridge.enable_ip_masquerade=true
 ifdef IPV6
     KIND_NETWORK_OPTS += --ipv6 --subnet "fd00:fd12:3456::0/64"
+endif
+
+K3D_HELM_DEPLOY_OPTS = \
+	--set global.image.registry="$(DOCKER_REGISTRY)"
+
+ifeq ($(BUILD_INFO_VERSION),0.0.0-preview.vlocal-build)
+	K3D_HELM_DEPLOY_OPTS += \
+		--set global.image.tag="$(BUILD_INFO_VERSION)"
+else
+	K3D_HELM_DEPLOY_OPTS += \
+		--set controlPlane.image.tag="$(BUILD_INFO_VERSION)" \
+		--set cni.image.tag="$(BUILD_INFO_VERSION)" \
+		--set dataPlane.image.tag="$(BUILD_INFO_VERSION)" \
+		--set dataPlane.initImage.tag="$(BUILD_INFO_VERSION)" \
+		--set kumactl.image.tag="$(BUILD_INFO_VERSION)"
+endif
+
+ifndef K3D_HELM_DEPLOY_NO_CNI
+	K3D_HELM_DEPLOY_OPTS += \
+		--set cni.enabled=true \
+		--set cni.chained=true \
+		--set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
+		--set cni.binDir=/bin/ \
+		--set cni.confName=10-flannel.conflist
+endif
+
+ifdef K3D_HELM_DEPLOY_ADDITIONAL_OPTS
+	K3D_HELM_DEPLOY_OPTS += $(K3D_HELM_DEPLOY_ADDITIONAL_OPTS)
 endif
 
 .PHONY: k3d/network/create
@@ -158,9 +188,11 @@ k3d/load/images:
 
 .PHONY: k3d/load
 k3d/load:
+ifndef K3D_DONT_LOAD
 	$(MAKE) images
 	$(MAKE) docker/tag
 	$(MAKE) k3d/load/images
+endif
 
 .PHONY: k3d/deploy/kuma
 k3d/deploy/kuma: build/kumactl k3d/load
@@ -173,17 +205,17 @@ k3d/deploy/kuma: build/kumactl k3d/load
 
 .PHONY: k3d/deploy/helm
 k3d/deploy/helm: k3d/load
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) --wait | true
-	KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create namespace $(KUMA_NAMESPACE)
-	KUBECONFIG=$(KIND_KUBECONFIG) helm upgrade --install --namespace $(KUMA_NAMESPACE) \
-                --set global.image.registry="$(DOCKER_REGISTRY)" \
-                --set global.image.tag="$(BUILD_INFO_VERSION)" \
-                --set cni.enabled=true \
-                --set cni.chained=true \
-                --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
-                --set cni.binDir=/bin/ \
-                --set cni.confName=10-flannel.conflist \
-                kuma ./deployments/charts/kuma
+ifndef K3D_DEPLOY_HELM_DONT_DELETE_NS
+	@KUBECONFIG=$(KIND_KUBECONFIG) helm delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) kuma 2>/dev/null
+	@until \
+	    ! @KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n $(KUMA_NAMESPACE) --selector app=kuma-control-plane 2>/dev/null ; \
+	do sleep 1; done
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) --force --wait --ignore-not-found 2>/dev/null
+	@until \
+	    ! @KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get namespace $(KUMA_NAMESPACE) 2>/dev/null ; \
+	do sleep 1; done
+endif
+	KUBECONFIG=$(KIND_KUBECONFIG) helm upgrade --install --namespace $(KUMA_NAMESPACE) --create-namespace $(K3D_HELM_DEPLOY_OPTS) kuma ./deployments/charts/kuma
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 

@@ -1,61 +1,37 @@
 resources:
-- name: meshexternalservice_example
+- name: default_example___extsvc_9090
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    dnsLookupFamily: V4_ONLY
-    loadAssignment:
-      clusterName: meshexternalservice_example
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: example.com
-                portValue: 10000
-          loadBalancingWeight: 1
-        - endpoint:
-            address:
-              socketAddress:
-                address: example2.com
-                portValue: 11111
-          loadBalancingWeight: 1
-    name: meshexternalservice_example
-    transportSocketMatches:
-    - name: example.com
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            tlsCertificates:
-            - certificateChain:
-                inlineBytes: Y2VydA==
-              privateKey:
-                inlineBytes: a2V5
-            validationContext:
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    name: default_example___extsvc_9090
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
               matchTypedSubjectAltNames:
               - matcher:
-                  exact: example2.com
-                sanType: DNS
-              - matcher:
-                  exact: example2.com
-                sanType: IP_ADDRESS
-              - matcher:
-                  prefix: example
-                sanType: DNS
-              - matcher:
-                  exact: example2.com
-                sanType: DNS
-              - matcher:
-                  prefix: example
-                sanType: IP_ADDRESS
-              - matcher:
-                  exact: example2.com
-                sanType: IP_ADDRESS
-              trustedCa:
-                inlineBytes: Y2E=
-          sni: example2.com
-    type: STRICT_DNS
+                  exact: spiffe://default/zone-egress
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+        sni: afce62f771ed74b78.example.9090.default.mes
+    type: EDS
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions

@@ -17,14 +17,16 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
-	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
+func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+	if targetRef == nil {
+		return validators.ValidationError{}
+	}
+	targetRefErr := mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
-			common_api.MeshExternalService,
 		},
 	})
 	return targetRefErr
@@ -40,7 +42,6 @@ func validateFrom(from []From) validators.ValidationError {
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
-				common_api.MeshExternalService,
 			},
 		}))
 

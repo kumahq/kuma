@@ -1,12 +1,15 @@
 package gatewayapi_test
 
 import (
+	"context"
+	"fmt"
 	"io/fs"
 	"testing"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/gomega"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/sets"
 	clientgo_kube "k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -45,8 +48,35 @@ func TestConformance(t *testing.T) {
 	g := NewWithT(t)
 
 	cluster := NewK8sCluster(t, clusterName, Silent)
+	opts := cluster.GetKubectlOptions()
 
 	t.Cleanup(func() {
+		var meshNamespaces []string
+		clientset, err := k8s.GetKubernetesClientFromOptionsE(t, opts)
+		if err == nil {
+			if nsList, err := clientset.CoreV1().Namespaces().List(context.Background(),
+				metav1.ListOptions{
+					LabelSelector: fmt.Sprintf("%s=%s", metadata.KumaSidecarInjectionAnnotation, metadata.AnnotationEnabled),
+				}); err == nil {
+				for _, ns := range nsList.Items {
+					meshNamespaces = append(meshNamespaces, ns.Name)
+				}
+			}
+		}
+
+		if t.Failed() {
+			if len(meshNamespaces) > 0 {
+				g.Expect(func() error { //nolint:unparam  // we need this return type to be included in the Expect block
+					RegisterFailHandler(g.Fail)
+					DebugKube(cluster, "default", meshNamespaces...)
+					return nil
+				}()).To(Succeed())
+			}
+		}
+
+		for _, ns := range meshNamespaces {
+			g.Expect(cluster.DeleteNamespace(ns)).To(Succeed())
+		}
 		g.Expect(cluster.DeleteKuma()).To(Succeed())
 		g.Expect(cluster.DismissCluster()).To(Succeed())
 	})
@@ -55,8 +85,6 @@ func TestConformance(t *testing.T) {
 	g.Eventually(func() error {
 		return NewClusterSetup().Install(Kuma(config_core.Zone)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
-
-	opts := cluster.GetKubectlOptions()
 
 	configPath, err := opts.GetConfigPath(t)
 	g.Expect(err).ToNot(HaveOccurred())
@@ -81,8 +109,8 @@ func TestConformance(t *testing.T) {
 		RestConfig:           clientConfig,
 		Clientset:            clientset,
 		GatewayClassName:     "kuma",
-		CleanupBaseResources: true,
-		Debug:                false,
+		CleanupBaseResources: false,        // we want to collect details when test fails, so don't clean up here, we'll clean up resources by ourselves.
+		Debug:                Config.Debug, // controls if request details should be printed to stdout
 		NamespaceLabels: map[string]string{
 			metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
 		},
@@ -108,6 +136,9 @@ func TestConformance(t *testing.T) {
 		),
 		Implementation:      implementation,
 		ConformanceProfiles: sets.New(suite.GatewayHTTPConformanceProfileName, suite.MeshHTTPConformanceProfileName),
+		// We are seeing flaky runs which are related to headless service cases, so ignoring them temporarily
+		// See https://github.com/kumahq/kuma/pull/11463
+		SkipTests: []string{tests.HTTPRouteServiceTypes.ShortName},
 	}
 
 	conformanceSuite, err := suite.NewConformanceTestSuite(options)

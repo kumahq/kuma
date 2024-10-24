@@ -61,6 +61,7 @@ func (i IngressGenerator) Generate(
 			localMes,
 			meshResources.MeshMultiZoneServices().Items,
 			xdsCtx.ControlPlane.SystemNamespace,
+			xdsCtx.Mesh.ResolveResourceIdentifier,
 		)
 
 		core.Log.Info("TEST INGRESS GEN", "dest", dest)

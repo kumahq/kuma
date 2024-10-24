@@ -85,6 +85,7 @@ func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
+		Named("kuma-configmap-controller").
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
 		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
@@ -120,7 +121,7 @@ func ServiceToConfigMapsMapper(client kube_client.Reader, l logr.Logger, systemN
 
 		meshSet := map[string]struct{}{}
 		for i := range pods.Items {
-			meshSet[k8s_util.MeshOfByAnnotation(&pods.Items[i], &ns)] = struct{}{}
+			meshSet[k8s_util.MeshOfByLabelOrAnnotation(l, &pods.Items[i], &ns)] = struct{}{}
 		}
 		var req []kube_reconile.Request
 		for mesh := range meshSet {

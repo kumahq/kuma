@@ -14,6 +14,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -195,6 +196,8 @@ type ResourceTypeDescriptor struct {
 	DumpForGlobal bool
 	// AllowedOnSystemNamespaceOnly whether this resource type can be created only in the system namespace
 	AllowedOnSystemNamespaceOnly bool
+	// IsReferenceableInTo whether this resource type can be used in spec.to[].targetRef
+	IsReferenceableInTo bool
 }
 
 func newObject(baseResource Resource) Resource {
@@ -418,17 +421,31 @@ func IsReferenced(refMeta ResourceMeta, refName string, resourceMeta ResourceMet
 	return refName == GetDisplayName(resourceMeta)
 }
 
-func IsLocallyOriginated(mode config_core.CpMode, r Resource) bool {
+func IsLocallyOriginated(mode config_core.CpMode, labels map[string]string) bool {
 	switch mode {
 	case config_core.Global:
-		origin, ok := ResourceOrigin(r.GetMeta())
+		origin, ok := resourceOrigin(labels)
 		return !ok || origin == mesh_proto.GlobalResourceOrigin
 	case config_core.Zone:
-		origin, _ := ResourceOrigin(r.GetMeta())
-		return origin == mesh_proto.ZoneResourceOrigin
+		origin, ok := resourceOrigin(labels)
+		return !ok || origin == mesh_proto.ZoneResourceOrigin
 	default:
 		return true
 	}
+}
+
+func IsLocalZoneResource(labels map[string]string, zone string) bool {
+	origin, ok := resourceOrigin(labels)
+	if ok && origin == mesh_proto.ZoneResourceOrigin {
+		resourceZone, ok := labels[mesh_proto.ZoneTag]
+		// backward compatibility: in kuma 2.7, a resource doesn't have the `kuma.io/zone` label but has the `kuma.io/origin` zone,
+		// indicating that the resource was created in this zone.
+		if !ok {
+			return true
+		}
+		return resourceZone == zone
+	}
+	return false
 }
 
 func GetDisplayName(rm ResourceMeta) string {
@@ -442,16 +459,58 @@ func GetDisplayName(rm ResourceMeta) string {
 }
 
 func ResourceOrigin(rm ResourceMeta) (mesh_proto.ResourceOrigin, bool) {
-	if labels := rm.GetLabels(); labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
+	if rm == nil {
+		return "", false
+	}
+	return resourceOrigin(rm.GetLabels())
+}
+
+func resourceOrigin(labels map[string]string) (mesh_proto.ResourceOrigin, bool) {
+	if labels != nil && labels[mesh_proto.ResourceOriginLabel] != "" {
 		return mesh_proto.ResourceOrigin(labels[mesh_proto.ResourceOriginLabel]), true
 	}
 	return "", false
 }
 
-func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamespace string, localZone string) map[string]string {
-	labels := r.GetMeta().GetLabels()
-	if len(labels) == 0 {
-		labels = map[string]string{}
+// Namespace type allows to avoid carrying both 'namespace' and 'systemNamespace' around the code base
+// and depend on this type instead
+type Namespace struct {
+	value  string
+	system bool
+}
+
+var UnsetNamespace = Namespace{}
+
+func NewNamespace(value string, system bool) Namespace {
+	return Namespace{
+		value:  value,
+		system: system,
+	}
+}
+
+func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
+	if ns, ok := rm.GetNameExtensions()[K8sNamespaceComponent]; ok && ns != "" {
+		return Namespace{
+			value:  ns,
+			system: ns == systemNamespace,
+		}
+	}
+	return UnsetNamespace
+}
+
+func ComputeLabels(
+	rd ResourceTypeDescriptor,
+	spec ResourceSpec,
+	existingLabels map[string]string,
+	ns Namespace,
+	mesh string,
+	mode config_core.CpMode,
+	isK8s bool,
+	localZone string,
+) (map[string]string, error) {
+	labels := map[string]string{}
+	if len(existingLabels) > 0 {
+		labels = existingLabels
 	}
 
 	setIfNotExist := func(k, v string) {
@@ -461,43 +520,53 @@ func ComputeLabels(r Resource, mode config_core.CpMode, isK8s bool, systemNamesp
 	}
 
 	getMeshOrDefault := func() string {
-		if mesh := r.GetMeta().GetMesh(); mesh != "" {
+		if mesh != "" {
 			return mesh
 		}
 		return DefaultMesh
 	}
 
-	if r.Descriptor().Scope == ScopeMesh {
+	if rd.Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
-		setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
-		if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
-			setIfNotExist(mesh_proto.ZoneTag, localZone)
-			env := mesh_proto.UniversalEnvironment
-			if isK8s {
-				env = mesh_proto.KubernetesEnvironment
+		// If resource can't be created on Zone (like Mesh), there is no point in adding
+		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
+		if rd.KDSFlags.Has(AllowedOnZoneSelector) {
+			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
+			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
+				setIfNotExist(mesh_proto.ZoneTag, localZone)
+				env := mesh_proto.UniversalEnvironment
+				if isK8s {
+					env = mesh_proto.KubernetesEnvironment
+				}
+				setIfNotExist(mesh_proto.EnvTag, env)
 			}
-			setIfNotExist(mesh_proto.EnvTag, env)
 		}
 	}
 
-	if ns, ok := labels[mesh_proto.KubeNamespaceTag]; ok && r.Descriptor().IsPolicy && r.Descriptor().IsPluginOriginated {
-		var role mesh_proto.PolicyRole
-		switch ns {
-		case systemNamespace:
-			role = mesh_proto.SystemPolicyRole
-		default:
-			role = ComputePolicyRole(r.GetSpec().(Policy))
-		}
-		setIfNotExist(mesh_proto.PolicyRoleLabel, string(role))
+	if ns.value != "" && isK8s && IsLocallyOriginated(mode, labels) {
+		setIfNotExist(mesh_proto.KubeNamespaceTag, ns.value)
 	}
 
-	return labels
+	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
+		role, err := ComputePolicyRole(spec.(Policy), ns)
+		if err != nil {
+			return nil, err
+		}
+		labels[mesh_proto.PolicyRoleLabel] = string(role)
+	}
+
+	return labels, nil
 }
 
-func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
+func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
+	if ns.system || ns == UnsetNamespace {
+		// on Universal the value is always empty
+		return mesh_proto.SystemPolicyRole, nil
+	}
+
 	hasTo := false
 	if pwtl, ok := p.(PolicyWithToList); ok && len(pwtl.GetToList()) > 0 {
 		hasTo = true
@@ -508,11 +577,33 @@ func ComputePolicyRole(p Policy) mesh_proto.PolicyRole {
 		hasFrom = true
 	}
 
-	if hasTo && !hasFrom {
-		// todo(lobkovilya): detect if the policy is a producer policy when they're supported
-		return mesh_proto.ConsumerPolicyRole
-	} else {
-		return mesh_proto.WorkloadOwnerPolicyRole
+	if hasFrom && hasTo {
+		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
+	}
+
+	if hasFrom || !(hasTo || hasFrom) {
+		// if there is 'from' or neither (single item)
+		return mesh_proto.WorkloadOwnerPolicyRole, nil
+	}
+
+	isProducerItem := func(tr common_api.TargetRef) bool {
+		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns.value)
+	}
+
+	producerItems := 0
+	for _, item := range p.(PolicyWithToList).GetToList() {
+		if isProducerItem(item.GetTargetRef()) {
+			producerItems++
+		}
+	}
+
+	switch {
+	case producerItems == len(p.(PolicyWithToList).GetToList()):
+		return mesh_proto.ProducerPolicyRole, nil
+	case producerItems == 0:
+		return mesh_proto.ConsumerPolicyRole, nil
+	default:
+		return "", errors.New("it's not allowed to mix producer and consumer items in the same policy")
 	}
 }
 
@@ -704,6 +795,52 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 	}
 }
 
+func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_api.BackendRef {
+	id := NewResourceIdentifier(r)
+	return common_api.BackendRef{
+		TargetRef: common_api.TargetRef{
+			Kind:      common_api.TargetRefKind(resType),
+			Name:      id.Name,
+			Namespace: id.Namespace,
+		},
+		Port: pointer.To(port),
+	}
+}
+
+type LabelResourceIdentifierResolver func(ResourceType, map[string]string) *ResourceIdentifier
+
+func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
+	switch {
+	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
+	case br.Kind == common_api.MeshExternalService:
+	case br.Kind == common_api.MeshMultiZoneService:
+	default:
+		return &ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}
+	}
+
+	rr := RealResourceBackendRef{
+		Resource: &TypedResourceIdentifier{
+			ResourceIdentifier: TargetRefToResourceIdentifier(meta, br.TargetRef),
+			ResourceType:       ResourceType(br.Kind),
+		},
+		Weight: pointer.DerefOr(br.Weight, 1),
+	}
+
+	if len(br.Labels) > 0 {
+		ri := resolver(ResourceType(br.Kind), br.Labels)
+		if ri == nil {
+			return nil
+		}
+		rr.Resource.ResourceIdentifier = *ri
+	}
+
+	if br.Port != nil {
+		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
+	}
+
+	return &ResolvedBackendRef{Ref: &rr}
+}
+
 func (r ResourceIdentifier) String() string {
 	var pairs []string
 	if r.Mesh != "" {
@@ -717,6 +854,104 @@ func (r ResourceIdentifier) String() string {
 	}
 	if r.Name != "" {
 		pairs = append(pairs, fmt.Sprintf("name/%s", r.Name))
+	}
+	return strings.Join(pairs, ":")
+}
+
+type TypedResourceIdentifier struct {
+	ResourceIdentifier
+
+	ResourceType ResourceType
+	SectionName  string
+}
+
+type IsResolvedBackendRef interface {
+	isResolvedBackendRef()
+}
+
+type ResolvedBackendRef struct {
+	// Ref is either LegacyBackendRef or RealResourceBackendRef
+	Ref IsResolvedBackendRef
+}
+
+func NewResolvedBackendRef(r IsResolvedBackendRef) *ResolvedBackendRef {
+	return &ResolvedBackendRef{Ref: r}
+}
+
+func (rbr *ResolvedBackendRef) ReferencesRealResource() bool {
+	if rbr == nil {
+		return false
+	}
+	if rbr.Ref == nil {
+		return false
+	}
+	_, ok := rbr.Ref.(*RealResourceBackendRef)
+	return ok
+}
+
+func (rbr *ResolvedBackendRef) ResourceOrNil() *TypedResourceIdentifier {
+	if rr := rbr.RealResourceBackendRef(); rr != nil {
+		return rr.Resource
+	}
+	return nil
+}
+
+func (rbr *ResolvedBackendRef) LegacyBackendRef() *LegacyBackendRef {
+	if lbr, ok := rbr.Ref.(*LegacyBackendRef); ok {
+		return lbr
+	}
+	return nil
+}
+
+func (rbr *ResolvedBackendRef) RealResourceBackendRef() *RealResourceBackendRef {
+	if rr, ok := rbr.Ref.(*RealResourceBackendRef); ok {
+		return rr
+	}
+	return nil
+}
+
+type LegacyBackendRef common_api.BackendRef
+
+func (lbr *LegacyBackendRef) isResolvedBackendRef() {}
+
+type RealResourceBackendRef struct {
+	Resource *TypedResourceIdentifier
+	Weight   uint
+}
+
+func (rbr *RealResourceBackendRef) isResolvedBackendRef() {}
+
+type NewTypedResourceIdentifierFunc func(id *TypedResourceIdentifier)
+
+func WithSectionName(sectionName string) NewTypedResourceIdentifierFunc {
+	return func(id *TypedResourceIdentifier) {
+		id.SectionName = sectionName
+	}
+}
+
+func NewTypedResourceIdentifier(r Resource, opts ...NewTypedResourceIdentifierFunc) TypedResourceIdentifier {
+	tri := TypedResourceIdentifier{
+		ResourceType:       r.Descriptor().Name,
+		ResourceIdentifier: NewResourceIdentifier(r),
+	}
+	for _, opt := range opts {
+		opt(&tri)
+	}
+	return tri
+}
+
+func (ri TypedResourceIdentifier) MarshalText() ([]byte, error) {
+	return []byte(ri.String()), nil
+}
+
+func (ri TypedResourceIdentifier) String() string {
+	var pairs []string
+	if ri.ResourceType != "" {
+		pairs = append(pairs, strings.ToLower(string(ri.ResourceType)))
+	}
+	pairs = append(pairs, ri.ResourceIdentifier.String())
+	if ri.SectionName != "" {
+		pairs = append(pairs, fmt.Sprintf("section/%s", ri.SectionName))
 	}
 	return strings.Join(pairs, ":")
 }

@@ -16,7 +16,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator/zoneproxy"
 )
@@ -31,12 +30,12 @@ func (g *ExternalServicesGenerator) Generate(
 	listenerBuilder *envoy_listeners.ListenerBuilder,
 	meshResources *core_xds.MeshResources,
 ) (*core_xds.ResourceSet, error) {
-	zone := xdsCtx.ControlPlane.Zone
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
 	testMeses := []*meshexternalservice_api.MeshExternalServiceResource{}
 	mess := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]
+	localResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
 	for _, mes := range mess.(*meshexternalservice_api.MeshExternalServiceResourceList).GetItems() {
 		if mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] == proxy.Zone {
 			testMeses = append(testMeses, mes.(*meshexternalservice_api.MeshExternalServiceResource))
@@ -44,19 +43,19 @@ func (g *ExternalServicesGenerator) Generate(
 	}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
-		xds_context.Resources{MeshLocalResources: meshResources.Resources},
+		localResources,
 		nil,
 		testMeses,
 		nil,
 		"",
+		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
 	core.Log.Info("ExternalServicesGenerator", "endpointMap", endpointMap, "destinations", destinations, "xdsCtx.Mesh.Resources.MeshExternalServices().Items", meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems())
-	services := g.buildServices(endpointMap, zone, meshResources)
+	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(
 		apiVersion,
-		destinations.KumaIoServices,
-		destinations.BackendRefs,
+		destinations,
 		endpointMap,
 		meshResources,
 		listenerBuilder,
@@ -99,22 +98,20 @@ func (*ExternalServicesGenerator) generateCDS(
 			continue
 		}
 
-		// There is a case where multiple meshes contain services with
-		// the same names, so we cannot use just "serviceName" as a cluster
-		// name as we would overwrite some clusters with the latest one
-		clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
-
-		clusterBuilder := envoy_clusters.NewClusterBuilder(apiVersion, clusterName)
-
-		if isMeshExternalService(endpoints) {
-			clusterBuilder.WithName(envoy_names.GetEgressMeshExternalServiceName(meshName, serviceName))
-			clusterBuilder.
-				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMeshExternalService(endpoints), endpoints...)).
+		var clusterBuilder *envoy_clusters.ClusterBuilder
+		isMes := isMeshExternalService(endpoints)
+		if isMes {
+			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, serviceName).
+				Configure(envoy_clusters.ProvidedCustomEndpointCluster(isIPV6, isMes, endpoints...)).
 				Configure(
 					envoy_clusters.MeshExternalServiceClientSideTLS(endpoints, systemCaPath, true),
 				)
 		} else {
-			clusterBuilder.
+			// There is a case where multiple meshes contain services with
+			// the same names, so we cannot use just "serviceName" as a cluster
+			// name as we would overwrite some clusters with the latest one
+			clusterName := envoy_names.GetMeshClusterName(meshName, serviceName)
+			clusterBuilder = envoy_clusters.NewClusterBuilder(apiVersion, clusterName).
 				Configure(envoy_clusters.ProvidedEndpointCluster(
 					isIPV6,
 					endpoints...,
@@ -136,11 +133,18 @@ func (*ExternalServicesGenerator) generateCDS(
 			return nil, err
 		}
 
-		resources = append(resources, &core_xds.Resource{
-			Name:     serviceName,
+		resource := &core_xds.Resource{
+			Name:     cluster.GetName(),
 			Origin:   OriginEgress,
 			Resource: cluster,
-		})
+		}
+
+		if isMes {
+			resource.ResourceOrigin = endpoints[0].ExternalService.OwnerResource
+			resource.Protocol = endpoints[0].ExternalService.Protocol
+		}
+
+		resources = append(resources, resource)
 	}
 
 	return resources, nil
@@ -148,14 +152,11 @@ func (*ExternalServicesGenerator) generateCDS(
 
 func (*ExternalServicesGenerator) buildServices(
 	endpointMap core_xds.EndpointMap,
-	localZone string,
-	meshResources *core_xds.MeshResources,
 ) map[string]bool {
 	services := map[string]bool{}
 
 	for serviceName, endpoints := range endpointMap {
-		if len(endpoints) > 0 && endpoints[0].IsExternalService() &&
-			(!meshResources.Mesh.ZoneEgressEnabled() || endpoints[0].IsReachableFromZone(localZone)) {
+		if len(endpoints) > 0 && endpoints[0].IsExternalService() {
 			services[serviceName] = true
 		}
 	}
@@ -165,8 +166,7 @@ func (*ExternalServicesGenerator) buildServices(
 
 func (g *ExternalServicesGenerator) addFilterChains(
 	apiVersion core_xds.APIVersion,
-	destinationsPerService map[string][]tags.Tags,
-	backendRefs []zoneproxy.BackendRefDestination,
+	meshDestinations zoneproxy.MeshDestinations,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
 	listenerBuilder *envoy_listeners.ListenerBuilder,
@@ -175,148 +175,151 @@ func (g *ExternalServicesGenerator) addFilterChains(
 ) {
 	meshName := meshResources.Mesh.GetMeta().GetName()
 	sniUsed := map[string]bool{}
-
 	esNames := []string{}
 	for _, es := range meshResources.ExternalServices {
 		esNames = append(esNames, es.Spec.GetService())
 	}
-	// if val, found := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]; found {
-	// 	for _, mes := range val.GetItems() {
-	// 		esNames = append(esNames, mes.GetMeta().GetName())
-	// 	}
-	// }
 
 	for _, esName := range esNames {
 		if !services[esName] {
 			continue
 		}
-
 		endpoints := endpointMap[esName]
-		destinations := destinationsPerService[esName]
-		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
-
+		destinations := meshDestinations.KumaIoServices[esName]
+		destinations = append(destinations, meshDestinations.KumaIoServices[mesh_proto.MatchAllTag]...)
 		for _, destination := range destinations {
 			meshDestination := destination.
 				WithTags(mesh_proto.ServiceTag, esName).
 				WithTags("mesh", meshName)
 
 			sni := tls.SNIFromTags(meshDestination)
-
 			if sniUsed[sni] {
 				continue
 			}
 
 			sniUsed[sni] = true
-
-			// There is a case where multiple meshes contain services with
-			// the same names, so we cannot use just "serviceName" as a cluster
-			// name as we would overwrite some clusters with the latest one
-			var clusterName string
-			if isMeshExternalService(endpoints) {
-				clusterName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
-			} else {
-				clusterName = envoy_names.GetMeshClusterName(meshName, esName)
-			}
-
-			cluster := envoy_common.NewCluster(
-				envoy_common.WithName(clusterName),
-				envoy_common.WithService(esName),
-				envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
-				envoy_common.WithExternalService(true),
+			g.configureFilterChain(
+				apiVersion,
+				esName,
+				sni,
+				meshName,
+				endpoints,
+				meshDestination,
+				meshResources,
+				secretsTracker,
+				listenerBuilder,
 			)
-
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, names.GetEgressFilterChainName(esName, meshName)).Configure(
-				envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker),
-				envoy_listeners.MatchTransportProtocol("tls"),
-				envoy_listeners.MatchServerNames(sni),
-				envoy_listeners.NetworkRBAC(
-					esName,
-					// Zone Egress will configure these filter chains only for
-					// meshes with mTLS enabled, so we can safely pass here true
-					true,
-					meshResources.ExternalServicePermissionMap[esName],
-				),
-			)
-			protocol := endpoints[0].Protocol()
-
-			switch protocol {
-			case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
-				routes := envoy_common.Routes{}
-
-				for _, rl := range meshResources.ExternalServiceRateLimits[esName] {
-					if rl.Spec.GetConf().GetHttp() == nil {
-						continue
-					}
-
-					routes = append(routes, envoy_common.NewRoute(
-						envoy_common.WithCluster(cluster),
-						envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
-						envoy_common.WithRateLimit(rl.Spec),
-					))
-				}
-
-				// Add the default fall-back route
-				routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
-
-				var routeConfigName string
-				if isMeshExternalService(endpoints) {
-					routeConfigName = envoy_names.GetEgressMeshExternalServiceName(meshName, esName)
-				} else {
-					routeConfigName = envoy_names.GetOutboundRouteName(esName)
-				}
-
-				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(esName, false)).
-					Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
-					Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
-					Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
-						Name:    routeConfigName,
-						Service: esName,
-						Routes:  routes,
-						DpTags:  nil,
-					}))
-			default:
-				filterChainBuilder.Configure(
-					envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),
-				)
-			}
-
-			listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 		}
 	}
-	for _, refDest := range backendRefs {
-		clusterName := envoy_names.GetEgressMeshExternalServiceName(refDest.Mesh, refDest.DestinationName)
-
-		if _, ok := sniUsed[refDest.SNI]; ok {
+	for _, mes := range meshDestinations.BackendRefs {
+		if !services[mes.DestinationName] {
+			return
+		}
+		endpoints := endpointMap[mes.DestinationName]
+		if sniUsed[mes.SNI] {
 			continue
 		}
-		sniUsed[refDest.SNI] = true
-
-		// todo(jakubdyszkiewicz) support splits
-		relevantTags := envoy_tags.Tags{}
-
-		// Destination name usually equals to kuma.io/service so we will add already existing cluster which will be
-		// then deduplicated in later steps
-		cluster := envoy_common.NewCluster(
-			envoy_common.WithName(clusterName),
-			envoy_common.WithService(refDest.DestinationName),
-			envoy_common.WithTags(relevantTags),
+		sniUsed[mes.SNI] = true
+		relevantTags := tags.Tags{}
+		g.configureFilterChain(
+			apiVersion,
+			mes.DestinationName,
+			mes.SNI,
+			meshName,
+			endpoints,
+			relevantTags,
+			meshResources,
+			secretsTracker,
+			listenerBuilder,
 		)
-		cluster.SetMesh(refDest.Mesh)
-
-		filterChain := envoy_listeners.FilterChain(
-			envoy_listeners.NewFilterChainBuilder(apiVersion, envoy_common.AnonymousResource).Configure(
-				envoy_listeners.MatchTransportProtocol("tls"),
-				envoy_listeners.MatchServerNames(refDest.SNI),
-				envoy_listeners.TcpProxyDeprecatedWithMetadata(
-					clusterName,
-					cluster,
-				),
-			),
-		)
-
-		listenerBuilder.Configure(filterChain)
 	}
+}
+
+func (*ExternalServicesGenerator) configureFilterChain(
+	apiVersion core_xds.APIVersion,
+	esName string,
+	sni string,
+	meshName string,
+	endpoints []core_xds.Endpoint,
+	meshDestination tags.Tags,
+	meshResources *core_xds.MeshResources,
+	secretsTracker core_xds.SecretsTracker,
+	listenerBuilder *envoy_listeners.ListenerBuilder,
+) {
+	// There is a case where multiple meshes contain services with
+	// the same names, so we cannot use just "serviceName" as a cluster
+	// name as we would overwrite some clusters with the latest one
+	clusterName := envoy_names.GetMeshClusterName(meshName, esName)
+	if isMeshExternalService(endpoints) {
+		clusterName = esName
+	}
+
+	cluster := envoy_common.NewCluster(
+		envoy_common.WithName(clusterName),
+		envoy_common.WithService(esName),
+		envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+		envoy_common.WithExternalService(true),
+	)
+
+	filterChainName := names.GetEgressFilterChainName(esName, meshName)
+	if isMeshExternalService(endpoints) {
+		filterChainName = esName
+	}
+
+	filterChainBuilder := envoy_listeners.NewFilterChainBuilder(apiVersion, filterChainName).Configure(
+		envoy_listeners.ServerSideMTLS(meshResources.Mesh, secretsTracker, nil, nil),
+		envoy_listeners.MatchTransportProtocol("tls"),
+		envoy_listeners.MatchServerNames(sni),
+		envoy_listeners.NetworkRBAC(
+			esName,
+			// Zone Egress will configure these filter chains only for
+			// meshes with mTLS enabled, so we can safely pass here true
+			true,
+			meshResources.ExternalServicePermissionMap[esName],
+		),
+	)
+	protocol := endpoints[0].Protocol()
+
+	switch protocol {
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
+		routes := envoy_common.Routes{}
+
+		for _, rl := range meshResources.ExternalServiceRateLimits[esName] {
+			if rl.Spec.GetConf().GetHttp() == nil {
+				continue
+			}
+
+			routes = append(routes, envoy_common.NewRoute(
+				envoy_common.WithCluster(cluster),
+				envoy_common.WithMatchHeaderRegex(tags.TagsHeaderName, tags.MatchSourceRegex(rl)),
+				envoy_common.WithRateLimit(rl.Spec),
+			))
+		}
+
+		// Add the default fall-back route
+		routes = append(routes, envoy_common.NewRoute(envoy_common.WithCluster(cluster)))
+
+		routeConfigName := envoy_names.GetOutboundRouteName(esName)
+		if isMeshExternalService(endpoints) {
+			routeConfigName = esName
+		}
+
+		filterChainBuilder.
+			Configure(envoy_listeners.HttpConnectionManager(esName, false)).
+			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
+			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
+			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
+				Name:    routeConfigName,
+				Service: esName,
+				Routes:  routes,
+				DpTags:  nil,
+			}))
+	default:
+		filterChainBuilder.Configure(
+			envoy_listeners.TcpProxyDeprecatedWithMetadata(esName, cluster),
+		)
+	}
+	listenerBuilder.Configure(envoy_listeners.FilterChain(filterChainBuilder))
 }
 
 func isMeshExternalService(endpoints []core_xds.Endpoint) bool {

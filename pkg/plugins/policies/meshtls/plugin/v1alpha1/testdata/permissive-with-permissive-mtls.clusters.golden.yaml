@@ -1,0 +1,33 @@
+resources:
+- name: outgoing
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    name: outgoing
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          alpnProtocols:
+          - kuma
+          combinedValidationContext:
+            defaultValidationContext:
+              matchTypedSubjectAltNames:
+              - matcher:
+                  exact: spiffe://default/outgoing
+                sanType: URI
+            validationContextSdsSecretConfig:
+              name: mesh_ca:secret:default
+              sdsConfig:
+                ads: {}
+                resourceApiVersion: V3
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert:secret:default
+            sdsConfig:
+              ads: {}
+              resourceApiVersion: V3
+          tlsParams:
+            cipherSuites:
+            - ECDHE-ECDSA-AES128-GCM-SHA256
+            tlsMaximumProtocolVersion: TLSv1_3
+            tlsMinimumProtocolVersion: TLSv1_2

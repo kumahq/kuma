@@ -1,9 +1,0 @@
-apiVersion: kuma.io/v1alpha1
-kind: Dataplane
-metadata:
-  name: side-car
-status:
-  connectionTime: "2019-01-01T00:00:00Z"
-  lastStatusUpdateTime: "2019-01-01T01:30:00Z"
-  totalPushedConfigurationUpdates: 1000
-  totalRejectedConfigurationUpdates: 1

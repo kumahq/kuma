@@ -63,7 +63,6 @@ func NewCallbacks(
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
-			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
 			generator: NewSnapshotGenerator(readOnlyResourceManager, config, defaultAdminPort),
 		},
 	}
@@ -116,12 +115,10 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 	streams.activeStreams[streamID] = true
 
 	if streams.watchdogCancel == nil { // watchdog was not started yet
-		stopCh := make(chan struct{})
-		streams.watchdogCancel = func() {
-			close(stopCh)
-		}
+		ctx, cancel := context.WithCancel(context.Background())
+		streams.watchdogCancel = cancel
 		// kick off watchdog for that Dataplane
-		go t.newWatchdog(req.Node).Start(stopCh)
+		go t.newWatchdog(req.Node).Start(ctx)
 		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
@@ -129,7 +126,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 	return nil
 }
 
-func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
+func (t *tracker) newWatchdog(node *envoy_core.Node) util_xds_v3.Watchdog {
 	return &watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(t.config.RefreshInterval.Duration)

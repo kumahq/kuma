@@ -78,6 +78,19 @@ from:
     default:
       backends: []
 `),
+			Entry("MeshMultiZoneService", `
+targetRef:
+  kind: Mesh
+to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      name: web-backend
+    default:
+      backends:
+        - type: File
+          file:
+            path: '/tmp/logs.txt'
+`),
 		)
 
 		type testCase struct {
@@ -384,6 +397,29 @@ violations:
   message: must be defined
 - field: spec.from[0].default.backends[1].tcp.format.json
   message: must be defined`,
+			}),
+			Entry("MeshGateway and invalid to kind", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshGateway
+  name: edge-gateway
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      backends:
+        - type: File
+          file:
+           format:
+             type: Plain
+             plain: '{"start_time": "%START_TIME%"}'
+           path: '/tmp/logs.txt'
+`,
+				expected: `
+violations:
+- field: spec.to[0].targetRef.kind
+  message: value is not supported`,
 			}),
 		)
 	})
