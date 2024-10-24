@@ -516,6 +516,10 @@ multizone:
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
+      tracing:
+        # Defines whether tracing is enabled for all gRPC methods
+        # of GlobalKDSServer and KDSSyncService or completely disabled
+        enabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "default" # ENV: KUMA_MULTIZONE_ZONE_NAME
