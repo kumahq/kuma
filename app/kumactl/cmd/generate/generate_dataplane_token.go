@@ -99,5 +99,8 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 	cmd.Flags().DurationVar(&ctx.args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 	cmd.Flags().StringVar(&ctx.args.signingKeyPath, "signing-key-path", "", "path to a file that contains private signing key. When specified, control plane won't be used to issue the token.")
 	cmd.Flags().StringVar(&ctx.args.kid, "kid", "", "ID of the key that is used to issue a token. Required when --signing-key-path is used.")
+
+	_ = cmd.MarkFlagRequired("name")
+	_ = cmd.MarkFlagRequired("valid-for")
 	return cmd
 }
