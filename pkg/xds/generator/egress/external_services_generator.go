@@ -5,6 +5,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -31,13 +32,20 @@ func (g *ExternalServicesGenerator) Generate(
 	resources := core_xds.NewResourceSet()
 	apiVersion := proxy.APIVersion
 	endpointMap := meshResources.EndpointMap
+	testMeses := []*meshexternalservice_api.MeshExternalServiceResource{}
+	mess := meshResources.Resources[meshexternalservice_api.MeshExternalServiceType]
 	localResources := xds_context.Resources{MeshLocalResources: meshResources.Resources}
+	for _, mes := range mess.(*meshexternalservice_api.MeshExternalServiceResourceList).GetItems() {
+		if mes.GetMeta().GetLabels()[mesh_proto.ZoneTag] == proxy.Zone {
+			testMeses = append(testMeses, mes.(*meshexternalservice_api.MeshExternalServiceResource))
+		}
+	}
 	destinations := zoneproxy.BuildMeshDestinations(
 		nil,
 		localResources,
 		nil,
+		testMeses,
 		nil,
-		localResources.MeshExternalServices().Items,
 		"",
 		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
@@ -201,7 +209,6 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			)
 		}
 	}
-
 	for _, mes := range meshDestinations.BackendRefs {
 		if !services[mes.DestinationName] {
 			return

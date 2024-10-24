@@ -71,6 +71,17 @@ func And(fs ...func(model.Resource) bool) func(model.Resource) bool {
 	}
 }
 
+func Or(fs ...func(model.Resource) bool) func(model.Resource) bool {
+	return func(r model.Resource) bool {
+		for _, f := range fs {
+			if f(r) {
+				return true
+			}
+		}
+		return false
+	}
+}
+
 func If(condition func(model.Resource) bool, m ResourceMapper) ResourceMapper {
 	return func(features kds.Features, r model.Resource) (model.Resource, error) {
 		if condition(r) {

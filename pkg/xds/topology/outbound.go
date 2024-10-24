@@ -58,7 +58,7 @@ func BuildEgressEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{})
+	fillIngressOutbounds(outbound, zoneIngresses, nil, localZone, mesh, nil, false, map[core_xds.ServiceName]struct{}{}, meshExternalServices)
 
 	fillExternalServicesReachableFromZone(ctx, outbound, externalServices, meshExternalServices, mesh, loader, localZone)
 
@@ -117,7 +117,7 @@ func BuildEdsEndpointMap(
 		meshServiceDestinations[name] = struct{}{}
 	}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations, nil)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -416,6 +416,7 @@ func BuildCrossMeshEndpointMap(
 		otherMesh,
 		mesh.ZoneEgressEnabled(),
 		map[core_xds.ServiceName]struct{}{},
+		nil,
 	)
 
 	endpointWeight := uint32(1)
@@ -483,8 +484,73 @@ func fillIngressOutbounds(
 	otherMesh *core_mesh.MeshResource, // otherMesh is set if we are looking for specific crossmesh connections
 	routeThroughZoneEgress bool,
 	meshServiceDestinations map[core_xds.ServiceName]struct{},
+	mes []*meshexternalservice_api.MeshExternalServiceResource,
 ) uint32 {
 	ziInstances := map[string]struct{}{}
+
+	for _, zi := range zoneIngresses {
+		if !zi.IsRemoteIngress(localZone) {
+			continue
+		}
+
+		if !mesh.MTLSEnabled() {
+			// Ingress routes the request by TLS SNI, therefore for cross
+			// cluster communication MTLS is required.
+			// We ignore Ingress from endpoints if MTLS is disabled, otherwise
+			// we would fail anyway.
+			continue
+		}
+
+		if !zi.HasPublicAddress() {
+			// Zone Ingress is not reachable yet from other clusters.
+			// This may happen when Ingress Service is pending waiting on
+			// External IP on Kubernetes.
+			continue
+		}
+
+		ziNetworking := zi.Spec.GetNetworking()
+		ziAddress := ziNetworking.GetAdvertisedAddress()
+		ziPort := ziNetworking.GetAdvertisedPort()
+		ziCoordinates := buildCoordinates(ziAddress, ziPort)
+
+		if _, ok := ziInstances[ziCoordinates]; ok {
+			// many Ingress instances can be placed in front of one load
+			// balancer (all instances can have the same public address and
+			// port).
+			// In this case we only need one Instance avoiding creating
+			// unnecessary duplicated endpoints
+			continue
+		}
+
+		for _, service := range mes {
+			relevantMesh := mesh
+			if otherMesh != nil {
+				relevantMesh = otherMesh
+			}
+
+			if service.Meta.GetMesh() != relevantMesh.GetMeta().GetName() {
+				continue
+			}
+
+			if service.GetMeta().GetLabels()[mesh_proto.ZoneTag] != localZone {
+				if zi.Spec.Zone == service.GetMeta().GetLabels()[mesh_proto.ZoneTag] {
+					// deep copy map to not modify tags in BuildRemoteEndpointMap
+					serviceTags := maps.Clone(service.GetMeta().GetLabels())
+					locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+
+					endpoint := core_xds.Endpoint{
+						Target:   ziAddress,
+						Port:     ziPort,
+						Tags:     serviceTags,
+						Weight:   1,
+						Locality: locality,
+					}
+
+					outbound[service.DestinationName(uint32(service.Spec.Match.Port))] = append(outbound[service.DestinationName(uint32(service.Spec.Match.Port))], endpoint)
+				}
+			}
+		}
+	}
 
 	for _, zi := range zoneIngresses {
 		if !zi.IsRemoteIngress(localZone) {

@@ -125,7 +125,7 @@
    "singularDisplayName": "Mesh Circuit Breaker"
   },
   {
-   "includeInFederation": true,
+   "includeInFederation": false,
    "name": "MeshExternalService",
    "path": "meshexternalservices",
    "pluralDisplayName": "Mesh External Services",
