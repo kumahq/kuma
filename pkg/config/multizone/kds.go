@@ -42,6 +42,7 @@ type KdsServerConfig struct {
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_global_kds_response_backoff"`
 	// ZoneHealthCheck holds config for ensuring zones are online
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
+	Tracing         KDSServerTracing      `json:"tracing"`
 }
 
 var _ config.Config = &KdsServerConfig{}
