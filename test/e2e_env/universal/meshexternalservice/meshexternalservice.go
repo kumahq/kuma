@@ -23,6 +23,7 @@ import (
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -32,20 +33,6 @@ import (
 func MeshExternalService() {
 	var tcpSinkDockerName string
 	meshNameNoDefaults := "mesh-external-service-no-default-policy"
-	meshDefaulMtlsOn := func(meshName string) InstallFunc {
-		return YamlUniversal(fmt.Sprintf(`
-type: Mesh
-name: "%s"
-mtls:
-  enabledBackend: ca-1
-  backends:
-  - name: ca-1
-    type: builtin
-networking:
-  outbound:
-    passthrough: false
-`, meshName))
-	}
 
 	meshExternalService := func(service, host, meshName string, port int, tls bool, caCert []byte) *meshexternalservice_api.MeshExternalServiceResource {
 		mes := &meshexternalservice_api.MeshExternalServiceResource{
@@ -92,12 +79,12 @@ networking:
 	BeforeAll(func() {
 		tcpSinkDockerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, "mes-tcp-sink")
 
-		esHttpContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpName)
-		esHttpsContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttpsName)
-		esHttp2ContainerName = fmt.Sprintf("%s_%s", universal.Cluster.Name(), esHttp2Name)
+		esHttpContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, esHttpName)
+		esHttpsContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, esHttpsName)
+		esHttp2ContainerName = fmt.Sprintf("%s_%s_%s", universal.Cluster.Name(), meshNameNoDefaults, esHttp2Name)
 
 		err := NewClusterSetup().
-			Install(meshDefaulMtlsOn(meshNameNoDefaults)).
+			Install(Yaml(samples.MeshMTLSBuilder().WithName(meshNameNoDefaults).WithoutPassthrough().WithEgressRoutingEnabled())).
 			Install(TcpSinkUniversal("mes-tcp-sink", WithDockerContainerName(tcpSinkDockerName))).
 			Install(TestServerExternalServiceUniversal(esHttpName, 80, false, WithDockerContainerName(esHttpContainerName))).
 			Install(TestServerExternalServiceUniversal(esHttpsName, 443, true, WithDockerContainerName(esHttpsContainerName))).
@@ -143,10 +130,10 @@ networking:
 	contextFor := func(name, meshName, clientName string) {
 		Context(name, func() {
 			It("should route to mesh-external-service", func() {
-				err := universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv-1", esHttpContainerName, meshName, 80, false, nil)))
+				err := universal.Cluster.Install(ResourceUniversal(meshExternalService("ext-srv", esHttpContainerName, meshName, 80, false, nil)))
 				Expect(err).ToNot(HaveOccurred())
 
-				checkSuccessfulRequest("ext-srv-1.extsvc.mesh.local", clientName, And(
+				checkSuccessfulRequest("ext-srv.extsvc.mesh.local", clientName, And(
 					Not(ContainSubstring("HTTPS")),
 					// Should rewrite host header
 					ContainSubstring(fmt.Sprintf(`"Host":["%s"]`, esHttpContainerName)),
