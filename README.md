@@ -46,6 +46,7 @@ Built by Envoy contributors at Kong 🦍.
 - Attend a [Community Call](https://docs.google.com/document/d/1HgnK3wJIEg8uFlivdrhrPZYWTpElWWu3mhFDXj-bMWQ/edit?usp=sharing) monthly on the second Wednesday. [Add to Calendar](https://calendar.google.com/calendar/u/0/r/eventedit/copy/YzdmZmxtY2FuNmljMTM3cTZqZDZ2ZzNlZjNfMjAyMjAyMDlUMTYzMDAwWiBrb25naHEuY29tXzFtYTk2c3NkZ2dmaDlmcnJjczk3ZXB1MzhvQGc/dGFyeW4uam9uZXNAa29uZ2hxLmNvbQ?scp=ALL&sf=true)
 - Follow us on [Twitter](https://twitter.com/kumamesh)
 - Read the [blog](https://kuma.io/blog/)
+- [Ask Kuma Guru](https://gurubase.io/g/kuma)
 
 **Need help?** In your journey with Kuma you can get in touch with the broader community via the official [community channels](https://kuma.io/community).
 
