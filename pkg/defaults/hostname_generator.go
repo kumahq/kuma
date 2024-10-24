@@ -96,7 +96,7 @@ func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.
 					},
 				},
 			},
-			Template: `{{ .DisplayName }}.extsvc.mesh.local`,
+			Template: `{{ .DisplayName }}.extsvc.{{ .Zone }}.mesh.local`,
 		}
 		if err := ensureHostnameGeneratorExists(ctx, resManager, log, "synced-mesh-external-service", namespace, nil, spec); err != nil {
 			return err

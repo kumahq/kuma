@@ -4,7 +4,6 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -50,7 +49,6 @@ func (g *ExternalServicesGenerator) Generate(
 		"",
 		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
-	core.Log.Info("ExternalServicesGenerator", "endpointMap", endpointMap, "destinations", destinations, "xdsCtx.Mesh.Resources.MeshExternalServices().Items", meshResources.Resources[meshexternalservice_api.MeshExternalServiceType].GetItems())
 	services := g.buildServices(endpointMap)
 
 	g.addFilterChains(

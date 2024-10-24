@@ -17,7 +17,6 @@ type MeshTrafficPermission struct {
 }
 
 type From struct {
-	
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
 	TargetRef common_api.TargetRef `json:"targetRef"`

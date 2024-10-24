@@ -91,7 +91,6 @@ func BuildIngressEndpointMap(
 	// This way we only keep local endpoints.
 	outbound := BuildEdsEndpointMap(mesh, localZone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
 	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
-	core.Log.Info("TEST", "outbound", outbound, "meshExternalServices", meshExternalServices)
 	return outbound
 }
 
@@ -118,7 +117,7 @@ func BuildEdsEndpointMap(
 		meshServiceDestinations[name] = struct{}{}
 	}
 
-	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations, meshExternalServices)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, zoneEgresses, localZone, mesh, nil, mesh.ZoneEgressEnabled(), meshServiceDestinations, nil)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -524,7 +523,6 @@ func fillIngressOutbounds(
 		}
 
 		for _, service := range mes {
-			core.Log.Info("fillIngressOutbounds", "service", service, "service.GetMeta().GetLabels()[mesh_proto.ZoneTag] != localZone && service.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel]", service.GetMeta().GetLabels()[mesh_proto.ZoneTag] != localZone && service.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] == "zone")
 			relevantMesh := mesh
 			if otherMesh != nil {
 				relevantMesh = otherMesh
@@ -538,7 +536,6 @@ func fillIngressOutbounds(
 				if zi.Spec.Zone == service.GetMeta().GetLabels()[mesh_proto.ZoneTag] {
 					// deep copy map to not modify tags in BuildRemoteEndpointMap
 					serviceTags := maps.Clone(service.GetMeta().GetLabels())
-					serviceName := service.Meta.GetName()
 					locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
 
 					endpoint := core_xds.Endpoint{
@@ -549,7 +546,7 @@ func fillIngressOutbounds(
 						Locality: locality,
 					}
 
-					outbound[serviceName] = append(outbound[serviceName], endpoint)
+					outbound[service.DestinationName(uint32(service.Spec.Match.Port))] = append(outbound[service.DestinationName(uint32(service.Spec.Match.Port))], endpoint)
 				}
 			}
 		}
@@ -623,7 +620,7 @@ func fillIngressOutbounds(
 			if _, ok := meshServiceDestinations[serviceName]; ok {
 				continue
 			}
-			
+
 			// TODO (bartsmykla): We have to check if it will be ok in a situation
 			//  where we have few zone ingresses with the same services, as
 			//  with zone egresses we will generate endpoints with the same
@@ -685,7 +682,6 @@ func fillExternalServicesReachableFromZone(
 	}
 	for _, mes := range meshExternalServices {
 		if mes.IsReachableFromZone(zone) {
-			core.Log.Info("fillExternalServicesReachableFromZone", "mes", mes, "mes.IsReachableFromZone(zone)", mes.IsReachableFromZone(zone))
 			err := createMeshExternalServiceEndpoint(ctx, outbound, mes, mesh, loader, zone)
 			if err != nil {
 				outboundLog.Error(err, "unable to create MeshExternalService endpoint. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())

@@ -198,7 +198,7 @@ func GetServiceProtocolPortFromRef(
 		}
 		port := uint32(mes.Spec.Match.Port)
 		service := mes.DestinationName(port)
-		protocol := meshCtx.GetServiceProtocol(service)
+		protocol := mes.Spec.Match.Protocol
 		return service, protocol, port, true
 	case common_api.MeshMultiZoneService:
 		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]

@@ -7,7 +7,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -70,7 +69,6 @@ func (p *EgressProxyBuilder) Build(
 		rateLimits := meshCtx.Resources.RateLimits().Items
 		mes := meshCtx.Resources.MeshExternalServices().Items
 
-		
 		meshResources := &core_xds.MeshResources{
 			Mesh:             mesh,
 			ExternalServices: externalServices,
@@ -98,8 +96,6 @@ func (p *EgressProxyBuilder) Build(
 			Dynamic:   core_xds.ExternalServiceDynamicPolicies{},
 			Resources: meshCtx.Resources.MeshLocalResources,
 		}
-
-		core.Log.Info("EgressProxyBuilder", "mes", mes, "meshResources", meshResources)
 
 		for _, es := range externalServices {
 			policies, err := matchEgressPolicies(es.Spec.GetTags(), meshCtx.Resources)

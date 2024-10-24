@@ -4,7 +4,6 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -52,7 +51,6 @@ func (g *InternalServicesGenerator) Generate(
 		"",
 		xdsCtx.Mesh.ResolveResourceIdentifier,
 	)
-	core.Log.Info("InternalServicesGenerator", "destinations", destinations, "availableServices", availableServices, "servicesMap", servicesMap)
 	services := zoneproxy.AddFilterChains(availableServices, proxy.APIVersion, listenerBuilder, destinations, meshResources.EndpointMap)
 
 	cds, err := zoneproxy.GenerateCDS(destinations, services, proxy.APIVersion, meshName, OriginEgress)
@@ -61,7 +59,6 @@ func (g *InternalServicesGenerator) Generate(
 	}
 	resources.Add(cds...)
 
-	core.Log.Info("InternalServicesGenerator", "services", services, "meshResources.EndpointMap", meshResources.EndpointMap)
 	eds, err := zoneproxy.GenerateEDS(services, meshResources.EndpointMap, proxy.APIVersion, meshName, OriginEgress)
 	if err != nil {
 		return nil, err

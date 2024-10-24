@@ -8,7 +8,6 @@ import (
 	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -63,8 +62,6 @@ func (i IngressGenerator) Generate(
 			xdsCtx.ControlPlane.SystemNamespace,
 			xdsCtx.Mesh.ResolveResourceIdentifier,
 		)
-
-		core.Log.Info("TEST INGRESS GEN", "dest", dest)
 
 		services := zoneproxy.AddFilterChains(availableSvcsByMesh[meshName], proxy.APIVersion, listenerBuilder, dest, mr.EndpointMap)
 

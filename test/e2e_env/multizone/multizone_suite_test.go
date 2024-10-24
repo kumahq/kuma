@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inbound_communication"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/inspect"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/localityawarelb"
+	"github.com/kumahq/kuma/test/e2e_env/multizone/meshexternalservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshhttproute"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshmultizoneservice"
 	"github.com/kumahq/kuma/test/e2e_env/multizone/meshservice"
@@ -86,4 +87,5 @@ var (
 	_ = Describe("Producer Policy Flow", producer.ProducerPolicyFlow, Ordered)
 	_ = Describe("MeshServiceReachableBackends", reachablebackends.MeshServicesWithReachableBackendsOption, Ordered)
 	_ = Describe("MeshTLS", meshtls.MeshTLS, Ordered)
+	_ = Describe("MeshExternalService Connectivity", meshexternalservice.MesConnectivity, Ordered)
 )
