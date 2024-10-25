@@ -17,8 +17,8 @@ Another relevant scenario is when only the Zone Egress in a particular zone is a
 * Create `MeshExternalService` on a Zone. 
   The `MeshExternalService` would be created in a zone and exposed similarly to how `MeshService` is synced across zones.
 
-* Add a Label
-  Introduce a label like `kuma.io/accessible-zone` (to determine the best name) to restrict external access to a specific zone.
+* Add a label `kuma.io/zone` to `MeshExternalService` created on the global
+  Create `MeshExternalService` on a global with a label `kuma.io/zone`
 
 ## Decision Outcome
 
@@ -86,7 +86,7 @@ The traffic flow in this case is simpler:
 * Adds complexity to the flow.
 * Every `MeshExternalService` created in a zone is exposed via Zone Ingress.
 
-### Add a label
+### Add a label `kuma.io/zone` to `MeshExternalService` created on the global
 
 In this approach, the user must explicitly provide information during resource creation. The resource can only be created on the global control-plane.
 
@@ -95,7 +95,8 @@ type: MeshExternalService
 name: mes-through-zone-1
 mesh: default
 labels:
-  kuma.io/accessible-zone: zone-1
+  kuma.io/origin: global
+  kuma.io/zone: zone-1
 spec:
   match:
     type: HostnameGenerator
@@ -106,13 +107,14 @@ spec:
       port: 80
 ```
 
-Once the resource is synced, the control-plane uses the `kuma.io/accessible-zone` label to generate configurations. This configuration directs all zones—except the one specified by the label's value—to use the ingress of the specified zone.
+Once the resource is synced, the control-plane uses the `kuma.io/zone` label to generate configurations. Traffic from all zones different than one in a resource is going to be routed trhough this zone, and leaves the cluster from Zone Egress of zone in the resource
 
-It's not possible to validate the zone name during resource creation, but we could log a message indicating there is no zone with the provided name. However, this is not an ideal solution.
+It's not possible to validate the zone name during resource creation, but we could log a message indicating there is no zone with the provided name.
+Additionally, creating a resource with both `kuma.io/origin: zone` and `kuma.io/zone` labels would not be allowed. This restriction helps ensure a clear separation between resources originating in specific zones and those configured globally, preventing potential errors.
 
 #### Advantages:
 * There's no need to expose all `MeshExternalServices` created in the zone on the ingress.
+* No need to sync `MeshExternalServices` from origin zone to other zones
 
 #### Disadvantages:
-* Requires managing an additional label.
 * Additional logic is needed to handle the label.
