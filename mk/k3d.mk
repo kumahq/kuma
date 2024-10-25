@@ -1,5 +1,6 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
+K3D_VERSION ?= $(shell $(TOP)/mk/dependencies/k3d.sh - get-version)
 
 KUMA_MODE ?= standalone
 KUMA_NAMESPACE ?= kuma-system
@@ -51,7 +52,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*'
 endif
 
@@ -81,8 +82,15 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
+$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
+	@mkdir -p $(TOP)/$(KUMA_DIR)/test/k3d
+	curl --location --fail --silent --retry 5 \
+		-o $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml \
+		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
+
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create \
+	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)

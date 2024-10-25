@@ -20,3 +20,6 @@ build/
 # to embed ebpf programs by using go:embed, we have to copy programs first
 pkg/transparentproxy/ebpf/programs/amd64/mb_*
 pkg/transparentproxy/ebpf/programs/arm64/mb_*
+
+# Used to download manifests for k3d
+/test/k3d
