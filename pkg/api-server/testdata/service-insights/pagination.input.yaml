@@ -7,7 +7,7 @@ type: ServiceInsight
 mesh: mesh-1
 name: all-services-mesh-1
 labels:
-  kuma.io/display-name: all-services-mesh-1 # refer to https://github.com/kumahq/kuma/issues/9729
+  kuma.io/display-name: all-services-mesh-1 # add display name manually to test if it's removed in the response
 services:
   frontend:
     status: partially_degraded
