@@ -172,6 +172,41 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /meshes/{mesh}/{serviceType}/{serviceName}/_resources/hostnames:
+    get:
+      operationId: inspect-hostnames
+      summary: Returns hostnames for service
+      description: Returns hostnames for a service
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: serviceType
+          example: meshservices
+          schema:
+            type: string
+          required: true
+          description: The type of the service (meshservices, meshmultizoneservices, meshexternalservices)
+        - in: path
+          name: serviceName
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectHostnamesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
     Index:
@@ -433,6 +468,45 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
+    InspectHostnames:
+      type: object
+      title: InspectHostnames
+      description: A list of hostnames
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostname'
+    InspectHostname:
+      type: object
+      title: InspectHostname
+      description: A list of zones in which the hostname is available in
+      required: [hostname, zones]
+      properties:
+        hostname:
+          type: string
+          description: Generated hostname
+          example: redis.redis-system.svc.east.mesh.local
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostnameZone'
+    InspectHostnameZone:
+      type: object
+      title: InspectHostnameZone
+      description: A name of the zone with hostname generator that was used to generate the hostname
+      required: [name, hostnameGeneratorCoreName]
+      properties:
+        name:
+          type: string
+          example: east
+        hostnameGeneratorCoreName:
+          type: string
+          example: synced-kube-mesh-service.kuma-system
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -476,6 +550,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InspectRules'
+    InspectHostnamesResponse:
+      description: A response containing hostnames that match a service.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectHostnames'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
       content:
@@ -536,3 +619,13 @@ components:
           - type: Dataplane
             mesh: default
             name: dp-2
+    InspectHostnamesExample:
+      value:
+        total: 100
+        items:
+          - hostname: redis.redis-system.svc.east.mesh.local
+            zones:
+              - name: east
+                hostnameGeneratorCoreName: synced-kube-mesh-service.kuma-system
+              - name: west
+                hostnameGeneratorCoreName: synced-kube-mesh-service.kuma-system

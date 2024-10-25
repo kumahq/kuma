@@ -1,0 +1,34 @@
+#/meshes/default/meshservices/test-server/_resources/hostnames 200
+type: Mesh
+name: default
+---
+type: MeshService
+name: test-server
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+  kuma.io/display-name: test-server
+  kuma.io/zone: east
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+---
+type: HostnameGenerator
+name: local-mesh-services
+labels:
+  kuma.io/origin: zone
+  kuma.io/zone: east
+spec:
+  template: '{{ .DisplayName }}.svc.mesh.local'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: zone
+        kuma.io/env: universal

@@ -1,0 +1,26 @@
+#/meshes/default/meshexternalservices/mes-1/_resources/hostnames 200
+type: Mesh
+name: default
+---
+type: MeshExternalService
+name: mes-1
+mesh: default
+spec:
+  match:
+    type: HostnameGenerator
+    port: 9090
+    protocol: http
+  endpoints:
+    - address: 127.0.0.1
+      port: 8080
+---
+type: HostnameGenerator
+name: synced-meshexternalservice
+labels:
+  kuma.io/origin: global
+spec:
+  template: '{{ .DisplayName }}.extsvc.mesh.local'
+  selector:
+    meshExternalService:
+      matchLabels:
+        kuma.io/origin: global

@@ -1,0 +1,33 @@
+#/meshes/default/meshservices/test-server-syncedhash/_resources/hostnames 200
+type: Mesh
+name: default
+---
+type: MeshService
+name: test-server-syncedhash
+mesh: default
+labels:
+  kuma.io/origin: global
+  kuma.io/env: universal
+  kuma.io/display-name: test-server
+  kuma.io/zone: west
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+---
+type: HostnameGenerator
+name: synced-mesh-services-syncedhash
+labels:
+  kuma.io/origin: global
+spec:
+  template: '{{ .DisplayName }}.svc.{{ .Zone }}.mesh.local'
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/origin: global
+        kuma.io/env: universal

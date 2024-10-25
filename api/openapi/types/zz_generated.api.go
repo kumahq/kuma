@@ -109,6 +109,25 @@ type InspectDataplanesForPolicy struct {
 	Total int                 `json:"total"`
 }
 
+// InspectHostname A list of zones in which the hostname is available in
+type InspectHostname struct {
+	// Hostname Generated hostname
+	Hostname string                `json:"hostname"`
+	Zones    []InspectHostnameZone `json:"zones"`
+}
+
+// InspectHostnameZone A name of the zone with hostname generator that was used to generate the hostname
+type InspectHostnameZone struct {
+	HostnameGeneratorCoreName string `json:"hostnameGeneratorCoreName"`
+	Name                      string `json:"name"`
+}
+
+// InspectHostnames A list of hostnames
+type InspectHostnames struct {
+	Items []InspectHostname `json:"items"`
+	Total int               `json:"total"`
+}
+
 // InspectRules A list of rules for a dataplane
 type InspectRules struct {
 	HttpMatches []externalRef0.HttpMatch   `json:"httpMatches"`
@@ -182,6 +201,9 @@ type InspectDataplanesConfigResponse = InspectDataplanesConfig
 
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
+
+// InspectHostnamesResponse A list of hostnames
+type InspectHostnamesResponse = InspectHostnames
 
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules

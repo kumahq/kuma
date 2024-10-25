@@ -1,0 +1,14 @@
+{
+ "items": [
+  {
+   "hostname": "test-server.svc.west.mesh.local",
+   "zones": [
+    {
+     "hostnameGeneratorCoreName": "synced-mesh-services",
+     "name": "west"
+    }
+   ]
+  }
+ ],
+ "total": 1
+}

@@ -1,0 +1,14 @@
+{
+ "items": [
+  {
+   "hostname": "test-server.mzsvc.mesh.local",
+   "zones": [
+    {
+     "hostnameGeneratorCoreName": "synced-meshmultizoneservice",
+     "name": "test-server"
+    }
+   ]
+  }
+ ],
+ "total": 1
+}
