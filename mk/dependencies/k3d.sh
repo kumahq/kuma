@@ -3,7 +3,11 @@
 set -e
 
 OUTPUT_DIR=$1/bin
+<<<<<<< HEAD
 VERSION="5.4.7"
+=======
+VERSION="5.7.4"
+>>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 
 if [[ $2 == "get-version" ]]; then
   echo ${VERSION}

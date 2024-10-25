@@ -23,5 +23,10 @@ build/
 pkg/transparentproxy/ebpf/programs/amd64/mb_*
 pkg/transparentproxy/ebpf/programs/arm64/mb_*
 
+<<<<<<< HEAD
+=======
+/justfile
+
+>>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 # Used to download manifests for k3d
 /test/k3d
