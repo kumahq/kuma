@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 77d9346ab1d13367c550958b9c634c2b3aae4bea
+=======
+b1205d74c2e9db303adc2d29d38c6edb8ae52081
+>>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
