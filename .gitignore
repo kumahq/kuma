@@ -20,11 +20,6 @@ build/
 # to embed ebpf programs by using go:embed, we have to copy programs first
 pkg/transparentproxy/ebpf/programs/amd64/mb_*
 pkg/transparentproxy/ebpf/programs/arm64/mb_*
-<<<<<<< HEAD
-=======
-
-/justfile
 
 # Used to download manifests for k3d
 /test/k3d
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
