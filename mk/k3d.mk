@@ -82,25 +82,6 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
-<<<<<<< HEAD
-.PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
-=======
-DOCKERHUB_PULL_CREDENTIAL ?=
-.PHONY: k3d/setup-docker-credentials
-k3d/setup-docker-credentials:
-	@mkdir -p /tmp/.kuma-dev ; \
-	echo '{"configs": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
-	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
-  		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
-  		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
-  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" > /tmp/.kuma-dev/k3d-registry.yaml ; \
-  	fi
-
-.PHONY: k3d/cleanup-docker-credentials
-k3d/cleanup-docker-credentials:
-	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
-
 $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 	@mkdir -p $(TOP)/$(KUMA_DIR)/test/k3d
 	curl --location --fail --silent --retry 5 \
@@ -110,8 +91,6 @@ $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 .PHONY: k3d/start
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
 	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
-
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
@@ -141,9 +120,9 @@ k3d/configure/metallb:
 	@IFS=. read -ra NETWORK_ADDR_SPACE <<< "$$(docker network inspect kind --format '{{ (index .IPAM.Config 0).Subnet }}')"; \
 		IFS=/ read -r _byte prefix <<< "$${NETWORK_ADDR_SPACE[3]}"; \
 		    if [[ "$${prefix}" -gt 16 ]]; then echo "Unexpected docker network, expecting a prefix of at most 16 bits"; exit 1; fi; \
-		IFS=. read -ra BASE_ADDR_SPACE <<< "$$(yq 'select(.kind == "IPAddressPool") | .spec.addresses[0]' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml)"; \
+		IFS=. read -ra BASE_ADDR_SPACE <<< "$$($(YQ) 'select(.kind == "IPAddressPool") | .spec.addresses[0]' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml)"; \
 		ADDR_SPACE="$${NETWORK_ADDR_SPACE[0]}.$${NETWORK_ADDR_SPACE[1]}.$${BASE_ADDR_SPACE[2]}.$${BASE_ADDR_SPACE[3]}" \
-	      yq '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(ADDR_SPACE)' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml | \
+	      $(YQ) '(select(.kind == "IPAddressPool") | .spec.addresses[0]) = env(ADDR_SPACE)' $(KUMA_DIR)/mk/metallb-k3d-$(KIND_CLUSTER_NAME).yaml | \
 		KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f -
 
 .PHONY: k3d/wait
