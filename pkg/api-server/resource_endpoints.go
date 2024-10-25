@@ -370,7 +370,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	if create {
 		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest, response)
+		r.updateResource(request.Request.Context(), resource, resourceRest, response, meshName)
 	}
 }
 
@@ -433,6 +433,7 @@ func (r *resourceEndpoints) updateResource(
 	currentRes model.Resource,
 	newResRest rest.Resource,
 	response *restful.Response,
+	meshName string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
@@ -450,8 +451,22 @@ func (r *resourceEndpoints) updateResource(
 	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
 		_ = currentRes.SetStatus(newResRest.GetStatus())
 	}
+	labels, err := model.ComputeLabels(
+		currentRes.Descriptor(),
+		currentRes.GetSpec(),
+		newResRest.GetMeta().GetLabels(),
+		model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
+		meshName,
+		r.mode,
+		r.isK8s,
+		r.zoneName,
+	)
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+		return
+	}
 
-	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 		return
 	}

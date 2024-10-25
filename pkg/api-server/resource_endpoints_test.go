@@ -298,7 +298,7 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		}))
 	})
 
-	FIt("should compute labels on update of the resource", func() {
+	It("should compute labels on update of the resource", func() {
 		// given
 		apiServer, store, stop := createServer(false, false)
 		defer stop()
