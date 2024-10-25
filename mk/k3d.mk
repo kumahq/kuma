@@ -1,6 +1,10 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
+<<<<<<< HEAD
 K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
+=======
+K3D_VERSION ?= $(shell $(TOP)/mk/dependencies/k3d.sh - get-version)
+>>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
