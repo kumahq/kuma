@@ -6,13 +6,9 @@ Technical Story: https://github.com/kumahq/kuma/issues/11071
 
 ## Context and Problem Statement
 
-In certain cloud environments, mesh-enabled applications need to communicate with applications running in a Datacenter (DC) that are not part of the mesh. These DC applications are not exposed to the internet. To address this, we installed a ZoneCP in the DC. This setup allows DC applications to be resolved from the Kuma Egress running in the DC.
+In certain cloud environments, mesh-enabled applications may need to communicate with applications in a Datacenter (DC) that are outside the mesh and isolated from the internet. To enable this communication without exposing these applications to the public, users need a way to connect securely. Currently, this can be achieved using an [ExternalService with the label kuma.io/zone](https://kuma.io/docs/2.9.x/policies/external-services/#external-services-accessible-from-specific-zone-through-zoneegress), but the same setup is not supported for MeshExternalService.
 
-For example, by registering the DC apps as MeshExternalService with a zone tag matching the DC zone name, traffic originating from other zones can be routed to the DC zone. Once the traffic reaches the DC, the egress can resolve and direct it to the appropriate DC applications.
-
-This scenario provides a possibility of seamless communication between mesh and non-mesh applications. However, we have additional use cases that also need consideration, where traffic flow and resolution rules may vary across zones and require tailored configurations.
-Scenario:
-
+Another relevant scenario is when only the Zone Egress in a particular zone is allowed to route traffic outside the cluster. In this case, communication with external services must occur through this designated egress point, preventing direct access from each zone.
 * Zone 2 has a Zone Egress but cannot route traffic outside the organization.
 * Zone 1 has a Zone Egress that can route traffic outside the organization.
 
