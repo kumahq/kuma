@@ -82,25 +82,6 @@ k3d/network/create:
 		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
 		rm -f $(BUILD_DIR)/k3d_network.lock
 
-<<<<<<< HEAD
-.PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create
-=======
-DOCKERHUB_PULL_CREDENTIAL ?=
-.PHONY: k3d/setup-docker-credentials
-k3d/setup-docker-credentials:
-	@mkdir -p /tmp/.kuma-dev ; \
-	echo '{"configs": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
-	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
-  		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
-  		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
-  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" > /tmp/.kuma-dev/k3d-registry.yaml ; \
-  	fi
-
-.PHONY: k3d/cleanup-docker-credentials
-k3d/cleanup-docker-credentials:
-	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
-
 $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 	@mkdir -p $(TOP)/$(KUMA_DIR)/test/k3d
 	curl --location --fail --silent --retry 5 \
@@ -108,10 +89,8 @@ $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
 
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create \
 	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
-
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
