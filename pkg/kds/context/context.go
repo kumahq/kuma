@@ -103,6 +103,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
+			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
@@ -289,12 +290,18 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
 					return false
 				}
-				role, err := core_model.ComputePolicyRole(policy, r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag])
+				// if declared role is not 'producer' then no syncing
+				if core_model.PolicyRole(r.GetMeta()) != mesh_proto.ProducerPolicyRole {
+					return false
+				}
+				// otherwise we're testing the role in Global CP in case Zone had the validation webhook turned off
+				role, err := core_model.ComputePolicyRole(policy, core_model.NewNamespace(r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag], false))
 				if err != nil {
 					ri := core_model.NewResourceIdentifier(r)
 					log.V(1).Info(err.Error(), "name", ri.Name, "mesh", ri.Mesh, "zone", ri.Zone, "namespace", ri.Namespace)
 					return false
 				}
+				// if the actual role is not 'producer' then no syncing
 				if role != mesh_proto.ProducerPolicyRole {
 					return false
 				}
@@ -317,7 +324,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 			zone := system.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
-				log.Error(err, "failed to get zone", "zone", zoneTag)
+				if !errors.Is(err, context.Canceled) {
+					log.Error(err, "failed to get zone", "zone", zoneTag)
+				}
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
 				return true

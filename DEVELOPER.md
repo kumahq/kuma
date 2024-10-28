@@ -93,6 +93,47 @@ make build/kumactl
 ```
 This could help expedite your development process if you only made changes to the `kumactl` files.
 
+## Debugging
+
+Like any other go program Kuma can be debugged using [dlv](https://github.com/go-delve/delve).
+In this section we'll go into how to trigger a breakpoint both in K8S and Universal.
+
+### K8S
+
+1. Disable k8s leader election (optional)
+2. Remove "-w -s" from LDFLAGS [here](https://github.com/kumahq/kuma/blob/7398d8901798d5cf1c2715e036204fc3632ec45d/mk/build.mk#L2) so that debugging symbols are not stripped
+3. Always add `EXTRA_GOFLAGS='-gcflags "all=-N -l"'` to build / deploy parameters to make sure debug info is in the binaries
+4. Run `make k3d/start`
+5. Run `make EXTRA_GOFLAGS='-gcflags "all=-N -l"' -j k3d/deploy/kuma`
+6. Change the Kuma deployment:
+   1. Remove readiness and Liveness probes (otherwise Kubernetes will kill the container if you stay in a breakpoint long enough)
+   2. set runAsNonRoot: false
+   3. Double the memory (debugger can make the container OOM)
+7. Check go version in `go.mod`, run `kubectl debug --profile=general -n kuma-system -it kuma-control-plane-POD_HASH --image=golang:1.GO_VERSION_FROM_GO_MOD-bookworm --target=control-plane -- bash`
+8. Install `dlv` [version that is closes](https://github.com/go-delve/delve/releases) to the `go.mod` version in the container, run: `go install github.com/go-delve/delve/cmd/dlv@vCLOSEST_DLV_VERSION`
+9. Run `dlv --listen=:4000 --headless=true --api-version=2 --accept-multiclient attach 1`
+10. Setup port forward for `4000`
+11. Run goland/vscode debugger with remote target on port `4000`
+12. Put a breakpoint where you want
+13. Enjoy!
+
+### Universal
+
+1. Add `4000` port in [UniversalApp](https://github.com/kumahq/kuma/blob/201413bdd532e92ff6e1fd017c4970073ba0c09f/test/framework/universal_app.go#L223) so that it's exposed, and the debugger can connect.
+2. Remove "-w -s" from LDFLAGS [here](https://github.com/kumahq/kuma/blob/7398d8901798d5cf1c2715e036204fc3632ec45d/mk/build.mk#L2) so that debugging symbols are not stripped
+3. Add a `time.Sleep` in a place where you want to debug the test
+4. Run the tests `make -j test/e2e/debug EXTRA_GOFLAGS='-gcflags "all=-N -l"' E2E_PKG_LIST=./test/e2e_env/universal/...`
+5. Wait to hit the `time.Sleep`
+6. Figure out the `kuma-cp` container id by running: `docker ps | grep kuma-cp`
+7. Exec into the container: `docker exec -it kuma-3_kuma-cp_3dkYrT bash`
+8. Download the same go as in `go.mod` - e.g. `curl -o golang https://dl.google.com/go/go1.23.2.linux-arm64.tar.gz`
+9. Extract using `tar xzf golang`
+10. Install `dlv` [version that is closes](https://github.com/go-delve/delve/releases) to the `go.mod` version in the container, run: `go install github.com/go-delve/delve/cmd/dlv@vCLOSEST_DLV_VERSION`
+11. Run `dlv --listen=:4000 --headless=true --api-version=2 --accept-multiclient attach 1`
+12. Figure out the port on the host machine `docker ps | grep kuma-3_kuma-cp_3dkYrT`, look for the port forward for `4000`
+13. Run goland/vscode debugger with remote target on port from point 12
+14. Enjoy!
+
 ## Running
 
 ### Kubernetes

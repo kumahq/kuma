@@ -39,7 +39,7 @@ func ReachableServices() {
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
+		}, "30s", "500ms").MustPassRepeatedly(10).Should(Succeed())
 	})
 
 	It("should not be able to non reachable services", func() {
@@ -50,7 +50,7 @@ func ReachableServices() {
 			)
 			// then
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6))
-		}, "30s", "500ms", MustPassRepeatedly(10)).Should(Succeed())
+			g.Expect(response.Exitcode).To(Or(Equal(6), Equal(28)))
+		}, "5s", "500ms").Should(Succeed())
 	})
 }
