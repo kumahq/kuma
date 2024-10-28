@@ -39,10 +39,12 @@ func (s *server) FetchMonitoringAssignments(ctx context.Context, req *envoy_sd.D
 	// Because we want to do long polling we use the watch system if there's a deadline on the context
 	if _, hasDeadline := ctx.Deadline(); hasDeadline {
 		cancelWatch := s.cache.CreateWatch(req, streamState, resChan)
-		defer cancelWatch()
-		select { // Wait until either we timeout or the watch triggers
-		case <-ctx.Done():
-		case <-resChan:
+		if cancelWatch != nil {
+			defer cancelWatch()
+			select { // Wait until either we timeout or the watch triggers
+			case <-ctx.Done():
+			case <-resChan:
+			}
 		}
 	}
 	resp, err := s.cache.Fetch(context.WithoutCancel(ctx), req)
