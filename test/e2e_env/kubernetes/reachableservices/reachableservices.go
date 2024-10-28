@@ -55,6 +55,8 @@ func ReachableServices() {
 	})
 
 	It("should not connect to non reachable service", func() {
+		var seenResolveFail bool
+
 		Consistently(func(g Gomega) {
 			// when trying to connect to non-reachable services via Kuma DNS
 			response, err := client.CollectFailure(
@@ -63,7 +65,13 @@ func ReachableServices() {
 			)
 			// then it fails because Kuma DP has no such DNS
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6))
+			g.Expect(response.Exitcode).To(Or(Equal(28), Equal(6)))
+			if response.Exitcode == 6 {
+				seenResolveFail = true
+			}
+			if seenResolveFail && response.Exitcode == 28 {
+				Fail("once a request fails with exit code 6, it should then always fail with exit code 6")
+			}
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
