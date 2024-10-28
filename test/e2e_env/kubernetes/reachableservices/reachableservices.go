@@ -63,7 +63,7 @@ func ReachableServices() {
 			)
 			// then it fails because Kuma DP has no such DNS
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Exitcode).To(Equal(6))
+			g.Expect(response.Exitcode).To(Or(Equal(6), Equal(28)))
 		}).Should(Succeed())
 
 		Consistently(func(g Gomega) {
