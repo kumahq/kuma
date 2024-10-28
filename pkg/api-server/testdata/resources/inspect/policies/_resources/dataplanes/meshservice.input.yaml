@@ -1,0 +1,49 @@
+#/meshes/default/meshservices/test-server/_resources/dataplanes 200
+type: Mesh
+name: default
+---
+type: MeshService
+name: test-server
+mesh: default
+labels:
+  kuma.io/origin: zone
+  kuma.io/env: universal
+spec:
+  selector:
+    dataplaneTags:
+      kuma.io/service: test-server
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+      name: main-port
+---
+type: Dataplane
+name: ts-01
+mesh: default
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: test-server
+---
+type: Dataplane
+name: ts-02
+mesh: default
+networking:
+  address: 127.0.0.2
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: test-server
+---
+type: Dataplane
+name: not-ts-01
+mesh: default
+networking:
+  address: 127.0.0.2
+  inbound:
+    - port: 80
+      tags:
+        kuma.io/service: not-test-server
