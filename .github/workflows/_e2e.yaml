@@ -34,7 +34,7 @@ jobs:
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -57,9 +57,13 @@ jobs:
           make build
       - run: |
           make -j build/distributions
-      - run: |
-          make -j images
-          make -j docker/save
+      - uses: nick-fields/retry@v3
+        id: retry
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15s
+          timeout_minutes: 30
+          command: make -j images && make -j docker/save
       - run: |
           make dev/set-kuma-helm-repo
       - name: "Enable ipv6 for docker"
@@ -127,11 +131,19 @@ jobs:
             target="test/e2e"
           fi
           make ${MAKE_PARAMETERS} CI=true "${target}"
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         if: always()
         with:
-          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}-${{ matrix.parallelRunnerId }}
+          name: e2e-debug-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}-${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}-${{ matrix.parallelRunnerId }}
           if-no-files-found: ignore
           path: |
             /tmp/e2e-debug/
+          retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        if: always()
+        with:
+          name: e2e-reports-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}-${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}-${{ matrix.parallelRunnerId }}
+          if-no-files-found: ignore
+          path: |
+            build/reports
           retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}

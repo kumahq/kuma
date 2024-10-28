@@ -258,7 +258,6 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 
 func (k *k8SDeployment) getAnnotations() map[string]string {
 	annotations := make(map[string]string)
-	annotations["kuma.io/mesh"] = k.opts.Mesh
 	for key, value := range k.opts.PodAnnotations {
 		annotations[key] = value
 	}
@@ -268,6 +267,7 @@ func (k *k8SDeployment) getAnnotations() map[string]string {
 func (k *k8SDeployment) getLabels() map[string]string {
 	labels := make(map[string]string)
 	labels["app"] = k.Name()
+	labels["kuma.io/mesh"] = k.opts.Mesh
 	for key, value := range k.opts.PodLabels {
 		labels[key] = value
 	}

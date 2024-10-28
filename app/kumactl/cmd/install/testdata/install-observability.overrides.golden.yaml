@@ -6,7 +6,6 @@ metadata:
   name: kuma
   labels:
     kuma.io/sidecar-injection: disabled
-  annotations:
     kuma.io/mesh: mesh-1
 ---
 apiVersion: v1

@@ -193,7 +193,7 @@ func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Servi
 		tags[key] = value
 	}
 	if len(ignoredLabels) > 0 {
-		logger.Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
+		logger.V(1).Info("ignoring internal labels when converting labels to tags", "label", strings.Join(ignoredLabels, ","))
 	}
 
 	tags[mesh_proto.KubeNamespaceTag] = pod.Namespace

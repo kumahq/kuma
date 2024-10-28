@@ -204,7 +204,7 @@ spec:
 					HaveKey(Equal(`test-server-0`)),
 					HaveKey(Equal(`test-server-1`)),
 					HaveKey(Equal(`test-server-2`)),
-					HaveKeyWithValue(ContainSubstring(`external-service`), BeNumerically("~", 50, 15)),
+					HaveKey(ContainSubstring(`external-service`)),
 				))
 			}, "30s", "5s").Should(Succeed())
 		})

@@ -54,7 +54,7 @@ jobs:
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -63,6 +63,10 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make build
+      - id: annotate-image-tag
+        name: Image tag
+        run: |
+          echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
           make -j build/distributions
       - id: inspect-binary-output
@@ -71,7 +75,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -105,7 +109,7 @@ jobs:
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -128,7 +132,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -137,7 +141,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -169,14 +173,14 @@ jobs:
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
           retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
@@ -186,7 +190,7 @@ jobs:
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@0aaaa49782e9028086feb943ec04e03e35e3f813 # v2.7.2
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -196,6 +200,7 @@ jobs:
   digest-images:
     needs: [build-images]
     runs-on: ubuntu-latest
+    if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -227,7 +232,7 @@ jobs:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -255,7 +260,7 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}

@@ -1,29 +1,20 @@
 package parameters
 
-type CtParameter struct {
-	name  string
-	value string
+type CtParameter WrappingParameter
+
+func newCtParameter(param string, params ...string) *CtParameter {
+	return (*CtParameter)(NewWrappingParameter(param, params...))
 }
 
-func (p *CtParameter) Build() []string {
-	return []string{p.name, p.value}
-}
-
-func Ct(ctParameters ...*CtParameter) *JumpParameter {
-	parameters := []string{"CT"}
-
-	for _, parameter := range ctParameters {
-		parameters = append(parameters, parameter.Build()...)
+func Ct(params ...*CtParameter) *JumpParameter {
+	var parameters []string
+	for _, param := range params {
+		parameters = append(parameters, param.parameters...)
 	}
 
-	return &JumpParameter{
-		parameters: parameters,
-	}
+	return newJumpParameter("CT", parameters...)
 }
 
 func Zone(id string) *CtParameter {
-	return &CtParameter{
-		name:  "--zone",
-		value: id,
-	}
+	return newCtParameter("--zone", id)
 }

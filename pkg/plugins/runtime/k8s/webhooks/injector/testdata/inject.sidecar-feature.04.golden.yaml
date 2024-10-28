@@ -16,6 +16,7 @@ metadata:
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
+    kuma.io/mesh: demo
     run: busybox
   name: busybox
 spec:

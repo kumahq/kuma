@@ -19,6 +19,7 @@ const inspectZoneEgressError = "Policies are not applied on ZoneEgress, please u
 func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 	var configDump bool
 	var inspectionType string
+	var includeEDS bool
 	cmd := &cobra.Command{
 		Use:   "zoneegress NAME",
 		Short: "Inspect ZoneEgress",
@@ -27,6 +28,9 @@ func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if configDump {
 				inspectionType = InspectionTypeConfigDump
+			}
+			if includeEDS && inspectionType != InspectionTypeConfigDump {
+				return errors.New(fmt.Sprintf("flag '--include-eds' can be used only when '--type=%s'", InspectionTypeConfigDump))
 			}
 
 			client, err := pctx.CurrentInspectEnvoyProxyClient(mesh.ZoneEgressResourceTypeDescriptor)
@@ -38,7 +42,7 @@ func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 
 			switch inspectionType {
 			case InspectionTypeConfigDump:
-				bytes, err := client.ConfigDump(context.Background(), resourceKey)
+				bytes, err := client.ConfigDump(context.Background(), resourceKey, includeEDS)
 				if err != nil {
 					return err
 				}
@@ -67,6 +71,7 @@ func newInspectZoneEgressCmd(pctx *cmd.RootContext) *cobra.Command {
 	}
 	cmd.PersistentFlags().BoolVar(&configDump, "config-dump", false, "if set then the command returns envoy config dump for provided dataplane")
 	_ = cmd.PersistentFlags().MarkDeprecated("config-dump", "use --type=config-dump")
+	cmd.PersistentFlags().BoolVar(&includeEDS, "include-eds", false, "include EDS when dumping envoy config for dataplane")
 	cmd.PersistentFlags().StringVar(&inspectionType, "type", InspectionTypeConfigDump, kuma_cmd.UsageOptions("inspection type", InspectionTypeConfigDump, InspectionTypeStats, InspectionTypeClusters))
 	return cmd
 }

@@ -5,5 +5,4 @@ metadata:
   name: {{ .Namespace }}
   labels:
     kuma.io/sidecar-injection: disabled
-  annotations:
     kuma.io/mesh: {{ .Mesh }}

@@ -506,6 +506,24 @@ func YamlUniversal(yaml string) InstallFunc {
 	}
 }
 
+type builder interface {
+	KubeYaml() string
+	UniYaml() string
+}
+
+func Yaml(b builder) InstallFunc {
+	return func(cluster Cluster) error {
+		switch c := cluster.(type) {
+		case *K8sCluster:
+			return YamlK8s(b.KubeYaml())(c)
+		case *UniversalCluster:
+			return YamlUniversal(b.UniYaml())(c)
+		default:
+			return errors.New("unknown cluster type")
+		}
+	}
+}
+
 func ResourceUniversal(resource model.Resource) InstallFunc {
 	return func(cluster Cluster) error {
 		_, err := retry.DoWithRetryE(cluster.GetTesting(), "install resource", DefaultRetries, DefaultTimeout,
@@ -712,8 +730,8 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 		Spec: batchv1.JobSpec{
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
-					Annotations: map[string]string{"kuma.io/mesh": mesh},
-					Labels:      map[string]string{"app": name},
+					Annotations: map[string]string{},
+					Labels:      map[string]string{"app": name, "kuma.io/mesh": mesh},
 				},
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{

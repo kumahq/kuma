@@ -12,6 +12,8 @@ kind: Service
 metadata:
   name: redis
   namespace: kuma-demo
+  labels:
+    app: redis
 spec:
   selector:
     app: redis
@@ -24,6 +26,8 @@ kind: Service
 metadata:
   name: demo-app
   namespace: kuma-demo
+  labels:
+    app: demo-app
 spec:
   selector:
     app: demo-app
@@ -130,14 +134,14 @@ spec:
     kind: MeshGateway
     name: demo-app
   to:
-    - targetRef:
-        kind: Mesh
-      rules:
-        - matches:
-            - path:
-                type: PathPrefix
-                value: "/"
-          default:
-            backendRefs:
-              - kind: MeshService
-                name: demo-app_kuma-demo_svc_5000
+  - targetRef:
+      kind: Mesh
+    rules:
+    - default:
+        backendRefs:
+        - kind: MeshService
+          name: demo-app_kuma-demo_svc_5000
+      matches:
+      - path:
+          type: PathPrefix
+          value: /

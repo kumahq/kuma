@@ -41,7 +41,7 @@ kind: MeshGatewayInstance
 metadata:
   name: edge-gateway
   namespace: graceful
-  annotations:
+  labels:
     kuma.io/mesh: graceful
 spec:
   replicas: %d

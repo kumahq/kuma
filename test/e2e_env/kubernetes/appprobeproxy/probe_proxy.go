@@ -173,7 +173,7 @@ func ApplicationProbeProxy() {
 		By("patch the application pod and disabling application probe proxy using annotation")
 		kubectlOptsApps := kubernetes.Cluster.GetKubectlOptions(namespace)
 		nextTemplateHash := patchAndWait(kubernetes.Cluster.GetTesting(), Default, kubernetes.Cluster, kubectlOptsApps, httpAppName,
-			`[{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
+			`[{"op": "add", "path": "/spec/template/metadata/annotations", "value": {}},{"op":"add", "path":"/spec/template/metadata/annotations/kuma.io~1application-probe-proxy-port", "value":"0"}]`)
 
 		By("checking virtual probes annotations on the new pod")
 		var nextRevPodName string
