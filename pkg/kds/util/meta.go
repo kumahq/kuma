@@ -1,6 +1,7 @@
 package util
 
 import (
+	"strings"
 	"time"
 
 	"golang.org/x/exp/maps"
@@ -56,6 +57,16 @@ func PopulateNamespaceLabelFromNameExtension() CloneResourceMetaOpt {
 func WithoutLabel(key string) CloneResourceMetaOpt {
 	return func(m *resourceMeta) {
 		delete(m.labels, key)
+	}
+}
+
+func WithoutLabelPrefix(prefix string) CloneResourceMetaOpt {
+	return func(m *resourceMeta) {
+		for label := range m.labels {
+			if strings.HasPrefix(label, prefix) {
+				delete(m.labels, label)
+			}
+		}
 	}
 }
 
