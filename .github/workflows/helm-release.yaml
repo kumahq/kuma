@@ -65,7 +65,7 @@ jobs:
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
