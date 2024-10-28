@@ -1,0 +1,17 @@
+{
+ "items": [
+  {
+   "labels": {},
+   "mesh": "default",
+   "name": "ts-01",
+   "type": "Dataplane"
+  },
+  {
+   "labels": {},
+   "mesh": "default",
+   "name": "ts-02",
+   "type": "Dataplane"
+  }
+ ],
+ "total": 2
+}

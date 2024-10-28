@@ -1,4 +1,4 @@
-# {short title of solved problem and solution}
+# MeshTLS policy - being able to selectively modify TLS properties (mode, version, cipher)
 
 * Status: accepted
 

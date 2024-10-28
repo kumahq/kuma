@@ -31,7 +31,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
       - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
@@ -65,7 +65,7 @@ jobs:
         with:
           name: ${{ steps.package.outputs.filename }}
           path: .cr-release-packages/${{ steps.package.outputs.filename }}
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token

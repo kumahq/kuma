@@ -51,7 +51,7 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
       - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
@@ -83,7 +83,7 @@ jobs:
             ./build/distributions/out/*.tar.gz
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -106,7 +106,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
       - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
@@ -179,14 +179,14 @@ jobs:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
           path: |
             ./build/docker/${{ matrix.image }}.digest.json
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
@@ -227,7 +227,7 @@ jobs:
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
           cache-dependency-path: |
@@ -264,7 +264,7 @@ jobs:
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
