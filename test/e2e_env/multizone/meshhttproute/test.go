@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -36,47 +38,45 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true))).
-			Install(TestServerUniversal("dp-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "zone1-v1"}),
-				WithServiceVersion("v1"),
-			)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group := errgroup.Group{}
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(Parallel(
+					DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true)),
+					TestServerUniversal("dp-echo-1", meshName,
+						WithArgs([]string{"echo", "--instance", "zone1-v1"}),
+						WithServiceVersion("v1"),
+					),
+				)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
 
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-2-v1", meshName,
-				WithArgs([]string{"echo", "--instance", "zone2-v1"}),
-				WithServiceVersion("v1"),
-			)).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-2-v2", meshName,
-				WithArgs([]string{"echo", "--instance", "zone2-v2"}),
-				WithServiceVersion("v2"),
-			)).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-2-v3", meshName,
-				WithArgs([]string{"echo", "--instance", "zone2-v3"}),
-				WithServiceVersion("v3"),
-			)).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-4", meshName,
-				WithArgs([]string{"echo", "--instance", "alias-zone2"}),
-				WithServiceName("alias-test-server"),
-				WithServiceVersion("v2"),
-			)).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(Parallel(
+					TestServerUniversal("dp-echo-2-v1", meshName,
+						WithArgs([]string{"echo", "--instance", "zone2-v1"}),
+						WithServiceVersion("v1"),
+					),
+					TestServerUniversal("dp-echo-2-v2", meshName,
+						WithArgs([]string{"echo", "--instance", "zone2-v2"}),
+						WithServiceVersion("v2"),
+					),
+					TestServerUniversal("dp-echo-2-v3", meshName,
+						WithArgs([]string{"echo", "--instance", "zone2-v3"}),
+						WithServiceVersion("v3"),
+					),
+					TestServerUniversal("dp-echo-4", meshName,
+						WithArgs([]string{"echo", "--instance", "alias-zone2"}),
+						WithServiceName("alias-test-server"),
+						WithServiceVersion("v2"),
+					),
+				)).
+				Setup(multizone.UniZone2)
+			return errors.Wrap(err, multizone.UniZone2.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

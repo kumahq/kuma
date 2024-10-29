@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -23,25 +25,33 @@ func Migration() {
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("demo-client"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-			)).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group := errgroup.Group{}
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(Parallel(
+					testserver.Install(
+						testserver.WithName("demo-client"),
+						testserver.WithMesh(meshName),
+						testserver.WithNamespace(namespace),
+					),
+					testserver.Install(
+						testserver.WithName("test-server"),
+						testserver.WithNamespace(namespace),
+						testserver.WithMesh(meshName),
+					),
+				)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
-		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(TestServerUniversal("test-server", meshName)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

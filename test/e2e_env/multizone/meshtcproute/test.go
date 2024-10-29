@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -25,33 +27,40 @@ func Test() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, meshName,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "zone1"}),
-				WithServiceVersion("v1"),
-			)).
-			Setup(multizone.UniZone1),
-		).To(Succeed())
+		group := errgroup.Group{}
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Parallel(
+					DemoClientUniversal(AppModeDemoClient, meshName,
+						WithTransparentProxy(true),
+					),
+					TestServerUniversal("test-server-echo-1", meshName,
+						WithArgs([]string{"echo", "--instance", "zone1"}),
+						WithServiceVersion("v1"),
+					),
+				)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(TestServerUniversal("test-server-echo-2", meshName,
-				WithArgs([]string{"echo", "--instance", "zone2"}),
-				WithServiceVersion("v2"),
-			)).
-			Setup(multizone.UniZone2),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Parallel(
+					TestServerUniversal("test-server-echo-2", meshName,
+						WithArgs([]string{"echo", "--instance", "zone2"}),
+						WithServiceVersion("v2"),
+					),
+					TestServerUniversal("test-server-echo-3", meshName,
+						WithArgs([]string{"echo", "--instance", "alias-zone2"}),
+						WithServiceName("alias-test-server"),
+						WithServiceVersion("v2"),
+					),
+				)).
+				Setup(multizone.UniZone2)
+			return errors.Wrap(err, multizone.UniZone2.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(TestServerUniversal("test-server-echo-3", meshName,
-				WithArgs([]string{"echo", "--instance", "alias-zone2"}),
-				WithServiceName("alias-test-server"),
-				WithServiceVersion("v2"),
-			)).
-			Setup(multizone.UniZone2),
-		).To(Succeed())
+		Expect(group.Wait()).To(Succeed())
 
 		Expect(DeleteMeshResources(
 			multizone.Global,

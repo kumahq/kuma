@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -39,38 +41,48 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Universal Zone 1
-		err = multizone.UniZone1.Install(DemoClientUniversal(
-			"zone3-demo-client",
-			meshName,
-			WithTransparentProxy(true),
-		))
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = multizone.UniZone1.Install(DemoClientUniversal(
+				"zone3-demo-client",
+				meshName,
+				WithTransparentProxy(true),
+			))
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
 
 		// Universal Zone 2
-		err = multizone.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
-			WithArgs([]string{"echo", "--instance", "echo-v1"}),
-			WithServiceName("zone4-test-server"),
-		))
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = multizone.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceName("zone4-test-server"),
+			))
+			return errors.Wrap(err, multizone.UniZone2.Name())
+		})
 
 		// Kubernetes Zone 1
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
 		// Kubernetes Zone 2
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-			)).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+				)).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

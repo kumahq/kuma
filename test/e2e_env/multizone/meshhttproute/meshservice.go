@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -43,26 +45,34 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-			)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group := errgroup.Group{}
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(Parallel(
+					testserver.Install(
+						testserver.WithNamespace(namespace),
+						testserver.WithMesh(meshName),
+						testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+					),
+					democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+				)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-			)).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				)).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

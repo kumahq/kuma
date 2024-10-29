@@ -7,6 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	k8s_gateway "github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
@@ -88,24 +90,37 @@ func CrossMeshGatewayOnMultizone() {
 			Install(YamlUniversal(edgeGatewayYaml))
 		Expect(globalSetup.Setup(multizone.Global)).To(Succeed())
 
-		gatewayZoneSetup := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
-			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
-			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
-			Install(echoServerApp(gatewayMesh)).
-			Install(echoServerApp(gatewayOtherMesh)).
-			Install(democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh))).
-			Install(democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh))).
-			Install(YamlK8s(crossMeshGatewayInstanceYaml)).
-			Install(YamlK8s(edgeGatewayInstanceYaml))
-		Expect(gatewayZoneSetup.Setup(multizone.KubeZone1)).To(Succeed())
+		group := errgroup.Group{}
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(gatewayTestNamespace)).
+				Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
+				Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
+				Install(Parallel(
+					echoServerApp(gatewayMesh),
+					echoServerApp(gatewayOtherMesh),
+					democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh)),
+					democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh)),
+				)).
+				Install(YamlK8s(crossMeshGatewayInstanceYaml)).
+				Install(YamlK8s(edgeGatewayInstanceYaml)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
-		otherZoneSetup := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
-			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
-			Install(democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh))).
-			Install(democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh)))
-		Expect(otherZoneSetup.Setup(multizone.KubeZone2)).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
+				Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
+				Install(Parallel(
+					democlient.Install(democlient.WithMesh(gatewayOtherMesh), democlient.WithNamespace(gatewayClientNamespaceOtherMesh)),
+					democlient.Install(democlient.WithMesh(gatewayMesh), democlient.WithNamespace(gatewayClientNamespaceSameMesh)),
+				)).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

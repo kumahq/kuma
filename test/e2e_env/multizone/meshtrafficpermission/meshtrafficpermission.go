@@ -7,6 +7,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
@@ -57,21 +59,29 @@ func MeshTrafficPermission() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Universal Zone 1
-		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName,
-				WithArgs([]string{"echo", "--instance", "echo"}),
-			)).
-			Install(TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test"))).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(Parallel(
+					TestServerUniversal("test-server", meshName,
+						WithArgs([]string{"echo", "--instance", "echo"}),
+					),
+					TestServerExternalServiceUniversal("external-service", 80, false, WithDockerContainerName("kuma-es-4_external-service-mtp-test")),
+				)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
 
 		// Kubernetes Zone 1
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err = NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 
 		clientPodName, err = PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)
 		Expect(err).ToNot(HaveOccurred())

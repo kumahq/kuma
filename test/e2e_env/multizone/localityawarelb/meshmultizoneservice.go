@@ -3,6 +3,8 @@ package localityawarelb
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -39,20 +41,27 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-			)).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+		group := errgroup.Group{}
+
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
+
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
 
 		uniServiceYAML := `
 type: MeshService
@@ -73,11 +82,14 @@ spec:
     appProtocol: http
 `
 
-		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+				Install(YamlUniversal(uniServiceYAML)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

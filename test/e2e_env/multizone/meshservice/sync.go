@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -41,8 +43,11 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		Expect(NewClusterSetup().
-			Install(YamlUniversal(`
+		group := errgroup.Group{}
+
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(YamlUniversal(`
 type: MeshService
 name: backend
 mesh: meshservice
@@ -58,14 +63,17 @@ spec:
     targetPort: 80
     appProtocol: http
 `)).
-			Install(TestServerUniversal("dp-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithServiceVersion("v1"),
-			)).
-			Setup(multizone.UniZone1)).To(Succeed())
+				Install(TestServerUniversal("dp-echo-1", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v1"}),
+					WithServiceVersion("v1"),
+				)).
+				Setup(multizone.UniZone1)
+			return errors.Wrap(err, multizone.UniZone1.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(YamlUniversal(`
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(YamlUniversal(`
 type: MeshService
 name: backend
 mesh: meshservice
@@ -81,14 +89,13 @@ spec:
     targetPort: 80
     appProtocol: http
 `)).
-			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
-			Setup(multizone.UniZone2)).To(Succeed())
+				Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
+				Setup(multizone.UniZone2)
+			return errors.Wrap(err, multizone.UniZone2.Name())
+		})
 
-		err := NewClusterSetup().
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
-
-		veryLongNamedService := `
+		group.Go(func() error {
+			veryLongNamedService := `
 kind: MeshService
 apiVersion: kuma.io/v1alpha1
 metadata:
@@ -106,12 +113,15 @@ spec:
     appProtocol: http
 `
 
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(YamlK8s(veryLongNamedService)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(namespace)).
+				Install(YamlK8s(veryLongNamedService)).
+				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

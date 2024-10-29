@@ -5,6 +5,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	meshtls_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	. "github.com/kumahq/kuma/test/framework"
@@ -26,27 +28,33 @@ func MeshTLS() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Kube Zone 1
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(k8sZoneNamespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-			)).
-			Setup(multizone.KubeZone1),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+				Install(testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(k8sZoneNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(democlient.Install(
-				democlient.WithName("demo-client"),
-				democlient.WithMesh(meshName),
-				democlient.WithNamespace(k8sZoneNamespace),
-			)).
-			Setup(multizone.KubeZone2),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+				Install(democlient.Install(
+					democlient.WithName("demo-client"),
+					democlient.WithMesh(meshName),
+					democlient.WithNamespace(k8sZoneNamespace),
+				)).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -6,6 +6,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -28,27 +30,33 @@ func ProducerPolicyFlow() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Kube Zone 1
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-client"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(k8sZoneNamespace),
-			)).
-			Setup(multizone.KubeZone1),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+				Install(testserver.Install(
+					testserver.WithName("test-client"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+				)).
+				Setup(multizone.KubeZone1)
+			return errors.Wrap(err, multizone.KubeZone1.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(k8sZoneNamespace),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-			)).
-			Setup(multizone.KubeZone2),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+				Install(testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+				)).
+				Setup(multizone.KubeZone2)
+			return errors.Wrap(err, multizone.KubeZone2.Name())
+		})
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
