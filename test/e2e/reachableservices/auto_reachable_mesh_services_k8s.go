@@ -45,13 +45,15 @@ spec:
 						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
 				),
 			).
+			Install(YamlK8s(hostnameGenerator)).
+			Setup(KubeCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
 			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
-			Install(YamlK8s(hostnameGenerator)).
-			Setup(KubeCluster)
-
-		Expect(err).ToNot(HaveOccurred())
+			SetupInParallel(KubeCluster)
 	})
 
 	E2EAfterEach(func() {
