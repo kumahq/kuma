@@ -58,6 +58,7 @@ type K8sCluster struct {
 	forwardedPortsChans []chan struct{}
 	verbose             bool
 	deployments         map[string]Deployment
+	mutex               sync.RWMutex // to protect deployments
 	defaultTimeout      time.Duration
 	defaultRetries      int
 	opts                kumaDeploymentOptions
@@ -155,6 +156,8 @@ func (c *K8sCluster) Name() string {
 }
 
 func (c *K8sCluster) Deployment(name string) Deployment {
+	c.mutex.RLock()
+	defer c.mutex.RUnlock()
 	return c.deployments[name]
 }
 
@@ -1188,6 +1191,8 @@ func (c *K8sCluster) GetTesting() testing.TestingT {
 
 func (c *K8sCluster) DismissCluster() error {
 	var errs error
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	for name, deployment := range c.deployments {
 		if err := deployment.Delete(c); err != nil {
 			errs = multierr.Append(errs, err)
@@ -1198,19 +1203,25 @@ func (c *K8sCluster) DismissCluster() error {
 }
 
 func (c *K8sCluster) Deploy(deployment Deployment) error {
+	c.mutex.Lock()
 	c.deployments[deployment.Name()] = deployment
+	c.mutex.Unlock()
 	return deployment.Deploy(c)
 }
 
 func (c *K8sCluster) DeleteDeployment(name string) error {
+	c.mutex.RLock()
 	deployment, ok := c.deployments[name]
+	c.mutex.RUnlock()
 	if !ok {
 		return errors.Errorf("deployment %s not found", name)
 	}
 	if err := deployment.Delete(c); err != nil {
 		return err
 	}
+	c.mutex.Lock()
 	delete(c.deployments, name)
+	c.mutex.Unlock()
 	return nil
 }
 
