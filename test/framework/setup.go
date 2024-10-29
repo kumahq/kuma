@@ -123,8 +123,9 @@ func Parallel(fns ...InstallFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		eg := errgroup.Group{}
 		for _, fn := range fns {
+			installFn := fn
 			eg.Go(func() error {
-				return fn(cluster)
+				return installFn(cluster)
 			})
 		}
 		return eg.Wait()
