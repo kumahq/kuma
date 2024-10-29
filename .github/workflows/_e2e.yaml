@@ -70,8 +70,7 @@ jobs:
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
-            "ipv6": true,
-            "fixed-cidr-v6": "2001:db8:1::/64"
+            "ipv6": true
           }
           EOF
           sudo service docker restart
@@ -131,7 +130,7 @@ jobs:
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
         if: ${{ failure() }}
-        timeout-minutes: 60
+        timeout-minutes: 20
         with:
           limit-access-to-actor: true
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
