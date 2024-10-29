@@ -12,6 +12,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,6 +117,18 @@ type: Mesh
 name: %s
 `, name)
 	return YamlUniversal(mesh)
+}
+
+func Parallel(fns ...InstallFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		eg := errgroup.Group{}
+		for _, fn := range fns {
+			eg.Go(func() error {
+				return fn(cluster)
+			})
+		}
+		return eg.Wait()
+	}
 }
 
 func MeshKubernetes(name string) InstallFunc {

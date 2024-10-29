@@ -19,21 +19,23 @@ func ReachableServices() {
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("client-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithReachableServices("first-test-server_reachable-svc_svc_80"),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("first-test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("second-test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("client-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithReachableServices("first-test-server_reachable-svc_svc_80"),
+				),
+				testserver.Install(
+					testserver.WithName("first-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("second-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
