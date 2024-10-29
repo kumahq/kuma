@@ -12,6 +12,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -992,6 +993,17 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func (cs *ClusterSetup) SetupInParallel(cluster Cluster) error {
+	errGroup := errgroup.Group{}
+	for _, f := range cs.installFuncs {
+		fn := f
+		errGroup.Go(func() error {
+			return fn(cluster)
+		})
+	}
+	return errGroup.Wait()
 }
 
 func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error {
