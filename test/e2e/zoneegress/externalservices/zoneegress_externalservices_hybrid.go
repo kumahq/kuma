@@ -6,6 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -93,44 +95,55 @@ conf:
 
 		globalCP := global.GetKuma()
 
+		group := errgroup.Group{}
+
 		// K8s Cluster 1
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh))).
-			Install(testserver.Install(
-				testserver.WithName("es-test-server"),
-				testserver.WithNamespace("default"),
-				testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
-			)).
-			Setup(zone1)).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+				Install(NamespaceWithSidecarInjection(TestNamespace)).
+				Install(Parallel(
+					democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh)),
+					testserver.Install(
+						testserver.WithName("es-test-server"),
+						testserver.WithNamespace("default"),
+						testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
+					),
+				)).
+				Setup(zone1)
+			return errors.Wrap(err, zone1.Name())
+		})
 
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
+				Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
+				Install(Parallel(
+					DemoClientUniversal(
+						"zone4-demo-client",
+						nonDefaultMesh,
+						WithTransparentProxy(true),
+					),
+					func(cluster Cluster) error {
+						return cluster.DeployApp(
+							WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", "es-test-server"}),
+							WithName("es-test-server"),
+							WithoutDataplane(),
+							WithVerbose())
+					},
+					TestServerUniversal("test-server", nonDefaultMesh,
+						WithArgs([]string{"echo", "--instance", "test-server"}),
+						WithTransparentProxy(true),
+					),
+				)).
+				Setup(zone4)
+			return errors.Wrap(err, zone4.Name())
+		})
 
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
-			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
-			Install(DemoClientUniversal(
-				"zone4-demo-client",
-				nonDefaultMesh,
-				WithTransparentProxy(true),
-			)).
-			Install(
-				func(cluster Cluster) error {
-					return cluster.DeployApp(
-						WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", "es-test-server"}),
-						WithName("es-test-server"),
-						WithoutDataplane(),
-						WithVerbose())
-				}).
-			Install(TestServerUniversal("test-server", nonDefaultMesh,
-				WithArgs([]string{"echo", "--instance", "test-server"}),
-				WithTransparentProxy(true),
-			)).
-			Setup(zone4),
-		).To(Succeed())
+		Expect(group.Wait()).To(Succeed())
 
 		Expect(global.GetKumactlOptions().
 			KumactlApplyFromString(

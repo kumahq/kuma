@@ -51,8 +51,10 @@ func AppDeploymentWithHelmChart() {
 				)).
 				Install(MeshKubernetes("default")).
 				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithPodAnnotations(annotations))).
-				Install(testserver.Install(testserver.WithPodAnnotations(annotations))).
+				Install(Parallel(
+					democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithPodAnnotations(annotations)),
+					testserver.Install(testserver.WithPodAnnotations(annotations)),
+				)).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 

@@ -46,14 +46,12 @@ spec:
 				),
 			).
 			Install(YamlK8s(hostnameGenerator)).
+			Install(Parallel(
+				testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
+				testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
+				testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace)),
+			)).
 			Setup(KubeCluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(testserver.Install(testserver.WithName("client-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
-			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
-			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
-			SetupInParallel(KubeCluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

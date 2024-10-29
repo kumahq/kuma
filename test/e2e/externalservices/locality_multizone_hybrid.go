@@ -6,6 +6,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -51,33 +53,41 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		globalCP := global.GetKuma()
 
 		// K8s Cluster 1
+		group := errgroup.Group{}
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone,
-				WithIngress(),
-				WithIngressEnvoyAdminTunnel(),
-				WithEgress(),
-				WithEgressEnvoyAdminTunnel(),
-				WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			)).
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Setup(zone1)).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Kuma(config_core.Zone,
+					WithIngress(),
+					WithIngressEnvoyAdminTunnel(),
+					WithEgress(),
+					WithEgressEnvoyAdminTunnel(),
+					WithGlobalAddress(globalCP.GetKDSServerAddress()),
+				)).
+				Install(NamespaceWithSidecarInjection(TestNamespace)).
+				Setup(zone1)
+			return errors.Wrap(err, zone1.Name())
+		})
 
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
-		Expect(NewClusterSetup().
-			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal(
-				"zone4-demo-client",
-				defaultMesh,
-				WithTransparentProxy(true),
-			)).
-			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-			Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
-			Install(TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false)).
-			Setup(zone4),
-		).To(Succeed())
+		group.Go(func() error {
+			err := NewClusterSetup().
+				Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+				Install(DemoClientUniversal(
+					"zone4-demo-client",
+					defaultMesh,
+					WithTransparentProxy(true),
+				)).
+				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
+				Install(TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false)).
+				Setup(zone4)
+			return errors.Wrap(err, zone4.Name())
+		})
+
+		Expect(group.Wait()).To(Succeed())
 
 		Expect(NewClusterSetup().
 			Install(YamlUniversal(zoneExternalService(defaultMesh, zone4.GetApp("external-service-in-zone1").GetIP(), "external-service-in-zone1", "kuma-1"))).
