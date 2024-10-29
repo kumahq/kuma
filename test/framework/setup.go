@@ -1008,6 +1008,17 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
+func (cs *ClusterSetup) SetupInParallel(cluster Cluster) error {
+	errGroup := errgroup.Group{}
+	for _, f := range cs.installFuncs {
+		fn := f
+		errGroup.Go(func() error {
+			return fn(cluster)
+		})
+	}
+	return errGroup.Wait()
+}
+
 func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error {
 	return CombineWithRetries(maxRetries, cs.installFuncs...)(cluster)
 }
