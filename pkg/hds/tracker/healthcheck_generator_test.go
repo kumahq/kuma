@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -14,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/hds/cache"
+	v3 "github.com/kumahq/kuma/pkg/hds/v3"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -47,13 +48,11 @@ var _ = Describe("HDS Snapshot generator", func() {
 			generator := NewSnapshotGenerator(resourceManager, given.hdsConfig, 9901)
 
 			// when
-			snapshot, err := generator.GenerateSnapshot(context.Background(), &envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			actual, err := util_proto.ToYAML(snapshot.GetResources(cache.HealthCheckSpecifierType)["hcs"])
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(matchers.MatchGoldenYAML("testdata", given.goldenFile))
+			Expect(generator.GenerateSnapshot(context.Background(), &envoy_config_core_v3.Node{Id: "mesh-1.dp-1"})).Should(
+				WithTransform(func(snapshot envoy_cache.ResourceSnapshot) ([]byte, error) {
+					return util_proto.ToYAML(snapshot.GetResources(v3.HealthCheckSpecifierType)[""])
+				}, matchers.MatchGoldenYAML("testdata", given.goldenFile)),
+			)
 		},
 		Entry("should generate HealthCheckSpecifier", testCase{
 			goldenFile: "hds.1.golden.yaml",
