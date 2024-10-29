@@ -54,6 +54,7 @@ spec:
 			Install(testserver.Install(testserver.WithName("first-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			Install(testserver.Install(testserver.WithName("second-test-server"), testserver.WithMesh(meshName), testserver.WithNamespace(namespace))).
 			SetupInParallel(KubeCluster)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
