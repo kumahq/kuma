@@ -67,10 +67,12 @@ jobs:
       - run: |
           make dev/set-kuma-helm-repo
       - name: "Enable ipv6 for docker"
+        if: ${{ env.E2E_PARAM_K8S_VERSION == 'kindIpv6' }}
         run: |
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
-            "ipv6": true
+            "ipv6": true,
+            "fixed-cidr-v6": "fd00:fd12:3456::0/64"
           }
           EOF
           sudo service docker restart
