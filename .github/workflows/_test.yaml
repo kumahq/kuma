@@ -40,7 +40,7 @@ jobs:
           make test
   gen_e2e_matrix:
     timeout-minutes: 2
-    runs-on: ubuntu-latest-kong
+    runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
