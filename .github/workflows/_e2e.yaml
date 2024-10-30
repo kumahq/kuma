@@ -72,7 +72,7 @@ jobs:
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
             "ipv6": true,
-            "fixed-cidr-v6": "fd00:fd12:3456::0/64",
+            "fixed-cidr-v6": "2001:db8:1::/64",
             "dns-search": ["."]
           }
           EOF
