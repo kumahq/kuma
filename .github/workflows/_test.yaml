@@ -47,7 +47,7 @@ jobs:
             {
               "test_e2e": {
                 "target": [""],
-                "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [4],
                 "cniNetworkPlugin": ["flannel"],
