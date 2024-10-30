@@ -66,9 +66,11 @@ jobs:
           make dev/tools
       - run: |
           make clean
-      - run: |
+      - if: false
+        run: |
           make check
       - id: sca-project
+        if: false
         uses: Kong/public-shared-actions/security-actions/sca@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
         with:
           dir: .

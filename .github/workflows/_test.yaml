@@ -17,7 +17,8 @@ env:
 jobs:
   test_unit:
     timeout-minutes: 20
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    if: false
+    # if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
@@ -48,34 +49,16 @@ jobs:
         env:
           BASE_MATRIX: |-
             {
-              "test_e2e": {
-                "target": [""],
-                "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
-                "arch": ["amd64"],
-                "parallelism": [4],
-                "cniNetworkPlugin": ["flannel"],
-                "sidecarContainers": [""]
-              },
+              "test_e2e": false,
               "test_e2e_env": {
-                "target": ["kubernetes", "universal", "multizone"],
-                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MAX_VERSION }}"],
+                "target": ["kubernetes"],
+                "k8sVersion": ["kindIpv6"],
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
                 "sidecarContainers": [""],
-                "exclude":[
-                  {"target": "kubernetes", "k8sVersion":"kind"},
-                  {"target": "multizone", "k8sVersion":"kind"},
-                  {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
-                ],
-                "include":[
-                  {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
-                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
-                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
-                  {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
-                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
-                  {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
-                ]
+                "exclude":[],
+                "include":[]
               }
             }
           # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)

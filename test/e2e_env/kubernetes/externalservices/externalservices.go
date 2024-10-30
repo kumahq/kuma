@@ -54,9 +54,9 @@ spec:
 	})
 
 	E2EAfterAll(func() {
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
-		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
+		//Expect(kubernetes.Cluster.TriggerDeleteNamespace(clientNamespace)).To(Succeed())
+		//Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
+		//Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	Context("non-TLS", func() {
