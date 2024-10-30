@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -243,6 +245,19 @@ func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
 
 func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
+	labels := maps.Clone(m.GetObjectMeta().GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
+		labels[v1alpha1.DisplayName] = displayName
+	} else {
+		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+	}
+	return labels
 }
 
 type Converter interface {
