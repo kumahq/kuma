@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 var _ core_store.ResourceStore = &KubernetesStore{}
@@ -62,6 +63,11 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 			configMapKey: configRes.Spec.Config,
 		},
 	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(opts.Labels, cm.GetAnnotations())
+	cm.GetObjectMeta().SetLabels(labels)
+	cm.GetObjectMeta().SetAnnotations(annotations)
+
 	if opts.Owner != nil {
 		k8sOwner, err := s.converter.ToKubernetesObject(opts.Owner)
 		if err != nil {
@@ -83,6 +89,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	if !ok {
 		return newInvalidTypeError()
 	}
+	opts := core_store.NewUpdateOptions(fs...)
 	cm := &kube_core.ConfigMap{
 		TypeMeta: kube_meta.TypeMeta{
 			Kind:       "ConfigMap",
@@ -94,6 +101,16 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 			configMapKey: configRes.Spec.Config,
 		},
 	}
+
+	updateLabels := cm.GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(updateLabels, cm.GetAnnotations())
+	cm.GetObjectMeta().SetLabels(labels)
+	cm.GetObjectMeta().SetAnnotations(annotations)
+
 	if err := s.client.Update(ctx, cm); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, r.GetMeta().GetName(), r.GetMeta().GetMesh())
