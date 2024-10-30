@@ -72,12 +72,13 @@ jobs:
           cat <<'EOF' | sudo tee /etc/docker/daemon.json
           {
             "ipv6": true,
-            "fixed-cidr-v6": "fd00:fd12:3456::0/64"
+            "fixed-cidr-v6": "fd00:fd12:3456::0/64",
+            "dns-search": ["."]
           }
           EOF
           sudo service docker restart
       - name: "Run E2E tests"
-        if: false
+        # if: false
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
           KUMA_DEBUG: ${{ runner.debug == '1' || vars.ENABLE_E2E_DEBUG_GLOBALLY == 'true' }}
@@ -132,6 +133,7 @@ jobs:
           make ${MAKE_PARAMETERS} CI=true "${target}"
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        if: false
         # if: ${{ failure() }}
         timeout-minutes: 60
         with:

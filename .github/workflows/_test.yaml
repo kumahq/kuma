@@ -49,16 +49,34 @@ jobs:
         env:
           BASE_MATRIX: |-
             {
-              "test_e2e": false,
+              "test_e2e": {
+                "target": [""],
+                "k8sVersion": ["kindIpv6"],
+                "arch": ["amd64"],
+                "parallelism": [4],
+                "cniNetworkPlugin": ["flannel"],
+                "sidecarContainers": [""]
+              },
               "test_e2e_env": {
-                "target": ["kubernetes"],
+                "target": ["kubernetes", "universal", "multizone"],
                 "k8sVersion": ["kindIpv6"],
                 "arch": ["amd64"],
                 "parallelism": [1],
                 "cniNetworkPlugin": ["flannel"],
                 "sidecarContainers": [""],
-                "exclude":[],
-                "include":[]
+                "exclude":[
+                  {"target": "kubernetes", "k8sVersion":"kind"},
+                  {"target": "multizone", "k8sVersion":"kind"},
+                  {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+                ],
+                "include":[
+                  {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
+                  {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
+                  {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
+                ]
               }
             }
           # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
