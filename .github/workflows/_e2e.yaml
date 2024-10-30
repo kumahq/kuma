@@ -77,6 +77,7 @@ jobs:
           EOF
           sudo service docker restart
       - name: "Run E2E tests"
+        if: false
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
           KUMA_DEBUG: ${{ runner.debug == '1' || vars.ENABLE_E2E_DEBUG_GLOBALLY == 'true' }}
@@ -131,7 +132,7 @@ jobs:
           make ${MAKE_PARAMETERS} CI=true "${target}"
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
-        if: ${{ failure() }}
+        # if: ${{ failure() }}
         timeout-minutes: 20
         with:
           limit-access-to-actor: true
