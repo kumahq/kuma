@@ -141,7 +141,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 
 	var annotations map[string]string
-	var injectedInitContainer kube_core.Container
+	var injectedInitContainer *kube_core.Container
 
 	if i.cfg.TransparentProxyConfigMapName != "" {
 		tproxyCfg, err := i.getTransparentProxyConfig(ctx, logger, pod)
@@ -176,18 +176,20 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		switch {
 		case !tproxyCfg.CNIMode:
 			initContainer := i.NewInitContainer([]string{"--config", tproxyCfgYAML})
-			injectedInitContainer, err = i.applyCustomPatches(logger, initContainer, initPatches)
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
 			if err != nil {
 				return err
 			}
+			injectedInitContainer = &injected
 		case tproxyCfg.Redirect.Inbound.Enabled:
 			ipFamilyMode := tproxyCfg.IPFamilyMode.String()
 			inboundPort := tproxyCfg.Redirect.Inbound.Port.String()
 			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
-			injectedInitContainer, err = i.applyCustomPatches(logger, validationContainer, initPatches)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
 			if err != nil {
 				return err
 			}
+			injectedInitContainer = &injected
 			fallthrough
 		default:
 			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
@@ -213,18 +215,20 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 		if !i.cfg.CNIEnabled {
 			initContainer := i.NewInitContainer(podRedirect.AsKumactlCommandLine())
-			injectedInitContainer, err = i.applyCustomPatches(logger, initContainer, initPatches)
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
 			if err != nil {
 				return err
 			}
+			injectedInitContainer = &injected
 		} else if podRedirect.RedirectInbound {
 			ipFamilyMode := podRedirect.IpFamilyMode
 			inboundPort := fmt.Sprintf("%d", podRedirect.RedirectPortInbound)
 			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
-			injectedInitContainer, err = i.applyCustomPatches(logger, validationContainer, initPatches)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
 			if err != nil {
 				return err
 			}
+			injectedInitContainer = &injected
 		}
 	}
 
@@ -254,10 +258,12 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	var prependInitContainers []kube_core.Container
 	var appendInitContainers []kube_core.Container
 
-	if initFirst || i.sidecarContainersEnabled {
-		prependInitContainers = append(prependInitContainers, injectedInitContainer)
-	} else {
-		appendInitContainers = append(appendInitContainers, injectedInitContainer)
+	if injectedInitContainer != nil {
+		if initFirst || i.sidecarContainersEnabled {
+			prependInitContainers = append(prependInitContainers, *injectedInitContainer)
+		} else {
+			appendInitContainers = append(appendInitContainers, *injectedInitContainer)
+		}
 	}
 
 	if i.sidecarContainersEnabled {
