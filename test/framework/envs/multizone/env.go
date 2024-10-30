@@ -92,6 +92,7 @@ func SetupAndGetState() []byte {
 		Expect(KubeZone1.Install(Kuma(core.Zone, kubeZone1Options...))).To(Succeed())
 	}()
 
+<<<<<<< HEAD
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
@@ -110,6 +111,11 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		Expect(KubeZone2.Install(Kuma(core.Zone, kubeZone2Options...))).To(Succeed())
 	}()
+=======
+	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
+	kubeZone2Options = append(kubeZone2Options, WithCNI())
+	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
+>>>>>>> ebcc4be57 (fix(cni): delegated gateway was not correctly injected (#11922))
 
 	UniZone1 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 	uniZone1Options := append(
