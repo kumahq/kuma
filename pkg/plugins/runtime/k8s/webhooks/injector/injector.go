@@ -174,6 +174,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
 	}
 
+<<<<<<< HEAD
 	// inject sidecar as first container
 	pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
 
@@ -183,6 +184,98 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 	for key, value := range annotations {
 		pod.Annotations[key] = value
+=======
+	var annotations map[string]string
+	var injectedInitContainer *kube_core.Container
+
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		tproxyCfg, err := i.getTransparentProxyConfig(ctx, logger, pod)
+		if err != nil {
+			return err
+		}
+
+		tproxyCfgYAMLBytes, err := yaml.Marshal(tproxyCfg)
+		if err != nil {
+			return err
+		}
+		tproxyCfgYAML := string(tproxyCfgYAMLBytes)
+
+		if annotations, err = tproxy_k8s.ConfigToAnnotations(
+			tproxyCfg,
+			i.cfg,
+			pod.Annotations,
+			i.defaultAdminPort,
+		); err != nil {
+			return errors.Wrap(err, "could not generate annotations for pod")
+		}
+
+		for key, value := range annotations {
+			pod.Annotations[key] = value
+		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
+
+		switch {
+		case !tproxyCfg.CNIMode:
+			initContainer := i.NewInitContainer([]string{"--config", tproxyCfgYAML})
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		case tproxyCfg.Redirect.Inbound.Enabled:
+			ipFamilyMode := tproxyCfg.IPFamilyMode.String()
+			inboundPort := tproxyCfg.Redirect.Inbound.Port.String()
+			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+			fallthrough
+		default:
+			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
+		}
+	} else { // this is legacy and deprecated - will be removed soon
+		if annotations, err = i.NewAnnotations(pod, logger); err != nil {
+			return errors.Wrap(err, "could not generate annotations for pod")
+		}
+
+		for key, value := range annotations {
+			pod.Annotations[key] = value
+		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
+
+		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(pod.Annotations)
+		if err != nil {
+			return err
+		}
+
+		if !i.cfg.CNIEnabled {
+			initContainer := i.NewInitContainer(podRedirect.AsKumactlCommandLine())
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		} else if podRedirect.RedirectInbound {
+			ipFamilyMode := podRedirect.IpFamilyMode
+			inboundPort := fmt.Sprintf("%d", podRedirect.RedirectPortInbound)
+			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		}
+>>>>>>> ebcc4be57 (fix(cni): delegated gateway was not correctly injected (#11922))
 	}
 
 	if i.cfg.EBPF.Enabled {
@@ -203,10 +296,54 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		})
 	}
 
+<<<<<<< HEAD
 	// init container
 	if !i.cfg.CNIEnabled {
 		ic, err := i.NewInitContainer(pod)
 		if err != nil {
+=======
+	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+	if err != nil {
+		return err
+	}
+
+	var prependInitContainers []kube_core.Container
+	var appendInitContainers []kube_core.Container
+
+	if injectedInitContainer != nil {
+		if initFirst || i.sidecarContainersEnabled {
+			prependInitContainers = append(prependInitContainers, *injectedInitContainer)
+		} else {
+			appendInitContainers = append(appendInitContainers, *injectedInitContainer)
+		}
+	}
+
+	if i.sidecarContainersEnabled {
+		// inject sidecar after init
+		patchedContainer.RestartPolicy = pointer.To(kube_core.ContainerRestartPolicyAlways)
+		patchedContainer.Lifecycle = &kube_core.Lifecycle{
+			PreStop: &kube_core.LifecycleHandler{
+				Exec: &kube_core.ExecAction{
+					Command: []string{"killall", "-USR2", "kuma-dp"},
+				},
+			},
+		}
+		prependInitContainers = append(prependInitContainers, patchedContainer)
+	} else {
+		// inject sidecar as first container
+		pod.Spec.Containers = append([]kube_core.Container{patchedContainer}, pod.Spec.Containers...)
+	}
+
+	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
+
+	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
+	if err != nil {
+		return err
+	}
+
+	if disabledAppProbeProxy {
+		if err := i.overrideHTTPProbes(pod); err != nil {
+>>>>>>> ebcc4be57 (fix(cni): delegated gateway was not correctly injected (#11922))
 			return err
 		}
 		patchedIc, err := i.applyCustomPatches(logger, ic, initPatches)

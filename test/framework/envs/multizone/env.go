@@ -73,6 +73,7 @@ func SetupAndGetState() []byte {
 		Expect(KubeZone1.Install(Kuma(core.Zone, kubeZone1Options...))).To(Succeed())
 	}()
 
+<<<<<<< HEAD
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
@@ -84,6 +85,21 @@ func SetupAndGetState() []byte {
 			WithCNI(),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)...,
+=======
+	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
+	kubeZone2Options = append(kubeZone2Options, WithCNI())
+	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
+
+	UniZone1 = setupUniZone(&wg, Kuma4, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...)
+
+	vipCIDROverride := "251.0.0.0/8"
+	if Config.IPV6 {
+		vipCIDROverride = "fd00:fd11::/64"
+	}
+	uniZone2Options := append(
+		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2),
+		WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
+>>>>>>> ebcc4be57 (fix(cni): delegated gateway was not correctly injected (#11922))
 	)
 	KubeZone2 = NewK8sCluster(NewTestingT(), Kuma2, Verbose)
 	go func() {
