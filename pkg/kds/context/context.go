@@ -68,20 +68,10 @@ func DefaultContext(
 		config_manager.ClusterIdConfigKey: true,
 	}
 
-	var globalSkipLabelOpts []util.CloneResourceMetaOpt
-	for _, prefix := range cfg.Multizone.Global.KDS.Labels.SkipPrefixes {
-		globalSkipLabelOpts = append(globalSkipLabelOpts, util.WithoutLabelPrefix(prefix))
-	}
-	var zoneSkipLabelOpts []util.CloneResourceMetaOpt
-	for _, prefix := range cfg.Multizone.Zone.KDS.Labels.SkipPrefixes {
-		zoneSkipLabelOpts = append(zoneSkipLabelOpts, util.WithoutLabelPrefix(prefix))
-	}
 	globalMappers := []reconcile_v2.ResourceMapper{
 		UpdateResourceMeta(
-			append(
-				globalSkipLabelOpts,
-				util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
-			)...,
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
+			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
 		),
 		reconcile_v2.If(
 			reconcile_v2.And(
@@ -113,13 +103,11 @@ func DefaultContext(
 
 	zoneMappers := []reconcile_v2.ResourceMapper{
 		UpdateResourceMeta(
-			append(
-				zoneSkipLabelOpts,
-				util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
-				util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
-				util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
-				util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
-			)...,
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin)),
+			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
+			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
+			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
+			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
