@@ -56,9 +56,8 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	secret.Namespace = s.namespace
 	secret.Name = opts.Name
-	if r.Descriptor().Scope == core_model.ScopeMesh {
-		setMesh(secret, opts.Mesh, opts.Labels)
-	}
+
+	setLabelsAnnotationsAndMesh(secret, opts.Mesh, opts.Labels)
 
 	if opts.Owner != nil {
 		k8sOwner, err := s.resourcesConverter.ToKubernetesObject(opts.Owner)
@@ -91,9 +90,14 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
 	secret.Namespace = s.namespace
-	if r.Descriptor().Scope == core_model.ScopeMesh {
-		setMesh(secret, r.GetMeta().GetMesh(), opts.Labels)
+
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
 	}
+
+	setLabelsAnnotationsAndMesh(secret, r.GetMeta().GetMesh(), updateLabels)
+
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, secret.Name, r.GetMeta().GetMesh())
@@ -107,12 +111,17 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	return nil
 }
 
-func setMesh(s *kube_core.Secret, mesh string, labels map[string]string) {
+func setLabelsAnnotationsAndMesh(s *kube_core.Secret, mesh string, labels map[string]string) {
 	if labels == nil {
 		labels = map[string]string{}
 	}
-	labels[metadata.KumaMeshLabel] = mesh
-	s.SetLabels(labels)
+	if mesh != "" {
+		labels[metadata.KumaMeshLabel] = mesh
+	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(labels, s.GetAnnotations())
+	s.GetObjectMeta().SetLabels(labels)
+	s.GetObjectMeta().SetAnnotations(annotations)
 }
 
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
