@@ -55,7 +55,7 @@ jobs:
         if: false
         with:
           args: --fix=false --verbose
-          version: v1.60.3
+          version: v1.61.0
       - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: |

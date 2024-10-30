@@ -49,15 +49,18 @@ var _ = Describe("MADS http service", func() {
 	const refreshInterval = 250 * time.Millisecond
 
 	const defaultFetchTimeout = 1 * time.Second
-
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
+	})
 
+	setupServer := func() {
 		cfg := mads_config.DefaultMonitoringAssignmentServerConfig()
 		cfg.AssignmentRefreshInterval = config_types.Duration{Duration: refreshInterval}
 		cfg.DefaultFetchTimeout = config_types.Duration{Duration: defaultFetchTimeout}
 
 		svc := service.NewService(cfg, resManager, logr.Discard(), nil)
+		ctx, cancel := context.WithCancel(context.Background())
+		svc.Start(ctx)
 
 		ws := new(restful.WebService)
 		svc.RegisterRoutes(ws)
@@ -69,14 +72,16 @@ var _ = Describe("MADS http service", func() {
 		url = srv.Server().URL
 		monitoringAssignmentPath = fmt.Sprintf("%s%s", url, service.FetchMonitoringAssignmentsPath)
 		DeferCleanup(func() {
+			cancel()
 			srv.Server().Close()
 		})
 
 		// wait for the server
 		Eventually(srv.Ready).Should(Succeed())
-	})
+	}
 
 	Context("with resources", func() {
+		BeforeEach(setupServer)
 		It("should respond with an empty discovery response", func() {
 			// given
 			discoveryReq := envoy_v3.DiscoveryRequest{
@@ -213,6 +218,7 @@ var _ = Describe("MADS http service", func() {
 			// given
 			Expect(createMesh(mesh)).To(Succeed())
 			Expect(createDataPlane(dp1)).To(Succeed())
+			setupServer()
 		})
 
 		It("should return the monitoring assignments", func() {
@@ -548,6 +554,21 @@ var _ = Describe("MADS http service", func() {
 					HaveField("Resources", HaveLen(1)),
 				))),
 			)))
+
+			By("Second request should also be instant")
+			discoveryReq.VersionInfo = discoveryRes.VersionInfo
+			reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
+			Expect(err).ToNot(HaveOccurred())
+			// when
+			req, err = http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=0s", strings.NewReader(reqBytes))
+			Expect(err).ToNot(HaveOccurred())
+			req.Header.Add("content-type", "application/json")
+
+			start := time.Now()
+			Expect(http.DefaultClient.Do(req)).
+				Should(HaveHTTPStatus(http.StatusNotModified))
+			// Request should have been very fast
+			Expect(start).To(BeTemporally("~", time.Now(), time.Millisecond*200))
 		})
 
 		It("should return an error if the fetch timeout is unparseable", func() {
