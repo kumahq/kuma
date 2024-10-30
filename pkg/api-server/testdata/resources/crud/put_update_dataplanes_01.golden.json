@@ -4,6 +4,12 @@
  "name": "dp-1",
  "creationTime": "0001-01-01T00:00:00Z",
  "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/env": "universal",
+  "kuma.io/mesh": "default",
+  "kuma.io/origin": "zone",
+  "kuma.io/zone": "default"
+ },
  "networking": {
   "address": "10.1.2.1",
   "inbound": [

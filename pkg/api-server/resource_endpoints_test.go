@@ -16,6 +16,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
@@ -27,6 +28,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -290,6 +292,69 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 		Expect(store.Get(context.Background(), actualDpp, core_store.GetByKey("dpp-1", mesh))).To(Succeed())
 		Expect(actualDpp.Meta.GetLabels()).To(Equal(map[string]string{
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             mesh,
+			mesh_proto.EnvTag:              "universal",
+		}))
+	})
+
+	It("should compute labels on update of the resource", func() {
+		// given
+		apiServer, store, stop := createServer(false, false)
+		defer stop()
+		createMesh(store)
+		name := "ext-svc"
+
+		// when
+		res := &rest_v1alpha1.Resource{
+			ResourceMeta: rest_v1alpha1.ResourceMeta{
+				Name: name,
+				Mesh: mesh,
+				Type: string(meshexternalservice_api.MeshExternalServiceType),
+				Labels: map[string]string{
+					"kuma.io/origin": "zone",
+				},
+			},
+			Spec: &meshexternalservice_api.MeshExternalService{
+				Match: meshexternalservice_api.Match{
+					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+					Port:     9000,
+					Protocol: core_mesh.ProtocolHTTP,
+				},
+				Endpoints: []meshexternalservice_api.Endpoint{
+					{
+						Address: "192.168.0.1",
+						Port:    meshexternalservice_api.Port(27017),
+					},
+				},
+			},
+		}
+		resp, err := put(apiServer.Address(), meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor, name, res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusCreated))
+		// and then
+		actualMes := meshexternalservice_api.NewMeshExternalServiceResource()
+		Expect(store.Get(context.Background(), actualMes, core_store.GetByKey(name, mesh))).To(Succeed())
+		Expect(actualMes.Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: "zone",
+			mesh_proto.ZoneTag:             "default",
+			mesh_proto.MeshTag:             mesh,
+			mesh_proto.EnvTag:              "universal",
+		}))
+
+		// after update it should have computed labels
+		resp, err = put(apiServer.Address(), meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor, name, res)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
+		// and then
+		actualMes = meshexternalservice_api.NewMeshExternalServiceResource()
+		Expect(store.Get(context.Background(), actualMes, core_store.GetByKey(name, mesh))).To(Succeed())
+		Expect(actualMes.Meta.GetLabels()).To(Equal(map[string]string{
+			mesh_proto.ResourceOriginLabel: "zone",
 			mesh_proto.ZoneTag:             "default",
 			mesh_proto.MeshTag:             mesh,
 			mesh_proto.EnvTag:              "universal",
