@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -104,7 +105,13 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.Secret)
 
 			// when
+<<<<<<< HEAD
 			err := s.Create(context.Background(), secret, store.CreateByKey(name, "demo"))
+=======
+			err := rs.Create(context.Background(), secret, store.CreateByKey(name, "demo"), store.CreateWithLabels(map[string]string{
+				mesh_proto.DisplayName: name,
+			}))
+>>>>>>> e1179afd8 (fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (#11923))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -120,6 +127,9 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
 			Expect(actual.Type).To(Equal(expected.Type))
+			Expect(actual.GetObjectMeta().GetLabels()).NotTo(HaveKey(mesh_proto.DisplayName))
+			Expect(actual.GetObjectMeta().GetAnnotations()).To(HaveKeyWithValue(mesh_proto.DisplayName, name))
+
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(secret.Meta.GetVersion()))
 		})
@@ -190,9 +200,11 @@ var _ = Describe("KubernetesStore", func() {
               name: %s
               labels:
                 kuma.io/mesh: demo
+              annotations:
+                kuma.io/display-name: %s
             data:
               value: ZXhhbXBsZQ== # base64(example)
-`, ns, name))
+`, ns, name, name))
 			backend.Create(initial)
 			// and
 			expected := backend.ParseYAML(`
@@ -229,6 +241,8 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
 			Expect(actual.Type).To(Equal(expected.Type))
+			Expect(actual.GetObjectMeta().GetLabels()).NotTo(HaveKey(mesh_proto.DisplayName))
+			Expect(actual.GetObjectMeta().GetAnnotations()).To(HaveKeyWithValue(mesh_proto.DisplayName, name))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(secret.Meta.GetVersion()))
 		})

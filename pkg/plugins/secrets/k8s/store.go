@@ -3,6 +3,7 @@ package k8s
 import (
 	"context"
 	"fmt"
+	"maps"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -56,12 +58,17 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	}
 	secret.Namespace = s.namespace
 	secret.Name = opts.Name
+<<<<<<< HEAD
 	if r.Descriptor().Name == secret_model.SecretType {
 		labels := map[string]string{
 			metadata.KumaMeshLabel: opts.Mesh,
 		}
 		secret.SetLabels(labels)
 	}
+=======
+
+	setLabelsAnnotationsAndMesh(secret, opts.Mesh, opts.Labels)
+>>>>>>> e1179afd8 (fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (#11923))
 
 	if opts.Owner != nil {
 		k8sOwner, err := s.resourcesConverter.ToKubernetesObject(opts.Owner)
@@ -92,6 +99,17 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrap(err, "failed to convert core Secret into k8s counterpart")
 	}
 	secret.Namespace = s.namespace
+<<<<<<< HEAD
+=======
+
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+
+	setLabelsAnnotationsAndMesh(secret, r.GetMeta().GetMesh(), updateLabels)
+
+>>>>>>> e1179afd8 (fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (#11923))
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return core_store.ErrorResourceConflict(r.Descriptor().Name, secret.Name, r.GetMeta().GetMesh())
@@ -105,6 +123,22 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+func setLabelsAnnotationsAndMesh(s *kube_core.Secret, mesh string, labels map[string]string) {
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if mesh != "" {
+		labels[metadata.KumaMeshLabel] = mesh
+	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(labels, s.GetAnnotations())
+	s.GetObjectMeta().SetLabels(labels)
+	s.GetObjectMeta().SetAnnotations(annotations)
+}
+
+>>>>>>> e1179afd8 (fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (#11923))
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
 	if err := s.Get(ctx, r, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
@@ -224,6 +258,19 @@ func (m *KubernetesMetaAdapter) GetCreationTime() time.Time {
 
 func (m *KubernetesMetaAdapter) GetModificationTime() time.Time {
 	return m.GetObjectMeta().GetCreationTimestamp().Time
+}
+
+func (m *KubernetesMetaAdapter) GetLabels() map[string]string {
+	labels := maps.Clone(m.GetObjectMeta().GetLabels())
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if displayName, ok := m.GetObjectMeta().GetAnnotations()[v1alpha1.DisplayName]; ok {
+		labels[v1alpha1.DisplayName] = displayName
+	} else {
+		labels[v1alpha1.DisplayName] = m.GetObjectMeta().GetName()
+	}
+	return labels
 }
 
 type Converter interface {
