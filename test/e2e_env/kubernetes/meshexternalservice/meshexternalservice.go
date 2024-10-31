@@ -35,8 +35,10 @@ func MeshExternalServices() {
 				WithEgressRoutingEnabled().KubeYaml())).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
-			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithName("demo-client-egress"), democlient.WithMesh(meshNameEgress))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName)),
+				democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithName("demo-client-egress"), democlient.WithMesh(meshNameEgress)),
+			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

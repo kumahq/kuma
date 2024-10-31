@@ -59,11 +59,13 @@ func CrossMeshGatewayOnKubernetes() {
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceOtherMesh)).
 			Install(NamespaceWithSidecarInjection(gatewayClientNamespaceSameMesh)).
 			Install(Namespace(gatewayClientOutsideMesh)).
-			Install(echoServerApp(gatewayMesh)).
-			Install(echoServerApp(gatewayOtherMesh)).
-			Install(democlient.Install(democlient.WithNamespace(gatewayClientNamespaceOtherMesh), democlient.WithMesh(gatewayOtherMesh))).
-			Install(democlient.Install(democlient.WithNamespace(gatewayClientNamespaceSameMesh), democlient.WithMesh(gatewayMesh))).
-			Install(democlient.Install(democlient.WithNamespace(gatewayClientOutsideMesh), democlient.WithMesh(gatewayMesh))) // this will not be in the mesh
+			Install(Parallel(
+				echoServerApp(gatewayMesh),
+				echoServerApp(gatewayOtherMesh),
+				democlient.Install(democlient.WithNamespace(gatewayClientNamespaceOtherMesh), democlient.WithMesh(gatewayOtherMesh)),
+				democlient.Install(democlient.WithNamespace(gatewayClientNamespaceSameMesh), democlient.WithMesh(gatewayMesh)),
+				democlient.Install(democlient.WithNamespace(gatewayClientOutsideMesh), democlient.WithMesh(gatewayMesh)), // this will not be in the mesh
+			))
 
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())
 	})

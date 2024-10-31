@@ -119,6 +119,19 @@ name: %s
 	return YamlUniversal(mesh)
 }
 
+func Parallel(fns ...InstallFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		eg := errgroup.Group{}
+		for _, fn := range fns {
+			installFn := fn
+			eg.Go(func() error {
+				return installFn(cluster)
+			})
+		}
+		return eg.Wait()
+	}
+}
+
 func MeshKubernetes(name string) InstallFunc {
 	mesh := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -993,6 +1006,12 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func (cs *ClusterSetup) SetupInGroup(cluster Cluster, group *errgroup.Group) {
+	group.Go(func() error {
+		return errors.Wrap(Combine(cs.installFuncs...)(cluster), cluster.Name())
+	})
 }
 
 func (cs *ClusterSetup) SetupInParallel(cluster Cluster) error {
