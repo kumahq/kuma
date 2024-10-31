@@ -93,7 +93,11 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	secret.Namespace = s.namespace
 
-	setLabelsAnnotationsAndMesh(secret, r.GetMeta().GetMesh(), opts.Labels)
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	setLabelsAnnotationsAndMesh(secret, r.GetMeta().GetMesh(), updateLabels)
 
 	if err := s.writer.Update(ctx, secret); err != nil {
 		if kube_apierrs.IsConflict(err) {

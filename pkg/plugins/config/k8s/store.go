@@ -91,6 +91,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	if !ok {
 		return newInvalidTypeError()
 	}
+	opts := core_store.NewUpdateOptions(fs...)
 	cm := &kube_core.ConfigMap{
 		TypeMeta: kube_meta.TypeMeta{
 			Kind:       "ConfigMap",
@@ -103,7 +104,12 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		},
 	}
 
-	labels, annotations := k8s.SplitLabelsAndAnnotations(cm.GetLabels(), cm.GetAnnotations())
+	updateLabels := cm.GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(updateLabels, cm.GetAnnotations())
 	cm.GetObjectMeta().SetLabels(labels)
 	cm.GetObjectMeta().SetAnnotations(annotations)
 
