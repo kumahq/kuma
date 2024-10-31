@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -55,38 +54,32 @@ spec:
 
 		group := errgroup.Group{}
 		// Kube Zone 1
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-				Install(Parallel(
-					testserver.Install(
-						testserver.WithName("test-client"),
-						testserver.WithMesh(mesh),
-						testserver.WithNamespace(k8sZoneNamespace),
-					),
-					testserver.Install(
-						testserver.WithName("test-server"),
-						testserver.WithMesh(mesh),
-						testserver.WithNamespace(k8sZoneNamespace),
-						testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-					),
-				)).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
-
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-				Install(testserver.Install(
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-client"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(k8sZoneNamespace),
+				),
+				testserver.Install(
 					testserver.WithName("test-server"),
 					testserver.WithMesh(mesh),
 					testserver.WithNamespace(k8sZoneNamespace),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(k8sZoneNamespace),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())

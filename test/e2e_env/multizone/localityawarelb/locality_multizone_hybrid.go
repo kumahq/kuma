@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -87,35 +86,29 @@ networking:
 
 		group := errgroup.Group{}
 		// Universal Zone 4
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Parallel(
-					DemoClientUniversal(
-						"uni-zone4-demo-client",
-						mesh,
-						WithTransparentProxy(true),
-					),
-					DemoClientUniversal(
-						"uni-zone4-demo-client-no-egress",
-						meshNoZoneEgress,
-						WithTransparentProxy(true),
-					),
-					InstallExternalService("external-service-in-uni-zone4"),
-					InstallExternalService("external-service-in-kube-zone1"),
-					InstallExternalService("external-service-in-both-zones"),
-				)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(
+					"uni-zone4-demo-client",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				DemoClientUniversal(
+					"uni-zone4-demo-client-no-egress",
+					meshNoZoneEgress,
+					WithTransparentProxy(true),
+				),
+				InstallExternalService("external-service-in-uni-zone4"),
+				InstallExternalService("external-service-in-kube-zone1"),
+				InstallExternalService("external-service-in-both-zones"),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Kubernetes Zone 1
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
+			SetupInGroup(multizone.KubeZone1, &group)
 
 		Expect(group.Wait()).To(Succeed())
 

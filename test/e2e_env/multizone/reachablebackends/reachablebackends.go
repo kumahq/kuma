@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -135,77 +134,71 @@ spec:
 
 		group := errgroup.Group{}
 		// Zone Kube1
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(Namespace(namespaceOutside)).
-				Install(YamlK8s(meshPassthrough)).
-				Install(Parallel(
-					testserver.Install(
-						testserver.WithName("client-server"),
-						testserver.WithMesh(meshName),
-						testserver.WithNamespace(namespace),
-						testserver.WithReachableServices("dummy-service"),
-						testserver.WithReachableBackends(reachableBackends),
-					),
-					testserver.Install(
-						testserver.WithName("client-server-namespace"),
-						testserver.WithMesh(meshName),
-						testserver.WithNamespace(namespace),
-						testserver.WithReachableServices("dummy-service"),
-						testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
-					),
-					testserver.Install(
-						testserver.WithName("client-server-no-access"),
-						testserver.WithMesh(meshName),
-						testserver.WithNamespace(namespace),
-						testserver.WithReachableServices("dummy-service"),
-						testserver.WithReachableBackends("{}"),
-					),
-					testserver.Install(
-						testserver.WithName("first-test-server"),
-						testserver.WithMesh(meshName),
-						testserver.WithNamespace(namespace),
-					),
-					testserver.Install(
-						testserver.WithName("second-test-server"),
-						testserver.WithMesh(meshName),
-						testserver.WithNamespace(namespace),
-					),
-					testserver.Install(
-						testserver.WithName("external-service"),
-						testserver.WithNamespace(namespaceOutside),
-					),
-					testserver.Install(
-						testserver.WithName("not-accessible-es"),
-						testserver.WithNamespace(namespaceOutside),
-					),
-				)).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(namespaceOutside)).
+			Install(YamlK8s(meshPassthrough)).
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("client-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithReachableServices("dummy-service"),
+					testserver.WithReachableBackends(reachableBackends),
+				),
+				testserver.Install(
+					testserver.WithName("client-server-namespace"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithReachableServices("dummy-service"),
+					testserver.WithReachableBackends(reachableBackendsNamespaceLabel),
+				),
+				testserver.Install(
+					testserver.WithName("client-server-no-access"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithReachableServices("dummy-service"),
+					testserver.WithReachableBackends("{}"),
+				),
+				testserver.Install(
+					testserver.WithName("first-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("second-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("external-service"),
+					testserver.WithNamespace(namespaceOutside),
+				),
+				testserver.Install(
+					testserver.WithName("not-accessible-es"),
+					testserver.WithNamespace(namespaceOutside),
+				),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
 
 		// Zone Kube2
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(Parallel(
-					testserver.Install(
-						testserver.WithName("other-zone-test-server"),
-						testserver.WithNamespace(namespace),
-						testserver.WithMesh(meshName),
-						testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
-					),
-					testserver.Install(
-						testserver.WithName("other-zone-not-accessible"),
-						testserver.WithNamespace(namespace),
-						testserver.WithMesh(meshName),
-						testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
-					),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("other-zone-test-server"),
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
+				),
+				testserver.Install(
+					testserver.WithName("other-zone-not-accessible"),
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "other-zone-not-accessible"),
+				),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

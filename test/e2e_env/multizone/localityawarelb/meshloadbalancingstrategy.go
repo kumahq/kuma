@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -41,28 +40,22 @@ networking:
 
 		// Universal Zone 4
 		group := errgroup.Group{}
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Parallel(
-					DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true)),
-					InstallExternalService("es-1"),
-					InstallExternalService("es-2"),
-					TestServerUniversal("test-server-1", mesh,
-						WithArgs([]string{"echo", "--instance", "ts-1"}),
-					),
-				)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal("demo-client", mesh, WithTransparentProxy(true)),
+				InstallExternalService("es-1"),
+				InstallExternalService("es-2"),
+				TestServerUniversal("test-server-1", mesh,
+					WithArgs([]string{"echo", "--instance", "ts-1"}),
+				),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(TestServerUniversal("test-server-2", mesh,
-					WithArgs([]string{"echo", "--instance", "ts-2"}),
-				)).
-				Setup(multizone.UniZone2)
-			return errors.Wrap(err, multizone.UniZone2.Name())
-		})
+		NewClusterSetup().
+			Install(TestServerUniversal("test-server-2", mesh,
+				WithArgs([]string{"echo", "--instance", "ts-2"}),
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
 

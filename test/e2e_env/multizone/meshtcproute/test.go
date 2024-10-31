@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -28,37 +27,31 @@ func Test() {
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Parallel(
-					DemoClientUniversal(AppModeDemoClient, meshName,
-						WithTransparentProxy(true),
-					),
-					TestServerUniversal("test-server-echo-1", meshName,
-						WithArgs([]string{"echo", "--instance", "zone1"}),
-						WithServiceVersion("v1"),
-					),
-				)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(AppModeDemoClient, meshName,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("test-server-echo-1", meshName,
+					WithArgs([]string{"echo", "--instance", "zone1"}),
+					WithServiceVersion("v1"),
+				),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Parallel(
-					TestServerUniversal("test-server-echo-2", meshName,
-						WithArgs([]string{"echo", "--instance", "zone2"}),
-						WithServiceVersion("v2"),
-					),
-					TestServerUniversal("test-server-echo-3", meshName,
-						WithArgs([]string{"echo", "--instance", "alias-zone2"}),
-						WithServiceName("alias-test-server"),
-						WithServiceVersion("v2"),
-					),
-				)).
-				Setup(multizone.UniZone2)
-			return errors.Wrap(err, multizone.UniZone2.Name())
-		})
+		NewClusterSetup().
+			Install(Parallel(
+				TestServerUniversal("test-server-echo-2", meshName,
+					WithArgs([]string{"echo", "--instance", "zone2"}),
+					WithServiceVersion("v2"),
+				),
+				TestServerUniversal("test-server-echo-3", meshName,
+					WithArgs([]string{"echo", "--instance", "alias-zone2"}),
+					WithServiceName("alias-test-server"),
+					WithServiceVersion("v2"),
+				),
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
 

@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -46,32 +45,26 @@ spec:
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
-		group.Go(func() error {
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(Parallel(
-					testserver.Install(
-						testserver.WithNamespace(namespace),
-						testserver.WithMesh(meshName),
-						testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-					),
-					democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
-				)).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
-
-		group.Go(func() error {
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Parallel(
+				testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

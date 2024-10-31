@@ -6,7 +6,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -32,30 +31,24 @@ func ProducerPolicyFlow() {
 
 		group := errgroup.Group{}
 		// Kube Zone 1
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-				Install(testserver.Install(
-					testserver.WithName("test-client"),
-					testserver.WithMesh(mesh),
-					testserver.WithNamespace(k8sZoneNamespace),
-				)).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(testserver.Install(
+				testserver.WithName("test-client"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(k8sZoneNamespace),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
-				Install(testserver.Install(
-					testserver.WithName("test-server"),
-					testserver.WithMesh(mesh),
-					testserver.WithNamespace(k8sZoneNamespace),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(mesh),
+				testserver.WithNamespace(k8sZoneNamespace),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

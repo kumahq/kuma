@@ -6,7 +6,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -33,21 +32,17 @@ func TrafficPermission() {
 
 		group := errgroup.Group{}
 		// Universal Zone 1
-		group.Go(func() error {
-			err := multizone.UniZone1.Install(TestServerUniversal("test-server", meshName,
+		NewClusterSetup().
+			Install(TestServerUniversal("test-server", meshName,
 				WithArgs([]string{"echo", "--instance", "echo"}),
-			))
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Kubernetes Zone 1
-		group.Go(func() error {
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 
 		clientPodName, err = PodNameOfApp(multizone.KubeZone1, "demo-client", namespace)

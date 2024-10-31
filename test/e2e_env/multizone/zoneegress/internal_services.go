@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -43,45 +42,37 @@ routing:
 
 		group := errgroup.Group{}
 		// Universal Zone 1
-		group.Go(func() error {
-			err = multizone.UniZone1.Install(DemoClientUniversal(
+		NewClusterSetup().
+			Install(DemoClientUniversal(
 				"zone3-demo-client",
 				meshName,
 				WithTransparentProxy(true),
-			))
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Universal Zone 2
-		group.Go(func() error {
-			err = multizone.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
+		NewClusterSetup().
+			Install(TestServerUniversal("zone4-dp-echo", meshName,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithServiceName("zone4-test-server"),
-			))
-			return errors.Wrap(err, multizone.UniZone2.Name())
-		})
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
 
 		// Kubernetes Zone 1
-		group.Go(func() error {
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone1, &group)
 
 		// Kubernetes Zone 2
-		group.Go(func() error {
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(
-					testserver.WithName("test-server"),
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

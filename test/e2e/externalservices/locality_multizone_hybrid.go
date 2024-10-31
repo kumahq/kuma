@@ -6,7 +6,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -55,37 +54,31 @@ func ExternalServicesOnMultizoneHybridWithLocalityAwareLb() {
 		// K8s Cluster 1
 		group := errgroup.Group{}
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Kuma(config_core.Zone,
-					WithIngress(),
-					WithIngressEnvoyAdminTunnel(),
-					WithEgress(),
-					WithEgressEnvoyAdminTunnel(),
-					WithGlobalAddress(globalCP.GetKDSServerAddress()),
-				)).
-				Install(NamespaceWithSidecarInjection(TestNamespace)).
-				Setup(zone1)
-			return errors.Wrap(err, zone1.Name())
-		})
+		NewClusterSetup().
+			Install(Kuma(config_core.Zone,
+				WithIngress(),
+				WithIngressEnvoyAdminTunnel(),
+				WithEgress(),
+				WithEgressEnvoyAdminTunnel(),
+				WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			)).
+			Install(NamespaceWithSidecarInjection(TestNamespace)).
+			SetupInGroup(zone1, &group)
 
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-				Install(DemoClientUniversal(
-					"zone4-demo-client",
-					defaultMesh,
-					WithTransparentProxy(true),
-				)).
-				Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
-				Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
-				Install(TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false)).
-				Setup(zone4)
-			return errors.Wrap(err, zone4.Name())
-		})
+		NewClusterSetup().
+			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(DemoClientUniversal(
+				"zone4-demo-client",
+				defaultMesh,
+				WithTransparentProxy(true),
+			)).
+			Install(IngressUniversal(globalCP.GenerateZoneIngressToken)).
+			Install(EgressUniversal(globalCP.GenerateZoneEgressToken)).
+			Install(TestServerExternalServiceUniversal("external-service-in-zone1", 8080, false)).
+			SetupInGroup(zone4, &group)
 
 		Expect(group.Wait()).To(Succeed())
 

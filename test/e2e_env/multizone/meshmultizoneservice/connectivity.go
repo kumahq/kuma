@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
@@ -92,50 +91,41 @@ spec:
 `, Config.KumaNamespace, meshName)
 
 		group := errgroup.Group{}
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(Namespace(clientNamespace)).
-				Install(Parallel(
-					testserver.Install(
-						testserver.WithNamespace(namespace),
-						testserver.WithMesh(meshName),
-						testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-					),
-					testserver.Install(
-						testserver.WithName("demo-client"),
-						testserver.WithNamespace(clientNamespace),
-					),
-					democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
-				)).
-				Install(YamlK8s(meshGateway)).
-				Install(YamlK8s(gatewayRoute)).
-				Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-mmzs", namespace, meshName))).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
-
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(clientNamespace)).
+			Install(Parallel(
+				testserver.Install(
 					testserver.WithNamespace(namespace),
 					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+				testserver.Install(
+					testserver.WithName("demo-client"),
+					testserver.WithNamespace(clientNamespace),
+				),
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
+			)).
+			Install(YamlK8s(meshGateway)).
+			Install(YamlK8s(gatewayRoute)).
+			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-mmzs", namespace, meshName))).
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(Parallel(
-					DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)),
-					TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"})),
-				)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
+
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true)),
+				TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"})),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

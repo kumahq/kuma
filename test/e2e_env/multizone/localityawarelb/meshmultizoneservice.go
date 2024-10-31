@@ -3,7 +3,6 @@ package localityawarelb
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -43,25 +42,19 @@ spec:
 
 		group := errgroup.Group{}
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-				)).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+			)).
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone2, &group)
 
 		uniServiceYAML := `
 type: MeshService
@@ -82,13 +75,10 @@ spec:
     appProtocol: http
 `
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-				Install(YamlUniversal(uniServiceYAML)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			Install(YamlUniversal(uniServiceYAML)).
+			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
 

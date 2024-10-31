@@ -1008,6 +1008,12 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
+func (cs *ClusterSetup) SetupInGroup(cluster Cluster, group *errgroup.Group) {
+	group.Go(func() error {
+		return errors.Wrap(Combine(cs.installFuncs...)(cluster), cluster.Name())
+	})
+}
+
 func (cs *ClusterSetup) SetupInParallel(cluster Cluster) error {
 	errGroup := errgroup.Group{}
 	for _, f := range cs.installFuncs {

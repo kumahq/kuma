@@ -5,7 +5,6 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -45,9 +44,8 @@ spec:
 
 		group := errgroup.Group{}
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(YamlUniversal(`
+		NewClusterSetup().
+			Install(YamlUniversal(`
 type: MeshService
 name: backend
 mesh: meshservice
@@ -63,17 +61,14 @@ spec:
     targetPort: 80
     appProtocol: http
 `)).
-				Install(TestServerUniversal("dp-echo-1", meshName,
-					WithArgs([]string{"echo", "--instance", "echo-v1"}),
-					WithServiceVersion("v1"),
-				)).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+			Install(TestServerUniversal("dp-echo-1", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceVersion("v1"),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(YamlUniversal(`
+		NewClusterSetup().
+			Install(YamlUniversal(`
 type: MeshService
 name: backend
 mesh: meshservice
@@ -89,13 +84,10 @@ spec:
     targetPort: 80
     appProtocol: http
 `)).
-				Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
-				Setup(multizone.UniZone2)
-			return errors.Wrap(err, multizone.UniZone2.Name())
-		})
+			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
+			SetupInGroup(multizone.UniZone2, &group)
 
-		group.Go(func() error {
-			veryLongNamedService := `
+		veryLongNamedService := `
 kind: MeshService
 apiVersion: kuma.io/v1alpha1
 metadata:
@@ -113,13 +105,11 @@ spec:
     appProtocol: http
 `
 
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(YamlK8s(veryLongNamedService)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(YamlK8s(veryLongNamedService)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
 	})

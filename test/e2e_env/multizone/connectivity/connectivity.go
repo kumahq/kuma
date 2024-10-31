@@ -3,7 +3,6 @@ package connectivity
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
@@ -25,39 +24,27 @@ func Connectivity() {
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-				Setup(multizone.KubeZone1)
-			return errors.Wrap(err, multizone.KubeZone1.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(
-					testserver.WithNamespace(namespace),
-					testserver.WithMesh(meshName),
-					testserver.WithEchoArgs("echo", "--instance", "kube-test-server"),
-				)).
-				Setup(multizone.KubeZone2)
-			return errors.Wrap(err, multizone.KubeZone2.Name())
-		})
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
-				Setup(multizone.UniZone1)
-			return errors.Wrap(err, multizone.UniZone1.Name())
-		})
+		NewClusterSetup().
+			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
+			SetupInGroup(multizone.UniZone1, &group)
 
-		group.Go(func() error {
-			err := NewClusterSetup().
-				Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-				Setup(multizone.UniZone2)
-			return errors.Wrap(err, multizone.UniZone2.Name())
-		})
+		NewClusterSetup().
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			SetupInGroup(multizone.UniZone2, &group)
 
 		Expect(group.Wait()).To(Succeed())
 	})
