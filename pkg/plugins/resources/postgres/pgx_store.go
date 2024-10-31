@@ -153,7 +153,11 @@ func (r *pgxResourceStore) Update(ctx context.Context, resource core_model.Resou
 		return errors.Wrap(err, "failed to convert meta version to int")
 	}
 
-	labels, err := prepareLabels(opts.Labels)
+	updateLabels := resource.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, err := prepareLabels(updateLabels)
 	if err != nil {
 		return err
 	}
