@@ -54,8 +54,8 @@ jobs:
       - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           args: --fix=false --verbose
-          version: v1.60.3
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+          version: v1.61.0
+      - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -87,7 +87,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:

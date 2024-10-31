@@ -22,19 +22,21 @@ func Test() {
 		err := NewClusterSetup().
 			Install(MeshKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-client"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithName("external-service"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-client"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("external-service"),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

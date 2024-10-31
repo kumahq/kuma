@@ -344,18 +344,20 @@ func MeshMetric() {
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(observabilityNamespace)).
 			Install(Namespace(secondaryOpenTelemetryCollectorNamespace)).
-			Install(otelcollector.Install(
-				otelcollector.WithName(primaryOtelCollectorName),
-				otelcollector.WithNamespace(observabilityNamespace),
-				otelcollector.WithIPv6(Config.IPV6),
+			Install(Parallel(
+				otelcollector.Install(
+					otelcollector.WithName(primaryOtelCollectorName),
+					otelcollector.WithNamespace(observabilityNamespace),
+					otelcollector.WithIPv6(Config.IPV6),
+				),
+				democlient.Install(democlient.WithNamespace(observabilityNamespace)),
+				otelcollector.Install(
+					otelcollector.WithName(secondaryOtelCollectorName),
+					otelcollector.WithNamespace(secondaryOpenTelemetryCollectorNamespace),
+					otelcollector.WithIPv6(Config.IPV6),
+				),
+				democlient.Install(democlient.WithNamespace(secondaryOpenTelemetryCollectorNamespace)),
 			)).
-			Install(democlient.Install(democlient.WithNamespace(observabilityNamespace))).
-			Install(otelcollector.Install(
-				otelcollector.WithName(secondaryOtelCollectorName),
-				otelcollector.WithNamespace(secondaryOpenTelemetryCollectorNamespace),
-				otelcollector.WithIPv6(Config.IPV6),
-			)).
-			Install(democlient.Install(democlient.WithNamespace(secondaryOpenTelemetryCollectorNamespace))).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
 

@@ -3,7 +3,7 @@ module github.com/kumahq/kuma
 go 1.23.2
 
 require (
-	cirello.io/pglock v1.14.2
+	cirello.io/pglock v1.16.0
 	github.com/Masterminds/semver/v3 v3.3.0
 	github.com/Masterminds/sprig/v3 v3.3.0
 	github.com/Nordix/simple-ipam v1.0.0
@@ -42,7 +42,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.20.5
 	github.com/prometheus/client_model v0.6.1
-	github.com/prometheus/common v0.60.0
+	github.com/prometheus/common v0.60.1
 	github.com/sethvargo/go-retry v0.3.0
 	github.com/shopspring/decimal v1.4.0
 	github.com/slok/go-http-metrics v0.13.0
@@ -76,20 +76,22 @@ require (
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.16.2
-	k8s.io/api v0.31.1
-	k8s.io/apiextensions-apiserver v0.31.1
-	k8s.io/apimachinery v0.31.1
-	k8s.io/client-go v0.31.1
+	k8s.io/api v0.31.2
+	k8s.io/apiextensions-apiserver v0.31.2
+	k8s.io/apimachinery v0.31.2
+	k8s.io/client-go v0.31.2
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kube-openapi v0.0.0-20240423202451-8948a665c108
-	k8s.io/kubectl v0.31.1
+	k8s.io/kubectl v0.31.2
 	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
-	sigs.k8s.io/controller-runtime v0.19.0
-	sigs.k8s.io/controller-tools v0.16.4
+	sigs.k8s.io/controller-runtime v0.19.1
+	sigs.k8s.io/controller-tools v0.16.5
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.2.0
 	sigs.k8s.io/yaml v1.4.0
 )
+
+require golang.org/x/sync v0.8.0
 
 require (
 	cel.dev/expr v0.16.0 // indirect
@@ -115,7 +117,7 @@ require (
 	github.com/docker/docker v27.2.0+incompatible // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
-	github.com/fatih/color v1.17.0 // indirect
+	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
@@ -216,7 +218,6 @@ require (
 	golang.org/x/crypto v0.28.0 // indirect
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/term v0.25.0 // indirect
 	golang.org/x/time v0.6.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect

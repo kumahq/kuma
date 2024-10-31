@@ -6,6 +6,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/kds/hash"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -28,18 +29,18 @@ func ProducerPolicyFlow() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Kube Zone 1
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-client"),
 				testserver.WithMesh(mesh),
 				testserver.WithNamespace(k8sZoneNamespace),
 			)).
-			Setup(multizone.KubeZone1),
-		).To(Succeed())
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(k8sZoneNamespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
@@ -47,8 +48,8 @@ func ProducerPolicyFlow() {
 				testserver.WithNamespace(k8sZoneNamespace),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).
-			Setup(multizone.KubeZone2),
-		).To(Succeed())
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

@@ -72,11 +72,12 @@ $ kumactl generate user-token --name john.doe@example.com --group users --valid-
 		},
 	}
 	cmd.Flags().StringVar(&args.name, "name", "", "name of the user")
-	_ = cmd.MarkFlagRequired("name")
 	cmd.Flags().StringSliceVar(&args.groups, "group", nil, "group of the user")
 	cmd.Flags().DurationVar(&args.validFor, "valid-for", 0, `how long the token will be valid (for example "24h")`)
 	cmd.Flags().StringVar(&args.signingKeyPath, "signing-key-path", "", "path to a file that contains private signing key. When specified, control plane won't be used to issue the token.")
 	cmd.Flags().StringVar(&args.kid, "kid", "", "ID of the key that is used to issue a token. Required when --signing-key-path is used.")
+
+	_ = cmd.MarkFlagRequired("name")
 	_ = cmd.MarkFlagRequired("valid-for")
 	return cmd
 }

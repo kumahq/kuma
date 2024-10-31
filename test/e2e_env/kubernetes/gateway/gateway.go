@@ -102,15 +102,17 @@ type: system.kuma.io/secret
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(Namespace(clientNamespace)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("demo-client"),
-				testserver.WithNamespace(clientNamespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("echo-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "echo-server"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("demo-client"),
+					testserver.WithNamespace(clientNamespace),
+				),
+				testserver.Install(
+					testserver.WithName("echo-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
+				),
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
