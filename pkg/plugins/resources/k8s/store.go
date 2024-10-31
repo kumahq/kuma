@@ -58,7 +58,7 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		return err
 	}
 
-	labels, annotations := splitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
+	labels, annotations := SplitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
 	obj.GetObjectMeta().SetLabels(labels)
 	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(opts.Mesh)
@@ -103,7 +103,8 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	if opts.ModifyLabels {
 		updateLabels = opts.Labels
 	}
-	labels, annotations := splitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+	labels, annotations := SplitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+
 	obj.GetObjectMeta().SetLabels(labels)
 	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(r.GetMeta().GetMesh())
@@ -241,7 +242,7 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 
 // Kuma resource labels are generally stored on Kubernetes as labels, except "kuma.io/display-name".
 // We store it as an annotation because the resource name on k8s is limited by 253 and the label value is limited by 63.
-func splitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
+func SplitLabelsAndAnnotations(coreLabels map[string]string, currentAnnotations map[string]string) (map[string]string, map[string]string) {
 	labels := maps.Clone(coreLabels)
 	annotations := maps.Clone(currentAnnotations)
 	if annotations == nil {
