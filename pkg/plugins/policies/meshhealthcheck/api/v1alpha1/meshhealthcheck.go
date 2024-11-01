@@ -58,6 +58,7 @@ type Conf struct {
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
 	// Either int or decimal represented as string.
+	// Deprecated, not recommended. Use MeshCircuitBreaker instead.
 	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`
 	// If set to true, Envoy will not consider any hosts when the cluster is in
 	// 'panic mode'. Instead, the cluster will fail all requests as if all hosts

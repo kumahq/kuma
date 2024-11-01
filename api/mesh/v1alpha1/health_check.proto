@@ -66,6 +66,7 @@ message HealthCheck {
 
     // Allows to configure panic threshold for Envoy cluster. If not specified,
     // the default is 50%. To disable panic mode, set to 0%.
+    // Deprecated, not recommended. Use MeshCircuitBreaker instead.
     google.protobuf.FloatValue healthy_panic_threshold = 10;
 
     // If set to true, Envoy will not consider any hosts when the cluster is in
