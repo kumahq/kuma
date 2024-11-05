@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"sync"
@@ -70,7 +71,7 @@ func (m memoryMeta) GetModificationTime() time.Time {
 }
 
 func (m memoryMeta) GetLabels() map[string]string {
-	return m.Labels
+	return maps.Clone(m.Labels)
 }
 
 type memoryVersion uint64

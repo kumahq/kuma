@@ -35,7 +35,7 @@ func WithLabel(key, value string) CloneResourceMetaOpt {
 }
 
 func CloneResourceMeta(m model.ResourceMeta, fs ...CloneResourceMetaOpt) model.ResourceMeta {
-	labels := maps.Clone(m.GetLabels())
+	labels := m.GetLabels()
 	if labels == nil {
 		labels = map[string]string{}
 	}
@@ -86,5 +86,5 @@ func (r *resourceMeta) GetModificationTime() time.Time {
 }
 
 func (r *resourceMeta) GetLabels() map[string]string {
-	return r.labels
+	return maps.Clone(r.labels)
 }

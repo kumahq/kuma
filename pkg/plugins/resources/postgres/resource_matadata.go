@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"maps"
 	"time"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -42,5 +43,5 @@ func (r *resourceMetaObject) GetModificationTime() time.Time {
 }
 
 func (r *resourceMetaObject) GetLabels() map[string]string {
-	return r.Labels
+	return maps.Clone(r.Labels)
 }

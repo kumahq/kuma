@@ -1,6 +1,7 @@
 package model
 
 import (
+	"maps"
 	"time"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -83,5 +84,5 @@ func (m *ResourceMeta) GetModificationTime() time.Time {
 }
 
 func (m *ResourceMeta) GetLabels() map[string]string {
-	return m.Labels
+	return maps.Clone(m.Labels)
 }
