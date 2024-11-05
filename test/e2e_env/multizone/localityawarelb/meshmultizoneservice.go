@@ -56,28 +56,8 @@ spec:
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone2, &group)
 
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: mlb-mzms
-labels:
-  kuma.io/origin: zone
-  kuma.io/env: universal
-  k8s.kuma.io/namespace: mlb-mzms # add a label to aggregate kube and uni service
-  kuma.io/display-name: test-server # add a label to aggregate kube and uni service
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
-
 		NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})
