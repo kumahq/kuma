@@ -127,12 +127,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = b.defaultAdminPort
 		}
 	}
-
-	if request.XDSConfigType == "" {
-		params.UseDelta = b.deltaXdsEnabled
-	} else {
-		params.UseDelta = request.XDSConfigType == "delta"
-	}
+	params.UseDelta = request.DeltaXDSConfigEnabled
 
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:

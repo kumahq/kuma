@@ -382,6 +382,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		argsMap["--cni-conf-name"] = Config.CNIConf.ConfName
 	}
 
+	if c.opts.useDeltaXds {
+		argsMap["--env-var"] = "KUMA_EXPERIMENTAL_USE_DELTA_XDS=true"
+	}
+
 	if Config.XDSApiVersion != "" {
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + Config.XDSApiVersion
 	}

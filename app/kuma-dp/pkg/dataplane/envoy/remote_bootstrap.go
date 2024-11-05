@@ -191,11 +191,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		},
 		SystemCaPath: params.SystemCaPath,
 	}
-	if cfg.DataplaneRuntime.XDSConfigType == "" {
-		request.XDSConfigType = "sotw"
-	} else {
-		request.XDSConfigType = "delta"
-	}
+	request.DeltaXDSConfigEnabled = cfg.DataplaneRuntime.DeltaXdsConfigEnabled
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {
 		return nil, errors.Wrap(err, "could not marshal request to json")

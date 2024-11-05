@@ -29,6 +29,5 @@
   "certPath": "",
   "keyPath": ""
  },
- "systemCaPath": "",
- "xdsConfigType": "sotw"
+ "systemCaPath": ""
 }

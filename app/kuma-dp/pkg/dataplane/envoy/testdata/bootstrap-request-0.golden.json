@@ -31,6 +31,5 @@
   "certPath": "/tmp/cert.pem",
   "keyPath": "/tmp/key.pem"
  },
- "systemCaPath": "",
- "xdsConfigType": "sotw"
+ "systemCaPath": ""
 }

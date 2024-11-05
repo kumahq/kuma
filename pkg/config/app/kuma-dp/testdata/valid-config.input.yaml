@@ -12,4 +12,4 @@ dataplaneRuntime:
   binaryPath: envoy.sh
   configDir: /var/run/envoy
   envoyLogLevel: trace
-  xdsConfigType: delta
+  deltaXdsConfigEnabled: true

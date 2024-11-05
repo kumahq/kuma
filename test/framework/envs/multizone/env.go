@@ -132,6 +132,7 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
 	kubeZone2Options = append(kubeZone2Options, WithCNI())
+	kubeZone2Options = append(kubeZone2Options, WithDeltaXds())
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
 	UniZone1 = setupUniZone(&wg, Kuma4, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...)
