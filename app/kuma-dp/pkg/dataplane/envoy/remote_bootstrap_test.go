@@ -149,7 +149,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
 				cfg.DataplaneRuntime.Token = "token"
-				cfg.DataplaneRuntime.DeltaXdsConfigEnabled = true
+				cfg.DataplaneRuntime.XdsConfigMode = "delta"
 
 				return testCase{
 					config:                       cfg,

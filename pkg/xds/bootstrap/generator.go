@@ -127,7 +127,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = b.defaultAdminPort
 		}
 	}
-	params.UseDelta = request.DeltaXDSConfigEnabled
+	switch request.XdsConfigMode {
+	case types.DELTA:
+		params.UseDelta = true
+	case types.NOT_DEFINED:
+		if b.deltaXdsEnabled {
+			params.UseDelta = true
+		}
+	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {
 	case mesh_proto.IngressProxyType:

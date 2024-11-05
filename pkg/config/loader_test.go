@@ -372,7 +372,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
 			Expect(cfg.Experimental.SkipPersistedVIPs).To(BeTrue())
 			Expect(cfg.Experimental.GenerateMeshServices).To(BeTrue())
-			Expect(cfg.Experimental.UseDeltaXDS).To(BeTrue())
+			Expect(cfg.Experimental.UseDeltaXds).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -760,7 +760,7 @@ experimental:
   sidecarContainers: true
   generateMeshServices: true
   skipPersistedVIPs: true
-  useDeltaXDS: true
+  useDeltaXds: true
 proxy:
   gateway:
     globalDownstreamMaxConnections: 1

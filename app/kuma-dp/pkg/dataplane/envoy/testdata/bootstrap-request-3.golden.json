@@ -30,5 +30,5 @@
   "keyPath": ""
  },
  "systemCaPath": "",
- "deltaXdsConfigEnabled": true
+ "xdsConfigMode": 2
 }

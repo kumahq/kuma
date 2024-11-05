@@ -51,7 +51,6 @@ type kumaDeploymentOptions struct {
 	zoneName                    string
 	verifyKuma                  bool
 	setupKumactl                bool
-	useDeltaXds                 bool
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -319,12 +318,6 @@ func WithEgress() KumaDeploymentOption {
 func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
-	})
-}
-
-func WithDeltaXds() KumaDeploymentOption {
-	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.useDeltaXds = true
 	})
 }
 

@@ -21,7 +21,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Authn.EnableReloadableTokens || rt.Config().Store.Type == store.KubernetesStore,
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
-		rt.Config().Experimental.UseDeltaXDS,
+		rt.Config().Experimental.UseDeltaXds,
 	)
 	if err != nil {
 		return err

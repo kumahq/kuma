@@ -224,11 +224,11 @@ var _ = Describe("bootstrapGenerator", func() {
 				return dp
 			},
 			request: types.BootstrapRequest{
-				Mesh:                  "mesh",
-				Name:                  "name.namespace",
-				Version:               defaultVersion,
-				Workdir:               "/tmp",
-				DeltaXDSConfigEnabled: true,
+				Mesh:          "mesh",
+				Name:          "name.namespace",
+				Version:       defaultVersion,
+				Workdir:       "/tmp",
+				XdsConfigMode: types.DELTA,
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request-and-delta.golden.yaml",
 			hdsEnabled:         true,
