@@ -233,6 +233,15 @@ func configureEndpoints(
 			}
 		}
 	}
+	if conf.LocalityAwareness != nil && pointer.Deref(conf.LocalityAwareness.Disabled) {
+		for _, cla := range endpoints {
+			for _, localityLbEndpoints := range cla.Endpoints {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
+					localityLbEndpoints.Priority = 0
+				}
+			}
+		}
+	}
 	return nil
 }
 
