@@ -91,25 +91,29 @@ spec:
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			Install(Parallel(
+				democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace)),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+				),
 			)).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		// Universal Zone 5
 		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb-egress_svc",
-				mesh,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-zone-5", mesh,
-				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client_locality-aware-lb-egress_svc",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("test-server-zone-5", mesh,
+					WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+				),
 			)).
 			Setup(multizone.UniZone2),
 		).To(Succeed())
@@ -127,14 +131,16 @@ spec:
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb-egress_svc",
-				mesh,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-zone-4", mesh,
-				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client_locality-aware-lb-egress_svc",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("test-server-zone-4", mesh,
+					WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+				),
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())

@@ -121,6 +121,12 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	if len(svc.GetAnnotations()) > 0 {
+		if ignored, _, _ := metadata.Annotations(svc.GetAnnotations()).GetBoolean(metadata.KumaIgnoreAnnotation); ignored {
+			if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+				return kube_ctrl.Result{}, err
+			}
+			return kube_ctrl.Result{}, nil
+		}
 		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
 			log.V(1).Info("service is for gateway. Ignoring.")
 			return kube_ctrl.Result{}, nil

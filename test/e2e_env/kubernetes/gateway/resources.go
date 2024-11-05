@@ -88,17 +88,19 @@ spec:
 			Install(Namespace(waitingClientNamespace)).
 			Install(Namespace(curlingClientNamespace)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
-			Install(democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName))).
-			Install(democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(waitingClientNamespace), democlient.WithMesh(meshName)),
+				democlient.Install(democlient.WithNamespace(curlingClientNamespace), democlient.WithMesh(meshName)),
+				testserver.Install(
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithName("test-server"),
+					testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
+				),
+			)).
 			Install(YamlK8s(meshGatewayWithoutLimit)).
 			Install(YamlK8s(MkGatewayInstance(gatewayName, namespace, meshName))).
 			Install(YamlK8s(httpRoute)).
-			Install(testserver.Install(
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithName("test-server"),
-				testserver.WithEchoArgs("echo", "--instance", "kubernetes"),
-			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

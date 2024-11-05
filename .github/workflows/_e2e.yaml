@@ -31,10 +31,10 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+      - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -57,9 +57,13 @@ jobs:
           make build
       - run: |
           make -j build/distributions
-      - run: |
-          make -j images
-          make -j docker/save
+      - uses: nick-fields/retry@v3
+        id: retry
+        with:
+          max_attempts: 3
+          retry_wait_seconds: 15s
+          timeout_minutes: 30
+          command: make -j images && make -j docker/save
       - run: |
           make dev/set-kuma-helm-repo
       - name: "Enable ipv6 for docker"
@@ -69,7 +73,6 @@ jobs:
           {
             "ipv6": true,
             "fixed-cidr-v6": "2001:db8:1::/64",
-            "dns": ["8.8.8.8"],
             "dns-search": ["."]
           }
           EOF
@@ -134,12 +137,12 @@ jobs:
           if-no-files-found: ignore
           path: |
             /tmp/e2e-debug/
-          retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}
-      - uses: actions/upload-artifact@50769540e7f4bd5e21e526ee35c689e35e0d6874 # v4.4.0
+          retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         if: always()
         with:
           name: e2e-reports-${{ env.E2E_PARAM_TARGET }}-${{ env.E2E_PARAM_ARCH }}-${{ env.E2E_PARAM_K8S_VERSION }}-${{ env.E2E_PARAM_CNI_NETWORK_PLUGIN }}-${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}-${{ matrix.parallelRunnerId }}
           if-no-files-found: ignore
           path: |
             build/reports
-          retention-days: ${{ github.event_name == 'pull_request' && 5 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 5 || 10 }}

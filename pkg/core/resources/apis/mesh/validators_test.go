@@ -189,6 +189,20 @@ name: gateway.namespace
 				},
 			},
 		}),
+		Entry("MeshGateway with slash in tags", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway.namespace
+tags:
+  port: http/443
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+				GatewayListenerTagsAllowed: true,
+			},
+		}),
 		Entry("MeshHTTPRoute", testCase{
 			inputYaml: `
 kind: MeshHTTPRoute

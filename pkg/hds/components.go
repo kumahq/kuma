@@ -6,6 +6,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
@@ -17,7 +18,6 @@ import (
 	hds_server "github.com/kumahq/kuma/pkg/hds/server"
 	"github.com/kumahq/kuma/pkg/hds/tracker"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 var hdsServerLog = core.Log.WithName("hds-server")
@@ -30,7 +30,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	}
 
-	snapshotCache := util_xds_v3.NewSnapshotCache(false, hasher{}, util_xds.NewLogger(hdsServerLog))
+	snapshotCache := envoy_cache.NewSnapshotCache(false, hasher{}, util_xds.NewLogger(hdsServerLog))
 
 	callbacks, err := DefaultCallbacks(rt, snapshotCache)
 	if err != nil {
@@ -44,7 +44,7 @@ func Setup(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (hds_callbacks.Callbacks, error) {
+func DefaultCallbacks(rt core_runtime.Runtime, cache envoy_cache.SnapshotCache) (hds_callbacks.Callbacks, error) {
 	metrics, err := hds_metrics.NewMetrics(rt.Metrics())
 	if err != nil {
 		return nil, err
