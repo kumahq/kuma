@@ -49,6 +49,7 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
@@ -95,7 +96,9 @@ spec:
 	It("should fallback only to first zone", func() {
 		// given traffic to other zones
 		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
-			MustPassRepeatedly(5).Should(Or(Equal("kube-test-server-1"), Equal("uni-test-server")))
+			Should(Equal("kube-test-server-1"))
+		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
+			Should(Equal("uni-test-server"))
 
 		// when
 		policy := `
@@ -109,7 +112,7 @@ spec:
   - targetRef:
       kind: MeshMultiZoneService
       labels:
-        kuma.io/display-name: test-server 
+        kuma.io/display-name: test-server
     default:
       localityAwareness:
         crossZone:
@@ -130,5 +133,36 @@ spec:
 
 		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
 			MustPassRepeatedly(5).Should(Equal("kube-test-server-1"))
+	})
+
+	It("should be locality aware unless disabled", func() {
+		// given traffic only to the local zone
+		Eventually(responseFromInstance(multizone.KubeZone1), "30s", "1s").
+			MustPassRepeatedly(5).Should(Equal("kube-test-server-1"))
+
+		// when
+		policy := `
+type: MeshLoadBalancingStrategy
+name: mlb-mzms
+mesh: mlb-mzms
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server
+    default:
+      localityAwareness:
+        disabled: true
+`
+		err := multizone.Global.Install(YamlUniversal(policy))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(responseFromInstance(multizone.KubeZone1), "30s", "1s").
+			Should(Equal("uni-test-server"))
 	})
 }
