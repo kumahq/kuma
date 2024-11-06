@@ -42,7 +42,7 @@ jobs:
           go-version-file: go.mod
       - name: "Install tools"
         run: |
-          go install github.com/google/osv-scanner/cmd/osv-scanner@037c3543ac60359190459b10fbb5331568b4c8f5 # v1.7.0
+          go install github.com/google/osv-scanner/cmd/osv-scanner@b13f37e1a1e4cb98556c1d34cd3256a876929be1 # v1.9.1
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |
