@@ -31,7 +31,6 @@ spec:
     meshService:
       matchLabels:
         kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: mlb-mzms
   ports:
   - name: "80"
     port: 80
