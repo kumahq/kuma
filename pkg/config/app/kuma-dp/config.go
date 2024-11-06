@@ -217,7 +217,9 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
-	// XdsConfigMode defines xDS communication type between Envoy and control-plane
+	// XdsConfigMode defines xDS communication type between Envoy and control-plane.
+	// Available values are: sotw, delta
+	// By default it takes configuration provided by the control-plane.
 	XdsConfigMode string `json:"xdsConfigMode,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_xds_config_mode"`
 }
 
