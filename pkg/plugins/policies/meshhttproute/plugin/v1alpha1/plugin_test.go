@@ -263,9 +263,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 			}
 		}()),
 		Entry("default-meshmultizoneservice", func() outboundsTestCase {
-			backendDP := samples.DataplaneWebBuilder().
+			backendDP := builders.Dataplane().
+				WithName("backend").
+				WithAddress("192.168.0.4").
 				AddInbound(builders.Inbound().
-					WithAddress("192.168.0.4").
 					WithPort(8084).
 					WithTags(map[string]string{
 						mesh_proto.ServiceTag:  "backend",
@@ -274,9 +275,18 @@ var _ = Describe("MeshHTTPRoute", func() {
 					}),
 				).Build()
 			meshSvc := meshservice_api.MeshServiceResource{
-				Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
+				Meta: &test_model.ResourceMeta{
+					Name: "backend", Mesh: "default",
+					Labels: map[string]string{
+						"service": "backend",
+					},
+				},
 				Spec: &meshservice_api.MeshService{
-					Selector: meshservice_api.Selector{},
+					Selector: meshservice_api.Selector{
+						DataplaneTags: meshservice_api.DataplaneTags{
+							mesh_proto.ServiceTag: "backend",
+						},
+					},
 					Ports: []meshservice_api.Port{{
 						Port:        80,
 						TargetPort:  intstr.FromInt(8084),
@@ -286,10 +296,6 @@ var _ = Describe("MeshHTTPRoute", func() {
 						{
 							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
 							Value: "backend",
-						},
-						{
-							Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-							Value: "other-backend",
 						},
 					},
 				},
@@ -302,7 +308,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 			meshMZSvc := meshmultizoneservice_api.MeshMultiZoneServiceResource{
 				Meta: &test_model.ResourceMeta{Name: "multi-backend", Mesh: "default"},
 				Spec: &meshmultizoneservice_api.MeshMultiZoneService{
-					Selector: meshmultizoneservice_api.Selector{},
+					Selector: meshmultizoneservice_api.Selector{
+						MeshService: meshmultizoneservice_api.MeshServiceSelector{
+							MatchLabels: map[string]string{
+								"service": "backend",
+							},
+						},
+					},
 					Ports: []meshmultizoneservice_api.Port{{
 						Port:        80,
 						AppProtocol: core_mesh.ProtocolHTTP,
