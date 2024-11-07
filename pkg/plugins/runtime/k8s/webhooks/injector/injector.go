@@ -440,7 +440,6 @@ func (i *KumaInjector) getTransparentProxyConfigMap(
 	return tproxy_config.Config{}, err
 }
 
-
 // applyCustomPatches applies the block of patches to the given container and returns a new,
 // patched container. If patch list is empty, the same unaltered container is returned.
 func (i *KumaInjector) applyCustomPatches(
