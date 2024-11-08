@@ -28,7 +28,7 @@ env:
   CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
   MIN_VERSION: "1.2.0"
-  USE_LABEL_IN_VERSION: "false"
+  USE_LABEL_IN_VERSION: "true"
 permissions:
   contents: read
 jobs:
