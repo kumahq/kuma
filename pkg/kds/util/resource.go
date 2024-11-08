@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -65,7 +66,7 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:    r.GetMeta().GetName(),
 				Mesh:    r.GetMeta().GetMesh(),
-				Labels:  r.GetMeta().GetLabels(),
+				Labels:  maps.Clone(r.GetMeta().GetLabels()),
 				Version: "",
 			},
 			Spec:   pbany,
@@ -152,7 +153,11 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 				return nil, err
 			}
 		}
-		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
+		obj.SetMeta(&resourceMeta{
+			name:   obj.GetMeta().GetName(),
+			mesh:   obj.GetMeta().GetMesh(),
+			labels: maps.Clone(obj.GetMeta().GetLabels()),
+		})
 		if err := list.AddItem(obj); err != nil {
 			return nil, err
 		}
