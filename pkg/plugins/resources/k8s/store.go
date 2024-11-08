@@ -99,7 +99,12 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.Descriptor().Name)
 	}
 
-	labels, annotations := SplitLabelsAndAnnotations(opts.Labels, obj.GetAnnotations())
+	updateLabels := r.GetMeta().GetLabels()
+	if opts.ModifyLabels {
+		updateLabels = opts.Labels
+	}
+	labels, annotations := SplitLabelsAndAnnotations(updateLabels, obj.GetAnnotations())
+
 	obj.GetObjectMeta().SetLabels(labels)
 	obj.GetObjectMeta().SetAnnotations(annotations)
 	obj.SetMesh(r.GetMeta().GetMesh())
