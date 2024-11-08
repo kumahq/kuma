@@ -649,6 +649,8 @@ var _ = Describe("PodReconciler", func() {
             uid: pod-with-kuma-sidecar-and-ip-demo
           resourceVersion: "1"
         spec:
+          envoy:
+            xdsTransportProtocolVariant: GRPC
           networking:
             address: 192.168.0.1
             inbound:
@@ -742,6 +744,8 @@ var _ = Describe("PodReconciler", func() {
             uid: "pod-with-kuma-sidecar-and-ip-demo"
           resourceVersion: "2"
         spec:
+          envoy:
+            xdsTransportProtocolVariant: GRPC
           networking:
             address: 192.168.0.1
             inbound:
@@ -808,6 +812,9 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
+				Envoy: &mesh_proto.EnvoyConfiguration{
+					XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_GRPC,
+				},
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Admin: &mesh_proto.EnvoyAdmin{
@@ -892,6 +899,8 @@ var _ = Describe("PodReconciler", func() {
                 uid: pod-with-custom-admin-port-demo
           resourceVersion: "1"
         spec:
+          envoy:
+            xdsTransportProtocolVariant: GRPC
           networking:
             address: 192.168.0.1
             admin:
@@ -1008,6 +1017,8 @@ var _ = Describe("PodReconciler", func() {
                 uid: pod-with-custom-admin-port-demo
           resourceVersion: "2"
         spec:
+          envoy:
+            xdsTransportProtocolVariant: GRPC
           networking:
             address: 192.168.0.1
             admin:

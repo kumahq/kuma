@@ -21,15 +21,14 @@ type BootstrapRequest struct {
 	Workdir              string            `json:"workdir"`
 	MetricsResources     MetricsResources  `json:"metricsResources"`
 	SystemCaPath         string            `json:"systemCaPath"`
-	XdsConfigMode        XdsMode           `json:"xdsConfigMode,omitempty"`
 }
 
-type XdsMode int
+type XdsMode string
 
 const (
-	NOT_DEFINED XdsMode = iota
-	SOTW
-	DELTA
+	DEFAULT    XdsMode = "DEFAULT"
+	DELTA_GRPC XdsMode = "DELTA_GRPC"
+	GRPC       XdsMode = "GRPC"
 )
 
 type Version struct {

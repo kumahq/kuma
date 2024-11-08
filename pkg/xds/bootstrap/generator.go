@@ -127,12 +127,17 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 			params.AdminPort = b.defaultAdminPort
 		}
 	}
-	switch request.XdsConfigMode {
-	case types.DELTA:
-		params.UseDelta = true
-	case types.NOT_DEFINED:
-		if b.deltaXdsEnabled {
-			params.UseDelta = true
+	setXdsTransportProtocolVariant := func(resourceMode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant) {
+		switch resourceMode {
+		case mesh_proto.EnvoyConfiguration_DEFAULT:
+			if b.deltaXdsEnabled {
+				params.XdsTransportProtocolVariant = types.DELTA_GRPC
+			}
+			params.XdsTransportProtocolVariant = types.GRPC
+		case mesh_proto.EnvoyConfiguration_DELTA_GRPC:
+			params.XdsTransportProtocolVariant = types.DELTA_GRPC
+		case mesh_proto.EnvoyConfiguration_GRPC:
+			params.XdsTransportProtocolVariant = types.GRPC
 		}
 	}
 
@@ -145,6 +150,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 		params.Service = "ingress"
 		setAdminPort(zoneIngress.Spec.GetNetworking().GetAdmin().GetPort())
+		setXdsTransportProtocolVariant(zoneIngress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.EgressProxyType:
 		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
 		if err != nil {
@@ -152,6 +158,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = "egress"
 		setAdminPort(zoneEgress.Spec.GetNetworking().GetAdmin().GetPort())
+		setXdsTransportProtocolVariant(zoneEgress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -173,6 +180,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
+		setXdsTransportProtocolVariant(dataplane.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 
 		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap)
 		if err != nil {

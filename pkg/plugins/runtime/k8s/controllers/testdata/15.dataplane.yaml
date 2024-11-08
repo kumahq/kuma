@@ -2,6 +2,8 @@ mesh: default
 metadata:
   creationTimestamp: null
 spec:
+  envoy:
+    xdsTransportProtocolVariant: GRPC
   networking:
     address: fd00::1
     inbound:

@@ -29,6 +29,5 @@
   "certPath": "",
   "keyPath": ""
  },
- "systemCaPath": "",
- "xdsConfigMode": 2
+ "systemCaPath": ""
 }

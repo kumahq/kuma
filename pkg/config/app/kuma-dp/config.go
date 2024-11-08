@@ -217,10 +217,6 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
-	// XdsConfigMode defines xDS communication type between Envoy and control-plane.
-	// Available values are: sotw, delta
-	// By default it takes configuration provided by the control-plane.
-	XdsConfigMode string `json:"xdsConfigMode,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_xds_config_mode"`
 }
 
 type Metrics struct {
@@ -338,13 +334,6 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
-	}
-	if d.XdsConfigMode != "" {
-		switch d.XdsConfigMode {
-		case "delta", "sotw":
-		default:
-			errs = multierr.Append(errs, errors.Errorf(".XdsConfigMode can be one of: delta, sotw"))
-		}
 	}
 	return errs
 }

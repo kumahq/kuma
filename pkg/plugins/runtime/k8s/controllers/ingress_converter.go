@@ -66,6 +66,7 @@ func (p *PodConverter) IngressFor(
 	if exist {
 		zoneIngress.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
+	zoneIngress.Envoy = GetEnvoyConfiguration(p.DeltaXds, metadata.Annotations(pod.Annotations))
 
 	return nil
 }

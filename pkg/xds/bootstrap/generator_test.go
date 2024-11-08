@@ -224,11 +224,10 @@ var _ = Describe("bootstrapGenerator", func() {
 				return dp
 			},
 			request: types.BootstrapRequest{
-				Mesh:          "mesh",
-				Name:          "name.namespace",
-				Version:       defaultVersion,
-				Workdir:       "/tmp",
-				XdsConfigMode: types.DELTA,
+				Mesh:    "mesh",
+				Name:    "name.namespace",
+				Version: defaultVersion,
+				Workdir: "/tmp",
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request-and-delta.golden.yaml",
 			hdsEnabled:         true,
@@ -277,6 +276,9 @@ var _ = Describe("bootstrapGenerator", func() {
     ],
     "admin": {
       "port": 1234
+    },
+    "envoy" : {
+      "xdsTransportProtocolVariant": "DELTA_GRPC"
     }
   }
 }`,

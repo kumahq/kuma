@@ -132,7 +132,7 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2),
-		WithEnv("KUMA_EXPERIMENTAL_USE_DELTA_XDS", "true"),
+		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
 	)
 	kubeZone2Options = append(kubeZone2Options, WithCNI())
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)

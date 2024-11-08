@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/envoy.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 
 // ZoneIngress allows us to configure dataplane in the Ingress mode. In this
@@ -68,4 +69,7 @@ message ZoneIngress {
   // AvailableService contains tags that represent unique subset of
   // endpoints
   repeated AvailableService availableServices = 3;
+
+  // EnvoyConfiguration provides additional configuration for the Envoy sidecar.
+  EnvoyConfiguration envoy = 4;
 }

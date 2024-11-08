@@ -1,6 +1,8 @@
 metadata:
   creationTimestamp: null
 spec:
+  envoy:
+    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     port: 10001
