@@ -459,11 +459,6 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true then it generates MeshServices from Kubernetes Service.
-	GenerateMeshServices bool `json:"generateMeshServices" envconfig:"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES"`
-	// If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
-	// Do not enable on production.
-	SkipPersistedVIPs bool `json:"skipPersistedVIPs" envconfig:"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS"`
 	// If true uses Delta xDS to deliver changes to sidecars.
 	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 }
