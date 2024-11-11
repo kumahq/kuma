@@ -3,11 +3,11 @@ package controllers
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -41,19 +41,9 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, nil
 	}
 
-	namespace := &kube_core.Namespace{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Name: svc.GetNamespace()}, namespace); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			return kube_ctrl.Result{}, nil
-		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
-	}
-
-	injectedLabel, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
-	if err != nil {
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", namespace.Name)
-	}
-	if !injectedLabel {
+	if svcPartOfMesh, err := r.isServicePartOfMesh(ctx, log, svc, req); err != nil {
+		return kube_ctrl.Result{}, err
+	} else if !svcPartOfMesh {
 		log.V(1).Info(req.NamespacedName.String() + "is not part of the mesh")
 		return kube_ctrl.Result{}, nil
 	}
@@ -88,6 +78,48 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *ServiceReconciler) isServicePartOfMesh(ctx context.Context, log logr.Logger, svc *kube_core.Service, req kube_ctrl.Request) (bool, error) {
+	namespace := &kube_core.Namespace{}
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: svc.GetNamespace()}, namespace); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "unable to fetch Namespace %s", req.NamespacedName.Name)
+	}
+
+	injectEnabledOnNs, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return false, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", namespace.Name)
+	}
+
+	if !injectEnabledOnNs && svc.Spec.Selector != nil {
+		pods := &kube_core.PodList{}
+		if err := r.List(ctx, pods, kube_client.InNamespace(svc.GetNamespace()),
+			kube_client.MatchingLabelsSelector{Selector: labels.SelectorFromSet(svc.Spec.Selector)}); err != nil {
+			return false, errors.Wrapf(err, "unable to list pods of Service %s", req.NamespacedName.Name)
+		}
+
+		injectEnabledOnPod := false
+		for i := range pods.Items {
+			pod := pods.Items[i]
+			injectedEnabled, _, errLabel := metadata.Annotations(pod.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+			if errLabel == nil && pod.DeletionTimestamp == nil && injectedEnabled {
+				injectEnabledOnPod = true
+				break
+			}
+		}
+
+		if !injectEnabledOnPod {
+			log.V(1).Info(req.NamespacedName.String() + "is not part of the mesh")
+			return false, nil
+		}
+
+		return true, nil
+	}
+
+	return false, nil
 }
 
 func (r *ServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {

@@ -82,6 +82,30 @@ var _ = Describe("ServiceReconciler", func() {
 			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "non-system-ns-without-sidecar-injection",
+					Name:      "service-with-pods-labeled",
+					Annotations: map[string]string{
+						"bogus-annotation": "1",
+					},
+				},
+				Spec: kube_core.ServiceSpec{
+					Selector: map[string]string{
+						"app": "app-pod-labeled",
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "non-system-ns-without-sidecar-injection",
+					Name:      "pods-labeled-1",
+					Labels: map[string]string{
+						metadata.KumaSidecarInjectionAnnotation: metadata.AnnotationEnabled,
+					},
+				},
+				Spec: kube_core.PodSpec{},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "builtin-gateway",
 					Name:      "service",
 					Annotations: map[string]string{
@@ -135,6 +159,26 @@ var _ = Describe("ServiceReconciler", func() {
 		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(svc.GetAnnotations()).ToNot(HaveKey(metadata.IngressServiceUpstream))
+	})
+
+	It("should include service with pods annotated in a namespace not labeled", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-without-sidecar-injection", Name: "service-with-pods-labeled"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and service is not annotated
+		svc := &kube_core.Service{}
+		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(svc.GetAnnotations()).To(HaveKey(metadata.IngressServiceUpstream))
 	})
 
 	It("should ignore service of builtin gateway", func() {
