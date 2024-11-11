@@ -91,7 +91,7 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require golang.org/x/sync v0.8.0
+require golang.org/x/sync v0.9.0
 
 require (
 	cel.dev/expr v0.16.0 // indirect
