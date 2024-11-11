@@ -67,12 +67,12 @@ require (
 	go.uber.org/zap v1.27.0
 	golang.org/x/exp v0.0.0-20240904232852-e7e105dedf7e
 	golang.org/x/net v0.30.0
-	golang.org/x/sys v0.26.0
+	golang.org/x/sys v0.27.0
 	golang.org/x/text v0.19.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20241007155032-5fefd90f89a9
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20241007155032-5fefd90f89a9
-	google.golang.org/grpc v1.67.1
+	google.golang.org/grpc v1.68.0
 	google.golang.org/protobuf v1.35.1
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.16.2
@@ -91,10 +91,10 @@ require (
 	sigs.k8s.io/yaml v1.4.0
 )
 
-require golang.org/x/sync v0.8.0
+require golang.org/x/sync v0.9.0
 
 require (
-	cel.dev/expr v0.16.0 // indirect
+	cel.dev/expr v0.16.1 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/BurntSushi/toml v1.4.0 // indirect
@@ -106,7 +106,7 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
-	github.com/cncf/xds/go v0.0.0-20240723142845-024c85f92f20 // indirect
+	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/containerd/log v0.1.0 // indirect
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/cpuguy83/dockercfg v0.3.2 // indirect
