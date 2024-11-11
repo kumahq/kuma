@@ -9,17 +9,16 @@ import (
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 )
 
+func ProtocolOr(protocol, fallback core_mesh.Protocol) core_mesh.Protocol {
+	if protocol == core_mesh.ProtocolUnknown {
+		return fallback
+	}
+	return protocol
+}
+
 func InferServiceProtocol(serviceProtocol core_mesh.Protocol, routeProtocol core_mesh.Protocol) core_mesh.Protocol {
 	if serviceProtocol == core_mesh.ProtocolUnknown || serviceProtocol == "" {
-		switch routeProtocol {
-		case core_mesh.ProtocolHTTP:
-			return core_mesh.ProtocolHTTP
-		case core_mesh.ProtocolTCP:
-			return core_mesh.ProtocolTCP
-		default:
-			// HTTP is a better default than "unknown".
-			return core_mesh.ProtocolHTTP
-		}
+		return ProtocolOr(routeProtocol, core_mesh.ProtocolHTTP)
 	}
 	return serviceProtocol
 }

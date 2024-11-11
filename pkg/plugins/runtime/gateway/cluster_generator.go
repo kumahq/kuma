@@ -152,11 +152,11 @@ func (c *ClusterGenerator) generateRealBackendRefCluster(
 	systemNamespace string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, string, error) {
-	service, destProtocol, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef)
+	service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, backendRef)
 	if !ok {
 		return nil, "", nil
 	}
-	protocol := route.InferServiceProtocol(destProtocol, routeProtocol)
+	protocol := route.ProtocolOr(routeProtocol, core_mesh.ProtocolHTTP)
 
 	edsClusterBuilder := clusters.NewClusterBuilder(proxy.APIVersion, service).
 		Configure(
@@ -196,8 +196,7 @@ func (c *ClusterGenerator) generateMeshCluster(
 	upstreamServiceName string,
 	identifyingTags map[string]string,
 ) (*core_xds.Resource, error) {
-	destProtocol := core_mesh.ParseProtocol(dest.Destination[mesh_proto.ProtocolTag])
-	protocol := route.InferServiceProtocol(destProtocol, dest.RouteProtocol)
+	protocol := route.ProtocolOr(dest.RouteProtocol, core_mesh.ProtocolHTTP)
 
 	builder := newClusterBuilder(info.Proxy.APIVersion, dest.Destination[mesh_proto.ServiceTag], protocol, dest).Configure(
 		clusters.EdsCluster(),
