@@ -137,20 +137,11 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
-<<<<<<< HEAD
-		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
-=======
-		if obj.Descriptor().HasStatus && kr.Status != nil {
-			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
-				return nil, err
-			}
-		}
 		obj.SetMeta(&resourceMeta{
 			name:   kr.GetMeta().GetName(),
 			mesh:   kr.GetMeta().GetMesh(),
 			labels: maps.Clone(kr.GetMeta().GetLabels()),
 		})
->>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 		if err := list.AddItem(obj); err != nil {
 			return nil, err
 		}
