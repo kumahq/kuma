@@ -370,12 +370,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
-<<<<<<< HEAD
-			Expect(cfg.Experimental.SkipPersistedVIPs).To(BeTrue())
-			Expect(cfg.Experimental.GenerateMeshServices).To(BeTrue())
 			Expect(cfg.Experimental.DeltaXds).To(BeTrue())
-=======
->>>>>>> upstream/master
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))

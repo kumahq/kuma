@@ -42,7 +42,10 @@ func (p *PodConverter) EgressFor(
 	if exist {
 		zoneEgress.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
-	zoneEgress.Envoy = GetEnvoyConfiguration(p.DeltaXds, metadata.Annotations(pod.Annotations))
+	zoneEgress.Envoy, err = GetEnvoyConfiguration(p.DeltaXds, metadata.Annotations(pod.Annotations))
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
