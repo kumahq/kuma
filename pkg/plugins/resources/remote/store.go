@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"maps"
 	"net/http"
 	"strconv"
 
@@ -38,9 +39,16 @@ type remoteStore struct {
 func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	meta := rest_v1alpha1.ResourceMeta{
+<<<<<<< HEAD
 		Type: string(res.Descriptor().Name),
 		Name: opts.Name,
 		Mesh: opts.Mesh,
+=======
+		Type:   string(res.Descriptor().Name),
+		Name:   opts.Name,
+		Mesh:   opts.Mesh,
+		Labels: maps.Clone(opts.Labels),
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
@@ -50,9 +58,16 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
 	meta := rest_v1alpha1.ResourceMeta{
+<<<<<<< HEAD
 		Type: string(res.Descriptor().Name),
 		Name: res.GetMeta().GetName(),
 		Mesh: res.GetMeta().GetMesh(),
+=======
+		Type:   string(res.Descriptor().Name),
+		Name:   res.GetMeta().GetName(),
+		Mesh:   res.GetMeta().GetMesh(),
+		Labels: maps.Clone(opts.Labels),
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err

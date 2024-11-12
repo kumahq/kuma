@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"sync"
@@ -112,6 +113,10 @@ func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...sto
 		Version:          initialVersion(),
 		CreationTime:     opts.CreationTime,
 		ModificationTime: opts.CreationTime,
+<<<<<<< HEAD
+=======
+		Labels:           maps.Clone(opts.Labels),
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 	}
 
 	// fill the meta
@@ -167,6 +172,12 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 	}
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
+<<<<<<< HEAD
+=======
+	if opts.ModifyLabels {
+		meta.Labels = maps.Clone(opts.Labels)
+	}
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 	r.SetMeta(meta)
 
 	record.Version = meta.Version

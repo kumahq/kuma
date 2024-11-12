@@ -105,6 +105,23 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	return nil
 }
 
+<<<<<<< HEAD
+=======
+func setLabelsAnnotationsAndMesh(s *kube_core.Secret, mesh string, labels map[string]string) {
+	labels = maps.Clone(labels)
+	if labels == nil {
+		labels = map[string]string{}
+	}
+	if mesh != "" {
+		labels[metadata.KumaMeshLabel] = mesh
+	}
+
+	labels, annotations := k8s.SplitLabelsAndAnnotations(labels, s.GetAnnotations())
+	s.GetObjectMeta().SetLabels(labels)
+	s.GetObjectMeta().SetAnnotations(annotations)
+}
+
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...core_store.DeleteOptionsFunc) error {
 	opts := core_store.NewDeleteOptions(fs...)
 	if err := s.Get(ctx, r, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
