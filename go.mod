@@ -213,3 +213,9 @@ require (
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
+<<<<<<< HEAD
+=======
+
+// remove once https://github.com/envoyproxy/go-control-plane/issues/875 is resolved
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.1-kong-1
+>>>>>>> 9565a54ef (chore(deps): change go-control-plane version (#12000))
