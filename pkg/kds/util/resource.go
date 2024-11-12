@@ -154,9 +154,9 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 			}
 		}
 		obj.SetMeta(&resourceMeta{
-			name:   obj.GetMeta().GetName(),
-			mesh:   obj.GetMeta().GetMesh(),
-			labels: maps.Clone(obj.GetMeta().GetLabels()),
+			name:   kr.GetMeta().GetName(),
+			mesh:   kr.GetMeta().GetMesh(),
+			labels: maps.Clone(kr.GetMeta().GetLabels()),
 		})
 		if err := list.AddItem(obj); err != nil {
 			return nil, err
