@@ -3,6 +3,7 @@ package memory
 import (
 	"context"
 	"fmt"
+	"maps"
 	"strconv"
 	"strings"
 	"sync"
@@ -123,7 +124,7 @@ func (c *memoryStore) Create(_ context.Context, r core_model.Resource, fs ...sto
 		Version:          initialVersion(),
 		CreationTime:     opts.CreationTime,
 		ModificationTime: opts.CreationTime,
-		Labels:           opts.Labels,
+		Labels:           maps.Clone(opts.Labels),
 	}
 
 	// fill the meta
@@ -180,7 +181,7 @@ func (c *memoryStore) Update(_ context.Context, r core_model.Resource, fs ...sto
 	meta.Version = meta.Version.Next()
 	meta.ModificationTime = opts.ModificationTime
 	if opts.ModifyLabels {
-		meta.Labels = opts.Labels
+		meta.Labels = maps.Clone(opts.Labels)
 	}
 	r.SetMeta(meta)
 
