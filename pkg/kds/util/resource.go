@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -56,7 +57,7 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:    r.GetMeta().GetName(),
 				Mesh:    r.GetMeta().GetMesh(),
-				Labels:  r.GetMeta().GetLabels(),
+				Labels:  maps.Clone(r.GetMeta().GetLabels()),
 				Version: "",
 			},
 			Spec: pbany,
@@ -136,7 +137,20 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
+<<<<<<< HEAD
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))
+=======
+		if obj.Descriptor().HasStatus && kr.Status != nil {
+			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
+				return nil, err
+			}
+		}
+		obj.SetMeta(&resourceMeta{
+			name:   kr.GetMeta().GetName(),
+			mesh:   kr.GetMeta().GetMesh(),
+			labels: maps.Clone(kr.GetMeta().GetLabels()),
+		})
+>>>>>>> c3d7187c7 (fix(kuma-cp): avoid concurrent access on resource meta (#11997))
 		if err := list.AddItem(obj); err != nil {
 			return nil, err
 		}

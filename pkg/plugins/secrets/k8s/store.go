@@ -113,6 +113,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 }
 
 func setLabelsAnnotationsAndMesh(s *kube_core.Secret, mesh string, labels map[string]string) {
+	labels = maps.Clone(labels)
 	if labels == nil {
 		labels = map[string]string{}
 	}
