@@ -286,6 +286,7 @@ import (
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/rbac/matchers/upstream_ip_port/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/request_id/uuid/v3"
+	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/cpu_utilization/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/downstream_connections/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/fixed_heap/v3"
 	_ "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/injected_resource/v3"
