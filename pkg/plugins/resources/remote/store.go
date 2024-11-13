@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"maps"
 	"net/http"
 	"strconv"
 
@@ -41,7 +42,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 		Type:   string(res.Descriptor().Name),
 		Name:   opts.Name,
 		Mesh:   opts.Mesh,
-		Labels: opts.Labels,
+		Labels: maps.Clone(opts.Labels),
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
@@ -55,7 +56,7 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 		Type:   string(res.Descriptor().Name),
 		Name:   res.GetMeta().GetName(),
 		Mesh:   res.GetMeta().GetMesh(),
-		Labels: opts.Labels,
+		Labels: maps.Clone(opts.Labels),
 	}
 	if err := s.upsert(ctx, res, meta); err != nil {
 		return err
