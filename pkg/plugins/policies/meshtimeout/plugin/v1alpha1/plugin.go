@@ -83,6 +83,13 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		}
 
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
+<<<<<<< HEAD
+=======
+		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		if conf == nil {
+			continue
+		}
+>>>>>>> 844c9881c (fix(meshtimeout): don't set default timeouts on inbound cluster and listener (#12043))
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    fromRules.Rules[listenerKey],
 			Subset:   core_rules.MeshSubset(),
