@@ -221,6 +221,30 @@ var _ = Describe("MeshTimeout", func() {
 			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
 		}),
+		Entry("basic inbound route without defaults", sidecarTestCase{
+			resources: []core_xds.Resource{
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: httpInboundListenerWith(),
+				},
+				{
+					Name:     "inbound",
+					Origin:   generator.OriginInbound,
+					Resource: test_xds.ClusterWithName(fmt.Sprintf("localhost:%d", builders.FirstInboundServicePort)),
+				},
+			},
+			fromRules: core_rules.FromRules{
+				Rules: map[core_rules.InboundListener]core_rules.Rules{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: []*core_rules.Rule{},
+				},
+			},
+			expectedClusters:  []string{"basic_without_defaults_inbound_cluster.golden.yaml"},
+			expectedListeners: []string{"basic_without_defaults_inbound_listener.golden.yaml"},
+		}),
 		Entry("outbound with defaults when http conf missing", sidecarTestCase{
 			resources: []core_xds.Resource{
 				{
