@@ -125,7 +125,7 @@ issues:
   exclude-rules:
     - linters:
         - staticcheck
-      text: 'SA1019: "github.com/golang/protobuf' # TODO ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
+      text: 'SA1019: "github.com/golang/protobuf/jsonpb"' # We need to use the deprecated module since the jsonpb replacement is not backwards compatible.
     - linters:
         - staticcheck
       text: "SA1019: l.UseOriginalDst is deprecated: Do not use." # TODO What is the up-to-date alternative ?
