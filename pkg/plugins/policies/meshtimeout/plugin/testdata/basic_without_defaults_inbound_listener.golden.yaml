@@ -8,13 +8,10 @@ filterChains:
   - name: envoy.filters.network.http_connection_manager
     typedConfig:
       '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-      commonHttpProtocolOptions:
-        idleTimeout: 0s
       httpFilters:
       - name: envoy.filters.http.router
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-      requestHeadersTimeout: 0s
       routeConfig:
         name: inbound:backend
         requestHeadersToRemove:
@@ -29,8 +26,7 @@ filterChains:
               prefix: /
             route:
               cluster: backend
-              idleTimeout: 5s
-              timeout: 15s
+              timeout: 0s
       statPrefix: inbound_127_0_0_1_80
 name: inbound:127.0.0.1:80
 trafficDirection: INBOUND
