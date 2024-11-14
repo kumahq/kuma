@@ -1,0 +1,9 @@
+connectTimeout: 5s
+name: localhost:8080
+typedExtensionProtocolOptions:
+  envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+    '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+    commonHttpProtocolOptions:
+      idleTimeout: 3600s
+      maxConnectionDuration: 5s
+      maxStreamDuration: 0s
