@@ -99,12 +99,18 @@ linters-settings:
         deny:
           - pkg: "github.com/kumahq/kuma/app"
             desc: "pkg can't import app"
-      AllGoFiles:
+      DenyGolangProtobuf:
+        files:
+          - $all
+        deny:
+          - pkg: github.com/golang/protobuf
+            desc: "github.com/golang/protobuf is deprecated; use google.golang.org/protobuf instead"
+      DenyGoogleProtoJson:
         files:
           - $all
         deny:
           - pkg: google.golang.org/protobuf/encoding/protojson
-            desc: "don't use the protojson package; use 'github.com/golang/protobuf/jsonpb' instead"
+            desc: "don't use the protojson package; use github.com/golang/protobuf/jsonpb instead"
 
   misspell:
     locale: US
