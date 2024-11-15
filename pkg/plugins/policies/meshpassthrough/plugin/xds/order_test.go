@@ -22,9 +22,9 @@ var _ = Describe("Match order", func() {
 	DescribeTable("should generate proper order",
 		func(given validTestCase) {
 			// when
-			ordered, _ := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches, _ := plugin_xds.GetOrderedMatchers(given.conf)
 
-			yaml, err := yaml.Marshal(ordered)
+			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
@@ -115,6 +115,16 @@ var _ = Describe("Match order", func() {
 						Type:     api.MatchType("CIDR"),
 						Value:    "192.168.0.1/30",
 						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "240.0.0.0/4",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "172.18.0.0/16",
+						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("IP"),

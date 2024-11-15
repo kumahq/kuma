@@ -20,7 +20,9 @@ type FilterChainConfigurer struct {
 	APIVersion core_xds.APIVersion
 	Protocol   core_mesh.Protocol
 	Port       uint32
-	Routes     []Route
+	MatchType  MatchType
+	MatchValue string
+	Routes     []Route // should be set only for http and domains/wildcard
 	IsIPv6     bool
 }
 
@@ -37,92 +39,120 @@ func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clus
 func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
 	switch c.Protocol {
 	case core_mesh.ProtocolTCP:
-		for _, route := range c.Routes {
-			if err := c.configureTcpFilterChain(listener, route, clustersAccumulator); err != nil {
-				return err
-			}
+		if err := c.configureTcpFilterChain(listener, clustersAccumulator); err != nil {
+			return err
 		}
 	case core_mesh.ProtocolTLS:
-		for _, route := range c.Routes {
-			if err := c.configureTlsFilterChain(listener, route, clustersAccumulator); err != nil {
-				return err
-			}
+		if err := c.configureTlsFilterChain(listener, clustersAccumulator); err != nil {
+			return err
 		}
 	default:
-		chainName := FilterChainName(
-			string(c.Protocol),
-			c.Protocol,
-			c.Port,
-		)
-		routeBuilder := xds_routes.NewRouteConfigurationBuilder(c.APIVersion, chainName)
-		for _, route := range c.Routes {
-			if c.IsIPv6 && route.MatchType == IP {
-				continue
-			}
-			if !c.IsIPv6 && route.MatchType == IPV6 {
-				continue
-			}
-			switch route.MatchType {
-			case Domain, WildcardDomain, IP, IPV6:
-				domains := []string{route.Value}
-				// based on the RFC, the host header might include a port, so we add another entry with the port defined
-				if route.MatchType == IP {
-					domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
+		switch c.MatchType {
+		case Domain, WildcardDomain:
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol) {
+				for _, route := range c.Routes {
+					if c.IsIPv6 && route.MatchType == IP {
+						continue
+					}
+					if !c.IsIPv6 && route.MatchType == IPV6 {
+						continue
+					}
+					switch route.MatchType {
+					case Domain, WildcardDomain, IP, IPV6:
+						domains := []string{route.Value}
+						// based on the RFC, the host header might include a port, so we add another entry with the port defined
+						if route.MatchType == IP {
+							domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
+						}
+						if route.MatchType == IPV6 {
+							domains = append(domains, fmt.Sprintf("[%s]", route.Value), fmt.Sprintf("[%s]:%d", route.Value, c.Port))
+						}
+						clusterName := ClusterName(route.Value, c.Protocol, c.Port)
+						routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, route.Value).
+							Configure(
+								xds_virtual_hosts.BasicRoute(clusterName),
+								xds_virtual_hosts.DomainNames(domains...),
+							)))
+						clustersAccumulator[clusterName] = c.Protocol
+					}
 				}
-				if route.MatchType == IPV6 {
-					domains = append(domains, fmt.Sprintf("[%s]", route.Value), fmt.Sprintf("[%s]:%d", route.Value, c.Port))
-				}
-				clusterName := ClusterName(route, c.Protocol, c.Port)
-				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, route.Value).
+				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, "no_match").
 					Configure(
-						xds_virtual_hosts.BasicRoute(ClusterName(route, c.Protocol, c.Port)),
-						xds_virtual_hosts.DomainNames(domains...),
+						xds_virtual_hosts.DirectResponseRoute(http.StatusServiceUnavailable, NoMatchMsg),
+					)))
+			}
+			filterChainName := FilterChainName(string(c.Protocol), c.Protocol, c.Port)
+			if err := c.configureHttpFilterChain(listener, routeFn, clustersAccumulator, filterChainName); err != nil {
+				return err
+			}
+		default:
+			routeFn := func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol) {
+				clusterName := ClusterName(c.MatchValue, c.Protocol, c.Port)
+				routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, c.MatchValue).
+					Configure(
+						xds_virtual_hosts.BasicRoute(clusterName),
+						xds_virtual_hosts.DomainNames("*"),
 					)))
 				clustersAccumulator[clusterName] = c.Protocol
 			}
+			filterChainName := FilterChainName(c.MatchValue, c.Protocol, c.Port)
+			if err := c.configureHttpFilterChain(listener, routeFn, clustersAccumulator, filterChainName); err != nil {
+				return err
+			}
 		}
-
-		routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, "no_match").
-			Configure(
-				xds_virtual_hosts.DirectResponseRoute(http.StatusServiceUnavailable, NoMatchMsg),
-			)))
-
-		filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
-			Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
-			Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).
-			Configure(xds_listeners.HttpConnectionManager(chainName, false)).
-			Configure(xds_listeners.HttpStaticRoute(routeBuilder))
-
-		switch c.Protocol {
-		case core_mesh.ProtocolGRPC:
-			filterChainBuilder.Configure(xds_listeners.GrpcStats())
-		}
-
-		filterChain, err := filterChainBuilder.Build()
-		if err != nil {
-			return err
-		}
-		listener.FilterChains = append(listener.FilterChains, filterChain.(*envoy_listener.FilterChain))
 	}
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, route Route, clustersAccumulator map[string]core_mesh.Protocol) error {
-	if c.IsIPv6 && (route.MatchType == IP || route.MatchType == CIDR) {
+func (c FilterChainConfigurer) configureHttpFilterChain(
+	listener *envoy_listener.Listener,
+	routeFn func(routeBuilder *xds_routes.RouteConfigurationBuilder, clustersAccumulator map[string]core_mesh.Protocol),
+	clustersAccumulator map[string]core_mesh.Protocol,
+	filterChainName string,
+) error {
+	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
-	if !c.IsIPv6 && (route.MatchType == IPV6 || route.MatchType == CIDRV6) {
+	if !c.IsIPv6 && (c.MatchType == IPV6 || c.MatchType == CIDRV6) {
 		return nil
 	}
-	chainName := FilterChainName(route.Value, core_mesh.ProtocolTCP, c.Port)
-	clusterName := ClusterName(route, core_mesh.ProtocolTCP, c.Port)
+	routeBuilder := xds_routes.NewRouteConfigurationBuilder(c.APIVersion, filterChainName)
+	routeFn(routeBuilder, clustersAccumulator)
+	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, filterChainName).
+		Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
+		Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).
+		Configure(xds_listeners.HttpConnectionManager(filterChainName, false)).
+		Configure(xds_listeners.HttpStaticRoute(routeBuilder))
+	c.configureAddressMatch(filterChainBuilder)
+	if c.Port != 0 {
+		filterChainBuilder.
+			Configure(xds_listeners.MatchDestiantionPort(c.Port))
+	}
+
+	filterChain, err := filterChainBuilder.Build()
+	if err != nil {
+		return err
+	}
+	listener.FilterChains = append(listener.FilterChains, filterChain.(*envoy_listener.FilterChain))
+	return nil
+}
+
+func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
+		return nil
+	}
+	if !c.IsIPv6 && (c.MatchType == IPV6 || c.MatchType == CIDRV6) {
+		return nil
+	}
+	chainName := FilterChainName(c.MatchValue, core_mesh.ProtocolTCP, c.Port)
+	clusterName := ClusterName(c.MatchValue, core_mesh.ProtocolTCP, c.Port)
 	split := plugins_xds.NewSplitBuilder().
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
 		Configure(xds_listeners.TCPProxy(clusterName, split)).
 		Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
-	c.configureAddressMatch(route, filterChainBuilder)
+	c.configureAddressMatch(filterChainBuilder)
 	if c.Port != 0 {
 		filterChainBuilder.
 			Configure(xds_listeners.MatchDestiantionPort(c.Port))
@@ -137,26 +167,26 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 	return nil
 }
 
-func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, route Route, clustersAccumulator map[string]core_mesh.Protocol) error {
-	if c.IsIPv6 && (route.MatchType == IP || route.MatchType == CIDR) {
+func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
+	if c.IsIPv6 && (c.MatchType == IP || c.MatchType == CIDR) {
 		return nil
 	}
-	if !c.IsIPv6 && (route.MatchType == IPV6 || route.MatchType == CIDRV6) {
+	if !c.IsIPv6 && (c.MatchType == IPV6 || c.MatchType == CIDRV6) {
 		return nil
 	}
-	chainName := FilterChainName(route.Value, core_mesh.ProtocolTLS, c.Port)
-	clusterName := ClusterName(route, core_mesh.ProtocolTLS, c.Port)
+	chainName := FilterChainName(c.MatchValue, core_mesh.ProtocolTLS, c.Port)
+	clusterName := ClusterName(c.MatchValue, core_mesh.ProtocolTLS, c.Port)
 	split := plugins_xds.NewSplitBuilder().
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
 		Configure(xds_listeners.TCPProxy(clusterName, split)).
 		Configure(xds_listeners.MatchTransportProtocol("tls"))
-	c.configureAddressMatch(route, filterChainBuilder)
-	switch route.MatchType {
+	c.configureAddressMatch(filterChainBuilder)
+	switch c.MatchType {
 	case WildcardDomain, Domain:
 		filterChainBuilder.
-			Configure(xds_listeners.MatchServerNames(route.Value))
+			Configure(xds_listeners.MatchServerNames(c.MatchValue))
 	}
 	if c.Port != 0 {
 		filterChainBuilder.
@@ -172,21 +202,21 @@ func (c FilterChainConfigurer) configureTlsFilterChain(listener *envoy_listener.
 	return nil
 }
 
-func (c FilterChainConfigurer) configureAddressMatch(route Route, builder *xds_listeners.FilterChainBuilder) {
-	switch route.MatchType {
+func (c FilterChainConfigurer) configureAddressMatch(builder *xds_listeners.FilterChainBuilder) {
+	switch c.MatchType {
 	case CIDR, CIDRV6:
-		ip, mask := getIpAndMask(route.Value)
+		ip, mask := getIpAndMask(c.MatchValue)
 		builder.Configure(xds_listeners.MatchDestiantionAddressesRange(ip, mask))
 	case IP, IPV6:
-		builder.Configure(xds_listeners.MatchDestiantionAddress(route.Value, c.IsIPv6))
+		builder.Configure(xds_listeners.MatchDestiantionAddress(c.MatchValue, c.IsIPv6))
 	}
 }
 
-func ClusterName(route Route, protocol core_mesh.Protocol, port uint32) string {
+func ClusterName(matchValue string, protocol core_mesh.Protocol, port uint32) string {
 	if port == 0 {
-		return fmt.Sprintf("meshpassthrough_%s_*", route.Value)
+		return fmt.Sprintf("meshpassthrough_%s_*", matchValue)
 	}
-	return fmt.Sprintf("meshpassthrough_%s_%d", route.Value, port)
+	return fmt.Sprintf("meshpassthrough_%s_%d", matchValue, port)
 }
 
 func FilterChainName(name string, protocol core_mesh.Protocol, port uint32) string {

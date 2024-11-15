@@ -123,49 +123,49 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
-									Port:     pointer.To[int](443),
+									Port:     pointer.To(443),
 									Protocol: api.ProtocolType("tls"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "example.com",
-									Port:     pointer.To[int](443),
+									Port:     pointer.To(443),
 									Protocol: api.ProtocolType("tls"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "*.example.com",
-									Port:     pointer.To[int](443),
+									Port:     pointer.To(443),
 									Protocol: api.ProtocolType("tls"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "example.com",
-									Port:     pointer.To[int](8080),
+									Port:     pointer.To(8080),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "other.com",
-									Port:     pointer.To[int](8080),
+									Port:     pointer.To(8080),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "grpcdomain.com",
-									Port:     pointer.To[int](19000),
+									Port:     pointer.To(19000),
 									Protocol: api.ProtocolType("grpc"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "http2.com",
-									Port:     pointer.To[int](8080),
+									Port:     pointer.To(8080),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "http2.com",
-									Port:     pointer.To[int](8080),
+									Port:     pointer.To(8080),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
@@ -181,13 +181,13 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.19.1",
-									Port:     pointer.To[int](10000),
+									Port:     pointer.To(10000),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.1",
-									Port:     pointer.To[int](9091),
+									Port:     pointer.To(9091),
 									Protocol: api.ProtocolType("tcp"),
 								},
 								{
@@ -201,6 +201,48 @@ var _ = Describe("MeshPassthrough", func() {
 									Protocol: api.ProtocolType("tcp"),
 								},
 								{
+									Type:     api.MatchType("Domain"),
+									Value:    "trace-svc.datadog-agent.svc.cluster.local",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8126),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "trace-svc.datadog-agent.svc",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8126),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "172.16.0.0/12",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8126),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "cluster.test.local.dev",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8005),
+								},
+								{
+									Type:     api.MatchType("Domain"),
+									Value:    "cluster-telemetry.test.local.dev",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8006),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "192.168.0.0/16",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8126),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "240.0.0.0/4",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(8126),
+								},
+								{
 									Type:     api.MatchType("IP"),
 									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
 									Protocol: api.ProtocolType("tls"),
@@ -208,7 +250,7 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
-									Port:     pointer.To[int](9091),
+									Port:     pointer.To(9091),
 									Protocol: api.ProtocolType("tcp"),
 								},
 								{
@@ -263,7 +305,7 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.0",
-									Port:     pointer.To[int](80),
+									Port:     pointer.To(80),
 									Protocol: api.ProtocolType("tcp"),
 								},
 							},
@@ -308,13 +350,13 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
-									Port:     pointer.To[int](80),
+									Port:     pointer.To(80),
 									Protocol: api.ProtocolType("http"),
 								},
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.0",
-									Port:     pointer.To[int](80),
+									Port:     pointer.To(80),
 									Protocol: api.ProtocolType("tcp"),
 								},
 							},
@@ -381,7 +423,7 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
-									Port:     pointer.To[int](443),
+									Port:     pointer.To(443),
 									Protocol: api.ProtocolType("tls"),
 								},
 							},
@@ -422,7 +464,7 @@ var _ = Describe("MeshPassthrough", func() {
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
-									Port:     pointer.To[int](443),
+									Port:     pointer.To(443),
 									Protocol: api.ProtocolType("tls"),
 								},
 							},

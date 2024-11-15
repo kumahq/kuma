@@ -24,6 +24,7 @@ resources:
         applicationProtocols:
         - http/1.1
         - h2c
+        destinationPort: 80
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -78,6 +79,7 @@ resources:
         applicationProtocols:
         - http/1.1
         - h2c
+        destinationPort: 80
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.http_connection_manager
