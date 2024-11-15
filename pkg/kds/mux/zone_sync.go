@@ -23,16 +23,16 @@ type FilterV2 interface {
 	InterceptClientStream(stream grpc.ClientStream) error
 }
 
-type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errorCh chan error)
+type OnGlobalToZoneSyncConnectFunc func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error
 
-func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errorCh chan error) {
-	f(stream, errorCh)
+func (f OnGlobalToZoneSyncConnectFunc) OnGlobalToZoneSyncConnect(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
+	return f(stream)
 }
 
-type OnZoneToGlobalSyncConnectFunc func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errorCh chan error)
+type OnZoneToGlobalSyncConnectFunc func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error
 
-func (f OnZoneToGlobalSyncConnectFunc) OnZoneToGlobalSyncConnect(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errorCh chan error) {
-	f(stream, errorCh)
+func (f OnZoneToGlobalSyncConnectFunc) OnZoneToGlobalSyncConnect(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
+	return f(stream)
 }
 
 var clientLog = core.Log.WithName("kds-delta-client")
@@ -77,7 +77,12 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error, 1)
-	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
+	go func() {
+		if err := g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream); err != nil {
+			processingErrorsCh <- err
+		}
+	}()
+
 	select {
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
@@ -114,7 +119,12 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	defer shouldDisconnectStream.Close()
 
 	processingErrorsCh := make(chan error, 1)
-	go g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
+	go func() {
+		if err := g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream); err != nil {
+			processingErrorsCh <- err
+		}
+	}()
+
 	select {
 	case <-shouldDisconnectStream.Recv():
 		logger.Info("ending stream, zone health check failed")
