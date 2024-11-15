@@ -77,13 +77,13 @@
   endOfLifeDate: "2024-11-15"
   branch: release-2.5
 - edition: kuma
-  version: 2.6.12
+  version: 2.6.13
   release: 2.6.x
   releaseDate: "2024-02-01"
   endOfLifeDate: "2025-02-01"
   branch: release-2.6
 - edition: kuma
-  version: 2.7.8
+  version: 2.7.9
   release: 2.7.x
   releaseDate: "2024-04-19"
   endOfLifeDate: "2026-04-19"
