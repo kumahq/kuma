@@ -226,6 +226,26 @@
 * revert(kuma-cp): do not use additional addresses [#11601](https://github.com/kumahq/kuma/pull/11601) @lukidzi
 
 
+## 2.6.13
+> Released on 2024/11/13
+
+* chore(deps): bump envoy from 1.28.7 to 1.29.10 [#11960](https://github.com/kumahq/kuma/pull/11960) @lukidzi
+* chore(deps): security update [#11975](https://github.com/kumahq/kuma/pull/11975) @kumahq
+* fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (backport of #11923) [#11940](https://github.com/kumahq/kuma/pull/11940) @kumahq
+* fix(kuma-cp): avoid concurrent access on resource meta (backport of #11997) [#12021](https://github.com/kumahq/kuma/pull/12021) @kumahq
+* fix(store): preserve existing labels when update [#11953](https://github.com/kumahq/kuma/pull/11953) @kumahq
+
+
+## 2.7.9
+> Released on 2024/11/12
+
+* chore(deps): bump envoy from 1.29.9 to 1.29.10 [#11956](https://github.com/kumahq/kuma/pull/11956) @lukidzi
+* chore(deps): security update [#11972](https://github.com/kumahq/kuma/pull/11972) @kumahq
+* fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (backport of #11923) [#11941](https://github.com/kumahq/kuma/pull/11941) @kumahq
+* fix(kuma-cp): avoid concurrent access on resource meta (backport of #11997) [#12023](https://github.com/kumahq/kuma/pull/12023) @kumahq
+* fix(store): preserve existing labels when update [#11954](https://github.com/kumahq/kuma/pull/11954) @kumahq
+
+
 ## 2.8.4
 > Released on 2024/10/07
 
