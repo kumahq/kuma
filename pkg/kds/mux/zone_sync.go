@@ -76,7 +76,7 @@ func (g *KDSSyncServiceServer) GlobalToZoneSync(stream mesh_proto.KDSSyncService
 	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone)
 	defer shouldDisconnectStream.Close()
 
-	processingErrorsCh := make(chan error)
+	processingErrorsCh := make(chan error, 1)
 	go g.globalToZoneCb.OnGlobalToZoneSyncConnect(stream, processingErrorsCh)
 	select {
 	case <-shouldDisconnectStream.Recv():
@@ -113,7 +113,7 @@ func (g *KDSSyncServiceServer) ZoneToGlobalSync(stream mesh_proto.KDSSyncService
 	shouldDisconnectStream := g.watchZoneHealthCheck(stream.Context(), zone)
 	defer shouldDisconnectStream.Close()
 
-	processingErrorsCh := make(chan error)
+	processingErrorsCh := make(chan error, 1)
 	go g.zoneToGlobalCb.OnZoneToGlobalSyncConnect(stream, processingErrorsCh)
 	select {
 	case <-shouldDisconnectStream.Recv():
