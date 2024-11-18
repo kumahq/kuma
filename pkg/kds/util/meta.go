@@ -97,14 +97,6 @@ func CloneResourceMeta(m model.ResourceMeta, fs ...CloneResourceMetaOpt) model.R
 	return meta
 }
 
-func kumaResourceMetaToResourceMeta(meta *mesh_proto.KumaResource_Meta) model.ResourceMeta {
-	return &resourceMeta{
-		name:   meta.Name,
-		mesh:   meta.Mesh,
-		labels: meta.GetLabels(),
-	}
-}
-
 func (r *resourceMeta) GetName() string {
 	return r.name
 }
