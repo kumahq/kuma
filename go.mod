@@ -16,7 +16,7 @@ require (
 	github.com/envoyproxy/go-control-plane v0.13.0
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/evanphx/json-patch/v5 v5.9.0
-	github.com/exaring/otelpgx v0.6.2
+	github.com/exaring/otelpgx v0.7.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
