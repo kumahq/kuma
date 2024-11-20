@@ -54,41 +54,44 @@ type dpStream struct {
 	ctx context.Context
 }
 
+func (d *xdsCallbacks) getDpStream() map[core_xds.StreamID]dpStream {
+	return d.dpStreams
+}
+
+func (d *xdsCallbacks) getDpDeltaStream() map[core_xds.StreamID]dpStream {
+	return d.dpDeltaStreams
+}
+
 var _ util_xds.MultiXDSCallbacks = &xdsCallbacks{}
 
 func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
-	d.onStreamClosed(streamID, false)
+	d.onStreamClosed(streamID, d.getDpStream)
 }
 
 func (d *xdsCallbacks) OnDeltaStreamClosed(streamID core_xds.StreamID) {
-	d.onStreamClosed(streamID, true)
+	d.onStreamClosed(streamID, d.getDpDeltaStream)
 }
 
 func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_xds.DiscoveryRequest) error {
-	return d.onStreamRequest(streamID, request, false)
+	return d.onStreamRequest(streamID, request, d.getDpStream)
 }
 
 func (d *xdsCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, request util_xds.DeltaDiscoveryRequest) error {
-	return d.onStreamRequest(streamID, request, true)
+	return d.onStreamRequest(streamID, request, d.getDpDeltaStream)
 }
 
 func (d *xdsCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	return d.onStreamOpen(ctx, streamID, false)
+	return d.onStreamOpen(ctx, streamID, d.getDpStream)
 }
 
 func (d *xdsCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
-	return d.onStreamOpen(ctx, streamID, true)
+	return d.onStreamOpen(ctx, streamID, d.getDpDeltaStream)
 }
 
-func (d *xdsCallbacks) onStreamClosed(streamID core_xds.StreamID, isDelta bool) {
+func (d *xdsCallbacks) onStreamClosed(streamID core_xds.StreamID, getDpStream func() map[core_xds.StreamID]dpStream) {
 	var lastStreamDpKey *core_model.ResourceKey
 	d.Lock()
-	var dpStream dpStream
-	if isDelta {
-		dpStream = d.dpDeltaStreams[streamID]
-	} else {
-		dpStream = d.dpStreams[streamID]
-	}
+	dpStream := getDpStream()[streamID]
 	if dpKey := dpStream.dp; dpKey != nil {
 		d.activeStreams[*dpKey]--
 		if d.activeStreams[*dpKey] == 0 {
@@ -96,11 +99,7 @@ func (d *xdsCallbacks) onStreamClosed(streamID core_xds.StreamID, isDelta bool) 
 			delete(d.activeStreams, *dpKey)
 		}
 	}
-	if isDelta {
-		delete(d.dpDeltaStreams, streamID)
-	} else {
-		delete(d.dpStreams, streamID)
-	}
+	delete(getDpStream(), streamID)
 	d.Unlock()
 	if lastStreamDpKey != nil {
 		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
@@ -108,7 +107,7 @@ func (d *xdsCallbacks) onStreamClosed(streamID core_xds.StreamID, isDelta bool) 
 	}
 }
 
-func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_xds.Request, isDelta bool) error {
+func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_xds.Request, getDpStream func() map[core_xds.StreamID]dpStream) error {
 	if request.NodeId() == "" {
 		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
 		// Only the first request on a stream is guaranteed to carry the node identifier.
@@ -120,13 +119,7 @@ func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_
 	}
 
 	d.RLock()
-	var alreadyProcessed bool
-	if isDelta {
-		alreadyProcessed = d.dpDeltaStreams[streamID].dp != nil
-	} else {
-		alreadyProcessed = d.dpStreams[streamID].dp != nil
-	}
-
+	alreadyProcessed := getDpStream()[streamID].dp != nil
 	d.RUnlock()
 	if alreadyProcessed {
 		return nil
@@ -146,27 +139,14 @@ func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_
 	// in case client will open 2 concurrent request for the same streamID then
 	// we don't to increment the counter twice, so checking once again that stream
 	// wasn't processed
-	if isDelta {
-		alreadyProcessed = d.dpDeltaStreams[streamID].dp != nil
-	} else {
-		alreadyProcessed = d.dpStreams[streamID].dp != nil
-	}
+	alreadyProcessed = getDpStream()[streamID].dp != nil
 	if alreadyProcessed {
 		return nil
 	}
 
-	var dpStream dpStream
-	if isDelta {
-		dpStream = d.dpDeltaStreams[streamID]
-	} else {
-		dpStream = d.dpStreams[streamID]
-	}
+	dpStream := getDpStream()[streamID]
 	dpStream.dp = &dpKey
-	if isDelta {
-		d.dpDeltaStreams[streamID] = dpStream
-	} else {
-		d.dpStreams[streamID] = dpStream
-	}
+	getDpStream()[streamID] = dpStream
 
 	activeStreams := d.activeStreams[dpKey]
 	d.activeStreams[dpKey]++
@@ -184,18 +164,13 @@ func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_
 	return nil
 }
 
-func (d *xdsCallbacks) onStreamOpen(ctx context.Context, streamID core_xds.StreamID, isDelta bool) error {
+func (d *xdsCallbacks) onStreamOpen(ctx context.Context, streamID core_xds.StreamID, getDpStream func() map[core_xds.StreamID]dpStream) error {
 	d.Lock()
 	defer d.Unlock()
 	dps := dpStream{
 		ctx: ctx,
 	}
-	if isDelta {
-		d.dpDeltaStreams[streamID] = dps
-	} else {
-		d.dpStreams[streamID] = dps
-	}
-
+	getDpStream()[streamID] = dps
 	return nil
 }
 

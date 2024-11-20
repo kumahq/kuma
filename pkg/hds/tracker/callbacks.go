@@ -41,8 +41,7 @@ type tracker struct {
 
 	sync.RWMutex       // protects access to the fields below
 	streamsAssociation map[xds.StreamID]core_model.ResourceKey
-	// deltaStreamsAssociation map[xds.StreamID]core_model.ResourceKey
-	dpStreams map[core_model.ResourceKey]streams
+	dpStreams          map[core_model.ResourceKey]streams
 }
 
 func NewCallbacks(

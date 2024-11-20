@@ -56,6 +56,14 @@ type authCallbacks struct {
 	deltaStreams map[core_xds.StreamID]stream
 }
 
+func (d *authCallbacks) getStreams() map[core_xds.StreamID]stream {
+	return d.streams
+}
+
+func (d *authCallbacks) getDeltaStreams() map[core_xds.StreamID]stream {
+	return d.deltaStreams
+}
+
 type stream struct {
 	// context of the stream that contains a credential
 	ctx context.Context
@@ -85,7 +93,7 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 }
 
 func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
-	return a.onStreamRequest(streamID, req, false)
+	return a.onStreamRequest(streamID, req, a.getStreams)
 }
 
 func (a *authCallbacks) OnDeltaStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
@@ -108,11 +116,11 @@ func (a *authCallbacks) OnDeltaStreamClosed(streamID int64) {
 }
 
 func (a *authCallbacks) OnStreamDeltaRequest(streamID core_xds.StreamID, req util_xds.DeltaDiscoveryRequest) error {
-	return a.onStreamRequest(streamID, req, true)
+	return a.onStreamRequest(streamID, req, a.getDeltaStreams)
 }
 
-func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds.Request, isDelta bool) error {
-	s, err := a.stream(streamID, req, isDelta)
+func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) error {
+	s, err := a.stream(streamID, req, getStreamsState)
 	if err != nil {
 		return err
 	}
@@ -126,24 +134,14 @@ func (a *authCallbacks) onStreamRequest(streamID core_xds.StreamID, req util_xds
 		return errors.Wrap(err, "authentication failed")
 	}
 	a.Lock()
-	if isDelta {
-		a.deltaStreams[streamID] = s
-	} else {
-		a.streams[streamID] = s
-	}
+	getStreamsState()[streamID] = s
 	a.Unlock()
 	return nil
 }
 
-func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request, isDelta bool) (stream, error) {
+func (a *authCallbacks) stream(streamID core_xds.StreamID, req util_xds.Request, getStreamsState func() map[core_xds.StreamID]stream) (stream, error) {
 	a.RLock()
-	var s stream
-	var ok bool
-	if isDelta {
-		s, ok = a.deltaStreams[streamID]
-	} else {
-		s, ok = a.streams[streamID]
-	}
+	s, ok := getStreamsState()[streamID]
 	a.RUnlock()
 	if !ok {
 		return stream{}, errors.New("stream is not present")
