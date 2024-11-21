@@ -110,7 +110,7 @@ linters-settings:
           - $all
         deny:
           - pkg: google.golang.org/protobuf/encoding/protojson
-            desc: "don't use the protojson package; use github.com/golang/protobuf/jsonpb instead"
+            desc: "don't use the protojson package, it's incompatible and might cause issues(https://github.com/golang/protobuf/issues/1374); use github.com/golang/protobuf/jsonpb instead"
 
   misspell:
     locale: US
