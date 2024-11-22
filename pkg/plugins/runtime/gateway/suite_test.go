@@ -14,7 +14,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/runtime/protoimpl"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -51,7 +50,7 @@ type ProtoMessage struct {
 }
 
 func (p ProtoMessage) MarshalJSON() ([]byte, error) {
-	return util_proto.ToJSON(protoimpl.X.ProtoMessageV2Of(p.Message))
+	return util_proto.ToJSON(p.Message)
 }
 
 type ProtoResource struct {

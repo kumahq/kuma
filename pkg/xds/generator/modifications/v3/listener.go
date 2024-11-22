@@ -4,7 +4,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/runtime/protoimpl"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -35,7 +34,7 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
-			util_proto.Merge(protoimpl.X.ProtoMessageV2Of(listener.Resource), listenerPatch)
+			util_proto.Merge(listener.Resource, listenerPatch)
 		}
 	}
 }
