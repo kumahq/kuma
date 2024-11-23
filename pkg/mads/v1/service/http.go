@@ -8,7 +8,7 @@ import (
 	"github.com/emicklei/go-restful/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/jsonpb" // nolint: depguard
 
 	"github.com/kumahq/kuma/pkg/core"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
