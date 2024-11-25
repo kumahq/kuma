@@ -40,8 +40,8 @@ jobs:
         id: process_prs
         run: |
           cat open_prs.json
-          pr_numbers_with_verify_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json)
-          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json)
+          pr_numbers_with_verify_stability=$(jq -r -c '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json | tr '\n' ' ')
+          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json | tr '\n' ' ')
           echo "PRs with 'ci/verify-stability' label: $pr_numbers_with_verify_stability"
           echo "PRs with 'ci/verify-stability-merge-master' label: $pr_numbers_with_verify_stability_merge_master"
           echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> $GITHUB_OUTPUT
@@ -51,7 +51,8 @@ jobs:
       - name: Merge master branch (if applicable) and push a single commit
         if: steps.process_prs.outputs.pr_numbers_with_verify_stability != ''
         run: |
-          for pr_number in ${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }}; do
+          eval "pr_numbers=(${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }})" 
+          for pr_number in $pr_numbers; do
             current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
             echo "Processing PR #$pr_number"
 
