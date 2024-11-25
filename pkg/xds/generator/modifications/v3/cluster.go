@@ -3,7 +3,6 @@ package v3
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
-	protov1 "github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -34,7 +33,7 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
-			util_proto.Merge(protov1.MessageV2(cluster.Resource), clusterMod)
+			util_proto.Merge(cluster.Resource, clusterMod)
 		}
 	}
 }
