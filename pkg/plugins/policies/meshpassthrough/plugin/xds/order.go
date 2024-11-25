@@ -101,7 +101,6 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	}
 	filterChainMatchers := []FilterChainMatch{}
 	for matcher, routes := range matcherWithRoutes {
-		getOrderedRoutes(routes)
 		filterChainMatchers = append(filterChainMatchers,
 			FilterChainMatch{
 				Protocol:  matcher.Protocol,

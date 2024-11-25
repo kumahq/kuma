@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -109,25 +111,25 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 }
 
 func hasIPv4Matches(orderedMatchers []FilterChainMatch) bool {
-	for _, matcher := range orderedMatchers {
+	return slices.ContainsFunc(orderedMatchers, func(matcher FilterChainMatch) bool {
 		if matcher.MatchType == Domain ||
 			matcher.MatchType == WildcardDomain ||
 			matcher.MatchType == CIDR ||
 			matcher.MatchType == IP {
 			return true
 		}
-	}
-	return false
+		return false
+	})
 }
 
 func hasIPv6Matches(orderedMatchers []FilterChainMatch) bool {
-	for _, matcher := range orderedMatchers {
+	return slices.ContainsFunc(orderedMatchers, func(matcher FilterChainMatch) bool {
 		if matcher.MatchType == Domain ||
 			matcher.MatchType == WildcardDomain ||
 			matcher.MatchType == CIDRV6 ||
 			matcher.MatchType == IPV6 {
 			return true
 		}
-	}
-	return false
+		return false
+	})
 }
