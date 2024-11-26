@@ -349,6 +349,8 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		IsPolicy: {{.IsPolicy}},
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
+		{{- if ne .ShortName "" }}
+		ShortName: "{{.ShortName}}",{{- end}}
 		IsExperimental: {{.IsExperimental}},
 {{- if .HasInsights}}
 		Insight: New{{.ResourceType}}InsightResource(),

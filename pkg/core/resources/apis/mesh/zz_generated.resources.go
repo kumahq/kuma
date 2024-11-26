@@ -248,6 +248,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane",
 	PluralDisplayName:   "Dataplanes",
+	ShortName:           "dpp",
 	IsExperimental:      false,
 	Insight:             NewDataplaneInsightResource(),
 	Overview:            NewDataplaneOverviewResource(),
@@ -1099,6 +1100,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh Gateway",
 	PluralDisplayName:   "Mesh Gateways",
+	ShortName:           "mgw",
 	IsExperimental:      false,
 }
 
@@ -2795,6 +2797,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Egress",
 	PluralDisplayName:   "Zone Egresses",
+	ShortName:           "ze",
 	IsExperimental:      false,
 	Insight:             NewZoneEgressInsightResource(),
 	Overview:            NewZoneEgressOverviewResource(),
@@ -3158,6 +3161,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Ingress",
 	PluralDisplayName:   "Zone Ingresses",
+	ShortName:           "zi",
 	IsExperimental:      false,
 	Insight:             NewZoneIngressInsightResource(),
 	Overview:            NewZoneIngressOverviewResource(),

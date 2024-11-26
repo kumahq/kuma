@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -29,6 +30,7 @@ type PolicyConfig struct {
 	SkipGetDefault               bool
 	SingularDisplayName          string
 	PluralDisplayName            string
+	ShortName                    string
 	Path                         string
 	AlternativeNames             []string
 	HasTo                        bool
@@ -139,7 +141,6 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		NameLower:           strings.ToLower(name),
 		SingularDisplayName: core_model.DisplayName(name),
 		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
-		AlternativeNames:    []string{strings.ToLower(name)},
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
 		IsPolicy:            true,
@@ -195,6 +196,17 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		res.Plural = core_model.PluralType(res.Name)
 	}
 
+	if v, ok := markers["kuma:policy:short_name"]; ok {
+		res.ShortName = v
+	} else {
+		var result []rune
+		for _, char := range res.SingularDisplayName {
+			if unicode.IsUpper(char) {
+				result = append(result, unicode.ToLower(char))
+			}
+		}
+		res.ShortName = string(result)
+	}
 	res.Path = strings.ToLower(res.Plural)
 
 	return res, nil
