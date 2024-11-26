@@ -1,16 +1,11 @@
 Patches: null
-allowed: false
+allowed: true
 status:
-  code: 422
-  details:
-    causes:
-    - field: spec.from
-      message: needs at least one item
-      reason: FieldValueInvalid
-    kind: MeshTrafficPermission
-    name: mtp-es
-  message: 'spec.from: needs at least one item'
+  code: 200
   metadata: {}
-  reason: Invalid
-  status: Failure
 uid: "12345"
+warnings:
+- SourceIP type for 'spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].type'
+  is deprecated, use Connection instead
+- MeshService value for 'targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service'
+  tag instead

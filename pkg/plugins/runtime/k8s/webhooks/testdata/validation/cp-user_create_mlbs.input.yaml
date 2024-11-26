@@ -1,8 +1,8 @@
 # user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+kind: MeshLoadBalancingStrategy
 apiVersion: kuma.io/v1alpha1
-kind: MeshTrafficPermission
 metadata:
-  name: mtp-es
+  name: ring-hash
   namespace: kuma-system
   labels:
     kuma.io/mesh: default
