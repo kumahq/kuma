@@ -111,25 +111,19 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 }
 
 func hasIPv4Matches(orderedMatchers []FilterChainMatch) bool {
-	return slices.ContainsFunc(orderedMatchers, func(matcher FilterChainMatch) bool {
-		if matcher.MatchType == Domain ||
-			matcher.MatchType == WildcardDomain ||
-			matcher.MatchType == CIDR ||
-			matcher.MatchType == IP {
+	for _, matcher := range orderedMatchers {
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDR, IP}, matcher.MatchType) {
 			return true
 		}
-		return false
-	})
+	}
+	return false
 }
 
 func hasIPv6Matches(orderedMatchers []FilterChainMatch) bool {
-	return slices.ContainsFunc(orderedMatchers, func(matcher FilterChainMatch) bool {
-		if matcher.MatchType == Domain ||
-			matcher.MatchType == WildcardDomain ||
-			matcher.MatchType == CIDRV6 ||
-			matcher.MatchType == IPV6 {
+	for _, matcher := range orderedMatchers {
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDRV6, IPV6}, matcher.MatchType) {
 			return true
 		}
-		return false
-	})
+	}
+	return false
 }
