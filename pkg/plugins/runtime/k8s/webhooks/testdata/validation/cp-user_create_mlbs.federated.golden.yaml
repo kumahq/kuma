@@ -1,0 +1,16 @@
+Patches: null
+allowed: false
+status:
+  code: 422
+  details:
+    causes:
+    - field: spec.from
+      message: needs at least one item
+      reason: FieldValueInvalid
+    kind: MeshTrafficPermission
+    name: mtp-es
+  message: 'spec.from: needs at least one item'
+  metadata: {}
+  reason: Invalid
+  status: Failure
+uid: "12345"

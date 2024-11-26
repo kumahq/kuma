@@ -147,6 +147,10 @@ to:
 					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[1].cookie",
 					Message: "must be defined",
 				},
+        {
+					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[2].connection",
+					Message: "must be defined",
+				},
 				{
 					Field:   "spec.to[0].default.loadBalancer.maglev.hashPolicies[3].queryParameter",
 					Message: "must be defined",

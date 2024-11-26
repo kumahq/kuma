@@ -3086,6 +3086,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -3207,6 +3208,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
