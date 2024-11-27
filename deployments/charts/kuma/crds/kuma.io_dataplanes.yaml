@@ -13,6 +13,8 @@ spec:
     kind: Dataplane
     listKind: DataplaneList
     plural: dataplanes
+    shortNames:
+    - dpp
     singular: dataplane
   scope: Namespaced
   versions:

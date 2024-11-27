@@ -1668,6 +1668,8 @@ spec:
     kind: MeshGateway
     listKind: MeshGatewayList
     plural: meshgateways
+    shortNames:
+    - mgw
     singular: meshgateway
   scope: Cluster
   versions:
@@ -6538,6 +6540,8 @@ spec:
     kind: Dataplane
     listKind: DataplaneList
     plural: dataplanes
+    shortNames:
+    - dpp
     singular: dataplane
   scope: Namespaced
   versions:
@@ -6850,7 +6854,7 @@ spec:
     listKind: MeshTraceList
     plural: meshtraces
     shortNames:
-    - mt
+    - mtr
     singular: meshtrace
   scope: Namespaced
   versions:
@@ -7889,6 +7893,8 @@ spec:
     kind: ZoneEgress
     listKind: ZoneEgressList
     plural: zoneegresses
+    shortNames:
+    - ze
     singular: zoneegress
   scope: Namespaced
   versions:
@@ -7995,6 +8001,8 @@ spec:
     kind: ZoneIngress
     listKind: ZoneIngressList
     plural: zoneingresses
+    shortNames:
+    - zi
     singular: zoneingress
   scope: Namespaced
   versions:

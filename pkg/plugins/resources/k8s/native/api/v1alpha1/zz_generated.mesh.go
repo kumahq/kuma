@@ -124,7 +124,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=dpp
 // +kubebuilder:printcolumn:description="Service tag of the first inbound",JSONPath=`.spec.networking.inbound[0].tags['kuma\.io/service']`,name="kuma.io/service",type=string
 // +kubebuilder:printcolumn:description="Service tag of the second inbound",JSONPath=`.spec.networking.inbound[1].tags['kuma\.io/service']`,name="kuma.io/service",type=string
 // +kubebuilder:printcolumn:description="Service tag of the third inbound",JSONPath=`.spec.networking.inbound[2].tags['kuma\.io/service']`,name="kuma.io/service",type=string,priority=1
@@ -758,7 +758,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster,shortName=mgw
 type MeshGateway struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -2123,7 +2123,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=ze
 // +kubebuilder:printcolumn:description="Zone name",JSONPath=`.spec.zone`,name="zone",type=string
 type ZoneEgress struct {
 	metav1.TypeMeta   `json:",inline"`
@@ -2334,7 +2334,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=zi
 // +kubebuilder:printcolumn:description="Zone name",JSONPath=`.spec.zone`,name="zone",type=string
 type ZoneIngress struct {
 	metav1.TypeMeta   `json:",inline"`

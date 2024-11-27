@@ -14,7 +14,7 @@ spec:
     listKind: MeshTraceList
     plural: meshtraces
     shortNames:
-    - mt
+    - mtr
     singular: meshtrace
   scope: Namespaced
   versions:
