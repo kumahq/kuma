@@ -195,7 +195,8 @@ spec:
 		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
 		"MeshAccessLog":             delegated.MeshAccessLog(&config),
 		"MeshPassthrough":           delegated.MeshPassthrough(&config),
-		"MeshTLS":                   delegated.MeshTLS(&config),
+		// Matcher for from policy doesn't work for delegated gateway https://github.com/kumahq/kuma/issues/12107
+		// "MeshTLS":                   delegated.MeshTLS(&config),
 	})
 	contextFor("delegated with MeshService", &configMs, map[string]func(){
 		"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&configMs),
