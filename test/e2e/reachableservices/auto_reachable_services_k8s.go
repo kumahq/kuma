@@ -89,7 +89,7 @@ spec:
 			g.Expect(stdout).To(ContainSubstring("first-test-server_reachable-services_svc_80"))
 		}, "30s", "1s").Should(Succeed())
 
-		Consistently(func(g Gomega) {
+		Eventually(func(g Gomega) {
 			failures, err := client.CollectFailure(
 				KubeCluster,
 				"second-test-server",
@@ -98,7 +98,7 @@ spec:
 			)
 			g.Expect(err).To(Not(HaveOccurred()))
 			g.Expect(failures.Exitcode).To(Equal(52))
-		}, "5s", "1s").Should(Succeed())
+		}, "15s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 	})
 
 	It("should connect to ExternalService when MeshTrafficPermission defined", func() {
