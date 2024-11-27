@@ -88,7 +88,17 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "*.example.com",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
 						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.42.0.8",
+						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("IP"),

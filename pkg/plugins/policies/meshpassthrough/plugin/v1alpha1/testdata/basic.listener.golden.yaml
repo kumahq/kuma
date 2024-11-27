@@ -8,6 +8,18 @@ resources:
         portValue: 15001
     filterChains:
     - filterChainMatch:
+        prefixRanges:
+        - addressPrefix: 192.168.19.1
+          prefixLen: 32
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_192.168.19.1_*
+          statPrefix: meshpassthrough_192_168_19_1__
+      name: meshpassthrough_192.168.19.1_*
+    - filterChainMatch:
         destinationPort: 443
         serverNames:
         - api.example.com
@@ -43,18 +55,6 @@ resources:
           cluster: meshpassthrough_*.example.com_443
           statPrefix: meshpassthrough___example_com_443
       name: meshpassthrough_*.example.com_443
-    - filterChainMatch:
-        prefixRanges:
-        - addressPrefix: 192.168.19.1
-          prefixLen: 32
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.19.1_*
-          statPrefix: meshpassthrough_192_168_19_1__
-      name: meshpassthrough_192.168.19.1_*
     - filterChainMatch:
         serverNames:
         - '*.example.com'
@@ -103,44 +103,6 @@ resources:
           cluster: meshpassthrough_192.168.0.1/24_*
           statPrefix: meshpassthrough_192_168_0_1_24__
       name: meshpassthrough_192.168.0.1/24_*
-    - filterChainMatch:
-        applicationProtocols:
-        - http/1.1
-        - h2c
-        destinationPort: 19000
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          routeConfig:
-            name: meshpassthrough_http_19000
-            virtualHosts:
-            - domains:
-              - grpcdomain.com
-              name: grpcdomain.com
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_grpcdomain.com_19000
-            - domains:
-              - '*'
-              name: no_match
-              routes:
-              - directResponse:
-                  body:
-                    inlineString: |
-                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
-                  status: 503
-                match:
-                  prefix: /
-          statPrefix: meshpassthrough_http_19000
-      name: meshpassthrough_http_19000
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
@@ -261,6 +223,44 @@ resources:
                   cluster: meshpassthrough_240.0.0.0/4_8126
           statPrefix: meshpassthrough_http_8126
       name: meshpassthrough_http_8126
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        destinationPort: 19000
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_19000
+            virtualHosts:
+            - domains:
+              - grpcdomain.com
+              name: grpcdomain.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_grpcdomain.com_19000
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
+                  status: 503
+                match:
+                  prefix: /
+          statPrefix: meshpassthrough_http_19000
+      name: meshpassthrough_http_19000
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
@@ -455,6 +455,18 @@ resources:
         portValue: 15001
     filterChains:
     - filterChainMatch:
+        prefixRanges:
+        - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+          prefixLen: 128
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6__
+      name: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
+    - filterChainMatch:
         destinationPort: 443
         serverNames:
         - api.example.com
@@ -490,18 +502,6 @@ resources:
           cluster: meshpassthrough_*.example.com_443
           statPrefix: meshpassthrough___example_com_443
       name: meshpassthrough_*.example.com_443
-    - filterChainMatch:
-        prefixRanges:
-        - addressPrefix: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-          prefixLen: 128
-        transportProtocol: tls
-      filters:
-      - name: envoy.filters.network.tcp_proxy
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6__
-      name: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
     - filterChainMatch:
         serverNames:
         - '*.example.com'

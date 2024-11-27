@@ -183,11 +183,11 @@ func orderMatchers(matchers []FilterChainMatch) {
 		if protocolOrder[matchers[i].Protocol] != protocolOrder[matchers[j].Protocol] {
 			return protocolOrder[matchers[i].Protocol] < protocolOrder[matchers[j].Protocol]
 		}
-		if matchers[i].Port != matchers[j].Port {
-			return matchers[i].Port > matchers[j].Port
-		}
 		if matchers[i].MatchType != matchers[j].MatchType {
 			return matchers[i].MatchType > matchers[j].MatchType
+		}
+		if matchers[i].Port != matchers[j].Port {
+			return matchers[i].Port > matchers[j].Port
 		}
 		if matchers[i].MatchType == Domain || matchers[i].MatchType == WildcardDomain {
 			return sortDomains(matchers[i].Value, matchers[j].Value)

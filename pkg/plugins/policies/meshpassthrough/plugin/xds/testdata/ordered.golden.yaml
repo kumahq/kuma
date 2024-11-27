@@ -1,18 +1,3 @@
-- MatchType: 2
-  Port: 443
-  Protocol: tls
-  Routes: []
-  Value: api.example.com
-- MatchType: 2
-  Port: 443
-  Protocol: tls
-  Routes: []
-  Value: example.com
-- MatchType: 1
-  Port: 443
-  Protocol: tls
-  Routes: []
-  Value: '*.example.com'
 - MatchType: 6
   Port: 0
   Protocol: tls
@@ -24,10 +9,25 @@
   Routes: []
   Value: 192.168.19.1
 - MatchType: 2
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: example.com
+- MatchType: 2
   Port: 0
   Protocol: tls
   Routes: []
   Value: api.example.com
+- MatchType: 1
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
 - MatchType: 1
   Port: 0
   Protocol: tls
@@ -63,6 +63,21 @@
   Protocol: tcp
   Routes: []
   Value: 192.168.0.1/24
+- MatchType: 5
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 3
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
 - MatchType: 2
   Port: 9001
   Protocol: grpc
@@ -88,20 +103,17 @@
   - MatchType: 2
     Value: other.com
   Value: ""
-- MatchType: 3
-  Port: 0
-  Protocol: http
-  Routes: []
-  Value: 172.18.0.0/16
-- MatchType: 3
-  Port: 0
-  Protocol: http
-  Routes: []
-  Value: 240.0.0.0/4
 - MatchType: 2
   Port: 0
   Protocol: http
   Routes:
   - MatchType: 2
     Value: otherexample.com
+  Value: ""
+- MatchType: 1
+  Port: 0
+  Protocol: http
+  Routes:
+  - MatchType: 1
+    Value: '*.example.com'
   Value: ""
