@@ -218,8 +218,12 @@ func HashSuffixMapper(checkKDSFeature bool, labelsToUse ...string) reconcile.Res
 
 func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile.ResourceMapper {
 	return func(_ kds.Features, r core_model.Resource) (core_model.Resource, error) {
-		r.SetMeta(util.CloneResourceMeta(r.GetMeta(), fs...))
-		return r, nil
+		newObj := r.Descriptor().NewObject()
+		newMeta := util.CloneResourceMeta(r.GetMeta(), fs...)
+		newObj.SetMeta(newMeta)
+		_ = newObj.SetSpec(r.GetSpec())
+
+		return newObj, nil
 	}
 }
 
