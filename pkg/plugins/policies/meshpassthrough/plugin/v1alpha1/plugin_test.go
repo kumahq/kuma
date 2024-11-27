@@ -243,6 +243,17 @@ var _ = Describe("MeshPassthrough", func() {
 									Port:     pointer.To(8126),
 								},
 								{
+									Type:     api.MatchType("Domain"),
+									Value:    "www.google.com",
+									Protocol: api.ProtocolType("http"),
+									Port:     pointer.To(80),
+								},
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "10.42.0.8",
+									Protocol: api.ProtocolType("http"),
+								},
+								{
 									Type:     api.MatchType("IP"),
 									Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
 									Protocol: api.ProtocolType("tls"),

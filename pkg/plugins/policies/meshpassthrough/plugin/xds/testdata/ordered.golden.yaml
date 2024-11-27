@@ -109,11 +109,6 @@
   Routes:
   - MatchType: 2
     Value: otherexample.com
-  Value: ""
-- MatchType: 1
-  Port: 0
-  Protocol: http
-  Routes:
   - MatchType: 1
     Value: '*.example.com'
   Value: ""

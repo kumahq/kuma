@@ -2,6 +2,7 @@ package xds
 
 import (
 	"net"
+	"slices"
 	"sort"
 	"strings"
 
@@ -59,7 +60,7 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	for _, match := range conf.AppendMatch {
 		port := pointer.DerefOr(match.Port, 0)
 		protocol := core_mesh.ParseProtocol(string(match.Protocol))
-		matchType := getMatchType(match)
+		matchType, isWildcardDomain := getMatchType(match, protocol)
 		matcher := Matcher{
 			Protocol:  protocol,
 			Port:      uint32(port),
@@ -73,7 +74,10 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 		switch protocol {
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 			// when there are domains we want to create VirtualHosts with Domain match
-			if matchType == Domain || matchType == WildcardDomain {
+			if matchType == Domain {
+				if isWildcardDomain {
+					matchType = WildcardDomain
+				}
 				route := Route{
 					Value:     match.Value,
 					MatchType: matchType,
@@ -114,14 +118,18 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	return filterChainMatchers, nil
 }
 
-func getMatchType(match api.Match) MatchType {
+func getMatchType(match api.Match, protocol core_mesh.Protocol) (MatchType, bool) {
 	var matchType MatchType
+	isWildcardDomain := false
 	switch match.Type {
 	case api.MatchType("Domain"):
-		if strings.HasPrefix(match.Value, "*") {
-			matchType = WildcardDomain
-		} else {
+		matchType = Domain
+		// for L7 protocol we want to aggregate routes
+		if strings.HasPrefix(match.Value, "*") && slices.Contains([]core_mesh.Protocol{core_mesh.ProtocolGRPC, core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2}, protocol) {
 			matchType = Domain
+			isWildcardDomain = true
+		} else if strings.HasPrefix(match.Value, "*") {
+			matchType = WildcardDomain
 		}
 	case api.MatchType("IP"):
 		if govalidator.IsIPv6(match.Value) {
@@ -137,7 +145,7 @@ func getMatchType(match api.Match) MatchType {
 			matchType = CIDR
 		}
 	}
-	return matchType
+	return matchType, isWildcardDomain
 }
 
 func validatePortAndProtocol(portProtocols map[int]map[core_mesh.Protocol]bool) error {
@@ -167,7 +175,7 @@ func getOrderedRoutes(routesMap map[Route]bool) []Route {
 	}
 	sort.SliceStable(routes, func(i, j int) bool {
 		if routes[i].MatchType != routes[j].MatchType {
-			return routes[i].MatchType < routes[j].MatchType
+			return routes[i].MatchType > routes[j].MatchType
 		}
 		if routes[i].MatchType == Domain || routes[i].MatchType == WildcardDomain {
 			return sortDomains(routes[i].Value, routes[j].Value)
