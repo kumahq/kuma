@@ -73,7 +73,53 @@ spec:
 		kicIP, err := kic.From(kubernetes.Cluster).IP(config.namespace)
 		Expect(err).To(Succeed())
 
+<<<<<<< HEAD
 		config.kicIP = kicIP
+=======
+				config.KicIP = kicIP
+				Expect(DeleteMeshResources(
+					kubernetes.Cluster,
+					config.Mesh,
+					mcb_api.MeshCircuitBreakerResourceTypeDescriptor,
+					mt_api.MeshTimeoutResourceTypeDescriptor,
+					mr_api.MeshRetryResourceTypeDescriptor,
+				)).To(Succeed())
+			})
+
+			E2EAfterAll(func() {
+				Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.Namespace)).
+					To(Succeed())
+				Expect(kubernetes.Cluster.TriggerDeleteNamespace(config.NamespaceOutsideMesh)).
+					To(Succeed())
+				Expect(kubernetes.Cluster.DeleteMesh(config.Mesh)).To(Succeed())
+				Expect(kubernetes.Cluster.DeleteDeployment(config.ObservabilityDeploymentName)).
+					To(Succeed())
+			})
+
+			// If you copy the test case from a non-gateway test or create a new test,
+			// remember the the name of policies needs to be unique.
+			// If they have the same name, one might override the other, causing a flake.
+			for policyName, test := range testMatrix {
+				Context(policyName, test)
+			}
+		})
+	}
+
+	contextFor("delegated with kuma.io/service", &config, map[string]func(){
+		"MeshCircuitBreaker":        delegated.CircuitBreaker(&config),
+		"MeshProxyPatch":            delegated.MeshProxyPatch(&config),
+		"MeshHealthCheck":           delegated.MeshHealthCheck(&config),
+		"MeshRetry":                 delegated.MeshRetry(&config),
+		"MeshHTTPRoute":             delegated.MeshHTTPRoute(&config),
+		"MeshTimeout":               delegated.MeshTimeout(&config),
+		"MeshMetric":                delegated.MeshMetric(&config),
+		"MeshTrace":                 delegated.MeshTrace(&config),
+		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
+		"MeshAccessLog":             delegated.MeshAccessLog(&config),
+		"MeshPassthrough":           delegated.MeshPassthrough(&config),
+		// Matcher for from policy doesn't work for delegated gateway https://github.com/kumahq/kuma/issues/12107
+		// "MeshTLS":                   delegated.MeshTLS(&config),
+>>>>>>> c542d022d (test(e2e): disable meshmtls test with delegated gateway (#12108))
 	})
 
 	E2EAfterAll(func() {
