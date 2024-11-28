@@ -56,14 +56,14 @@ type FilterChainMatch struct {
 
 func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
-	portProtocols := map[int]map[core_mesh.Protocol]bool{}
+	portProtocols := map[uint32]map[core_mesh.Protocol]bool{}
 	for _, match := range conf.AppendMatch {
-		port := pointer.DerefOr(match.Port, 0)
+		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_mesh.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)
 		matcher := Matcher{
 			Protocol:  protocol,
-			Port:      uint32(port),
+			Port:      port,
 			MatchType: matchType,
 		}
 		if _, found := portProtocols[port]; !found {
@@ -103,8 +103,27 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	if err := validatePortAndProtocol(portProtocols); err != nil {
 		return nil, err
 	}
-	filterChainMatchers := []FilterChainMatch{}
+	// Envoy first checks the port when performing matching. If there is a matcher for a specific port
+	// and one rule to match all ports alongside another for a specific port,
+	// it might select the matcher for the specific port but fail to find a corresponding filter chain.
+	// To avoid this issue, we also generate specific port matchers for rules intended to match all ports.
+	matcherWithRoutesAndAdditionalPorts := map[Matcher]map[Route]bool{}
 	for matcher, routes := range matcherWithRoutes {
+		matcherWithRoutesAndAdditionalPorts[matcher] = routes
+		if matcher.Port == 0 {
+			for port := range portProtocols {
+				additionalMatcher := Matcher{
+					Protocol:  matcher.Protocol,
+					Port:      port,
+					MatchType: matcher.MatchType,
+					Value:     matcher.Value,
+				}
+				matcherWithRoutesAndAdditionalPorts[additionalMatcher] = routes
+			}
+		}
+	}
+	filterChainMatchers := []FilterChainMatch{}
+	for matcher, routes := range matcherWithRoutesAndAdditionalPorts {
 		filterChainMatchers = append(filterChainMatchers,
 			FilterChainMatch{
 				Protocol:  matcher.Protocol,
@@ -148,7 +167,7 @@ func getMatchType(match api.Match, protocol core_mesh.Protocol) (MatchType, bool
 	return matchType, isWildcardDomain
 }
 
-func validatePortAndProtocol(portProtocols map[int]map[core_mesh.Protocol]bool) error {
+func validatePortAndProtocol(portProtocols map[uint32]map[core_mesh.Protocol]bool) error {
 	var errs error
 	for port, protocols := range portProtocols {
 		var counter int

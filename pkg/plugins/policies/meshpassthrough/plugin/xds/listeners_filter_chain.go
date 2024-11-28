@@ -61,7 +61,7 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 					case Domain, WildcardDomain, IP, IPV6:
 						domains := []string{route.Value}
 						// based on the RFC, the host header might include a port, so we add another entry with the port defined
-						if route.MatchType == IP {
+						if route.MatchType == IP || route.MatchType == Domain || route.MatchType == WildcardDomain {
 							domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
 						}
 						if route.MatchType == IPV6 {
@@ -224,8 +224,8 @@ func FilterChainName(name string, protocol core_mesh.Protocol, port uint32) stri
 	if port != 0 {
 		displayPort = fmt.Sprintf("%d", port)
 	}
-	if protocol == core_mesh.ProtocolTCP || protocol == core_mesh.ProtocolTLS {
+	if name == string(protocol) {
 		return fmt.Sprintf("meshpassthrough_%s_%s", name, displayPort)
 	}
-	return fmt.Sprintf("meshpassthrough_http_%s", displayPort)
+	return fmt.Sprintf("meshpassthrough_%s_%s_%s", protocol, name, displayPort)
 }

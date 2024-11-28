@@ -28,6 +28,41 @@
   Protocol: tcp
   Routes: []
   Value: 127.0.0.1
+- MatchType: 5
+  Port: 80
+  Protocol: tcp
+  Routes: []
+  Value: 127.0.0.1
+- MatchType: 5
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: 127.0.0.1
+- MatchType: 5
+  Port: 9091
+  Protocol: http
+  Routes: []
+  Value: 10.22.22.1
+- MatchType: 5
+  Port: 9090
+  Protocol: http
+  Routes: []
+  Value: 10.22.22.1
+- MatchType: 5
+  Port: 443
+  Protocol: http
+  Routes: []
+  Value: 10.22.22.1
+- MatchType: 5
+  Port: 80
+  Protocol: http
+  Routes: []
+  Value: 10.22.22.1
+- MatchType: 5
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 10.22.22.1
 - MatchType: 2
   Port: 9091
   Protocol: grpc
@@ -48,4 +83,11 @@
   Routes:
   - MatchType: 2
     Value: api.example.com
+  Value: ""
+- MatchType: 2
+  Port: 80
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: httpbin.com
   Value: ""
