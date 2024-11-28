@@ -27,7 +27,7 @@ env:
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
-  MIN_VERSION: "1.2.0"
+  MIN_VERSION: "2.2.0"
 permissions:
   contents: read
 jobs:
