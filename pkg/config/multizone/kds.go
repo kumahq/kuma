@@ -43,6 +43,8 @@ type KdsServerConfig struct {
 	// ZoneHealthCheck holds config for ensuring zones are online
 	ZoneHealthCheck ZoneHealthCheckConfig `json:"zoneHealthCheck"`
 	Tracing         KDSServerTracing      `json:"tracing"`
+	// Labels allows for customizing label handling
+	Labels GlobalLabels `json:"labels"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -103,6 +105,8 @@ type KdsClientConfig struct {
 	// ResponseBackoff is a time Zone CP waits before sending ACK/NACK.
 	// This is a way to slow down Global CP from sending resources too often.
 	ResponseBackoff config_types.Duration `json:"responseBackoff" envconfig:"kuma_multizone_zone_kds_response_backoff"`
+	// Labels allows for customizing label handling
+	Labels ZoneLabels `json:"labels"`
 }
 
 var _ config.Config = &KdsClientConfig{}

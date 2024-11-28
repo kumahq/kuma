@@ -22,7 +22,27 @@ func Sync() {
 	meshName := "sync"
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(
+			multizone.Global.Install(MTLSMeshUniversal(meshName)),
+		).To(Succeed())
+		Expect(
+			multizone.Global.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-to-client
+mesh: %s
+labels:
+  argocd.argoproj.io/instance: something
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshService
+        name: client-server_kuma-test_svc_80 # this is just something to sync
+      default:
+        action: Allow
+`, meshName)),
+			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
@@ -103,6 +123,17 @@ func Sync() {
 				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", meshName)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(strings.Count(out, "Online")).To(Equal(2))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should drop unwanted labels", func() {
+			Eventually(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrafficpermissions", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "argocd.argoproj.io")).To(Equal(1))
+				out, err = multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrafficpermissions", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "argocd.argoproj.io")).To(Equal(0))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
