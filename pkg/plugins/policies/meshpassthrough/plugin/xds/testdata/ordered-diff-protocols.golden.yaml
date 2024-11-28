@@ -64,20 +64,6 @@
   Routes: []
   Value: 10.22.22.1
 - MatchType: 2
-  Port: 9091
-  Protocol: grpc
-  Routes:
-  - MatchType: 2
-    Value: api.example.com
-  Value: ""
-- MatchType: 2
-  Port: 9090
-  Protocol: http2
-  Routes:
-  - MatchType: 2
-    Value: api.example.com
-  Value: ""
-- MatchType: 2
   Port: 443
   Protocol: http
   Routes:
@@ -90,4 +76,18 @@
   Routes:
   - MatchType: 2
     Value: httpbin.com
+  Value: ""
+- MatchType: 2
+  Port: 9090
+  Protocol: http2
+  Routes:
+  - MatchType: 2
+    Value: api.example.com
+  Value: ""
+- MatchType: 2
+  Port: 9091
+  Protocol: grpc
+  Routes:
+  - MatchType: 2
+    Value: api.example.com
   Value: ""

@@ -61,10 +61,10 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 					case Domain, WildcardDomain, IP, IPV6:
 						domains := []string{route.Value}
 						// based on the RFC, the host header might include a port, so we add another entry with the port defined
-						if route.MatchType == IP || route.MatchType == Domain || route.MatchType == WildcardDomain {
+						if c.Port != 0 && (route.MatchType == IP || route.MatchType == Domain || route.MatchType == WildcardDomain) {
 							domains = append(domains, fmt.Sprintf("%s:%d", route.Value, c.Port))
 						}
-						if route.MatchType == IPV6 {
+						if c.Port != 0 && route.MatchType == IPV6 {
 							domains = append(domains, fmt.Sprintf("[%s]", route.Value), fmt.Sprintf("[%s]:%d", route.Value, c.Port))
 						}
 						clusterName := ClusterName(route.Value, c.Protocol, c.Port)

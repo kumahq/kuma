@@ -346,43 +346,17 @@
 - MatchType: 2
   Port: 9091
   Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
-  Value: ""
-- MatchType: 2
-  Port: 9001
-  Protocol: grpc
-  Routes:
-  - MatchType: 2
-    Value: grpc.com
+  Routes: []
   Value: ""
 - MatchType: 2
   Port: 9001
   Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
+  Routes: []
   Value: ""
 - MatchType: 2
   Port: 9000
   Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
-  Value: ""
-- MatchType: 2
-  Port: 9000
-  Protocol: http2
-  Routes:
-  - MatchType: 2
-    Value: http2.com
+  Routes: []
   Value: ""
 - MatchType: 2
   Port: 8080
@@ -398,11 +372,7 @@
 - MatchType: 2
   Port: 443
   Protocol: http
-  Routes:
-  - MatchType: 2
-    Value: otherexample.com
-  - MatchType: 1
-    Value: '*.example.com'
+  Routes: []
   Value: ""
 - MatchType: 2
   Port: 0
@@ -412,4 +382,18 @@
     Value: otherexample.com
   - MatchType: 1
     Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 9000
+  Protocol: http2
+  Routes:
+  - MatchType: 2
+    Value: http2.com
+  Value: ""
+- MatchType: 2
+  Port: 9001
+  Protocol: grpc
+  Routes:
+  - MatchType: 2
+    Value: grpc.com
   Value: ""

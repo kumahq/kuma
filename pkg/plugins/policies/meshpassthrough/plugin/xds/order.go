@@ -30,8 +30,8 @@ var protocolOrder = map[core_mesh.Protocol]int{
 	core_mesh.ProtocolTLS:   0,
 	core_mesh.ProtocolTCP:   1,
 	core_mesh.ProtocolHTTP:  2,
-	core_mesh.ProtocolHTTP2: 2,
-	core_mesh.ProtocolGRPC:  2,
+	core_mesh.ProtocolHTTP2: 3,
+	core_mesh.ProtocolGRPC:  4,
 }
 
 type Route struct {
@@ -118,7 +118,13 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 					MatchType: matcher.MatchType,
 					Value:     matcher.Value,
 				}
-				matcherWithRoutesAndAdditionalPorts[additionalMatcher] = routes
+				if routes, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
+					for route := range routes {
+						matcherWithRoutesAndAdditionalPorts[additionalMatcher][route] = true
+					}
+				} else {
+					matcherWithRoutesAndAdditionalPorts[additionalMatcher] = routes
+				}
 			}
 		}
 	}
@@ -225,7 +231,7 @@ func orderMatchers(matchers []FilterChainMatch) {
 			return prefixI > prefixJ
 		}
 
-		return matchers[i].MatchType < matchers[j].MatchType
+		return len(matchers[i].Routes) > len(matchers[j].Routes)
 	})
 }
 
