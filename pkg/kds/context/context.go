@@ -69,7 +69,10 @@ func DefaultContext(
 	}
 
 	globalMappers := []reconcile_v2.ResourceMapper{
-		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))),
+		UpdateResourceMeta(
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
+			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
+		),
 		reconcile_v2.If(
 			reconcile_v2.And(
 				reconcile_v2.TypeIs(system.GlobalSecretType),
@@ -104,6 +107,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
 			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
+			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
