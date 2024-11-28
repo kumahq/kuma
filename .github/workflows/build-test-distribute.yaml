@@ -78,7 +78,7 @@ jobs:
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
     steps:
       - name: "Halt due to previous failures"
         if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}
