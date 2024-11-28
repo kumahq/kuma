@@ -766,36 +766,6 @@ resources:
         - h2c
         destinationPort: 8126
         prefixRanges:
-        - addressPrefix: 10.42.0.8
-          prefixLen: 32
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          routeConfig:
-            name: meshpassthrough_http_10.42.0.8_8126
-            virtualHosts:
-            - domains:
-              - '*'
-              name: 10.42.0.8
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_10.42.0.8_8126
-          statPrefix: meshpassthrough_http_10_42_0_8_8126
-      name: meshpassthrough_http_10.42.0.8_8126
-    - filterChainMatch:
-        applicationProtocols:
-        - http/1.1
-        - h2c
-        destinationPort: 8126
-        prefixRanges:
         - addressPrefix: 10.42.0.9
           prefixLen: 32
         transportProtocol: raw_buffer
@@ -820,6 +790,36 @@ resources:
                   cluster: meshpassthrough_10.42.0.9_8126
           statPrefix: meshpassthrough_http_10_42_0_9_8126
       name: meshpassthrough_http_10.42.0.9_8126
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        destinationPort: 8126
+        prefixRanges:
+        - addressPrefix: 10.42.0.8
+          prefixLen: 32
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_10.42.0.8_8126
+            virtualHosts:
+            - domains:
+              - '*'
+              name: 10.42.0.8
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_10.42.0.8_8126
+          statPrefix: meshpassthrough_http_10_42_0_8_8126
+      name: meshpassthrough_http_10.42.0.8_8126
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
@@ -1006,36 +1006,6 @@ resources:
         - h2c
         destinationPort: 443
         prefixRanges:
-        - addressPrefix: 10.42.0.8
-          prefixLen: 32
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          routeConfig:
-            name: meshpassthrough_http_10.42.0.8_443
-            virtualHosts:
-            - domains:
-              - '*'
-              name: 10.42.0.8
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_10.42.0.8_443
-          statPrefix: meshpassthrough_http_10_42_0_8_443
-      name: meshpassthrough_http_10.42.0.8_443
-    - filterChainMatch:
-        applicationProtocols:
-        - http/1.1
-        - h2c
-        destinationPort: 443
-        prefixRanges:
         - addressPrefix: 10.42.0.9
           prefixLen: 32
         transportProtocol: raw_buffer
@@ -1060,6 +1030,36 @@ resources:
                   cluster: meshpassthrough_10.42.0.9_443
           statPrefix: meshpassthrough_http_10_42_0_9_443
       name: meshpassthrough_http_10.42.0.9_443
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        destinationPort: 443
+        prefixRanges:
+        - addressPrefix: 10.42.0.8
+          prefixLen: 32
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_10.42.0.8_443
+            virtualHosts:
+            - domains:
+              - '*'
+              name: 10.42.0.8
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_10.42.0.8_443
+          statPrefix: meshpassthrough_http_10_42_0_8_443
+      name: meshpassthrough_http_10.42.0.8_443
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
@@ -1125,35 +1125,6 @@ resources:
         - http/1.1
         - h2c
         prefixRanges:
-        - addressPrefix: 10.42.0.8
-          prefixLen: 32
-        transportProtocol: raw_buffer
-      filters:
-      - name: envoy.filters.network.http_connection_manager
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-          httpFilters:
-          - name: envoy.filters.http.router
-            typedConfig:
-              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-          routeConfig:
-            name: meshpassthrough_http_10.42.0.8_*
-            virtualHosts:
-            - domains:
-              - '*'
-              name: 10.42.0.8
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_10.42.0.8_*
-          statPrefix: meshpassthrough_http_10_42_0_8__
-      name: meshpassthrough_http_10.42.0.8_*
-    - filterChainMatch:
-        applicationProtocols:
-        - http/1.1
-        - h2c
-        prefixRanges:
         - addressPrefix: 10.42.0.9
           prefixLen: 32
         transportProtocol: raw_buffer
@@ -1178,6 +1149,35 @@ resources:
                   cluster: meshpassthrough_10.42.0.9_*
           statPrefix: meshpassthrough_http_10_42_0_9__
       name: meshpassthrough_http_10.42.0.9_*
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        prefixRanges:
+        - addressPrefix: 10.42.0.8
+          prefixLen: 32
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_10.42.0.8_*
+            virtualHosts:
+            - domains:
+              - '*'
+              name: 10.42.0.8
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_10.42.0.8_*
+          statPrefix: meshpassthrough_http_10_42_0_8__
+      name: meshpassthrough_http_10.42.0.8_*
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
