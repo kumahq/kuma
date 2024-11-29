@@ -67,6 +67,11 @@ func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_liste
 						if c.Port != 0 && route.MatchType == IPV6 {
 							domains = append(domains, fmt.Sprintf("[%s]", route.Value), fmt.Sprintf("[%s]:%d", route.Value, c.Port))
 						}
+						if c.Port == 0 && route.MatchType == Domain {
+							// we want to match all domains
+							domains = append(domains, fmt.Sprintf("%s:*", route.Value))
+						}
+
 						clusterName := ClusterName(route.Value, c.Protocol, c.Port)
 						routeBuilder.Configure(xds_routes.VirtualHost(xds_virtual_hosts.NewVirtualHostBuilder(c.APIVersion, route.Value).
 							Configure(
