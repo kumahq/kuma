@@ -1,33 +1,33 @@
 resources:
-- name: meshpassthrough_*.example.com_*
+- name: meshpassthrough_*.example.com_http_*
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough___example_com__
+    altStatName: meshpassthrough___example_com_http__
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_*.example.com_*
+    name: meshpassthrough_*.example.com_http_*
     type: ORIGINAL_DST
-- name: meshpassthrough_anotherexample.com_*
+- name: meshpassthrough_anotherexample.com_http_*
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_anotherexample_com__
+    altStatName: meshpassthrough_anotherexample_com_http__
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_anotherexample.com_*
+    name: meshpassthrough_anotherexample.com_http_*
     type: ORIGINAL_DST
-- name: meshpassthrough_example1.com_80
+- name: meshpassthrough_example1.com_http_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_example1_com_80
+    altStatName: meshpassthrough_example1_com_http_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_example1.com_80
+    name: meshpassthrough_example1.com_http_80
     type: ORIGINAL_DST
-- name: meshpassthrough_example2.com_80
+- name: meshpassthrough_example2.com_http_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_example2_com_80
+    altStatName: meshpassthrough_example2_com_http_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_example2.com_80
+    name: meshpassthrough_example2.com_http_80
     type: ORIGINAL_DST

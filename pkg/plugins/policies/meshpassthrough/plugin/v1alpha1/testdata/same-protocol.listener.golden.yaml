@@ -34,7 +34,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_80
+                  cluster: meshpassthrough_10.42.0.8_http_80
           statPrefix: meshpassthrough_http_10_42_0_8_80
       name: meshpassthrough_http_10.42.0.8_80
     - filterChainMatch:
@@ -63,7 +63,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_*
+                  cluster: meshpassthrough_10.42.0.8_http_*
           statPrefix: meshpassthrough_http_10_42_0_8__
       name: meshpassthrough_http_10.42.0.8_*
     - filterChainMatch:
@@ -91,7 +91,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_www.gmail.com_80
+                  cluster: meshpassthrough_www.gmail.com_http_80
             - domains:
               - '*'
               name: no_match
@@ -147,7 +147,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_www.gmail.com_80
+                  cluster: meshpassthrough_www.gmail.com_http_80
             - domains:
               - '*'
               name: no_match

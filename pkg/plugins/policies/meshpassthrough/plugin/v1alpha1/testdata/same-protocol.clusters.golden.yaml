@@ -1,25 +1,25 @@
 resources:
-- name: meshpassthrough_10.42.0.8_*
+- name: meshpassthrough_10.42.0.8_http_*
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_10_42_0_8__
+    altStatName: meshpassthrough_10_42_0_8_http__
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_10.42.0.8_*
+    name: meshpassthrough_10.42.0.8_http_*
     type: ORIGINAL_DST
-- name: meshpassthrough_10.42.0.8_80
+- name: meshpassthrough_10.42.0.8_http_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_10_42_0_8_80
+    altStatName: meshpassthrough_10_42_0_8_http_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_10.42.0.8_80
+    name: meshpassthrough_10.42.0.8_http_80
     type: ORIGINAL_DST
-- name: meshpassthrough_www.gmail.com_80
+- name: meshpassthrough_www.gmail.com_http_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_www_gmail_com_80
+    altStatName: meshpassthrough_www_gmail_com_http_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_www.gmail.com_80
+    name: meshpassthrough_www.gmail.com_http_80
     type: ORIGINAL_DST

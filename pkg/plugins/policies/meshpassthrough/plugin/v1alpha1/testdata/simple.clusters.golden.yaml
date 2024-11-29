@@ -1,17 +1,17 @@
 resources:
-- name: meshpassthrough_192.168.0.0_80
+- name: meshpassthrough_192.168.0.0_tcp_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_192_168_0_0_80
+    altStatName: meshpassthrough_192_168_0_0_tcp_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_192.168.0.0_80
+    name: meshpassthrough_192.168.0.0_tcp_80
     type: ORIGINAL_DST
-- name: meshpassthrough_api.example.com_80
+- name: meshpassthrough_api.example.com_http_80
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: meshpassthrough_api_example_com_80
+    altStatName: meshpassthrough_api_example_com_http_80
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
-    name: meshpassthrough_api.example.com_80
+    name: meshpassthrough_api.example.com_http_80
     type: ORIGINAL_DST

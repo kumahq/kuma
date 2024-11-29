@@ -16,8 +16,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_api.example.com_443
-          statPrefix: meshpassthrough_api_example_com_443
+          cluster: meshpassthrough_api.example.com_tls_443
+          statPrefix: meshpassthrough_api_example_com_tls_443
       name: meshpassthrough_tls_api.example.com_443
     - filterChainMatch:
         destinationPort: 443
@@ -28,8 +28,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_example.com_443
-          statPrefix: meshpassthrough_example_com_443
+          cluster: meshpassthrough_example.com_tls_443
+          statPrefix: meshpassthrough_example_com_tls_443
       name: meshpassthrough_tls_example.com_443
     - filterChainMatch:
         destinationPort: 443
@@ -40,8 +40,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_*.example.com_443
-          statPrefix: meshpassthrough___example_com_443
+          cluster: meshpassthrough_*.example.com_tls_443
+          statPrefix: meshpassthrough___example_com_tls_443
       name: meshpassthrough_tls_*.example.com_443
     - filterChainMatch:
         applicationProtocols:
@@ -70,7 +70,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_9091
+                  cluster: meshpassthrough_10.42.0.8_http_9091
           statPrefix: meshpassthrough_http_10_42_0_8_9091
       name: meshpassthrough_http_10.42.0.8_9091
     - filterChainMatch:
@@ -100,7 +100,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_8126
+                  cluster: meshpassthrough_10.42.0.8_http_8126
           statPrefix: meshpassthrough_http_10_42_0_8_8126
       name: meshpassthrough_http_10.42.0.8_8126
     - filterChainMatch:
@@ -130,7 +130,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_8080
+                  cluster: meshpassthrough_10.42.0.8_http_8080
           statPrefix: meshpassthrough_http_10_42_0_8_8080
       name: meshpassthrough_http_10.42.0.8_8080
     - filterChainMatch:
@@ -160,7 +160,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_443
+                  cluster: meshpassthrough_10.42.0.8_http_443
           statPrefix: meshpassthrough_http_10_42_0_8_443
       name: meshpassthrough_http_10.42.0.8_443
     - filterChainMatch:
@@ -190,7 +190,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_80
+                  cluster: meshpassthrough_10.42.0.8_http_80
           statPrefix: meshpassthrough_http_10_42_0_8_80
       name: meshpassthrough_http_10.42.0.8_80
     - filterChainMatch:
@@ -219,7 +219,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_10.42.0.8_*
+                  cluster: meshpassthrough_10.42.0.8_http_*
           statPrefix: meshpassthrough_http_10_42_0_8__
       name: meshpassthrough_http_10.42.0.8_*
     - filterChainMatch:
@@ -249,7 +249,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_192.168.0.0/16_8126
+                  cluster: meshpassthrough_192.168.0.0/16_http_8126
           statPrefix: meshpassthrough_http_192_168_0_0_16_8126
       name: meshpassthrough_http_192.168.0.0/16_8126
     - filterChainMatch:
@@ -279,7 +279,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_240.0.0.0/4_8126
+                  cluster: meshpassthrough_240.0.0.0/4_http_8126
           statPrefix: meshpassthrough_http_240_0_0_0_4_8126
       name: meshpassthrough_http_240.0.0.0/4_8126
     - filterChainMatch:
@@ -307,7 +307,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example.com_8080
+                  cluster: meshpassthrough_example.com_http_8080
             - domains:
               - other.com
               - other.com:8080
@@ -316,7 +316,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_other.com_8080
+                  cluster: meshpassthrough_other.com_http_8080
             - domains:
               - '*'
               name: no_match
@@ -355,7 +355,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_www.google.com_80
+                  cluster: meshpassthrough_www.google.com_http_80
             - domains:
               - '*'
               name: no_match
@@ -396,8 +396,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_9091
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_9091
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_9091
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls_9091
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_9091
     - filterChainMatch:
         destinationPort: 8126
@@ -409,8 +409,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_8126
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_8126
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls_8126
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8126
     - filterChainMatch:
         destinationPort: 8080
@@ -422,8 +422,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_8080
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_8080
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls_8080
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_8080
     - filterChainMatch:
         destinationPort: 443
@@ -435,8 +435,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_443
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_443
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls_443
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_443
     - filterChainMatch:
         destinationPort: 80
@@ -448,8 +448,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_80
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_80
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls_80
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_80
     - filterChainMatch:
         prefixRanges:
@@ -460,8 +460,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
-          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6__
+          cluster: meshpassthrough_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_tls_*
+          statPrefix: meshpassthrough_b6e5_a45e_70ae_e77f_d24e_5023_375d_20a6_tls__
       name: meshpassthrough_tls_b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6_*
     - filterChainMatch:
         destinationPort: 443
@@ -472,8 +472,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_api.example.com_443
-          statPrefix: meshpassthrough_api_example_com_443
+          cluster: meshpassthrough_api.example.com_tls_443
+          statPrefix: meshpassthrough_api_example_com_tls_443
       name: meshpassthrough_tls_api.example.com_443
     - filterChainMatch:
         destinationPort: 443
@@ -484,8 +484,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_example.com_443
-          statPrefix: meshpassthrough_example_com_443
+          cluster: meshpassthrough_example.com_tls_443
+          statPrefix: meshpassthrough_example_com_tls_443
       name: meshpassthrough_tls_example.com_443
     - filterChainMatch:
         destinationPort: 443
@@ -496,8 +496,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_*.example.com_443
-          statPrefix: meshpassthrough___example_com_443
+          cluster: meshpassthrough_*.example.com_tls_443
+          statPrefix: meshpassthrough___example_com_tls_443
       name: meshpassthrough_tls_*.example.com_443
     - filterChainMatch:
         destinationPort: 9091
@@ -509,8 +509,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
-          statPrefix: meshpassthrough_9942_9abf_d0e0_f2da_2290_333b_e590_f497_9091
+          cluster: meshpassthrough_9942:9abf:d0e0:f2da:2290:333b:e590:f497_tcp_9091
+          statPrefix: meshpassthrough_9942_9abf_d0e0_f2da_2290_333b_e590_f497_tcp_9091
       name: meshpassthrough_tcp_9942:9abf:d0e0:f2da:2290:333b:e590:f497_9091
     - filterChainMatch:
         applicationProtocols:
@@ -537,7 +537,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example.com_8080
+                  cluster: meshpassthrough_example.com_http_8080
             - domains:
               - other.com
               - other.com:8080
@@ -546,7 +546,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_other.com_8080
+                  cluster: meshpassthrough_other.com_http_8080
             - domains:
               - '*'
               name: no_match
@@ -585,7 +585,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_www.google.com_80
+                  cluster: meshpassthrough_www.google.com_http_80
             - domains:
               - '*'
               name: no_match

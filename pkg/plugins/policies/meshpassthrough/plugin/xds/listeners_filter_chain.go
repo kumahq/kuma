@@ -219,9 +219,9 @@ func (c FilterChainConfigurer) configureAddressMatch(builder *xds_listeners.Filt
 
 func ClusterName(matchValue string, protocol core_mesh.Protocol, port uint32) string {
 	if port == 0 {
-		return fmt.Sprintf("meshpassthrough_%s_*", matchValue)
+		return fmt.Sprintf("meshpassthrough_%s_%s_*", matchValue, protocol)
 	}
-	return fmt.Sprintf("meshpassthrough_%s_%d", matchValue, port)
+	return fmt.Sprintf("meshpassthrough_%s_%s_%d", matchValue, protocol, port)
 }
 
 func FilterChainName(name string, protocol core_mesh.Protocol, port uint32) string {
