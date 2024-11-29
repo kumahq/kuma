@@ -248,7 +248,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane",
 	PluralDisplayName:   "Dataplanes",
-	ShortName:           "dpp",
+	ShortName:           "dp",
 	IsExperimental:      false,
 	Insight:             NewDataplaneInsightResource(),
 	Overview:            NewDataplaneOverviewResource(),

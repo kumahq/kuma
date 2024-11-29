@@ -124,7 +124,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=dpp
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=dp
 // +kubebuilder:printcolumn:description="Service tag of the first inbound",JSONPath=`.spec.networking.inbound[0].tags['kuma\.io/service']`,name="kuma.io/service",type=string
 // +kubebuilder:printcolumn:description="Service tag of the second inbound",JSONPath=`.spec.networking.inbound[1].tags['kuma\.io/service']`,name="kuma.io/service",type=string
 // +kubebuilder:printcolumn:description="Service tag of the third inbound",JSONPath=`.spec.networking.inbound[2].tags['kuma\.io/service']`,name="kuma.io/service",type=string,priority=1
