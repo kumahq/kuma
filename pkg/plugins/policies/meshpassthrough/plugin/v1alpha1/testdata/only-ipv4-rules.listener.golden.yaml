@@ -17,8 +17,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.0_tcp_80
-          statPrefix: meshpassthrough_192_168_0_0_tcp_80
+          cluster: meshpassthrough_tcp_192.168.0.0_80
+          statPrefix: meshpassthrough_tcp_192_168_0_0_80
       name: meshpassthrough_tcp_192.168.0.0_80
     listenerFilters:
     - name: envoy.filters.listener.tls_inspector

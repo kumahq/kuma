@@ -32,7 +32,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example1.com_http_80
+                  cluster: meshpassthrough_http_example1.com_80
             - domains:
               - example2.com
               - example2.com:80
@@ -41,7 +41,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example2.com_http_80
+                  cluster: meshpassthrough_http_example2.com_80
             - domains:
               - '*'
               name: no_match
@@ -79,7 +79,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_anotherexample.com_http_*
+                  cluster: meshpassthrough_http_anotherexample.com_*
             - domains:
               - '*.example.com'
               name: '*.example.com'
@@ -87,7 +87,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_*.example.com_http_*
+                  cluster: meshpassthrough_http_*.example.com_*
             - domains:
               - '*'
               name: no_match
@@ -143,7 +143,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example1.com_http_80
+                  cluster: meshpassthrough_http_example1.com_80
             - domains:
               - example2.com
               - example2.com:80
@@ -152,7 +152,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_example2.com_http_80
+                  cluster: meshpassthrough_http_example2.com_80
             - domains:
               - '*'
               name: no_match
@@ -190,7 +190,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_anotherexample.com_http_*
+                  cluster: meshpassthrough_http_anotherexample.com_*
             - domains:
               - '*.example.com'
               name: '*.example.com'
@@ -198,7 +198,7 @@ resources:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_*.example.com_http_*
+                  cluster: meshpassthrough_http_*.example.com_*
             - domains:
               - '*'
               name: no_match
