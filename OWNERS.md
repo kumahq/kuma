@@ -23,6 +23,7 @@ kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers
 - Krzysztof Slonka @slonka (krzysztof.slonka@konghq.com)
 - Marcin Skalski @Automaat (marcin.skalski@konghq.com)
 - Lukasz Dziedziak @lukidzi (lukidzi@gmail.com) 
+- Jay Jijie Chen @jijiechen (jijie.chen@outlook.com)
 
 # Reviewers
 
