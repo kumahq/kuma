@@ -13,6 +13,8 @@ spec:
     kind: MeshTLS
     listKind: MeshTLSList
     plural: meshtlses
+    shortNames:
+    - mtls
     singular: meshtls
   scope: Namespaced
   versions:

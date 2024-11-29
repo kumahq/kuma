@@ -34,6 +34,7 @@ const maxNameLength = 63
 // +kuma:policy:has_status=true
 // +kuma:policy:kds_flags=model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag
 // +kuma:policy:is_referenceable_in_to=true
+// +kuma:policy:short_name=msvc
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.

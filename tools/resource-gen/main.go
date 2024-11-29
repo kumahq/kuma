@@ -47,9 +47,9 @@ import (
 
 // +kubebuilder:object:root=true
 {{- if .ScopeNamespace }}
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced{{- if ne .ShortName ""}},shortName={{.ShortName}}{{- end}}
 {{- else }}
-// +kubebuilder:resource:categories=kuma,scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster{{- if ne .ShortName ""}},shortName={{.ShortName}}{{- end}}
 {{- end}}
 {{- range .AdditionalPrinterColumns }}
 // +kubebuilder:printcolumn:{{ . }}
@@ -349,6 +349,8 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		IsPolicy: {{.IsPolicy}},
 		SingularDisplayName: "{{.SingularDisplayName}}",
 		PluralDisplayName: "{{.PluralDisplayName}}",
+		{{- if ne .ShortName "" }}
+		ShortName: "{{.ShortName}}",{{- end}}
 		IsExperimental: {{.IsExperimental}},
 {{- if .HasInsights}}
 		Insight: New{{.ResourceType}}InsightResource(),

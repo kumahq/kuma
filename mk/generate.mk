@@ -34,7 +34,7 @@ generate: generate/protos generate/resources $(if $(findstring ./api,$(PROTO_DIR
 $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
-$(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)
+$(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 .PHONY: resources/type
