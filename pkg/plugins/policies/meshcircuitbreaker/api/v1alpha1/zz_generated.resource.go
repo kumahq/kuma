@@ -153,4 +153,5 @@ var MeshCircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
+	ShortName:                    "mcb",
 }
