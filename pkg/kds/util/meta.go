@@ -1,10 +1,9 @@
 package util
 
 import (
+	"maps"
 	"strings"
 	"time"
-
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"

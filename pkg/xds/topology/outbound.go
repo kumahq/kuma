@@ -8,7 +8,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
-	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -107,7 +107,7 @@ func BuildEdsEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	meshServices := exp_maps.Values(meshServicesByName)
+	meshServices := util_maps.AllValues(meshServicesByName)
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
 	// we want to prefer endpoints build by MeshService
