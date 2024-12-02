@@ -12,7 +12,7 @@ import (
 
 func (m *MeshServiceResource) DestinationName(port uint32) string {
 	id := model.NewResourceIdentifier(m)
-	return fmt.Sprintf("%s_%s_%s_%s_msvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
+	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
 func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
