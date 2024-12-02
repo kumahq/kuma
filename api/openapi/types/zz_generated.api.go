@@ -20,6 +20,13 @@ const (
 	Meshgateways InspectDataplanesRulesParamsResourceType = "meshgateways"
 )
 
+// Defines values for InspectHostnamesParamsServiceType.
+const (
+	Meshexternalservices  InspectHostnamesParamsServiceType = "meshexternalservices"
+	Meshmultizoneservices InspectHostnamesParamsServiceType = "meshmultizoneservices"
+	Meshservices          InspectHostnamesParamsServiceType = "meshservices"
+)
+
 // BaseStatus defines model for BaseStatus.
 type BaseStatus struct {
 	Online int `json:"online"`
@@ -109,14 +116,14 @@ type InspectDataplanesForPolicy struct {
 	Total int                 `json:"total"`
 }
 
-// InspectHostname A list of zones in which the hostname is available in
+// InspectHostname An supported hostname along with the zones it exists in
 type InspectHostname struct {
 	// Hostname Generated hostname
 	Hostname string                `json:"hostname"`
 	Zones    []InspectHostnameZone `json:"zones"`
 }
 
-// InspectHostnameZone A name of the zone with hostname generator that was used to generate the hostname
+// InspectHostnameZone A name of the zone and hostname generator that was used to generate the hostname
 type InspectHostnameZone struct {
 	HostnameGeneratorCoreName string `json:"hostnameGeneratorCoreName"`
 	Name                      string `json:"name"`
@@ -241,3 +248,6 @@ type InspectResourcesParams struct {
 
 // InspectDataplanesRulesParamsResourceType defines parameters for InspectDataplanesRules.
 type InspectDataplanesRulesParamsResourceType string
+
+// InspectHostnamesParamsServiceType defines parameters for InspectHostnames.
+type InspectHostnamesParamsServiceType string

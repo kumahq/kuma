@@ -68,22 +68,28 @@ func matchingDataplanesForMeshServices(resManager manager.ResourceManager, resou
 	}
 }
 
+var availableServiceTypes = []string{
+	string(types.Meshservices),
+	string(types.Meshexternalservices),
+	string(types.Meshmultizoneservices),
+}
+
 func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction {
-	generatorsForType := map[string]hostname.HostnameGenerator{
-		"meshservices":          meshservice_hostname.NewMeshServiceHostnameGenerator(resManager),
-		"meshexternalservices":  mes_hostname.NewMeshExternalServiceHostnameGenerator(resManager),
-		"meshmultizoneservices": mzms_hostname.NewMeshMultiZoneServiceHostnameGenerator(resManager),
+	generatorsForType := map[types.InspectHostnamesParamsServiceType]hostname.HostnameGenerator{
+		types.Meshservices:          meshservice_hostname.NewMeshServiceHostnameGenerator(resManager),
+		types.Meshexternalservices:  mes_hostname.NewMeshExternalServiceHostnameGenerator(resManager),
+		types.Meshmultizoneservices: mzms_hostname.NewMeshMultiZoneServiceHostnameGenerator(resManager),
 	}
-	typeDescForType := map[string]model.ResourceTypeDescriptor{
-		"meshservices":          meshservice_api.MeshServiceResourceTypeDescriptor,
-		"meshexternalservices":  meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
-		"meshmultizoneservices": meshmultizoneservice_api.MeshMultiZoneServiceResourceTypeDescriptor,
+	typeDescForType := map[types.InspectHostnamesParamsServiceType]model.ResourceTypeDescriptor{
+		types.Meshservices:          meshservice_api.MeshServiceResourceTypeDescriptor,
+		types.Meshexternalservices:  meshexternalservice_api.MeshExternalServiceResourceTypeDescriptor,
+		types.Meshmultizoneservices: meshmultizoneservice_api.MeshMultiZoneServiceResourceTypeDescriptor,
 	}
 
 	return func(request *restful.Request, response *restful.Response) {
 		svcName := request.PathParameter("name")
 		svcMesh := request.PathParameter("mesh")
-		svcType := request.PathParameter("serviceType")
+		svcType := types.InspectHostnamesParamsServiceType(request.PathParameter("serviceType"))
 
 		desc, ok := typeDescForType[svcType]
 		if !ok {
@@ -91,7 +97,7 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 				request.Request.Context(),
 				response,
 				&validators.ValidationError{},
-				fmt.Sprintf("only %q are available for inspection", strings.Join(util_maps.SortedKeys(typeDescForType), ",")),
+				fmt.Sprintf("only %q are available for inspection", strings.Join(availableServiceTypes, ",")),
 			)
 		}
 

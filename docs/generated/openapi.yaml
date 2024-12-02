@@ -190,7 +190,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /meshes/{mesh}/{serviceType}/{serviceName}/_resources/hostnames:
+  /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
     get:
       operationId: inspect-hostnames
       summary: Returns hostnames for service
@@ -210,10 +210,12 @@ paths:
           example: meshservices
           schema:
             type: string
+            enum:
+              - meshservices
+              - meshmultizoneservices
+              - meshexternalservices
           required: true
-          description: >-
-            The type of the service (meshservices, meshmultizoneservices,
-            meshexternalservices)
+          description: The type of the service
         - in: path
           name: serviceName
           example: redis
@@ -2386,7 +2388,7 @@ components:
     InspectHostname:
       type: object
       title: InspectHostname
-      description: A list of zones in which the hostname is available in
+      description: An supported hostname along with the zones it exists in
       required:
         - hostname
         - zones
@@ -2403,7 +2405,7 @@ components:
       type: object
       title: InspectHostnameZone
       description: >-
-        A name of the zone with hostname generator that was used to generate the
+        A name of the zone and hostname generator that was used to generate the
         hostname
       required:
         - name
