@@ -2,12 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
-	"sort"
 	"strings"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
-	"golang.org/x/exp/maps"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -15,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
@@ -200,11 +199,11 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 	for _, group := range crossZoneGroups {
 		switch group.Type {
 		case api.Only:
-			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, strings.Join(sortedZones(group.Zones), ",")))
+			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, strings.Join(util_maps.SortedKeys(group.Zones), ",")))
 		case api.Any:
 			builder.WriteString(fmt.Sprintf("%d:%s", group.Priority, group.Type))
 		case api.AnyExcept:
-			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, strings.Join(sortedZones(group.Zones), ",")))
+			builder.WriteString(fmt.Sprintf("%d:%s:%s", group.Priority, group.Type, strings.Join(util_maps.SortedKeys(group.Zones), ",")))
 		default:
 			continue
 		}
@@ -215,10 +214,4 @@ func egressLocality(crossZoneGroups []CrossZoneLbGroup) *core_xds.Locality {
 		Zone:     fmt.Sprintf("egress_%s", sha256.Hash(builder.String())[:8]),
 		Priority: 1,
 	}
-}
-
-func sortedZones(zones map[string]bool) []string {
-	keys := maps.Keys(zones)
-	sort.Strings(keys)
-	return keys
 }

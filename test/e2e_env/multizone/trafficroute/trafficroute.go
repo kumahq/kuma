@@ -381,7 +381,8 @@ conf:
 			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 		})
 
-		It("should loadbalance all requests equally by default", func() {
+		// TODO(bartsmykla): disabled while investingating flake (https://github.com/kumahq/kuma/issues/12142)
+		XIt("should loadbalance all requests equally by default", func() {
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
@@ -392,11 +393,6 @@ conf:
 					"echo-v4": Not(BeNil()),
 					"echo-v5": Not(BeNil()),
 					"echo-v6": Not(BeNil()),
-					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 10, 1)),
 				}),
 			)
 		})

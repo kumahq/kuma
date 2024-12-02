@@ -8,7 +8,6 @@ import (
 
 	envoy_service_runtime_v3 "github.com/envoyproxy/go-control-plane/envoy/service/runtime/v3"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/merge"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -430,7 +430,7 @@ func MakeGatewayListener(
 	}
 
 	var listenerHostnames []GatewayListenerHostname
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(hostsByName)) {
+	for _, hostname := range match.SortHostnamesByExactnessDec(util_maps.AllKeys(hostsByName)) {
 		hostAcc := hostsByName[hostname]
 		hosts := RedistributeWildcardRoutes(hostAcc.hosts)
 

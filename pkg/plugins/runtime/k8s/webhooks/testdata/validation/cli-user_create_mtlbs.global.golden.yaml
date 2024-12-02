@@ -1,0 +1,11 @@
+Patches: null
+allowed: true
+status:
+  code: 200
+  metadata: {}
+uid: "12345"
+warnings:
+- SourceIP type for 'spec.to[0].default.loadBalancer.ringHash.hashPolicies[0].type'
+  is deprecated, use Connection instead
+- MeshService value for 'targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service'
+  tag instead

@@ -51,7 +51,7 @@ jobs:
       - name: Merge master branch (if applicable) and push a single commit
         if: steps.process_prs.outputs.pr_numbers_with_verify_stability != ''
         run: |
-          eval "pr_numbers=(${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }})" 
+          eval "pr_numbers=(${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }})"
           for pr_number in $pr_numbers; do
             current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
             echo "Processing PR #$pr_number"
