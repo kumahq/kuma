@@ -129,6 +129,8 @@ jobs:
           echo "Disk usage after cleanup"
           sudo df -h
       - run: |
+          make dev/tools
+      - run: |
           make build
       - run: |
           make -j build/distributions
