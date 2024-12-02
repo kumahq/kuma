@@ -1,4 +1,4 @@
-#/meshes/default/meshexternalservices/mes-1/_resources/hostnames 200
+#/meshes/default/meshexternalservices/mes-1/_hostnames 200
 type: Mesh
 name: default
 ---

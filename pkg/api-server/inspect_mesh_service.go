@@ -42,7 +42,7 @@ func addInspectMeshServiceEndpoints(
 			Param(ws.PathParameter("mesh", "mesh name").DataType("string")),
 	)
 	ws.Route(
-		ws.GET("/meshes/{mesh}/{serviceType}/{name}/_resources/hostnames").
+		ws.GET("/meshes/{mesh}/{serviceType}/{name}/_hostnames").
 			To(matchingHostnames(rm)).
 			Doc("inspect service hostnames").
 			Param(ws.PathParameter("name", "mesh service name").DataType("string")).

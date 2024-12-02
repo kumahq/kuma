@@ -1,4 +1,4 @@
-#/meshes/default/meshservices/test-server-syncedhash/_resources/hostnames 200
+#/meshes/default/meshservices/test-server-syncedhash/_hostnames 200
 type: Mesh
 name: default
 ---
