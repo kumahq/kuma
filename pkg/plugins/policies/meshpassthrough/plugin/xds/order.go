@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"maps"
 	"net"
 	"slices"
 	"sort"
@@ -109,9 +110,21 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	// To avoid this issue, we also generate specific port matchers for rules intended to match all ports.
 	matcherWithRoutesAndAdditionalPorts := map[Matcher]map[Route]bool{}
 	for matcher, routes := range matcherWithRoutes {
-		matcherWithRoutesAndAdditionalPorts[matcher] = routes
+		if _, found := matcherWithRoutesAndAdditionalPorts[matcher]; found {
+			for route := range routes {
+				matcherWithRoutesAndAdditionalPorts[matcher][Route{
+					Value: route.Value,
+					MatchType: route.MatchType,
+				}] = true
+			}
+		} else {
+			matcherWithRoutesAndAdditionalPorts[matcher] = maps.Clone(routes)
+		}
 		if matcher.Port == 0 {
 			for port := range portProtocols {
+				if port == 0 {
+					continue
+				}
 				additionalMatcher := Matcher{
 					Protocol:  matcher.Protocol,
 					Port:      port,
@@ -120,10 +133,13 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 				}
 				if _, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
 					for route := range routes {
-						matcherWithRoutesAndAdditionalPorts[additionalMatcher][route] = true
+						matcherWithRoutesAndAdditionalPorts[additionalMatcher][Route{
+							Value: route.Value,
+							MatchType: route.MatchType,
+						}] = true
 					}
 				} else {
-					matcherWithRoutesAndAdditionalPorts[additionalMatcher] = map[Route]bool{}
+					matcherWithRoutesAndAdditionalPorts[additionalMatcher] = maps.Clone(routes)
 				}
 			}
 		}
