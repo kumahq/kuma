@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -15,7 +16,6 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
-	"golang.org/x/exp/maps"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"

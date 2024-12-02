@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"context"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_types "k8s.io/apimachinery/pkg/types"

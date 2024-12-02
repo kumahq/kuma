@@ -13,11 +13,11 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/template"
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
@@ -450,7 +450,7 @@ func (c *UniversalCluster) DeleteMesh(mesh string) error {
 
 func (c *UniversalCluster) DeleteMeshApps(mesh string) error {
 	c.mutex.RLock()
-	apps := maps.Keys(c.apps)
+	apps := util_maps.AllKeys(c.apps)
 	c.mutex.RUnlock()
 	for _, name := range apps {
 		if c.GetApp(name).mesh == mesh {
