@@ -191,8 +191,9 @@ paths:
           example: meshservices
           schema:
             type: string
+            enum: [meshservices, meshmultizoneservices, meshexternalservices]
           required: true
-          description: The type of the service (meshservices, meshmultizoneservices, meshexternalservices)
+          description: The type of the service
         - in: path
           name: serviceName
           example: redis
@@ -484,7 +485,7 @@ components:
     InspectHostname:
       type: object
       title: InspectHostname
-      description: A list of zones in which the hostname is available in
+      description: An supported hostname along with the zones it exists in
       required: [hostname, zones]
       properties:
         hostname:
@@ -498,7 +499,7 @@ components:
     InspectHostnameZone:
       type: object
       title: InspectHostnameZone
-      description: A name of the zone with hostname generator that was used to generate the hostname
+      description: A name of the zone and hostname generator that was used to generate the hostname
       required: [name, hostnameGeneratorCoreName]
       properties:
         name:

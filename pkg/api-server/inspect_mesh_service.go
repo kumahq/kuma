@@ -91,7 +91,7 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 				request.Request.Context(),
 				response,
 				&validators.ValidationError{},
-				fmt.Sprintf("only %s are available for inspection", strings.Join(util_maps.SortedKeys(typeDescForType), ",")),
+				fmt.Sprintf("only %q are available for inspection", strings.Join(util_maps.SortedKeys(typeDescForType), ",")),
 			)
 		}
 
