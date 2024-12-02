@@ -18,7 +18,7 @@ func validateHashPoliciesType(confs []To) []string {
 		if conf.Default.LoadBalancer == nil {
 			continue
 		}
-	
+
 		switch conf.Default.LoadBalancer.Type {
 		case RingHashType:
 			if conf.Default.LoadBalancer.RingHash == nil || conf.Default.LoadBalancer.RingHash.HashPolicies == nil {
