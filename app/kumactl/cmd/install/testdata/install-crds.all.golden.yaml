@@ -228,6 +228,8 @@ spec:
     kind: Dataplane
     listKind: DataplaneList
     plural: dataplanes
+    shortNames:
+    - dp
     singular: dataplane
   scope: Namespaced
   versions:
@@ -448,6 +450,8 @@ spec:
     kind: HostnameGenerator
     listKind: HostnameGeneratorList
     plural: hostnamegenerators
+    shortNames:
+    - hg
     singular: hostnamegenerator
   scope: Namespaced
   versions:
@@ -520,6 +524,8 @@ spec:
     kind: MeshAccessLog
     listKind: MeshAccessLogList
     plural: meshaccesslogs
+    shortNames:
+    - mal
     singular: meshaccesslog
   scope: Namespaced
   versions:
@@ -1077,6 +1083,8 @@ spec:
     kind: MeshCircuitBreaker
     listKind: MeshCircuitBreakerList
     plural: meshcircuitbreakers
+    shortNames:
+    - mcb
     singular: meshcircuitbreaker
   scope: Namespaced
   versions:
@@ -1866,6 +1874,8 @@ spec:
     kind: MeshExternalService
     listKind: MeshExternalServiceList
     plural: meshexternalservices
+    shortNames:
+    - extsvc
     singular: meshexternalservice
   scope: Namespaced
   versions:
@@ -2199,6 +2209,8 @@ spec:
     kind: MeshFaultInjection
     listKind: MeshFaultInjectionList
     plural: meshfaultinjections
+    shortNames:
+    - mfi
     singular: meshfaultinjection
   scope: Namespaced
   versions:
@@ -3250,6 +3262,8 @@ spec:
     kind: MeshGateway
     listKind: MeshGatewayList
     plural: meshgateways
+    shortNames:
+    - mgw
     singular: meshgateway
   scope: Cluster
   versions:
@@ -3300,6 +3314,8 @@ spec:
     kind: MeshHealthCheck
     listKind: MeshHealthCheckList
     plural: meshhealthchecks
+    shortNames:
+    - mhc
     singular: meshhealthcheck
   scope: Namespaced
   versions:
@@ -3682,6 +3698,8 @@ spec:
     kind: MeshHTTPRoute
     listKind: MeshHTTPRouteList
     plural: meshhttproutes
+    shortNames:
+    - mhttpr
     singular: meshhttproute
   scope: Namespaced
   versions:
@@ -4400,6 +4418,8 @@ spec:
     kind: MeshLoadBalancingStrategy
     listKind: MeshLoadBalancingStrategyList
     plural: meshloadbalancingstrategies
+    shortNames:
+    - mlbs
     singular: meshloadbalancingstrategy
   scope: Namespaced
   versions:
@@ -4622,6 +4642,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -4743,6 +4764,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -4972,6 +4994,8 @@ spec:
     kind: MeshMetric
     listKind: MeshMetricList
     plural: meshmetrics
+    shortNames:
+    - mm
     singular: meshmetric
   scope: Namespaced
   versions:
@@ -5264,6 +5288,8 @@ spec:
     kind: MeshMultiZoneService
     listKind: MeshMultiZoneServiceList
     plural: meshmultizoneservices
+    shortNames:
+    - mzsvc
     singular: meshmultizoneservice
   scope: Namespaced
   versions:
@@ -5463,6 +5489,8 @@ spec:
     kind: MeshPassthrough
     listKind: MeshPassthroughList
     plural: meshpassthroughs
+    shortNames:
+    - mp
     singular: meshpassthrough
   scope: Namespaced
   versions:
@@ -5627,6 +5655,8 @@ spec:
     kind: MeshProxyPatch
     listKind: MeshProxyPatchList
     plural: meshproxypatches
+    shortNames:
+    - mpp
     singular: meshproxypatch
   scope: Namespaced
   versions:
@@ -6177,6 +6207,8 @@ spec:
     kind: MeshRateLimit
     listKind: MeshRateLimitList
     plural: meshratelimits
+    shortNames:
+    - mrl
     singular: meshratelimit
   scope: Namespaced
   versions:
@@ -6676,6 +6708,8 @@ spec:
     kind: MeshRetry
     listKind: MeshRetryList
     plural: meshretries
+    shortNames:
+    - mr
     singular: meshretry
   scope: Namespaced
   versions:
@@ -7183,6 +7217,8 @@ spec:
     kind: MeshService
     listKind: MeshServiceList
     plural: meshservices
+    shortNames:
+    - msvc
     singular: meshservice
   scope: Namespaced
   versions:
@@ -7401,6 +7437,8 @@ spec:
     kind: MeshTCPRoute
     listKind: MeshTCPRouteList
     plural: meshtcproutes
+    shortNames:
+    - mtcpr
     singular: meshtcproute
   scope: Namespaced
   versions:
@@ -7683,6 +7721,8 @@ spec:
     kind: MeshTimeout
     listKind: MeshTimeoutList
     plural: meshtimeouts
+    shortNames:
+    - mt
     singular: meshtimeout
   scope: Namespaced
   versions:
@@ -8046,6 +8086,8 @@ spec:
     kind: MeshTLS
     listKind: MeshTLSList
     plural: meshtlses
+    shortNames:
+    - mtls
     singular: meshtls
   scope: Namespaced
   versions:
@@ -8285,6 +8327,8 @@ spec:
     kind: MeshTrace
     listKind: MeshTraceList
     plural: meshtraces
+    shortNames:
+    - mtr
     singular: meshtrace
   scope: Namespaced
   versions:
@@ -8568,6 +8612,8 @@ spec:
     kind: MeshTrafficPermission
     listKind: MeshTrafficPermissionList
     plural: meshtrafficpermissions
+    shortNames:
+    - mtp
     singular: meshtrafficpermission
   scope: Namespaced
   versions:
@@ -9271,6 +9317,8 @@ spec:
     kind: ZoneEgress
     listKind: ZoneEgressList
     plural: zoneegresses
+    shortNames:
+    - ze
     singular: zoneegress
   scope: Namespaced
   versions:
@@ -9377,6 +9425,8 @@ spec:
     kind: ZoneIngress
     listKind: ZoneIngressList
     plural: zoneingresses
+    shortNames:
+    - zi
     singular: zoneingress
   scope: Namespaced
   versions:

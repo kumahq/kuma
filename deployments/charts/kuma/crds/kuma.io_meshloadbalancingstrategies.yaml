@@ -13,6 +13,8 @@ spec:
     kind: MeshLoadBalancingStrategy
     listKind: MeshLoadBalancingStrategyList
     plural: meshloadbalancingstrategies
+    shortNames:
+    - mlbs
     singular: meshloadbalancingstrategy
   scope: Namespaced
   versions:
@@ -235,6 +237,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -356,6 +359,7 @@ spec:
                                         enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState

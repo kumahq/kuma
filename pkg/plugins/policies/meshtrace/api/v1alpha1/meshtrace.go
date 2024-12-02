@@ -9,6 +9,7 @@ import (
 
 // MeshTrace allows users to enable request tracing between services in the mesh
 // and sending these traces to a third party storage.
+// +kuma:policy:short_name=mtr
 type MeshTrace struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

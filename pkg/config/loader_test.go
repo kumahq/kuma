@@ -6,13 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -77,7 +77,7 @@ var _ = Describe("Config loader", func() {
 					testEnvs[key] = struct{}{}
 				}
 
-				Expect(maps.Keys(testEnvs)).To(ConsistOf(maps.Keys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+				Expect(util_maps.AllKeys(testEnvs)).To(ConsistOf(util_maps.AllKeys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
@@ -267,6 +267,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration).To(Equal(110 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.Tracing.Enabled).To(BeFalse())
+			Expect(cfg.Multizone.Global.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -276,6 +277,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.ResponseBackoff.Duration).To(Equal(2 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
+			Expect(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
@@ -623,6 +625,8 @@ multizone:
         timeout: 110s
       tracing:
         enabled: false
+      labels:
+        skipPrefixes: ["argocd.argoproj.io"]
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -634,6 +638,8 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       tlsSkipVerify: true
+      labels:
+        skipPrefixes: ["argocd.argoproj.io"]
     disableOriginLabelValidation: true
     ingressUpdateInterval: 2s
 dnsServer:
@@ -968,6 +974,7 @@ meshService:
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_POLL_INTERVAL":                                "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_TIMEOUT":                                      "110s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED":                                                "false",
+				"KUMA_MULTIZONE_GLOBAL_KDS_LABELS_SKIP_PREFIXES":                                           "argocd.argoproj.io",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -979,6 +986,7 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
+				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",

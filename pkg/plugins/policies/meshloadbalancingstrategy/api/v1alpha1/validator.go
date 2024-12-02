@@ -249,7 +249,7 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 			if policy.FilterState == nil {
 				verr.AddViolationAt(path.Field("filterState"), validators.MustBeDefined)
 			}
-		case ConnectionType:
+		case ConnectionType, SourceIPType:
 			if policy.Connection == nil {
 				verr.AddViolationAt(path.Field("connection"), validators.MustBeDefined)
 			}

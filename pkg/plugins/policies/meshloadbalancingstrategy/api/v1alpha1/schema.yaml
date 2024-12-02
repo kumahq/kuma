@@ -199,6 +199,7 @@ properties:
                                 enum:
                                   - Header
                                   - Cookie
+                                  - Connection
                                   - SourceIP
                                   - QueryParameter
                                   - FilterState
@@ -314,6 +315,7 @@ properties:
                                 enum:
                                   - Header
                                   - Cookie
+                                  - Connection
                                   - SourceIP
                                   - QueryParameter
                                   - FilterState

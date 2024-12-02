@@ -16,6 +16,7 @@ import "validate/validate.proto";
 message Dataplane {
 
   option (kuma.mesh.resource).name = "DataplaneResource";
+  option (kuma.mesh.resource).short_name = "dp";
   option (kuma.mesh.resource).type = "Dataplane";
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).kds.send_to_global = true;

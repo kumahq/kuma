@@ -1,9 +1,9 @@
 package util
 
 import (
+	"maps"
+	"strings"
 	"time"
-
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -56,6 +56,18 @@ func PopulateNamespaceLabelFromNameExtension() CloneResourceMetaOpt {
 func WithoutLabel(key string) CloneResourceMetaOpt {
 	return func(m *resourceMeta) {
 		delete(m.labels, key)
+	}
+}
+
+func WithoutLabelPrefixes(prefixes ...string) CloneResourceMetaOpt {
+	return func(m *resourceMeta) {
+		for label := range m.labels {
+			for _, prefix := range prefixes {
+				if strings.HasPrefix(label, prefix) {
+					delete(m.labels, label)
+				}
+			}
+		}
 	}
 }
 

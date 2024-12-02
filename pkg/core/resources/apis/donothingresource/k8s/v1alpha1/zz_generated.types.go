@@ -17,7 +17,7 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=dnr
 type DoNothingResource struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

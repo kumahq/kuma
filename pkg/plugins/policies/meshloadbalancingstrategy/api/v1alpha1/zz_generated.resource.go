@@ -153,4 +153,5 @@ var MeshLoadBalancingStrategyResourceTypeDescriptor = model.ResourceTypeDescript
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
+	ShortName:                    "mlbs",
 }

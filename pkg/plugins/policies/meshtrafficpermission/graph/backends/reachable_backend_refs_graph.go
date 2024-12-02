@@ -1,7 +1,7 @@
 package backends
 
 import (
-	"golang.org/x/exp/maps"
+	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
