@@ -7,6 +7,14 @@ resources:
     lbPolicy: CLUSTER_PROVIDED
     name: meshpassthrough_http_*.example.com_*
     type: ORIGINAL_DST
+- name: meshpassthrough_http_*.example.com_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http___example_com_80
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_*.example.com_80
+    type: ORIGINAL_DST
 - name: meshpassthrough_http_anotherexample.com_*
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -14,6 +22,14 @@ resources:
     connectTimeout: 5s
     lbPolicy: CLUSTER_PROVIDED
     name: meshpassthrough_http_anotherexample.com_*
+    type: ORIGINAL_DST
+- name: meshpassthrough_http_anotherexample.com_80
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: meshpassthrough_http_anotherexample_com_80
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: meshpassthrough_http_anotherexample.com_80
     type: ORIGINAL_DST
 - name: meshpassthrough_http_example1.com_80
   resource:

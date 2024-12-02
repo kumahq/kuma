@@ -25,41 +25,23 @@ resources:
             name: meshpassthrough_http_80
             virtualHosts:
             - domains:
-              - anotherexample.com
-              - anotherexample.com:80
-              name: anotherexample.com
+              - www.anotherexample.com
+              - www.anotherexample.com:80
+              name: www.anotherexample.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_anotherexample.com_80
+                  cluster: meshpassthrough_http_www.anotherexample.com_80
             - domains:
-              - example1.com
-              - example1.com:80
-              name: example1.com
+              - www.example.com
+              - www.example.com:80
+              name: www.example.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_example1.com_80
-            - domains:
-              - example2.com
-              - example2.com:80
-              name: example2.com
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_example2.com_80
-            - domains:
-              - '*.example.com'
-              - '*.example.com:80'
-              name: '*.example.com'
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_*.example.com_80
+                  cluster: meshpassthrough_http_www.example.com_80
             - domains:
               - '*'
               name: no_match
@@ -90,22 +72,14 @@ resources:
             name: meshpassthrough_http_*
             virtualHosts:
             - domains:
-              - anotherexample.com
-              - anotherexample.com:*
-              name: anotherexample.com
+              - www.anotherexample.com
+              - www.anotherexample.com:*
+              name: www.anotherexample.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_anotherexample.com_*
-            - domains:
-              - '*.example.com'
-              name: '*.example.com'
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_*.example.com_*
+                  cluster: meshpassthrough_http_www.anotherexample.com_*
             - domains:
               - '*'
               name: no_match
@@ -154,41 +128,23 @@ resources:
             name: meshpassthrough_http_80
             virtualHosts:
             - domains:
-              - anotherexample.com
-              - anotherexample.com:80
-              name: anotherexample.com
+              - www.anotherexample.com
+              - www.anotherexample.com:80
+              name: www.anotherexample.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_anotherexample.com_80
+                  cluster: meshpassthrough_http_www.anotherexample.com_80
             - domains:
-              - example1.com
-              - example1.com:80
-              name: example1.com
+              - www.example.com
+              - www.example.com:80
+              name: www.example.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_example1.com_80
-            - domains:
-              - example2.com
-              - example2.com:80
-              name: example2.com
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_example2.com_80
-            - domains:
-              - '*.example.com'
-              - '*.example.com:80'
-              name: '*.example.com'
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_*.example.com_80
+                  cluster: meshpassthrough_http_www.example.com_80
             - domains:
               - '*'
               name: no_match
@@ -219,22 +175,14 @@ resources:
             name: meshpassthrough_http_*
             virtualHosts:
             - domains:
-              - anotherexample.com
-              - anotherexample.com:*
-              name: anotherexample.com
+              - www.anotherexample.com
+              - www.anotherexample.com:*
+              name: www.anotherexample.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_http_anotherexample.com_*
-            - domains:
-              - '*.example.com'
-              name: '*.example.com'
-              routes:
-              - match:
-                  prefix: /
-                route:
-                  cluster: meshpassthrough_http_*.example.com_*
+                  cluster: meshpassthrough_http_www.anotherexample.com_*
             - domains:
               - '*'
               name: no_match

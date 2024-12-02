@@ -368,6 +368,10 @@
     Value: example.com
   - MatchType: 2
     Value: other.com
+  - MatchType: 2
+    Value: otherexample.com
+  - MatchType: 1
+    Value: '*.example.com'
   Value: ""
 - MatchType: 2
   Port: 443

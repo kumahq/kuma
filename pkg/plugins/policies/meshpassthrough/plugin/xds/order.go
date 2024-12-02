@@ -118,12 +118,12 @@ func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 					MatchType: matcher.MatchType,
 					Value:     matcher.Value,
 				}
-				if routes, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
+				if existingRoutes, found := matcherWithRoutesAndAdditionalPorts[additionalMatcher]; found {
 					for route := range routes {
 						matcherWithRoutesAndAdditionalPorts[additionalMatcher][route] = true
 					}
 				} else {
-					matcherWithRoutesAndAdditionalPorts[additionalMatcher] = routes
+					matcherWithRoutesAndAdditionalPorts[additionalMatcher] = existingRoutes
 				}
 			}
 		}
