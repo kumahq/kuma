@@ -66,6 +66,7 @@ var _ = Describe("MeshService generator", func() {
 			metrics,
 			resManager,
 			meshCache,
+			"zone",
 		)
 
 		Expect(err).ToNot(HaveOccurred())

@@ -2,10 +2,8 @@ package generator
 
 import (
 	"context"
-	"sort"
 
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -45,8 +43,6 @@ func (i IngressGenerator) Generate(
 
 	for _, mr := range proxy.ZoneIngressProxy.MeshResourceList {
 		meshName := mr.Mesh.GetMeta().GetName()
-		serviceList := maps.Keys(mr.EndpointMap)
-		sort.Strings(serviceList)
 
 		meshResources := xds_context.Resources{MeshLocalResources: mr.Resources}
 		// we only want to expose local mesh services

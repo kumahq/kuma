@@ -2,9 +2,9 @@ package observability
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"golang.org/x/exp/slices"
 
 	"github.com/kumahq/kuma/test/framework"
 )

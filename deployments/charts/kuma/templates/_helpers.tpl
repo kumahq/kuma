@@ -265,7 +265,7 @@ env:
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_LOGGING
   value: "true"
 {{- end }}
-{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
+{{- if .Values.transparentProxy.configMap.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_TRANSPARENT_PROXY_CONFIGMAP_NAME
   value: {{ include "kuma.transparentProxyConfigMapName" . | quote }}
 {{- end }}

@@ -40,6 +40,7 @@ type Generator struct {
 	metric              prometheus.Summary
 	resManager          manager.ResourceManager
 	meshCache           *mesh_cache.Cache
+	zone                string
 }
 
 var _ component.Component = &Generator{}
@@ -51,6 +52,7 @@ func New(
 	metrics core_metrics.Metrics,
 	resManager manager.ResourceManager,
 	meshCache *mesh_cache.Cache,
+	zone string,
 ) (*Generator, error) {
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "component_meshservice_generator",
@@ -67,6 +69,7 @@ func New(
 		metric:              metric,
 		resManager:          resManager,
 		meshCache:           meshCache,
+		zone:                zone,
 	}, nil
 }
 
@@ -259,6 +262,7 @@ func (g *Generator) generate(ctx context.Context, mesh string, dataplanes []*cor
 			mesh_proto.DisplayName:         name,
 			mesh_proto.ManagedByLabel:      managedByValue,
 			mesh_proto.EnvTag:              mesh_proto.UniversalEnvironment,
+			mesh_proto.ZoneTag:             g.zone,
 			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
 		})); err != nil {
 			log.Error(err, "couldn't create MeshService")

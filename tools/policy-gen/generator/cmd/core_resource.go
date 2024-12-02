@@ -209,7 +209,7 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		Scope: model.Scope{{.Scope}},
 		KDSFlags: {{.KDSFlags}},
 		WsPath: "{{.Path}}",
-		KumactlArg: "{{index .AlternativeNames 0}}",
+		KumactlArg: "{{.NameLower}}",
 		KumactlListArg: "{{.Path}}",
 		AllowToInspect: {{.IsPolicy}},
 		IsPolicy: {{.IsPolicy}},
@@ -223,5 +223,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		HasStatus: {{.HasStatus}},
 		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
 		IsReferenceableInTo: {{.IsReferenceableInTo}},
+		ShortName: "{{.ShortName}}",
 	}
 `))

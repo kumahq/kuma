@@ -67,46 +67,48 @@ spec:
 					Install(MeshTrafficPermissionAllowAllKubernetes(config.Mesh)).
 					Install(NamespaceWithSidecarInjection(config.Namespace)).
 					Install(Namespace(config.NamespaceOutsideMesh)).
-					Install(democlient.Install(
-						democlient.WithNamespace(config.NamespaceOutsideMesh),
-						democlient.WithService(true),
-					)).
-					Install(testserver.Install(
-						testserver.WithMesh(config.Mesh),
-						testserver.WithNamespace(config.Namespace),
-						testserver.WithName("test-server"),
-						testserver.WithStatefulSet(),
-						testserver.WithReplicas(3),
-					)).
-					Install(testserver.Install(
-						testserver.WithNamespace(config.NamespaceOutsideMesh),
-						testserver.WithName("external-service"),
-					)).
-					Install(testserver.Install(
-						testserver.WithNamespace(config.NamespaceOutsideMesh),
-						testserver.WithName("another-external-service"),
-					)).
-					Install(testserver.Install(
-						testserver.WithNamespace(config.NamespaceOutsideMesh),
-						testserver.WithName("external-tcp-service"),
-					)).
-					Install(otelcollector.Install(
-						otelcollector.WithNamespace(config.NamespaceOutsideMesh),
-						otelcollector.WithIPv6(Config.IPV6),
-					)).
-					Install(observability.Install(
-						config.ObservabilityDeploymentName,
-						observability.WithNamespace(config.NamespaceOutsideMesh),
-						observability.WithComponents(observability.JaegerComponent),
-					)).
-					Install(kic.KongIngressController(
-						kic.WithName(config.Mesh),
-						kic.WithNamespace(config.Namespace),
-						kic.WithMesh(config.Mesh),
-					)).
-					Install(kic.KongIngressService(
-						kic.WithName(config.Mesh),
-						kic.WithNamespace(config.Namespace),
+					Install(Parallel(
+						democlient.Install(
+							democlient.WithNamespace(config.NamespaceOutsideMesh),
+							democlient.WithService(true),
+						),
+						testserver.Install(
+							testserver.WithMesh(config.Mesh),
+							testserver.WithNamespace(config.Namespace),
+							testserver.WithName("test-server"),
+							testserver.WithStatefulSet(),
+							testserver.WithReplicas(3),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("external-service"),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("another-external-service"),
+						),
+						testserver.Install(
+							testserver.WithNamespace(config.NamespaceOutsideMesh),
+							testserver.WithName("external-tcp-service"),
+						),
+						otelcollector.Install(
+							otelcollector.WithNamespace(config.NamespaceOutsideMesh),
+							otelcollector.WithIPv6(Config.IPV6),
+						),
+						observability.Install(
+							config.ObservabilityDeploymentName,
+							observability.WithNamespace(config.NamespaceOutsideMesh),
+							observability.WithComponents(observability.JaegerComponent),
+						),
+						kic.KongIngressController(
+							kic.WithName(config.Mesh),
+							kic.WithNamespace(config.Namespace),
+							kic.WithMesh(config.Mesh),
+						),
+						kic.KongIngressService(
+							kic.WithName(config.Mesh),
+							kic.WithNamespace(config.Namespace),
+						),
 					)).
 					Install(YamlK8s(externalNameService("external-service"))).
 					Install(YamlK8s(externalNameService("another-external-service"))).
@@ -195,7 +197,8 @@ spec:
 		"MeshLoadBalancingStrategy": delegated.MeshLoadBalancingStrategy(&config),
 		"MeshAccessLog":             delegated.MeshAccessLog(&config),
 		"MeshPassthrough":           delegated.MeshPassthrough(&config),
-		"MeshTLS":                   delegated.MeshTLS(&config),
+		// Matcher for from policy doesn't work for delegated gateway https://github.com/kumahq/kuma/issues/12107
+		// "MeshTLS":                   delegated.MeshTLS(&config),
 	})
 	contextFor("delegated with MeshService", &configMs, map[string]func(){
 		"MeshHTTPRoute": delegated.MeshHTTPRouteMeshService(&configMs),

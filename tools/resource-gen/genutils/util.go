@@ -53,6 +53,7 @@ type ResourceInfo struct {
 	Global                   bool
 	KumactlSingular          string
 	KumactlPlural            string
+	ShortName                string
 	WsReadOnly               bool
 	WsAdminOnly              bool
 	WsPath                   string
@@ -78,6 +79,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		SkipRegistration:         r.SkipRegistration,
 		SkipKubernetesWrappers:   r.SkipKubernetesWrappers,
 		Global:                   r.Global,
+		ShortName:                r.ShortName,
 		ScopeNamespace:           r.ScopeNamespace,
 		AllowToInspect:           r.AllowToInspect,
 		StorageVersion:           r.StorageVersion,

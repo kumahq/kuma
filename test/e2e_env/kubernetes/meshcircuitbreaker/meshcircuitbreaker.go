@@ -31,8 +31,10 @@ func MeshCircuitBreaker() {
 				),
 			).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
+				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace)),
+			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator

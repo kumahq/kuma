@@ -2,10 +2,10 @@ package util
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"github.com/go-logr/logr"
-	"golang.org/x/exp/maps"
 	kube_core "k8s.io/api/core/v1"
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"

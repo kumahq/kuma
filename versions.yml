@@ -1,58 +1,4 @@
 - edition: kuma
-  version: 1.2.3
-  release: 1.2.x
-  releaseDate: "2021-06-17"
-  endOfLifeDate: "2022-06-17"
-  branch: release-1.2
-- edition: kuma
-  version: 1.3.1
-  release: 1.3.x
-  releaseDate: "2021-08-26"
-  endOfLifeDate: "2022-08-26"
-  branch: release-1.3
-- edition: kuma
-  version: 1.4.1
-  release: 1.4.x
-  releaseDate: "2021-11-22"
-  endOfLifeDate: "2022-11-22"
-  branch: release-1.4
-- edition: kuma
-  version: 1.5.4
-  release: 1.5.x
-  releaseDate: "2022-02-24"
-  endOfLifeDate: "2023-02-24"
-  branch: release-1.5
-- edition: kuma
-  version: 1.6.5
-  release: 1.6.x
-  releaseDate: "2022-04-12"
-  endOfLifeDate: "2023-04-12"
-  branch: release-1.6
-- edition: kuma
-  version: 1.7.6
-  release: 1.7.x
-  releaseDate: "2022-06-16"
-  endOfLifeDate: "2023-06-16"
-  branch: release-1.7
-- edition: kuma
-  version: 1.8.8
-  release: 1.8.x
-  releaseDate: "2022-08-24"
-  endOfLifeDate: "2023-08-24"
-  branch: release-1.8
-- edition: kuma
-  version: 2.0.8
-  release: 2.0.x
-  releaseDate: "2022-11-04"
-  endOfLifeDate: "2023-11-04"
-  branch: release-2.0
-- edition: kuma
-  version: 2.1.7
-  release: 2.1.x
-  releaseDate: "2023-02-01"
-  endOfLifeDate: "2024-02-01"
-  branch: release-2.1
-- edition: kuma
   version: 2.2.9
   release: 2.2.x
   releaseDate: "2023-04-14"
@@ -77,26 +23,26 @@
   endOfLifeDate: "2024-11-15"
   branch: release-2.5
 - edition: kuma
-  version: 2.6.12
+  version: 2.6.13
   release: 2.6.x
   releaseDate: "2024-02-01"
   endOfLifeDate: "2025-02-01"
   branch: release-2.6
 - edition: kuma
-  version: 2.7.8
+  version: 2.7.9
   release: 2.7.x
   releaseDate: "2024-04-19"
   endOfLifeDate: "2026-04-19"
   branch: release-2.7
   lts: true
 - edition: kuma
-  version: 2.8.4
+  version: 2.8.5
   release: 2.8.x
   releaseDate: "2024-06-24"
   endOfLifeDate: "2025-06-24"
   branch: release-2.8
 - edition: kuma
-  version: 2.9.0
+  version: 2.9.1
   release: 2.9.x
   latest: true
   releaseDate: "2024-10-22"
@@ -104,5 +50,6 @@
   branch: release-2.9
 - edition: kuma
   version: preview
-  release: dev
+  release: 2.10.x
   branch: master
+  label: dev

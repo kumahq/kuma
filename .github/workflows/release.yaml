@@ -27,8 +27,7 @@ env:
   RELEASE: ${{ inputs.release || '0.0.0' }}
   CHECK: ${{ inputs.check || 'false' }}
   EDITION: kuma
-  MIN_VERSION: "1.2.0"
-  USE_LABEL_IN_VERSION: "false"
+  MIN_VERSION: "2.2.0"
 permissions:
   contents: read
 jobs:
@@ -39,13 +38,13 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           ref: "master"
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
       - name: install-kuma-ci-tools
         run: |
           echo $(go env GOPATH)/bin >> $GITHUB_PATH
-          go install github.com/kumahq/ci-tools/cmd/release-tool@v0.13.1
+          go install github.com/kumahq/ci-tools/cmd/release-tool@v1.0.0
       - name: Generate GitHub app token
         id: github-app-token
         uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
@@ -85,7 +84,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --use-label-for-dev=${{ env.USE_LABEL_IN_VERSION }} > versions.yml
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}

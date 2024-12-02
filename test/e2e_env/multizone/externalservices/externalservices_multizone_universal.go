@@ -83,10 +83,12 @@ routing:
 		external = NewUniversalCluster(NewTestingT(), clusterName4, Silent)
 
 		err := NewClusterSetup().
-			Install(TestServerExternalServiceUniversal("es-http", 80, false, WithDockerContainerName("kuma-es-4_es-http"))).
-			Install(TestServerExternalServiceUniversal("es-https", 443, true, WithDockerContainerName("kuma-es-4_es-https"))).
-			Install(TestServerExternalServiceUniversal("es-for-kuma-es-2", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-2"))).
-			Install(TestServerExternalServiceUniversal("es-for-kuma-es-3", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-3"))).
+			Install(Parallel(
+				TestServerExternalServiceUniversal("es-http", 80, false, WithDockerContainerName("kuma-es-4_es-http")),
+				TestServerExternalServiceUniversal("es-https", 443, true, WithDockerContainerName("kuma-es-4_es-https")),
+				TestServerExternalServiceUniversal("es-for-kuma-es-2", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-2")),
+				TestServerExternalServiceUniversal("es-for-kuma-es-3", 80, false, WithDockerContainerName("kuma-es-4_es-for-kuma-es-3")),
+			)).
 			Setup(external)
 		Expect(err).ToNot(HaveOccurred())
 		externalUni = external.(*UniversalCluster)

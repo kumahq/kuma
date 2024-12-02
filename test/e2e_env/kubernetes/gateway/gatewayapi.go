@@ -45,22 +45,24 @@ spec:
 			Install(Namespace(externalServicesNamespace)).
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
-			Install(testserver.Install(
-				testserver.WithName("test-server-1"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-1"),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server-2"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-2"),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("external-service"),
-				testserver.WithNamespace(externalServicesNamespace),
-				testserver.WithEchoArgs("echo", "--instance", "external-service"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-server-1"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-1"),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-2"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-2"),
+				),
+				testserver.Install(
+					testserver.WithName("external-service"),
+					testserver.WithNamespace(externalServicesNamespace),
+					testserver.WithEchoArgs("echo", "--instance", "external-service"),
+				),
 			)).
 			Install(YamlK8s(externalService))
 		Expect(setup.Setup(kubernetes.Cluster)).To(Succeed())

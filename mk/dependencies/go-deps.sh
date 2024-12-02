@@ -23,7 +23,7 @@ for i in \
     github.com/mikefarah/yq/v4@v4.30.8 \
     github.com/norwoodj/helm-docs/cmd/helm-docs@v1.11.0 \
     golang.stackrox.io/kube-linter/cmd/kube-linter@v0.6.5 \
-    github.com/deepmap/oapi-codegen/cmd/oapi-codegen@v1.15.0 \
+    github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.4.1 \
     ; do
   echo "install go dep: ${i}"
   echo "${i}" >> mk/dependencies/go-deps.versions

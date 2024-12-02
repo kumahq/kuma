@@ -31,25 +31,27 @@ func MeshServiceTargeting() {
 
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("test-client"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("second-test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("kumaioservice-targeted-test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("test-client"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("second-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("kumaioservice-targeted-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
 			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1

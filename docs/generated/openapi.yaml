@@ -3363,6 +3363,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -4572,6 +4582,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -5075,6 +5095,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -5552,6 +5582,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -6346,6 +6386,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7097,6 +7147,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7419,6 +7479,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7593,6 +7663,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8300,6 +8380,16 @@ components:
           required:
             - default
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8877,6 +8967,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9513,6 +9613,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9843,6 +9953,16 @@ components:
               minItems: 1
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10312,6 +10432,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10582,6 +10712,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10922,6 +11062,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11153,6 +11303,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11216,6 +11376,16 @@ components:
             template:
               type: string
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11460,6 +11630,16 @@ components:
           required:
             - match
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshExternalService
@@ -11643,6 +11823,16 @@ components:
           required:
             - selector
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshMultiZoneService
@@ -11872,6 +12062,16 @@ components:
                 - Unavailable
               type: string
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: Status is the current status of the Kuma MeshService resource.
           properties:

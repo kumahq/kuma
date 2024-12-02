@@ -3,11 +3,11 @@ package mesh
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
