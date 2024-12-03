@@ -95,6 +95,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
 			}
+			if match.Port == nil && strings.HasPrefix(match.Value, "*") && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "wildcard domains doesn't work for all ports and layer 7 protocol")
+			}
 			if !strings.HasPrefix(match.Value, "*") {
 				isValid := govalidator.IsDNSName(match.Value)
 				if !isValid {
