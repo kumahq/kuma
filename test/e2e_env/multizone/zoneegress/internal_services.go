@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -39,38 +40,40 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Universal Zone 1
-		err = multizone.UniZone1.Install(DemoClientUniversal(
-			"zone3-demo-client",
-			meshName,
-			WithTransparentProxy(true),
-		))
-		Expect(err).ToNot(HaveOccurred())
+		NewClusterSetup().
+			Install(DemoClientUniversal(
+				"zone3-demo-client",
+				meshName,
+				WithTransparentProxy(true),
+			)).
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Universal Zone 2
-		err = multizone.UniZone2.Install(TestServerUniversal("zone4-dp-echo", meshName,
-			WithArgs([]string{"echo", "--instance", "echo-v1"}),
-			WithServiceName("zone4-test-server"),
-		))
-		Expect(err).ToNot(HaveOccurred())
+		NewClusterSetup().
+			Install(TestServerUniversal("zone4-dp-echo", meshName,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
+				WithServiceName("zone4-test-server"),
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
 
 		// Kubernetes Zone 1
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
 
 		// Kubernetes Zone 2
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("test-server"),
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 			)).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

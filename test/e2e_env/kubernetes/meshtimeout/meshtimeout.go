@@ -32,8 +32,10 @@ func MeshTimeout() {
 					WithoutInitialPolicies().
 					WithMeshServicesEnabled(mode))).
 				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-				Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
+				Install(Parallel(
+					democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
+					testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace)),
+				)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})

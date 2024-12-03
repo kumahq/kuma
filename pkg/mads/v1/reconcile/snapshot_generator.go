@@ -3,6 +3,7 @@ package reconcile
 import (
 	"context"
 
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -11,7 +12,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/mads/generator"
-	mads_v1_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
@@ -36,7 +37,7 @@ type SnapshotGenerator struct {
 	meshCache         *mesh.Cache
 }
 
-func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]util_xds_v3.Snapshot, error) {
+func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]envoy_cache.ResourceSnapshot, error) {
 	meshesWithMeshMetrics, err := s.getMeshesWithMeshMetrics(ctx)
 	if err != nil {
 		return nil, err
@@ -52,7 +53,7 @@ func (s *SnapshotGenerator) GenerateSnapshot(ctx context.Context) (map[string]ut
 	}
 
 	var resources []*core_xds.Resource
-	resourcesPerClientId := map[string]util_xds_v3.Snapshot{}
+	resourcesPerClientId := map[string]envoy_cache.ResourceSnapshot{}
 	if len(meshesWithMeshMetrics) == 0 {
 		dataplanes, err := s.getDataplanes(ctx, meshes)
 		if err != nil {
@@ -179,6 +180,6 @@ func (s *SnapshotGenerator) getMeshGateways(ctx context.Context, meshes []*core_
 	return meshGateways, nil
 }
 
-func createSnapshot(resources []*core_xds.Resource) *mads_v1_cache.Snapshot {
-	return mads_v1_cache.NewSnapshot(core.NewUUID(), core_xds.ResourceList(resources).ToIndex())
+func createSnapshot(resources []*core_xds.Resource) envoy_cache.ResourceSnapshot {
+	return util_xds_v3.NewSingleTypeSnapshot(core.NewUUID(), mads_v1.MonitoringAssignmentType, core_xds.ResourceList(resources).Payloads())
 }

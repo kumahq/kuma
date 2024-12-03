@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -52,7 +52,7 @@ func sortRulesToHosts(
 	// under the same route config
 	var observedHostnames []string
 
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(sublistenersByHostname)) {
+	for _, hostname := range match.SortHostnamesByExactnessDec(util_maps.AllKeys(sublistenersByHostname)) {
 		hostnameTag := sublistenersByHostname[hostname]
 		inboundListener := rules.NewInboundListenerHostname(
 			address,

@@ -187,4 +187,48 @@ var _ = Describe("SimpleWatchdog", func() {
 		Eventually(doneCh).Should(BeClosed())
 		Consistently(onErrorCalls).ShouldNot(Receive())
 	}))
+
+	It("should wait for the first tick to happen on WaitForFirstTick", func() {
+		watchdog := &SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return &time.Ticker{
+					C: timeTicks,
+				}
+			},
+			OnTick: func(ctx context.Context) error {
+				return nil
+			},
+			OnError: func(err error) {
+				onErrorCalls <- err
+			},
+		}
+		watchdog.WithTickCheck()
+
+		// setup
+		hasTicked := make(chan struct{})
+		go func() {
+			watchdog.HasTicked(true)
+			close(hasTicked)
+		}()
+		go func() {
+			watchdog.Start(ctx)
+			close(doneCh)
+		}()
+		Expect(watchdog.HasTicked(false)).Should(BeFalse())
+		Consistently(hasTicked).ShouldNot(Receive())
+
+		By("simulating 1st tick")
+		// when
+		timeTicks <- time.Time{}
+		Expect(watchdog.HasTicked(false)).Should(BeTrue())
+		Expect(hasTicked).Should(BeClosed())
+
+		By("simulating 2nd tick")
+		// when
+		timeTicks <- time.Time{}
+		Expect(watchdog.HasTicked(false)).Should(BeTrue())
+		Expect(hasTicked).Should(BeClosed())
+
+		cancel()
+	})
 })

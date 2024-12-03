@@ -698,3 +698,13 @@ properties:
           type: object
         type: array
     type: object
+  creationTime:
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

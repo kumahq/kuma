@@ -5,11 +5,10 @@ import (
 	envoy_config_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -172,8 +171,7 @@ func RouteActionForward(xdsCtx xds_context.Context, endpoints core_xds.EndpointM
 
 		var weights []*envoy_config_route.WeightedCluster_ClusterWeight
 
-		names := maps.Keys(byName)
-		slices.Sort(names)
+		names := util_maps.SortedKeys(byName)
 		for _, name := range names {
 			destination := byName[name]
 			var requestHeadersToAdd []*envoy_config_core.HeaderValueOption

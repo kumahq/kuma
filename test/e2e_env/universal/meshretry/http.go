@@ -120,11 +120,16 @@ spec:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
+		}, "30s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		By("Adding a MeshFaultInjection for test-server")
 		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
 
+		// Increased the time to 30 seconds
+		// reference: https://github.com/kumahq/kuma/issues/12098
+		// The default `initial_fetch_timeout` is 15 seconds.
+		// In case the race condition described in the issue occurs,
+		// this provides enough time to validate whether the change has arrived.
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
@@ -135,7 +140,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(500))
-		}, "10s", "100ms").Should(Succeed())
+		}, "30s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -189,7 +194,7 @@ spec:
 				universal.Cluster, "demo-client", "test-server.universal.ms",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
+		}, "30s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		By("Adding a MeshFaultInjection for test-server")
 		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
@@ -204,7 +209,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(500))
-		}, "10s", "100ms").Should(Succeed())
+		}, "30s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -284,7 +289,7 @@ spec:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "10s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
+		}, "30s", "100ms", MustPassRepeatedly(5)).Should(Succeed())
 
 		By("Adding a MeshFaultInjection for test-server")
 		Expect(universal.Cluster.Install(YamlUniversal(meshFaultInjection))).To(Succeed())
@@ -299,7 +304,7 @@ spec:
 
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(500))
-		}, "10s", "100ms").Should(Succeed())
+		}, "30s", "100ms").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())

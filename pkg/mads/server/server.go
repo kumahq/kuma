@@ -19,6 +19,7 @@ import (
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/mads"
@@ -26,6 +27,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	kuma_srv "github.com/kumahq/kuma/pkg/util/http/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
 var log = core.Log.WithName("mads-server")
@@ -33,11 +35,12 @@ var log = core.Log.WithName("mads-server")
 // muxServer is a runtime component.Component that
 // serves MADs resources over HTTP
 type muxServer struct {
-	httpServices []HttpService
-	config       *mads_config.MonitoringAssignmentServerConfig
-	metrics      core_metrics.Metrics
-	ready        atomic.Bool
+	config  *mads_config.MonitoringAssignmentServerConfig
+	metrics core_metrics.Metrics
+	ready   atomic.Bool
 	mesh_proto.UnimplementedMultiplexServiceServer
+	rm        manager.ReadOnlyResourceManager
+	meshCache *mesh.Cache
 }
 
 type HttpService interface {
@@ -46,31 +49,13 @@ type HttpService interface {
 
 var _ component.Component = &muxServer{}
 
-func (s *muxServer) createHttpServicesHandler() http.Handler {
-	container := restful.NewContainer()
-	promMiddleware := middleware.New(middleware.Config{
-		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
-			Registry: s.metrics,
-			Prefix:   "mads_server",
-		}),
-	})
-	promFilterFunc := util_prometheus.MetricsHandler("", promMiddleware)
-
-	for _, service := range s.httpServices {
-		ws := new(restful.WebService)
-		ws.Filter(promFilterFunc)
-		service.RegisterRoutes(ws)
-		container.Add(ws)
-	}
-
-	return container
-}
-
 func (s *muxServer) Ready() bool {
 	return s.ready.Load()
 }
 
 func (s *muxServer) Start(stop <-chan struct{}) error {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	var tlsConfig *tls.Config
 	if s.config.TlsEnabled {
 		cert, err := tls.LoadX509KeyPair(s.config.TlsCertFile, s.config.TlsKeyFile)
@@ -88,12 +73,29 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 			return err
 		}
 	}
+	ws := new(restful.WebService)
+	ws.Filter(
+		util_prometheus.MetricsHandler("", middleware.New(middleware.Config{
+			Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+				Registry: s.metrics,
+				Prefix:   "mads_server",
+			}),
+		})))
+	if s.config.VersionIsEnabled(mads.API_V1) {
+		log.Info("MADS v1 is enabled")
+		svc := mads_v1.NewService(s.config, s.rm, log.WithValues("apiVersion", mads.API_V1), s.meshCache)
+		svc.RegisterRoutes(ws)
+		svc.Start(ctx)
+	}
+
+	container := restful.NewContainer()
+	container.Add(ws)
 	errChan := make(chan error)
 	httpS := &http.Server{
 		Addr:              fmt.Sprintf(":%d", s.config.Port),
 		ReadHeaderTimeout: time.Second,
 		TLSConfig:         tlsConfig,
-		Handler:           s.createHttpServicesHandler(),
+		Handler:           container,
 		ErrorLog:          adapter.ToStd(log),
 	}
 	if err := kuma_srv.StartServer(log, httpS, &s.ready, errChan); err != nil {
@@ -118,21 +120,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
-	config := rt.Config().MonitoringAssignmentServer
-
-	rm := rt.ReadOnlyResourceManager()
-
-	var httpServices []HttpService
-
-	if config.VersionIsEnabled(mads.API_V1) {
-		log.Info("MADS v1 is enabled")
-		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1), rt.MeshCache())
-		httpServices = append(httpServices, svc)
-	}
-
 	return rt.Add(&muxServer{
-		httpServices: httpServices,
-		config:       config,
-		metrics:      rt.Metrics(),
+		meshCache: rt.MeshCache(),
+		rm:        rt.ReadOnlyResourceManager(),
+		config:    rt.Config().MonitoringAssignmentServer,
+		metrics:   rt.Metrics(),
 	})
 }

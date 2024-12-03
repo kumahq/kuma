@@ -37,12 +37,12 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           ref: ${{ matrix.branch }}
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
           go-version-file: go.mod
       - name: "Install tools"
         run: |
-          go install github.com/google/osv-scanner/cmd/osv-scanner@037c3543ac60359190459b10fbb5331568b4c8f5 # v1.7.0
+          go install github.com/google/osv-scanner/cmd/osv-scanner@b13f37e1a1e4cb98556c1d34cd3256a876929be1 # v1.9.1
       - name: "Prepare commit body - before"
         id: prepare_commit_body_before
         run: |

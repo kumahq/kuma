@@ -766,11 +766,6 @@ experimental:
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
   sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  # If true then it generates MeshServices from Kubernetes Service.
-  generateMeshServices: false # ENV: KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES
-  # If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
-  # Do not enable on production.
-  skipPersistedVIPs: false # ENV: KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

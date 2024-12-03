@@ -3,6 +3,7 @@ package inbound_communication
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -30,39 +31,41 @@ func InboundPassthroughDisabled() {
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 4 We pick the second set of zones to test with passthrough disabled
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"uni-demo-client",
-				mesh,
-				WithTransparentProxy(true),
+		group := errgroup.Group{}
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(
+					"uni-demo-client",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("uni-test-server-localhost", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", localhostAddress}),
+					ServiceProbe(),
+					WithServiceName("uni-test-server-localhost"),
+				),
+				TestServerUniversal("uni-test-server-wildcard", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", wildcardAddress}),
+					ServiceProbe(),
+					WithServiceName("uni-test-server-wildcard"),
+				),
+				TestServerUniversal("uni-test-server-wildcard-no-tp", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", wildcardAddress}),
+					ServiceProbe(),
+					WithTransparentProxy(false),
+					WithServiceName("uni-test-server-wildcard-no-tp"),
+				),
+				TestServerUniversal("uni-test-server-containerip", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-containerip"}),
+					ServiceProbe(),
+					BoundToContainerIp(),
+					WithServiceName("uni-test-server-containerip"),
+				),
 			)).
-			Install(TestServerUniversal("uni-test-server-localhost", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", localhostAddress}),
-				ServiceProbe(),
-				WithServiceName("uni-test-server-localhost"),
-			)).
-			Install(TestServerUniversal("uni-test-server-wildcard", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", wildcardAddress}),
-				ServiceProbe(),
-				WithServiceName("uni-test-server-wildcard"),
-			)).
-			Install(TestServerUniversal("uni-test-server-wildcard-no-tp", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", wildcardAddress}),
-				ServiceProbe(),
-				WithTransparentProxy(false),
-				WithServiceName("uni-test-server-wildcard-no-tp"),
-			)).
-			Install(TestServerUniversal("uni-test-server-containerip", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-containerip"}),
-				ServiceProbe(),
-				BoundToContainerIp(),
-				WithServiceName("uni-test-server-containerip"),
-			)).
-			Setup(multizone.UniZone2),
-		).To(Succeed())
+			SetupInGroup(multizone.UniZone2, &group)
 
 		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
 			Install(testserver.Install(
@@ -78,8 +81,8 @@ func InboundPassthroughDisabled() {
 				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
 				testserver.WithoutProbes(),
 			)).
-			Setup(multizone.KubeZone2),
-		).To(Succeed())
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

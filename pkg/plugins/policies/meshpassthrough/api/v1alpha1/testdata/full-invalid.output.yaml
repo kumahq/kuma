@@ -22,3 +22,5 @@ violations:
   message: provided DNS has incorrect value, partial wildcard is currently not supported
 - field: spec.default.appendMatch[9].value
   message: value google.com is already defiend for this port and protocol
+- field: spec.default.appendMatch[10].port
+  message: wildcard domains doesn't work for all ports and layer 7 protocol

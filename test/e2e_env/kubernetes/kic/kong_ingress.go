@@ -40,20 +40,22 @@ func KICKubernetes() {
 			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(namespaceOutsideMesh)).
-			Install(democlient.Install(democlient.WithNamespace(namespaceOutsideMesh))). // this will not be in the mesh
-			Install(kic.KongIngressController(
-				kic.WithNamespace(namespace),
-				kic.WithName("kic"),
-				kic.WithMesh(mesh),
-			)).
-			Install(kic.KongIngressService(
-				kic.WithNamespace(namespace),
-				kic.WithName("kic"),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("test-server"),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespaceOutsideMesh)), // this will not be in the mesh
+				kic.KongIngressController(
+					kic.WithNamespace(namespace),
+					kic.WithName("kic"),
+					kic.WithMesh(mesh),
+				),
+				kic.KongIngressService(
+					kic.WithNamespace(namespace),
+					kic.WithName("kic"),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("test-server"),
+				),
 			)).
 			Setup(kubernetes.Cluster)).To(Succeed())
 

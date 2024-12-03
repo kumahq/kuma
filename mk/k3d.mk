@@ -105,12 +105,23 @@ ifdef K3D_HELM_DEPLOY_ADDITIONAL_OPTS
 	K3D_HELM_DEPLOY_OPTS += $(K3D_HELM_DEPLOY_ADDITIONAL_OPTS)
 endif
 
+define maybe_with_flock
+  if which flock >/dev/null 2>&1; then \
+    SHELL=bash flock -x $(BUILD_DIR)/k3d_network.lock -c $(1); \
+  else \
+    bash -c $(1); \
+  fi
+endef
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
-		if [ `which flock` ]; then flock -x $(BUILD_DIR)/k3d_network.lock -c 'docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true'; \
-		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
-		rm -f $(BUILD_DIR)/k3d_network.lock
+		$(call maybe_with_flock,"if ! docker network inspect kind >/dev/null 2>&1; then \
+		  docker network create -d=bridge $(KIND_NETWORK_OPTS) kind >/dev/null; \
+		fi; \
+		echo 'Using docker network: '; \
+		docker network inspect kind --format='{{ .Id }}'")
+	@rm -f $(BUILD_DIR)/k3d_network.lock
 
 DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: k3d/setup-docker-credentials

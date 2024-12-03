@@ -18,7 +18,7 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=hg
 type HostnameGenerator struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

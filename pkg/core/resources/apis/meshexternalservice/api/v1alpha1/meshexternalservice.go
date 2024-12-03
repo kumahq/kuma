@@ -15,6 +15,7 @@ import (
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:has_status=true
 // +kuma:policy:is_referenceable_in_to=true
+// +kuma:policy:short_name=extsvc
 // +kubebuilder:printcolumn:name=Hostname,type=string,JSONPath=".status.addresses[0].hostname"
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.

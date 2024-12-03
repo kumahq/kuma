@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/maps"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 type TargetRefKind string
@@ -67,7 +67,7 @@ func (k TargetRefKind) IsOldKind() bool {
 }
 
 func AllTargetRefKinds() []TargetRefKind {
-	keys := maps.Keys(order)
+	keys := util_maps.AllKeys(order)
 	sort.Sort(TargetRefKindSlice(keys))
 	return keys
 }
@@ -152,15 +152,13 @@ type BackendRefHash string
 
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
-	keys := maps.Keys(in.Tags)
-	sort.Strings(keys)
+	keys := util_maps.SortedKeys(in.Tags)
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
 
-	keys = maps.Keys(in.Labels)
-	sort.Strings(keys)
+	keys = util_maps.SortedKeys(in.Labels)
 	orderedLabels := make([]string, 0, len(in.Labels))
 	for _, k := range keys {
 		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))

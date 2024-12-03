@@ -2,8 +2,7 @@ package v1alpha1
 
 import (
 	"reflect"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
