@@ -1,0 +1,47 @@
+targetRef:
+  kind: Mesh
+default:
+  appendMatch:
+  - type: test
+    value: 1.2.3.4
+    port: 0
+    protocol: 1
+  - type: Domain
+    value: 1.2.3.4
+    port: 1
+    protocol: tcp
+  - type: IP
+    value: example.com
+    port: 1
+    protocol: tls
+  - type: Domain
+    value: example.com
+    port: 999
+    protocol: tcp
+  - type: CIDR
+    value: 1.2.3.4
+    port: 999
+    protocol: tcp
+  - type: Domain
+    value: example.com
+    port: 8080
+    protocol: http
+  - type: Domain
+    value: example.com
+    port: 8080
+    protocol: http2
+  - type: Domain
+    value: "*w.example.com"
+    port: 9090
+    protocol: http2
+  - type: Domain
+    value: google.com
+    port: 10000
+    protocol: http
+  - type: Domain
+    value: google.com
+    port: 10000
+    protocol: http
+  - type: Domain
+    value: "*.example.com"
+    protocol: http

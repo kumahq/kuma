@@ -1,0 +1,140 @@
+type: object
+required: [type, name, spec]
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+    enum:
+      - MeshPassthrough
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to. It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  labels:
+    additionalProperties:
+      type: string
+    description: 'The labels to help identity resources'
+    type: object
+  spec:
+    description: Spec is the specification of the Kuma MeshPassthrough resource.
+    properties:
+      default:
+        description: MeshPassthrough configuration.
+        properties:
+          appendMatch:
+            description: AppendMatch is a list of destinations that should be allowed through the sidecar.
+            items:
+              properties:
+                port:
+                  description: Port defines the port to which a user makes a request.
+                  format: int32
+                  type: integer
+                protocol:
+                  default: tcp
+                  description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                  enum:
+                    - tcp
+                    - tls
+                    - grpc
+                    - http
+                    - http2
+                  type: string
+                type:
+                  description: Type of the match, one of `Domain`, `IP` or `CIDR` is available.
+                  enum:
+                    - Domain
+                    - IP
+                    - CIDR
+                  type: string
+                value:
+                  description: Value for the specified Type.
+                  type: string
+              type: object
+            type: array
+          passthroughMode:
+            default: None
+            description: |-
+              Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+              When `All` or `None` `appendMatch` has no effect.
+            enum:
+              - All
+              - Matched
+              - None
+            type: string
+        type: object
+      targetRef:
+        description: |-
+          TargetRef is a reference to the resource the policy takes an effect on.
+          The resource could be either a real store object or virtual resource
+          defined in-place.
+        properties:
+          kind:
+            description: Kind of the referenced resource
+            enum:
+              - Mesh
+              - MeshSubset
+              - MeshGateway
+              - MeshService
+              - MeshExternalService
+              - MeshMultiZoneService
+              - MeshServiceSubset
+              - MeshHTTPRoute
+            type: string
+          labels:
+            additionalProperties:
+              type: string
+            description: |-
+              Labels are used to select group of MeshServices that match labels. Either Labels or
+              Name and Namespace can be used.
+            type: object
+          mesh:
+            description: Mesh is reserved for future use to identify cross mesh resources.
+            type: string
+          name:
+            description: |-
+              Name of the referenced resource. Can only be used with kinds: `MeshService`,
+              `MeshServiceSubset` and `MeshGatewayRoute`
+            type: string
+          namespace:
+            description: |-
+              Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+              will be targeted.
+            type: string
+          proxyTypes:
+            description: |-
+              ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+              all data plane types are targeted by the policy.
+            items:
+              enum:
+                - Sidecar
+                - Gateway
+              type: string
+            minItems: 1
+            type: array
+          sectionName:
+            description: |-
+              SectionName is used to target specific section of resource.
+              For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+            type: string
+          tags:
+            additionalProperties:
+              type: string
+            description: |-
+              Tags used to select a subset of proxies by tags. Can only be used with kinds
+              `MeshSubset` and `MeshServiceSubset`
+            type: object
+        type: object
+    type: object
+  creationTime:
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
