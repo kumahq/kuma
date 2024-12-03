@@ -38,7 +38,7 @@ func (in *Match) DeepCopyInto(out *Match) {
 	*out = *in
 	if in.Port != nil {
 		in, out := &in.Port, &out.Port
-		*out = new(int)
+		*out = new(uint32)
 		**out = **in
 	}
 }

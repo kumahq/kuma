@@ -44,21 +44,21 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	portAndProtocol := map[int]ProtocolType{}
+	portAndProtocol := map[uint32]ProtocolType{}
 	type portProtocol struct {
-		port     int
+		port     uint32
 		protocol ProtocolType
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
 	for i, match := range conf.AppendMatch {
-		if match.Port != nil && pointer.Deref[int](match.Port) == 0 || pointer.Deref[int](match.Port) > math.MaxUint16 {
+		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
 		if match.Port != nil {
-			if value, found := portAndProtocol[pointer.Deref[int](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+			if value, found := portAndProtocol[pointer.Deref[uint32](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			} else {
-				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
+				portAndProtocol[pointer.Deref[uint32](match.Port)] = match.Protocol
 			}
 			key := portProtocol{
 				port:     *match.Port,
@@ -94,6 +94,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
+			}
+			if match.Port == nil && strings.HasPrefix(match.Value, "*") && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "wildcard domains doesn't work for all ports and layer 7 protocol")
 			}
 			if !strings.HasPrefix(match.Value, "*") {
 				isValid := govalidator.IsDNSName(match.Value)

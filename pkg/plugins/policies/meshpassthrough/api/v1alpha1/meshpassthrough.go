@@ -47,7 +47,11 @@ type Match struct {
 	// Value for the specified Type.
 	Value string `json:"value,omitempty"`
 	// Port defines the port to which a user makes a request.
+<<<<<<< HEAD
 	Port *int `json:"port"`
+=======
+	Port *uint32 `json:"port,omitempty"`
+>>>>>>> a5d4745e6 (fix(meshpassthrough): generate separate filter chain  when ip/cidr fo… (#12054))
 	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
 	Protocol ProtocolType `json:"protocol,omitempty"`
