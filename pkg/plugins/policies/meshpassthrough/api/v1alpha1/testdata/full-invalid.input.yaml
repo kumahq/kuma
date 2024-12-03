@@ -42,3 +42,6 @@ default:
     value: google.com
     port: 10000
     protocol: http
+  - type: Domain
+    value: "*.example.com"
+    protocol: http
