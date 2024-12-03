@@ -5,6 +5,7 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
   contents: write # To upload assets
   id-token: write # For using token to sign images
@@ -14,7 +15,7 @@ env:
   KUMA_DIR: "."
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
 concurrency:
-  group: ${{github.workflow}}-${{ github.event_name == 'push' && github.sha || github.event.pull_request.number }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
   check:
@@ -25,7 +26,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -87,7 +88,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:
