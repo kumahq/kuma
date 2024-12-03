@@ -1,0 +1,26 @@
+violations:
+- field: spec.default.appendMatch[0].port
+  message: port must be a valid (1-65535)
+- field: spec.default.appendMatch[0].protocol
+  message: '"protocol" must be one of ["tcp", "tls", "grpc", "http", "http2"]'
+- field: spec.default.appendMatch[0].type
+  message: provided type test is not supported, one of Domain, IP, or CIDR is supported
+- field: spec.default.appendMatch[1].protocol
+  message: protocol tcp is not supported for a domain
+- field: spec.default.appendMatch[1].value
+  message: provided DNS has incorrect value
+- field: spec.default.appendMatch[2].value
+  message: provided IP has incorrect value
+- field: spec.default.appendMatch[3].protocol
+  message: protocol tcp is not supported for a domain
+- field: spec.default.appendMatch[4].value
+  message: provided CIDR has incorrect value
+- field: spec.default.appendMatch[6].port
+  message: 'using the same port in multiple matches requires the same protocol for
+    the following protocols: [grpc http http2]'
+- field: spec.default.appendMatch[7].value
+  message: provided DNS has incorrect value, partial wildcard is currently not supported
+- field: spec.default.appendMatch[9].value
+  message: value google.com is already defiend for this port and protocol
+- field: spec.default.appendMatch[10].port
+  message: wildcard domains doesn't work for all ports and layer 7 protocol

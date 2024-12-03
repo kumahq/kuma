@@ -2745,7 +2745,178 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
+<<<<<<< HEAD
     controller-gen.kubebuilder.io/version: v0.14.0
+=======
+    controller-gen.kubebuilder.io/version: v0.16.5
+  name: meshpassthroughs.kuma.io
+spec:
+  group: kuma.io
+  names:
+    categories:
+    - kuma
+    kind: MeshPassthrough
+    listKind: MeshPassthroughList
+    plural: meshpassthroughs
+    shortNames:
+    - mp
+    singular: meshpassthrough
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.targetRef.kind
+      name: TargetRef Kind
+      type: string
+    - jsonPath: .spec.targetRef.name
+      name: TargetRef Name
+      type: string
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: Spec is the specification of the Kuma MeshPassthrough resource.
+            properties:
+              default:
+                description: MeshPassthrough configuration.
+                properties:
+                  appendMatch:
+                    description: AppendMatch is a list of destinations that should
+                      be allowed through the sidecar.
+                    items:
+                      properties:
+                        port:
+                          description: Port defines the port to which a user makes
+                            a request.
+                          format: int32
+                          type: integer
+                        protocol:
+                          default: tcp
+                          description: 'Protocol defines the communication protocol.
+                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                          enum:
+                          - tcp
+                          - tls
+                          - grpc
+                          - http
+                          - http2
+                          type: string
+                        type:
+                          description: Type of the match, one of `Domain`, `IP` or
+                            `CIDR` is available.
+                          enum:
+                          - Domain
+                          - IP
+                          - CIDR
+                          type: string
+                        value:
+                          description: Value for the specified Type.
+                          type: string
+                      type: object
+                    type: array
+                  passthroughMode:
+                    default: None
+                    description: |-
+                      Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
+                      When `All` or `None` `appendMatch` has no effect.
+                    enum:
+                    - All
+                    - Matched
+                    - None
+                    type: string
+                type: object
+              targetRef:
+                description: |-
+                  TargetRef is a reference to the resource the policy takes an effect on.
+                  The resource could be either a real store object or virtual resource
+                  defined in-place.
+                properties:
+                  kind:
+                    description: Kind of the referenced resource
+                    enum:
+                    - Mesh
+                    - MeshSubset
+                    - MeshGateway
+                    - MeshService
+                    - MeshExternalService
+                    - MeshMultiZoneService
+                    - MeshServiceSubset
+                    - MeshHTTPRoute
+                    type: string
+                  labels:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Labels are used to select group of MeshServices that match labels. Either Labels or
+                      Name and Namespace can be used.
+                    type: object
+                  mesh:
+                    description: Mesh is reserved for future use to identify cross
+                      mesh resources.
+                    type: string
+                  name:
+                    description: |-
+                      Name of the referenced resource. Can only be used with kinds: `MeshService`,
+                      `MeshServiceSubset` and `MeshGatewayRoute`
+                    type: string
+                  namespace:
+                    description: |-
+                      Namespace specifies the namespace of target resource. If empty only resources in policy namespace
+                      will be targeted.
+                    type: string
+                  proxyTypes:
+                    description: |-
+                      ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
+                      all data plane types are targeted by the policy.
+                    items:
+                      enum:
+                      - Sidecar
+                      - Gateway
+                      type: string
+                    minItems: 1
+                    type: array
+                  sectionName:
+                    description: |-
+                      SectionName is used to target specific section of resource.
+                      For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
+                    type: string
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: |-
+                      Tags used to select a subset of proxies by tags. Can only be used with kinds
+                      `MeshSubset` and `MeshServiceSubset`
+                    type: object
+                type: object
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.16.5
+>>>>>>> a5d4745e6 (fix(meshpassthrough): generate separate filter chain  when ip/cidr fo… (#12054))
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
