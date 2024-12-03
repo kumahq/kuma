@@ -55,6 +55,14 @@ var _ = Describe("Reachable Services Graph", func() {
 			},
 			expectedFromAll: fromAllServices,
 		}),
+		Entry("allow all no top targetRef", testCase{
+			mtps: []*v1alpha1.MeshTrafficPermissionResource{
+				builders.MeshTrafficPermission().
+					AddFrom(builders.TargetRefMesh(), v1alpha1.Allow).
+					Build(),
+			},
+			expectedFromAll: fromAllServices,
+		}),
 		Entry("deny all", testCase{
 			mtps: []*v1alpha1.MeshTrafficPermissionResource{
 				builders.MeshTrafficPermission().
