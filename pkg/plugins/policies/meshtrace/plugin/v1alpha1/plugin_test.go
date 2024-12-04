@@ -13,6 +13,8 @@ import (
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -48,7 +50,18 @@ var _ = Describe("MeshTrace", func() {
 	type testCase struct {
 		resources       []core_xds.Resource
 		singleItemRules core_rules.SingleItemRules
+		outbounds       xds_types.Outbounds
 		goldenFile      string
+	}
+	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
+		ResourceIdentifier: core_model.ResourceIdentifier{
+			Name:      "backend",
+			Mesh:      "default",
+			Namespace: "backend-ns",
+			Zone:      "zone-1",
+		},
+		ResourceType: "MeshService",
+		SectionName:  "",
 	}
 	inboundAndOutbound := func() []core_xds.Resource {
 		return []core_xds.Resource{
@@ -66,6 +79,26 @@ var _ = Describe("MeshTrace", func() {
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
 					)).MustBuild(),
+			},
+		}
+	}
+	inboundAndOutboundRealMeshService := func() []core_xds.Resource {
+		return []core_xds.Resource{
+			{
+				Name:   "inbound",
+				Origin: generator.OriginInbound,
+				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+					)).MustBuild(),
+			}, {
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshServiceIdentifier,
 			},
 		}
 	}
@@ -87,14 +120,12 @@ var _ = Describe("MeshTrace", func() {
 							WithAddress("127.0.0.1").
 							WithPort(17777)),
 				).
-				WithOutbounds(xds_types.Outbounds{
-					{LegacyOutbound: builders.Outbound().
-						WithService("other-service").
-						WithAddress("127.0.0.1").
-						WithPort(27777).Build()},
-				}).
+				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
+			context.Mesh.MeshServiceByIdentifier = map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource{
+				backendMeshServiceIdentifier.ResourceIdentifier : samples.MeshServiceBackend(),
+			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
 			Expect(plugin.Apply(resources, context, proxy)).To(Succeed())
@@ -104,8 +135,54 @@ var _ = Describe("MeshTrace", func() {
 			Expect(getResource(resources, envoy_resource.ClusterType)).
 				To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s.cluster.golden.yaml", given.goldenFile)))
 		},
+		Entry("inbound/outbound for zipkin and real MeshService", testCase{
+			resources: inboundAndOutboundRealMeshService(),
+			outbounds: xds_types.Outbounds{
+				{
+					Address: "127.0.0.1",
+					Port: 27777,
+					Resource: &backendMeshServiceIdentifier,
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []core_rules.Tag{},
+						Conf: api.Conf{
+							Tags: &[]api.Tag{
+								{Name: "app", Literal: pointer.To("backend")},
+								{Name: "app_code", Header: &api.HeaderTag{Name: "app_code"}},
+								{Name: "client_id", Header: &api.HeaderTag{Name: "client_id", Default: pointer.To("none")}},
+							},
+							Sampling: &api.Sampling{
+								Overall: pointer.To(intstr.FromInt(10)),
+								Client:  pointer.To(intstr.FromInt(20)),
+								Random:  pointer.To(intstr.FromInt(50)),
+							},
+							Backends: &[]api.Backend{{
+								Zipkin: &api.ZipkinBackend{
+									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
+									SharedSpanContext: pointer.To(true),
+									ApiVersion:        pointer.To("httpProto"),
+									TraceId128Bit:     pointer.To(true),
+								},
+							}},
+						},
+					},
+				},
+			},
+			goldenFile: "inbound-outbound-zipkin-real-meshservice",
+		}),
 		Entry("inbound/outbound for zipkin", testCase{
 			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+				},
+			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -137,6 +214,14 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("inbound/outbound for opentelemetry", testCase{
 			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+				},
+			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -165,6 +250,14 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("inbound/outbound for datadog", testCase{
 			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+				},
+			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -187,6 +280,14 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("sampling is empty", testCase{
 			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+				},
+			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
@@ -207,6 +308,14 @@ var _ = Describe("MeshTrace", func() {
 		}),
 		Entry("backends list is empty", testCase{
 			resources: inboundAndOutbound(),
+			outbounds: xds_types.Outbounds{
+				{
+						LegacyOutbound: builders.Outbound().
+							WithService("other-service").
+							WithAddress("127.0.0.1").
+							WithPort(27777).Build(),
+				},
+			},
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
