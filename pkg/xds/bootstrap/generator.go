@@ -130,10 +130,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	setXdsTransportProtocolVariant := func(resourceMode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant) {
 		switch resourceMode {
 		case mesh_proto.EnvoyConfiguration_DEFAULT:
+			params.XdsTransportProtocolVariant = types.GRPC
 			if b.deltaXdsEnabled {
 				params.XdsTransportProtocolVariant = types.DELTA_GRPC
 			}
-			params.XdsTransportProtocolVariant = types.GRPC
 		case mesh_proto.EnvoyConfiguration_DELTA_GRPC:
 			params.XdsTransportProtocolVariant = types.DELTA_GRPC
 		case mesh_proto.EnvoyConfiguration_GRPC:
