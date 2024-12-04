@@ -124,7 +124,7 @@ var _ = Describe("MeshTrace", func() {
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
 			context.Mesh.MeshServiceByIdentifier = map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource{
-				backendMeshServiceIdentifier.ResourceIdentifier : samples.MeshServiceBackend(),
+				backendMeshServiceIdentifier.ResourceIdentifier: samples.MeshServiceBackend(),
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -139,8 +139,8 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutboundRealMeshService(),
 			outbounds: xds_types.Outbounds{
 				{
-					Address: "127.0.0.1",
-					Port: 27777,
+					Address:  "127.0.0.1",
+					Port:     27777,
 					Resource: &backendMeshServiceIdentifier,
 				},
 			},
@@ -177,10 +177,10 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
@@ -216,10 +216,10 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
@@ -252,10 +252,10 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
@@ -282,10 +282,10 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{
@@ -310,10 +310,10 @@ var _ = Describe("MeshTrace", func() {
 			resources: inboundAndOutbound(),
 			outbounds: xds_types.Outbounds{
 				{
-						LegacyOutbound: builders.Outbound().
-							WithService("other-service").
-							WithAddress("127.0.0.1").
-							WithPort(27777).Build(),
+					LegacyOutbound: builders.Outbound().
+						WithService("other-service").
+						WithAddress("127.0.0.1").
+						WithPort(27777).Build(),
 				},
 			},
 			singleItemRules: core_rules.SingleItemRules{

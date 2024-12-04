@@ -65,5 +65,34 @@ resources:
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           statPrefix: "127_0_0_1_27777"
+          tracing:
+            clientSampling:
+              value: 20
+            customTags:
+            - literal:
+                value: backend
+              tag: app
+            - requestHeader:
+                name: app_code
+              tag: app_code
+            - requestHeader:
+                defaultValue: none
+                name: client_id
+              tag: client_id
+            overallSampling:
+              value: 10
+            provider:
+              name: envoy.tracers.zipkin
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.trace.v3.ZipkinConfig
+                collectorCluster: meshtrace:zipkin
+                collectorEndpoint: /api/v2/spans
+                collectorEndpointVersion: HTTP_PROTO
+                collectorHostname: jaeger-collector.mesh-observability:9411
+                sharedSpanContext: true
+                traceId128bit: true
+            randomSampling:
+              value: 50
+            spawnUpstreamSpan: false
     name: outbound:127.0.0.1:27777
     trafficDirection: OUTBOUND
