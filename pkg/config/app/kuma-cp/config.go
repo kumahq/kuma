@@ -277,6 +277,7 @@ var DefaultConfig = func() Config {
 				DelayFullResync:    false,
 			},
 			SidecarContainers: false,
+			DeltaXds: true,
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),
@@ -459,6 +460,8 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
+	// If true uses Delta xDS to deliver changes to sidecars.
+	DeltaXds bool `json:"deltaXds" envconfig:"KUMA_EXPERIMENTAL_DELTA_XDS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {

@@ -38,6 +38,7 @@ type PodConverter struct {
 	SystemNamespace     string
 	Mode                config_core.CpMode
 	KubeOutboundsAsVIPs bool
+	DeltaXds            bool
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -299,6 +300,10 @@ func (p *PodConverter) dataplaneFor(
 	}
 	if exist {
 		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
+	}
+	dataplane.Envoy, err = GetEnvoyConfiguration(p.DeltaXds, annotations)
+	if err != nil {
+		return nil, err
 	}
 
 	return dataplane, nil
