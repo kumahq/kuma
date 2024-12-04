@@ -660,8 +660,6 @@ func createMeshExternalServiceEndpoint(
 	}
 	meshName := mesh.GetMeta().GetName()
 	tls := mes.Spec.Tls
-	// Server name and SNI we need to add
-	// mes.Spec.Tls.Verification.SubjectAltNames
 	if tls != nil && tls.Enabled {
 		err := setTlsConfiguration(ctx, tls, es, meshName, loader)
 		if err != nil {
@@ -693,6 +691,14 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 	es.FallbackToSystemCa = true
 	es.AllowRenegotiation = tls.AllowRenegotiation
 
+	if tls.Version != nil {
+		if tls.Version.Min != nil {
+			es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
+		}
+		if tls.Version.Max != nil {
+			es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
+		}
+	}
 	var err error
 	if tls.Verification != nil {
 		if tls.Verification.CaCert != nil {
@@ -723,15 +729,8 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 				Value:     san.Value,
 			})
 		}
-		if tls.Version != nil {
-			if tls.Version.Min != nil {
-				es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
-			}
-			if tls.Version.Max != nil {
-				es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
-			}
-		}
-
+		// Server name and SNI we need to add
+		// mes.Spec.Tls.Verification.SubjectAltNames
 		if tls.Verification.Mode != nil {
 			switch *tls.Verification.Mode {
 			case meshexternalservice_api.TLSVerificationSkipSAN:
@@ -819,8 +818,6 @@ func fillExternalServicesOutboundsThroughEgress(
 			Protocol:      mes.Spec.Match.Protocol,
 			OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
 		}
-		// Server name and SNI we need to add
-		// mes.Spec.Tls.Verification.SubjectAltNames
 		if tls != nil && tls.Enabled {
 			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)
 			if err != nil {
