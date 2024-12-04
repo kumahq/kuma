@@ -41,7 +41,7 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 func trimNotSupportedTags(mtps []*mtp_api.MeshTrafficPermissionResource, supportedTags map[string]string) []*mtp_api.MeshTrafficPermissionResource {
 	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
-		if len(mtp.Spec.TargetRef.Tags) > 0 {
+		if mtp.Spec != nil && mtp.Spec.TargetRef != nil && len(mtp.Spec.TargetRef.Tags) > 0 {
 			filteredTags := map[string]string{}
 			for tag, val := range mtp.Spec.TargetRef.Tags {
 				if _, ok := supportedTags[tag]; ok {

@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -20,18 +22,18 @@ type Configurer struct {
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_mesh.Protocol{}
-	orderedMatchers, err := GetOrderedMatchers(c.Conf)
+	filterChainMatches, err := GetOrderedMatchers(c.Conf)
 	if err != nil {
 		return err
 	}
 
-	if hasIPv4Matches(orderedMatchers) {
-		if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
+	if hasIPv4Matches(filterChainMatches) {
+		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false); err != nil {
 			return err
 		}
 	}
-	if hasIPv6Matches(orderedMatchers) {
-		if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
+	if hasIPv6Matches(filterChainMatches) {
+		if err := c.configureListener(filterChainMatches, ipv6, clustersAccumulator, true); err != nil {
 			return err
 		}
 	}
@@ -51,7 +53,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 }
 
 func (c Configurer) configureListener(
-	orderedMatchers []FilterChainMatcher,
+	orderedFilterChainMatches []FilterChainMatch,
 	listener *envoy_listener.Listener,
 	clustersAccumulator map[string]core_mesh.Protocol,
 	isIPv6 bool,
@@ -61,11 +63,13 @@ func (c Configurer) configureListener(
 	}
 	// remove default filter chain provided by `transparent_proxy_generator`
 	listener.FilterChains = []*envoy_listener.FilterChain{}
-	for _, matcher := range orderedMatchers {
+	for _, matcher := range orderedFilterChainMatches {
 		configurer := FilterChainConfigurer{
 			APIVersion: c.APIVersion,
 			Protocol:   matcher.Protocol,
 			Port:       matcher.Port,
+			MatchType:  matcher.MatchType,
+			MatchValue: matcher.Value,
 			Routes:     matcher.Routes,
 			IsIPv6:     isIPv6,
 		}
@@ -106,29 +110,19 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 	return err
 }
 
-func hasIPv4Matches(orderedMatchers []FilterChainMatcher) bool {
+func hasIPv4Matches(orderedMatchers []FilterChainMatch) bool {
 	for _, matcher := range orderedMatchers {
-		for _, route := range matcher.Routes {
-			if route.MatchType == Domain ||
-				route.MatchType == WildcardDomain ||
-				route.MatchType == CIDR ||
-				route.MatchType == IP {
-				return true
-			}
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDR, IP}, matcher.MatchType) {
+			return true
 		}
 	}
 	return false
 }
 
-func hasIPv6Matches(orderedMatchers []FilterChainMatcher) bool {
+func hasIPv6Matches(orderedMatchers []FilterChainMatch) bool {
 	for _, matcher := range orderedMatchers {
-		for _, route := range matcher.Routes {
-			if route.MatchType == Domain ||
-				route.MatchType == WildcardDomain ||
-				route.MatchType == CIDRV6 ||
-				route.MatchType == IPV6 {
-				return true
-			}
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDRV6, IPV6}, matcher.MatchType) {
+			return true
 		}
 	}
 	return false

@@ -17,13 +17,14 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.0_80
-          statPrefix: meshpassthrough_192_168_0_0_80
-      name: meshpassthrough_192.168.0.0_80
+          cluster: meshpassthrough_tcp_192.168.0.0_80
+          statPrefix: meshpassthrough_tcp_192_168_0_0_80
+      name: meshpassthrough_tcp_192.168.0.0_80
     - filterChainMatch:
         applicationProtocols:
         - http/1.1
         - h2c
+        destinationPort: 80
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -38,12 +39,13 @@ resources:
             virtualHosts:
             - domains:
               - api.example.com
+              - api.example.com:80
               name: api.example.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_api.example.com_80
+                  cluster: meshpassthrough_http_api.example.com_80
             - domains:
               - '*'
               name: no_match
@@ -78,6 +80,7 @@ resources:
         applicationProtocols:
         - http/1.1
         - h2c
+        destinationPort: 80
         transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.http_connection_manager
@@ -92,12 +95,13 @@ resources:
             virtualHosts:
             - domains:
               - api.example.com
+              - api.example.com:80
               name: api.example.com
               routes:
               - match:
                   prefix: /
                 route:
-                  cluster: meshpassthrough_api.example.com_80
+                  cluster: meshpassthrough_http_api.example.com_80
             - domains:
               - '*'
               name: no_match

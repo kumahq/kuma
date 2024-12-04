@@ -1,0 +1,207 @@
+resources:
+- name: outbound:passthrough:ipv4
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChains:
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        destinationPort: 80
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_80
+            virtualHosts:
+            - domains:
+              - www.anotherexample.com
+              - www.anotherexample.com:80
+              name: www.anotherexample.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.anotherexample.com_80
+            - domains:
+              - www.example.com
+              - www.example.com:80
+              name: www.example.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.example.com_80
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
+                  status: 503
+                match:
+                  prefix: /
+          statPrefix: meshpassthrough_http_80
+      name: meshpassthrough_http_80
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_*
+            virtualHosts:
+            - domains:
+              - www.anotherexample.com
+              - www.anotherexample.com:*
+              name: www.anotherexample.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.anotherexample.com_*
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
+                  status: 503
+                match:
+                  prefix: /
+          statPrefix: meshpassthrough_http__
+      name: meshpassthrough_http_*
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv4
+    trafficDirection: OUTBOUND
+- name: outbound:passthrough:ipv6
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: '::'
+        portValue: 15001
+    filterChains:
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        destinationPort: 80
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_80
+            virtualHosts:
+            - domains:
+              - www.anotherexample.com
+              - www.anotherexample.com:80
+              name: www.anotherexample.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.anotherexample.com_80
+            - domains:
+              - www.example.com
+              - www.example.com:80
+              name: www.example.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.example.com_80
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
+                  status: 503
+                match:
+                  prefix: /
+          statPrefix: meshpassthrough_http_80
+      name: meshpassthrough_http_80
+    - filterChainMatch:
+        applicationProtocols:
+        - http/1.1
+        - h2c
+        transportProtocol: raw_buffer
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            name: meshpassthrough_http_*
+            virtualHosts:
+            - domains:
+              - www.anotherexample.com
+              - www.anotherexample.com:*
+              name: www.anotherexample.com
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: meshpassthrough_http_www.anotherexample.com_*
+            - domains:
+              - '*'
+              name: no_match
+              routes:
+              - directResponse:
+                  body:
+                    inlineString: |
+                      This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.
+                  status: 503
+                match:
+                  prefix: /
+          statPrefix: meshpassthrough_http__
+      name: meshpassthrough_http_*
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
+    - name: envoy.filters.listener.http_inspector
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+    name: outbound:passthrough:ipv6
+    trafficDirection: OUTBOUND

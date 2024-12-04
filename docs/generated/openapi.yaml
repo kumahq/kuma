@@ -7459,6 +7459,7 @@ components:
                     properties:
                       port:
                         description: Port defines the port to which a user makes a request.
+                        format: int32
                         type: integer
                       protocol:
                         default: tcp
