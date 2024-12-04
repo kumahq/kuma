@@ -7,6 +7,8 @@ spec:
     tags:
       kuma.io/protocol: http
       kuma.io/service: service-1-zone-2
+  envoy:
+    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     advertisedAddress: 192.168.100.1
