@@ -4,7 +4,6 @@
    "hostname": "test-server.svc.mesh.local",
    "zones": [
     {
-     "hostnameGeneratorCoreName": "local-mesh-services",
      "name": "east"
     }
    ]

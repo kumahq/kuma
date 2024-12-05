@@ -123,10 +123,9 @@ type InspectHostname struct {
 	Zones    []InspectHostnameZone `json:"zones"`
 }
 
-// InspectHostnameZone A name of the zone and hostname generator that was used to generate the hostname
+// InspectHostnameZone A name of the zone in which the hostname is available
 type InspectHostnameZone struct {
-	HostnameGeneratorCoreName string `json:"hostnameGeneratorCoreName"`
-	Name                      string `json:"name"`
+	Name string `json:"name"`
 }
 
 // InspectHostnames A list of hostnames

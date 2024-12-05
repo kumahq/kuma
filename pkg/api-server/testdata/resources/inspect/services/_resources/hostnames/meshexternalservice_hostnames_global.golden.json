@@ -4,7 +4,6 @@
    "hostname": "mes-1.extsvc.mesh.local",
    "zones": [
     {
-     "hostnameGeneratorCoreName": "synced-meshexternalservice",
      "name": "mes-1"
     }
    ]

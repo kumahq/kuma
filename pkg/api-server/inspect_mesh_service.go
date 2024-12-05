@@ -143,8 +143,7 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 				continue
 			}
 			byHostname[host] = append(byHostname[host], types.InspectHostnameZone{
-				HostnameGeneratorCoreName: hg.GetMeta().GetName(),
-				Name:                      svcZone,
+				Name: svcZone,
 			})
 		}
 

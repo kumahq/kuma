@@ -499,15 +499,12 @@ components:
     InspectHostnameZone:
       type: object
       title: InspectHostnameZone
-      description: A name of the zone and hostname generator that was used to generate the hostname
-      required: [name, hostnameGeneratorCoreName]
+      description: A name of the zone in which the hostname is available
+      required: [name]
       properties:
         name:
           type: string
           example: east
-        hostnameGeneratorCoreName:
-          type: string
-          example: synced-kube-mesh-service.kuma-system
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -627,6 +624,4 @@ components:
           - hostname: redis.redis-system.svc.east.mesh.local
             zones:
               - name: east
-                hostnameGeneratorCoreName: synced-kube-mesh-service.kuma-system
               - name: west
-                hostnameGeneratorCoreName: synced-kube-mesh-service.kuma-system

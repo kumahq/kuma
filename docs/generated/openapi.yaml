@@ -2409,14 +2409,10 @@ components:
         hostname
       required:
         - name
-        - hostnameGeneratorCoreName
       properties:
         name:
           type: string
           example: east
-        hostnameGeneratorCoreName:
-          type: string
-          example: synced-kube-mesh-service.kuma-system
     PolicyDescription:
       type: object
       required:
