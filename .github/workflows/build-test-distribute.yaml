@@ -38,6 +38,12 @@ jobs:
       VERSION_NAME: ${{ steps.metadata.outputs.version }}
       NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
       CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
+    defaults:
+      run:
+        # We are explicitly specifying a different working directory from the default to ensure our
+        # security scans generate the correct results. This prevents vulnerabilities from other tools
+        # from being included, which happens if we use the default working directory
+        working-directory: ${{ github.repository }}
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ fromJSON(env.FORCE_PUBLISH_FROM_FORK) }}
@@ -47,14 +53,36 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
+          path: ${{ github.repository }}
+      - id: metadata0
+        run: |
+          echo "images0=$(make images/info/release/json)"
+          echo "images0=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+          echo "registry0=$(make docker/info/registry)"
+          echo "registry0=$(make docker/info/registry)" >> $GITHUB_OUTPUT
+          echo "version0=$(make build/info/version)"
+          echo "version0=$(make build/info/version)" >> $GITHUB_OUTPUT
+          echo "distribution_repository0=$(make build/info/cloudsmith_repository)"
+          echo "distribution_repository0=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+      - id: sca-project-01
+        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
+        env:
+          SYFT_SOURCE_NAME: ${{ github.repository }}
+          SYFT_SOURCE_VERSION: ${{ steps.metadata0.outputs.version0 }}
+        with:
+          dir: ${{ github.repository }}
+          config: "${{ github.repository }}/.syft.yaml"
+          upload-sbom-release-assets: true
+          asset_prefix: '01'
       - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
         with:
-          go-version-file: go.mod
+          go-version-file: "${{ github.repository }}/go.mod"
           cache: false
       - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
         with:
           args: --fix=false --verbose
           version: v1.61.0
+          working-directory: ${{ github.repository }}
       - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: |
@@ -68,18 +96,22 @@ jobs:
           make clean
       - run: |
           make check
-      - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
-        with:
-          dir: .
-          config: .syft.yaml
-          upload-sbom-release-assets: true
       - id: metadata
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+      - id: sca-project-02
+        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
+        env:
+          SYFT_SOURCE_NAME: ${{ github.repository }}
+          SYFT_SOURCE_VERSION: ${{ steps.metadata.outputs.version }}
+        with:
+          dir: ${{ github.repository }}
+          config: "${{ github.repository }}/.syft.yaml"
+          upload-sbom-release-assets: true
+          asset_prefix: '02'
   test:
     permissions:
       contents: read
