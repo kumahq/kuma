@@ -145,6 +145,13 @@ func (m *DataplaneMetadata) GetDNSPort() uint32 {
 	return m.DNSPort
 }
 
+func (m *DataplaneMetadata) GetSystemCaPath() string {
+	if m == nil {
+		return ""
+	}
+	return m.SystemCaPath
+}
+
 func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 	if m == nil || m.DynamicMetadata == nil {
 		return ""

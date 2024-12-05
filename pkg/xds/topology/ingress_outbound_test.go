@@ -1,14 +1,21 @@
 package topology_test
 
 import (
+	"context"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -16,6 +23,12 @@ import (
 )
 
 var _ = Describe("IngressTrafficRoute", func() {
+	var dataSourceLoader datasource.Loader
+
+	BeforeEach(func() {
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil, false)
+		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
+	})
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
 			mesh             *core_mesh.MeshResource
@@ -33,6 +46,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 					meshServicesByName[model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := topology.BuildIngressEndpointMap(
+					context.Background(),
 					given.mesh,
 					"east",
 					meshServicesByName,
@@ -42,6 +56,7 @@ var _ = Describe("IngressTrafficRoute", func() {
 					given.externalServices,
 					nil,
 					given.zoneEgress,
+					dataSourceLoader,
 				)
 
 				// then
