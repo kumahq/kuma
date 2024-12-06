@@ -229,5 +229,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
 )
 
-// remove once https://github.com/envoyproxy/go-control-plane/issues/875 is resolved
 replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.1-kong-1
