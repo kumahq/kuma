@@ -66,6 +66,8 @@ jobs:
           make dev/tools
       - run: |
           make clean
+      - run: |
+          make check
       - name: "Set metadata for downstream jobs"
         id: metadata
         run: |
@@ -73,7 +75,12 @@ jobs:
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
-      - name: "Software Composition Analysis / produce SBOM and CVE report"
+      # "make check" puts binaries in ./build (see mk/generate.mk:2), so we need
+      # to clean it after "make check". Running SCA before it would create
+      # artifacts that cause "make check" to fail.
+      - run: |
+          make clean/build
+      - name: "Generate SBOM and CVE report (Software Composition Analysis)"
         id: sca-project
         uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
         env:
@@ -83,8 +90,6 @@ jobs:
           dir: .
           config: .syft.yaml
           upload-sbom-release-assets: true
-      - run: |
-          make check
   test:
     permissions:
       contents: read
