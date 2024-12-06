@@ -67,7 +67,7 @@ jobs:
       - run: |
           make clean
       - run: |
-          make check
+          ls -lah build
       - id: metadata
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
@@ -83,6 +83,8 @@ jobs:
           dir: .
           config: .syft.yaml
           upload-sbom-release-assets: true
+      - run: |
+          make check
   test:
     permissions:
       contents: read
