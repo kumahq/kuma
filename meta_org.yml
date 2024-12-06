@@ -53,6 +53,9 @@ default:
     - color: c7def8
       name: kind/service-review
       description: "Service review issue"
+    - color: d93f0b
+      name: blocked
+      description: "This is blocked by another issue or something external"
     - color: e11d21
       name: breaking-change
     - color: 7057ff
