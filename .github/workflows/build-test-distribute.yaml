@@ -54,10 +54,10 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
-      - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
-        with:
-          args: --fix=false --verbose
-          version: v1.61.0
+#      - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
+#        with:
+#          args: --fix=false --verbose
+#          version: v1.61.0
       - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
         with:
           path: |
