@@ -75,10 +75,12 @@ jobs:
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
-      # "make check" puts binaries in ./build (see mk/generate.mk: $(POLICY_GEN)
-      # and $(RESOURCE_GEN)), so we need to clean it after "make check". We need
-      # to clean it after "make check" since running SCA first would create
-      # artifacts that would "make check" fail.
+      # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
+      # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
+      # Running the SCA step before "make check" creates files (sbom.spdx.json,
+      # cve-report.json etc.) that cause "make check" to fail, so it can't run first.
+      # Instead, we clean ./build after "make check" to ensure tool binaries
+      # are excluded from the SBOM.
       - run: |
           make clean/build
       - name: "Generate SBOM and CVE report (Software Composition Analysis)"
