@@ -12,6 +12,9 @@ permissions:
   packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
 env:
   KUMA_DIR: "."
+  # To keep CI tools out of the SBOM, we use a `.ci_tools` directory in the parent
+  # of the code checkout path (typically /home/runner/work/<repo-name>/<repo-name>
+  # on the runner).
   CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
 concurrency:
   group: ${{github.workflow}}-${{ github.event_name == 'push' && github.sha || github.event.pull_request.number }}
