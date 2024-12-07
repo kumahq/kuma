@@ -109,7 +109,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
-    needs: ["check", "test"]
+    needs: ["check"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
     with:
@@ -139,7 +139,7 @@ jobs:
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
   distributions:
-    needs: ["build_publish", "check", "test", "provenance"]
+    needs: ["build_publish", "check", "provenance"]
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-latest
