@@ -80,10 +80,14 @@ jobs:
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
       # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
       # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
-      # Running the SCA step before "make check" creates files (sbom.spdx.json,
-      # cve-report.json etc.) that cause "make check" to fail, so it can't run first.
-      # Instead, we clean ./build after "make check" to ensure tool binaries
-      # are excluded from the SBOM.
+      # Running the SCA step before "make check" might seem like a solution, but it
+      # generates report files (e.g., sbom.spdx.json, cve-report.json) in the working
+      # directory. These files cause "make check" to fail, as it checks if no files
+      # in the repository were modified, deleted, or added after its process.
+      # It doesn't recognize that the SBOM and CVE report files were added earlier
+      # and should be ignored. Since we currently can't change the working directory
+      # for the SCA step, it must run after "make check." Instead, we clean ./build
+      # after "make check" to exclude tool binaries from the SBOM.
       - run: |
           make clean/build
       - name: "Generate SBOM and CVE report (Software Composition Analysis)"
