@@ -1,2 +1,4 @@
 select-catalogers:
   - +sbom-cataloger
+  - -github-action-workflow-usage-cataloger
+  - -github-actions-usage-cataloger
