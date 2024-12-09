@@ -8,6 +8,7 @@ metadata:
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: 19000
     kuma.io/application-probe-proxy-port: "8662"
+    kuma.io/xds-transport-protocol-variant: "DELTA_GRPC"
 spec:
   containers:
     - readinessProbe:

@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 	clusters_v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -106,6 +107,12 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 			},
 		})
 	}
+	configType := envoy_core_v3.ApiConfigSource_GRPC
+	switch parameters.XdsTransportProtocolVariant {
+	case types.DELTA_GRPC:
+		configType = envoy_core_v3.ApiConfigSource_DELTA_GRPC
+	}
+
 	res := &envoy_bootstrap_v3.Bootstrap{
 		Node: &envoy_core_v3.Node{
 			Id:      parameters.Id,
@@ -168,7 +175,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 				ResourceApiVersion:    envoy_core_v3.ApiVersion_V3,
 			},
 			AdsConfig: &envoy_core_v3.ApiConfigSource{
-				ApiType:                   envoy_core_v3.ApiConfigSource_GRPC,
+				ApiType:                   configType,
 				TransportApiVersion:       envoy_core_v3.ApiVersion_V3,
 				SetNodeOnFirstMessageOnly: true,
 				GrpcServices: []*envoy_core_v3.GrpcService{

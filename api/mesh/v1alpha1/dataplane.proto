@@ -7,6 +7,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "api/mesh/options.proto";
 import "api/mesh/v1alpha1/metrics.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
+import "api/mesh/v1alpha1/envoy.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
@@ -370,4 +371,7 @@ message Dataplane {
   // Deprecated: this feature will be removed for Universal; on Kubernetes, it's
   // not needed anymore.
   Probes probes = 3;
+
+  // EnvoyConfiguration provides additional configuration for the Envoy sidecar.
+  EnvoyConfiguration envoy = 4;
 }

@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+message EnvoyConfiguration {
+  enum XdsTransportProtocolVariant {
+    // This value defines default control-plane variant.
+    DEFAULT = 0;
+    // Enables incremental xDS between control-plane and the Envoy.
+    DELTA_GRPC = 1;
+    // Enables state of the world xDS between control-plane and the Envoy.
+    GRPC = 2;
+  }
+  // xDSTransportProtocol provides information about protocol used for
+  // configuration exchange between control-plane and Envoy sidecar.
+  XdsTransportProtocolVariant xds_transport_protocol_variant = 1;
+}

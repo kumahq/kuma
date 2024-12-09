@@ -6,6 +6,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/util/xds"
@@ -175,6 +176,10 @@ type discoveryResponse struct {
 	*envoy_sd.DiscoveryResponse
 }
 
+func (d *discoveryResponse) GetNumberOfResources() int {
+	return len(d.Resources)
+}
+
 func (d *discoveryResponse) VersionInfo() string {
 	return d.GetVersionInfo()
 }
@@ -211,10 +216,34 @@ func (d *deltaDiscoveryRequest) GetInitialResourceVersions() map[string]string {
 	return d.InitialResourceVersions
 }
 
+func (d *deltaDiscoveryRequest) GetResourceNames() []string {
+	return d.GetResourceNamesSubscribe()
+}
+
+func (d *deltaDiscoveryRequest) VersionInfo() string {
+	return ""
+}
+
 var _ xds.DeltaDiscoveryRequest = &deltaDiscoveryRequest{}
 
 type deltaDiscoveryResponse struct {
 	*envoy_sd.DeltaDiscoveryResponse
+}
+
+func (d *deltaDiscoveryResponse) VersionInfo() string {
+	return d.SystemVersionInfo
+}
+
+func (d *deltaDiscoveryResponse) GetResources() []*anypb.Any {
+	resources := []*anypb.Any{}
+	for _, res := range d.Resources {
+		resources = append(resources, res.Resource)
+	}
+	return resources
+}
+
+func (d *deltaDiscoveryResponse) GetNumberOfResources() int {
+	return len(d.Resources)
 }
 
 var _ xds.DeltaDiscoveryResponse = &deltaDiscoveryResponse{}
