@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Add checklist comment
         if: github.event.pull_request.author != 'app/dependabot'
-        uses: marocchino/sticky-pull-request-comment@44e0bad81007ecff41ba26d1cbf49a0267d28e9d # v2.9.0
+        uses: marocchino/sticky-pull-request-comment@daa4a82a0a3f6c162c02b83fa44b3ab83946f7cb # v2.9.0
         with:
           header: PR reviewer checklist
           only_create: true
