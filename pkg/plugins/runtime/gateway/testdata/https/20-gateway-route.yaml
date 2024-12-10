@@ -7,6 +7,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
+          trackRemaining: true
       connectTimeout: 10s
       edsClusterConfig:
         edsConfig:
@@ -29,6 +30,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
+          trackRemaining: true
       connectTimeout: 300s
       edsClusterConfig:
         edsConfig:
@@ -51,6 +53,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
+          trackRemaining: true
       connectTimeout: 20s
       edsClusterConfig:
         edsConfig:
