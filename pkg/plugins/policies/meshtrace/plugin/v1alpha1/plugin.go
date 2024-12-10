@@ -6,10 +6,15 @@ import (
 	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -54,6 +59,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return err
 	}
 	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 
@@ -135,6 +143,52 @@ func applyToOutbounds(
 	}
 
 	return nil
+}
+
+func applyToRealResources(
+	ctx xds_context.Context,
+	rules core_rules.SingleItemRules,
+	rs *xds.ResourceSet,
+	proxy *xds.Proxy,
+) error {
+	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
+		destination, err := getDestinationName(uri, ctx)
+		if err != nil {
+			return err
+		}
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				for _, listener := range resources {
+					if err := configureListener(rules, proxy.Dataplane, listener.Resource.(*envoy_listener.Listener), destination); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func getDestinationName(uri model.TypedResourceIdentifier, ctx xds_context.Context) (string, error) {
+	var destination string
+	switch uri.ResourceType {
+	case meshservice_api.MeshServiceType:
+		ms := ctx.Mesh.MeshServiceByIdentifier[uri.ResourceIdentifier]
+		port, ok := ms.FindPortByName(uri.SectionName)
+		if !ok {
+			return "", errors.Errorf("cannot find port for MeshService %s", ms.Meta.GetName())
+		}
+		destination = ms.DestinationName(port.Port)
+	case meshmultizoneservice_api.MeshMultiZoneServiceType:
+		mmzs := ctx.Mesh.MeshMultiZoneServiceByIdentifier[uri.ResourceIdentifier]
+		port, ok := mmzs.FindPortByName(uri.SectionName)
+		if !ok {
+			return "", errors.Errorf("cannot find port for MeshMultiZoneService %s", mmzs.Meta.GetName())
+		}
+		destination = mmzs.DestinationName(port.Port)
+	}
+	return destination, nil
 }
 
 func configureListener(rules core_rules.SingleItemRules, dataplane *core_mesh.DataplaneResource, listener *envoy_listener.Listener, destination string) error {
