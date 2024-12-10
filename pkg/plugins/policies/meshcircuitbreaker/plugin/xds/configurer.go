@@ -30,7 +30,8 @@ func configureCircuitBreakers(cluster *envoy_cluster.Cluster, conf *api.Connecti
 	}
 
 	defaultThreshold := &envoy_cluster.CircuitBreakers_Thresholds{
-		Priority: envoy_config_core_v3.RoutingPriority_DEFAULT,
+		Priority:       envoy_config_core_v3.RoutingPriority_DEFAULT,
+		TrackRemaining: true,
 	}
 
 	if conf.MaxConnectionPools != nil {

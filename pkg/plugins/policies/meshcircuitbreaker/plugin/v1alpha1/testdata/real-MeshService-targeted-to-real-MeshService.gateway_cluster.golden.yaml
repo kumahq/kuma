@@ -9,6 +9,7 @@ resources:
         maxPendingRequests: 3333
         maxRequests: 4444
         maxRetries: 5555
+        trackRemaining: true
     edsClusterConfig:
       edsConfig:
         ads: {}

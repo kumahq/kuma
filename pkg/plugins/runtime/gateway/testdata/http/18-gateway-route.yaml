@@ -7,6 +7,7 @@ Clusters:
           maxPendingRequests: 1024
           maxRequests: 1024
           maxRetries: 3
+          trackRemaining: true
       connectTimeout: 5s
       dnsLookupFamily: V4_ONLY
       loadAssignment:
