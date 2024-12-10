@@ -14,6 +14,13 @@
 * fix(meshtimeout): don't set default timeouts on inbound cluster and listener (backport of #12043) [#12049](https://github.com/kumahq/kuma/pull/12049) @kumahq
 
 
+## 2.6.14
+> Released on 2024/12/02
+
+* chore(deps): upgrade go from 1.22.8 to 1.22.9 [#12087](https://github.com/kumahq/kuma/pull/12087) @lukidzi
+* fix(kds): clone resource on update meta (backport of #10460) [#12121](https://github.com/kumahq/kuma/pull/12121) @kumahq
+
+
 ## 2.7.10
 > Released on 2024/11/28
 
