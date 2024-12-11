@@ -23,7 +23,7 @@ jobs:
       contents: read
       # golangci-lint-action
       checks: write
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
