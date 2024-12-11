@@ -52,7 +52,7 @@ func (c *tenancyCallbacks) OnStreamDeltaRequest(streamID int64, request *envoy_s
 	return nil
 }
 
-func (c *tenancyCallbacks) OnDeltaStreamClosed(streamID int64, node *envoy_core.Node) {
+func (c *tenancyCallbacks) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
 	c.Lock()
 	delete(c.streamToCtx, streamID)
 	c.Unlock()
