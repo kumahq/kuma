@@ -5,6 +5,7 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
@@ -21,7 +22,7 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 jobs:
   check:
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
@@ -90,7 +91,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: "Maybe set full matrix"
-        if: github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix')
         id: set-full-matrix-switches
         run: |
           echo 'ENABLED_GOARCHES=arm64 amd64' >> $GITHUB_ENV
@@ -213,7 +214,7 @@ jobs:
       - id: generate-matrix
         name: Generate matrix
         env:
-          RUN_FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+          RUN_FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
           BASE_MATRIX: |-
             {
               "test_e2e": {
