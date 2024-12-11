@@ -5,6 +5,7 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 concurrency:
   group: ${{github.workflow}}-${{ github.ref_name }} # group all runs by branch or tag
   cancel-in-progress: ${{ github.event_name == 'pull_request' }} # only cancel previous runs on PRs, we want each commit to build on branches
@@ -22,10 +23,10 @@ jobs:
       contents: read
       # golangci-lint-action
       checks: write
-    timeout-minutes: 15
+    timeout-minutes: 25
     runs-on: ubuntu-latest
     env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
