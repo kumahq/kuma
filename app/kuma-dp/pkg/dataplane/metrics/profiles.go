@@ -152,6 +152,16 @@ var basicProfile = []selectorFunction{
 		Match: "envoy_cluster_membership_total",
 	}),
 	// end of dashboards
+	// start of dns stats
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: "envoy_dns_filter",
+	}),
+	selectorToFilterFunction(v1alpha1.Selector{
+		Type:  v1alpha1.PrefixSelectorType,
+		Match: "envoy_dns_cares",
+	}),
+	// end of dns stats
 }
 
 var basicProfileLabels = []selectorFunction{

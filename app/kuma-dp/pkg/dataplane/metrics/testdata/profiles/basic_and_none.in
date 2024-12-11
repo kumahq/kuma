@@ -109,3 +109,18 @@ envoy_server_memory_heap_size{envoy_cluster_name="example"} 1
 
 # TYPE envoy_server_uptime counter
 envoy_server_uptime{envoy_cluster_name="example"} 1
+
+# TYPE envoy_dns_cares_not_found counter
+envoy_dns_cares_not_found{} 1
+
+# TYPE envoy_dns_cares_resolve_total counter
+envoy_dns_cares_resolve_total{} 1
+
+# TYPE envoy_dns_filter_srv_record_queries counter
+envoy_dns_filter_srv_record_queries{envoy_dns_filter_prefix="kuma_dns"} 1
+
+# TYPE envoy_dns_filter_unanswered_queries counter
+envoy_dns_filter_unanswered_queries{envoy_dns_filter_prefix="kuma_dns"} 1
+
+# TYPE envoy_dns_filter_unsupported_queries counter
+envoy_dns_filter_unsupported_queries{envoy_dns_filter_prefix="kuma_dns"} 1
