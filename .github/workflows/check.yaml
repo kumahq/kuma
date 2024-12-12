@@ -70,3 +70,5 @@ jobs:
           ' > commitlint.config.js
           npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
           echo "${{ env.TITLE }}" | commitlint --config commitlint.config.js
+      - name: Run tmate
+        uses: mxschmitt/action-tmate@v2
