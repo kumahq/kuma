@@ -10,7 +10,7 @@ COMMIT
 -N KUMA_MESH_INBOUND_REDIRECT
 -N KUMA_MESH_OUTBOUND_REDIRECT
 -A PREROUTING -p tcp -j KUMA_MESH_INBOUND
--I OUTPUT 1 -p udp --dport 53 -m owner --uid-owner 0 -j DOCKER_OUTPUT
+-I OUTPUT 1 -p udp --dport 53 -m owner --uid-owner 0 -j dnsJumpTargetPlaceholder
 -I OUTPUT 2 -p udp --dport 53 -j REDIRECT --to-ports 12345
 -A OUTPUT -p tcp -j KUMA_MESH_OUTBOUND
 -A KUMA_MESH_INBOUND -p tcp -j KUMA_MESH_INBOUND_REDIRECT
