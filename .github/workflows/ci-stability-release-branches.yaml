@@ -1,0 +1,108 @@
+name: ci-stability-release-branches
+
+on:
+  schedule:
+    - cron: "0 19 * * *" # 11:00 AM PST / 20:00 CET / 03:00 CST
+    - cron: "0 21 * * *" # 01:00 PM PST / 22:00 CET / 05:00 CST
+    - cron: "0 23 * * *" # 03:00 PM PST / 00:00 CET / 07:00 CST (next day CET)
+    - cron: "0 1 * * *"  # 05:00 PM PST / 02:00 CET / 09:00 CST (next day CET)
+  workflow_dispatch:
+    inputs:
+      release_branch:
+        description: The release branch to process
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ format('{0}-{1}', github.workflow, github.event_name) }}
+
+jobs:
+  fetch-release-branches:
+    runs-on: ubuntu-24.04
+    outputs:
+      branches: ${{ steps.generate-branches.outputs.branches }}
+    steps:
+      - name: Fetch release branches
+        id: generate-branches
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          # Fetch active branches from the repository
+          ACTIVE_BRANCHES=$(
+            gh api /repos/${{ github.repository }}/contents/active-branches.json \
+              --jq '.content | @base64d | rtrimstr("\n")'
+          )
+          
+          # Remove "master" from the branches list and compact the result
+          RELEASE_BRANCHES=$(echo "$ACTIVE_BRANCHES" | jq -c 'map(select(. != "master"))')
+
+          # Write "branches" to GITHUB_OUTPUT
+          echo "branches=$RELEASE_BRANCHES" >> $GITHUB_OUTPUT
+
+  validate-dispatch:
+    needs: fetch-release-branches
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    outputs:
+      branch: ${{ steps.validate-branch.outputs.branch }}
+    steps:
+      - id: validate-branch
+        env:
+          RELEASE_BRANCHES: ${{ needs.fetch-release-branches.outputs.branches }}
+          MANUAL_BRANCH: ${{ github.event.inputs.release_branch }}
+        run: |
+          if [ -z "$MANUAL_BRANCH" ]; then
+            echo "Error: No release_branch input provided."
+            exit 1
+          fi
+          
+          # Verify if the branch is in the list of active branches
+          if echo "$RELEASE_BRANCHES" | jq -e --arg branch "$MANUAL_BRANCH" '.[] | select(. == $branch)' > /dev/null; then
+            echo "branch=$MANUAL_BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "Error: The provided release branch ($MANUAL_BRANCH) is not in the list of active branches."
+            exit 1
+          fi
+
+  validate-schedule:
+    needs: fetch-release-branches
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    outputs:
+      branch: ${{ steps.validate-branch.outputs.branch }}
+    steps:
+      - id: validate-branch
+        env:
+          SCHEDULED_TIME: ${{ github.event.schedule }}
+          RELEASE_BRANCHES: ${{ needs.fetch-release-branches.outputs.branches }}
+        run: |
+          BRANCH=""
+          case "$SCHEDULED_TIME" in
+            "0 19 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[0]') ;;
+            "0 21 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[1]') ;;
+            "0 23 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[2]') ;;
+            "0 1 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[3]') ;;
+            *) echo "Unknown schedule trigger" && exit 1 ;;
+          esac
+
+          if [ -n "$BRANCH" ]; then
+            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          else
+            echo "No release branch to process"
+            exit 1
+          fi
+
+  trigger-workflow:
+    needs: [validate-dispatch, validate-schedule]
+    if: needs.validate-dispatch.result == 'success' || needs.validate-schedule.result == 'success'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - env:
+          RELEASE_BRANCH: ${{ needs.validate-dispatch.outputs.branch || needs.validate-schedule.outputs.branch }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run build-test-distribute --ref "$BRANCH"
