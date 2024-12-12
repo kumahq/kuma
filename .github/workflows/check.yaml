@@ -47,8 +47,6 @@ jobs:
         # for more info. We have "Default to PR title for squash merge commits" enabled.
         if: github.event.action != 'synchronize'
         # Inject as env variable to escape properly
-        env:
-          TITLE: ${{ github.event.pull_request.title }}
         run: |
           echo '
             module.exports = {
@@ -69,4 +67,4 @@ jobs:
             };
           ' > commitlint.config.js
           npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
-          echo "${{ env.TITLE }}" | commitlint --config commitlint.config.js
+          echo '${{ github.event.pull_request.title }}' | commitlint --config commitlint.config.js
