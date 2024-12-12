@@ -80,7 +80,7 @@ jobs:
       - name: "Run E2E tests"
         env:
           DOCKERHUB_PULL_CREDENTIAL: ${{ secrets.DOCKERHUB_PULL_CREDENTIAL }}
-          KUMA_DEBUG: ${{ runner.debug == '1' || vars.ENABLE_E2E_DEBUG_GLOBALLY == 'true' }}
+          KUMA_DEBUG: ${{ runner.debug == '1' }}
         run: |
           if [[ "${{ env.E2E_PARAM_K8S_VERSION }}" == "kindIpv6" ]]; then
             export IPV6=true
