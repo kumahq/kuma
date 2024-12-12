@@ -459,10 +459,6 @@ resources:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
           routeConfig:
             name: outbound:api-grpc
-            requestHeadersToAdd:
-            - header:
-                key: x-kuma-tags
-                value: '&kuma.io/service=gateway&'
             validateClusters: false
             virtualHosts:
             - domains:
