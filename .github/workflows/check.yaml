@@ -69,4 +69,4 @@ jobs:
           npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
 
           # Validate the PR title. Use the intermediate variable to safely handle the title.
-          echo "$TITLE" | commitlint --config commitlint.config.js
+          echo '${{ env.TITLE }}' | commitlint --config commitlint.config.js
