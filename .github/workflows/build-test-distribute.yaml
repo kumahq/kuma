@@ -51,158 +51,38 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
-        with:
-          go-version-file: go.mod
-          cache: false
-      - uses: golangci/golangci-lint-action@971e284b6050e8a5849b72094c50ab08da042db8 # v6.1.1
-        with:
-          args: --fix=false --verbose
-          version: v1.61.0
-      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-        with:
-          path: |
-            ${{ env.CI_TOOLS_DIR }}
-          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-devtools
-      - run: |
-          make dev/tools
-      - run: |
-          make clean
-      - run: |
-          make check
-      - name: "Set metadata for downstream jobs"
-        id: metadata
+      - name: Check PR title
+        # Check PR title against the Conventional Commits format using commitlint.
+        # For more details, see: https://www.conventionalcommits.org/en/v1.0.0/
+        # This ensures the PR title matches the conventonal commit title format
+        # as it will be usead as a commit name after squashing.
+        # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge.
+        env:
+          # Use an intermediate environment variable to safely handle the PR title
+          # and avoid potential injection risks. See:
+          # https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
+          TITLE: ${{ github.event.pull_request.title }}
         run: |
-          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
-          echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
-          echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
-          echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
-      # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
-      # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
-      # Running the SCA step before "make check" might seem like a solution, but it
-      # generates report files (e.g., sbom.spdx.json, cve-report.json) in the working
-      # directory. These files cause "make check" to fail, as it checks if no files
-      # in the repository were modified, deleted, or added after its process.
-      # It doesn't recognize that the SBOM and CVE report files were added earlier
-      # and should be ignored. Since we currently can't change the working directory
-      # for the SCA step, it must run after "make check." Instead, we clean ./build
-      # after "make check" to exclude tool binaries from the SBOM.
-      - run: |
-          make clean/build
-      - name: "Generate SBOM and CVE report (Software Composition Analysis)"
-        id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
-        env:
-          SYFT_SOURCE_NAME: ${{ github.repository }}
-          SYFT_SOURCE_VERSION: ${{ steps.metadata.outputs.version }}
-        with:
-          dir: .
-          config: .syft.yaml
-          upload-sbom-release-assets: true
-  test:
-    permissions:
-      contents: read
-    needs: ["check"]
-    uses: ./.github/workflows/_test.yaml
-    with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
-    secrets: inherit
-  build_publish:
-    permissions:
-      contents: read
-      id-token: write
-    needs: ["check", "test"]
-    uses: ./.github/workflows/_build_publish.yaml
-    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
-    with:
-      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
-      IMAGE_ARTIFACT_NAME: "image_artifacts"
-      BINARY_ARTIFACT_NAME: "binary_artifacts"
-      IMAGES: ${{ needs.check.outputs.IMAGES }}
-      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
-      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
-      VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
-    secrets: inherit
-  provenance:
-    needs: ["check", "build_publish"]
-    if: ${{ github.ref_type == 'tag' }}
-    uses: ./.github/workflows/_provenance.yaml
-    secrets: inherit
-    permissions:
-      contents: write
-      id-token: write # For using token to sign images
-      actions: read # For getting workflow run info to build provenance
-      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
-    with:
-      BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
-      IMAGES: ${{ needs.check.outputs.IMAGES }}
-      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
-      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
-      IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
-  distributions:
-    needs: ["build_publish", "check", "test", "provenance"]
-    timeout-minutes: 10
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read # For getting workflow run info
-    env:
-      SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
-      SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
-    steps:
-      - name: "Halt due to previous failures"
-        run: |-
-          echo "results: ${{ toJson(needs.*.result) }}"
-          # for some reason, GH Action will always trigger a downstream job even if there are errors in an dependent job
-          # so we manually check it here. An example could be found here: https://github.com/kumahq/kuma/actions/runs/7044980149
-          [[ ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }} == "true" ]] && exit 1
-          echo "All dependent jobs succeeded"
-      - name: "Download all SBOM assets"
-        id: collect_sbom
-        if: ${{ needs.build_publish.result == 'success' }}
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
-          pattern: "*sbom.{cyclonedx,spdx}.json"
-          merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: "Download binary artifact provenance"
-        if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
-        id: collect_provenance
-        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
-        with:
-          path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
-          pattern: ${{ github.event.repository.name }}.intoto.jsonl
-          merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: "Generate security assets TAR"
-        if: ${{ needs.build_publish.result == 'success' }}
-        id: security_assets_metadata
-        run: |
-          cd ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
-          find . -maxdepth 1 -type f \( -name '*sbom.*.json' -o -name '*.intoto.jsonl' \) -print | tar -cvzf ${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz -T -
-          ls -alR .
-        # Publish aggregated zip file of SBOMs and/or Binary Provenance to artifact regstry
-      - name: Push security assets to cloudsmith
-        id: push_security_assets
-        if: ${{ needs.provenance.result == 'success' || needs.build_publish.result == 'success' }}
-        uses: cloudsmith-io/action@7af394e0f8add4867bce109385962dafecad1b8d # v0.6.14
-        with:
-          api-key: ${{ secrets.CLOUDSMITH_API_KEY }}
-          command: "push"
-          format: "raw"
-          owner: "kong"
-          repo: "${{ needs.check.outputs.CLOUDSMITH_REPOSITORY }}"
-          version: "${{ needs.check.outputs.VERSION_NAME }}"
-          file: "${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}/${{ env.SECURITY_ASSETS_PACKAGE_NAME }}.tar.gz"
-          name: "${{ env.SECURITY_ASSETS_PACKAGE_NAME }}"
-          summary: "SLSA security artifacts for ${{ github.repository }}"
-          description: "SBOM and Binary artifact Provenance for ${{ github.repository }}"
-          use-executable: "false"
+          # Create a temporary commitlint configuration file
+          cat <<EOF > commitlint.config.js
+          module.exports = {
+            extends: ["@commitlint/config-conventional"],
+            helpUrl: "https://github.com/kumahq/kuma/blob/master/CONTRIBUTING.md#commit-message-format",
+            rules: {
+              "body-max-line-length": [0],
+              "footer-max-line-length": [0],
+              "footer-leading-blank": [0],
+              "header-max-length": [0],
+              "scope-enum": [2, "never", [
+                "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf", "policies", "tests"
+              ]],
+              "scope-empty": [2, "never"]
+            },
+          };
+          EOF
+
+          # Install commitlint CLI and configuration
+          npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
+
+          # Validate the PR title. Use the intermediate variable to safely handle the title.
+          echo "$TITLE" | commitlint --config commitlint.config.js
