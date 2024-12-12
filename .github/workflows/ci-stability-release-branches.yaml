@@ -105,4 +105,4 @@ jobs:
           RELEASE_BRANCH: ${{ needs.validate-dispatch.outputs.branch || needs.validate-schedule.outputs.branch }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run build-test-distribute --ref "$BRANCH"
+          gh workflow run build-test-distribute --ref "$RELEASE_BRANCH"
