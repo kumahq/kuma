@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       release_branch:
-        description: The release branch to process
+        description: The name of the release branch to process, such as "release-2.9"
         required: true
 
 permissions:
@@ -19,13 +19,12 @@ concurrency:
   group: ${{ format('{0}-{1}', github.workflow, github.event_name) }}
 
 jobs:
-  fetch-release-branches:
+  fetch-active-branches:
     runs-on: ubuntu-24.04
     outputs:
-      branches: ${{ steps.generate-branches.outputs.branches }}
+      branches: ${{ steps.active-branches.outputs.branches }}
     steps:
-      - name: Fetch release branches
-        id: generate-branches
+      - id: active-branches
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
@@ -41,8 +40,8 @@ jobs:
           # Write "branches" to GITHUB_OUTPUT
           echo "branches=$RELEASE_BRANCHES" >> $GITHUB_OUTPUT
 
-  validate-dispatch:
-    needs: fetch-release-branches
+  validate-dispatch-branch:
+    needs: fetch-active-branches
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-24.04
     outputs:
@@ -50,7 +49,7 @@ jobs:
     steps:
       - id: validate-branch
         env:
-          RELEASE_BRANCHES: ${{ needs.fetch-release-branches.outputs.branches }}
+          RELEASE_BRANCHES: ${{ needs.fetch-active-branches.outputs.branches }}
           MANUAL_BRANCH: ${{ github.event.inputs.release_branch }}
         run: |
           if [ -z "$MANUAL_BRANCH" ]; then
@@ -66,8 +65,8 @@ jobs:
             exit 1
           fi
 
-  validate-schedule:
-    needs: fetch-release-branches
+  validate-schedule-branch:
+    needs: fetch-active-branches
     if: github.event_name == 'schedule'
     runs-on: ubuntu-24.04
     outputs:
@@ -76,7 +75,7 @@ jobs:
       - id: validate-branch
         env:
           SCHEDULED_TIME: ${{ github.event.schedule }}
-          RELEASE_BRANCHES: ${{ needs.fetch-release-branches.outputs.branches }}
+          RELEASE_BRANCHES: ${{ needs.fetch-active-branches.outputs.branches }}
         run: |
           BRANCH=""
           case "$SCHEDULED_TIME" in
@@ -95,14 +94,14 @@ jobs:
           fi
 
   trigger-workflow:
-    needs: [validate-dispatch, validate-schedule]
-    if: needs.validate-dispatch.result == 'success' || needs.validate-schedule.result == 'success'
+    needs: [validate-dispatch-branch, validate-schedule-branch]
+    if: needs.validate-dispatch-branch.result == 'success' || needs.validate-schedule-branch.result == 'success'
     runs-on: ubuntu-24.04
     permissions:
       actions: write
     steps:
       - env:
-          RELEASE_BRANCH: ${{ needs.validate-dispatch.outputs.branch || needs.validate-schedule.outputs.branch }}
+          RELEASE_BRANCH: ${{ needs.validate-dispatch-branch.outputs.branch || needs.validate-schedule-branch.outputs.branch }}
           GITHUB_TOKEN: ${{ github.token }}
         run: |
           gh workflow run build-test-distribute --ref "$RELEASE_BRANCH"
