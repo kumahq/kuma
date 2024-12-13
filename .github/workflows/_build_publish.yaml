@@ -89,7 +89,7 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
