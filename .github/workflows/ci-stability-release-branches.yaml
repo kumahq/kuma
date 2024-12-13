@@ -2,106 +2,272 @@ name: ci-stability-release-branches
 
 on:
   schedule:
-    - cron: "0 19 * * *" # 11:00 AM PST / 20:00 CET / 03:00 CST
-    - cron: "0 21 * * *" # 01:00 PM PST / 22:00 CET / 05:00 CST
-    - cron: "0 23 * * *" # 03:00 PM PST / 00:00 CET / 07:00 CST (next day CET)
-    - cron: "0 1 * * *"  # 05:00 PM PST / 02:00 CET / 09:00 CST (next day CET)
+    - cron: "*/5 19-0 * * *" # Every 5 minutes between 19:00 and 00:55 UTC
+    - cron: "5 1 * * *"      # Cleanup at 1:05 UTC
   workflow_dispatch:
     inputs:
-      release_branch:
-        description: The name of the release branch to process, such as "release-2.9"
-        required: true
+      force_run:
+        description: "Force run the workflow outside the schedule"
+        required: false
+        type: boolean
 
 permissions:
   contents: read
 
 concurrency:
-  group: ${{ format('{0}-{1}', github.workflow, github.event_name) }}
+  group: ${{ github.workflow }}
+
+env:
+  REPOSITORY_VARIABLE_NAME: TEMP_CI_STABILITY_BRANCHES_TO_PROCESS
 
 jobs:
-  fetch-active-branches:
+  should-skip:
     runs-on: ubuntu-24.04
     outputs:
-      branches: ${{ steps.active-branches.outputs.branches }}
+      skip_workflow: ${{ steps.set-skip-workflow.outputs.skip_workflow }}
+    permissions:
+      actions: read # required to check the status of workflow runs
     steps:
-      - id: active-branches
+      - id: check-cleanup-run
+        env:
+          IS_CLEANUP_RUN: ${{ github.event.schedule == '5 1 * * *' }}
+        run: |
+          if [ "$IS_CLEANUP_RUN" == "true" ]; then
+            echo "Cleanup run. Skipping other jobs."
+            echo "skip_workflow=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "skip_workflow=false" >> $GITHUB_OUTPUT
+
+      - id: check-force-run
+        if: steps.check-cleanup-run.outputs.skip_workflow == 'false'
+        env:
+          FORCE_RUN_TRIGGERED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_run == 'true' }}
+        run: |
+          if [ "$FORCE_RUN_TRIGGERED" == "true" ]; then
+            echo "Force run triggered via workflow_dispatch. Proceeding with the workflow."
+            echo "skip_workflow=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "skip_workflow=false" >> $GITHUB_OUTPUT
+
+      - id: check-existing-runs
+        if: steps.check-cleanup-run.outputs.skip_workflow == 'false' && steps.check-force-run.outputs.skip_workflow == 'false'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          RUNNING=$(gh run list \
+            --workflow ci-stability-release-branches.yaml \
+            --json status \
+            --jq '[
+              .[] | select(
+                .status | IN(
+                  "completed", 
+                  "failure", 
+                  "cancelled", 
+                  "timed_out", 
+                  "neutral", 
+                  "skipped"
+                ) | not
+              )
+            ] | length' 2>&1)
+
+          if [[ "$RUNNING" =~ "could not find any workflows" || "$RUNNING" =~ ^0$ ]]; then
+            echo "skip_workflow=false" >> $GITHUB_OUTPUT
+          elif [[ "$RUNNING" =~ ^[0-9]+$ && "$RUNNING" -gt 0 ]]; then
+            echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
+            echo "> There are existing workflows in progress" >> $GITHUB_STEP_SUMMARY
+            echo "skip_workflow=true" >> $GITHUB_OUTPUT
+          else
+            echo "> [!CAUTION]" >> $GITHUB_STEP_SUMMARY
+            echo "> Failed to list the workflow runs: $RUNNING" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - id: set-skip-workflow
+        run: |
+          if [ "${{ steps.check-cleanup-run.outputs.skip_workflow }}" == "true" ] || \
+             [ "${{ steps.check-force-run.outputs.skip_workflow }}" == "true" ] || \
+             [ "${{ steps.check-existing-runs.outputs.skip_workflow }}" == "true" ]; then
+            echo "skip_workflow=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip_workflow=false" >> $GITHUB_OUTPUT
+          fi
+
+  determine-release-branches:
+    if: needs.should-skip.outputs.skip_workflow == 'false'
+    needs: should-skip
+    runs-on: ubuntu-24.04
+    steps:
+      - id: fetch-branches
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          # Fetch active branches from the repository
-          ACTIVE_BRANCHES=$(
+          ACTIVE_RELEASE_BRANCHES=$(
             gh api /repos/${{ github.repository }}/contents/active-branches.json \
-              --jq '.content | @base64d | rtrimstr("\n")'
+              --jq '.content | @base64d | fromjson | map(select(. != "master")) | @json'
           )
-          
-          # Remove "master" from the branches list and compact the result
-          RELEASE_BRANCHES=$(echo "$ACTIVE_BRANCHES" | jq -c 'map(select(. != "master"))')
+          echo "branches=$ACTIVE_RELEASE_BRANCHES" >> $GITHUB_OUTPUT
 
-          # Write "branches" to GITHUB_OUTPUT
-          echo "branches=$RELEASE_BRANCHES" >> $GITHUB_OUTPUT
-
-  validate-dispatch-branch:
-    needs: fetch-active-branches
-    if: github.event_name == 'workflow_dispatch'
+  process-next-release-branch:
+    if: needs.should-skip.outputs.skip_workflow == 'false'
+    needs: [should-skip, determine-release-branches]
     runs-on: ubuntu-24.04
-    outputs:
-      branch: ${{ steps.validate-branch.outputs.branch }}
+    permissions:
+      actions: write # required to update repository variables
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      ACTIVE_RELEASE_BRANCHES: ${{ needs.determine-release-branches.outputs.branches }}
     steps:
-      - id: validate-branch
-        env:
-          RELEASE_BRANCHES: ${{ needs.fetch-active-branches.outputs.branches }}
-          MANUAL_BRANCH: ${{ github.event.inputs.release_branch }}
+      - id: fetch-stored-branches
         run: |
-          if [ -z "$MANUAL_BRANCH" ]; then
-            echo "Error: No release_branch input provided."
-            exit 1
-          fi
-          
-          # Verify if the branch is in the list of active branches
-          if echo "$RELEASE_BRANCHES" | jq -e --arg branch "$MANUAL_BRANCH" '.[] | select(. == $branch)' > /dev/null; then
-            echo "branch=$MANUAL_BRANCH" >> $GITHUB_OUTPUT
-          else
-            echo "Error: The provided release branch ($MANUAL_BRANCH) is not in the list of active branches."
+          BRANCHES=$(gh variable get "$REPOSITORY_VARIABLE_NAME" \
+            --json value \
+            --jq '.value' 2>&1)
+
+          if [[ $? -ne 0 ]]; then
+            echo "> [!CAUTION]" >> $GITHUB_STEP_SUMMARY
+            echo "> Failed to get the repository variable ${{ env.REPOSITORY_VARIABLE_NAME }}: $BRANCHES" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
 
-  validate-schedule-branch:
-    needs: fetch-active-branches
-    if: github.event_name == 'schedule'
-    runs-on: ubuntu-24.04
-    outputs:
-      branch: ${{ steps.validate-branch.outputs.branch }}
-    steps:
-      - id: validate-branch
-        env:
-          SCHEDULED_TIME: ${{ github.event.schedule }}
-          RELEASE_BRANCHES: ${{ needs.fetch-active-branches.outputs.branches }}
-        run: |
-          BRANCH=""
-          case "$SCHEDULED_TIME" in
-            "0 19 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[0]') ;;
-            "0 21 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[1]') ;;
-            "0 23 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[2]') ;;
-            "0 1 * * *") BRANCH=$(echo "$RELEASE_BRANCHES" | jq -r '.[3]') ;;
-            *) echo "Unknown schedule trigger" && exit 1 ;;
-          esac
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
 
-          if [ -n "$BRANCH" ]; then
-            echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-          else
+      - id: validate-branches
+        env:
+          BRANCHES: ${{ steps.fetch-stored-branches.outputs.branches }}
+        run: |
+          IS_INVALID=false
+
+          if [ -z "$BRANCHES" ] || [ "$BRANCHES" == "null" ] || [ "$BRANCHES" == '""' ]; then
+            IS_INVALID=true
+          fi
+
+          if ! $IS_INVALID && ! echo "$BRANCHES" | jq -e '.' >/dev/null 2>&1; then
+            IS_INVALID=true
+          fi
+
+          if ! $IS_INVALID && [ "$(echo "$BRANCHES" | jq 'length')" -eq 0 ]; then
+            IS_INVALID=true
+          fi
+
+          if ! $IS_INVALID && echo "$BRANCHES" | jq -e 'type != "array"' >/dev/null 2>&1; then
+            IS_INVALID=true
+          fi
+
+          if $IS_INVALID; then
+            BRANCHES="$ACTIVE_RELEASE_BRANCHES"
+          fi
+
+          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
+
+      - id: extract-branch
+        env:
+          BRANCHES: ${{ steps.validate-branches.outputs.branches }}
+        run: |
+          BRANCH=$(echo "$BRANCHES" | jq -r '.[0]')
+
+          if [ -z "$BRANCH" ]; then
             echo "No release branch to process"
             exit 1
           fi
 
+          REMAINING_BRANCHES=$(echo "$BRANCHES" | jq -c '.[1:]')
+
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "remaining-branches=$REMAINING_BRANCHES" >> $GITHUB_OUTPUT
+
+      - id: update-repository-variable
+        env:
+          UPDATED_BRANCHES: ${{ steps.extract-branch.outputs.remaining-branches }}
+        run: |
+          if [ "$(echo "$UPDATED_BRANCHES" | jq 'length')" -eq 0 ]; then
+            UPDATED_BRANCHES="$ACTIVE_RELEASE_BRANCHES"
+          fi
+
+          gh variable set "$REPOSITORY_VARIABLE_NAME" --body "$UPDATED_BRANCHES"
+
   trigger-workflow:
-    needs: [validate-dispatch-branch, validate-schedule-branch]
-    if: needs.validate-dispatch-branch.result == 'success' || needs.validate-schedule-branch.result == 'success'
+    if: needs.should-skip.outputs.skip_workflow == 'false'
+    needs: process-next-release-branch
     runs-on: ubuntu-24.04
     permissions:
-      actions: write
+      actions: write # required to trigger workflows
+    env:
+      BRANCH: ${{ needs.process-next-release-branch.outputs.branch }}
+      GITHUB_TOKEN: ${{ github.token }}
+    outputs:
+      run_id: ${{ steps.get-run-id.outputs.run_id }}
     steps:
-      - env:
-          RELEASE_BRANCH: ${{ needs.validate-dispatch-branch.outputs.branch || needs.validate-schedule-branch.outputs.branch }}
-          GITHUB_TOKEN: ${{ github.token }}
+      - id: trigger
         run: |
-          gh workflow run build-test-distribute --ref "$RELEASE_BRANCH"
+          gh workflow run build-test-distribute.yaml --ref "$BRANCH"
+
+      - id: get-run-id
+        run: |
+          RUN_ID=""
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+
+          until [[ -n "$RUN_ID" || "$RETRY_COUNT" -ge "$MAX_RETRIES" ]]; do
+            RUN_ID=$(gh run list \
+              --workflow build-test-distribute.yaml \
+              --branch "$BRANCH" \
+              --json databaseId \
+              --jq '.[0].databaseId' || echo "")
+
+            if [[ -z "$RUN_ID" ]]; then
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              sleep 3
+            fi
+          done
+
+          if [[ -z "$RUN_ID" ]]; then
+            echo "Unable to retrieve RUN_ID after $MAX_RETRIES attempts."
+            exit 1
+          fi
+
+          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+
+  monitor-triggered-workflow:
+    if: needs.should-skip.outputs.skip_workflow == 'false'
+    needs: trigger-workflow
+    runs-on: ubuntu-24.04
+    timeout-minutes: 115
+    permissions:
+      actions: read # required to monitor workflow runs
+      checks: read # required to fetch run statuses
+    env:
+      RUN_ID: ${{ needs.trigger-workflow.outputs.run_id }}
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - id: monitor
+        run: |
+          gh run watch "$RUN_ID"
+
+  re-trigger-current-workflow:
+    if: needs.should-skip.outputs.skip_workflow == 'false'
+    needs: monitor-triggered-workflow
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write # required to re-trigger workflows
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - id: re-trigger
+        run: |
+          if [ "$(date -u +%H)" -lt "1" ]; then
+            gh workflow run ci-stability-release-branches.yaml
+          fi
+
+  cleanup:
+    if: github.event.schedule == '5 1 * * *'
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write # required to delete repository variables
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - id: cleanup
+        run: |
+          gh variable delete "$REPOSITORY_VARIABLE_NAME"
