@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -27,6 +28,7 @@ func newEchoHTTPCmd() *cobra.Command {
 		port     uint32
 		instance string
 		tls      bool
+		tls13    bool
 		crtFile  string
 		keyFile  string
 		probes   bool
@@ -111,6 +113,12 @@ func newEchoHTTPCmd() *cobra.Command {
 				Addr:              net.JoinHostPort(args.ip, strconv.Itoa(int(args.port))),
 				ReadHeaderTimeout: time.Second,
 			}
+			if args.tls && args.tls13 {
+				srv.TLSConfig = &tls.Config{
+					MinVersion: tls.VersionTLS13,
+					MaxVersion: tls.VersionTLS13,
+				}
+			}
 			if args.tls {
 				return srv.ListenAndServeTLS(args.crtFile, args.keyFile)
 			}
@@ -125,6 +133,7 @@ func newEchoHTTPCmd() *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVar(&args.instance, "instance", r, "will be included in response")
 	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "run the server with TLS enabled")
+	cmd.PersistentFlags().BoolVar(&args.tls13, "tls13", false, "run the server with TLS 1.3, requires enabled tls")
 	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "path to the server's TLS cert")
 	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
 	cmd.PersistentFlags().BoolVar(&args.probes, "probes", false, "generate readiness and liveness endpoints")

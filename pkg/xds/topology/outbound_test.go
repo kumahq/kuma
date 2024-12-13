@@ -3,6 +3,7 @@ package topology_test
 import (
 	"context"
 
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -213,7 +214,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items,
+				context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -309,6 +310,7 @@ var _ = Describe("TrafficRoute", func() {
 					meshServiceByName[core_model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := BuildEdsEndpointMap(
+					context.Background(),
 					given.mesh,
 					"zone-1",
 					meshServiceByName,
@@ -318,6 +320,7 @@ var _ = Describe("TrafficRoute", func() {
 					given.zoneIngresses,
 					given.zoneEgresses,
 					given.externalServices,
+					dataSourceLoader,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
@@ -1433,8 +1436,11 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolTCP,
-								TLSEnabled: false,
+								Protocol:                 core_mesh.ProtocolTCP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								SkipHostnameVerification: true,
+								SANs:                     []core_xds.SAN{},
 								OwnerResource: &core_model.TypedResourceIdentifier{
 									ResourceIdentifier: core_model.ResourceIdentifier{
 										Name: "another-mes",
@@ -1452,8 +1458,27 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolHTTP,
-								TLSEnabled: false,
+								Protocol:                 core_mesh.ProtocolHTTP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								CaCert:                   []byte("ca"),
+								ClientCert:               []byte("cert"),
+								ClientKey:                []byte("key"),
+								AllowRenegotiation:       true,
+								SkipHostnameVerification: false,
+								ServerName:               "example.com",
+								SANs: []core_xds.SAN{
+									{
+										MatchType: core_xds.SANMatchPrefix,
+										Value:     "test.com",
+									},
+									{
+										MatchType: core_xds.SANMatchExact,
+										Value:     "test.com",
+									},
+								},
+								MinTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_2),
+								MaxTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_3),
 								OwnerResource: &core_model.TypedResourceIdentifier{
 									ResourceIdentifier: core_model.ResourceIdentifier{
 										Name: "example-mes",
