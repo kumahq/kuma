@@ -85,10 +85,6 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-<<<<<<< HEAD
-=======
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
->>>>>>> ca2f6cf35 (test(e2e): reenable amd64 self-hosted runners (#11937))
     secrets: inherit
   build_publish:
     permissions:
