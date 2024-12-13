@@ -382,7 +382,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 154c47a95fc93687dd1e825cea7f843d0fe8c450f82014d27cd7eb1a49f3bd35
-        checksum/tls-secrets: f0d59ac1c30adfd19564af3b7c6a0c7b9f3a8a3cfeccd4e54198e8ad4f3d77e3
+        checksum/tls-secrets: 6b1a182ce28e995a316ac917bcf4eef0d4be1ee12e9d858082941ff5ce1f8b24
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -872,28 +872,4 @@ webhooks:
           - DELETE
         resources:
           - secrets
-    sideEffects: None
-  - name: gateway.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma
-        name: kuma-ctrl-plane
-        path: /validate-gatewayclass
-    rules:
-      - apiGroups:
-          - "gateway.networking.k8s.io"
-        apiVersions:
-          - v1beta1
-        operations:
-          - CREATE
-        resources:
-          - gatewayclasses
     sideEffects: None
