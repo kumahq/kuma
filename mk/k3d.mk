@@ -1,10 +1,6 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
-<<<<<<< HEAD
 K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
-=======
-K3D_VERSION ?= $(shell $(TOP)/mk/dependencies/k3d.sh - get-version)
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
@@ -59,11 +55,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 
 ifeq ($(K3D_NETWORK_CNI),calico)
 	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
-<<<<<<< HEAD
-		--k3s-arg '--flannel-backend=none@server:*'
-=======
 		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 endif
 
 ifdef CI
@@ -120,14 +112,8 @@ $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
 
 .PHONY: k3d/start
-<<<<<<< HEAD
 k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
-=======
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
-	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
-
->>>>>>> 529694bad (ci(k8s): download calico manifests as needed (#11851))
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
