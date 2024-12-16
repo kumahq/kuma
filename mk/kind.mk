@@ -27,8 +27,21 @@ CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
 
+DOCKERHUB_PULL_CREDENTIAL ?=
+.PHONY: kind/setup-docker-credentials
+kind/setup-docker-credentials:
+	@mkdir -p /tmp/.kuma-dev ; \
+	echo '{"auths":{}}' > /tmp/.kuma-dev/kind-config.json ; \
+	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
+		echo "{\"auths\":{\"https://index.docker.io/v1/\":{\"auth\":\"$$(echo -n "$(DOCKERHUB_PULL_CREDENTIAL)" | base64)\"}}}" > /tmp/.kuma-dev/kind-config.json ; \
+	fi
+
+.PHONY: kind/cleanup-docker-credentials
+kind/cleanup-docker-credentials:
+	@rm -f /tmp/.kuma-dev/kind-config.json
+
 .PHONY: kind/start
-kind/start: ${KUBECONFIG_DIR}
+kind/start: ${KUBECONFIG_DIR} kind/setup-docker-credentials
 	$(KIND) get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		($(KIND) create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
@@ -57,7 +70,7 @@ kind/wait:
     done
 
 .PHONY: kind/stop
-kind/stop:
+kind/stop: kind/cleanup-docker-credentials
 	@$(KIND) delete cluster --name $(KIND_CLUSTER_NAME)
 	@rm -f $(KUBECONFIG_DIR)/$(KIND_KUBECONFIG)
 
