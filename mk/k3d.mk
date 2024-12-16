@@ -41,6 +41,7 @@ KUMA_NAMESPACE ?= kuma-system
 PORT_PREFIX := $$(($(patsubst 300-%,300+%-1,$(KIND_CLUSTER_NAME:kuma%=300%))))
 
 K3D_NETWORK_CNI ?= flannel
+K3D_REGISTRY_FILE ?=
 K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--k3s-arg '--disable=traefik@server:0' \
 	--k3s-arg '--disable=metrics-server@server:0' \
@@ -49,6 +50,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
     --volume '$(subst @,\@,$(TOP)/$(KUMA_DIR))/test/framework/deployments:/tmp/deployments@server:0' \
 	--network kind \
 	--port "$(PORT_PREFIX)80-$(PORT_PREFIX)99:30080-30099@server:0" \
+	--registry-config "/tmp/.kuma-dev/k3d-registry.yaml" \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
@@ -88,8 +90,23 @@ $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
 		-o $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml \
 		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
 
+DOCKERHUB_PULL_CREDENTIAL ?=
+.PHONY: k3d/setup-docker-credentials
+k3d/setup-docker-credentials:
+	@mkdir -p /tmp/.kuma-dev ; \
+	echo '{"configs": {}}' > /tmp/.kuma-dev/k3d-registry.yaml ; \
+	if [[ "$(DOCKERHUB_PULL_CREDENTIAL)" != "" ]]; then \
+  		DOCKER_USER=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 1); \
+  		DOCKER_PWD=$$(echo "$(DOCKERHUB_PULL_CREDENTIAL)" | cut -d ':' -f 2); \
+  		echo "{\"configs\": {\"registry-1.docker.io\": {\"auth\": {\"username\": \"$${DOCKER_USER}\",\"password\":\"$${DOCKER_PWD}\"}}}}" > /tmp/.kuma-dev/k3d-registry.yaml ; \
+  	fi
+
+.PHONY: k3d/cleanup-docker-credentials
+k3d/cleanup-docker-credentials:
+	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
+
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create \
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
@@ -136,7 +153,7 @@ k3d/wait:
     done
 
 .PHONY: k3d/stop
-k3d/stop:
+k3d/stop: k3d/cleanup-docker-credentials
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(K3D_BIN) cluster delete "$(KIND_CLUSTER_NAME)"
 
 .PHONY: k3d/stop/all
