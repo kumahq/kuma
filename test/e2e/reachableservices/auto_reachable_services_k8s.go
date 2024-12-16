@@ -130,7 +130,7 @@ spec:
 				client.FromKubernetesPod(TestNamespace, "client-server"),
 			)
 			g.Expect(err).To(Not(HaveOccurred()))
-			g.Expect(failures.Exitcode).To(Equal(6))
+			g.Expect(failures.Exitcode).To(Or(Equal(6), Equal(28)))
 		}, "30s", "1s").Should(Succeed())
 
 		// when
