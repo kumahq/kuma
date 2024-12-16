@@ -6,12 +6,7 @@ on:
         type: string
       runner:
         type: string
-<<<<<<< HEAD:.github/workflows/e2e.yaml
-        required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
-=======
         required: true
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945)):.github/workflows/_e2e.yaml
 permissions:
   contents: read
 env:
@@ -24,15 +19,10 @@ env:
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
-<<<<<<< HEAD:.github/workflows/e2e.yaml
-    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
-    if: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] != '' }}
-=======
     timeout-minutes: 60
     # can't use env vars here
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945)):.github/workflows/_e2e.yaml
     strategy:
       fail-fast: false
       matrix:
@@ -115,8 +105,6 @@ jobs:
             export GINKGO_E2E_LABEL_FILTERS="job-${{ matrix.parallelRunnerId }}"
           fi
           env
-<<<<<<< HEAD:.github/workflows/e2e.yaml
-=======
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
             export KUMA_DEFAULT_RETRIES=60
           fi
@@ -135,7 +123,6 @@ jobs:
             trap "on_exit" EXIT
           fi
           
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945)):.github/workflows/_e2e.yaml
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else
