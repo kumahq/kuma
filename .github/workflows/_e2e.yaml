@@ -20,7 +20,6 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-    # can't use env vars here
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
     strategy:
@@ -73,7 +72,6 @@ jobs:
           {
             "ipv6": true,
             "fixed-cidr-v6": "2001:db8:1::/64",
-            "dns": ["8.8.8.8"],
             "dns-search": ["."]
           }
           EOF
