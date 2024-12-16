@@ -129,38 +129,17 @@ jobs:
         with:
           retries: '5'
           script: |
-            const interval = 360_000; // Check every 5 minutes
+            const interval = 120_000; // Check every 2 minutes
 
             while (true) {
-              const response = await github.rest.actions.listJobsForWorkflowRun({
+              const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
                 ...context.repo,
                 run_id: process.env.RUN_ID,
               });
               
-              console.log(JSON.stringify(response, null, 2))
-              
-              const { data: { jobs } } = response;
-              
-              const jobStatuses = jobs.map(job => {
-                const finishedSteps = job.steps.filter(s => s.conclusion).length;
-                const totalSteps = job.steps.length;
-                
-                return {
-                  Job: job.name,
-                  Status: job.status,
-                  Steps: `${finishedSteps}/${totalSteps}`,
-                  Conclusion: job.conclusion || 'in_progress',
-                };
-              });
-              
-              if (jobs.length) {
-                // Log current status in console
-                console.table(jobStatuses);
-              } else {
-                console.warn('No jobs in workflow run')
-              }
-              
-              if (jobs.length && jobs.every(job => job.conclusion !== null)) {
+              if (!jobs.length) {
+                console.warn('No jobs in run, which suggest that run is in pending or waiting state')
+              } else if (jobs.every(job => job.conclusion !== null)) {
                 console.log('All jobs completed');
                 
                 // Prepare table data for summary
@@ -182,8 +161,23 @@ jobs:
                 return core.summary
                   .addTable([headers, ...rows])
                   .write();
+              } else {
+                // Log jobs in progress
+                console.table(jobs
+                  .filter(job => job.status !== 'completed')
+                  .map(job => {
+                    const finishedSteps = job.steps.filter(s => s.conclusion).length;
+                    const totalSteps = job.steps.length;
+                    
+                    return {
+                      Job: job.name,
+                      Status: job.status,
+                      Steps: `${finishedSteps}/${totalSteps}`,
+                      Conclusion: job.conclusion || 'in_progress',
+                    };
+                  }));  
               }
-            
+              
               // Wait before checking again
               const nextCheck = new Date(Date.now() + interval).toLocaleTimeString();
               console.log(`Next check will be in ${interval / 1_000} seconds, at: ${nextCheck} (UTC)`);
