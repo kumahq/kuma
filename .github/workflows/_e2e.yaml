@@ -20,10 +20,6 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-<<<<<<< HEAD
-=======
-    # can't use env vars here
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
     strategy:
