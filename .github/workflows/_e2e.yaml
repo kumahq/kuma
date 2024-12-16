@@ -6,12 +6,7 @@ on:
         type: string
       runner:
         type: string
-<<<<<<< HEAD
-        required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
-=======
         required: true
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
 permissions:
   contents: read
 env:
@@ -25,14 +20,9 @@ env:
 jobs:
   e2e:
     timeout-minutes: 60
-<<<<<<< HEAD
-    # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
-    runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
-=======
     # can't use env vars here
     runs-on: ${{ inputs.runner }}
     if: ${{ inputs.runner != '' }}
->>>>>>> 126029d11 (ci(.github): enable self hosted runners for AMD64 E2E tasks (#10945))
     strategy:
       fail-fast: false
       matrix:
