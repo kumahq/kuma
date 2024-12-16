@@ -109,12 +109,12 @@ jobs:
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "multizone" ]]; then
             export KUMA_DEFAULT_RETRIES=60
           fi
-          
+
           function on_exit()
           {
             docker logout docker.io
           }
-          
+
           # we pull a few images during the E2E run, sometimes we get rate-limited by docker hub
           # to prevent this, we support specifying a pull credential here
           if [[ "$DOCKERHUB_PULL_CREDENTIAL" != "" ]]; then
@@ -123,7 +123,7 @@ jobs:
             echo -n "$DOCKER_PWD" | docker login -u "$DOCKER_USER" --password-stdin
             trap "on_exit" EXIT
           fi
-          
+
           if [[ "${{ env.E2E_PARAM_TARGET }}" != "" ]]; then
             target="test/e2e-${{ env.E2E_PARAM_TARGET }}"
           else
