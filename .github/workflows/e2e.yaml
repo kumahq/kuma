@@ -8,9 +8,6 @@ on:
         type: string
         required: false
         default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
-    secrets:
-      circleCIToken:
-        required: true
 permissions:
   contents: read
 env:
@@ -23,8 +20,8 @@ env:
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
   e2e:
-    # use the runner from the map, if the runner is circleci or '' then use ubuntu-latest
-    runs-on: ${{ contains(fromJSON('["circleci", ""]'), fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]) && 'ubuntu-latest' || fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch]}}
+    runs-on: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] }}
+    if: ${{ fromJSON(inputs.runnersByArch)[fromJSON(inputs.matrix).arch] != '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -75,7 +72,6 @@ jobs:
           {
             "ipv6": true,
             "fixed-cidr-v6": "2001:db8:1::/64",
-            "dns": ["8.8.8.8"],
             "dns-search": ["."]
           }
           EOF
