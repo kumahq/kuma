@@ -132,11 +132,15 @@ jobs:
             const interval = 360_000; // Check every 5 minutes
 
             while (true) {
-              const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+              const response = await github.rest.actions.listJobsForWorkflowRun({
                 ...context.repo,
                 run_id: process.env.RUN_ID,
               });
-                            
+              
+              console.log(JSON.stringify(response, null, 2))
+              
+              const { data: { jobs } } = response;
+              
               const jobStatuses = jobs.map(job => {
                 const finishedSteps = job.steps.filter(s => s.conclusion).length;
                 const totalSteps = job.steps.length;
@@ -149,8 +153,12 @@ jobs:
                 };
               });
               
-              // Log current status in console
-              console.table(jobStatuses);
+              if (jobs.length) {
+                // Log current status in console
+                console.table(jobStatuses);
+              } else {
+                console.warn('No jobs in workflow run')
+              }
               
               if (jobs.length && jobs.every(job => job.conclusion !== null)) {
                 console.log('All jobs completed');
