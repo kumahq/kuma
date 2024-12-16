@@ -8,9 +8,6 @@ on:
         type: string
         required: false
         default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
-    secrets:
-      circleCIToken:
-        required: true
 permissions:
   contents: read
 env:
