@@ -1,273 +1,186 @@
 name: ci-stability-release-branches
 
 on:
-  schedule:
-    - cron: "*/5 19-0 * * *" # Every 5 minutes between 19:00 and 00:55 UTC
-    - cron: "5 1 * * *"      # Cleanup at 1:05 UTC
   workflow_dispatch:
-    inputs:
-      force_run:
-        description: "Force run the workflow outside the schedule"
-        required: false
-        type: boolean
+  schedule:
+    - cron: "0 19 * * *" # Once a day at 19:00 UTC
 
-permissions:
-  contents: read
+permissions: {}
 
 concurrency:
   group: ${{ github.workflow }}
-
-env:
-  REPOSITORY_VARIABLE_NAME: TEMP_CI_STABILITY_BRANCHES_TO_PROCESS
+  cancel-in-progress: false
 
 jobs:
-  should-skip:
+  get-active-release-branches:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     outputs:
-      skip_workflow: ${{ steps.set-skip-workflow.outputs.skip_workflow }}
-    permissions:
-      actions: read # required to check the status of workflow runs
+      branches: ${{ steps.get-branches.outputs.result }}
     steps:
-      - id: check-cleanup-run
-        env:
-          IS_CLEANUP_RUN: ${{ github.event.schedule == '5 1 * * *' }}
-        run: |
-          if [ "$IS_CLEANUP_RUN" == "true" ]; then
-            echo "Cleanup run. Skipping other jobs."
-            echo "skip_workflow=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "skip_workflow=false" >> $GITHUB_OUTPUT
+      - name: "Get active branches"
+        id: get-branches
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
+        with:
+          script: |
+            const defaultBranch = context.payload.repository.default_branch;
 
-      - id: check-force-run
-        if: steps.check-cleanup-run.outputs.skip_workflow == 'false'
-        env:
-          FORCE_RUN_TRIGGERED: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.force_run == 'true' }}
-        run: |
-          if [ "$FORCE_RUN_TRIGGERED" == "true" ]; then
-            echo "Force run triggered via workflow_dispatch. Proceeding with the workflow."
-            echo "skip_workflow=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          echo "skip_workflow=false" >> $GITHUB_OUTPUT
+            const { data } = await github.rest.repos.getContent({
+              ...context.repo,
+              path: 'active-branches.json',
+            });
 
-      - id: check-existing-runs
-        if: steps.check-cleanup-run.outputs.skip_workflow == 'false' && steps.check-force-run.outputs.skip_workflow == 'false'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          RUNNING=$(gh run list \
-            --workflow ci-stability-release-branches.yaml \
-            --json status \
-            --jq '[
-              .[] | select(
-                .status | IN(
-                  "completed", 
-                  "failure", 
-                  "cancelled", 
-                  "timed_out", 
-                  "neutral", 
-                  "skipped"
-                ) | not
-              )
-            ] | length' 2>&1)
+            const content = Buffer.from(data.content, 'base64').toString('utf-8');
+            const branches = JSON.parse(content).filter(b => b !== defaultBranch);
 
-          if [[ "$RUNNING" =~ "could not find any workflows" || "$RUNNING" =~ ^0$ ]]; then
-            echo "skip_workflow=false" >> $GITHUB_OUTPUT
-          elif [[ "$RUNNING" =~ ^[0-9]+$ && "$RUNNING" -gt 0 ]]; then
-            echo "> [!NOTE]" >> $GITHUB_STEP_SUMMARY
-            echo "> There are existing workflows in progress" >> $GITHUB_STEP_SUMMARY
-            echo "skip_workflow=true" >> $GITHUB_OUTPUT
-          else
-            echo "> [!CAUTION]" >> $GITHUB_STEP_SUMMARY
-            echo "> Failed to list the workflow runs: $RUNNING" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
+            if (!Array.isArray(branches) || branches.length === 0) {
+              throw new Error('No active branches to process');
+            }
+            
+            await core.summary
+              .addRaw('Active release branches:', true)
+              .addCodeBlock(JSON.stringify(branches), 'json')
+              .write();
+            
+            return branches;
 
-      - id: set-skip-workflow
-        run: |
-          if [ "${{ steps.check-cleanup-run.outputs.skip_workflow }}" == "true" ] || \
-             [ "${{ steps.check-force-run.outputs.skip_workflow }}" == "true" ] || \
-             [ "${{ steps.check-existing-runs.outputs.skip_workflow }}" == "true" ]; then
-            echo "skip_workflow=true" >> $GITHUB_OUTPUT
-          else
-            echo "skip_workflow=false" >> $GITHUB_OUTPUT
-          fi
-
-  determine-release-branches:
-    if: needs.should-skip.outputs.skip_workflow == 'false'
-    needs: should-skip
-    runs-on: ubuntu-24.04
-    steps:
-      - id: fetch-branches
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          ACTIVE_RELEASE_BRANCHES=$(
-            gh api /repos/${{ github.repository }}/contents/active-branches.json \
-              --jq '.content | @base64d | fromjson | map(select(. != "master")) | @json'
-          )
-          echo "branches=$ACTIVE_RELEASE_BRANCHES" >> $GITHUB_OUTPUT
-
-  process-next-release-branch:
-    if: needs.should-skip.outputs.skip_workflow == 'false'
-    needs: [should-skip, determine-release-branches]
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write # required to update repository variables
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-      ACTIVE_RELEASE_BRANCHES: ${{ needs.determine-release-branches.outputs.branches }}
-    steps:
-      - id: fetch-stored-branches
-        run: |
-          BRANCHES=$(gh variable get "$REPOSITORY_VARIABLE_NAME" \
-            --json value \
-            --jq '.value' 2>&1)
-
-          if [[ $? -ne 0 ]]; then
-            echo "> [!CAUTION]" >> $GITHUB_STEP_SUMMARY
-            echo "> Failed to get the repository variable ${{ env.REPOSITORY_VARIABLE_NAME }}: $BRANCHES" >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
-
-      - id: validate-branches
-        env:
-          BRANCHES: ${{ steps.fetch-stored-branches.outputs.branches }}
-        run: |
-          IS_INVALID=false
-
-          if [ -z "$BRANCHES" ] || [ "$BRANCHES" == "null" ] || [ "$BRANCHES" == '""' ]; then
-            IS_INVALID=true
-          fi
-
-          if ! $IS_INVALID && ! echo "$BRANCHES" | jq -e '.' >/dev/null 2>&1; then
-            IS_INVALID=true
-          fi
-
-          if ! $IS_INVALID && [ "$(echo "$BRANCHES" | jq 'length')" -eq 0 ]; then
-            IS_INVALID=true
-          fi
-
-          if ! $IS_INVALID && echo "$BRANCHES" | jq -e 'type != "array"' >/dev/null 2>&1; then
-            IS_INVALID=true
-          fi
-
-          if $IS_INVALID; then
-            BRANCHES="$ACTIVE_RELEASE_BRANCHES"
-          fi
-
-          echo "branches=$BRANCHES" >> $GITHUB_OUTPUT
-
-      - id: extract-branch
-        env:
-          BRANCHES: ${{ steps.validate-branches.outputs.branches }}
-        run: |
-          BRANCH=$(echo "$BRANCHES" | jq -r '.[0]')
-
-          if [ -z "$BRANCH" ]; then
-            echo "No release branch to process"
-            exit 1
-          fi
-
-          REMAINING_BRANCHES=$(echo "$BRANCHES" | jq -c '.[1:]')
-
-          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
-          echo "remaining-branches=$REMAINING_BRANCHES" >> $GITHUB_OUTPUT
-
-      - id: update-repository-variable
-        env:
-          UPDATED_BRANCHES: ${{ steps.extract-branch.outputs.remaining-branches }}
-        run: |
-          if [ "$(echo "$UPDATED_BRANCHES" | jq 'length')" -eq 0 ]; then
-            UPDATED_BRANCHES="$ACTIVE_RELEASE_BRANCHES"
-          fi
-
-          gh variable set "$REPOSITORY_VARIABLE_NAME" --body "$UPDATED_BRANCHES"
-
-  trigger-workflow:
-    if: needs.should-skip.outputs.skip_workflow == 'false'
-    needs: process-next-release-branch
+  trigger-build-test-distribute:
+    needs: get-active-release-branches
     runs-on: ubuntu-24.04
     permissions:
       actions: write # required to trigger workflows
+      checks: read # required to list workflow runs
+    continue-on-error: true
+    strategy:
+      matrix:
+        branch: ${{ fromJSON(needs.get-active-release-branches.outputs.branches) }}
+      fail-fast: false
+      max-parallel: 1
     env:
-      BRANCH: ${{ needs.process-next-release-branch.outputs.branch }}
-      GITHUB_TOKEN: ${{ github.token }}
-    outputs:
-      run_id: ${{ steps.get-run-id.outputs.run_id }}
+      BRANCH: ${{ matrix.branch }}
     steps:
-      - id: trigger
-        run: |
-          gh workflow run build-test-distribute.yaml --ref "$BRANCH"
+      - name: "Trigger the workflow"
+        id: trigger-workflow
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
+        with:
+          script: |
+            core.setOutput('started', new Date().toISOString());
 
-      - id: get-run-id
-        run: |
-          RUN_ID=""
-          MAX_RETRIES=5
-          RETRY_COUNT=0
+            await github.rest.actions.createWorkflowDispatch({
+              ...context.repo,
+              workflow_id: 'build-test-distribute.yaml',
+              ref: process.env.BRANCH,
+            });
 
-          until [[ -n "$RUN_ID" || "$RETRY_COUNT" -ge "$MAX_RETRIES" ]]; do
-            RUN_ID=$(gh run list \
-              --workflow build-test-distribute.yaml \
-              --branch "$BRANCH" \
-              --json databaseId \
-              --jq '.[0].databaseId' || echo "")
+            core.setOutput('finished', new Date(Date.now() + 10_000).toISOString());
 
-            if [[ -z "$RUN_ID" ]]; then
-              RETRY_COUNT=$((RETRY_COUNT + 1))
-              sleep 3
-            fi
-          done
+      - name: "Retrieve workflow run ID"
+        id: get-run-id
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
+        env:
+          STARTED: ${{ steps.trigger-workflow.outputs.started }}
+          FINISHED: ${{ steps.trigger-workflow.outputs.finished }}
+        with:
+          script: |
+            const maxRetries = 5;
+            let retryCount = 0;
+            let run = null;
 
-          if [[ -z "$RUN_ID" ]]; then
-            echo "Unable to retrieve RUN_ID after $MAX_RETRIES attempts."
-            exit 1
-          fi
+            while (retryCount < maxRetries && !run) {
+              console.log(`Checking for workflow run (attempt ${retryCount + 1})...`);
 
-          echo "run_id=$RUN_ID" >> $GITHUB_OUTPUT
+              const response = await github.rest.actions.listWorkflowRuns({
+                ...context.repo,
+                workflow_id: 'build-test-distribute.yaml',
+                branch: process.env.BRANCH,
+                created: `${process.env.STARTED}..${process.env.FINISHED}`,
+                per_page: 1,
+              });
+              
+              if (response.data.workflow_runs.length > 0) {
+                run = response.data.workflow_runs[0];
+              }
 
-  monitor-triggered-workflow:
-    if: needs.should-skip.outputs.skip_workflow == 'false'
-    needs: trigger-workflow
-    runs-on: ubuntu-24.04
-    timeout-minutes: 115
-    permissions:
-      actions: read # required to monitor workflow runs
-      checks: read # required to fetch run statuses
-    env:
-      RUN_ID: ${{ needs.trigger-workflow.outputs.run_id }}
-      GITHUB_TOKEN: ${{ github.token }}
-    steps:
-      - id: monitor
-        run: |
-          gh run watch "$RUN_ID"
+              if (!run) {
+                retryCount++;
+                await new Promise(resolve => setTimeout(resolve, 5000));
+              }
+            }
 
-  re-trigger-current-workflow:
-    if: needs.should-skip.outputs.skip_workflow == 'false'
-    needs: monitor-triggered-workflow
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write # required to re-trigger workflows
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    steps:
-      - id: re-trigger
-        run: |
-          if [ "$(date -u +%H)" -lt "1" ]; then
-            gh workflow run ci-stability-release-branches.yaml
-          fi
+            if (!run) {
+              throw new Error(`Unable to retrieve run ID after ${maxRetries} retries.`);
+            }
 
-  cleanup:
-    if: github.event.schedule == '5 1 * * *'
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: write # required to delete repository variables
-    env:
-      GITHUB_TOKEN: ${{ github.token }}
-    steps:
-      - id: cleanup
-        run: |
-          gh variable delete "$REPOSITORY_VARIABLE_NAME"
+            console.log(`Retrieved run ID: ${run.id}`);
+            
+            await core.summary
+              .addHeading(`Run <a href="${run.html_url}">${run.id}</a>`, 4)
+              .write();
+            
+            return run.id
+
+      - name: "Monitor triggered workflow"
+        id: monitor-triggered-workflow
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
+        timeout-minutes: 120
+        env:
+          RUN_ID: ${{ steps.get-run-id.outputs.result }}
+        with:
+          script: |
+            const interval = 60_000; // Check every 60 seconds
+
+            while (true) {
+              const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
+                ...context.repo,
+                run_id: process.env.RUN_ID,
+              });
+                            
+              const jobStatuses = jobs.map(job => {
+                const finishedSteps = job.steps.filter(s => s.conclusion).length;
+                const totalSteps = job.steps.length;
+                
+                return {
+                  Job: job.name,
+                  Status: job.status,
+                  Steps: `${finishedSteps}/${totalSteps}`,
+                  Conclusion: job.conclusion || 'in_progress',
+                };
+              });
+              
+              // Log current status in console
+              console.table(jobStatuses);
+              
+              if (jobs.every(job => job.conclusion !== null)) {
+                console.log('All jobs completed');
+                
+                // Prepare table data for summary
+                const headers = [
+                  { data: 'Job', header: true },
+                  { data: 'Status', header: true },
+                  { data: 'Steps', header: true },
+                  { data: 'Conclusion', header: true },
+                ];
+                
+                const rows = jobs.map(job => {
+                  const finishedSteps = job.steps.filter(s => s.conclusion).length;
+                  const totalSteps = job.steps.length;
+                  
+                  return [
+                    { data: `<a href="${job.html_url}">${job.name}</a>` },
+                    { data: job.status },
+                    { data: `${finishedSteps}/${totalSteps}` },
+                    { data: job.conclusion || 'in_progress' },
+                  ];
+                });
+                
+                return core.summary
+                  .addTable([headers, ...rows])
+                  .write();
+              }
+            
+              // Wait before checking again
+              const nextCheck = new Date(Date.now() + interval).toLocaleTimeString();
+              console.log(`Next check will be in ${interval / 1_000} seconds, at: ${nextCheck} (UTC)`);
+              await new Promise(resolve => setTimeout(resolve, interval));
+            }
