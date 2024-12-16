@@ -137,15 +137,13 @@ jobs:
                 run_id: process.env.RUN_ID,
               });
               
-              console.log(`Workflow run is ${run.status}`);
-      
               if (['in_progress', 'completed'].includes(run.status)) {
                 break;
               }
 
               // Wait before checking again
               const nextCheck = new Date(Date.now() + interval).toLocaleTimeString();
-              console.log(`Next check will be in ${interval / 1_000} seconds, at: ${nextCheck} (UTC)`);
+              console.log(`Run ${run.id} is ${run.status}. Next check in ${interval / 1_000}s at ${nextCheck} (UTC)`);
               await new Promise(resolve => setTimeout(resolve, interval));
             }
 
