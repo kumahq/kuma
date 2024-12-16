@@ -128,7 +128,7 @@ jobs:
           RUN_ID: ${{ steps.get-run-id.outputs.result }}
         with:
           script: |
-            const interval = 60_000; // Check every 60 seconds
+            const interval = 360_000; // Check every 5 minutes
 
             while (true) {
               const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
