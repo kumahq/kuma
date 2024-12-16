@@ -138,7 +138,7 @@ jobs:
               });
               
               if (!jobs.length) {
-                console.warn('No jobs in run, which suggest that run is in pending or waiting state')
+                console.log('No jobs in run, which suggests that the run is pending or waiting');
               } else if (jobs.every(job => job.conclusion !== null)) {
                 console.log('All jobs completed');
                 
