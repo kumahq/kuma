@@ -1,0 +1,214 @@
+properties:
+  labels:
+    additionalProperties:
+      type: string
+    type: object
+  mesh:
+    type: string
+  name:
+    type: string
+  spec:
+    $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh
+    $schema: https://json-schema.org/draft/2020-12/schema
+    properties:
+      constraints:
+        properties:
+          dataplaneProxy:
+            properties:
+              requirements:
+                items:
+                  properties:
+                    tags:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                type: array
+              restrictions:
+                items:
+                  properties:
+                    tags:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                type: array
+            type: object
+        type: object
+      logging:
+        properties:
+          backends:
+            items:
+              properties:
+                conf:
+                  properties:
+                    fields:
+                      additionalProperties:
+                        properties:
+                          Kind: true
+                        required:
+                        - Kind
+                        type: object
+                      type: object
+                  type: object
+                format:
+                  type: string
+                name:
+                  type: string
+                type:
+                  type: string
+              type: object
+            type: array
+          defaultBackend:
+            type: string
+        type: object
+      meshServices:
+        properties:
+          mode:
+            oneOf:
+            - type: string
+            - type: integer
+        type: object
+      metrics:
+        properties:
+          backends:
+            items:
+              properties:
+                conf:
+                  properties:
+                    fields:
+                      additionalProperties:
+                        properties:
+                          Kind: true
+                        required:
+                        - Kind
+                        type: object
+                      type: object
+                  type: object
+                name:
+                  type: string
+                type:
+                  type: string
+              type: object
+            type: array
+          enabledBackend:
+            type: string
+        type: object
+      mtls:
+        properties:
+          backends:
+            items:
+              properties:
+                conf:
+                  properties:
+                    fields:
+                      additionalProperties:
+                        properties:
+                          Kind: true
+                        required:
+                        - Kind
+                        type: object
+                      type: object
+                  type: object
+                dpCert:
+                  properties:
+                    requestTimeout:
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                    rotation:
+                      properties:
+                        expiration:
+                          type: string
+                      type: object
+                  type: object
+                mode:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                name:
+                  type: string
+                rootChain:
+                  properties:
+                    requestTimeout:
+                      properties:
+                        nanos:
+                          type: integer
+                        seconds:
+                          type: integer
+                      type: object
+                  type: object
+                type:
+                  type: string
+              type: object
+            type: array
+          enabledBackend:
+            type: string
+          skipValidation:
+            type: boolean
+        type: object
+      networking:
+        properties:
+          outbound:
+            properties:
+              passthrough:
+                properties:
+                  value:
+                    type: boolean
+                type: object
+            type: object
+        type: object
+      routing:
+        properties:
+          defaultForbidMeshExternalServiceAccess:
+            type: boolean
+          localityAwareLoadBalancing:
+            type: boolean
+          zoneEgress:
+            type: boolean
+        type: object
+      skipCreatingInitialPolicies:
+        items:
+          type: string
+        type: array
+      tracing:
+        properties:
+          backends:
+            items:
+              properties:
+                conf:
+                  properties:
+                    fields:
+                      additionalProperties:
+                        properties:
+                          Kind: true
+                        required:
+                        - Kind
+                        type: object
+                      type: object
+                  type: object
+                name:
+                  type: string
+                sampling:
+                  properties:
+                    value:
+                      type: number
+                  type: object
+                type:
+                  type: string
+              type: object
+            type: array
+          defaultBackend:
+            type: string
+        type: object
+    type: object
+  type:
+    type: string
+required:
+- type
+- name
+- spec
+type: object

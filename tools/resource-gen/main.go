@@ -6,13 +6,19 @@ import (
 	"go/format"
 	"log"
 	"os"
+	"path"
+	"reflect"
 	"sort"
 	"strings"
 	"text/template"
 
+	"github.com/invopop/jsonschema"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	"sigs.k8s.io/yaml"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
@@ -366,25 +372,6 @@ func init() {
 {{end}}
 `))
 
-// ProtoMessageFunc ...
-type ProtoMessageFunc func(protoreflect.MessageType) bool
-
-// OnKumaResourceMessage ...
-func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
-	return func(m protoreflect.MessageType) bool {
-		r := KumaResourceForMessage(m.Descriptor())
-		if r == nil {
-			return true
-		}
-
-		if r.Package == pkg {
-			return f(m)
-		}
-
-		return true
-	}
-}
-
 func main() {
 	var gen string
 	var pkg string
@@ -418,34 +405,96 @@ func main() {
 		resources = append(resources, resourceInfo)
 	}
 
-	var generatorTemplate *template.Template
+	var generatorFn GeneratorFn
 
 	switch gen {
 	case "type":
-		generatorTemplate = ResourceTemplate
+		generatorFn = TemplateGeneratorFn(ResourceTemplate)
 	case "crd":
-		generatorTemplate = CustomResourceTemplate
+		generatorFn = TemplateGeneratorFn(CustomResourceTemplate)
+	case "openapi":
+		generatorFn = openApiGenerator
 	default:
 		log.Fatalf("%s is not a valid generator option\n", gen)
 	}
 
-	outBuf := bytes.Buffer{}
-	if err := generatorTemplate.Execute(&outBuf, struct {
-		Package   string
-		Resources []ResourceInfo
-	}{
-		Package:   pkg,
-		Resources: resources,
-	}); err != nil {
-		log.Fatalf("template error: %s", err)
-	}
-
-	out, err := format.Source(outBuf.Bytes())
+	err := generatorFn(pkg, resources)
 	if err != nil {
 		log.Fatalf("%s\n", err)
 	}
+}
 
-	if _, err := os.Stdout.Write(out); err != nil {
-		log.Fatalf("%s\n", err)
+func openApiGenerator(pkg string, resources []ResourceInfo) error {
+	protoTypeToType := map[string]reflect.Type{
+		"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
+		"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 	}
+
+	for _, r := range resources {
+		tpe, exists := protoTypeToType[r.ResourceType]
+		println("doing", r.ResourceType)
+		if !exists {
+			continue
+		}
+		println("doing", r.ResourceType)
+		reflector := jsonschema.Reflector{
+			ExpandedStruct:            true,
+			DoNotReference:            true,
+			AllowAdditionalProperties: true,
+		}
+		schemaMap := orderedmap.New[string, *jsonschema.Schema]()
+		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
+		schemaMap.Set("name", &jsonschema.Schema{Type: "string"})
+		if r.Global {
+			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
+		}
+		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
+		schemaMap.Set("spec", reflector.ReflectFromType(tpe))
+
+		schema := jsonschema.Schema{
+			Type:       "object",
+			Required:   []string{"type", "name", "spec"},
+			Properties: schemaMap,
+		}
+
+		// TODO merge the schema with a global open api schema for the resource (might be worth to just make these objects
+		
+		out, err := yaml.Marshal(schema)
+		if err != nil {
+			return err
+		}
+		// TODO the name of the file is Caml cased, I think this shouldn't be necessary
+		err = os.WriteFile(path.Join("api", pkg, "v1alpha1", r.ResourceType+"_openapi_gen.yaml"), out, 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+type GeneratorFn func(pkg string, resources []ResourceInfo) error
+
+func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
+	return func(pkg string, resources []ResourceInfo) error {
+		outBuf := bytes.Buffer{}
+		if err := tmpl.Execute(&outBuf, struct {
+			Package   string
+			Resources []ResourceInfo
+		}{
+			Package:   pkg,
+			Resources: resources,
+		}); err != nil {
+			return err
+		}
+
+		out, err := format.Source(outBuf.Bytes())
+		if err != nil {
+			return err
+		}
+		if _, err := os.Stdout.Write(out); err != nil {
+			return err
+		}
+		return nil
+	}
+
 }

@@ -1,0 +1,77 @@
+properties:
+  labels:
+    additionalProperties:
+      type: string
+    type: object
+  name:
+    type: string
+  spec:
+    $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh-gateway
+    $schema: https://json-schema.org/draft/2020-12/schema
+    properties:
+      conf:
+        properties:
+          listeners:
+            items:
+              properties:
+                crossMesh:
+                  type: boolean
+                hostname:
+                  type: string
+                port:
+                  type: integer
+                protocol:
+                  oneOf:
+                  - type: string
+                  - type: integer
+                resources:
+                  properties:
+                    connection_limit:
+                      type: integer
+                  type: object
+                tags:
+                  additionalProperties:
+                    type: string
+                  type: object
+                tls:
+                  properties:
+                    certificates:
+                      items:
+                        properties:
+                          Type: true
+                        required:
+                        - Type
+                        type: object
+                      type: array
+                    mode:
+                      oneOf:
+                      - type: string
+                      - type: integer
+                    options:
+                      properties: {}
+                      type: object
+                  type: object
+              type: object
+            type: array
+        type: object
+      selectors:
+        items:
+          properties:
+            match:
+              additionalProperties:
+                type: string
+              type: object
+          type: object
+        type: array
+      tags:
+        additionalProperties:
+          type: string
+        type: object
+    type: object
+  type:
+    type: string
+required:
+- type
+- name
+- spec
+type: object
