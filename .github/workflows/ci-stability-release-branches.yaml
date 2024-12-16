@@ -120,6 +120,35 @@ jobs:
             
             return run.id
 
+      - name: "Wait for triggered workflow to be in progress"
+        id: monitor-triggered-workflow-status
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
+        timeout-minutes: 120
+        env:
+          RUN_ID: ${{ steps.get-run-id.outputs.result }}
+        with:
+          retries: '5'
+          script: |
+            const interval = 360_000; // 5 minutes
+            
+            while (true) {
+              const { data: run } = await github.rest.actions.getWorkflowRun({
+                ...context.repo,
+                run_id: process.env.RUN_ID,
+              });
+              
+              console.log(`Workflow run is ${run.status}`);
+      
+              if (['in_progress', 'completed'].includes(run.status)) {
+                break;
+              }
+
+              // Wait before checking again
+              const nextCheck = new Date(Date.now() + interval).toLocaleTimeString();
+              console.log(`Next check will be in ${interval / 1_000} seconds, at: ${nextCheck} (UTC)`);
+              await new Promise(resolve => setTimeout(resolve, interval));
+            }
+
       - name: "Monitor triggered workflow"
         id: monitor-triggered-workflow
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
@@ -155,12 +184,8 @@ jobs:
                 console.log('All jobs completed');
                 
                 // Prepare table data for summary
-                const headers = [
-                  { data: 'Job', header: true },
-                  { data: 'Status', header: true },
-                  { data: 'Steps', header: true },
-                  { data: 'Conclusion', header: true },
-                ];
+                const headers = ['Job', 'Status', 'Steps', 'Conclusion']
+                  .map(data => ({ data, header: true }));
                 
                 const rows = jobs.map(job => {
                   const finishedSteps = job.steps.filter(s => s.conclusion).length;
