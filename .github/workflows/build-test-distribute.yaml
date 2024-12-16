@@ -20,7 +20,6 @@ env:
   CI_TOOLS_DIR: /home/runner/work/kuma/kuma/.ci_tools
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
-  RUNNERS_BY_ARCH:  ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
 jobs:
   check:
     timeout-minutes: 25
@@ -273,7 +272,8 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ env.RUNNERS_BY_ARCH }}
+      # can't use env here, make sure change other copies when making changes
+      runnersByArch: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
@@ -283,4 +283,5 @@ jobs:
     uses: ./.github/workflows/e2e.yaml
     with:
       matrix: ${{ toJSON(matrix) }}
-      runnersByArch: ${{ env.RUNNERS_BY_ARCH }}
+      # can't use env here, make sure change other copies when making changes
+      runnersByArch: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
