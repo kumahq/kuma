@@ -55,13 +55,14 @@ jobs:
       max-parallel: 1
     env:
       BRANCH: ${{ matrix.branch }}
+      REPOSITORY: ${{ github.repository }}
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: "Trigger the workflow"
         id: trigger-workflow
         run: |
           echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
-          gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --ref "$BRANCH"
+          gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --repo "$REPOSITORY" --ref "$BRANCH"
           echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
       - name: "Retrieve workflow run ID"
@@ -77,8 +78,9 @@ jobs:
 
           while [[ $retry_count -lt $max_retries && -z $run_id ]]; do
             runs=$(gh run list \
-              --workflow="$WORKFLOW_ID_TO_TRIGGER" \
-              --branch="$BRANCH" \
+              --repo "$REPOSITORY" \
+              --workflow "$WORKFLOW_ID_TO_TRIGGER" \
+              --branch "$BRANCH" \
               --created "$STARTED..$FINISHED" \
               --json databaseId,url \
               --limit 1 \
@@ -118,7 +120,7 @@ jobs:
           grey() { echo -e "\033[90m$1\033[0m"; }
 
           while true; do
-            jobs=$(gh run view "$RUN_ID" --json jobs --jq '.jobs')
+            jobs=$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json jobs --jq '.jobs')
 
             if [[ -z "$jobs" || "$jobs" == "null" || "$jobs" == "[]" ]]; then
               bold "No jobs found. Workflow may still be in pending or waiting state"
