@@ -11,6 +11,9 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 
+env:
+  WORKFLOW_ID_TO_TRIGGER: build-test-distribute
+
 jobs:
   get-active-release-branches:
     runs-on: ubuntu-24.04
@@ -69,7 +72,7 @@ jobs:
 
             await github.rest.actions.createWorkflowDispatch({
               ...context.repo,
-              workflow_id: 'build-test-distribute.yaml',
+              workflow_id: process.env.WORKFLOW_ID_TO_TRIGGER,
               ref: process.env.BRANCH,
             });
 
@@ -92,7 +95,7 @@ jobs:
 
               const response = await github.rest.actions.listWorkflowRuns({
                 ...context.repo,
-                workflow_id: 'build-test-distribute.yaml',
+                workflow_id: process.env.WORKFLOW_ID_TO_TRIGGER,
                 branch: process.env.BRANCH,
                 created: `${process.env.STARTED}..${process.env.FINISHED}`,
                 per_page: 1,
@@ -149,15 +152,10 @@ jobs:
                   { data: 'Conclusion', header: true },
                 ];
                 
-                const rows = jobs.map(job => {
-                  const finishedSteps = job.steps.filter(s => s.conclusion).length;
-                  
-                  return [
-                    { data: `<a href="${job.html_url}">${job.name}</a>` },
-                    { data: `${finishedSteps}/${job.steps.length}` },
-                    { data: job.conclusion || 'in_progress' },
-                  ];
-                });
+                const rows = jobs.map(job => [
+                  { data: `<a href="${job.html_url}">${job.name}</a>` },
+                  { data: job.conclusion || 'in_progress' },
+                ]);
                 
                 return core.summary.addTable([headers, ...rows]).write();
               } else {
