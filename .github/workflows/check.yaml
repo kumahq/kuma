@@ -9,6 +9,7 @@ on:
 permissions:
   contents: read
 jobs:
+<<<<<<< HEAD
   # This job checks the PR title using
   # https://github.com/conventional-changelog/commitlint
   # for the conventional commit format at
@@ -22,6 +23,13 @@ jobs:
   commit-lint:
     name: "Check PR title"
     runs-on: ubuntu-latest
+=======
+  pr-check:
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:

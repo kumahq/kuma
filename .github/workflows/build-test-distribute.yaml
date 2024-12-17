@@ -23,7 +23,25 @@ env:
 jobs:
   check:
     timeout-minutes: 25
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    runs-on: ubuntu-24.04
+    env:
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
+      FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
+    outputs:
+      FULL_MATRIX: ${{ env.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ env.ALLOW_PUSH }}
+      BUILD: ${{ env.BUILD }}
+      IMAGES: ${{ steps.metadata.outputs.images }}
+      REGISTRY: ${{ steps.metadata.outputs.registry }}
+      VERSION_NAME: ${{ steps.metadata.outputs.version }}
+      NOTARY_REPOSITORY: ${{ (contains(steps.metadata.outputs.version, 'preview') && 'notary-internal') || 'notary' }}
+      CLOUDSMITH_REPOSITORY: ${{ steps.metadata.outputs.distribution_repository }}
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     steps:
       - name: "Fail when 'ci/force-publish' label is present on PRs from forks"
         if: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -75,11 +93,98 @@ jobs:
       - run: |
           make dev/tools
       - run: |
+<<<<<<< HEAD
           make test
+=======
+          make clean
+      - run: |
+          make check
+      - name: "Set metadata for downstream jobs"
+        id: metadata
+        run: |
+          echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
+          echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
+          echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
+          echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+      # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
+      # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
+      # Running the SCA step before "make check" might seem like a solution, but it
+      # generates report files (e.g., sbom.spdx.json, cve-report.json) in the working
+      # directory. These files cause "make check" to fail, as it checks if no files
+      # in the repository were modified, deleted, or added after its process.
+      # It doesn't recognize that the SBOM and CVE report files were added earlier
+      # and should be ignored. Since we currently can't change the working directory
+      # for the SCA step, it must run after "make check." Instead, we clean ./build
+      # after "make check" to exclude tool binaries from the SBOM.
+      - run: |
+          make clean/build
+      - name: "Generate SBOM and CVE report (Software Composition Analysis)"
+        id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
+        env:
+          SYFT_SOURCE_NAME: ${{ github.repository }}
+          SYFT_SOURCE_VERSION: ${{ steps.metadata.outputs.version }}
+        with:
+          dir: .
+          config: .syft.yaml
+          upload-sbom-release-assets: true
+  test:
+    permissions:
+      contents: read
+    needs: ["check"]
+    uses: ./.github/workflows/_test.yaml
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":""}' }}
+    secrets: inherit
+  build_publish:
+    permissions:
+      contents: read
+      id-token: write
+    needs: ["check", "test"]
+    uses: ./.github/workflows/_build_publish.yaml
+    if: ${{ fromJSON(needs.check.outputs.BUILD) }}
+    with:
+      FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
+      ALLOW_PUSH: ${{ needs.check.outputs.ALLOW_PUSH }}
+      IMAGE_ARTIFACT_NAME: "image_artifacts"
+      BINARY_ARTIFACT_NAME: "binary_artifacts"
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
+    secrets: inherit
+  provenance:
+    needs: ["check", "build_publish"]
+    if: ${{ github.ref_type == 'tag' }}
+    uses: ./.github/workflows/_provenance.yaml
+    secrets: inherit
+    permissions:
+      contents: write
+      id-token: write # For using token to sign images
+      actions: read # For getting workflow run info to build provenance
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+    with:
+      BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
+      IMAGES: ${{ needs.check.outputs.IMAGES }}
+      REGISTRY: ${{ needs.check.outputs.REGISTRY }}
+      NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
+      IMAGE_DIGESTS: ${{ needs.build_publish.outputs.IMAGE_DIGESTS }}
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
   distributions:
     needs: ["check", "test", "test_e2e", "test_e2e_env"]
     if: ${{ always() }}
+<<<<<<< HEAD
     runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
+=======
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read # For getting workflow run info
+    env:
+      SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
+      SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     steps:
       - name: "Halt due to previous failures"
         if: ${{ contains(needs.*.result, 'failure')|| contains(needs.*.result, 'cancelled') }}

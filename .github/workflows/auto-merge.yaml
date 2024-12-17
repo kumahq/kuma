@@ -12,7 +12,12 @@ permissions:
   contents: read
 jobs:
   approve-and-auto-merge:
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    timeout-minutes: 10
+    runs-on: ubuntu-24.04
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
     permissions:
       pull-requests: write
