@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  WORKFLOW_ID_TO_TRIGGER: build-test-distribute
+  WORKFLOW_ID_TO_TRIGGER: build-test-distribute.yaml
 
 jobs:
   get-active-release-branches:
