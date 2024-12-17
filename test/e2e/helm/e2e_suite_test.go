@@ -19,12 +19,6 @@ var (
 	// Skipped as it fails with: error while running command: exit status 1; Error: INSTALLATION FAILED: rendered manifests contain a resource that already exists. Unable to continue with install: ServiceAccount "kuma-control-plane" in namespace "kuma-system" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "kuma-c0vo8o": current value is "kuma-8yy3uv"
 	// Likely something needs to be improved to be able to run this test
 	_ = PDescribe("Global and Zone universal mode with Helm chart", Label("job-0"), helm.GlobalAndZoneInUniversalModeWithHelmChart, Ordered)
-<<<<<<< HEAD
-	_ = Describe("App deployment with Helm", Label("job-2"), helm.AppDeploymentWithHelmChart)
-	_ = Describe("Upgrade Standalone with Helm", Label("job-2"), helm.UpgradingWithHelmChartStandalone, Ordered)
-	// Fails because of the bug in 2.6.7 (and potentially 2.7.3) https://github.com/kumahq/kuma/issues/10463
-=======
 	_ = Describe("Upgrade Standalone with Helm", Label("job-0"), helm.UpgradingWithHelmChartStandalone, Ordered)
->>>>>>> a649d8ebd (test(e2e): squash helm tests (#11901))
 	_ = Describe("Upgrade Multizone with Helm", Label("job-2"), helm.UpgradingWithHelmChartMultizone, Ordered)
 )
