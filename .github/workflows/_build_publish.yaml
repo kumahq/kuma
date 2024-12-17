@@ -44,7 +44,7 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
@@ -88,7 +88,11 @@ jobs:
         run: |
           make publish/pulp
   build-images:
+<<<<<<< HEAD
     runs-on: ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
+=======
+    runs-on: ubuntu-24.04
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -195,7 +199,12 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    runs-on: ubuntu-24.04
+    if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -213,7 +222,7 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
