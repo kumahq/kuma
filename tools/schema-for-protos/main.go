@@ -14,6 +14,10 @@ func main() {
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
 	}
+	err := reflector.AddGoComments("github.com/kumahq/kuma/", "api/mesh/v1alpha1/")
+	if err != nil {
+		return
+	}
 	schema := reflector.Reflect(&v1alpha1.Mesh{})
 	//out, _ := json.MarshalIndent(schema, "", "  ")
 	out, _ := yaml.Marshal(schema)

@@ -376,7 +376,7 @@ func main() {
 	var gen string
 	var pkg string
 
-	flag.StringVar(&gen, "generator", "", "the type of generator to run options: (type,crd)")
+	flag.StringVar(&gen, "generator", "", "the type of generator to run options: (type,crd,openapi)")
 	flag.StringVar(&pkg, "package", "", "the name of the package to generate: (mesh, system)")
 
 	flag.Parse()
@@ -432,15 +432,18 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 
 	for _, r := range resources {
 		tpe, exists := protoTypeToType[r.ResourceType]
-		println("doing", r.ResourceType)
+		println("generating", r.ResourceType)
 		if !exists {
 			continue
 		}
-		println("doing", r.ResourceType)
 		reflector := jsonschema.Reflector{
 			ExpandedStruct:            true,
 			DoNotReference:            true,
 			AllowAdditionalProperties: true,
+		}
+		err := reflector.AddGoComments("github.com/kumahq/kuma/", "api/")
+		if err != nil {
+			return err
 		}
 		schemaMap := orderedmap.New[string, *jsonschema.Schema]()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
