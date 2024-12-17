@@ -12,7 +12,7 @@ permissions:
   contents: read
 jobs:
   approve-and-auto-merge:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: contains(github.event.pull_request.labels.*.name, 'ci/auto-merge')
     permissions:
       pull-requests: write

@@ -6,7 +6,7 @@ on:
 permissions: read-all
 jobs:
   build-matrix:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
     steps:
@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.build-matrix.outputs.branches) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Set Swap Space
         uses: pierotofy/set-swap-space@49819abfb41bd9b44fb781159c033dba90353a7c

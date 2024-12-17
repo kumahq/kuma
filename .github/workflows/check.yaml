@@ -21,7 +21,7 @@ jobs:
   # for more info. We have "Default to PR title for squash merge commits" enabled.
   commit-lint:
     name: "Check PR title"
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:

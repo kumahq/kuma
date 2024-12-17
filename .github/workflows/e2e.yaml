@@ -7,7 +7,7 @@ on:
       runnersByArch:
         type: string
         required: false
-        default: '{"amd64": "ubuntu-latest", "arm64": "ubuntu-latest-arm64-kong"}'
+        default: '{"amd64": "ubuntu-24.04", "arm64": "ubuntu-latest-arm64-kong"}'
 permissions:
   contents: read
 env:
