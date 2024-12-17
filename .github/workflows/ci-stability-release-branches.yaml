@@ -20,33 +20,26 @@ jobs:
     permissions:
       contents: read
     outputs:
-      branches: ${{ steps.get-branches.outputs.result }}
+      branches: ${{ steps.get-branches.outputs.branches }}
     steps:
       - name: "Get active branches"
         id: get-branches
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
-        with:
-          script: |
-            const defaultBranch = context.payload.repository.default_branch;
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branches=$(gh api repos/$REPOSITORY/contents/active-branches.json \
+            --jq '[.content | @base64d | fromjson | .[] | select(. != "'"$DEFAULT_BRANCH"'")]')
 
-            const { data } = await github.rest.repos.getContent({
-              ...context.repo,
-              path: 'active-branches.json',
-            });
+          if [[ "$branches" == "[]" || -z "$branches" ]]; then
+            echo "No active branches to process"
+            exit 1
+          fi
 
-            const content = Buffer.from(data.content, 'base64').toString('utf-8');
-            const branches = JSON.parse(content).filter(b => b !== defaultBranch);
+          echo -e "Active release branches:\n\`\`\`json\n$branches\n\`\`\`" >> $GITHUB_STEP_SUMMARY
 
-            if (!Array.isArray(branches) || branches.length === 0) {
-              throw new Error('No active branches to process');
-            }
-            
-            await core.summary
-              .addRaw('Active release branches:', true)
-              .addCodeBlock(JSON.stringify(branches), 'json')
-              .write();
-            
-            return branches;
+          echo "branches=$branches" >> $GITHUB_OUTPUT
 
   trigger-build-test-distribute:
     needs: get-active-release-branches
@@ -62,120 +55,65 @@ jobs:
       max-parallel: 1
     env:
       BRANCH: ${{ matrix.branch }}
+      REPOSITORY: ${{ github.repository }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: "Trigger the workflow"
         id: trigger-workflow
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
-        with:
-          script: |
-            core.setOutput('started', new Date().toISOString());
-
-            await github.rest.actions.createWorkflowDispatch({
-              ...context.repo,
-              workflow_id: process.env.WORKFLOW_ID_TO_TRIGGER,
-              ref: process.env.BRANCH,
-            });
-
-            core.setOutput('finished', new Date(Date.now() + 10_000).toISOString());
+        run: |
+          echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --repo "$REPOSITORY" --ref "$BRANCH"
+          echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
 
       - name: "Retrieve workflow run ID"
         id: get-run-id
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
         env:
           STARTED: ${{ steps.trigger-workflow.outputs.started }}
           FINISHED: ${{ steps.trigger-workflow.outputs.finished }}
-        with:
-          script: |
-            const maxRetries = 5;
-            let retryCount = 0;
-            let run = null;
+        run: |
+          max_retries=5
+          retry_count=0
+          run_id=""
+          url=""
 
-            while (retryCount < maxRetries && !run) {
-              console.log(`Checking for workflow run (attempt ${retryCount + 1})...`);
+          while [[ $retry_count -lt $max_retries && -z $run_id ]]; do
+            runs=$(gh run list \
+              --repo "$REPOSITORY" \
+              --workflow "$WORKFLOW_ID_TO_TRIGGER" \
+              --branch "$BRANCH" \
+              --created "$STARTED..$FINISHED" \
+              --json databaseId,url \
+              --limit 1 \
+              --jq 'first(.[] // "") // ""')
+  
+            if [[ -n "$runs" ]]; then
+              run_id=$(echo "$runs" | jq -r '.databaseId')
+              url=$(echo "$runs" | jq -r '.url')
+            fi
+  
+            if [[ -z $run_id ]]; then
+              retry_count=$((retry_count + 1))
+              echo "Attempt $retry_count: Run not found, retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
 
-              const response = await github.rest.actions.listWorkflowRuns({
-                ...context.repo,
-                workflow_id: process.env.WORKFLOW_ID_TO_TRIGGER,
-                branch: process.env.BRANCH,
-                created: `${process.env.STARTED}..${process.env.FINISHED}`,
-                per_page: 1,
-              });
-              
-              if (response.data.workflow_runs.length > 0) {
-                run = response.data.workflow_runs[0];
-              }
+          if [[ -z $run_id ]]; then
+            echo "Unable to retrieve run ID after $max_retries retries"
+            exit 1
+          fi
 
-              if (!run) {
-                retryCount++;
-                await new Promise(resolve => setTimeout(resolve, 5000));
-              }
-            }
+          echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
+          echo "run_id=$run_id" >>$GITHUB_OUTPUT
 
-            if (!run) {
-              throw new Error(`Unable to retrieve run ID after ${maxRetries} retries.`);
-            }
-
-            console.log(`Retrieved run ID: ${run.id}`);
-            
-            await core.summary
-              .addHeading(`Run <a href="${run.html_url}">${run.id}</a>`, 4)
-              .write();
-            
-            return run.id
+          echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY
 
       - name: "Monitor triggered workflow"
         id: monitor-triggered-workflow
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.1.0
-        timeout-minutes: 120
+        timeout-minutes: 240
         env:
-          RUN_ID: ${{ steps.get-run-id.outputs.result }}
-        with:
-          retries: '5'
-          script: |
-            const interval = 120_000; // Check every 2 minutes
-
-            while (true) {
-              const { data: { jobs } } = await github.rest.actions.listJobsForWorkflowRun({
-                ...context.repo,
-                run_id: process.env.RUN_ID,
-              });
-              
-              if (!jobs.length) {
-                console.log('No jobs in run, which suggests that the run is pending or waiting');
-              } else if (jobs.every(job => job.conclusion !== null)) {
-                console.log('All jobs completed');
-                
-                // Prepare table data for summary
-                const headers = [
-                  { data: 'Job', header: true },
-                  { data: 'Steps', header: true },
-                  { data: 'Conclusion', header: true },
-                ];
-                
-                const rows = jobs.map(job => [
-                  { data: `<a href="${job.html_url}">${job.name}</a>` },
-                  { data: job.conclusion || 'in_progress' },
-                ]);
-                
-                return core.summary.addTable([headers, ...rows]).write();
-              } else {
-                // Log jobs in progress
-                console.table(jobs
-                  .filter(job => job.status !== 'completed')
-                  .map(job => {
-                    const finishedSteps = job.steps.filter(s => s.conclusion).length;
-                    
-                    return {
-                      Job: job.name,
-                      Status: job.status,
-                      Steps: `${finishedSteps}/${job.steps.length}`,
-                      Conclusion: job.conclusion || 'in_progress',
-                    };
-                  }));  
-              }
-              
-              // Wait before checking again
-              const nextCheck = new Date(Date.now() + interval).toLocaleTimeString();
-              console.log(`Next check will be in ${interval / 1_000} seconds, at: ${nextCheck} (UTC)`);
-              await new Promise(resolve => setTimeout(resolve, interval));
-            }
+          RUN_ID: ${{ steps.get-run-id.outputs.run_id }}
+        run: |
+          gh run watch "$RUN_ID" \
+            --repo "$REPOSITORY" \
+            --interval 360 # Check every 5 minutes 
