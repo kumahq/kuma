@@ -1,0 +1,115 @@
+openapi: 3.0.3
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "MeshGateway"
+
+paths:
+  /meshgateways/{name}:
+    get:
+      summary: Returns MeshGateway entity
+      tags: [ "MeshGateway" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshGatewayItem"
+
+    put:
+      summary: Creates or Updates MeshGateway entity
+      tags: [ "MeshGateway" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+
+    delete:
+      summary: Deletes MeshGateway entity
+      tags: [ "MeshGateway" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          description: Successful response
+
+  /meshgateways:
+    get:
+      summary: Returns a list of MeshGateway in the mesh.
+      tags: [ "MeshGateway" ]
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshGatewayList"
+
+components:
+  schemas:
+    MeshGatewayItem:
+      $ref: 'schema.yaml'
+    MeshGatewayCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: |
+            warnings is a list of warning messages to return to the requesting Kuma API clients.
+            Warning messages describe a problem the client making the API request should correct or be aware of.
+          items:
+            type: string
+
+  responses:
+    MeshGatewayItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshGatewayItem'
+    MeshGatewayList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshGatewayItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

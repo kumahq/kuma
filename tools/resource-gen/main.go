@@ -3,6 +3,8 @@ package main
 import (
 	"bytes"
 	"flag"
+	"fmt"
+	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	"go/format"
 	"log"
 	"os"
@@ -460,14 +462,36 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			Properties: schemaMap,
 		}
 
-		// TODO merge the schema with a global open api schema for the resource (might be worth to just make these objects
-		
 		out, err := yaml.Marshal(schema)
 		if err != nil {
 			return err
 		}
-		// TODO the name of the file is Caml cased, I think this shouldn't be necessary
-		err = os.WriteFile(path.Join("api", pkg, "v1alpha1", r.ResourceType+"_openapi_gen.yaml"), out, 0644)
+
+		outDir := path.Join("api", pkg, "v1alpha1", strings.ToLower(r.ResourceType))
+
+		// Ensure the directory exists
+		err = os.MkdirAll(outDir, 0o755)
+		if err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
+
+		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0644)
+		if err != nil {
+			return err
+		}
+
+		templatePath := path.Join("tools", "openapi", "templates", "endpoints.yaml")
+		tmpl, err := template.ParseFiles(templatePath)
+		if err != nil {
+			return err
+		}
+		opts := map[string]interface{}{
+			"Package": "v1alpha1",
+			"Name":    r.ResourceType,
+			"Scope":   "Global",
+			"Path":    r.WsPath,
+		}
+		err = save.PlainTemplate(tmpl, opts, path.Join(outDir, "rest.yaml"))
 		if err != nil {
 			return err
 		}

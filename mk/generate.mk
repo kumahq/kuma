@@ -48,6 +48,7 @@ clean/legacy-resources:
 
 POLICIES_DIR ?= pkg/plugins/policies
 RESOURCES_DIR ?= pkg/core/resources/apis
+MESH_API_DIR ?= api/mesh/v1alpha1
 COMMON_DIR := api/common
 
 policies = $(foreach dir,$(shell find $(POLICIES_DIR) -maxdepth 1 -mindepth 1 -type d | grep -v -e '/core$$' | grep -v -e '/system$$' | grep -v -e '/mesh$$' | sort),$(notdir $(dir)))
@@ -86,7 +87,7 @@ generate/policy/%: $(POLICY_GEN)
 	$(POLICY_GEN) k8s-resource --plugin-dir $(POLICIES_DIR)/$* --controller-gen-bin $(CONTROLLER_GEN) --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) plugin-file --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE) && \
 	$(POLICY_GEN) helpers --plugin-dir $(POLICIES_DIR)/$* --gomodule $(GO_MODULE)
-	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/policy-gen/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/policy-gen/templates/schema.yaml --gomodule $(GO_MODULE)
+	$(POLICY_GEN) openapi --plugin-dir $(POLICIES_DIR)/$* --yq-bin $(YQ) --openapi-template-path=$(TOOLS_DIR)/openapi/templates/endpoints.yaml --jsonschema-template-path=$(TOOLS_DIR)/openapi/templates/schema.yaml --gomodule $(GO_MODULE)
 	@echo "Policy $* successfully generated"
 
 generate/policy-import:
