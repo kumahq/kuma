@@ -24,7 +24,7 @@ jobs:
       # golangci-lint-action
       checks: write
     timeout-minutes: 25
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
@@ -89,7 +89,7 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:
@@ -128,7 +128,7 @@ jobs:
     needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10
     if: ${{ always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       actions: read # For getting workflow run info

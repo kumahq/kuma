@@ -23,7 +23,7 @@ env:
 jobs:
   package:
     name: Package
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       filename: ${{ steps.package.outputs.filename }}
     steps:
