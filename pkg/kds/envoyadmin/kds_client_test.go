@@ -11,7 +11,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
-	config_util "github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -33,11 +32,10 @@ var _ = Describe("KDS client", func() {
 		cfg := kuma_cp.DefaultConfig()
 		cfg.Store.Type = storeType
 		displayCfg, _ := config.ConfigForDisplay(&cfg)
-		bytes, _ := config_util.ToJson(displayCfg)
 		zoneInsight.Spec.Subscriptions = []*v1alpha1.KDSSubscription{
 			{
 				ConnectTime: util_proto.MustTimestampProto(t1),
-				Config:      string(bytes),
+				Config:      displayCfg,
 			},
 		}
 		return zoneInsight

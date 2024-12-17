@@ -35,38 +35,39 @@ jobs:
             
             [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
       - name: Check PR title
-        # This job checks the PR title using
-        # https://github.com/conventional-changelog/commitlint
-        # for the conventional commit format at
-        # https://www.conventionalcommits.org/en/v1.0.0/
-        # See also /.github/commitlint.config.js for more details
-        # We only need to check the PR title because it will end up being the
-        # (default) commit title when doing squash merges with Github.
-        # See
-        # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
-        # for more info. We have "Default to PR title for squash merge commits" enabled.
+        # Check PR title against the Conventional Commits format using commitlint.
+        # For more details, see: https://www.conventionalcommits.org/en/v1.0.0/
+        # This ensures the PR title matches the conventonal commit title format
+        # as it will be usead as a commit name after squashing.
+        # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge.
         if: github.event.action != 'synchronize'
-        # Inject as env variable to escape properly
         env:
+          # Use an intermediate environment variable to safely handle the PR title
+          # and avoid potential injection risks. See:
+          # https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          echo '
-            module.exports = {
-              extends: ["@commitlint/config-conventional"],
-              helpUrl:
-                  "https://github.com/kumahq/kuma/blob/master/CONTRIBUTING.md#commit-message-format",
-              rules: {
-                "body-max-line-length": [0],
-                "footer-max-line-length": [0],
-                "footer-leading-blank": [0],
-                "header-max-length": [0],
-                       // Disable some common mistyped scopes and some that should be used
-                "scope-enum": [2, "never", [
-                  "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf", "policies", "tests"
-                ]],
-                "scope-empty": [2, "never"]
-              },
-            };
-          ' > commitlint.config.js
+          # Create a temporary commitlint configuration file
+          cat <<EOF > commitlint.config.js
+          module.exports = {
+            extends: ["@commitlint/config-conventional"],
+            helpUrl: "https://github.com/kumahq/kuma/blob/master/CONTRIBUTING.md#commit-message-format",
+            rules: {
+              "body-max-line-length": [0],
+              "footer-max-line-length": [0],
+              "footer-leading-blank": [0],
+              "header-max-length": [0],
+              "scope-enum": [2, "never", [
+                "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf", "policies", "tests"
+              ]],
+              "scope-empty": [2, "never"]
+            },
+          };
+          EOF
+
+          # Install commitlint CLI and configuration
           npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
-          echo "${{ env.TITLE }}" | commitlint --config commitlint.config.js
+
+          # Validate the PR title. Use the intermediate variable to safely handle the title.
+          # '${{ env.TITLE }}' doesn't protect against injection, so "$TITLE" must be used instead.
+          echo "$TITLE" | commitlint --config commitlint.config.js
