@@ -103,7 +103,7 @@ jobs:
             exit 1
           fi
 
-          echo "Attempt $retry_count: Retrieved run ID: $run_id"
+          echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
           echo "run_id=$run_id" >>$GITHUB_OUTPUT
 
           echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY
@@ -112,7 +112,7 @@ jobs:
         id: monitor-triggered-workflow
         timeout-minutes: 120
         env:
-          RUN_ID: ${{ steps.get-run-id.outputs.result }}
+          RUN_ID: ${{ steps.get-run-id.outputs.run_id }}
         run: |
           interval=120 # Check every 2 minutes
 
