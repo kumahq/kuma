@@ -116,4 +116,4 @@ jobs:
         run: |
           gh run watch "$RUN_ID" \
             --repo "$REPOSITORY" \
-            --interval 360 # Check every 5 minutes 
+            --interval 360 # Check every 5 minutes
