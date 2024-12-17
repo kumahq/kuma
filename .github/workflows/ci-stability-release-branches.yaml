@@ -117,7 +117,7 @@ jobs:
           interval=120 # Check every 2 minutes
 
           bold() { echo -e "\033[1m$1\033[0m"; }
-          grey() { echo -e "\033[90m$1\033[0m"; }
+          grey() { while IFS= read -r line; do echo -e "\033[90m$line\033[0m"; done; }
 
           while true; do
             jobs=$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json jobs --jq '.jobs')
