@@ -32,12 +32,7 @@ permissions:
   contents: read
 jobs:
   release:
-<<<<<<< HEAD
-    runs-on: ubuntu-latest
-=======
-    timeout-minutes: 30
     runs-on: ubuntu-24.04
->>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
         with:

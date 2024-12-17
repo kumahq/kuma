@@ -6,12 +6,7 @@ on:
 permissions: read-all
 jobs:
   build-matrix:
-<<<<<<< HEAD
-    runs-on: ubuntu-latest
-=======
-    timeout-minutes: 10
     runs-on: ubuntu-24.04
->>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     outputs:
       branches: ${{ steps.generate-matrix.outputs.branches }}
     steps:
