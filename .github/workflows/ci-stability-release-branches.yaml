@@ -20,7 +20,7 @@ jobs:
     permissions:
       contents: read
     outputs:
-      branches: ${{ steps.get-branches.outputs.result }}
+      branches: ${{ steps.get-branches.outputs.branches }}
     steps:
       - name: "Get active branches"
         id: get-branches
