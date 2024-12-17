@@ -22,15 +22,10 @@ updates:
       - dependency-name: github.com/envoyproxy/go-control-plane
 
   - package-ecosystem: "docker"
-    directory: "/tools/releases/dockerfiles"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 15
-    labels:
-      - "dependencies"
-
-  - package-ecosystem: "docker"
-    directory: "/test/dockerfiles"
+    directories:
+      - "/tools/releases/dockerfiles"
+      - "/test/dockerfiles"
+      - "/deployments/charts/**/*"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 15
