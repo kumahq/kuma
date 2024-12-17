@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	"go/format"
 	"log"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
+
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
 
@@ -475,7 +477,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
-		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0644)
+		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o644)
 		if err != nil {
 			return err
 		}
@@ -523,5 +525,4 @@ func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
 		}
 		return nil
 	}
-
 }
