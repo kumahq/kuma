@@ -18,7 +18,7 @@ env:
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
 jobs:
   trigger-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Generate GitHub app token
         id: github-app-token

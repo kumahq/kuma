@@ -54,11 +54,7 @@ func Setup(rt core_runtime.Runtime) error {
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
-	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
-	if err != nil {
-		return errors.Wrap(err, "could not construct config for display")
-	}
-	cfgJson, err := config.ToJson(cfgForDisplay)
+	cfgJson, err := config.ConfigForDisplay(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "could not marshall config to json")
 	}
@@ -68,7 +64,7 @@ func Setup(rt core_runtime.Runtime) error {
 		syncClient := kds_client_v2.NewKDSSyncClient(
 			log,
 			reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, string(cfgJson)),
+			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, cfgJson),
 			kds_sync_store_v2.ZoneSyncCallback(
 				stream.Context(),
 				rt.KDSContext().Configs,
