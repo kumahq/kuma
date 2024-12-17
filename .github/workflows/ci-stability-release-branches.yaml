@@ -85,12 +85,12 @@ jobs:
               --json databaseId,url \
               --limit 1 \
               --jq 'first(.[] // "") // ""')
-  
+
             if [[ -n "$runs" ]]; then
               run_id=$(echo "$runs" | jq -r '.databaseId')
               url=$(echo "$runs" | jq -r '.url')
             fi
-  
+
             if [[ -z $run_id ]]; then
               retry_count=$((retry_count + 1))
               echo "Attempt $retry_count: Run not found, retrying in 5 seconds..."
@@ -116,4 +116,4 @@ jobs:
         run: |
           gh run watch "$RUN_ID" \
             --repo "$REPOSITORY" \
-            --interval 360 # Check every 5 minutes 
+            --interval 360 # Check every 5 minutes
