@@ -44,7 +44,7 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
@@ -88,7 +88,11 @@ jobs:
         run: |
           make publish/pulp
   build-images:
+<<<<<<< HEAD
     runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
+=======
+    runs-on: ubuntu-24.04
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -195,7 +199,12 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    runs-on: ubuntu-24.04
+    if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
@@ -213,7 +222,7 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:

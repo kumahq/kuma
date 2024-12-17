@@ -12,7 +12,13 @@ permissions:
 jobs:
   commit-lint:
     timeout-minutes: 10
+<<<<<<< HEAD
     runs-on: ubuntu-latest
+=======
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
+>>>>>>> 79dbceeef (ci(github): update workflows to use ubuntu-24.04 runners (#12251))
     steps:
       - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
       - name: Check PR title
