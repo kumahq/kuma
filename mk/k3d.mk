@@ -106,7 +106,7 @@ k3d/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
 
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
 	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
