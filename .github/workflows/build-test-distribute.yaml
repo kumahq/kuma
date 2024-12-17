@@ -1,4 +1,4 @@
-name: "build-test-distribute"
+name: "build-test-distribute" # This name is used by ci-stability-release-branches workflow. Update there too if you change this name.
 on:
   push:
     branches: ["master", "release-*", "!*-merge-master"]
