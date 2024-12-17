@@ -114,24 +114,6 @@ jobs:
         env:
           RUN_ID: ${{ steps.get-run-id.outputs.run_id }}
         run: |
-          interval=120 # Check every 2 minutes
-
-          bold() { while IFS= read -r line; do echo -e "\033[1m$line\033[0m"; done; }
-          grey() { while IFS= read -r line; do echo -e "\033[90m$line\033[0m"; done; }
-
-          while true; do
-            jobs=$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json jobs --jq '.jobs')
-
-            if [[ -z "$jobs" || "$jobs" == "null" || "$jobs" == "[]" ]]; then
-              echo "No jobs found. Workflow may still be in pending or waiting state" | bold
-            elif jq -e 'all(.conclusion != "")' <<< "$jobs" > /dev/null; then
-              echo "All jobs completed" | bold
-              break
-            else
-              echo "Jobs in progress" | bold
-              jq -r '.[] | select(.conclusion == "") | [.name, .status] | @tsv' <<< "$jobs" | column -ts$'\t' | grey
-            fi
-
-            echo "Next check in $interval seconds..." | bold
-            sleep $interval
-          done
+          gh run watch "$RUN_ID" \
+            --repo "$REPOSITORY" \
+            --interval 120 # Check every 2 minutes 
