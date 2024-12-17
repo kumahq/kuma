@@ -40,35 +40,13 @@ func UpgradingWithHelmChartMultizone() {
 		zoneUniversal = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	})
 
-<<<<<<< HEAD
 	E2EAfterAll(func() {
 		Expect(zoneUniversal.DismissCluster()).To(Succeed())
-		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
 		Expect(zoneK8s.DeleteKuma()).To(Succeed())
 		Expect(zoneK8s.DismissCluster()).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
-=======
-	E2EAfterEach(func() {
-		grp := sync.WaitGroup{}
-		grp.Add(3)
-		go func() {
-			defer grp.Done()
-			Expect(zoneUniversal.DismissCluster()).To(Succeed())
-		}()
-		go func() {
-			defer grp.Done()
-			Expect(zoneK8s.DeleteNamespace(namespace)).To(Succeed())
-			Expect(zoneK8s.DeleteKuma()).To(Succeed())
-			Expect(zoneK8s.DismissCluster()).To(Succeed())
-		}()
-		go func() {
-			defer grp.Done()
-			Expect(global.DeleteKuma()).To(Succeed())
-			Expect(global.DismissCluster()).To(Succeed())
-		}()
-		grp.Wait()
->>>>>>> 7d80a5ab5 (fix(e2e): don't reuse namespace for helm upgrade test (#11539))
 	})
 
 	It("should install a Kuma version 2 minor releases behind the current version on Global", func() {
@@ -158,21 +136,12 @@ spec:
 		}, "30s", "1s").Should(Equal(1))
 	})
 
-<<<<<<< HEAD
 	It("should sync DPPs from Zone to Global", func() {
 		// when start test server on Zone
 		err := NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(testserver.Install()).Setup(zoneK8s)
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
-=======
-			By("Sync DPPs from Zone to Global")
-			// when start test server on Zone
-			err = NewClusterSetup().
-				Install(NamespaceWithSidecarInjection(namespace)).
-				Install(testserver.Install(testserver.WithNamespace(namespace))).Setup(zoneK8s)
-			Expect(err).ToNot(HaveOccurred())
->>>>>>> 7d80a5ab5 (fix(e2e): don't reuse namespace for helm upgrade test (#11539))
 
 		// then the DPP is synced to Global
 		Eventually(func(g Gomega) int {
