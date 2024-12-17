@@ -116,22 +116,22 @@ jobs:
         run: |
           interval=120 # Check every 2 minutes
 
-          bold() { echo -e "\033[1m$1\033[0m"; }
+          bold() { while IFS= read -r line; do echo -e "\033[1m$line\033[0m"; done; }
           grey() { while IFS= read -r line; do echo -e "\033[90m$line\033[0m"; done; }
 
           while true; do
             jobs=$(gh run view "$RUN_ID" --repo "$REPOSITORY" --json jobs --jq '.jobs')
 
             if [[ -z "$jobs" || "$jobs" == "null" || "$jobs" == "[]" ]]; then
-              bold "No jobs found. Workflow may still be in pending or waiting state"
+              echo "No jobs found. Workflow may still be in pending or waiting state" | bold
             elif jq -e 'all(.conclusion != "")' <<< "$jobs" > /dev/null; then
-              bold "All jobs completed"
+              echo "All jobs completed" | bold
               break
             else
-              bold "Jobs in progress"
-              grey "$(jq -r '.[] | select(.conclusion == "") | [.name, .status] | @tsv' <<< "$jobs" | column -ts$'\t')"
+              echo "Jobs in progress" | bold
+              jq -r '.[] | select(.conclusion == "") | [.name, .status] | @tsv' <<< "$jobs" | column -ts$'\t' | grey
             fi
 
-            bold "Next check in $interval seconds..."
+            echo "Next check in $interval seconds..." | bold
             sleep $interval
           done
