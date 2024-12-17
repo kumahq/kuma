@@ -13,8 +13,6 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
-
 	"github.com/invopop/jsonschema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"google.golang.org/protobuf/reflect/protoreflect"
@@ -477,7 +475,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
-		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o644)
+		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
 		if err != nil {
 			return err
 		}
