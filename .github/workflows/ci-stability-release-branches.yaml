@@ -110,7 +110,7 @@ jobs:
 
       - name: "Monitor triggered workflow"
         id: monitor-triggered-workflow
-        timeout-minutes: 120
+        timeout-minutes: 240
         env:
           RUN_ID: ${{ steps.get-run-id.outputs.run_id }}
         run: |
