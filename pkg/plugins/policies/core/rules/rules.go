@@ -130,6 +130,55 @@ func NewSubset(m map[string]string) Subset {
 	return s
 }
 
+type Element map[string]string
+
+func (ss Subset) ContainsElement(element Element) bool {
+	// 1. find the overlaps of element and current subset
+	// 2. verify the overlaps
+	// 3. verify the left of current subset
+
+	if len(ss) == 0 {
+		return true
+	}
+
+	overlapKeyCount := 0
+	for _, tag := range ss {
+		tmpVal, ok := element[tag.Key]
+		if ok {
+			overlapKeyCount++
+
+			// contradict
+			if tag.Value == tmpVal && tag.Not == true {
+				return false
+			}
+			// intersect
+			if tag.Value == tmpVal && tag.Not == false {
+				continue
+			}
+			// intersect
+			if tag.Value != tmpVal && tag.Not == true {
+				continue
+			}
+			// contradict
+			if tag.Value != tmpVal && tag.Not == false {
+				return false
+			}
+		} else {
+			// for those items that don't exist in element should not make an impact
+			if tag.Not == false {
+				return false
+			}
+		}
+	}
+
+	// no overlap means no connections
+	if overlapKeyCount == 0 {
+		return false
+	}
+
+	return true
+}
+
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
 func (ss Subset) IsSubset(other Subset) bool {
@@ -196,7 +245,7 @@ func (ss Subset) Intersect(other Subset) bool {
 		}
 		oTags, ok := otherByKeysOnlyPositive[tag.Key]
 		if !ok {
-			return true
+			continue
 		}
 		for _, otherTag := range oTags {
 			if otherTag != tag {
@@ -289,6 +338,15 @@ func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.Reso
 }
 
 type Rules []*Rule
+
+func (rs Rules) NewCompute(element Element) *Rule {
+	for _, rule := range rs {
+		if rule.Subset.ContainsElement(element) {
+			return rule
+		}
+	}
+	return nil
+}
 
 // Compute returns configuration for the given subset.
 func (rs Rules) Compute(sub Subset) *Rule {

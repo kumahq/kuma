@@ -300,6 +300,75 @@ var _ = Describe("Rules", func() {
 				s2:        []core_rules.Tag{},
 				intersect: true,
 			}),
+			Entry("entry 7", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 8", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 9", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				intersect: false,
+			}),
+			Entry("entry 10", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v1"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 11", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+					{Key: "version", Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v2"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: false,
+			}),
+			Entry("entry 12", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("entry 13", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+					{Key: "version", Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
 		)
 	})
 
@@ -375,7 +444,12 @@ var _ = Describe("Rules", func() {
 
 		DescribeTable("should compute conf for subset based on rules",
 			func(given testCase) {
-				conf := given.rules.Compute(given.subset)
+				element := core_rules.Element{}
+				for _, tag := range given.subset {
+					element[tag.Key] = tag.Value
+				}
+
+				conf := given.rules.NewCompute(element)
 				if given.confYAML == nil {
 					Expect(conf).To(BeNil())
 				} else {
@@ -398,6 +472,22 @@ var _ = Describe("Rules", func() {
 				subset: []core_rules.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
+				},
+				confYAML: []byte(`action: Allow`),
+			}),
+			Entry("single matched rule and subset", testCase{
+				rules: core_rules.Rules{
+					{
+						Subset: []core_rules.Tag{
+							{Key: "key1", Value: "val1"},
+						},
+						Conf: meshtrafficpermission_api.Conf{
+							Action: "Allow",
+						},
+					},
+				},
+				subset: []core_rules.Tag{
+					{Key: "key1", Value: "val1"}, // rule has "key1: val1"
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
@@ -429,9 +519,9 @@ var _ = Describe("Rules", func() {
 					},
 				},
 				subset: []core_rules.Tag{
-					{Key: "key1", Value: "val1", Not: true},
+					{Key: "key1", Value: "val1"},
 				},
-				confYAML: []byte(`action: Allow`),
+				confYAML: nil,
 			}),
 			Entry("empty set is a superset for all subset", testCase{
 				rules: core_rules.Rules{
@@ -496,7 +586,7 @@ var _ = Describe("Rules", func() {
 				},
 				confYAML: nil,
 			}),
-			Entry("no rules matched, rule with negation", testCase{
+			Entry("no rules matched, subset has same key and value", testCase{
 				rules: core_rules.Rules{
 					{
 						Subset: []core_rules.Tag{
@@ -508,23 +598,7 @@ var _ = Describe("Rules", func() {
 					},
 				},
 				subset: []core_rules.Tag{
-					{Key: "key1", Value: "val1"}, // rule has "key1: !val1"
-				},
-				confYAML: nil,
-			}),
-			Entry("no rules matched, subset with negation", testCase{
-				rules: core_rules.Rules{
-					{
-						Subset: []core_rules.Tag{
-							{Key: "key1", Value: "val1"},
-						},
-						Conf: meshtrafficpermission_api.Conf{
-							Action: "Allow",
-						},
-					},
-				},
-				subset: []core_rules.Tag{
-					{Key: "key1", Value: "val1", Not: true}, // rule has "key1: val1"
+					{Key: "key1", Value: "val1"},
 				},
 				confYAML: nil,
 			}),
@@ -558,6 +632,23 @@ var _ = Describe("Rules", func() {
 					{Key: "key3", Value: "val3"},
 				},
 				confYAML: []byte(`action: Deny`),
+			}),
+			Entry("n dimensions rules and n-1 dimensions subsets", testCase{
+				rules: core_rules.Rules{
+					{
+						Subset: []core_rules.Tag{
+							{Key: "key1", Value: "val1"},
+							{Key: "key2", Value: "val1", Not: true},
+						},
+						Conf: meshtrafficpermission_api.Conf{
+							Action: "Allow",
+						},
+					},
+				},
+				subset: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				confYAML: []byte(`action: Allow`),
 			}),
 		)
 	})
