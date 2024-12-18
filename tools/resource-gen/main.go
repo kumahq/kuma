@@ -454,7 +454,10 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
-		schemaMap.Set("spec", reflector.ReflectFromType(tpe))
+		properties := reflector.ReflectFromType(tpe).Properties
+		for pair := properties.Oldest(); pair != nil; pair = pair.Next() {
+			schemaMap.Set(pair.Key, pair.Value)
+		}
 
 		schema := jsonschema.Schema{
 			Type:       "object",

@@ -11407,365 +11407,359 @@ components:
             type: string
     MeshItem:
       properties:
+        constraints:
+          description: Constraints that applies to the mesh and its entities
+          properties:
+            dataplaneProxy:
+              description: >-
+                DataplaneProxyMembership defines a set of requirements for data
+                plane
+
+                proxies to be a member of the mesh.
+              properties:
+                requirements:
+                  description: >-
+                    Requirements defines a set of requirements that data plane
+                    proxies must
+
+                    fulfill in order to join the mesh. A data plane proxy must
+                    fulfill at
+
+                    least one requirement in order to join the mesh. Empty list
+                    of allowed
+
+                    requirements means that any proxy that is not explicitly
+                    denied can join.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+                restrictions:
+                  description: >-
+                    Restrictions defines a set of restrictions that data plane
+                    proxies cannot
+
+                    fulfill in order to join the mesh. A data plane proxy cannot
+                    fulfill any
+
+                    requirement in order to join the mesh.
+
+                    Restrictions takes precedence over requirements.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+              type: object
+          type: object
         labels:
           additionalProperties:
             type: string
           type: object
+        logging:
+          description: |-
+            Logging settings.
+            +optional
+          properties:
+            backends:
+              description: List of available logging backends
+              items:
+                description: LoggingBackend defines logging backend available to mesh.
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties:
+                      fields:
+                        additionalProperties:
+                          properties:
+                            Kind: true
+                          required:
+                            - Kind
+                          type: object
+                        type: object
+                    type: object
+                  format:
+                    description: >-
+                      Format of access logs. Placeholders available on
+
+                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                    type: string
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.logging.defaultBackend or in
+
+                      TrafficLogging
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
+          type: object
+        meshServices:
+          properties:
+            mode:
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
+        metrics:
+          description: >-
+            Configuration for metrics collected and exposed by dataplanes.
+
+
+            Settings defined here become defaults for every dataplane in a given
+            Mesh.
+
+            Additionally, it is also possible to further customize this
+            configuration
+
+            for each dataplane individually using Dataplane resource.
+
+            +optional
+          properties:
+            backends:
+              description: List of available Metrics backends
+              items:
+                description: MetricsBackend defines metric backends
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties:
+                      fields:
+                        additionalProperties:
+                          properties:
+                            Kind: true
+                          required:
+                            - Kind
+                          type: object
+                        type: object
+                    type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.metrics.enabledBackend
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'prometheus')
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+          type: object
+        mtls:
+          description: |-
+            mTLS settings.
+            +optional
+          properties:
+            backends:
+              description: List of available Certificate Authority backends
+              items:
+                description: >-
+                  CertificateAuthorityBackend defines Certificate Authority
+                  backend
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties:
+                      fields:
+                        additionalProperties:
+                          properties:
+                            Kind: true
+                          required:
+                            - Kind
+                          type: object
+                        type: object
+                    type: object
+                  dpCert:
+                    description: Dataplane certificate settings
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request to CA for DP certificate generation
+                          and retrieval
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      rotation:
+                        description: Rotation settings
+                        properties:
+                          expiration:
+                            description: >-
+                              Time after which generated certificate for
+                              Dataplane will expire
+                            type: string
+                        type: object
+                    type: object
+                  mode:
+                    description: >-
+                      Mode defines the behaviour of inbound listeners with
+                      regard to traffic
+
+                      encryption
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  name:
+                    description: Name of the backend
+                    type: string
+                  rootChain:
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request for to CA for root certificate
+                          chain.
+
+                          If not specified, defaults to 10s.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                    type: object
+                  type:
+                    description: >-
+                      Type of the backend. Has to be one of the loaded plugins
+                      (Kuma ships with
+
+                      builtin and provided)
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+            skipValidation:
+              description: If enabled, skips CA validation.
+              type: boolean
+          type: object
         name:
           type: string
-        spec:
-          $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh
-          $schema: https://json-schema.org/draft/2020-12/schema
-          description: Mesh defines configuration of a single mesh.
+        networking:
+          description: Networking settings of the mesh
           properties:
-            constraints:
-              description: Constraints that applies to the mesh and its entities
+            outbound:
+              description: Outbound settings
               properties:
-                dataplaneProxy:
-                  description: >-
-                    DataplaneProxyMembership defines a set of requirements for
-                    data plane
-
-                    proxies to be a member of the mesh.
+                passthrough:
+                  description: Control the passthrough cluster
                   properties:
-                    requirements:
-                      description: >-
-                        Requirements defines a set of requirements that data
-                        plane proxies must
-
-                        fulfill in order to join the mesh. A data plane proxy
-                        must fulfill at
-
-                        least one requirement in order to join the mesh. Empty
-                        list of allowed
-
-                        requirements means that any proxy that is not explicitly
-                        denied can join.
-                      items:
-                        description: >-
-                          Rules defines a set of rules for data plane proxies to
-                          be member of the mesh.
-                        properties:
-                          tags:
-                            additionalProperties:
-                              type: string
-                            description: >-
-                              Tags defines set of required tags. You can specify
-                              '*' in value to
-
-                              require non empty value of tag
-                            type: object
-                        type: object
-                      type: array
-                    restrictions:
-                      description: >-
-                        Restrictions defines a set of restrictions that data
-                        plane proxies cannot
-
-                        fulfill in order to join the mesh. A data plane proxy
-                        cannot fulfill any
-
-                        requirement in order to join the mesh.
-
-                        Restrictions takes precedence over requirements.
-                      items:
-                        description: >-
-                          Rules defines a set of rules for data plane proxies to
-                          be member of the mesh.
-                        properties:
-                          tags:
-                            additionalProperties:
-                              type: string
-                            description: >-
-                              Tags defines set of required tags. You can specify
-                              '*' in value to
-
-                              require non empty value of tag
-                            type: object
-                        type: object
-                      type: array
+                    value:
+                      type: boolean
                   type: object
               type: object
-            logging:
+          type: object
+        routing:
+          description: Routing settings of the mesh
+          properties:
+            defaultForbidMeshExternalServiceAccess:
               description: |-
-                Logging settings.
-                +optional
-              properties:
-                backends:
-                  description: List of available logging backends
-                  items:
-                    description: LoggingBackend defines logging backend available to mesh.
-                    properties:
-                      conf:
-                        description: Configuration of the backend
-                        properties:
-                          fields:
-                            additionalProperties:
-                              properties:
-                                Kind: true
-                              required:
-                                - Kind
-                              type: object
-                            type: object
-                        type: object
-                      format:
-                        description: >-
-                          Format of access logs. Placeholders available on
-
-                          https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
-                        type: string
-                      name:
-                        description: >-
-                          Name of the backend, can be then used in
-                          Mesh.logging.defaultBackend or in
-
-                          TrafficLogging
-                        type: string
-                      type:
-                        description: Type of the backend (Kuma ships with 'tcp' and 'file')
-                        type: string
-                    type: object
-                  type: array
-                defaultBackend:
-                  description: Name of the default backend
-                  type: string
-              type: object
-            meshServices:
-              properties:
-                mode:
-                  oneOf:
-                    - type: string
-                    - type: integer
-              type: object
-            metrics:
+                If true, blocks traffic to MeshExternalServices.
+                Default: false
+              type: boolean
+            localityAwareLoadBalancing:
+              description: Enable the Locality Aware Load Balancing
+              type: boolean
+            zoneEgress:
               description: >-
-                Configuration for metrics collected and exposed by dataplanes.
+                Enable routing traffic to services in other zone or external
+                services
 
+                through ZoneEgress. Default: false
+              type: boolean
+          type: object
+        skipCreatingInitialPolicies:
+          description: >-
+            List of policies to skip creating by default when the mesh is
+            created.
 
-                Settings defined here become defaults for every dataplane in a
-                given Mesh.
+            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip
+            all
 
-                Additionally, it is also possible to further customize this
-                configuration
-
-                for each dataplane individually using Dataplane resource.
-
-                +optional
-              properties:
-                backends:
-                  description: List of available Metrics backends
-                  items:
-                    description: MetricsBackend defines metric backends
-                    properties:
-                      conf:
-                        description: Configuration of the backend
-                        properties:
-                          fields:
-                            additionalProperties:
-                              properties:
-                                Kind: true
-                              required:
-                                - Kind
-                              type: object
-                            type: object
-                        type: object
-                      name:
-                        description: >-
-                          Name of the backend, can be then used in
-                          Mesh.metrics.enabledBackend
-                        type: string
-                      type:
-                        description: Type of the backend (Kuma ships with 'prometheus')
-                        type: string
-                    type: object
-                  type: array
-                enabledBackend:
-                  description: Name of the enabled backend
-                  type: string
-              type: object
-            mtls:
-              description: |-
-                mTLS settings.
-                +optional
-              properties:
-                backends:
-                  description: List of available Certificate Authority backends
-                  items:
-                    description: >-
-                      CertificateAuthorityBackend defines Certificate Authority
-                      backend
-                    properties:
-                      conf:
-                        description: Configuration of the backend
-                        properties:
-                          fields:
-                            additionalProperties:
-                              properties:
-                                Kind: true
-                              required:
-                                - Kind
-                              type: object
-                            type: object
-                        type: object
-                      dpCert:
-                        description: Dataplane certificate settings
-                        properties:
-                          requestTimeout:
-                            description: >-
-                              Timeout on request to CA for DP certificate
-                              generation and retrieval
-                            properties:
-                              nanos:
-                                type: integer
-                              seconds:
-                                type: integer
-                            type: object
-                          rotation:
-                            description: Rotation settings
-                            properties:
-                              expiration:
-                                description: >-
-                                  Time after which generated certificate for
-                                  Dataplane will expire
-                                type: string
-                            type: object
-                        type: object
-                      mode:
-                        description: >-
-                          Mode defines the behaviour of inbound listeners with
-                          regard to traffic
-
-                          encryption
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      name:
-                        description: Name of the backend
-                        type: string
-                      rootChain:
-                        properties:
-                          requestTimeout:
-                            description: >-
-                              Timeout on request for to CA for root certificate
-                              chain.
-
-                              If not specified, defaults to 10s.
-                            properties:
-                              nanos:
-                                type: integer
-                              seconds:
-                                type: integer
-                            type: object
-                        type: object
-                      type:
-                        description: >-
-                          Type of the backend. Has to be one of the loaded
-                          plugins (Kuma ships with
-
-                          builtin and provided)
-                        type: string
-                    type: object
-                  type: array
-                enabledBackend:
-                  description: Name of the enabled backend
-                  type: string
-                skipValidation:
-                  description: If enabled, skips CA validation.
-                  type: boolean
-              type: object
-            networking:
-              description: Networking settings of the mesh
-              properties:
-                outbound:
-                  description: Outbound settings
-                  properties:
-                    passthrough:
-                      description: Control the passthrough cluster
-                      properties:
-                        value:
-                          type: boolean
-                      type: object
-                  type: object
-              type: object
-            routing:
-              description: Routing settings of the mesh
-              properties:
-                defaultForbidMeshExternalServiceAccess:
-                  description: |-
-                    If true, blocks traffic to MeshExternalServices.
-                    Default: false
-                  type: boolean
-                localityAwareLoadBalancing:
-                  description: Enable the Locality Aware Load Balancing
-                  type: boolean
-                zoneEgress:
-                  description: >-
-                    Enable routing traffic to services in other zone or external
-                    services
-
-                    through ZoneEgress. Default: false
-                  type: boolean
-              type: object
-            skipCreatingInitialPolicies:
-              description: >-
-                List of policies to skip creating by default when the mesh is
-                created.
-
-                e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to
-                skip all
-
-                policies.
+            policies.
+          items:
+            type: string
+          type: array
+        tracing:
+          description: |-
+            Tracing settings.
+            +optional
+          properties:
+            backends:
+              description: List of available tracing backends
               items:
-                type: string
-              type: array
-            tracing:
-              description: |-
-                Tracing settings.
-                +optional
-              properties:
-                backends:
-                  description: List of available tracing backends
-                  items:
-                    description: TracingBackend defines tracing backend available to mesh.
+                description: TracingBackend defines tracing backend available to mesh.
+                properties:
+                  conf:
+                    description: Configuration of the backend
                     properties:
-                      conf:
-                        description: Configuration of the backend
-                        properties:
-                          fields:
-                            additionalProperties:
-                              properties:
-                                Kind: true
-                              required:
-                                - Kind
-                              type: object
-                            type: object
+                      fields:
+                        additionalProperties:
+                          properties:
+                            Kind: true
+                          required:
+                            - Kind
+                          type: object
                         type: object
-                      name:
-                        description: >-
-                          Name of the backend, can be then used in
-                          Mesh.tracing.defaultBackend or in
-
-                          TrafficTrace
-                        type: string
-                      sampling:
-                        description: >-
-                          Percentage of traces that will be sent to the backend
-                          (range 0.0 - 100.0).
-
-                          Empty value defaults to 100.0%
-                        properties:
-                          value:
-                            type: number
-                        type: object
-                      type:
-                        description: Type of the backend (Kuma ships with 'zipkin')
-                        type: string
                     type: object
-                  type: array
-                defaultBackend:
-                  description: Name of the default backend
-                  type: string
-              type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.tracing.defaultBackend or in
+
+                      TrafficTrace
+                    type: string
+                  sampling:
+                    description: >-
+                      Percentage of traces that will be sent to the backend
+                      (range 0.0 - 100.0).
+
+                      Empty value defaults to 100.0%
+                    properties:
+                      value:
+                        type: number
+                    type: object
+                  type:
+                    description: Type of the backend (Kuma ships with 'zipkin')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
           type: object
         type:
           type: string
@@ -11789,6 +11783,148 @@ components:
             type: string
     MeshGatewayItem:
       properties:
+        conf:
+          description: The desired configuration of the MeshGateway.
+          properties:
+            listeners:
+              description: >-
+                Listeners define logical endpoints that are bound on this
+                MeshGateway's
+
+                address(es).
+              items:
+                properties:
+                  crossMesh:
+                    description: >-
+                      CrossMesh enables traffic to flow to this listener only
+                      from other
+
+                      meshes.
+                    type: boolean
+                  hostname:
+                    description: >-
+                      Hostname specifies the virtual hostname to match for
+                      protocol types that
+
+                      define this concept. When unspecified, "", or `*`, all
+                      hostnames are
+
+                      matched. This field can be omitted for protocols that
+                      don't require
+
+                      hostname based matching.
+                    type: string
+                  port:
+                    description: |-
+                      Port is the network port. Multiple listeners may use the
+                      same port, subject to the Listener compatibility rules.
+                    type: integer
+                  protocol:
+                    description: >-
+                      Protocol specifies the network protocol this listener
+                      expects to receive.
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  resources:
+                    description: >-
+                      Resources is used to specify listener-specific resource
+                      settings.
+                    properties:
+                      connection_limit:
+                        type: integer
+                    type: object
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: >-
+                      Tags specifies a unique combination of tags that routes
+                      can use
+
+                      to match themselves to this listener.
+
+
+                      When matching routes to listeners, the control plane
+                      constructs a
+
+                      set of matching tags for each listener by forming the
+                      union of the
+
+                      gateway tags and the listener tags. A route will be
+                      attached to the
+
+                      listener if all of the route's tags are preset in the
+                      matching tags
+                    type: object
+                  tls:
+                    description: |-
+                      TLS is the TLS configuration for the Listener. This field
+                      is required if the Protocol field is "HTTPS" or "TLS" and
+                      ignored otherwise.
+                    properties:
+                      certificates:
+                        description: >-
+                          Certificates is an array of datasources that contain
+                          TLS
+
+                          certificates and private keys.  Each datasource must
+                          contain a
+
+                          sequence of PEM-encoded objects. The server
+                          certificate and private
+
+                          key are required, but additional certificates are
+                          allowed and will
+
+                          be added to the certificate chain.  The server
+                          certificate must
+
+                          be the first certificate in the datasource.
+
+
+                          When multiple certificate datasources are configured,
+                          they must have
+
+                          different key types. In practice, this means that one
+                          datasource
+
+                          should contain an RSA key and certificate, and the
+                          other an
+
+                          ECDSA key and certificate.
+                        items:
+                          description: DataSource defines the source of bytes to use.
+                          properties:
+                            Type:
+                              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                          required:
+                            - Type
+                          type: object
+                        type: array
+                      mode:
+                        description: >-
+                          Mode defines the TLS behavior for the TLS session
+                          initiated
+
+                          by the client.
+                        oneOf:
+                          - type: string
+                          - type: integer
+                      options:
+                        description: >-
+                          Options should eventually configure how TLS is
+                          configured. This
+
+                          is where cipher suite and version configuration can be
+                          specified,
+
+                          client certificates enforced, and so on.
+                        properties: {}
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
         labels:
           additionalProperties:
             type: string
@@ -11797,193 +11933,31 @@ components:
           type: string
         name:
           type: string
-        spec:
-          $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh-gateway
-          $schema: https://json-schema.org/draft/2020-12/schema
-          description: MeshGateway is a virtual proxy.
-          properties:
-            conf:
-              description: The desired configuration of the MeshGateway.
-              properties:
-                listeners:
-                  description: >-
-                    Listeners define logical endpoints that are bound on this
-                    MeshGateway's
-
-                    address(es).
-                  items:
-                    properties:
-                      crossMesh:
-                        description: >-
-                          CrossMesh enables traffic to flow to this listener
-                          only from other
-
-                          meshes.
-                        type: boolean
-                      hostname:
-                        description: >-
-                          Hostname specifies the virtual hostname to match for
-                          protocol types that
-
-                          define this concept. When unspecified, "", or `*`, all
-                          hostnames are
-
-                          matched. This field can be omitted for protocols that
-                          don't require
-
-                          hostname based matching.
-                        type: string
-                      port:
-                        description: >-
-                          Port is the network port. Multiple listeners may use
-                          the
-
-                          same port, subject to the Listener compatibility
-                          rules.
-                        type: integer
-                      protocol:
-                        description: >-
-                          Protocol specifies the network protocol this listener
-                          expects to receive.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      resources:
-                        description: >-
-                          Resources is used to specify listener-specific
-                          resource settings.
-                        properties:
-                          connection_limit:
-                            type: integer
-                        type: object
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags specifies a unique combination of tags that
-                          routes can use
-
-                          to match themselves to this listener.
-
-
-                          When matching routes to listeners, the control plane
-                          constructs a
-
-                          set of matching tags for each listener by forming the
-                          union of the
-
-                          gateway tags and the listener tags. A route will be
-                          attached to the
-
-                          listener if all of the route's tags are preset in the
-                          matching tags
-                        type: object
-                      tls:
-                        description: >-
-                          TLS is the TLS configuration for the Listener. This
-                          field
-
-                          is required if the Protocol field is "HTTPS" or "TLS"
-                          and
-
-                          ignored otherwise.
-                        properties:
-                          certificates:
-                            description: >-
-                              Certificates is an array of datasources that
-                              contain TLS
-
-                              certificates and private keys.  Each datasource
-                              must contain a
-
-                              sequence of PEM-encoded objects. The server
-                              certificate and private
-
-                              key are required, but additional certificates are
-                              allowed and will
-
-                              be added to the certificate chain.  The server
-                              certificate must
-
-                              be the first certificate in the datasource.
-
-
-                              When multiple certificate datasources are
-                              configured, they must have
-
-                              different key types. In practice, this means that
-                              one datasource
-
-                              should contain an RSA key and certificate, and the
-                              other an
-
-                              ECDSA key and certificate.
-                            items:
-                              description: DataSource defines the source of bytes to use.
-                              properties:
-                                Type:
-                                  description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                              required:
-                                - Type
-                              type: object
-                            type: array
-                          mode:
-                            description: >-
-                              Mode defines the TLS behavior for the TLS session
-                              initiated
-
-                              by the client.
-                            oneOf:
-                              - type: string
-                              - type: integer
-                          options:
-                            description: >-
-                              Options should eventually configure how TLS is
-                              configured. This
-
-                              is where cipher suite and version configuration
-                              can be specified,
-
-                              client certificates enforced, and so on.
-                            properties: {}
-                            type: object
-                        type: object
-                    type: object
-                  type: array
-              type: object
-            selectors:
-              description: >-
-                Selectors is a list of selectors that are used to match builtin
-
-                gateway dataplanes that will receive this MeshGateway
-                configuration.
-              items:
-                description: >-
-                  Selector defines structure for selecting tags for given
-                  dataplane
-                properties:
-                  match:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags to match, can be used for both source and
-                      destinations
-                    type: object
+        selectors:
+          description: |-
+            Selectors is a list of selectors that are used to match builtin
+            gateway dataplanes that will receive this MeshGateway configuration.
+          items:
+            description: Selector defines structure for selecting tags for given dataplane
+            properties:
+              match:
+                additionalProperties:
+                  type: string
+                description: Tags to match, can be used for both source and destinations
                 type: object
-              type: array
-            tags:
-              additionalProperties:
-                type: string
-              description: >-
-                Tags is the set of tags common to all of the gateway's
-                listeners.
+            type: object
+          type: array
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags is the set of tags common to all of the gateway's listeners.
 
 
-                This field must not include a `kuma.io/service` tag (the service
-                is always
+            This field must not include a `kuma.io/service` tag (the service is
+            always
 
-                defined on the dataplanes).
-              type: object
+            defined on the dataplanes).
           type: object
         type:
           type: string

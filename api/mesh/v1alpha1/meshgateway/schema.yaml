@@ -1,4 +1,101 @@
 properties:
+  conf:
+    description: The desired configuration of the MeshGateway.
+    properties:
+      listeners:
+        description: |-
+          Listeners define logical endpoints that are bound on this MeshGateway's
+          address(es).
+        items:
+          properties:
+            crossMesh:
+              description: |-
+                CrossMesh enables traffic to flow to this listener only from other
+                meshes.
+              type: boolean
+            hostname:
+              description: |-
+                Hostname specifies the virtual hostname to match for protocol types that
+                define this concept. When unspecified, "", or `*`, all hostnames are
+                matched. This field can be omitted for protocols that don't require
+                hostname based matching.
+              type: string
+            port:
+              description: |-
+                Port is the network port. Multiple listeners may use the
+                same port, subject to the Listener compatibility rules.
+              type: integer
+            protocol:
+              description: Protocol specifies the network protocol this listener expects
+                to receive.
+              oneOf:
+              - type: string
+              - type: integer
+            resources:
+              description: Resources is used to specify listener-specific resource
+                settings.
+              properties:
+                connection_limit:
+                  type: integer
+              type: object
+            tags:
+              additionalProperties:
+                type: string
+              description: |-
+                Tags specifies a unique combination of tags that routes can use
+                to match themselves to this listener.
+
+                When matching routes to listeners, the control plane constructs a
+                set of matching tags for each listener by forming the union of the
+                gateway tags and the listener tags. A route will be attached to the
+                listener if all of the route's tags are preset in the matching tags
+              type: object
+            tls:
+              description: |-
+                TLS is the TLS configuration for the Listener. This field
+                is required if the Protocol field is "HTTPS" or "TLS" and
+                ignored otherwise.
+              properties:
+                certificates:
+                  description: |-
+                    Certificates is an array of datasources that contain TLS
+                    certificates and private keys.  Each datasource must contain a
+                    sequence of PEM-encoded objects. The server certificate and private
+                    key are required, but additional certificates are allowed and will
+                    be added to the certificate chain.  The server certificate must
+                    be the first certificate in the datasource.
+
+                    When multiple certificate datasources are configured, they must have
+                    different key types. In practice, this means that one datasource
+                    should contain an RSA key and certificate, and the other an
+                    ECDSA key and certificate.
+                  items:
+                    description: DataSource defines the source of bytes to use.
+                    properties:
+                      Type:
+                        description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                    required:
+                    - Type
+                    type: object
+                  type: array
+                mode:
+                  description: |-
+                    Mode defines the TLS behavior for the TLS session initiated
+                    by the client.
+                  oneOf:
+                  - type: string
+                  - type: integer
+                options:
+                  description: |-
+                    Options should eventually configure how TLS is configured. This
+                    is where cipher suite and version configuration can be specified,
+                    client certificates enforced, and so on.
+                  properties: {}
+                  type: object
+              type: object
+          type: object
+        type: array
+    type: object
   labels:
     additionalProperties:
       type: string
@@ -7,131 +104,28 @@ properties:
     type: string
   name:
     type: string
-  spec:
-    $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh-gateway
-    $schema: https://json-schema.org/draft/2020-12/schema
-    description: MeshGateway is a virtual proxy.
-    properties:
-      conf:
-        description: The desired configuration of the MeshGateway.
-        properties:
-          listeners:
-            description: |-
-              Listeners define logical endpoints that are bound on this MeshGateway's
-              address(es).
-            items:
-              properties:
-                crossMesh:
-                  description: |-
-                    CrossMesh enables traffic to flow to this listener only from other
-                    meshes.
-                  type: boolean
-                hostname:
-                  description: |-
-                    Hostname specifies the virtual hostname to match for protocol types that
-                    define this concept. When unspecified, "", or `*`, all hostnames are
-                    matched. This field can be omitted for protocols that don't require
-                    hostname based matching.
-                  type: string
-                port:
-                  description: |-
-                    Port is the network port. Multiple listeners may use the
-                    same port, subject to the Listener compatibility rules.
-                  type: integer
-                protocol:
-                  description: Protocol specifies the network protocol this listener
-                    expects to receive.
-                  oneOf:
-                  - type: string
-                  - type: integer
-                resources:
-                  description: Resources is used to specify listener-specific resource
-                    settings.
-                  properties:
-                    connection_limit:
-                      type: integer
-                  type: object
-                tags:
-                  additionalProperties:
-                    type: string
-                  description: |-
-                    Tags specifies a unique combination of tags that routes can use
-                    to match themselves to this listener.
-
-                    When matching routes to listeners, the control plane constructs a
-                    set of matching tags for each listener by forming the union of the
-                    gateway tags and the listener tags. A route will be attached to the
-                    listener if all of the route's tags are preset in the matching tags
-                  type: object
-                tls:
-                  description: |-
-                    TLS is the TLS configuration for the Listener. This field
-                    is required if the Protocol field is "HTTPS" or "TLS" and
-                    ignored otherwise.
-                  properties:
-                    certificates:
-                      description: |-
-                        Certificates is an array of datasources that contain TLS
-                        certificates and private keys.  Each datasource must contain a
-                        sequence of PEM-encoded objects. The server certificate and private
-                        key are required, but additional certificates are allowed and will
-                        be added to the certificate chain.  The server certificate must
-                        be the first certificate in the datasource.
-
-                        When multiple certificate datasources are configured, they must have
-                        different key types. In practice, this means that one datasource
-                        should contain an RSA key and certificate, and the other an
-                        ECDSA key and certificate.
-                      items:
-                        description: DataSource defines the source of bytes to use.
-                        properties:
-                          Type:
-                            description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                        required:
-                        - Type
-                        type: object
-                      type: array
-                    mode:
-                      description: |-
-                        Mode defines the TLS behavior for the TLS session initiated
-                        by the client.
-                      oneOf:
-                      - type: string
-                      - type: integer
-                    options:
-                      description: |-
-                        Options should eventually configure how TLS is configured. This
-                        is where cipher suite and version configuration can be specified,
-                        client certificates enforced, and so on.
-                      properties: {}
-                      type: object
-                  type: object
-              type: object
-            type: array
-        type: object
-      selectors:
-        description: |-
-          Selectors is a list of selectors that are used to match builtin
-          gateway dataplanes that will receive this MeshGateway configuration.
-        items:
-          description: Selector defines structure for selecting tags for given dataplane
-          properties:
-            match:
-              additionalProperties:
-                type: string
-              description: Tags to match, can be used for both source and destinations
-              type: object
+  selectors:
+    description: |-
+      Selectors is a list of selectors that are used to match builtin
+      gateway dataplanes that will receive this MeshGateway configuration.
+    items:
+      description: Selector defines structure for selecting tags for given dataplane
+      properties:
+        match:
+          additionalProperties:
+            type: string
+          description: Tags to match, can be used for both source and destinations
           type: object
-        type: array
-      tags:
-        additionalProperties:
-          type: string
-        description: |-
-          Tags is the set of tags common to all of the gateway's listeners.
+      type: object
+    type: array
+  tags:
+    additionalProperties:
+      type: string
+    description: |-
+      Tags is the set of tags common to all of the gateway's listeners.
 
-          This field must not include a `kuma.io/service` tag (the service is always
-          defined on the dataplanes).
-        type: object
+      This field must not include a `kuma.io/service` tag (the service is always
+      defined on the dataplanes).
     type: object
   type:
     type: string
