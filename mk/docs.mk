@@ -37,10 +37,11 @@ docs/generated/openapi.yaml:
 	mkdir -p $(dir $@)
 	mkdir -p $(OAPI_TMP_DIR)/policies
 	mkdir -p $(OAPI_TMP_DIR)/resources
+	mkdir -p $(OAPI_TMP_DIR)/protoresources
 	for i in $(API_DIRS); do mkdir -p $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); cp -R $$(echo $${i} | cut -d: -f1) $(OAPI_TMP_DIR)/$$(echo $${i} | cut -d: -f2); done
 	for i in $$( find $(POLICIES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/policies/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 	for i in $$( find $(RESOURCES_DIR) -name '*.yaml' | grep '/api/' | grep -v '/testdata/'); do DIR=$(OAPI_TMP_DIR)/resources/$$(echo $${i} | awk -F/ '{print $$(NF-3)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
-	for i in $$( find $(MESH_API_DIR) -name '*.yaml'); do DIR=$(OAPI_TMP_DIR)/resources/$$(echo $${i} | awk -F/ '{print $$(NF-1)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
+	for i in $$( find $(MESH_API_DIR) -name '*.yaml'); do DIR=$(OAPI_TMP_DIR)/protoresources/$$(echo $${i} | awk -F/ '{print $$(NF-1)}'); mkdir -p $${DIR}; cp $${i} $${DIR}/$$(echo $${i} | awk -F/ '{print $$(NF)}'); done
 
 ifdef BASE_API
 	docker run --rm -v $$PWD/$(dir $(BASE_API)):/base -v $(OAPI_TMP_DIR):/specs ghcr.io/kumahq/openapi-tool:v0.12.0 generate /base/$(notdir $(BASE_API)) '/specs/**/*.yaml'  '!/specs/kuma/**' > $@

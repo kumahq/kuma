@@ -450,7 +450,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		schemaMap := orderedmap.New[string, *jsonschema.Schema]()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
 		schemaMap.Set("name", &jsonschema.Schema{Type: "string"})
-		if r.Global {
+		if !r.Global {
 			schemaMap.Set("mesh", &jsonschema.Schema{Type: "string"})
 		}
 		schemaMap.Set("labels", &jsonschema.Schema{Type: "object", AdditionalProperties: &jsonschema.Schema{Type: "string"}})
@@ -485,10 +485,14 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if err != nil {
 			return err
 		}
+		scope := "Mesh"
+		if r.Global {
+			scope = "Global"
+		}
 		opts := map[string]interface{}{
 			"Package": "v1alpha1",
 			"Name":    r.ResourceType,
-			"Scope":   "Global",
+			"Scope":   scope,
 			"Path":    r.WsPath,
 		}
 		err = save.PlainTemplate(tmpl, opts, path.Join(outDir, "rest.yaml"))
