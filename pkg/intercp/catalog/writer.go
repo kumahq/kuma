@@ -82,7 +82,7 @@ func (r *catalogWriter) Start(stop <-chan struct{}) error {
 		case <-stop:
 			cancelFn()
 			if err := r.catalog.DropLeader(context.WithoutCancel(ctx), r.instance); err != nil {
-				writerLog.Error(err, "could not drop leader. It will be replaced by the next leader")
+				writerLog.Info("could not drop leader, it will be replaced by the next leader", "err", err)
 			} else {
 				writerLog.Info("leader dropped")
 			}
