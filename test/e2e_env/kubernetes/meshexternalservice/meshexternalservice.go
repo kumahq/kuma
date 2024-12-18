@@ -19,7 +19,6 @@ import (
 
 func MeshExternalServices() {
 	meshName := "mesh-external-services"
-	meshNameEgress := "mesh-external-services-egress"
 	namespace := "mesh-external-services"
 	clientNamespace := "client-mesh-external-services"
 
@@ -28,17 +27,9 @@ func MeshExternalServices() {
 			Install(YamlK8s(samples.MeshMTLSBuilder().
 				WithName(meshName).
 				WithEgressRoutingEnabled().KubeYaml())).
-			Install(YamlK8s(samples.MeshMTLSBuilder().
-				WithName(meshNameEgress).
-				WithoutPassthrough().
-				WithMeshExternalServiceTrafficForbidden().
-				WithEgressRoutingEnabled().KubeYaml())).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
-			Install(Parallel(
-				democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName)),
-				democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithName("demo-client-egress"), democlient.WithMesh(meshNameEgress)),
-			)).
+			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -124,7 +115,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshExternalService
 metadata:
-  name: mesh-external-service-egress
+  name: mesh-external-service-rbac
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -135,51 +126,41 @@ spec:
     port: 80
     protocol: http
   endpoints:
-    - address: external-service-egress.mesh-external-services.svc.cluster.local
+    - address: external-service-rbac.mesh-external-services.svc.cluster.local
       port: 80
-`, Config.KumaNamespace, meshNameEgress)
+`, Config.KumaNamespace, meshName)
 
 		filter := fmt.Sprintf(
 			"cluster.%s_%s_%s_default_extsvc_80.upstream_rq_total",
-			meshNameEgress,
-			"mesh-external-service-egress",
+			meshName,
+			"mesh-external-service-rbac",
 			Config.KumaNamespace,
 		)
 		BeforeAll(func() {
 			err := kubernetes.Cluster.Install(testserver.Install(
 				testserver.WithNamespace(namespace),
-				testserver.WithName("external-service-egress"),
+				testserver.WithName("external-service-rbac"),
 			))
 			Expect(err).ToNot(HaveOccurred())
+		})
+
+		AfterAll(func() {
+			Expect(kubernetes.Cluster.Install(YamlK8s(
+				samples.MeshMTLSBuilder().
+					WithName(meshName).
+					WithEgressRoutingEnabled().KubeYaml()),
+			)).To(Succeed())
 		})
 
 		It("should route to external-service", func() {
 			// when apply external service and hostname generator
 			Expect(kubernetes.Cluster.Install(YamlK8s(meshExternalService))).To(Succeed())
 
-			// then traffic doesn't work because of missing MeshTrafficPermission
-			Eventually(func(g Gomega) {
-				response, err := client.CollectFailure(
-					kubernetes.Cluster, "demo-client-egress", "mesh-external-service-egress.extsvc.mesh.local",
-					client.FromKubernetesPod(clientNamespace, "demo-client-egress"),
-				)
-				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(response.ResponseCode).To(Equal(403))
-			}, "30s", "1s").Should(Succeed())
-
-			// when allow all traffic
-			Expect(kubernetes.Cluster.Install(YamlK8s(
-				samples.MeshMTLSBuilder().
-					WithName(meshNameEgress).
-					WithoutPassthrough().
-					WithEgressRoutingEnabled().KubeYaml()),
-			)).To(Succeed())
-
-			// then traffic works
+			// then traffic work
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
-					kubernetes.Cluster, "demo-client-egress", "mesh-external-service-egress.extsvc.mesh.local",
-					client.FromKubernetesPod(clientNamespace, "demo-client-egress"),
+					kubernetes.Cluster, "demo-client", "mesh-external-service-rbac.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
 			}, "30s", "1s").Should(Succeed())
@@ -189,6 +170,25 @@ spec:
 				stat, err := kubernetes.Cluster.GetZoneEgressEnvoyTunnel().GetStats(filter)
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(stat).To(stats.BeGreaterThanZero())
+			}, "30s", "1s").Should(Succeed())
+
+			// when disable all traffic
+			Expect(kubernetes.Cluster.Install(YamlK8s(
+				samples.MeshMTLSBuilder().
+					WithName(meshName).
+					WithoutPassthrough().
+					WithMeshExternalServiceTrafficForbidden().
+					WithEgressRoutingEnabled().KubeYaml()),
+			)).To(Succeed())
+
+			// then traffic doesn't work
+			Eventually(func(g Gomega) {
+				response, err := client.CollectFailure(
+					kubernetes.Cluster, "demo-client", "mesh-external-service-rbac.extsvc.mesh.local",
+					client.FromKubernetesPod(clientNamespace, "demo-client"),
+				)
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(response.ResponseCode).To(Equal(403))
 			}, "30s", "1s").Should(Succeed())
 		})
 	})
