@@ -11766,7 +11766,6 @@ components:
       required:
         - type
         - name
-        - spec
       type: object
     MeshCreateOrUpdateSuccessResponse:
       type: object
@@ -11964,7 +11963,7 @@ components:
       required:
         - type
         - name
-        - spec
+        - mesh
       type: object
     MeshGatewayCreateOrUpdateSuccessResponse:
       type: object

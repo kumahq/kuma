@@ -427,6 +427,7 @@ func main() {
 }
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
+	// this is where the new types need to be added if we want to generate openAPI for it
 	protoTypeToType := map[string]reflect.Type{
 		"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
 		"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
@@ -434,7 +435,6 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 
 	for _, r := range resources {
 		tpe, exists := protoTypeToType[r.ResourceType]
-		println("generating", r.ResourceType)
 		if !exists {
 			continue
 		}
@@ -461,8 +461,12 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 
 		schema := jsonschema.Schema{
 			Type:       "object",
-			Required:   []string{"type", "name", "spec"},
+			Required:   []string{"type", "name"},
 			Properties: schemaMap,
+		}
+
+		if !r.Global {
+			schema.Required = append(schema.Required, "mesh")
 		}
 
 		out, err := yaml.Marshal(schema)

@@ -132,5 +132,5 @@ properties:
 required:
 - type
 - name
-- spec
+- mesh
 type: object
