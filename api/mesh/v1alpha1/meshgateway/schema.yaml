@@ -3,6 +3,8 @@ properties:
     additionalProperties:
       type: string
     type: object
+  mesh:
+    type: string
   name:
     type: string
   spec:

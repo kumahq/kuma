@@ -1698,6 +1698,167 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
+  /meshes/{name}:
+    get:
+      summary: Returns Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshItem'
+    put:
+      summary: Creates or Updates Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+    delete:
+      summary: Deletes Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          description: Successful response
+  /meshes:
+    get:
+      summary: Returns a list of Mesh in the mesh.
+      tags:
+        - Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshList'
+  /meshes/{mesh}/meshgateways/{name}:
+    get:
+      summary: Returns MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayItem'
+    put:
+      summary: Creates or Updates MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+    delete:
+      summary: Deletes MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshgateways:
+    get:
+      summary: Returns a list of MeshGateway in the mesh.
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayList'
   /hostnamegenerators/{name}:
     get:
       summary: Returns HostnameGenerator entity
@@ -1768,74 +1929,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorList'
-  /meshes/{name}:
-    get:
-      summary: Returns Mesh entity
-      tags:
-        - Mesh
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshItem'
-    put:
-      summary: Creates or Updates Mesh entity
-      tags:
-        - Mesh
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Mesh
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshItem'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
-    delete:
-      summary: Deletes Mesh entity
-      tags:
-        - Mesh
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the Mesh
-      responses:
-        '200':
-          description: Successful response
-  /meshes:
-    get:
-      summary: Returns a list of Mesh in the mesh.
-      tags:
-        - Mesh
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshList'
   /meshes/{mesh}/meshexternalservices/{name}:
     get:
       summary: Returns MeshExternalService entity
@@ -1931,74 +2024,6 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceList'
-  /meshgateways/{name}:
-    get:
-      summary: Returns MeshGateway entity
-      tags:
-        - MeshGateway
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshGateway
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayItem'
-    put:
-      summary: Creates or Updates MeshGateway entity
-      tags:
-        - MeshGateway
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshGateway
-      requestBody:
-        description: Put request
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MeshGatewayItem'
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
-    delete:
-      summary: Deletes MeshGateway entity
-      tags:
-        - MeshGateway
-      parameters:
-        - in: path
-          name: name
-          schema:
-            type: string
-          required: true
-          description: name of the MeshGateway
-      responses:
-        '200':
-          description: Successful response
-  /meshgateways:
-    get:
-      summary: Returns a list of MeshGateway in the mesh.
-      tags:
-        - MeshGateway
-      responses:
-        '200':
-          $ref: '#/components/responses/MeshGatewayList'
   /meshes/{mesh}/meshmultizoneservices/{name}:
     get:
       summary: Returns MeshMultiZoneService entity
@@ -11380,87 +11405,12 @@ components:
             request should correct or be aware of.
           items:
             type: string
-    HostnameGeneratorItem:
-      type: object
-      required:
-        - type
-        - name
-        - spec
-      properties:
-        type:
-          description: the type of the resource
-          type: string
-          enum:
-            - HostnameGenerator
-        name:
-          description: Name of the Kuma resource
-          type: string
-        labels:
-          additionalProperties:
-            type: string
-          description: The labels to help identity resources
-          type: object
-        spec:
-          description: Spec is the specification of the Kuma HostnameGenerator resource.
-          properties:
-            selector:
-              properties:
-                meshExternalService:
-                  properties:
-                    matchLabels:
-                      additionalProperties:
-                        type: string
-                      type: object
-                  type: object
-                meshMultiZoneService:
-                  properties:
-                    matchLabels:
-                      additionalProperties:
-                        type: string
-                      type: object
-                  type: object
-                meshService:
-                  properties:
-                    matchLabels:
-                      additionalProperties:
-                        type: string
-                      type: object
-                  type: object
-              type: object
-            template:
-              type: string
-          type: object
-        creationTime:
-          type: string
-          description: Time at which the resource was created
-          format: date-time
-          example: '0001-01-01T00:00:00Z'
-        modificationTime:
-          type: string
-          description: Time at which the resource was updated
-          format: date-time
-          example: '0001-01-01T00:00:00Z'
-    HostnameGeneratorCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
     MeshItem:
       properties:
         labels:
           additionalProperties:
             type: string
           type: object
-        mesh:
-          type: string
         name:
           type: string
         spec:
@@ -11837,6 +11787,297 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshGatewayItem:
+      properties:
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        spec:
+          $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh-gateway
+          $schema: https://json-schema.org/draft/2020-12/schema
+          description: MeshGateway is a virtual proxy.
+          properties:
+            conf:
+              description: The desired configuration of the MeshGateway.
+              properties:
+                listeners:
+                  description: >-
+                    Listeners define logical endpoints that are bound on this
+                    MeshGateway's
+
+                    address(es).
+                  items:
+                    properties:
+                      crossMesh:
+                        description: >-
+                          CrossMesh enables traffic to flow to this listener
+                          only from other
+
+                          meshes.
+                        type: boolean
+                      hostname:
+                        description: >-
+                          Hostname specifies the virtual hostname to match for
+                          protocol types that
+
+                          define this concept. When unspecified, "", or `*`, all
+                          hostnames are
+
+                          matched. This field can be omitted for protocols that
+                          don't require
+
+                          hostname based matching.
+                        type: string
+                      port:
+                        description: >-
+                          Port is the network port. Multiple listeners may use
+                          the
+
+                          same port, subject to the Listener compatibility
+                          rules.
+                        type: integer
+                      protocol:
+                        description: >-
+                          Protocol specifies the network protocol this listener
+                          expects to receive.
+                        oneOf:
+                          - type: string
+                          - type: integer
+                      resources:
+                        description: >-
+                          Resources is used to specify listener-specific
+                          resource settings.
+                        properties:
+                          connection_limit:
+                            type: integer
+                        type: object
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags specifies a unique combination of tags that
+                          routes can use
+
+                          to match themselves to this listener.
+
+
+                          When matching routes to listeners, the control plane
+                          constructs a
+
+                          set of matching tags for each listener by forming the
+                          union of the
+
+                          gateway tags and the listener tags. A route will be
+                          attached to the
+
+                          listener if all of the route's tags are preset in the
+                          matching tags
+                        type: object
+                      tls:
+                        description: >-
+                          TLS is the TLS configuration for the Listener. This
+                          field
+
+                          is required if the Protocol field is "HTTPS" or "TLS"
+                          and
+
+                          ignored otherwise.
+                        properties:
+                          certificates:
+                            description: >-
+                              Certificates is an array of datasources that
+                              contain TLS
+
+                              certificates and private keys.  Each datasource
+                              must contain a
+
+                              sequence of PEM-encoded objects. The server
+                              certificate and private
+
+                              key are required, but additional certificates are
+                              allowed and will
+
+                              be added to the certificate chain.  The server
+                              certificate must
+
+                              be the first certificate in the datasource.
+
+
+                              When multiple certificate datasources are
+                              configured, they must have
+
+                              different key types. In practice, this means that
+                              one datasource
+
+                              should contain an RSA key and certificate, and the
+                              other an
+
+                              ECDSA key and certificate.
+                            items:
+                              description: DataSource defines the source of bytes to use.
+                              properties:
+                                Type:
+                                  description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                              required:
+                                - Type
+                              type: object
+                            type: array
+                          mode:
+                            description: >-
+                              Mode defines the TLS behavior for the TLS session
+                              initiated
+
+                              by the client.
+                            oneOf:
+                              - type: string
+                              - type: integer
+                          options:
+                            description: >-
+                              Options should eventually configure how TLS is
+                              configured. This
+
+                              is where cipher suite and version configuration
+                              can be specified,
+
+                              client certificates enforced, and so on.
+                            properties: {}
+                            type: object
+                        type: object
+                    type: object
+                  type: array
+              type: object
+            selectors:
+              description: >-
+                Selectors is a list of selectors that are used to match builtin
+
+                gateway dataplanes that will receive this MeshGateway
+                configuration.
+              items:
+                description: >-
+                  Selector defines structure for selecting tags for given
+                  dataplane
+                properties:
+                  match:
+                    additionalProperties:
+                      type: string
+                    description: >-
+                      Tags to match, can be used for both source and
+                      destinations
+                    type: object
+                type: object
+              type: array
+            tags:
+              additionalProperties:
+                type: string
+              description: >-
+                Tags is the set of tags common to all of the gateway's
+                listeners.
+
+
+                This field must not include a `kuma.io/service` tag (the service
+                is always
+
+                defined on the dataplanes).
+              type: object
+          type: object
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - spec
+      type: object
+    MeshGatewayCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    HostnameGeneratorItem:
+      type: object
+      required:
+        - type
+        - name
+        - spec
+      properties:
+        type:
+          description: the type of the resource
+          type: string
+          enum:
+            - HostnameGenerator
+        name:
+          description: Name of the Kuma resource
+          type: string
+        labels:
+          additionalProperties:
+            type: string
+          description: The labels to help identity resources
+          type: object
+        spec:
+          description: Spec is the specification of the Kuma HostnameGenerator resource.
+          properties:
+            selector:
+              properties:
+                meshExternalService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                meshMultiZoneService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+                meshService:
+                  properties:
+                    matchLabels:
+                      additionalProperties:
+                        type: string
+                      type: object
+                  type: object
+              type: object
+            template:
+              type: string
+          type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+    HostnameGeneratorCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
     MeshExternalServiceItem:
       type: object
       required:
@@ -12182,222 +12423,6 @@ components:
               type: object
           type: object
     MeshExternalServiceCreateOrUpdateSuccessResponse:
-      type: object
-      properties:
-        warnings:
-          type: array
-          description: >
-            warnings is a list of warning messages to return to the requesting
-            Kuma API clients.
-
-            Warning messages describe a problem the client making the API
-            request should correct or be aware of.
-          items:
-            type: string
-    MeshGatewayItem:
-      properties:
-        labels:
-          additionalProperties:
-            type: string
-          type: object
-        name:
-          type: string
-        spec:
-          $id: https://github.com/kumahq/kuma/api/mesh/v1alpha1/mesh-gateway
-          $schema: https://json-schema.org/draft/2020-12/schema
-          description: MeshGateway is a virtual proxy.
-          properties:
-            conf:
-              description: The desired configuration of the MeshGateway.
-              properties:
-                listeners:
-                  description: >-
-                    Listeners define logical endpoints that are bound on this
-                    MeshGateway's
-
-                    address(es).
-                  items:
-                    properties:
-                      crossMesh:
-                        description: >-
-                          CrossMesh enables traffic to flow to this listener
-                          only from other
-
-                          meshes.
-                        type: boolean
-                      hostname:
-                        description: >-
-                          Hostname specifies the virtual hostname to match for
-                          protocol types that
-
-                          define this concept. When unspecified, "", or `*`, all
-                          hostnames are
-
-                          matched. This field can be omitted for protocols that
-                          don't require
-
-                          hostname based matching.
-                        type: string
-                      port:
-                        description: >-
-                          Port is the network port. Multiple listeners may use
-                          the
-
-                          same port, subject to the Listener compatibility
-                          rules.
-                        type: integer
-                      protocol:
-                        description: >-
-                          Protocol specifies the network protocol this listener
-                          expects to receive.
-                        oneOf:
-                          - type: string
-                          - type: integer
-                      resources:
-                        description: >-
-                          Resources is used to specify listener-specific
-                          resource settings.
-                        properties:
-                          connection_limit:
-                            type: integer
-                        type: object
-                      tags:
-                        additionalProperties:
-                          type: string
-                        description: >-
-                          Tags specifies a unique combination of tags that
-                          routes can use
-
-                          to match themselves to this listener.
-
-
-                          When matching routes to listeners, the control plane
-                          constructs a
-
-                          set of matching tags for each listener by forming the
-                          union of the
-
-                          gateway tags and the listener tags. A route will be
-                          attached to the
-
-                          listener if all of the route's tags are preset in the
-                          matching tags
-                        type: object
-                      tls:
-                        description: >-
-                          TLS is the TLS configuration for the Listener. This
-                          field
-
-                          is required if the Protocol field is "HTTPS" or "TLS"
-                          and
-
-                          ignored otherwise.
-                        properties:
-                          certificates:
-                            description: >-
-                              Certificates is an array of datasources that
-                              contain TLS
-
-                              certificates and private keys.  Each datasource
-                              must contain a
-
-                              sequence of PEM-encoded objects. The server
-                              certificate and private
-
-                              key are required, but additional certificates are
-                              allowed and will
-
-                              be added to the certificate chain.  The server
-                              certificate must
-
-                              be the first certificate in the datasource.
-
-
-                              When multiple certificate datasources are
-                              configured, they must have
-
-                              different key types. In practice, this means that
-                              one datasource
-
-                              should contain an RSA key and certificate, and the
-                              other an
-
-                              ECDSA key and certificate.
-                            items:
-                              description: DataSource defines the source of bytes to use.
-                              properties:
-                                Type:
-                                  description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
-                              required:
-                                - Type
-                              type: object
-                            type: array
-                          mode:
-                            description: >-
-                              Mode defines the TLS behavior for the TLS session
-                              initiated
-
-                              by the client.
-                            oneOf:
-                              - type: string
-                              - type: integer
-                          options:
-                            description: >-
-                              Options should eventually configure how TLS is
-                              configured. This
-
-                              is where cipher suite and version configuration
-                              can be specified,
-
-                              client certificates enforced, and so on.
-                            properties: {}
-                            type: object
-                        type: object
-                    type: object
-                  type: array
-              type: object
-            selectors:
-              description: >-
-                Selectors is a list of selectors that are used to match builtin
-
-                gateway dataplanes that will receive this MeshGateway
-                configuration.
-              items:
-                description: >-
-                  Selector defines structure for selecting tags for given
-                  dataplane
-                properties:
-                  match:
-                    additionalProperties:
-                      type: string
-                    description: >-
-                      Tags to match, can be used for both source and
-                      destinations
-                    type: object
-                type: object
-              type: array
-            tags:
-              additionalProperties:
-                type: string
-              description: >-
-                Tags is the set of tags common to all of the gateway's
-                listeners.
-
-
-                This field must not include a `kuma.io/service` tag (the service
-                is always
-
-                defined on the dataplanes).
-              type: object
-          type: object
-        type:
-          type: string
-      required:
-        - type
-        - name
-        - spec
-      type: object
-    MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
@@ -13285,29 +13310,6 @@ components:
               next:
                 type: string
                 description: URL to the next page
-    HostnameGeneratorItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/HostnameGeneratorItem'
-    HostnameGeneratorList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/HostnameGeneratorItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     MeshItem:
       description: Successful response
       content:
@@ -13331,29 +13333,6 @@ components:
               next:
                 type: string
                 description: URL to the next page
-    MeshExternalServiceItem:
-      description: Successful response
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/MeshExternalServiceItem'
-    MeshExternalServiceList:
-      description: List
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              items:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MeshExternalServiceItem'
-              total:
-                type: number
-                description: The total number of entities
-              next:
-                type: string
-                description: URL to the next page
     MeshGatewayItem:
       description: Successful response
       content:
@@ -13371,6 +13350,52 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshGatewayItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    HostnameGeneratorItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/HostnameGeneratorItem'
+    HostnameGeneratorList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/HostnameGeneratorItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshExternalServiceItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshExternalServiceItem'
+    MeshExternalServiceList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshExternalServiceItem'
               total:
                 type: number
                 description: The total number of entities
