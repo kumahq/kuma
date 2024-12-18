@@ -1,0 +1,115 @@
+openapi: 3.0.3
+info:
+  version: v1alpha1
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "Mesh"
+
+paths:
+  /meshes/{name}:
+    get:
+      summary: Returns Mesh entity
+      tags: [ "Mesh" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshItem"
+
+    put:
+      summary: Creates or Updates Mesh entity
+      tags: [ "Mesh" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+
+    delete:
+      summary: Deletes Mesh entity
+      tags: [ "Mesh" ]
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          description: Successful response
+
+  /meshes:
+    get:
+      summary: Returns a list of Mesh in the mesh.
+      tags: [ "Mesh" ]
+      responses:
+        '200':
+          $ref: "#/components/responses/MeshList"
+
+components:
+  schemas:
+    MeshItem:
+      $ref: 'schema.yaml'
+    MeshCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: |
+            warnings is a list of warning messages to return to the requesting Kuma API clients.
+            Warning messages describe a problem the client making the API request should correct or be aware of.
+          items:
+            type: string
+
+  responses:
+    MeshItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshItem'
+    MeshList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MeshItem"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
