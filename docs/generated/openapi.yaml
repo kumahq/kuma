@@ -11491,15 +11491,7 @@ components:
                 properties:
                   conf:
                     description: Configuration of the backend
-                    properties:
-                      fields:
-                        additionalProperties:
-                          properties:
-                            Kind: true
-                          required:
-                            - Kind
-                          type: object
-                        type: object
+                    properties: {}
                     type: object
                   format:
                     description: >-
@@ -11552,15 +11544,7 @@ components:
                 properties:
                   conf:
                     description: Configuration of the backend
-                    properties:
-                      fields:
-                        additionalProperties:
-                          properties:
-                            Kind: true
-                          required:
-                            - Kind
-                          type: object
-                        type: object
+                    properties: {}
                     type: object
                   name:
                     description: >-
@@ -11590,15 +11574,7 @@ components:
                 properties:
                   conf:
                     description: Configuration of the backend
-                    properties:
-                      fields:
-                        additionalProperties:
-                          properties:
-                            Kind: true
-                          required:
-                            - Kind
-                          type: object
-                        type: object
+                    properties: {}
                     type: object
                   dpCert:
                     description: Dataplane certificate settings
@@ -11725,15 +11701,7 @@ components:
                 properties:
                   conf:
                     description: Configuration of the backend
-                    properties:
-                      fields:
-                        additionalProperties:
-                          properties:
-                            Kind: true
-                          required:
-                            - Kind
-                          type: object
-                        type: object
+                    properties: {}
                     type: object
                   name:
                     description: >-
