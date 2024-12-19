@@ -104,7 +104,7 @@ generate/policy-helm:
 
 endpoints = $(foreach dir,$(shell find api/openapi/specs -type f | sort),$(basename $(dir)))
 
-generate/oas: $(GENERATE_OAS_PREREQUISITES)
+generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
 	for endpoint in $(endpoints); do \
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
