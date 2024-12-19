@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"sync"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -137,12 +138,16 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, uniZone1Options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressLegacyToken)).
+			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
+	vipCIDROverride := "251.0.0.0/8"
+	if Config.IPV6 {
+		vipCIDROverride = "fd00:fd11::/64"
+	}
 	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 	uniZone2Options := append(
 		[]framework.KumaDeploymentOption{
@@ -151,6 +156,7 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)
@@ -286,4 +292,37 @@ func RestoreState(bytes []byte) {
 	UniZone2.SetCp(cp)
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+}
+
+func PrintCPLogsOnFailure(report Report) {
+	if !report.SuiteSucceeded {
+		for _, cluster := range append(Zones(), Global) {
+			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
+			logs, err := cluster.GetKumaCPLogs()
+			if err != nil {
+				Logf("could not retrieve cp logs")
+			} else {
+				Logf(logs)
+			}
+		}
+	}
+}
+
+func PrintKubeState(report Report) {
+	if !report.SuiteSucceeded {
+		for _, cluster := range []Cluster{KubeZone1, KubeZone2} {
+			Logf("Kube state of cluster: " + cluster.Name())
+			// just running it, prints the logs
+			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
+				framework.Logf("could not retrieve kube pods")
+			}
+		}
+	}
+}
+
+func ExpectCpsToNotCrash() {
+	restartCount := framework.RestartCount(KubeZone1.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
+	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
+	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
 }
