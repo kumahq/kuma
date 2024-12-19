@@ -43,10 +43,14 @@ func Delegated() {
 				testserver.WithName("test-server"),
 			)).
 			Install(kic.KongIngressController(
+				kic.WithName("delegated"),
 				kic.WithNamespace(config.namespace),
 				kic.WithMesh(config.mesh),
 			)).
-			Install(kic.KongIngressService(kic.WithNamespace(config.namespace))).
+			Install(kic.KongIngressService(
+				kic.WithName("delegated"),
+				kic.WithNamespace(config.namespace),
+			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -54,7 +58,7 @@ metadata:
   namespace: %s
   name: %s-ingress
   annotations:
-    kubernetes.io/ingress.class: kong
+    kubernetes.io/ingress.class: delegated
 spec:
   rules:
   - http:
