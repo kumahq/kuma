@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -68,7 +69,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
-	annotations := metadata.Annotations(svc.Annotations)
+	annotations := metadata.Annotations(maps.Clone(svc.Annotations))
 	if annotations == nil {
 		annotations = metadata.Annotations{}
 	}
