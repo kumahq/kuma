@@ -793,7 +793,7 @@ func (i *KumaInjector) NewAnnotations(podAnnotations map[string]string, logger l
 		)
 	}
 
-	if err := setVirtualProbesPortAnnotation(result, podAnnotations, i.cfg); err != nil {
+	if err := setVirtualProbesPortAnnotation(result, annotations, i.cfg); err != nil {
 		return nil, errors.Wrap(
 			err,
 			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation),

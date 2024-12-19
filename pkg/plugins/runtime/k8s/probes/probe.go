@@ -80,7 +80,7 @@ func (p KumaProbe) Path() string {
 	return p.HTTPGet.Path
 }
 
-func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, cfgVirtualProbesEnabled bool) error {
+func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnnotations metadata.Annotations, cfgVirtualProbesEnabled bool) error {
 	str := func(b bool) string {
 		if b {
 			return metadata.AnnotationEnabled
@@ -88,11 +88,11 @@ func SetVirtualProbesEnabledAnnotation(annotations metadata.Annotations, podAnno
 		return metadata.AnnotationDisabled
 	}
 
-	vpEnabled, vpExist, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	vpEnabled, vpExist, err := podAnnotations.GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
 		return err
 	}
-	gwEnabled, _, err := metadata.Annotations(podAnnotations).GetEnabled(metadata.KumaGatewayAnnotation)
+	gwEnabled, _, err := podAnnotations.GetEnabled(metadata.KumaGatewayAnnotation)
 	if err != nil {
 		return err
 	}
