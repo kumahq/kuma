@@ -30,6 +30,11 @@ func SetupAndGetState() []byte {
 			framework.WithCtlOpts(map[string]string{
 				"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true", // needed for test/e2e_env/kubernetes/gateway/gatewayapi.go:470
 			}),
+			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
+			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
+			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
+			framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Standalone.Kubernetes)...,
 	)
