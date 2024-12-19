@@ -109,7 +109,7 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES)
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
 	done
-	$(RESOURCE_GEN) -package mesh -generator openapi
+	$(RESOURCE_GEN) -package mesh -generator openapi -rootDir $(KUMA_DIR)
 
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation
