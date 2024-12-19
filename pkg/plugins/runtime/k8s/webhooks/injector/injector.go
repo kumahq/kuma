@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"os"
 	"strconv"
 	"strings"
@@ -132,20 +133,24 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	}
 
 	// annotations
-	if pod.Annotations == nil {
-		pod.Annotations = map[string]string{}
+	annotations := maps.Clone(pod.Annotations)
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	labels := maps.Clone(pod.Labels)
+	if labels == nil {
+		labels = map[string]string{}
 	}
 
-	if _, hasDefaultContainer := pod.Annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !hasDefaultContainer {
-		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
+	if _, hasDefaultContainer := annotations[kube_podcmd.DefaultContainerAnnotationName]; len(pod.Spec.Containers) == 1 && !hasDefaultContainer {
+		annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
 	}
 
-	var annotations map[string]string
 	var injectedInitContainer *kube_core.Container
 
 	if i.cfg.TransparentProxyConfigMapName != "" {
-		tproxyCfgConfigMap := i.getTransparentProxyConfig(ctx, logger, pod)
-		tproxyCfg, err := tproxy_k8s.ConfigForKubernetes(tproxyCfgConfigMap, i.cfg, pod.Annotations, logger)
+		tproxyCfgConfigMap := i.getTransparentProxyConfig(ctx, logger, annotations, pod.Namespace)
+		tproxyCfg, err := tproxy_k8s.ConfigForKubernetes(tproxyCfgConfigMap, i.cfg, annotations, logger)
 		if err != nil {
 			return err
 		}
@@ -156,23 +161,21 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		}
 		tproxyCfgYAML := string(tproxyCfgYAMLBytes)
 
-		if annotations, err = tproxy_k8s.ConfigToAnnotations(
+		additionalAnnotations, err := tproxy_k8s.ConfigToAnnotations(
 			tproxyCfg,
 			i.cfg,
 			pod.Annotations,
 			i.defaultAdminPort,
-		); err != nil {
+		)
+		if err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
 
-		for key, value := range annotations {
-			pod.Annotations[key] = value
+		for key, value := range additionalAnnotations {
+			annotations[key] = value
 		}
 
-		if pod.Labels == nil {
-			pod.Labels = map[string]string{}
-		}
-		pod.Labels[metadata.KumaMeshLabel] = meshName
+		labels[metadata.KumaMeshLabel] = meshName
 
 		switch {
 		case !tproxyCfg.CNIMode:
@@ -193,23 +196,19 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 			injectedInitContainer = &injected
 			fallthrough
 		default:
-			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
+			annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
 		}
 	} else { // this is legacy and deprecated - will be removed soon
-		if annotations, err = i.NewAnnotations(pod, logger); err != nil {
+		result, err := i.NewAnnotations(annotations, logger)
+		if err != nil {
 			return errors.Wrap(err, "could not generate annotations for pod")
 		}
-
-		for key, value := range annotations {
-			pod.Annotations[key] = value
+		for key, value := range result {
+			annotations[key] = value
 		}
+		labels[metadata.KumaMeshLabel] = meshName
 
-		if pod.Labels == nil {
-			pod.Labels = map[string]string{}
-		}
-		pod.Labels[metadata.KumaMeshLabel] = meshName
-
-		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(pod.Annotations)
+		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(annotations)
 		if err != nil {
 			return err
 		}
@@ -251,7 +250,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		})
 	}
 
-	initFirst, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaInitFirst)
+	initFirst, _, err := metadata.Annotations(annotations).GetEnabled(metadata.KumaInitFirst)
 	if err != nil {
 		return err
 	}
@@ -285,20 +284,22 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 
 	pod.Spec.InitContainers = append(append(prependInitContainers, pod.Spec.InitContainers...), appendInitContainers...)
 
-	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(pod)
+	disabledAppProbeProxy, err := probes.ApplicationProbeProxyDisabled(annotations)
 	if err != nil {
 		return err
 	}
 
 	if disabledAppProbeProxy {
-		if err := i.overrideHTTPProbes(pod); err != nil {
+		if err := i.overrideHTTPProbes(pod, annotations); err != nil {
 			return err
 		}
 	} else {
-		if err := probes.SetupAppProbeProxies(pod, log); err != nil {
+		if err := probes.SetupAppProbeProxies(pod, annotations, log); err != nil {
 			return err
 		}
 	}
+	pod.Annotations = annotations
+	pod.Labels = labels
 
 	return nil
 }
@@ -366,14 +367,15 @@ func (i *KumaInjector) loadContainerPatches(
 func (i *KumaInjector) getTransparentProxyConfig(
 	ctx context.Context,
 	logger logr.Logger,
-	pod *kube_core.Pod,
+	annotations map[string]string,
+	namespace string,
 ) tproxy_config.Config {
 	if i.cfg.TransparentProxyConfigMapName == "" {
 		return tproxy_config.DefaultConfig()
 	}
 
-	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
-		if c, err := i.getTransparentProxyConfigMap(ctx, v, pod.Namespace, logger, "annotation"); err == nil {
+	if v := annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+		if c, err := i.getTransparentProxyConfigMap(ctx, v, namespace, logger, "annotation"); err == nil {
 			return c
 		}
 
@@ -664,7 +666,7 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 }
 
 // Deprecated
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (map[string]string, error) {
+func (i *KumaInjector) NewAnnotations(podAnnotations map[string]string, logger logr.Logger) (map[string]string, error) {
 	portOutbound := i.cfg.SidecarContainer.RedirectPortOutbound
 	portInbound := i.cfg.SidecarContainer.RedirectPortInbound
 
@@ -680,7 +682,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		result[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-	annotations := metadata.Annotations(pod.Annotations)
+	annotations := metadata.Annotations(podAnnotations)
 
 	if v, exists, _ := annotations.GetEnabled(
 		metadata.KumaTransparentProxyingAnnotation,
@@ -782,7 +784,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 
 	if err := probes.SetVirtualProbesEnabledAnnotation(
 		result,
-		pod.Annotations,
+		annotations,
 		i.cfg.VirtualProbesEnabled,
 	); err != nil {
 		return nil, errors.Wrap(
@@ -791,7 +793,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 		)
 	}
 
-	if err := setVirtualProbesPortAnnotation(result, pod, i.cfg); err != nil {
+	if err := setVirtualProbesPortAnnotation(result, podAnnotations, i.cfg); err != nil {
 		return nil, errors.Wrap(
 			err,
 			fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation),
@@ -800,7 +802,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, logger logr.Logger) (m
 
 	if err := probes.SetApplicationProbeProxyPortAnnotation(
 		result,
-		pod.Annotations,
+		annotations,
 		i.cfg.ApplicationProbeProxyPort,
 	); err != nil {
 		return nil, errors.Wrap(

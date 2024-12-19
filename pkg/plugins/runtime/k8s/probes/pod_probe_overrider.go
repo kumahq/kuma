@@ -12,17 +12,17 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func ApplicationProbeProxyDisabled(pod *kube_core.Pod) (bool, error) {
-	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+func ApplicationProbeProxyDisabled(annotations map[string]string) (bool, error) {
+	appProbeProxyPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return false, err
 	}
 	return appProbeProxyPort == 0, nil
 }
 
-func SetupAppProbeProxies(pod *kube_core.Pod, log logr.Logger) error {
+func SetupAppProbeProxies(pod *kube_core.Pod, annotations map[string]string, log logr.Logger) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
-	appProbeProxyPort, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	appProbeProxyPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
 	}
@@ -129,7 +129,7 @@ func overrideProbe(probe *kube_core.Probe, virtualPort uint32,
 	return nil
 }
 
-func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, podAnnotations map[string]string, defaultAppProbeProxyPort uint32) error {
+func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, podAnnotations metadata.Annotations, defaultAppProbeProxyPort uint32) error {
 	str := func(port uint32) string {
 		return fmt.Sprintf("%d", port)
 	}
@@ -144,7 +144,7 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 
 	// if disabled by "kuma.io/virtual-probes", we honor it when there is no "kuma.io/application-probe-proxy-port" annotation
 	// this is treated as deprecated though
-	proxyPortAnno, proxyPortAnnoExists, err := metadata.Annotations(podAnnotations).GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
+	proxyPortAnno, proxyPortAnnoExists, err := podAnnotations.GetUint32(metadata.KumaApplicationProbeProxyPortAnnotation)
 	if err != nil {
 		return err
 	}
@@ -156,7 +156,7 @@ func SetApplicationProbeProxyPortAnnotation(annotations metadata.Annotations, po
 	if proxyPortAnnoExists {
 		appProbeProxyPort = proxyPortAnno
 	}
-	_, gwExists := metadata.Annotations(podAnnotations).GetString(metadata.KumaGatewayAnnotation)
+	_, gwExists := podAnnotations.GetString(metadata.KumaGatewayAnnotation)
 	if gwExists {
 		if proxyPortAnnoExists && proxyPortAnno > 0 {
 			return errors.New("application probe proxies probes can't be enabled in gateway mode")

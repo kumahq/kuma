@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"maps"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -72,10 +73,12 @@ func (r *MeshReconciler) ensureDefaultResources(ctx context.Context, mesh *core_
 		return errors.Wrap(err, "could not create default mesh resources")
 	}
 
+	annotations := maps.Clone(mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations)
 	if mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations() == nil {
-		mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = map[string]string{}
+		annotations = map[string]string{}
 	}
-	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).GetAnnotations()[common_k8s.K8sMeshDefaultsGenerated] = "true"
+	annotations[common_k8s.K8sMeshDefaultsGenerated] = "true"
+	mesh.GetMeta().(*k8s.KubernetesMetaAdapter).Annotations = annotations
 
 	r.Log.Info("marking mesh that default resources were generated", "mesh", mesh.GetMeta().GetName())
 

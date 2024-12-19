@@ -169,6 +169,7 @@ func (p *PodConverter) dataplaneFor(
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
+	// we don't modify `annotations` so there is no need to clone
 	annotations := metadata.Annotations(pod.Annotations)
 
 	enabled, exist, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation)

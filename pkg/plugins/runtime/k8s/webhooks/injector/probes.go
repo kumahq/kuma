@@ -12,9 +12,9 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
-func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
+func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod, annotations map[string]string) error {
 	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
-	enabled, _, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
+	enabled, _, err := metadata.Annotations(annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 		return err
 	}
 
-	port, _, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
+	port, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
 	return nil
 }
 
-func setVirtualProbesPortAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
-	port, _, err := metadata.Annotations(pod.Annotations).GetUint32WithDefault(cfg.VirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
+func setVirtualProbesPortAnnotation(annotations metadata.Annotations, podAnnotations metadata.Annotations, cfg runtime_k8s.Injector) error {
+	port, _, err := podAnnotations.GetUint32WithDefault(cfg.VirtualProbesPort, metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err
 	}
