@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -51,60 +50,6 @@ type State struct {
 	KubeZone2 K8sNetworkingState
 }
 
-<<<<<<< HEAD
-=======
-func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framework.KumaDeploymentOption) *K8sCluster {
-	wg.Add(1)
-	options := []framework.KumaDeploymentOption{
-		WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-		WithIngress(),
-		WithIngressEnvoyAdminTunnel(),
-		WithEgress(),
-		WithEgressEnvoyAdminTunnel(),
-		WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-		// Occasionally CP will lose a leader in the E2E test just because of this deadline,
-		// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
-		// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
-		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
-		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
-	}
-	options = append(options, extraOptions...)
-	zone := NewK8sCluster(NewTestingT(), clusterName, Verbose)
-	go func() {
-		defer ginkgo.GinkgoRecover()
-		defer wg.Done()
-		Expect(zone.Install(Kuma(core.Zone, options...))).To(Succeed())
-	}()
-	return zone
-}
-
-func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framework.KumaDeploymentOption) *UniversalCluster {
-	wg.Add(1)
-	options := append(
-		[]framework.KumaDeploymentOption{
-			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
-			WithEgressEnvoyAdminTunnel(),
-			WithIngressEnvoyAdminTunnel(),
-			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
-			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-		},
-		extraOptions...,
-	)
-	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
-	go func() {
-		defer ginkgo.GinkgoRecover()
-		defer wg.Done()
-		err := NewClusterSetup().
-			Install(Kuma(core.Zone, options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
-			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
-			Setup(zone)
-		Expect(err).ToNot(HaveOccurred())
-	}()
-	return zone
-}
-
->>>>>>> bb904d04e (test(e2e): increase leader election lease and renew duration (#11796))
 // SetupAndGetState to be used with Ginkgo SynchronizedBeforeSuite
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
@@ -121,6 +66,11 @@ func SetupAndGetState() []byte {
 
 	kubeZone1Options := append(
 		[]framework.KumaDeploymentOption{
+			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
+			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
+			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
+			WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
+			WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
 			WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
 			WithIngress(),
@@ -148,6 +98,11 @@ func SetupAndGetState() []byte {
 
 	kubeZone2Options := append(
 		[]framework.KumaDeploymentOption{
+			// Occasionally CP will lose a leader in the E2E test just because of this deadline,
+			// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
+			// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
+			WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
+			WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
 			WithIngress(),
 			WithIngressEnvoyAdminTunnel(),
@@ -182,16 +137,12 @@ func SetupAndGetState() []byte {
 		defer wg.Done()
 		err := NewClusterSetup().
 			Install(Kuma(core.Zone, uniZone1Options...)).
-			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressToken)).
+			Install(IngressUniversal(Global.GetKuma().GenerateZoneIngressLegacyToken)).
 			Install(EgressUniversal(Global.GetKuma().GenerateZoneEgressToken, WithConcurrency(1))).
 			Setup(UniZone1)
 		Expect(err).ToNot(HaveOccurred())
 	}()
 
-	vipCIDROverride := "251.0.0.0/8"
-	if Config.IPV6 {
-		vipCIDROverride = "fd00:fd11::/64"
-	}
 	UniZone2 = NewUniversalCluster(NewTestingT(), Kuma5, Silent)
 	uniZone2Options := append(
 		[]framework.KumaDeploymentOption{
@@ -200,7 +151,6 @@ func SetupAndGetState() []byte {
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-			WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2)...,
 	)
@@ -336,37 +286,4 @@ func RestoreState(bytes []byte) {
 	UniZone2.SetCp(cp)
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
 	Expect(UniZone2.AddNetworking(state.UniZone2.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
-}
-
-func PrintCPLogsOnFailure(report Report) {
-	if !report.SuiteSucceeded {
-		for _, cluster := range append(Zones(), Global) {
-			Logf("\n\n\n\n\nCP logs of: " + cluster.Name())
-			logs, err := cluster.GetKumaCPLogs()
-			if err != nil {
-				Logf("could not retrieve cp logs")
-			} else {
-				Logf(logs)
-			}
-		}
-	}
-}
-
-func PrintKubeState(report Report) {
-	if !report.SuiteSucceeded {
-		for _, cluster := range []Cluster{KubeZone1, KubeZone2} {
-			Logf("Kube state of cluster: " + cluster.Name())
-			// just running it, prints the logs
-			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
-				framework.Logf("could not retrieve kube pods")
-			}
-		}
-	}
-}
-
-func ExpectCpsToNotCrash() {
-	restartCount := framework.RestartCount(KubeZone1.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "Zone 1 CP restarted in this suite, this should not happen.")
-	restartCount = framework.RestartCount(KubeZone2.GetKuma().(*framework.K8sControlPlane).GetKumaCPPods())
-	Expect(restartCount).To(Equal(0), "Zone 2 CP restarted in this suite, this should not happen.")
 }
