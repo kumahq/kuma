@@ -274,6 +274,7 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
       # can't use env here, make sure change other copies when making changes
       runnersByArch: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":""}' }}
+    secrets: inherit
   test_e2e_env:
     needs: ["gen_e2e_matrix"]
     if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
@@ -285,3 +286,4 @@ jobs:
       matrix: ${{ toJSON(matrix) }}
       # can't use env here, make sure change other copies when making changes
       runnersByArch: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":""}' }}
+    secrets: inherit
