@@ -63,15 +63,7 @@ properties:
           properties:
             conf:
               description: Configuration of the backend
-              properties:
-                fields:
-                  additionalProperties:
-                    properties:
-                      Kind: true
-                    required:
-                    - Kind
-                    type: object
-                  type: object
+              properties: {}
               type: object
             format:
               description: |-
@@ -115,15 +107,7 @@ properties:
           properties:
             conf:
               description: Configuration of the backend
-              properties:
-                fields:
-                  additionalProperties:
-                    properties:
-                      Kind: true
-                    required:
-                    - Kind
-                    type: object
-                  type: object
+              properties: {}
               type: object
             name:
               description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
@@ -149,15 +133,7 @@ properties:
           properties:
             conf:
               description: Configuration of the backend
-              properties:
-                fields:
-                  additionalProperties:
-                    properties:
-                      Kind: true
-                    required:
-                    - Kind
-                    type: object
-                  type: object
+              properties: {}
               type: object
             dpCert:
               description: Dataplane certificate settings
@@ -270,15 +246,7 @@ properties:
           properties:
             conf:
               description: Configuration of the backend
-              properties:
-                fields:
-                  additionalProperties:
-                    properties:
-                      Kind: true
-                    required:
-                    - Kind
-                    type: object
-                  type: object
+              properties: {}
               type: object
             name:
               description: |-

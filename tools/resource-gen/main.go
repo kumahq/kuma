@@ -17,6 +17,7 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
+	structpb "google.golang.org/protobuf/types/known/structpb"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -374,12 +375,15 @@ func init() {
 {{end}}
 `))
 
+var rootDir = "."
+
 func main() {
 	var gen string
 	var pkg string
 
 	flag.StringVar(&gen, "generator", "", "the type of generator to run options: (type,crd,openapi)")
 	flag.StringVar(&pkg, "package", "", "the name of the package to generate: (mesh, system)")
+	flag.StringVar(&rootDir, "rootDir", "", "the root directory, default: .")
 
 	flag.Parse()
 
@@ -442,8 +446,9 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			ExpandedStruct:            true,
 			DoNotReference:            true,
 			AllowAdditionalProperties: true,
+			IgnoredTypes:              []any{structpb.Struct{}},
 		}
-		err := reflector.AddGoComments("github.com/kumahq/kuma/", "api/")
+		err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(rootDir, "api/"))
 		if err != nil {
 			return err
 		}
@@ -474,7 +479,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return err
 		}
 
-		outDir := path.Join("api", pkg, "v1alpha1", strings.ToLower(r.ResourceType))
+		outDir := path.Join(rootDir, "api", pkg, "v1alpha1", strings.ToLower(r.ResourceType))
 
 		// Ensure the directory exists
 		err = os.MkdirAll(outDir, 0o755)
@@ -482,12 +487,12 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
-		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
+		err = os.WriteFile(path.Join(rootDir, outDir, "schema.yaml"), out, 0o600)
 		if err != nil {
 			return err
 		}
 
-		templatePath := path.Join("tools", "openapi", "templates", "endpoints.yaml")
+		templatePath := path.Join(rootDir, "tools", "openapi", "templates", "endpoints.yaml")
 		tmpl, err := template.ParseFiles(templatePath)
 		if err != nil {
 			return err
@@ -502,7 +507,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			"Scope":   scope,
 			"Path":    r.WsPath,
 		}
-		err = save.PlainTemplate(tmpl, opts, path.Join(outDir, "rest.yaml"))
+		err = save.PlainTemplate(tmpl, opts, path.Join(rootDir, outDir, "rest.yaml"))
 		if err != nil {
 			return err
 		}
