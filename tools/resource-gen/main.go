@@ -487,7 +487,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return fmt.Errorf("failed to create directory: %w", err)
 		}
 
-		err = os.WriteFile(path.Join(rootDir, outDir, "schema.yaml"), out, 0o600)
+		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
 		if err != nil {
 			return err
 		}
@@ -507,7 +507,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			"Scope":   scope,
 			"Path":    r.WsPath,
 		}
-		err = save.PlainTemplate(tmpl, opts, path.Join(rootDir, outDir, "rest.yaml"))
+		err = save.PlainTemplate(tmpl, opts, path.Join(outDir, "rest.yaml"))
 		if err != nil {
 			return err
 		}
