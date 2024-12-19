@@ -78,35 +78,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 			return err
 		}
 	}
-<<<<<<< HEAD
-
-	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.ingressNamespace),
-		metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app=%s", ingressApp),
-		},
-		1,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-
-	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.ingressNamespace),
-		metav1.ListOptions{
-			LabelSelector: fmt.Sprintf("app=%s", ingressApp),
-		},
-	)
-	if len(pods) != 1 {
-		return errors.Errorf("counting KIC pods. Got: %d. Expected: 1", len(pods))
-	}
-
-	return k8s.WaitUntilPodAvailableE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(t.ingressNamespace),
-		pods[0].Name,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-=======
 	return nil
->>>>>>> 6cf0b3eea (test(e2e): upgrade KIC (#9157))
 }
 
 func (t *k8sDeployment) Delete(cluster framework.Cluster) error {
