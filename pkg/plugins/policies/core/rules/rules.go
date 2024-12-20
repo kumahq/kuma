@@ -163,7 +163,7 @@ func (ss Subset) ContainsElement(element Element) bool {
 			}
 		} else {
 			// for those items that don't exist in element should not make an impact
-			if tag.Not == false {
+			if !tag.Not {
 				return false
 			}
 		}
