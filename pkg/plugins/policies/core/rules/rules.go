@@ -130,8 +130,6 @@ func NewSubset(m map[string]string) Subset {
 	return s
 }
 
-type Element map[string]string
-
 func (ss Subset) ContainsElement(element Element) bool {
 	// 1. find the overlaps of element and current subset
 	// 2. verify the overlaps
@@ -148,19 +146,19 @@ func (ss Subset) ContainsElement(element Element) bool {
 			overlapKeyCount++
 
 			// contradict
-			if tag.Value == tmpVal && tag.Not == true {
+			if tag.Value == tmpVal && tag.Not {
 				return false
 			}
 			// intersect
-			if tag.Value == tmpVal && tag.Not == false {
+			if tag.Value == tmpVal && !tag.Not {
 				continue
 			}
 			// intersect
-			if tag.Value != tmpVal && tag.Not == true {
+			if tag.Value != tmpVal && tag.Not {
 				continue
 			}
 			// contradict
-			if tag.Value != tmpVal && tag.Not == false {
+			if tag.Value != tmpVal && !tag.Not {
 				return false
 			}
 		} else {
@@ -284,6 +282,29 @@ func SubsetFromTags(tags map[string]string) Subset {
 	return subset
 }
 
+type Element map[string]string
+
+func (e Element) WithKeyValue(key, value string) Element {
+	if e == nil {
+		e = Element{}
+	}
+
+	e[key] = value
+	return e
+}
+
+func MeshElement() Element {
+	return Element{}
+}
+
+func MeshServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
+}
+
+func MeshExternalServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
+}
+
 // NumPositive returns a number of tags without negation
 func (ss Subset) NumPositive() int {
 	pos := 0
@@ -345,6 +366,15 @@ func (rs Rules) NewCompute(element Element) *Rule {
 			return rule
 		}
 	}
+	return nil
+}
+
+func NewComputeConf[T any](rs Rules, element Element) *T {
+	computed := rs.NewCompute(element)
+	if computed != nil {
+		return pointer.To(computed.Conf.(T))
+	}
+
 	return nil
 }
 

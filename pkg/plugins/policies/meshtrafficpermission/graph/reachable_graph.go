@@ -29,7 +29,7 @@ func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) b
 		// we cannot compute graph for cross mesh, so it's better to allow the traffic
 		return true
 	}
-	//rule := r.rules[toTags[mesh_proto.ServiceTag]].Compute(core_rules.SubsetFromTags(fromTags))
+	// rule := r.rules[toTags[mesh_proto.ServiceTag]].Compute(core_rules.SubsetFromTags(fromTags))
 	rule := r.rules[toTags[mesh_proto.ServiceTag]].NewCompute(core_rules.Element(fromTags))
 	if rule == nil {
 		return false
@@ -46,7 +46,7 @@ func (r *Graph) CanReachBackend(fromTags map[string]string, backendIdentifier co
 		ResourceIdentifier: backendIdentifier.ResourceIdentifier,
 		ResourceType:       backendIdentifier.ResourceType,
 	}
-	//rule := r.backendRules[noPort].Compute(core_rules.SubsetFromTags(fromTags))
+	// rule := r.backendRules[noPort].Compute(core_rules.SubsetFromTags(fromTags))
 	rule := r.backendRules[noPort].NewCompute(core_rules.Element(fromTags))
 	if rule == nil {
 		return false

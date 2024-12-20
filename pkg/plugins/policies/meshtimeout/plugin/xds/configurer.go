@@ -31,7 +31,7 @@ import (
 type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
-	Subset   rules.Subset
+	Element  rules.Element
 }
 
 func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -51,7 +51,7 @@ func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listene
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf := c.getConf(c.Subset); conf != nil {
+		if conf := c.getConf(c.Element); conf != nil {
 			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
 		}
 		return nil
@@ -76,9 +76,9 @@ func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguratio
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
-				conf := c.getConf(c.Subset.WithTag(rules.RuleMatchesHashTag, route.Name, false))
+				conf := c.getConf(c.Element.WithKeyValue(rules.RuleMatchesHashTag, route.Name))
 				if conf == nil {
-					conf = c.getConf(c.Subset)
+					conf = c.getConf(c.Element)
 				}
 				if conf == nil {
 					continue
@@ -94,7 +94,7 @@ func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguratio
 }
 
 func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
-	if conf := c.getConf(c.Subset); conf != nil {
+	if conf := c.getConf(c.Element); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
 			policies_defaults.DefaultRequestHeadersTimeout,
@@ -102,11 +102,11 @@ func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy
 	}
 }
 
-func (c *DeprecatedListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
+func (c *DeprecatedListenerConfigurer) getConf(element rules.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
-	return rules.ComputeConf[api.Conf](c.Rules, subset)
+	return rules.NewComputeConf[api.Conf](c.Rules, element)
 }
 
 type ClusterConfigurer struct {
