@@ -112,7 +112,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureOutbound(rules.Rules, dataplane, core_rules.MeshService(serviceName), serviceName, listener, backends, path); err != nil {
+		if err := configureOutbound(rules.Rules, dataplane, core_rules.MeshServiceElement(serviceName), serviceName, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -128,7 +128,7 @@ func applyToTransparentProxyListeners(
 		if err := configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshServiceElement(core_mesh.PassThroughService),
 			"external",
 			ipv4,
 			backends,
@@ -142,7 +142,7 @@ func applyToTransparentProxyListeners(
 		return configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshServiceElement(core_mesh.PassThroughService),
 			"external",
 			ipv6,
 			backends,
@@ -162,7 +162,7 @@ func applyToDirectAccess(
 		return configureOutbound(
 			rules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			core_rules.MeshServiceElement(core_mesh.PassThroughService),
 			name,
 			listener,
 			backends,
@@ -209,7 +209,7 @@ func applyToGateway(
 			if err := configureOutbound(
 				toListenerRules.Rules,
 				proxy.Dataplane,
-				core_rules.Subset{},
+				core_rules.MeshElement(),
 				mesh_proto.MatchAllTag,
 				listener,
 				backends,
@@ -239,7 +239,7 @@ func configureInbound(
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
 	// `from` section of MeshAccessLog only allows Mesh targetRef
-	conf := core_rules.ComputeConf[api.Conf](fromRules, core_rules.MeshSubset())
+	conf := core_rules.NewComputeConf[api.Conf](fromRules, core_rules.MeshElement())
 	if conf == nil {
 		return nil
 	}
@@ -268,7 +268,7 @@ func configureInbound(
 func configureOutbound(
 	toRules core_rules.Rules,
 	dataplane *core_mesh.DataplaneResource,
-	subset core_rules.Subset,
+	element core_rules.Element,
 	destinationServiceName string,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
@@ -276,7 +276,7 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	conf := core_rules.ComputeConf[api.Conf](toRules, subset)
+	conf := core_rules.NewComputeConf[api.Conf](toRules, element)
 	if conf == nil {
 		return nil
 	}

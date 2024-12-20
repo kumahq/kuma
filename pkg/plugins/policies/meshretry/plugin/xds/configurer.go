@@ -37,13 +37,13 @@ const (
 // It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
 // Deprecated
 type DeprecatedConfigurer struct {
-	Subset   core_rules.Subset
+	Element  core_rules.Element
 	Rules    core_rules.Rules
 	Protocol core_mesh.Protocol
 }
 
 func (c *DeprecatedConfigurer) ConfigureListener(ln *envoy_listener.Listener) error {
-	conf := c.getConf(c.Subset)
+	conf := c.getConf(c.Element)
 
 	for _, fc := range ln.FilterChains {
 		if c.Protocol == core_mesh.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
@@ -66,13 +66,13 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 		return nil
 	}
 
-	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Subset), c.Protocol)
+	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Element), c.Protocol)
 	if err != nil {
 		return err
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
-			routeConfig := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, route.Name, false))
+			routeConfig := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, route.Name))
 			policy, err := getRouteRetryConfig(routeConfig, c.Protocol)
 			if err != nil {
 				return err
@@ -419,11 +419,11 @@ func ensureRetriableStatusCodes(policyRetryOn string) string {
 	return policyRetryOn
 }
 
-func (c *DeprecatedConfigurer) getConf(subset core_rules.Subset) *api.Conf {
+func (c *DeprecatedConfigurer) getConf(element core_rules.Element) *api.Conf {
 	if c.Rules == nil {
 		return nil
 	}
-	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
+	return core_rules.NewComputeConf[api.Conf](c.Rules, element)
 }
 
 type Configurer struct {

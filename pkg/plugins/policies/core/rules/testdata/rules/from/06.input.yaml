@@ -1,0 +1,29 @@
+# Multiple MeshTrafficPermission policies
+type: MeshTrafficPermission
+mesh: default
+name: mtp-allow-kuma-one
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          k8s.kuma.io/namespace: kuma-one
+      default:
+        action: Allow
+---
+type: MeshTrafficPermission
+mesh: default
+name: mtp-allow-kuma-other-ns-and-tag
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          abcd: abcd
+          k8s.kuma.io/namespace: kuma-other
+      default:
+        action: Allow

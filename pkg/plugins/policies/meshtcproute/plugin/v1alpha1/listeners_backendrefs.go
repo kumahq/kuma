@@ -16,7 +16,7 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	var tcpConf *api.Rule
 	var origin core_model.ResourceMeta
 
-	ruleTCP := toRules.Rules.Compute(core_xds.MeshService(svc.ServiceName))
+	ruleTCP := toRules.Rules.NewCompute(core_xds.MeshServiceElement(svc.ServiceName))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
 		if o, ok := ruleTCP.GetBackendRefOrigin(core_xds.EmptyMatches); ok {

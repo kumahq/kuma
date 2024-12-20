@@ -130,6 +130,53 @@ func NewSubset(m map[string]string) Subset {
 	return s
 }
 
+func (ss Subset) ContainsElement(element Element) bool {
+	// 1. find the overlaps of element and current subset
+	// 2. verify the overlaps
+	// 3. verify the left of current subset
+
+	if len(ss) == 0 {
+		return true
+	}
+
+	overlapKeyCount := 0
+	for _, tag := range ss {
+		tmpVal, ok := element[tag.Key]
+		if ok {
+			overlapKeyCount++
+
+			// contradict
+			if tag.Value == tmpVal && tag.Not {
+				return false
+			}
+			// intersect
+			if tag.Value == tmpVal && !tag.Not {
+				continue
+			}
+			// intersect
+			if tag.Value != tmpVal && tag.Not {
+				continue
+			}
+			// contradict
+			if tag.Value != tmpVal && !tag.Not {
+				return false
+			}
+		} else {
+			// for those items that don't exist in element should not make an impact
+			if !tag.Not {
+				return false
+			}
+		}
+	}
+
+	// no overlap means no connections
+	if overlapKeyCount == 0 {
+		return false
+	}
+
+	return true
+}
+
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
 func (ss Subset) IsSubset(other Subset) bool {
@@ -196,7 +243,7 @@ func (ss Subset) Intersect(other Subset) bool {
 		}
 		oTags, ok := otherByKeysOnlyPositive[tag.Key]
 		if !ok {
-			return true
+			continue
 		}
 		for _, otherTag := range oTags {
 			if otherTag != tag {
@@ -233,6 +280,29 @@ func SubsetFromTags(tags map[string]string) Subset {
 		subset = append(subset, Tag{Key: k, Value: v})
 	}
 	return subset
+}
+
+type Element map[string]string
+
+func (e Element) WithKeyValue(key, value string) Element {
+	if e == nil {
+		e = Element{}
+	}
+
+	e[key] = value
+	return e
+}
+
+func MeshElement() Element {
+	return Element{}
+}
+
+func MeshServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
+}
+
+func MeshExternalServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
 }
 
 // NumPositive returns a number of tags without negation
@@ -289,6 +359,24 @@ func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.Reso
 }
 
 type Rules []*Rule
+
+func (rs Rules) NewCompute(element Element) *Rule {
+	for _, rule := range rs {
+		if rule.Subset.ContainsElement(element) {
+			return rule
+		}
+	}
+	return nil
+}
+
+func NewComputeConf[T any](rs Rules, element Element) *T {
+	computed := rs.NewCompute(element)
+	if computed != nil {
+		return pointer.To(computed.Conf.(T))
+	}
+
+	return nil
+}
 
 // Compute returns configuration for the given subset.
 func (rs Rules) Compute(sub Subset) *Rule {
