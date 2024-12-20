@@ -196,7 +196,7 @@ func (ss Subset) Intersect(other Subset) bool {
 		}
 		oTags, ok := otherByKeysOnlyPositive[tag.Key]
 		if !ok {
-			return true
+			continue
 		}
 		for _, otherTag := range oTags {
 			if otherTag != tag {
