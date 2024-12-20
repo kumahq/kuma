@@ -241,133 +241,179 @@ var _ = Describe("Rules", func() {
 			func(given testCase) {
 				Expect(given.s1.Intersect(given.s2)).To(Equal(given.intersect))
 			},
-			// TODO(Icarus9913): rewrite the description and filter them into "positive" and "negation" types
-			Entry("entry 1", testCase{
+			Entry("positive, same key and value", testCase{
 				s1: []core_rules.Tag{
-					{Key: "service", Value: "backend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "frontend"},
-					{Key: "version", Value: "v2"},
-				},
-				intersect: true,
-			}),
-			Entry("entry 2", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "backend"},
+					{Key: "service", Value: "frontend"},
 				},
 				s2: []core_rules.Tag{
 					{Key: "service", Value: "frontend"},
-					{Key: "version", Value: "v2"},
+				},
+				intersect: true,
+			}),
+			Entry("positive, same key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
 				},
 				intersect: false,
 			}),
-			Entry("entry 3", testCase{
+			Entry("positive, multiple key-values with overlap key-value", testCase{
 				s1: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
+					{Key: "service", Value: "frontend"},
+					{Key: "version", Value: "v1"},
 				},
 				s2: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
-					{Key: "version", Value: "v2"},
+					{Key: "service", Value: "frontend"},
 				},
 				intersect: true,
 			}),
-			Entry("entry 4", testCase{
+			Entry("positive, multiple key-values with overlap key but different value", testCase{
 				s1: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
-					{Key: "version", Not: true, Value: "v1"},
+					{Key: "service", Value: "frontend"},
 				},
 				s2: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
-					{Key: "version", Not: true, Value: "v1"},
-					{Key: "zone", Value: "east"},
+					{Key: "service", Value: "backend"},
+					{Key: "version", Value: "v1"},
+				},
+				intersect: false,
+			}),
+			Entry("positive, different key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v1"},
 				},
 				intersect: true,
 			}),
-			Entry("entry 5", testCase{
+			Entry("positive, superset", testCase{
 				s1: []core_rules.Tag{},
 				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+					{Key: "version", Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("a part of negation, same key and value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				intersect: true,
+			}),
+			Entry("a part of negation, same key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				intersect: true,
+			}),
+			Entry("a part of negation, multiple key-values with overlap key-value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "frontend"},
+				},
+				intersect: true,
+			}),
+			Entry("a part of negation, multiple key-values with overlap key but different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Value: "backend"},
+				},
+				intersect: true,
+			}),
+			Entry("a part of negation, different key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Value: "v1"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, same key and value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, same key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, multiple key-values with overlap key-value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
 				},
 				intersect: true,
 			}),
-			Entry("entry 6", testCase{
+			Entry("negation, multiple key-values with overlap key but different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, multiple key-values with overlap key but different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, different key, different value", testCase{
+				s1: []core_rules.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+				},
+				s2: []core_rules.Tag{
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, superset", testCase{
 				s1: []core_rules.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 				},
 				s2:        []core_rules.Tag{},
-				intersect: true,
-			}),
-			Entry("entry 7", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "frontend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
-					{Key: "zone", Value: "east"},
-				},
-				intersect: true,
-			}),
-			Entry("entry 8", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-				},
-				intersect: true,
-			}),
-			Entry("entry 9", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "service", Value: "backend"},
-				},
-				intersect: false,
-			}),
-			Entry("entry 10", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "version", Value: "v1"},
-				},
-				intersect: true,
-			}),
-			Entry("entry 11", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "backend"},
-					{Key: "version", Value: "v1"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "version", Value: "v2"},
-					{Key: "zone", Value: "east"},
-				},
-				intersect: false,
-			}),
-			Entry("entry 12", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "version", Value: "v1"},
-					{Key: "zone", Value: "east"},
-				},
-				intersect: true,
-			}),
-			Entry("entry 13", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Value: "frontend"},
-					{Key: "version", Value: "v1"},
-				},
-				s2: []core_rules.Tag{
-					{Key: "version", Value: "v1"},
-					{Key: "zone", Value: "east"},
-				},
 				intersect: true,
 			}),
 		)
