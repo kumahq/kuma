@@ -248,5 +248,5 @@ func (c *Configurer) getConf(element core_rules.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
-	return core_rules.NewComputeConf[api.Conf](c.Rules, element)
+	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }

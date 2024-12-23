@@ -239,7 +239,7 @@ func configureInbound(
 	serviceName := dataplane.Spec.GetIdentifyingService()
 
 	// `from` section of MeshAccessLog only allows Mesh targetRef
-	conf := core_rules.NewComputeConf[api.Conf](fromRules, core_rules.MeshElement())
+	conf := core_rules.ComputeConf[api.Conf](fromRules, core_rules.MeshElement())
 	if conf == nil {
 		return nil
 	}
@@ -276,7 +276,7 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	conf := core_rules.NewComputeConf[api.Conf](toRules, element)
+	conf := core_rules.ComputeConf[api.Conf](toRules, element)
 	if conf == nil {
 		return nil
 	}

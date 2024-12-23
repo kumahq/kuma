@@ -195,7 +195,7 @@ func configure(
 	element core_rules.Element,
 	cluster *envoy_cluster.Cluster,
 ) error {
-	if computed := rules.NewCompute(element); computed != nil {
+	if computed := rules.Compute(element); computed != nil {
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 

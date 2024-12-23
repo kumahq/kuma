@@ -423,7 +423,7 @@ func (c *DeprecatedConfigurer) getConf(element core_rules.Element) *api.Conf {
 	if c.Rules == nil {
 		return nil
 	}
-	return core_rules.NewComputeConf[api.Conf](c.Rules, element)
+	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type Configurer struct {

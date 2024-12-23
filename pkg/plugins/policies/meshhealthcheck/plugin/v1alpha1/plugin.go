@@ -170,7 +170,7 @@ func configure(
 	protocol core_mesh.Protocol,
 	cluster *envoy_cluster.Cluster,
 ) error {
-	conf := core_rules.NewComputeConf[api.Conf](rules, element)
+	conf := core_rules.ComputeConf[api.Conf](rules, element)
 	if conf == nil {
 		return nil
 	}

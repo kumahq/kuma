@@ -38,7 +38,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 	if len(policies.SingleItemRules.Rules) == 0 {
 		return nil
 	}
-	rule := policies.SingleItemRules.Rules.NewCompute(rules.MeshElement())
+	rule := policies.SingleItemRules.Rules.Compute(rules.MeshElement())
 	conf := rule.Conf.(api.Conf)
 	if err := ApplyMods(rs, conf.AppendModifications); err != nil {
 		return err

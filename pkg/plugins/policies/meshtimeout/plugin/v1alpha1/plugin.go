@@ -137,6 +137,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.DeprecatedListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
+			Subset:   core_rules.MeshService(serviceName),
 			Element:  core_rules.MeshServiceElement(serviceName),
 		}
 
@@ -264,7 +265,7 @@ func getConf(
 	if rules == nil {
 		return &api.Conf{}
 	} else {
-		if computed := rules.NewCompute(element); computed != nil {
+		if computed := rules.Compute(element); computed != nil {
 			return pointer.To(computed.Conf.(api.Conf))
 		} else {
 			return nil

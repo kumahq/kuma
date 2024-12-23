@@ -119,7 +119,7 @@ func getOutboundRuleAttachments(rules core_rules.Rules, networking *mesh_proto.D
 		}
 		attachment := byUniqueClusterName[name]
 		if attachment == nil {
-			computedRule := rules.NewCompute(core_rules.Element(outboundTags))
+			computedRule := rules.Compute(core_rules.Element(outboundTags))
 			if computedRule == nil {
 				continue
 			}

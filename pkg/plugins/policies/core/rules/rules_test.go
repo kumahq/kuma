@@ -491,7 +491,7 @@ var _ = Describe("Rules", func() {
 
 		DescribeTable("should compute conf for subset based on rules",
 			func(given testCase) {
-				conf := given.rules.NewCompute(given.element)
+				conf := given.rules.Compute(given.element)
 				if given.confYAML == nil {
 					Expect(conf).To(BeNil())
 				} else {

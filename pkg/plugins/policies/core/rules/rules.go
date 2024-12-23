@@ -353,7 +353,8 @@ func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.Reso
 
 type Rules []*Rule
 
-func (rs Rules) NewCompute(element Element) *Rule {
+// Compute returns Rule for the given element.
+func (rs Rules) Compute(element Element) *Rule {
 	for _, rule := range rs {
 		if rule.Subset.ContainsElement(element) {
 			return rule
@@ -362,8 +363,9 @@ func (rs Rules) NewCompute(element Element) *Rule {
 	return nil
 }
 
-func NewComputeConf[T any](rs Rules, element Element) *T {
-	computed := rs.NewCompute(element)
+// ComputeConf returns configuration for the given element.
+func ComputeConf[T any](rs Rules, element Element) *T {
+	computed := rs.Compute(element)
 	if computed != nil {
 		return pointer.To(computed.Conf.(T))
 	}
@@ -371,8 +373,9 @@ func NewComputeConf[T any](rs Rules, element Element) *T {
 	return nil
 }
 
-// Compute returns configuration for the given subset.
-func (rs Rules) Compute(sub Subset) *Rule {
+// LegacyCompute returns Rule for the given subset.
+// Deprecated: use Compute instead
+func (rs Rules) LegacyCompute(sub Subset) *Rule {
 	for _, rule := range rs {
 		if rule.Subset.IsSubset(sub) {
 			return rule
@@ -381,8 +384,10 @@ func (rs Rules) Compute(sub Subset) *Rule {
 	return nil
 }
 
-func ComputeConf[T any](rs Rules, sub Subset) *T {
-	if computed := rs.Compute(sub); computed != nil {
+// LegacyComputeConf returns configuration for the given subset.
+// Deprecated: use ComputeConf instead
+func LegacyComputeConf[T any](rs Rules, sub Subset) *T {
+	if computed := rs.LegacyCompute(sub); computed != nil {
 		return pointer.To(computed.Conf.(T))
 	}
 	return nil
