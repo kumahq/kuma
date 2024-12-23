@@ -142,12 +142,6 @@ issues:
         - gocritic
       text: "appendAssign: append result not assigned to the same slice" # None of the instances of this in Kuma were bugs.
     - linters:
-        - gocritic
-      text: "elseif: can replace 'else {if cond {}}' with 'else if cond {}'" # None of the instances of this in Kuma were bugs.
-    - linters:
-        - gosimple
-      text: "S1008: should use 'return overlapKeyCount != 0' instead of 'if overlapKeyCount == 0 { return false }; return true'" # Ignore this to better read the code
-    - linters:
         - staticcheck
       text: "SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated" # https://github.com/kumahq/kuma/issues/2460
     - linters:

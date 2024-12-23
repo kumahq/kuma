@@ -139,11 +139,11 @@ func (ss Subset) ContainsElement(element Element) bool {
 		return true
 	}
 
-	overlapKeyCount := 0
+	hasOverlapKey := false
 	for _, tag := range ss {
 		tmpVal, ok := element[tag.Key]
 		if ok {
-			overlapKeyCount++
+			hasOverlapKey = true
 
 			// contradict
 			if tag.Value == tmpVal && tag.Not {
@@ -161,20 +161,13 @@ func (ss Subset) ContainsElement(element Element) bool {
 			if tag.Value != tmpVal && !tag.Not {
 				return false
 			}
-		} else {
+		} else if !tag.Not {
 			// for those items that don't exist in element should not make an impact
-			if !tag.Not {
-				return false
-			}
+			return false
 		}
 	}
 
-	// no overlap means no connections
-	if overlapKeyCount == 0 {
-		return false
-	}
-
-	return true
+	return hasOverlapKey
 }
 
 // IsSubset returns true if 'other' is a subset of the current set.
