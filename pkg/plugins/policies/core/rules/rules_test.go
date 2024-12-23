@@ -549,7 +549,7 @@ var _ = Describe("Rules", func() {
 				},
 				confYAML: []byte(`action: Allow`),
 			}),
-			PEntry("empty set is a superset for all subset", testCase{
+			Entry("empty set is a superset for all element", testCase{
 				rules: core_rules.Rules{
 					{
 						Subset: []core_rules.Tag{}, // empty set
@@ -563,6 +563,20 @@ var _ = Describe("Rules", func() {
 					"key2": "val2",
 				},
 				confYAML: []byte(`action: Allow`),
+			}),
+			Entry("empty element", testCase{
+				rules: core_rules.Rules{
+					{
+						Subset: []core_rules.Tag{
+							{Key: "key1", Value: "val1", Not: true},
+						},
+						Conf: meshtrafficpermission_api.Conf{
+							Action: "Allow",
+						},
+					},
+				},
+				element:  core_rules.Element{},
+				confYAML: nil,
 			}),
 			Entry("no rules matched, rule with negation, element has same key value", testCase{
 				rules: core_rules.Rules{

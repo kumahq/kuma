@@ -138,6 +138,9 @@ func (ss Subset) ContainsElement(element Element) bool {
 	if len(ss) == 0 {
 		return true
 	}
+	if len(element) == 0 {
+		return false
+	}
 
 	hasOverlapKey := false
 	for _, tag := range ss {
