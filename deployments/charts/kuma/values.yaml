@@ -695,7 +695,7 @@ kubectl:
     # -- The kubectl image repository
     repository: bitnami/kubectl
     # -- The kubectl image tag
-    tag: "1.31.4"
+    tag: "1.32.0"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
