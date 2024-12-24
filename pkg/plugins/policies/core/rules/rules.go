@@ -130,7 +130,14 @@ func NewSubset(m map[string]string) Subset {
 	return s
 }
 
-func (ss Subset) ContainsElement(element Element) bool {
+// ContainsElement returns true if there exists a key in 'other' that matches the current set,
+// also the corresponding k-v pair must match the set rule.
+// Empty set is a superset for all elements.
+//
+// For example if you have a Subset with Tags: [{key: zone, value: east, not: true}, {key: service, value: frontend, not: false}]
+// an Element with k-v pairs: 1) service: frontend  2) version: zone1
+// there's a k-v pair 'service: frontend' in Element that matches the Subset Tag rule {key: service, value: frontend, not: false}
+func (ss Subset) ContainsElement(other Element) bool {
 	// 1. find the overlaps of element and current subset
 	// 2. verify the overlaps
 	// 3. verify the left of current subset
@@ -138,13 +145,13 @@ func (ss Subset) ContainsElement(element Element) bool {
 	if len(ss) == 0 {
 		return true
 	}
-	if len(element) == 0 {
+	if len(other) == 0 {
 		return false
 	}
 
 	hasOverlapKey := false
 	for _, tag := range ss {
-		tmpVal, ok := element[tag.Key]
+		tmpVal, ok := other[tag.Key]
 		if ok {
 			hasOverlapKey = true
 
@@ -165,7 +172,9 @@ func (ss Subset) ContainsElement(element Element) bool {
 				return false
 			}
 		} else if !tag.Not {
-			// for those items that don't exist in element should not make an impact
+			// For those items that don't exist in element should not make an impact.
+			// For example, the DP with tag {"service: frontend"} doesn't match
+			// the policy with matching tags [{"service: frontend"}, {"zone": "east"}]
 			return false
 		}
 	}
