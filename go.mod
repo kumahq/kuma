@@ -28,7 +28,7 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.48.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/jackc/pgx/v5 v5.7.1
+	github.com/jackc/pgx/v5 v5.7.2
 	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
