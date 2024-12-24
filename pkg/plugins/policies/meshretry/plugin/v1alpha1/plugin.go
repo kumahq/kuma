@@ -68,7 +68,7 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		configurer := plugin_xds.DeprecatedConfigurer{
-			Subset:   core_rules.MeshService(serviceName),
+			Element:  core_rules.MeshServiceElement(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
@@ -117,7 +117,7 @@ func applyToGateway(
 		configurer := plugin_xds.DeprecatedConfigurer{
 			Rules:    toRules.Rules,
 			Protocol: protocol,
-			Subset:   core_rules.MeshSubset(),
+			Element:  core_rules.MeshElement(),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {

@@ -130,6 +130,58 @@ func NewSubset(m map[string]string) Subset {
 	return s
 }
 
+// ContainsElement returns true if there exists a key in 'other' that matches the current set,
+// also the corresponding k-v pair must match the set rule.
+// Empty set is a superset for all elements.
+//
+// For example if you have a Subset with Tags: [{key: zone, value: east, not: true}, {key: service, value: frontend, not: false}]
+// an Element with k-v pairs: 1) service: frontend  2) version: zone1
+// there's a k-v pair 'service: frontend' in Element that matches the Subset Tag rule {key: service, value: frontend, not: false}
+func (ss Subset) ContainsElement(other Element) bool {
+	// 1. find the overlaps of element and current subset
+	// 2. verify the overlaps
+	// 3. verify the left of current subset
+
+	if len(ss) == 0 {
+		return true
+	}
+	if len(other) == 0 {
+		return false
+	}
+
+	hasOverlapKey := false
+	for _, tag := range ss {
+		tmpVal, ok := other[tag.Key]
+		if ok {
+			hasOverlapKey = true
+
+			// contradict
+			if tag.Value == tmpVal && tag.Not {
+				return false
+			}
+			// intersect
+			if tag.Value == tmpVal && !tag.Not {
+				continue
+			}
+			// intersect
+			if tag.Value != tmpVal && tag.Not {
+				continue
+			}
+			// contradict
+			if tag.Value != tmpVal && !tag.Not {
+				return false
+			}
+		} else if !tag.Not {
+			// For those items that don't exist in element should not make an impact.
+			// For example, the DP with tag {"service: frontend"} doesn't match
+			// the policy with matching tags [{"service: frontend"}, {"zone": "east"}]
+			return false
+		}
+	}
+
+	return hasOverlapKey
+}
+
 // IsSubset returns true if 'other' is a subset of the current set.
 // Empty set is a superset for all subsets.
 func (ss Subset) IsSubset(other Subset) bool {
@@ -196,7 +248,7 @@ func (ss Subset) Intersect(other Subset) bool {
 		}
 		oTags, ok := otherByKeysOnlyPositive[tag.Key]
 		if !ok {
-			return true
+			continue
 		}
 		for _, otherTag := range oTags {
 			if otherTag != tag {
@@ -233,6 +285,29 @@ func SubsetFromTags(tags map[string]string) Subset {
 		subset = append(subset, Tag{Key: k, Value: v})
 	}
 	return subset
+}
+
+type Element map[string]string
+
+func (e Element) WithKeyValue(key, value string) Element {
+	if e == nil {
+		e = Element{}
+	}
+
+	e[key] = value
+	return e
+}
+
+func MeshElement() Element {
+	return Element{}
+}
+
+func MeshServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
+}
+
+func MeshExternalServiceElement(name string) Element {
+	return Element{mesh_proto.ServiceTag: name}
 }
 
 // NumPositive returns a number of tags without negation
@@ -290,8 +365,29 @@ func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.Reso
 
 type Rules []*Rule
 
-// Compute returns configuration for the given subset.
-func (rs Rules) Compute(sub Subset) *Rule {
+// Compute returns Rule for the given element.
+func (rs Rules) Compute(element Element) *Rule {
+	for _, rule := range rs {
+		if rule.Subset.ContainsElement(element) {
+			return rule
+		}
+	}
+	return nil
+}
+
+// ComputeConf returns configuration for the given element.
+func ComputeConf[T any](rs Rules, element Element) *T {
+	computed := rs.Compute(element)
+	if computed != nil {
+		return pointer.To(computed.Conf.(T))
+	}
+
+	return nil
+}
+
+// LegacyCompute returns Rule for the given subset.
+// Deprecated: use Compute instead
+func (rs Rules) LegacyCompute(sub Subset) *Rule {
 	for _, rule := range rs {
 		if rule.Subset.IsSubset(sub) {
 			return rule
@@ -300,8 +396,10 @@ func (rs Rules) Compute(sub Subset) *Rule {
 	return nil
 }
 
-func ComputeConf[T any](rs Rules, sub Subset) *T {
-	if computed := rs.Compute(sub); computed != nil {
+// LegacyComputeConf returns configuration for the given subset.
+// Deprecated: use ComputeConf instead
+func LegacyComputeConf[T any](rs Rules, sub Subset) *T {
+	if computed := rs.LegacyCompute(sub); computed != nil {
 		return pointer.To(computed.Conf.(T))
 	}
 	return nil

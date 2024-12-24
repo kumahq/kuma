@@ -96,7 +96,7 @@ func (p plugin) configureDPP(
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		computed := toRules.Rules.Compute(core_rules.MeshService(serviceName))
+		computed := toRules.Rules.Compute(core_rules.MeshServiceElement(serviceName))
 		if computed == nil {
 			continue
 		}
@@ -294,7 +294,7 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)); localityConf != nil {
+					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshServiceElement(serviceName)); localityConf != nil {
 						perServiceConfiguration[serviceName] = localityConf
 
 						if err := p.configureCluster(cluster, *localityConf); err != nil {
@@ -412,7 +412,7 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 	if len(rules) == 0 {
 		return nil
 	}
-	return rules[0].Compute(core_rules.MeshSubset())
+	return rules[0].Compute(core_rules.MeshElement())
 }
 
 func (p plugin) configureListener(
