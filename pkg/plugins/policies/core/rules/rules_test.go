@@ -482,6 +482,108 @@ var _ = Describe("Rules", func() {
 		)
 	})
 
+	Describe("ContainsElement", func() {
+		type testCase struct {
+			ss       core_rules.Subset
+			other    core_rules.Element
+			contains bool
+		}
+
+		DescribeTable("should respond if subset ss contains element other",
+			func(given testCase) {
+				Expect(given.ss.ContainsElement(given.other)).To(Equal(given.contains))
+			},
+			Entry("single matched rule by single rule and elements", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+					"key2": "val2",
+				},
+				contains: true,
+			}),
+			Entry("single matched rule by single rule and element", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+				},
+				contains: true,
+			}),
+			Entry("single matched rule, rule with negation, element has key with another value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+				},
+				other: core_rules.Element{
+					"key1": "val2",
+				},
+				contains: true,
+			}),
+			Entry("empty set is a superset for all element", testCase{
+				ss: []core_rules.Tag{},
+				other: core_rules.Element{
+					"key1": "val2",
+				},
+				contains: true,
+			}),
+			Entry("empty element", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				other:    core_rules.Element{},
+				contains: false,
+			}),
+			Entry("no rules matched, rule with negation, element has same key value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, rule with negation, element has another key", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+				},
+				other: core_rules.Element{
+					"key2": "val2",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, element has key which is not presented in superset", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				other: core_rules.Element{
+					"key2": "val2",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, element has key with another value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+				},
+				other: core_rules.Element{
+					"key1": "val2",
+				},
+				contains: false,
+			}),
+			Entry("n dimensions subset and n-1 dimensions elements", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2", Not: true},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+				},
+				contains: true,
+			}),
+		)
+	})
+
 	Describe("Eval", func() {
 		type testCase struct {
 			rules    core_rules.Rules
@@ -673,7 +775,7 @@ var _ = Describe("Rules", func() {
 				},
 				confYAML: []byte(`action: Deny`),
 			}),
-			Entry("n dimensions rules and n-1 dimensions elements", testCase{
+			Entry("n dimensions subset and n-1 dimensions elements", testCase{
 				rules: core_rules.Rules{
 					{
 						Subset: []core_rules.Tag{
