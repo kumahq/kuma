@@ -31,7 +31,6 @@ import (
 type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
-	Subset   rules.Subset
 	Element  rules.Element
 }
 
@@ -95,13 +94,6 @@ func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguratio
 }
 
 func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
-	// For backward, once a user upgrades from an older version we shouldn't set default timeouts.
-	// Refer to https://github.com/kumahq/kuma/issues/12033
-	deprecatedGetConf := c.legacyGetConf(c.Subset)
-	if deprecatedGetConf == nil {
-		return
-	}
-
 	if conf := c.getConf(c.Element); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
@@ -115,13 +107,6 @@ func (c *DeprecatedListenerConfigurer) getConf(element rules.Element) *api.Conf 
 		return &api.Conf{}
 	}
 	return rules.ComputeConf[api.Conf](c.Rules, element)
-}
-
-func (c *DeprecatedListenerConfigurer) legacyGetConf(subset rules.Subset) *api.Conf {
-	if c.Rules == nil {
-		return &api.Conf{}
-	}
-	return rules.LegacyComputeConf[api.Conf](c.Rules, subset)
 }
 
 type ClusterConfigurer struct {

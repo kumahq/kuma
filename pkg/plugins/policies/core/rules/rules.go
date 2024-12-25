@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"maps"
 	"sort"
 	"strings"
 
@@ -151,24 +152,24 @@ func (ss Subset) ContainsElement(other Element) bool {
 
 	hasOverlapKey := false
 	for _, tag := range ss {
-		tmpVal, ok := other[tag.Key]
+		otherVal, ok := other[tag.Key]
 		if ok {
 			hasOverlapKey = true
 
 			// contradict
-			if tag.Value == tmpVal && tag.Not {
+			if tag.Value == otherVal && tag.Not {
 				return false
 			}
 			// intersect
-			if tag.Value == tmpVal && !tag.Not {
+			if tag.Value == otherVal && !tag.Not {
 				continue
 			}
 			// intersect
-			if tag.Value != tmpVal && tag.Not {
+			if tag.Value != otherVal && tag.Not {
 				continue
 			}
 			// contradict
-			if tag.Value != tmpVal && !tag.Not {
+			if tag.Value != otherVal && !tag.Not {
 				return false
 			}
 		} else if !tag.Not {
@@ -231,6 +232,36 @@ func isSubset(t1, t2 Tag) bool {
 
 // Intersect returns true if there exists an element that belongs both to 'other' and current set.
 // Empty set intersects with all sets.
+//
+// We're using this function to check if 2 'from' rules of MeshTrafficPermission can be applied to the same client DPP.
+// For example:
+//
+// from:
+//   - targetRef:
+//     kind: MeshSubset
+//     tags:
+//     team: team-a
+//   - targetRef:
+//     kind: MeshSubset
+//     tags:
+//     zone: east
+//
+// there is a DPP with tags 'team: team-a' and 'zone: east' that's subjected to both these rules.
+// So 'from[0]' and 'from[1]' have an intersection.
+// However, in another example:
+//
+// from:
+//   - targetRef:
+//     kind: MeshSubset
+//     tags:
+//     team: team-a
+//   - targetRef:
+//     kind: MeshSubset
+//     tags:
+//     team: team-b
+//     zone: east
+//
+// there is no DPP that'd hit both 'from[0]' and 'from[1]'. So in this case they don't have an intersection.
 func (ss Subset) Intersect(other Subset) bool {
 	if len(ss) == 0 || len(other) == 0 {
 		return true
@@ -290,12 +321,13 @@ func SubsetFromTags(tags map[string]string) Subset {
 type Element map[string]string
 
 func (e Element) WithKeyValue(key, value string) Element {
-	if e == nil {
-		e = Element{}
+	c := maps.Clone(e)
+	if c == nil {
+		c = Element{}
 	}
 
-	e[key] = value
-	return e
+	c[key] = value
+	return c
 }
 
 func MeshElement() Element {
@@ -382,26 +414,6 @@ func ComputeConf[T any](rs Rules, element Element) *T {
 		return pointer.To(computed.Conf.(T))
 	}
 
-	return nil
-}
-
-// LegacyCompute returns Rule for the given subset.
-// Deprecated: use Compute instead
-func (rs Rules) LegacyCompute(sub Subset) *Rule {
-	for _, rule := range rs {
-		if rule.Subset.IsSubset(sub) {
-			return rule
-		}
-	}
-	return nil
-}
-
-// LegacyComputeConf returns configuration for the given subset.
-// Deprecated: use ComputeConf instead
-func LegacyComputeConf[T any](rs Rules, sub Subset) *T {
-	if computed := rs.LegacyCompute(sub); computed != nil {
-		return pointer.To(computed.Conf.(T))
-	}
 	return nil
 }
 
