@@ -250,6 +250,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Dataplanes",
 	ShortName:           "dp",
 	IsExperimental:      false,
+	ProxyType:           "dataplane",
 	Insight:             NewDataplaneInsightResource(),
 	Overview:            NewDataplaneOverviewResource(),
 }
@@ -2799,6 +2800,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Zone Egresses",
 	ShortName:           "ze",
 	IsExperimental:      false,
+	ProxyType:           "egress",
 	Insight:             NewZoneEgressInsightResource(),
 	Overview:            NewZoneEgressOverviewResource(),
 }
@@ -3163,6 +3165,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Zone Ingresses",
 	ShortName:           "zi",
 	IsExperimental:      false,
+	ProxyType:           "ingress",
 	Insight:             NewZoneIngressInsightResource(),
 	Overview:            NewZoneIngressOverviewResource(),
 }

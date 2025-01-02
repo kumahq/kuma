@@ -186,6 +186,8 @@ type ResourceTypeDescriptor struct {
 	HasFromTargetRef bool
 	// HasStatus indicates that the policy has a status field
 	HasStatus bool
+	// ProxyType if this resource is proxy it contains its type. Empty for other resources.
+	ProxyType string
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 	// Insight contains the insight type attached to this resourceType

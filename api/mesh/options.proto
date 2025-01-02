@@ -54,6 +54,9 @@ message KumaResourceOptions {
 
   // Short name for xds or service reference.
   string short_name = 19;
+
+  // If this resource is proxy it contains its type. Empty for other resources.
+  string proxy_type = 20;
 }
 
 message KumaWsOptions {

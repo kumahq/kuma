@@ -85,6 +85,7 @@ type ResourceInfo struct {
 	IsExperimental           bool
 	AdditionalPrinterColumns []string
 	HasInsights              bool
+	ProxyType                string
 }
 
 func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
@@ -107,6 +108,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		IsExperimental:           r.IsExperimental,
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 		HasInsights:              r.HasInsights,
+		ProxyType:                r.ProxyType,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural

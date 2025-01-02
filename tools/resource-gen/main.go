@@ -361,6 +361,8 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		{{- if ne .ShortName "" }}
 		ShortName: "{{.ShortName}}",{{- end}}
 		IsExperimental: {{.IsExperimental}},
+        {{- if ne .ProxyType "" }}
+        ProxyType: "{{.ProxyType}}",{{- end}}
 {{- if .HasInsights}}
 		Insight: New{{.ResourceType}}InsightResource(),
 		Overview: New{{.ResourceType}}OverviewResource(),
