@@ -1,57 +1,425 @@
 components:
+  responses:
+    ErrorResponse:
+      description: api error response
+      content:
+        application/problem+json:
+          schema:
+            oneOf:
+              - $ref: '#/components/responses/BadRequest'
+              - $ref: '#/components/responses/Unauthorized'
+              - $ref: '#/components/responses/Forbidden'
+              - $ref: '#/components/responses/NotFound'
+              - $ref: '#/components/responses/Conflict'
+              - $ref: '#/components/responses/Gone'
+              - $ref: '#/components/responses/Internal'
+              - $ref: '#/components/responses/NotAvailable'
+            discriminator:
+              propertyName: status
+              mapping:
+                '400': '#/components/responses/BadRequest'
+                '401': '#/components/responses/Unauthorized'
+                '403': '#/components/responses/Forbidden'
+                '404': '#/components/responses/NotFound'
+                '409': '#/components/responses/Conflict'
+                '410': '#/components/responses/Gone'
+                '500': '#/components/responses/Internal'
+                '503': '#/components/responses/NotAvailable'
+    # 400
+    BadRequest:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/BadRequestError'
+    # 401
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/UnauthorizedError'
+          examples:
+            UnauthorizedExample:
+              $ref: '#/components/examples/UnauthorizedExample'
+    # 403
+    Forbidden:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ForbiddenError'
+          examples:
+            UnauthorizedExample:
+              $ref: '#/components/examples/ForbiddenExample'
+    # 404
+    NotFound:
+      description: Not Found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
+          examples:
+            NotFoundExample:
+              $ref: '#/components/examples/NotFoundExample'
+    # 409
+    Conflict:
+      description: Conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ConflictError'
+    # 410
+    Gone:
+      description: Gone
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/GoneError'
+    # 415
+    UnsupportedMediaType:
+      description: Unsupported Media Type
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/UnsupportedMediaTypeError'
+          examples:
+            UnsupportedMediaTypeExample:
+              $ref: '#/components/examples/UnsupportedMediaTypeExample'
+    UnprocessableContent:
+      description: Unprocessable Content
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/UnprocessableContentError'
+          examples:
+            UnprocessableContentExample:
+              $ref: '#/components/examples/UnprocessableContentExample'
+    # 429
+    TooManyRequests:
+      description: Too Many Requests
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/TooManyRequestsError'
+    # 500
+    Internal:
+      description: Internal
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/InternalError'
+    # 503
+    NotAvailable:
+      description: Service not available
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/NotAvailableError'
   schemas:
+    InvalidRules:
+      description: invalid parameters rules
+      type: string
+      readOnly: true
+      nullable: true
+      enum:
+        - required
+        - enum
+        - min_length
+        - max_length
+        - min_digits
+        - min_lowercase
+        - min_uppercase
+        - min_symbols
+        - is_array
+        - is_base64
+        - is_boolean
+        - is_date_time
+        - is_integer
+        - is_null
+        - is_number
+        - is_object
+        - is_string
+        - is_uuid
+        - unknown_property
+        - is_label
+        - matches_regex
     InvalidParameters:
+      type: array
+      nullable: false
+      uniqueItems: true
+      minItems: 1
+      description: invalid parameters
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/InvalidParameterChoiceItem'
+          - $ref: '#/components/schemas/InvalidParameterDependentItem'
+    InvalidParameterChoiceItem:
       type: object
-      title: Invalid Parameters
       properties:
         field:
           type: string
+          example: name
+          readOnly: true
+        rule:
+          $ref: '#/components/schemas/InvalidRules'
         reason:
           type: string
-        rule:
-          type: string
+          example: is a required field
+          readOnly: true
         choices:
           type: array
-          items:
-            type: string
-    Error:
+          uniqueItems: true
+          nullable: true
+          items: {}
+          readOnly: true
+      required:
+        - field
+        - reason
+    InvalidParameterDependentItem:
+      type: object
+      properties:
+        field:
+          type: string
+          example: name
+          readOnly: true
+        rule:
+          description: invalid parameters rules
+          type: string
+          readOnly: true
+          nullable: true
+          enum:
+            - dependent_fields
+        reason:
+          type: string
+          example: is a required field
+          readOnly: true
+        dependents:
+          type: array
+          uniqueItems: true
+          nullable: true
+          items: {}
+          readOnly: true
+      required:
+        - field
+        - rule
+        - reason
+        - dependents
+    BaseError:
       type: object
       title: Error
       description: standard error
-      x-examples:
-        Example 1:
-          status: 404
-          title: Not Found
-          type: https://kongapi.info/konnect/not-found
-          instance: 'portal:trace:2287285207635123011'
-          detail: The requested document was not found
       required:
         - status
         - title
         - instance
+        - detail
       properties:
         status:
           type: integer
-          description: The HTTP status code.
-          example: 404
+          description: |
+            The HTTP status code of the error. Useful when passing the response
+            body to child properties in a frontend UI. Must be returned as an integer.
+          readOnly: true
         title:
           type: string
-          description: The error response code.
-          example: Not Found
+          description: |
+            A short, human-readable summary of the problem. It should not
+            change between occurences of a problem, except for localization.
+            Should be provided as "Sentence case" for direct use in the UI.
+          readOnly: true
         type:
           type: string
           description: The error type.
-          example: Not Found
+          readOnly: true
         instance:
           type: string
-          example: 'portal:trace:2287285207635123011'
-          description: The portal traceback code
+          description: |
+            Used to return the correlation ID back to the user, in the format
+            kong:trace:<correlation_id>. This helps us find the relevant logs
+            when a customer reports an issue.
+          readOnly: true
         detail:
           type: string
-          example: The requested team was not found
-          description: Details about the error.
+          description: |
+            A human readable explanation specific to this occurence of the problem.
+            This field may contain request/entity data to help the user understand
+            what went wrong. Enclose variable values in square brackets. Should be
+            provided as "Sentence case" for direct use in the UI.
+          readOnly: true
+    BadRequestError:
+      type: object
+      required:
+        - invalid_parameters
+      properties:
+        status:
+          example: 400
+        title:
+          example: Bad Request
+        type:
+          example: https://httpstatuses.com/400
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Invalid request body
         invalid_parameters:
-          type: array
-          description: TODO
-          items:
-            $ref: "#/components/schemas/InvalidParameters"
+          $ref: '#/components/schemas/InvalidParameters'
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    UnauthorizedError:
+      type: object
+      properties:
+        status:
+          example: 401
+        title:
+          example: Unauthorized
+        type:
+          example: https://httpstatuses.com/401
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Invalid credentials
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    ForbiddenError:
+      type: object
+      properties:
+        status:
+          example: 403
+        title:
+          example: Forbidden
+        type:
+          example: https://httpstatuses.com/403
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Forbidden
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    NotFoundError:
+      type: object
+      properties:
+        status:
+          example: 404
+        title:
+          example: Not Found
+        type:
+          example: https://httpstatuses.com/404
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Not found
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    ConflictError:
+      type: object
+      properties:
+        status:
+          example: 409
+        title:
+          example: Conflict
+        type:
+          example: https://httpstatuses.com/409
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Conflict
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    UnsupportedMediaTypeError:
+      type: object
+      properties:
+        status:
+          example: 415
+        title:
+          example: UnsupportedMediaType
+        type:
+          example: https://httpstatuses.com/415
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: UnsupportedMediaType
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    UnprocessableContentError:
+      type: object
+      properties:
+        status:
+          example: 422
+        title:
+          example: Unprocessable Content
+        type:
+          example: https://httpstatuses.com/422
+        instance:
+          example: kong:trace:1234567891
+        detail:
+          example: Unprocessable Content
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    TooManyRequestsError:
+      type: object
+      properties:
+        status:
+          example: 429
+        title:
+          example: Too Many Requests
+        type:
+          example: https://httpstatuses.com/429
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Too Many Requests
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    GoneError:
+      type: object
+      properties:
+        status:
+          example: 410
+        title:
+          example: Gone
+        type:
+          example: https://httpstatuses.com/410
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Gone
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    InternalError:
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    NotAvailableError:
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+  examples:
+    ForbiddenExample:
+      value:
+        status: 403
+        title: Forbidden
+        instance: kong:trace:2723154947768991354
+        detail: You do not have permission to perform this action
+    NotFoundExample:
+      value:
+        status: 404
+        title: Not Found
+        instance: kong:trace:6816496025408232265
+        detail: Not Found
+    UnsupportedMediaTypeExample:
+      value:
+        status: 415
+        title: Unsupported Media Type
+        instance: kong:trace:8347343766220159418
+        detail: "This API only supports requests with `Content-Type: application/json`"
+    UnprocessableContentExample:
+      value:
+        status: 422
+        title: Unprocessable Content
+        instance: kong:trace:8347343766220159419
+        detail: "The requested operation cannot be performed with the provided data"
+    UnauthorizedExample:
+      value:
+        status: 401
+        title: Unauthorized
+        instance: kong:trace:8347343766220159418
+        detail: Unauthorized
