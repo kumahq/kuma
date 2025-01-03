@@ -1,0 +1,21 @@
+# MeshTrafficPermission with 2 from tags which one is a subset of another one
+type: MeshTrafficPermission
+mesh: default
+name: mtp-allow-kuma-one
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          k8s.kuma.io/namespace: kuma-one
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshSubset
+        tags:
+          app: demo
+          k8s.kuma.io/namespace: kuma-one
+      default:
+        action: Deny
