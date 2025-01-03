@@ -144,8 +144,10 @@ type ProxyType string
 
 const (
 	DataplaneProxyType ProxyType = "dataplane"
-	IngressProxyType   ProxyType = "ingress"
-	EgressProxyType    ProxyType = "egress"
+	IngressProxyType   ProxyType = "ZoneIngress"
+	EgressProxyType    ProxyType = "ZoneEgress"
+	SidecarProxyType   ProxyType = "Sidecar"
+	GatewayProxyType   ProxyType = "Gateway"
 )
 
 func (t ProxyType) IsValid() error {

@@ -145,6 +145,10 @@ type ResourceWithInsights interface {
 	NewOverviewList() ResourceList
 }
 
+type ProxyResource interface {
+	GetProxyType() mesh_proto.ProxyType
+}
+
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -186,8 +190,8 @@ type ResourceTypeDescriptor struct {
 	HasFromTargetRef bool
 	// HasStatus indicates that the policy has a status field
 	HasStatus bool
-	// ProxyType if this resource is proxy it contains its type. Empty for other resources.
-	ProxyType string
+	// IsProxy indicates if this resource is a proxy
+	IsProxy bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
 	// Insight contains the insight type attached to this resourceType

@@ -22,7 +22,7 @@ message Dataplane {
   option (kuma.mesh.resource).ws.name = "dataplane";
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
-  option (kuma.mesh.resource).proxy_type = "dataplane";
+  option (kuma.mesh.resource).is_proxy = true;
   option (kuma.mesh.resource).additional_printer_columns =
       "description=\"Service tag of the first "
       "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"
