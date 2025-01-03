@@ -21,6 +21,7 @@ message ZoneEgress {
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
   option (kuma.mesh.resource).short_name = "ze";
+  option (kuma.mesh.resource).is_proxy = true;
   option (kuma.mesh.resource).additional_printer_columns =
       "description=\"Zone name\""
       ",JSONPath=`.spec.zone`"

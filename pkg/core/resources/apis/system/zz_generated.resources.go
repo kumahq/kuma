@@ -124,6 +124,7 @@ var ConfigResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Config",
 	PluralDisplayName:   "Configs",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -241,6 +242,7 @@ var SecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Secret",
 	PluralDisplayName:   "Secrets",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -357,6 +359,7 @@ var ZoneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone",
 	PluralDisplayName:   "Zones",
 	IsExperimental:      false,
+	IsProxy:             false,
 	Insight:             NewZoneInsightResource(),
 	Overview:            NewZoneOverviewResource(),
 }
@@ -475,6 +478,7 @@ var ZoneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Insight",
 	PluralDisplayName:   "Zone Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -606,4 +610,5 @@ var ZoneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Overview",
 	PluralDisplayName:   "Zone Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }

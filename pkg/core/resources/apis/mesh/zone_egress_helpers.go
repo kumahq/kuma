@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -54,4 +55,8 @@ func (r *ZoneEgressResource) Hash() []byte {
 
 func (r *ZoneEgressResource) IsRemoteEgress(localZone string) bool {
 	return r.Spec.GetZone() != "" && r.Spec.GetZone() != localZone
+}
+
+func (r *ZoneEgressResource) GetProxyType() v1alpha1.TargetRefProxyType {
+	return v1alpha1.ZoneEgress
 }

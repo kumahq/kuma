@@ -132,6 +132,7 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Circuit Breaker",
 	PluralDisplayName:   "Circuit Breakers",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -250,6 +251,7 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Dataplanes",
 	ShortName:           "dp",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewDataplaneInsightResource(),
 	Overview:            NewDataplaneOverviewResource(),
 }
@@ -369,6 +371,7 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane Insight",
 	PluralDisplayName:   "Dataplane Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -500,6 +503,7 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane Overview",
 	PluralDisplayName:   "Dataplane Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -613,6 +617,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "External Service",
 	PluralDisplayName:   "External Services",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -738,6 +743,7 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Fault Injection",
 	PluralDisplayName:   "Fault Injections",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -863,6 +869,7 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Health Check",
 	PluralDisplayName:   "Health Checks",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -980,6 +987,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh",
 	PluralDisplayName:   "Meshes",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1102,6 +1110,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Mesh Gateways",
 	ShortName:           "mgw",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1223,6 +1232,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Gateway Route",
 	PluralDisplayName:   "Mesh Gateway Routes",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1339,6 +1349,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Insight",
 	PluralDisplayName:   "Mesh Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1460,6 +1471,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Proxy Template",
 	PluralDisplayName:   "Proxy Templates",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1585,6 +1597,7 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Rate Limit",
 	PluralDisplayName:   "Rate Limits",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1710,6 +1723,7 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Retry",
 	PluralDisplayName:   "Retries",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1827,6 +1841,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Service Insight",
 	PluralDisplayName:   "Service Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1943,6 +1958,7 @@ var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Service Overview",
 	PluralDisplayName:   "Service Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -2064,6 +2080,7 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Timeout",
 	PluralDisplayName:   "Timeouts",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2189,6 +2206,7 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Log",
 	PluralDisplayName:   "Traffic Logs",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2314,6 +2332,7 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Permission",
 	PluralDisplayName:   "Traffic Permissions",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2439,6 +2458,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Route",
 	PluralDisplayName:   "Traffic Routes",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2560,6 +2580,7 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Trace",
 	PluralDisplayName:   "Traffic Traces",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2681,6 +2702,7 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Virtual Outbound",
 	PluralDisplayName:   "Virtual Outbounds",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2799,6 +2821,7 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Zone Egresses",
 	ShortName:           "ze",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewZoneEgressInsightResource(),
 	Overview:            NewZoneEgressOverviewResource(),
 }
@@ -2918,6 +2941,7 @@ var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress Insight",
 	PluralDisplayName:   "Zone Egress Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -3049,6 +3073,7 @@ var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress Overview",
 	PluralDisplayName:   "Zone Egress Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -3163,6 +3188,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	PluralDisplayName:   "Zone Ingresses",
 	ShortName:           "zi",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewZoneIngressInsightResource(),
 	Overview:            NewZoneIngressOverviewResource(),
 }
@@ -3282,6 +3308,7 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress Insight",
 	PluralDisplayName:   "Zone Ingress Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -3413,4 +3440,5 @@ var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress Overview",
 	PluralDisplayName:   "Zone Ingress Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }

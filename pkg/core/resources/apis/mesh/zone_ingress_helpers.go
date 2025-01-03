@@ -5,6 +5,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -50,4 +51,8 @@ func (r *ZoneIngressResource) Hash() []byte {
 	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAddress()))
 	_, _ = hasher.Write([]byte(r.Spec.GetNetworking().GetAdvertisedAddress()))
 	return hasher.Sum(nil)
+}
+
+func (r *ZoneIngressResource) GetProxyType() v1alpha1.TargetRefProxyType {
+	return v1alpha1.ZoneIngress
 }
