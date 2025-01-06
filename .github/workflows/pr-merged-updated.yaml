@@ -38,7 +38,8 @@ jobs:
                 repo: context.repo.repo,
                 ref: process.env.GITHUB_SHA
               });
-              pr = commit.data.commit.message;
+              const prMatch = commit.data.commit.message.match(/\(#(\d+)\)/);
+              pr = prMatch ? parseInt(prMatch[1]) : undefined;
             }
             console.log('Branch:', branch);
             console.log('PR:', pr);
