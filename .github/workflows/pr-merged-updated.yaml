@@ -11,6 +11,9 @@ jobs:
     name: "Notify about merged PR (2)"
     runs-on: ubuntu-24.04
     steps:
+      - name: Hello World
+        run: |
+          echo "Hello World"
       - name: Logging
         run: |
           echo "${{toJSON(github.event)}}"
