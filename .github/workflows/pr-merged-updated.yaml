@@ -21,22 +21,22 @@ jobs:
           script: |
             let branch, pr;
             console.log("github object:", github);
-            console.log("github ref type:", github.ref_type);
-            if (github.ref_type === "tag") {
+            console.log("github ref type:", process.env.GITHUB_REF_TYPE);
+            if (process.env.GITHUB_REF_TYPE === "tag") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
-              const versionMatch = github.ref_name.match(versionRegex);
+              const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
               if (!versionMatch) {
                 return;
               }
               const [_, major, minor] = [...versionMatch];
               branch = `release-${major}.${minor}`;
-            } else if (github.ref_type === "branch") {
+            } else if (process.env.GITHUB_REF_TYPE === "branch") {
               console.log("branch");
-              branch = github.ref_name;
+              branch = process.env.GITHUB_REF_NAME;
               const commit = await github.rest.repos.getCommit({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: github.sha
+                ref: process.env.GITHUB_SHA
               });
               pr = commit.data.commit.message;
             }
