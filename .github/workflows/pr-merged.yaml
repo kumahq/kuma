@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - '*'
-  pull_request_target:
-    types: [closed]
     branches:
       - master
       - release-*
@@ -12,7 +10,7 @@ permissions:
   contents: read
 jobs:
   notify-about-merged-pr:
-    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged
+    timeout-minutes: 10
     name: "Notify about merged PR"
     runs-on: ubuntu-24.04
     steps:
@@ -21,11 +19,8 @@ jobs:
         with:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
-            let branch, pr;
-            if (context.eventName == "pull_request_target") {
-              branch = context.payload.pull_request.base.ref;
-              pr = context.payload.pull_request.number;
-            } else if (context.eventName == "push") {
+            let branch = process.env.GITHUB_REF_NAME;
+            if (process.env.GITHUB_REF_TYPE === "tag") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
               const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
               if (!versionMatch) {
@@ -40,6 +35,5 @@ jobs:
               event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
               client_payload: {
                 branch,
-                pr,
               },
             });
