@@ -19,7 +19,7 @@ jobs:
         with:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
-            let branch;
+            let branch = process.env.GITHUB_REF_NAME;
             if (process.env.GITHUB_REF_TYPE === "tag") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
               const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
@@ -28,8 +28,6 @@ jobs:
               }
               const [_, major, minor] = [...versionMatch];
               branch = `release-${major}.${minor}`;
-            } else if (process.env.GITHUB_REF_TYPE === "branch") {
-              branch = process.env.GITHUB_REF_NAME;
             }
             return github.rest.repos.createDispatchEvent({
               owner: '${{ secrets.NOTIFY_OWNER }}',
