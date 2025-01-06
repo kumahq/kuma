@@ -1,10 +1,19 @@
 on:
   schedule:
     - cron: '*/5 * * * *' #every 5mins
+  workflow_dispatch:
+    inputs:
+      lookback:
+        description: 'How far back to look for PRs'
+        required: false
+        default: '10 minutes'
+
 permissions:
   contents: read
 jobs:
   find-prs:
+    env:
+      LOOK_BACK: ${{ github.event.inputs.lookback }} || "10 minutes"
     runs-on: ubuntu-24.04
     outputs:
       recent_prs: ${{ steps.get-recent-prs.outputs.out }}
@@ -15,7 +24,7 @@ jobs:
           echo "out=$(gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d')" >> $GITHUB_OUTPUT
       - id: get-recent-prs
         run: |
-          prs=$(gh pr list --json number,title,url --search "updated:>=$(date --date='10 minutes ago' +'%Y-%m-%dT%H:%M:%S%z') -author:app/github-actions -author:dependabot")
+          prs=$(gh pr list --json number,title,url --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:app/github-actions -author:dependabot")
           echo "out=$prs" >> $GITHUB_OUTPUT
 
   pr-comment:
@@ -44,9 +53,3 @@ jobs:
             - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
             
             [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
-  maybe-backport:
-    needs: find-prs
-    runs-on: ubuntu-24.04
-    strategy:
-      matrix: ${{ fromJson(needs.get-prs.outputs.prs_to_backport) }}
-      max-parallel: 1 # to avoid using too many runners
