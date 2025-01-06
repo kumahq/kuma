@@ -1,0 +1,32 @@
+type: object
+required: [type, name, spec]
+properties:
+  type:
+    description: 'the type of the resource'
+    type: string
+  {{- if eq .Scope "Mesh"}}
+  mesh:
+    description: 'Mesh is the name of the Kuma mesh this resource belongs to.
+      It may be omitted for cluster-scoped resources.'
+    type: string
+    default: default
+  {{- end}}
+  name:
+    description: 'Name of the Kuma resource'
+    type: string
+  labels:
+    additionalProperties:
+      type: string
+    description: 'The labels to help identity resources'
+    type: object
+  spec: {}
+  creationTime:
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

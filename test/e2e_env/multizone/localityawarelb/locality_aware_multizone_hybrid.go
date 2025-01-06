@@ -1,7 +1,6 @@
 package localityawarelb
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -9,6 +8,8 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 
 	mesh_http_route_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	mesh_loadbalancing_api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -32,99 +33,107 @@ func LocalityAwareLB() {
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Universal Zone 4
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb_svc",
-				mesh,
-				WithTransparentProxy(true),
-				WithAdditionalTags(
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client_locality-aware-lb_svc",
+					mesh,
+					WithTransparentProxy(true),
+					WithAdditionalTags(
+						map[string]string{
+							"k8s.io/node": "node-1",
+							"k8s.io/az":   "az-1",
+						}),
+				),
+				TestServerUniversal("test-server-node-1", mesh, WithAdditionalTags(
 					map[string]string{
 						"k8s.io/node": "node-1",
 						"k8s.io/az":   "az-1",
 					}),
+					WithServiceName("test-server_locality-aware-lb_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-node-1-zone-4"}),
+				),
+				TestServerUniversal("test-server-az-1", mesh, WithAdditionalTags(
+					map[string]string{
+						"k8s.io/az": "az-1",
+					}),
+					WithServiceName("test-server_locality-aware-lb_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-az-1-zone-4"}),
+				),
+				TestServerUniversal("test-server-node-2", mesh, WithAdditionalTags(
+					map[string]string{
+						"k8s.io/node": "node-2",
+					}),
+					WithServiceName("test-server_locality-aware-lb_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-node-2-zone-4"}),
+				),
+				TestServerUniversal("test-server-no-tags", mesh,
+					WithArgs([]string{"echo", "--instance", "test-server-no-tags-zone-4"}),
+					WithServiceName("test-server_locality-aware-lb_svc_80"),
+				),
 			)).
-			Install(TestServerUniversal("test-server-node-1", mesh, WithAdditionalTags(
-				map[string]string{
-					"k8s.io/node": "node-1",
-					"k8s.io/az":   "az-1",
-				}),
-				WithServiceName("test-server_locality-aware-lb_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-node-1-zone-4"}),
-			)).
-			Install(TestServerUniversal("test-server-az-1", mesh, WithAdditionalTags(
-				map[string]string{
-					"k8s.io/az": "az-1",
-				}),
-				WithServiceName("test-server_locality-aware-lb_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-az-1-zone-4"}),
-			)).
-			Install(TestServerUniversal("test-server-node-2", mesh, WithAdditionalTags(
-				map[string]string{
-					"k8s.io/node": "node-2",
-				}),
-				WithServiceName("test-server_locality-aware-lb_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-node-2-zone-4"}),
-			)).
-			Install(TestServerUniversal("test-server-no-tags", mesh,
-				WithArgs([]string{"echo", "--instance", "test-server-no-tags-zone-4"}),
-				WithServiceName("test-server_locality-aware-lb_svc_80"),
-			)).
-			Setup(multizone.UniZone1),
-		).To(Succeed())
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Universal Zone 5
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb_svc",
-				mesh,
-				WithTransparentProxy(true),
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client_locality-aware-lb_svc",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("test-server", mesh,
+					WithServiceName("test-server_locality-aware-lb_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+				),
+				TestServerUniversal("test-server-mesh-route", mesh,
+					WithServiceName("test-server-mesh-route_locality-aware-lb_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-mesh-route-zone-5"}),
+				),
 			)).
-			Install(TestServerUniversal("test-server", mesh,
-				WithServiceName("test-server_locality-aware-lb_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
-			)).
-			Install(TestServerUniversal("test-server-mesh-route", mesh,
-				WithServiceName("test-server-mesh-route_locality-aware-lb_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-mesh-route-zone-5"}),
-			)).
-			Setup(multizone.UniZone2),
-		).To(Succeed())
+			SetupInGroup(multizone.UniZone2, &group)
 
 		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			Install(Parallel(
+				democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace)),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-mesh-route"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-mesh-route-zone-1"),
+				),
 			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server-mesh-route"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-mesh-route-zone-1"),
-			)).
-			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
 
 		// Kubernetes Zone 2
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(democlient.Install(
-				democlient.WithMesh(mesh),
-				democlient.WithNamespace(namespace),
-				democlient.WithName("demo-client-mesh-route"),
+			Install(Parallel(
+				democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace)),
+				democlient.Install(
+					democlient.WithMesh(mesh),
+					democlient.WithNamespace(namespace),
+					democlient.WithName("demo-client-mesh-route"),
+				),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-zone-2"),
+				),
 			)).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-2"),
-			)).
-			Setup(multizone.KubeZone2)).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

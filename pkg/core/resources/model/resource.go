@@ -198,6 +198,8 @@ type ResourceTypeDescriptor struct {
 	AllowedOnSystemNamespaceOnly bool
 	// IsReferenceableInTo whether this resource type can be used in spec.to[].targetRef
 	IsReferenceableInTo bool
+	// ShortName a name that is used in kubectl or in the envoy configuration
+	ShortName string
 }
 
 func newObject(baseResource Resource) Resource {

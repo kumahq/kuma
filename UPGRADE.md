@@ -6,6 +6,15 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.10.x`
+
+### MeshLoadBalancingStrategy
+
+#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+
+The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
+is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog
@@ -994,8 +1003,7 @@ Every item in the `items` array now has a `kind` property of either:
 * `MeshGatewayDataplane`: a `MeshGateway`-configured `Dataplane` with a new
   structure representing the `MeshGateway` it serves.
 
-Some examples can be found in the [Inspect API
-docs](https://kuma.io/docs/1.6.x/reference/http-api/#inspect-api).
+Some examples can be found in the Inspect API docs.
 
 ## Upgrade to `1.5.x`
 
@@ -1027,9 +1035,6 @@ tokens. In order to continue using client certificates (the previous default
 method), you'll need to explicitly set the authentication method to client
 certificates. This can be done by setting the `KUMA_API_SERVER_AUTHN_TYPE` variable to
 `"clientCerts"`.
-
-See [Configuration - Control plane](https://kuma.io/docs/1.3.1/documentation/configuration/#control-plane)
-for how to set this variable.
 
 ## Upgrade to `1.3.0`
 

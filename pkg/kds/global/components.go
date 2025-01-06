@@ -65,53 +65,33 @@ func Setup(rt runtime.Runtime) error {
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 
-	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer, errChan chan error) {
+	onGlobalToZoneSyncConnect := mux.OnGlobalToZoneSyncConnectFunc(func(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			select {
-			case errChan <- err:
-			default:
-				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
-			}
-			return
+			return err
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
 		log.Info("Global To Zone new session created")
 		if err := createZoneIfAbsent(stream.Context(), log, zoneID, rt.ResourceManager(), rt.KDSContext().CreateZoneOnFirstConnect); err != nil {
 			if errors.Is(err, context.Canceled) {
-				return
+				return nil
 			}
-			err = errors.Wrap(err, "Global CP could not create a zone")
-			select {
-			case errChan <- err:
-			default:
-				log.Error(err, "failed to write error to closed channel")
-			}
-			return
+			return errors.Wrap(err, "Global CP could not create a zone")
 		}
 
 		if err := kdsServerV2.GlobalToZoneSync(stream); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-			select {
-			case errChan <- err:
-			default:
-				log.Error(err, "failed to write error to closed channel")
-			}
-			return
-		} else {
-			log.V(1).Info("GlobalToZoneSync finished gracefully")
+			return err
 		}
+
+		log.V(1).Info("GlobalToZoneSync finished gracefully")
+		return nil
 	})
 
-	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer, errChan chan error) {
+	onZoneToGlobalSyncConnect := mux.OnZoneToGlobalSyncConnectFunc(func(stream mesh_proto.KDSSyncService_ZoneToGlobalSyncServer) error {
 		zoneID, err := util.ClientIDFromIncomingCtx(stream.Context())
 		if err != nil {
-			select {
-			case errChan <- err:
-			default:
-				kdsDeltaGlobalLog.Error(err, "failed to write error to closed channel")
-			}
-			return
+			return err
 		}
 		log := kdsDeltaGlobalLog.WithValues("peer-id", zoneID)
 		log = kuma_log.AddFieldsFromCtx(log, stream.Context(), rt.Extensions())
@@ -123,19 +103,12 @@ func Setup(rt runtime.Runtime) error {
 			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,
 		)
-		go func() {
-			err := sink.Receive()
-			if err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
-				err = errors.Wrap(err, "KDSSyncClient finished with an error")
-				select {
-				case errChan <- err:
-				default:
-					log.Error(err, "failed to write error to closed channel")
-				}
-			} else {
-				log.V(1).Info("KDSSyncClient finished gracefully")
-			}
-		}()
+		if err := sink.Receive(); err != nil && (status.Code(err) != codes.Canceled && !errors.Is(err, context.Canceled)) {
+			return errors.Wrap(err, "KDSSyncClient finished with an error")
+		}
+
+		log.V(1).Info("KDSSyncClient finished gracefully")
+		return nil
 	})
 	var streamInterceptors []service.StreamInterceptor
 	for _, filter := range rt.KDSContext().GlobalServerFiltersV2 {

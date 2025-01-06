@@ -1,0 +1,24 @@
+# user=system:serviceaccount:kuma-system:kuma-control-plane,operation=CREATE
+kind: MeshLoadBalancingStrategy
+apiVersion: kuma.io/v1alpha1
+metadata:
+  name: ring-hash
+  namespace: kuma-system
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: frontend
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      loadBalancer:
+        type: RingHash
+        ringHash:
+          hashPolicies:
+          - type: SourceIP
+            connection:
+              sourceIP: true

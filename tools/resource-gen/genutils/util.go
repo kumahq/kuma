@@ -12,6 +12,25 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+// ProtoMessageFunc ...
+type ProtoMessageFunc func(protoreflect.MessageType) bool
+
+// OnKumaResourceMessage ...
+func OnKumaResourceMessage(pkg string, f ProtoMessageFunc) ProtoMessageFunc {
+	return func(m protoreflect.MessageType) bool {
+		r := KumaResourceForMessage(m.Descriptor())
+		if r == nil {
+			return true
+		}
+
+		if r.Package == pkg {
+			return f(m)
+		}
+
+		return true
+	}
+}
+
 // KumaResourceForMessage fetches the Kuma resource option out of a message.
 func KumaResourceForMessage(desc protoreflect.MessageDescriptor) *mesh.KumaResourceOptions {
 	ext := proto.GetExtension(desc.Options(), mesh.E_Resource)
@@ -53,6 +72,7 @@ type ResourceInfo struct {
 	Global                   bool
 	KumactlSingular          string
 	KumactlPlural            string
+	ShortName                string
 	WsReadOnly               bool
 	WsAdminOnly              bool
 	WsPath                   string
@@ -78,6 +98,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		SkipRegistration:         r.SkipRegistration,
 		SkipKubernetesWrappers:   r.SkipKubernetesWrappers,
 		Global:                   r.Global,
+		ShortName:                r.ShortName,
 		ScopeNamespace:           r.ScopeNamespace,
 		AllowToInspect:           r.AllowToInspect,
 		StorageVersion:           r.StorageVersion,

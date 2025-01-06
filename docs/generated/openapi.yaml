@@ -1698,6 +1698,167 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
+  /meshes/{name}:
+    get:
+      summary: Returns Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshItem'
+    put:
+      summary: Creates or Updates Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+    delete:
+      summary: Deletes Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          description: Successful response
+  /meshes:
+    get:
+      summary: Returns a list of Mesh in the mesh.
+      tags:
+        - Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshList'
+  /meshes/{mesh}/meshgateways/{name}:
+    get:
+      summary: Returns MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayItem'
+    put:
+      summary: Creates or Updates MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+    delete:
+      summary: Deletes MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          description: Successful response
+  /meshes/{mesh}/meshgateways:
+    get:
+      summary: Returns a list of MeshGateway in the mesh.
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayList'
   /hostnamegenerators/{name}:
     get:
       summary: Returns HostnameGenerator entity
@@ -2389,61 +2550,166 @@ components:
           type: boolean
         policy:
           $ref: '#/components/schemas/PolicyDescription'
-    InvalidParameters:
-      type: object
-      title: Invalid Parameters
-      properties:
-        field:
-          type: string
-        reason:
-          type: string
-        rule:
-          type: string
-        choices:
-          type: array
-          items:
-            type: string
-    Error:
+    BaseError:
       type: object
       title: Error
       description: standard error
-      x-examples:
-        Example 1:
-          status: 404
-          title: Not Found
-          type: https://kongapi.info/konnect/not-found
-          instance: portal:trace:2287285207635123011
-          detail: The requested document was not found
       required:
         - status
         - title
         - instance
+        - detail
       properties:
         status:
           type: integer
-          description: The HTTP status code.
-          example: 404
+          description: >
+            The HTTP status code of the error. Useful when passing the response
+
+            body to child properties in a frontend UI. Must be returned as an
+            integer.
+          readOnly: true
         title:
           type: string
-          description: The error response code.
-          example: Not Found
+          description: |
+            A short, human-readable summary of the problem. It should not
+            change between occurences of a problem, except for localization.
+            Should be provided as "Sentence case" for direct use in the UI.
+          readOnly: true
         type:
           type: string
           description: The error type.
-          example: Not Found
+          readOnly: true
         instance:
           type: string
-          example: portal:trace:2287285207635123011
-          description: The portal traceback code
+          description: |
+            Used to return the correlation ID back to the user, in the format
+            kong:trace:<correlation_id>. This helps us find the relevant logs
+            when a customer reports an issue.
+          readOnly: true
         detail:
           type: string
-          example: The requested team was not found
-          description: Details about the error.
-        invalid_parameters:
+          description: >
+            A human readable explanation specific to this occurence of the
+            problem.
+
+            This field may contain request/entity data to help the user
+            understand
+
+            what went wrong. Enclose variable values in square brackets. Should
+            be
+
+            provided as "Sentence case" for direct use in the UI.
+          readOnly: true
+    InvalidRules:
+      description: invalid parameters rules
+      type: string
+      readOnly: true
+      nullable: true
+      enum:
+        - required
+        - enum
+        - min_length
+        - max_length
+        - min_digits
+        - min_lowercase
+        - min_uppercase
+        - min_symbols
+        - is_array
+        - is_base64
+        - is_boolean
+        - is_date_time
+        - is_integer
+        - is_null
+        - is_number
+        - is_object
+        - is_string
+        - is_uuid
+        - unknown_property
+        - is_label
+        - matches_regex
+    InvalidParameterChoiceItem:
+      type: object
+      properties:
+        field:
+          type: string
+          example: name
+          readOnly: true
+        rule:
+          $ref: '#/components/schemas/InvalidRules'
+        reason:
+          type: string
+          example: is a required field
+          readOnly: true
+        choices:
           type: array
-          description: TODO
-          items:
-            $ref: '#/components/schemas/InvalidParameters'
+          uniqueItems: true
+          nullable: true
+          items: {}
+          readOnly: true
+      required:
+        - field
+        - reason
+    InvalidParameterDependentItem:
+      type: object
+      properties:
+        field:
+          type: string
+          example: name
+          readOnly: true
+        rule:
+          description: invalid parameters rules
+          type: string
+          readOnly: true
+          nullable: true
+          enum:
+            - dependent_fields
+        reason:
+          type: string
+          example: is a required field
+          readOnly: true
+        dependents:
+          type: array
+          uniqueItems: true
+          nullable: true
+          items: {}
+          readOnly: true
+      required:
+        - field
+        - rule
+        - reason
+        - dependents
+    InvalidParameters:
+      type: array
+      nullable: false
+      uniqueItems: true
+      minItems: 1
+      description: invalid parameters
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/InvalidParameterChoiceItem'
+          - $ref: '#/components/schemas/InvalidParameterDependentItem'
+    BadRequestError:
+      type: object
+      required:
+        - invalid_parameters
+      properties:
+        status:
+          example: 400
+        title:
+          example: Bad Request
+        type:
+          example: https://httpstatuses.com/400
+        instance:
+          example: kong:trace:1234567890
+        detail:
+          example: Invalid request body
+        invalid_parameters:
+          $ref: '#/components/schemas/InvalidParameters'
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
+    InternalError:
+      allOf:
+        - $ref: '#/components/schemas/BaseError'
     Meta:
       type: object
       required:
@@ -3278,6 +3544,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -4487,6 +4763,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -4990,6 +5276,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -5467,6 +5763,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -6261,6 +6567,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -6559,6 +6875,7 @@ components:
                                       enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -6731,6 +7048,7 @@ components:
                                       enum:
                                         - Header
                                         - Cookie
+                                        - Connection
                                         - SourceIP
                                         - QueryParameter
                                         - FilterState
@@ -7012,6 +7330,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7334,6 +7662,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -7387,6 +7725,7 @@ components:
                     properties:
                       port:
                         description: Port defines the port to which a user makes a request.
+                        format: int32
                         type: integer
                       protocol:
                         default: tcp
@@ -7508,6 +7847,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8215,6 +8564,16 @@ components:
           required:
             - default
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -8792,6 +9151,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9428,6 +9797,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -9758,6 +10137,16 @@ components:
               minItems: 1
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10227,6 +10616,16 @@ components:
                 type: object
               type: array
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10497,6 +10896,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -10837,6 +11246,16 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11068,7 +11487,558 @@ components:
                   type: object
               type: object
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshItem:
+      properties:
+        constraints:
+          description: Constraints that applies to the mesh and its entities
+          properties:
+            dataplaneProxy:
+              description: >-
+                DataplaneProxyMembership defines a set of requirements for data
+                plane
+
+                proxies to be a member of the mesh.
+              properties:
+                requirements:
+                  description: >-
+                    Requirements defines a set of requirements that data plane
+                    proxies must
+
+                    fulfill in order to join the mesh. A data plane proxy must
+                    fulfill at
+
+                    least one requirement in order to join the mesh. Empty list
+                    of allowed
+
+                    requirements means that any proxy that is not explicitly
+                    denied can join.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+                restrictions:
+                  description: >-
+                    Restrictions defines a set of restrictions that data plane
+                    proxies cannot
+
+                    fulfill in order to join the mesh. A data plane proxy cannot
+                    fulfill any
+
+                    requirement in order to join the mesh.
+
+                    Restrictions takes precedence over requirements.
+                  items:
+                    description: >-
+                      Rules defines a set of rules for data plane proxies to be
+                      member of the mesh.
+                    properties:
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags defines set of required tags. You can specify '*'
+                          in value to
+
+                          require non empty value of tag
+                        type: object
+                    type: object
+                  type: array
+              type: object
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        logging:
+          description: |-
+            Logging settings.
+            +optional
+          properties:
+            backends:
+              description: List of available logging backends
+              items:
+                description: LoggingBackend defines logging backend available to mesh.
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties: {}
+                    type: object
+                  format:
+                    description: >-
+                      Format of access logs. Placeholders available on
+
+                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log
+                    type: string
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.logging.defaultBackend or in
+
+                      TrafficLogging
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'tcp' and 'file')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
+          type: object
+        meshServices:
+          properties:
+            mode:
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
+        metrics:
+          description: >-
+            Configuration for metrics collected and exposed by dataplanes.
+
+
+            Settings defined here become defaults for every dataplane in a given
+            Mesh.
+
+            Additionally, it is also possible to further customize this
+            configuration
+
+            for each dataplane individually using Dataplane resource.
+
+            +optional
+          properties:
+            backends:
+              description: List of available Metrics backends
+              items:
+                description: MetricsBackend defines metric backends
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties: {}
+                    type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.metrics.enabledBackend
+                    type: string
+                  type:
+                    description: Type of the backend (Kuma ships with 'prometheus')
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+          type: object
+        mtls:
+          description: |-
+            mTLS settings.
+            +optional
+          properties:
+            backends:
+              description: List of available Certificate Authority backends
+              items:
+                description: >-
+                  CertificateAuthorityBackend defines Certificate Authority
+                  backend
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties: {}
+                    type: object
+                  dpCert:
+                    description: Dataplane certificate settings
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request to CA for DP certificate generation
+                          and retrieval
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      rotation:
+                        description: Rotation settings
+                        properties:
+                          expiration:
+                            description: >-
+                              Time after which generated certificate for
+                              Dataplane will expire
+                            type: string
+                        type: object
+                    type: object
+                  mode:
+                    description: >-
+                      Mode defines the behaviour of inbound listeners with
+                      regard to traffic
+
+                      encryption
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  name:
+                    description: Name of the backend
+                    type: string
+                  rootChain:
+                    properties:
+                      requestTimeout:
+                        description: >-
+                          Timeout on request for to CA for root certificate
+                          chain.
+
+                          If not specified, defaults to 10s.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                    type: object
+                  type:
+                    description: >-
+                      Type of the backend. Has to be one of the loaded plugins
+                      (Kuma ships with
+
+                      builtin and provided)
+                    type: string
+                type: object
+              type: array
+            enabledBackend:
+              description: Name of the enabled backend
+              type: string
+            skipValidation:
+              description: If enabled, skips CA validation.
+              type: boolean
+          type: object
+        name:
+          type: string
+        networking:
+          description: Networking settings of the mesh
+          properties:
+            outbound:
+              description: Outbound settings
+              properties:
+                passthrough:
+                  description: Control the passthrough cluster
+                  properties:
+                    value:
+                      type: boolean
+                  type: object
+              type: object
+          type: object
+        routing:
+          description: Routing settings of the mesh
+          properties:
+            defaultForbidMeshExternalServiceAccess:
+              description: |-
+                If true, blocks traffic to MeshExternalServices.
+                Default: false
+              type: boolean
+            localityAwareLoadBalancing:
+              description: Enable the Locality Aware Load Balancing
+              type: boolean
+            zoneEgress:
+              description: >-
+                Enable routing traffic to services in other zone or external
+                services
+
+                through ZoneEgress. Default: false
+              type: boolean
+          type: object
+        skipCreatingInitialPolicies:
+          description: >-
+            List of policies to skip creating by default when the mesh is
+            created.
+
+            e.g. TrafficPermission, MeshRetry, etc. An '*' can be used to skip
+            all
+
+            policies.
+          items:
+            type: string
+          type: array
+        tracing:
+          description: |-
+            Tracing settings.
+            +optional
+          properties:
+            backends:
+              description: List of available tracing backends
+              items:
+                description: TracingBackend defines tracing backend available to mesh.
+                properties:
+                  conf:
+                    description: Configuration of the backend
+                    properties: {}
+                    type: object
+                  name:
+                    description: >-
+                      Name of the backend, can be then used in
+                      Mesh.tracing.defaultBackend or in
+
+                      TrafficTrace
+                    type: string
+                  sampling:
+                    description: >-
+                      Percentage of traces that will be sent to the backend
+                      (range 0.0 - 100.0).
+
+                      Empty value defaults to 100.0%
+                    properties:
+                      value:
+                        type: number
+                    type: object
+                  type:
+                    description: Type of the backend (Kuma ships with 'zipkin')
+                    type: string
+                type: object
+              type: array
+            defaultBackend:
+              description: Name of the default backend
+              type: string
+          type: object
+        type:
+          type: string
+      required:
+        - type
+        - name
+      type: object
+    MeshCreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          description: >
+            warnings is a list of warning messages to return to the requesting
+            Kuma API clients.
+
+            Warning messages describe a problem the client making the API
+            request should correct or be aware of.
+          items:
+            type: string
+    MeshGatewayItem:
+      properties:
+        conf:
+          description: The desired configuration of the MeshGateway.
+          properties:
+            listeners:
+              description: >-
+                Listeners define logical endpoints that are bound on this
+                MeshGateway's
+
+                address(es).
+              items:
+                properties:
+                  crossMesh:
+                    description: >-
+                      CrossMesh enables traffic to flow to this listener only
+                      from other
+
+                      meshes.
+                    type: boolean
+                  hostname:
+                    description: >-
+                      Hostname specifies the virtual hostname to match for
+                      protocol types that
+
+                      define this concept. When unspecified, "", or `*`, all
+                      hostnames are
+
+                      matched. This field can be omitted for protocols that
+                      don't require
+
+                      hostname based matching.
+                    type: string
+                  port:
+                    description: |-
+                      Port is the network port. Multiple listeners may use the
+                      same port, subject to the Listener compatibility rules.
+                    type: integer
+                  protocol:
+                    description: >-
+                      Protocol specifies the network protocol this listener
+                      expects to receive.
+                    oneOf:
+                      - type: string
+                      - type: integer
+                  resources:
+                    description: >-
+                      Resources is used to specify listener-specific resource
+                      settings.
+                    properties:
+                      connection_limit:
+                        type: integer
+                    type: object
+                  tags:
+                    additionalProperties:
+                      type: string
+                    description: >-
+                      Tags specifies a unique combination of tags that routes
+                      can use
+
+                      to match themselves to this listener.
+
+
+                      When matching routes to listeners, the control plane
+                      constructs a
+
+                      set of matching tags for each listener by forming the
+                      union of the
+
+                      gateway tags and the listener tags. A route will be
+                      attached to the
+
+                      listener if all of the route's tags are preset in the
+                      matching tags
+                    type: object
+                  tls:
+                    description: |-
+                      TLS is the TLS configuration for the Listener. This field
+                      is required if the Protocol field is "HTTPS" or "TLS" and
+                      ignored otherwise.
+                    properties:
+                      certificates:
+                        description: >-
+                          Certificates is an array of datasources that contain
+                          TLS
+
+                          certificates and private keys.  Each datasource must
+                          contain a
+
+                          sequence of PEM-encoded objects. The server
+                          certificate and private
+
+                          key are required, but additional certificates are
+                          allowed and will
+
+                          be added to the certificate chain.  The server
+                          certificate must
+
+                          be the first certificate in the datasource.
+
+
+                          When multiple certificate datasources are configured,
+                          they must have
+
+                          different key types. In practice, this means that one
+                          datasource
+
+                          should contain an RSA key and certificate, and the
+                          other an
+
+                          ECDSA key and certificate.
+                        items:
+                          description: DataSource defines the source of bytes to use.
+                          properties:
+                            Type:
+                              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+                          required:
+                            - Type
+                          type: object
+                        type: array
+                      mode:
+                        description: >-
+                          Mode defines the TLS behavior for the TLS session
+                          initiated
+
+                          by the client.
+                        oneOf:
+                          - type: string
+                          - type: integer
+                      options:
+                        description: >-
+                          Options should eventually configure how TLS is
+                          configured. This
+
+                          is where cipher suite and version configuration can be
+                          specified,
+
+                          client certificates enforced, and so on.
+                        properties: {}
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
+        labels:
+          additionalProperties:
+            type: string
+          type: object
+        mesh:
+          type: string
+        name:
+          type: string
+        selectors:
+          description: |-
+            Selectors is a list of selectors that are used to match builtin
+            gateway dataplanes that will receive this MeshGateway configuration.
+          items:
+            description: Selector defines structure for selecting tags for given dataplane
+            properties:
+              match:
+                additionalProperties:
+                  type: string
+                description: Tags to match, can be used for both source and destinations
+                type: object
+            type: object
+          type: array
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags is the set of tags common to all of the gateway's listeners.
+
+
+            This field must not include a `kuma.io/service` tag (the service is
+            always
+
+            defined on the dataplanes).
+          type: object
+        type:
+          type: string
+      required:
+        - type
+        - name
+        - mesh
+      type: object
+    MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
@@ -11131,6 +12101,16 @@ components:
             template:
               type: string
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -11375,6 +12355,16 @@ components:
           required:
             - match
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshExternalService
@@ -11558,6 +12548,16 @@ components:
           required:
             - selector
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: >-
             Status is the current status of the Kuma MeshMultiZoneService
@@ -11787,6 +12787,16 @@ components:
                 - Unavailable
               type: string
           type: object
+        creationTime:
+          type: string
+          description: Time at which the resource was created
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
+        modificationTime:
+          type: string
+          description: Time at which the resource was updated
+          format: date-time
+          example: '0001-01-01T00:00:00Z'
         status:
           description: Status is the current status of the Kuma MeshService resource.
           properties:
@@ -11971,13 +12981,13 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/BadRequestError'
     InternalServerError:
       description: Internal Server Error
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/InternalError'
     MeshAccessLogItem:
       description: Successful response
       content:
@@ -12340,6 +13350,52 @@ components:
                 type: array
                 items:
                   $ref: '#/components/schemas/MeshTrafficPermissionItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshItem'
+    MeshList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshItem'
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page
+    MeshGatewayItem:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MeshGatewayItem'
+    MeshGatewayList:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MeshGatewayItem'
               total:
                 type: number
                 description: The total number of entities

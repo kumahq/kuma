@@ -30,6 +30,7 @@ properties:
               properties:
                 port:
                   description: Port defines the port to which a user makes a request.
+                  format: int32
                   type: integer
                 protocol:
                   default: tcp
@@ -127,3 +128,13 @@ properties:
             type: object
         type: object
     type: object
+  creationTime:
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

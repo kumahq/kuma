@@ -8,7 +8,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
-	exp_maps "golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -24,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
@@ -77,6 +77,7 @@ func BuildEgressEndpointMap(
 }
 
 func BuildIngressEndpointMap(
+	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	localZone string,
 	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
@@ -86,15 +87,17 @@ func BuildIngressEndpointMap(
 	externalServices []*core_mesh.ExternalServiceResource,
 	gateways []*core_mesh.MeshGatewayResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
+	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	// Build EDS endpoint map just like for regular DPP, but without list of Ingress.
 	// This way we only keep local endpoints.
-	outbound := BuildEdsEndpointMap(mesh, localZone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices)
+	outbound := BuildEdsEndpointMap(ctx, mesh, localZone, meshServicesByName, meshMultiZoneServices, meshExternalServices, dataplanes, nil, zoneEgresses, externalServices, loader)
 	fillLocalCrossMeshOutbounds(outbound, mesh, dataplanes, gateways, 1, localZone)
 	return outbound
 }
 
 func BuildEdsEndpointMap(
+	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	localZone string,
 	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
@@ -104,10 +107,11 @@ func BuildEdsEndpointMap(
 	zoneIngresses []*core_mesh.ZoneIngressResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	externalServices []*core_mesh.ExternalServiceResource,
+	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 
-	meshServices := exp_maps.Values(meshServicesByName)
+	meshServices := util_maps.AllValues(meshServicesByName)
 
 	fillLocalMeshServices(outbound, meshServices, dataplanes, mesh, localZone)
 	// we want to prefer endpoints build by MeshService
@@ -127,7 +131,7 @@ func BuildEdsEndpointMap(
 
 	fillRemoteMeshServices(outbound, meshServices, zoneIngresses, mesh, localZone)
 
-	fillExternalServicesOutboundsThroughEgress(outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone)
+	fillExternalServicesOutboundsThroughEgress(ctx, outbound, externalServices, meshExternalServices, zoneEgresses, mesh, localZone, loader)
 
 	// it has to be last because it reuses endpoints for other cases
 	fillMeshMultiZoneServices(outbound, meshServicesByName, meshMultiZoneServices)
@@ -657,70 +661,9 @@ func createMeshExternalServiceEndpoint(
 	meshName := mesh.GetMeta().GetName()
 	tls := mes.Spec.Tls
 	if tls != nil && tls.Enabled {
-		var caCert, clientCert, clientKey []byte
-		es.TLSEnabled = tls.Enabled
-		es.FallbackToSystemCa = true
-		es.AllowRenegotiation = tls.AllowRenegotiation
-
-		var err error
-		if tls.Verification != nil {
-			if tls.Verification.CaCert != nil {
-				caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
-				if err != nil {
-					return errors.Wrap(err, "could not load caCert")
-				}
-				es.CaCert = caCert
-			}
-			if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
-				clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
-				if err != nil {
-					return errors.Wrap(err, "could not load clientCert")
-				}
-				clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
-				if err != nil {
-					return errors.Wrap(err, "could not load clientKey")
-				}
-				es.ClientCert = clientCert
-				es.ClientKey = clientKey
-			}
-			if pointer.Deref(tls.Verification.ServerName) != "" {
-				es.ServerName = pointer.Deref(tls.Verification.ServerName)
-			}
-			for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
-				es.SANs = append(es.SANs, core_xds.SAN{
-					MatchType: core_xds.MatchType(san.Type),
-					Value:     san.Value,
-				})
-			}
-			if tls.Version != nil {
-				if tls.Version.Min != nil {
-					es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
-				}
-				if tls.Version.Max != nil {
-					es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
-				}
-			}
-			// Server name and SNI we need to add
-			// mes.Spec.Tls.Verification.SubjectAltNames
-			if tls.Verification.Mode != nil {
-				switch *tls.Verification.Mode {
-				case meshexternalservice_api.TLSVerificationSkipSAN:
-					es.ServerName = ""
-					es.SANs = []core_xds.SAN{}
-					es.SkipHostnameVerification = true
-				case meshexternalservice_api.TLSVerificationSkipCA:
-					es.CaCert = nil
-					es.FallbackToSystemCa = false
-				case meshexternalservice_api.TLSVerificationSkipAll:
-					es.FallbackToSystemCa = false
-					es.CaCert = nil
-					es.ClientKey = nil
-					es.ClientCert = nil
-					es.ServerName = ""
-					es.SANs = []core_xds.SAN{}
-					es.SkipHostnameVerification = true
-				}
-			}
+		err := setTlsConfiguration(ctx, tls, es, meshName, loader)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -738,6 +681,75 @@ func createMeshExternalServiceEndpoint(
 			Locality:        GetLocality(zone, getZone(tags), mesh.LocalityAwareLbEnabled()),
 		}
 		outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))] = append(outbounds[mes.DestinationName(uint32(mes.Spec.Match.Port))], *outboundEndpoint)
+	}
+	return nil
+}
+
+func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, es *core_xds.ExternalService, meshName string, loader datasource.Loader) error {
+	var caCert, clientCert, clientKey []byte
+	es.TLSEnabled = tls.Enabled
+	es.FallbackToSystemCa = true
+	es.AllowRenegotiation = tls.AllowRenegotiation
+
+	if tls.Version != nil {
+		if tls.Version.Min != nil {
+			es.MinTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Min))
+		}
+		if tls.Version.Max != nil {
+			es.MaxTlsVersion = pointer.To(common_tls.ToTlsVersion(tls.Version.Max))
+		}
+	}
+	var err error
+	if tls.Verification != nil {
+		if tls.Verification.CaCert != nil {
+			caCert, err = loadBytes(ctx, tls.Verification.CaCert.ConvertToProto(), meshName, loader)
+			if err != nil {
+				return errors.Wrap(err, "could not load caCert")
+			}
+			es.CaCert = caCert
+		}
+		if tls.Verification.ClientKey != nil && tls.Verification.ClientCert != nil {
+			clientCert, err = loadBytes(ctx, tls.Verification.ClientCert.ConvertToProto(), meshName, loader)
+			if err != nil {
+				return errors.Wrap(err, "could not load clientCert")
+			}
+			clientKey, err = loadBytes(ctx, tls.Verification.ClientKey.ConvertToProto(), meshName, loader)
+			if err != nil {
+				return errors.Wrap(err, "could not load clientKey")
+			}
+			es.ClientCert = clientCert
+			es.ClientKey = clientKey
+		}
+		if pointer.Deref(tls.Verification.ServerName) != "" {
+			es.ServerName = pointer.Deref(tls.Verification.ServerName)
+		}
+		for _, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
+			es.SANs = append(es.SANs, core_xds.SAN{
+				MatchType: core_xds.MatchType(san.Type),
+				Value:     san.Value,
+			})
+		}
+		// Server name and SNI we need to add
+		// mes.Spec.Tls.Verification.SubjectAltNames
+		if tls.Verification.Mode != nil {
+			switch *tls.Verification.Mode {
+			case meshexternalservice_api.TLSVerificationSkipSAN:
+				es.ServerName = ""
+				es.SANs = []core_xds.SAN{}
+				es.SkipHostnameVerification = true
+			case meshexternalservice_api.TLSVerificationSkipCA:
+				es.CaCert = nil
+				es.FallbackToSystemCa = false
+			case meshexternalservice_api.TLSVerificationSkipAll:
+				es.FallbackToSystemCa = false
+				es.CaCert = nil
+				es.ClientKey = nil
+				es.ClientCert = nil
+				es.ServerName = ""
+				es.SANs = []core_xds.SAN{}
+				es.SkipHostnameVerification = true
+			}
+		}
 	}
 	return nil
 }
@@ -760,12 +772,14 @@ func createExternalServiceEndpoint(
 }
 
 func fillExternalServicesOutboundsThroughEgress(
+	ctx context.Context,
 	outbound core_xds.EndpointMap,
 	externalServices []*core_mesh.ExternalServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	zoneEgresses []*core_mesh.ZoneEgressResource,
 	mesh *core_mesh.MeshResource,
 	localZone string,
+	loader datasource.Loader,
 ) {
 	if mesh.ZoneEgressEnabled() {
 		for _, externalService := range externalServices {
@@ -799,6 +813,18 @@ func fillExternalServicesOutboundsThroughEgress(
 		serviceTags := maps.Clone(mes.Meta.GetLabels())
 		serviceName := mes.DestinationName(uint32(mes.Spec.Match.Port))
 		locality := GetLocality(localZone, getZone(serviceTags), mesh.LocalityAwareLbEnabled())
+		tls := mes.Spec.Tls
+		es := &core_xds.ExternalService{
+			Protocol:      mes.Spec.Match.Protocol,
+			OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
+		}
+		if tls != nil && tls.Enabled {
+			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)
+			if err != nil {
+				outboundLog.Error(err, "unable to create MeshExternalService endpoint for egress. Endpoint won't be included in the XDS.", "name", mes.Meta.GetName(), "mesh", mes.Meta.GetMesh())
+				continue
+			}
+		}
 
 		for _, ze := range zoneEgresses {
 			zeNetworking := ze.Spec.GetNetworking()
@@ -811,12 +837,9 @@ func fillExternalServicesOutboundsThroughEgress(
 				Tags:   serviceTags,
 				// AS it's a role of zone egress to load balance traffic between
 				// instances, we can safely set weight to 1
-				Weight:   1,
-				Locality: locality,
-				ExternalService: &core_xds.ExternalService{
-					Protocol:      mes.Spec.Match.Protocol,
-					OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
-				},
+				Weight:          1,
+				Locality:        locality,
+				ExternalService: es,
 			}
 
 			outbound[serviceName] = append(outbound[serviceName], endpoint)

@@ -1,0 +1,119 @@
+name: ci-stability-release-branches
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 19 * * *" # Once a day at 19:00 UTC
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  WORKFLOW_ID_TO_TRIGGER: build-test-distribute.yaml
+
+jobs:
+  get-active-release-branches:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      branches: ${{ steps.get-branches.outputs.branches }}
+    steps:
+      - name: "Get active branches"
+        id: get-branches
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          branches=$(gh api repos/$REPOSITORY/contents/active-branches.json \
+            --jq '[.content | @base64d | fromjson | .[] | select(. != "'"$DEFAULT_BRANCH"'")]')
+
+          if [[ "$branches" == "[]" || -z "$branches" ]]; then
+            echo "No active branches to process"
+            exit 1
+          fi
+
+          echo -e "Active release branches:\n\`\`\`json\n$branches\n\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "branches=$branches" >> $GITHUB_OUTPUT
+
+  trigger-build-test-distribute:
+    needs: get-active-release-branches
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write # required to trigger workflows
+      checks: read # required to list workflow runs
+    continue-on-error: true
+    strategy:
+      matrix:
+        branch: ${{ fromJSON(needs.get-active-release-branches.outputs.branches) }}
+      fail-fast: false
+      max-parallel: 1
+    env:
+      BRANCH: ${{ matrix.branch }}
+      REPOSITORY: ${{ github.repository }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: "Trigger the workflow"
+        id: trigger-workflow
+        run: |
+          echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --repo "$REPOSITORY" --ref "$BRANCH"
+          echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+
+      - name: "Retrieve workflow run ID"
+        id: get-run-id
+        env:
+          STARTED: ${{ steps.trigger-workflow.outputs.started }}
+          FINISHED: ${{ steps.trigger-workflow.outputs.finished }}
+        run: |
+          max_retries=5
+          retry_count=0
+          run_id=""
+          url=""
+
+          while [[ $retry_count -lt $max_retries && -z $run_id ]]; do
+            runs=$(gh run list \
+              --repo "$REPOSITORY" \
+              --workflow "$WORKFLOW_ID_TO_TRIGGER" \
+              --branch "$BRANCH" \
+              --created "$STARTED..$FINISHED" \
+              --json databaseId,url \
+              --limit 1 \
+              --jq 'first(.[] // "") // ""')
+
+            if [[ -n "$runs" ]]; then
+              run_id=$(echo "$runs" | jq -r '.databaseId')
+              url=$(echo "$runs" | jq -r '.url')
+            fi
+
+            if [[ -z $run_id ]]; then
+              retry_count=$((retry_count + 1))
+              echo "Attempt $retry_count: Run not found, retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
+
+          if [[ -z $run_id ]]; then
+            echo "Unable to retrieve run ID after $max_retries retries"
+            exit 1
+          fi
+
+          echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
+          echo "run_id=$run_id" >>$GITHUB_OUTPUT
+
+          echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY
+
+      - name: "Monitor triggered workflow"
+        id: monitor-triggered-workflow
+        timeout-minutes: 240
+        env:
+          RUN_ID: ${{ steps.get-run-id.outputs.run_id }}
+        run: |
+          gh run watch "$RUN_ID" \
+            --repo "$REPOSITORY" \
+            --interval 360 # Check every 5 minutes

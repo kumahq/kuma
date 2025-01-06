@@ -1,7 +1,7 @@
 package services
 
 import (
-	"golang.org/x/exp/maps"
+	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -92,7 +92,7 @@ func BuildRules(services map[string]mesh_proto.SingleValueTagSet, mtps []*mtp_ap
 func trimNotSupportedTags(mtps []*mtp_api.MeshTrafficPermissionResource) []*mtp_api.MeshTrafficPermissionResource {
 	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
-		if len(mtp.Spec.TargetRef.Tags) > 0 {
+		if mtp.Spec != nil && mtp.Spec.TargetRef != nil && len(mtp.Spec.TargetRef.Tags) > 0 {
 			filteredTags := map[string]string{}
 			for tag, val := range mtp.Spec.TargetRef.Tags {
 				if _, ok := SupportedTags[tag]; ok {

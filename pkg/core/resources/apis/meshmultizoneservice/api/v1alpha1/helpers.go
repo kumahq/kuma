@@ -56,7 +56,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) 
 
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
 	id := model.NewResourceIdentifier(m)
-	return fmt.Sprintf("%s_%s_%s_%s_mzsvc_%d", id.Mesh, id.Name, id.Namespace, id.Zone, port)
+	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
 }
 
 func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {

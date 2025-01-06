@@ -92,8 +92,10 @@ stringData:
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
-			Install(testserver.Install()).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
+				testserver.Install(),
+			)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 

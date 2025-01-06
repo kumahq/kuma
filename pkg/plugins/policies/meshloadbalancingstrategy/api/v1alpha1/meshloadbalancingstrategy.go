@@ -197,13 +197,14 @@ type RingHash struct {
 	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }
 
-// +kubebuilder:validation:Enum=Header;Cookie;SourceIP;QueryParameter;FilterState
+// +kubebuilder:validation:Enum=Header;Cookie;Connection;SourceIP;QueryParameter;FilterState
 type HashPolicyType string
 
 const (
 	HeaderType         HashPolicyType = "Header"
 	CookieType         HashPolicyType = "Cookie"
 	ConnectionType     HashPolicyType = "Connection"
+	SourceIPType       HashPolicyType = "SourceIP"
 	QueryParameterType HashPolicyType = "QueryParameter"
 	FilterStateType    HashPolicyType = "FilterState"
 )

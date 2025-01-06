@@ -56,11 +56,13 @@ spec:
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(Namespace(externalServicesNamespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(externalServicesNamespace),
-				testserver.WithName("external-service"),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
+				testserver.Install(
+					testserver.WithNamespace(externalServicesNamespace),
+					testserver.WithName("external-service"),
+				),
 			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())

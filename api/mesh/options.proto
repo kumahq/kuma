@@ -51,6 +51,9 @@ message KumaResourceOptions {
 
   // Whether the resource has a matching insight type
   bool has_insights = 18;
+
+  // Short name for xds or service reference.
+  string short_name = 19;
 }
 
 message KumaWsOptions {

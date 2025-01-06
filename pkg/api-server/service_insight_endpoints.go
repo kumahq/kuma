@@ -2,6 +2,7 @@ package api_server
 
 import (
 	"fmt"
+	"maps"
 	"sort"
 	"strconv"
 	"strings"
@@ -55,6 +56,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 		res := out.(*rest_unversioned.Resource)
 		res.Meta.Name = service
 		res.Spec = stat
+		removeDisplayNameLabel(res)
 		if err := response.WriteAsJson(res); err != nil {
 			core.Log.Error(err, "Could not write the response")
 		}
@@ -145,6 +147,7 @@ func (s *serviceInsightEndpoints) expandInsights(serviceInsightList *mesh.Servic
 				res := out.(*rest_unversioned.Resource)
 				res.Meta.Name = serviceName
 				res.Spec = service
+				removeDisplayNameLabel(res)
 				restItems = append(restItems, out)
 			}
 		}
@@ -195,4 +198,14 @@ func (s *serviceInsightEndpoints) paginateResources(request *restful.Request, re
 
 	restList.Next = nextLink(request, nextOffset)
 	return nil
+}
+
+// Since the value of label "kuma.io/display-name" is same with the ServiceInsight resource name,
+// in which it looks weird for the API to each service. Ref: https://github.com/kumahq/kuma/issues/9729
+func removeDisplayNameLabel(resource *rest_unversioned.Resource) {
+	tmpMeta := resource.GetMeta()
+	maps.DeleteFunc(tmpMeta.Labels, func(key string, val string) bool {
+		return key == v1alpha1.DisplayName
+	})
+	resource.Meta = tmpMeta
 }

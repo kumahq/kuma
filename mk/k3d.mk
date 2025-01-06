@@ -1,5 +1,6 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
+K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
@@ -53,7 +54,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
+	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
 		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
 endif
 
@@ -104,12 +105,23 @@ ifdef K3D_HELM_DEPLOY_ADDITIONAL_OPTS
 	K3D_HELM_DEPLOY_OPTS += $(K3D_HELM_DEPLOY_ADDITIONAL_OPTS)
 endif
 
+define maybe_with_flock
+  if which flock >/dev/null 2>&1; then \
+    SHELL=bash flock -x $(BUILD_DIR)/k3d_network.lock -c $(1); \
+  else \
+    bash -c $(1); \
+  fi
+endef
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
-		if [ `which flock` ]; then flock -x $(BUILD_DIR)/k3d_network.lock -c 'docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true'; \
-		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
-		rm -f $(BUILD_DIR)/k3d_network.lock
+		$(call maybe_with_flock,"if ! docker network inspect kind >/dev/null 2>&1; then \
+		  docker network create -d=bridge $(KIND_NETWORK_OPTS) kind >/dev/null; \
+		fi; \
+		echo 'Using docker network: '; \
+		docker network inspect kind --format='{{ .Id }}'")
+	@rm -f $(BUILD_DIR)/k3d_network.lock
 
 DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: k3d/setup-docker-credentials
@@ -126,8 +138,16 @@ k3d/setup-docker-credentials:
 k3d/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
 
+$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
+	@mkdir -p $(TOP)/$(KUMA_DIR)/test/k3d
+	curl --location --fail --silent --retry 5 \
+		-o $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml \
+		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
+
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
+	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
+
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)

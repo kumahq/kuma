@@ -402,7 +402,7 @@ func ValidateTargetRef(
 		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
-		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+		err.Add(ValidateSelector(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
 			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 		}
