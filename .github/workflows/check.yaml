@@ -1,8 +1,6 @@
 name: "PR health"
 on:
   pull_request:
-    # !!!! Be especially careful with checkouts are we are using: pull_request_target
-    # See: https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
     types: [edited, opened, reopened, synchronize]
 permissions:
   contents: read
