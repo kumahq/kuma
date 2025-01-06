@@ -1,4 +1,4 @@
-name: "Notify about updates to Kuma"
+name: "Notify about updates to Kuma (updated)"
 on:
   push:
     tags:
