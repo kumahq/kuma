@@ -3,44 +3,50 @@ on:
   push:
     tags:
       - '*'
-  pull_request_target:
-    types: [closed]
     branches:
-      - master
-      - release-*
+      - lobkovilya-test-workflow
 permissions:
   contents: read
 jobs:
   notify-about-merged-pr:
     timeout-minutes: 10
-    if: github.event_name != 'pull_request_target' || github.event.pull_request.merged
     name: "Notify about merged PR"
     runs-on: ubuntu-24.04
     steps:
+      - name: Logging
+        run: |
+          echo "${{toJSON(github.event)}}"
       - name: "Send repository dispatch event"
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
         with:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
             let branch, pr;
-            if (context.eventName == "pull_request_target") {
-              branch = context.payload.pull_request.base.ref;
-              pr = context.payload.pull_request.number;
-            } else if (context.eventName == "push") {
+            if (github.ref_type === "tag") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
-              const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
+              const versionMatch = github.ref_name.match(versionRegex);
               if (!versionMatch) {
                 return;
               }
               const [_, major, minor] = [...versionMatch];
               branch = `release-${major}.${minor}`;
+            } else if (github.ref_type === "branch") {
+              branch = github.ref_name;
+              const commit = await github.rest.repos.getCommit({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: github.sha
+              });
+              pr = commit.data.commit.message;
             }
-            return github.rest.repos.createDispatchEvent({
-              owner: '${{ secrets.NOTIFY_OWNER }}',
-              repo: '${{ secrets.NOTIFY_REPO }}',
-              event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
-              client_payload: {
-                branch,
-                pr,
-              },
-            });
+            # return github.rest.repos.createDispatchEvent({
+            #   owner: '${{ secrets.NOTIFY_OWNER }}',
+            #   repo: '${{ secrets.NOTIFY_REPO }}',
+            #   event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
+            #   client_payload: {
+            #     branch,
+            #     pr,
+            #   },
+            # });
+            console.log('Branch:', branch);
+            console.log('PR:', pr);
