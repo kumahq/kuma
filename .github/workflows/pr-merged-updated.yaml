@@ -1,8 +1,6 @@
 name: "Notify about updates to Kuma (updated)"
 on:
   push:
-    tags:
-      - '*'
     branches:
       - lobkovilya-test-workflow
 permissions:
@@ -39,14 +37,5 @@ jobs:
               });
               pr = commit.data.commit.message;
             }
-            # return github.rest.repos.createDispatchEvent({
-            #   owner: '${{ secrets.NOTIFY_OWNER }}',
-            #   repo: '${{ secrets.NOTIFY_REPO }}',
-            #   event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
-            #   client_payload: {
-            #     branch,
-            #     pr,
-            #   },
-            # });
             console.log('Branch:', branch);
             console.log('PR:', pr);
