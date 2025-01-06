@@ -2,7 +2,7 @@ name: "Notify about updates to Kuma (updated)"
 on:
   push:
     branches:
-      - lobkovilya-test-branch
+      - lobkovilya-test-workflow
 permissions:
   contents: read
 jobs:
