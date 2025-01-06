@@ -19,7 +19,7 @@ jobs:
         with:
           github-token: ${{ secrets.NOTIFY_BOT_PAT_TOKEN }}
           script: |
-            let branch, pr;
+            let branch;
             if (process.env.GITHUB_REF_TYPE === "tag") {
               const versionRegex = /v?(\d+)\.(\d+)\.\d+/;
               const versionMatch = process.env.GITHUB_REF_NAME.match(versionRegex);
@@ -30,13 +30,6 @@ jobs:
               branch = `release-${major}.${minor}`;
             } else if (process.env.GITHUB_REF_TYPE === "branch") {
               branch = process.env.GITHUB_REF_NAME;
-              const commit = await github.rest.repos.getCommit({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                ref: process.env.GITHUB_SHA
-              });
-              const prMatch = commit.data.commit.message.match(/\(#(\d+)\)/);
-              pr = prMatch ? parseInt(prMatch[1]) : undefined;
             }
             return github.rest.repos.createDispatchEvent({
               owner: '${{ secrets.NOTIFY_OWNER }}',
@@ -44,6 +37,5 @@ jobs:
               event_type: '${{ secrets.NOTIFY_EVENT_TYPE }}',
               client_payload: {
                 branch,
-                pr,
               },
             });
