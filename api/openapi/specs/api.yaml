@@ -390,7 +390,7 @@ components:
           type: integer
           description: Number of meshes
           example: 3
-    GlobalInsight:
+    schemas-GlobalInsight:
       type: object
       title: GlobalInsight
       description: Global Insight contains statistics for all main resources
@@ -433,6 +433,9 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
+    GlobalInsight:
+      allOf:
+        - $ref: '#/components/schemas/schemas-GlobalInsight'
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -481,13 +484,13 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: './common/error_schema.yaml#/components/schemas/BadRequestError'
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
     InternalServerError:
       description: Internal Server Error
       content:
         application/problem+json:
           schema:
-            $ref: './common/error_schema.yaml#/components/schemas/InternalError'
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
   examples:
     GlobalInsightExample:
       value:
