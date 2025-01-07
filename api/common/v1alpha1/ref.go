@@ -38,10 +38,8 @@ var order = map[TargetRefKind]int{
 type TargetRefProxyType string
 
 var (
-	Sidecar     TargetRefProxyType = "Sidecar"
-	Gateway     TargetRefProxyType = "Gateway"
-	ZoneIngress TargetRefProxyType = "ZoneIngress"
-	ZoneEgress  TargetRefProxyType = "ZoneEgress"
+	Sidecar TargetRefProxyType = "Sidecar"
+	Gateway TargetRefProxyType = "Gateway"
 )
 
 func (k TargetRefKind) Compare(o TargetRefKind) int {
