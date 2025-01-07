@@ -2448,7 +2448,7 @@ components:
           type: integer
           description: Number of meshes
           example: 3
-    GlobalInsight:
+    schemas-GlobalInsight:
       type: object
       title: GlobalInsight
       description: Global Insight contains statistics for all main resources
@@ -2491,6 +2491,9 @@ components:
           additionalProperties:
             $ref: '#/components/schemas/ResourceStats'
           description: A map of resource names to their corresponding statistics
+    GlobalInsight:
+      allOf:
+        - $ref: '#/components/schemas/schemas-GlobalInsight'
     PolicyDescription:
       type: object
       required:
