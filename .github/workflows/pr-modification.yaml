@@ -47,7 +47,7 @@ jobs:
   pr-comment:
     needs: find-prs
     runs-on: ubuntu-24.04
-    if : ${{ needs.find-prs.outputs.recent_prs != '[]' }}
+    if: needs.find-prs.outputs.recent_prs != '[]'
     strategy:
       matrix: ${{ fromJson(needs.find-prs.outputs.recent_prs) }}
       max-parallel: 1 # to avoid using too many runners
