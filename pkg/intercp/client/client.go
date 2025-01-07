@@ -47,5 +47,5 @@ func New(serverURL string, tlsCfg *TLSConfig) (Conn, error) {
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
-	return grpc.Dial(url.Host, dialOpts...)
+	return grpc.NewClient(url.Host, dialOpts...)
 }

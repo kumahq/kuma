@@ -45,7 +45,7 @@ func New(serverURL string) (*Client, error) {
 	default:
 		return nil, errors.Errorf("unsupported scheme %q. Use one of %s", url.Scheme, []string{"grpc", "grpcs"})
 	}
-	conn, err := grpc.Dial(url.Host, dialOpts...)
+	conn, err := grpc.NewClient(url.Host, dialOpts...)
 	if err != nil {
 		return nil, err
 	}

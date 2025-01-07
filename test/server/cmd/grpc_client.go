@@ -46,7 +46,7 @@ test-server grpc client address="localhost:8080" unary=true`,
 }
 
 func startSendingRequests(address string, streamCounter int, unary bool) error {
-	conn, err := grpc.Dial(address,
+	conn, err := grpc.NewClient(address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:    10 * time.Second,
