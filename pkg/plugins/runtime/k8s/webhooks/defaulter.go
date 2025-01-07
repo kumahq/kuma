@@ -67,8 +67,7 @@ func (h *defaultingHandler) Handle(_ context.Context, req admission.Request) adm
 	}
 
 	computed, err := core_model.ComputeLabels(
-		resource.Descriptor(),
-		resource.GetSpec(),
+		resource,
 		resource.GetMeta().GetLabels(),
 		core_model.GetNamespace(resource.GetMeta(), h.SystemNamespace),
 		resource.GetMeta().GetMesh(),

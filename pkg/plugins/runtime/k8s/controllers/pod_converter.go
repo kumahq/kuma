@@ -60,10 +60,18 @@ func (p *PodConverter) PodToDataplane(
 		return err
 	}
 	// we need to validate if the labels have changed
+	dataplaneRes := core_mesh.NewDataplaneResource()
+	err = dataplaneRes.SetSpec(dataplaneProto)
+	if err != nil {
+		return err
+	}
+	if err := p.ResourceConverter.ToCoreResource(dataplane, dataplaneRes); err != nil {
+		logger.Error(err, "unable to convert ZoneEgress k8s object into core resource")
+		return err
+	}
 	labels, err := model.ComputeLabels(
-		core_mesh.DataplaneResourceTypeDescriptor,
-		currentSpec,
-		map[string]string{},
+		dataplaneRes,
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
 		p.Mode,
@@ -78,6 +86,7 @@ func (p *PodConverter) PodToDataplane(
 		return nil
 	}
 	dataplane.SetSpec(dataplaneProto)
+	dataplane.SetLabels(labels)
 	return nil
 }
 
@@ -100,9 +109,8 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	}
 	// we need to validate if the labels have changed
 	labels, err := model.ComputeLabels(
-		core_mesh.ZoneIngressResourceTypeDescriptor,
-		currentSpec,
-		map[string]string{},
+		zoneIngressRes,
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
@@ -139,9 +147,8 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	}
 	// we need to validate if the labels have changed
 	labels, err := model.ComputeLabels(
-		core_mesh.ZoneEgressResourceTypeDescriptor,
-		currentSpec,
-		map[string]string{},
+		zoneEgressRes,
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,

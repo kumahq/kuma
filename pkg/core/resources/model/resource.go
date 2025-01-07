@@ -507,8 +507,7 @@ func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
 }
 
 func ComputeLabels(
-	rd ResourceTypeDescriptor,
-	spec ResourceSpec,
+	resource Resource,
 	existingLabels map[string]string,
 	ns Namespace,
 	mesh string,
@@ -534,14 +533,14 @@ func ComputeLabels(
 		return DefaultMesh
 	}
 
-	if rd.Scope == ScopeMesh {
+	if resource.Descriptor().Scope == ScopeMesh {
 		setIfNotExist(metadata.KumaMeshLabel, getMeshOrDefault())
 	}
 
 	if mode == config_core.Zone {
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
 		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(AllowedOnZoneSelector) {
+		if resource.Descriptor().KDSFlags.Has(AllowedOnZoneSelector) {
 			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 				setIfNotExist(mesh_proto.ZoneTag, localZone)
@@ -558,12 +557,19 @@ func ComputeLabels(
 		setIfNotExist(mesh_proto.KubeNamespaceTag, ns.value)
 	}
 
-	if ns.value != "" && rd.IsPolicy && rd.IsPluginOriginated && IsLocallyOriginated(mode, labels) {
-		role, err := ComputePolicyRole(spec.(Policy), ns)
+	if ns.value != "" && resource.Descriptor().IsPolicy && resource.Descriptor().IsPluginOriginated && IsLocallyOriginated(mode, labels) {
+		role, err := ComputePolicyRole(resource.GetSpec().(Policy), ns)
 		if err != nil {
 			return nil, err
 		}
 		labels[mesh_proto.PolicyRoleLabel] = string(role)
+	}
+
+	if resource.Descriptor().IsProxy {
+		proxy, ok := resource.(ProxyResource)
+		if ok {
+			labels[mesh_proto.ProxyTypeLabel] = strings.ToLower(string(proxy.GetProxyType()))
+		}
 	}
 
 	return labels, nil

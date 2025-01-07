@@ -400,8 +400,7 @@ func (r *resourceEndpoints) createResource(
 	}
 
 	labels, err := model.ComputeLabels(
-		res.Descriptor(),
-		res.GetSpec(),
+		res,
 		res.GetMeta().GetLabels(),
 		model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
@@ -452,8 +451,7 @@ func (r *resourceEndpoints) updateResource(
 		_ = currentRes.SetStatus(newResRest.GetStatus())
 	}
 	labels, err := model.ComputeLabels(
-		currentRes.Descriptor(),
-		currentRes.GetSpec(),
+		currentRes,
 		newResRest.GetMeta().GetLabels(),
 		model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
 		meshName,
