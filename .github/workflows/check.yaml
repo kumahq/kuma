@@ -1,8 +1,6 @@
 name: "PR health"
 on:
-  pull_request_target:
-    # !!!! Be especially careful with checkouts are we are using: pull_request_target
-    # See: https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+  pull_request:
     types: [edited, opened, reopened, synchronize]
 permissions:
   contents: read
@@ -13,27 +11,6 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - name: Add checklist comment
-        if: github.event.pull_request.author != 'app/dependabot'
-        uses: marocchino/sticky-pull-request-comment@daa4a82a0a3f6c162c02b83fa44b3ab83946f7cb # v2.9.0
-        with:
-          header: PR reviewer checklist
-          only_create: true
-          message: |
-            ## Reviewer Checklist
-            :mag: Each of these sections need to be checked by the reviewer of the PR :mag::
-            If something doesn't apply please check the box and add a justification if the reason is non obvious.
-
-            - [ ] Is the PR title satisfactory? Is this part of a larger feature and should be grouped using `> Changelog`?
-            - [ ] PR description is clear and complete. It [Links to relevant issue][1] as well as docs and UI issues
-            - [ ] This will not break child repos: it doesn't hardcode values (.e.g "kumahq" as an image registry)
-            - [ ] IPv6 is taken into account (.e.g: no string concatenation of host port)
-            - [ ] Tests (Unit test, E2E tests, manual test on universal and k8s)
-                - Don't forget `ci/` labels to run additional/fewer tests
-            - [ ] Does this contain a change that needs to be notified to users? In this case, [`UPGRADE.md`](../blob/master/UPGRADE.md) should be updated.
-            - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
-            
-            [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
       - name: Check PR title
         # Check PR title against the Conventional Commits format using commitlint.
         # For more details, see: https://www.conventionalcommits.org/en/v1.0.0/

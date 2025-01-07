@@ -481,13 +481,13 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: './common/error_schema.yaml#/components/schemas/BadRequestError'
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
     InternalServerError:
       description: Internal Server Error
       content:
         application/problem+json:
           schema:
-            $ref: './common/error_schema.yaml#/components/schemas/InternalError'
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
   examples:
     GlobalInsightExample:
       value:
