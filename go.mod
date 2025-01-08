@@ -85,7 +85,7 @@ require (
 	k8s.io/kubectl v0.32.0
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 	sigs.k8s.io/controller-runtime v0.19.3
-	sigs.k8s.io/controller-tools v0.16.5
+	sigs.k8s.io/controller-tools v0.17.0
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.2.1
 	sigs.k8s.io/yaml v1.4.0
