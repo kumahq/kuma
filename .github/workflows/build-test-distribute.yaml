@@ -127,8 +127,8 @@ jobs:
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
-      contents: read
       actions: read # For getting workflow run info to build provenance
+      contents: write # To add assets to a release
       id-token: write # For using token to sign images
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
