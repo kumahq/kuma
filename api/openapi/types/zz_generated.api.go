@@ -189,8 +189,8 @@ type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules
 
-// InternalServerError standard error
-type InternalServerError = externalRef0.Error
+// Internal standard error
+type Internal = externalRef0.Error
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
