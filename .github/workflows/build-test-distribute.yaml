@@ -21,7 +21,6 @@ jobs:
   check:
     permissions:
       checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
-      contents: write # needed for sca-project to upload sbom to release assets
     timeout-minutes: 25
     runs-on: ubuntu-24.04
     env:
