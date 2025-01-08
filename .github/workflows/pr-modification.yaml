@@ -30,7 +30,7 @@ jobs:
         name: Get recent PRs
         run: |
           echo "out<<EOF" >> $GITHUB_OUTPUT
-          gh pr list -R ${{ github.repository }} --json number,title,url --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:dependabot" | jq -c '{include: .}'>> $GITHUB_OUTPUT
+          gh pr list -R ${{ github.repository }} --json number,title,url --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:dependabot" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Show outputs
         env:
@@ -49,7 +49,8 @@ jobs:
     runs-on: ubuntu-24.04
     if: needs.find-prs.outputs.recent_prs != '[]'
     strategy:
-      matrix: ${{ fromJson(needs.find-prs.outputs.recent_prs) }}
+      matrix: 
+        include: ${{ fromJson(needs.find-prs.outputs.recent_prs) }}
       max-parallel: 1 # to avoid using too many runners
     permissions:
       pull-requests: write
