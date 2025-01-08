@@ -22,11 +22,11 @@ on:
         required: true
         type: string
         description: notary repository
-permissions:
-  contents: read
+permissions: {}
 jobs:
   artifact-provenance:
     permissions:
+      contents: read
       actions: read # For getting workflow run info to build provenance
       id-token: write # needed for signing the images
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
@@ -49,6 +49,7 @@ jobs:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
     permissions:
+      contents: read
       actions: read # For getting workflow run info to build provenance
       id-token: write # needed for signing the images
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
