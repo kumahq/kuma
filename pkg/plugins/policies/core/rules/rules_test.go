@@ -551,7 +551,7 @@ var _ = Describe("Rules", func() {
 				other: core_rules.Element{
 					"key2": "val2",
 				},
-				contains: false,
+				contains: true,
 			}),
 			Entry("no rules matched, element has key which is not presented in superset", testCase{
 				ss: []core_rules.Tag{
@@ -562,7 +562,8 @@ var _ = Describe("Rules", func() {
 				},
 				contains: false,
 			}),
-			Entry("no rules matched, element has key with another value", testCase{
+
+			Entry("no rules matched, rules with positive, element has key with another value", testCase{
 				ss: []core_rules.Tag{
 					{Key: "key1", Value: "val1"},
 				},
@@ -571,13 +572,109 @@ var _ = Describe("Rules", func() {
 				},
 				contains: false,
 			}),
-			Entry("n dimensions subset and n-1 dimensions elements", testCase{
+			Entry("no rules matched, rules with positive, element has only one overlapped key value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2"},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+				},
+				contains: false,
+			}),
+			Entry("single matched rule by rules and element, rules with a part of negation", testCase{
 				ss: []core_rules.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2", Not: true},
 				},
 				other: core_rules.Element{
 					"key1": "val1",
+				},
+				contains: true,
+			}),
+			Entry("single matched rule by rules and element, rules with a part of negation, element has key with another value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+					{Key: "key2", Value: "val2"},
+				},
+				other: core_rules.Element{
+					"key1": "val2",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, rules with negation, element has same key value", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+					{Key: "key2", Value: "val2", Not: true},
+				},
+				other: core_rules.Element{
+					"key1": "val1",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, rules with a part of negation, element has another key", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2", Not: true},
+				},
+				other: core_rules.Element{
+					"key3": "val3",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, rules with positive, element has another key", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2"},
+				},
+				other: core_rules.Element{
+					"key3": "val3",
+				},
+				contains: false,
+			}),
+			Entry("rules matched, rules with negation, element has another key", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+					{Key: "key2", Value: "val2", Not: true},
+				},
+				other: core_rules.Element{
+					"key3": "val3",
+				},
+				contains: true,
+			}),
+			Entry("no rules matched, n dimensions rules and n-1 dimensions elements, rules with positive, elements have another keys", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2"},
+					{Key: "key3", Value: "val3"},
+				},
+				other: core_rules.Element{
+					"key4": "val4",
+					"key5": "val5",
+				},
+				contains: false,
+			}),
+			Entry("no rules matched, n dimensions rules and n-1 dimensions elements, rules with positive, elements have overlapped key by rules", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1"},
+					{Key: "key2", Value: "val2"},
+					{Key: "key3", Value: "val3"},
+				},
+				other: core_rules.Element{
+					"key3": "val3",
+					"key4": "val4",
+				},
+				contains: false,
+			}),
+			Entry("rules matched, n dimensions rules and n-1 dimensions elements, rules with a part of negation, elements have overlapped key by rules", testCase{
+				ss: []core_rules.Tag{
+					{Key: "key1", Value: "val1", Not: true},
+					{Key: "key2", Value: "val2", Not: true},
+					{Key: "key3", Value: "val3"},
+				},
+				other: core_rules.Element{
+					"key3": "val3",
+					"key4": "val4",
 				},
 				contains: true,
 			}),
@@ -710,7 +807,7 @@ var _ = Describe("Rules", func() {
 				element: core_rules.Element{
 					"key2": "val2",
 				},
-				confYAML: nil,
+				confYAML: []byte(`action: Allow`),
 			}),
 			Entry("no rules matched, element has key which is not presented in superset", testCase{
 				rules: core_rules.Rules{

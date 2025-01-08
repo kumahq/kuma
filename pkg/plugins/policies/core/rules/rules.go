@@ -143,6 +143,7 @@ func (ss Subset) ContainsElement(other Element) bool {
 	// 1. find the overlaps of element and current subset
 	// 2. verify the overlaps
 	// 3. verify the left of current subset
+	// 4. if no overlaps, verify if all the Subset rules are negative
 
 	if len(ss) == 0 {
 		return true
@@ -179,6 +180,12 @@ func (ss Subset) ContainsElement(other Element) bool {
 			// the policy with matching tags [{"service: frontend"}, {"zone": "east"}]
 			return false
 		}
+	}
+
+	// if the current Subset owns all of negative rules and no overlapped keys in Element,
+	// we can also regard the Subset contains Element
+	if !hasOverlapKey && ss.NumPositive() == 0 {
+		return true
 	}
 
 	return hasOverlapKey
@@ -340,10 +347,6 @@ func MeshElement() Element {
 }
 
 func MeshServiceElement(name string) Element {
-	return Element{mesh_proto.ServiceTag: name}
-}
-
-func MeshExternalServiceElement(name string) Element {
 	return Element{mesh_proto.ServiceTag: name}
 }
 
