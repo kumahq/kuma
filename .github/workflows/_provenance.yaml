@@ -26,10 +26,9 @@ permissions: {}
 jobs:
   artifact-provenance:
     permissions:
-      contents: read
+      contents: write # To add assets to a release
       actions: read # For getting workflow run info to build provenance
       id-token: write # needed for signing the images
-      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
