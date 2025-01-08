@@ -2,7 +2,7 @@ name: "CodeQL"
 on:
   workflow_dispatch: {}
   schedule:
-    - cron: '35 3 * * *'
+    - cron: '35 3 * * *' # Runs daily at 3:35 AM UTC
 permissions:
   contents: read
 jobs:
@@ -11,7 +11,6 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       actions: read
-      contents: read
       security-events: write
     strategy:
       fail-fast: false
