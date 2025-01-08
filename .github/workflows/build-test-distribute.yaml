@@ -7,10 +7,7 @@ on:
     branches: ["master", "release-*"]
   workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
-  contents: write # To upload assets
-  id-token: write # For using token to sign images
-  actions: read # For getting workflow run info to build provenance
-  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+  contents: read
 env:
   KUMA_DIR: "."
   # To keep CI tools out of the SBOM, we use a `.ci_tools` directory in the parent
@@ -23,9 +20,8 @@ concurrency:
 jobs:
   check:
     permissions:
-      contents: read
-      # golangci-lint-action
-      checks: write
+      checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
+      contents: write # needed for sca-project to upload sbom to release assets
     timeout-minutes: 25
     runs-on: ubuntu-24.04
     env:
@@ -102,8 +98,6 @@ jobs:
           config: .syft.yaml
           upload-sbom-release-assets: true
   test:
-    permissions:
-      contents: read
     needs: ["check"]
     uses: ./.github/workflows/_test.yaml
     with:
@@ -112,8 +106,7 @@ jobs:
     secrets: inherit
   build_publish:
     permissions:
-      contents: read
-      id-token: write
+      id-token: write # Required for image signing
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
@@ -133,9 +126,8 @@ jobs:
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
-      contents: write
-      id-token: write # For using token to sign images
       actions: read # For getting workflow run info to build provenance
+      id-token: write # For using token to sign images
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
       BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
@@ -148,9 +140,6 @@ jobs:
     timeout-minutes: 10
     if: ${{ always() }}
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      actions: read # For getting workflow run info
     env:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
@@ -170,8 +159,6 @@ jobs:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: "*sbom.{cyclonedx,spdx}.json"
           merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Download binary artifact provenance"
         if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
         id: collect_provenance
@@ -180,8 +167,6 @@ jobs:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: ${{ github.event.repository.name }}.intoto.jsonl
           merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Generate security assets TAR"
         if: ${{ needs.build_publish.result == 'success' }}
         id: security_assets_metadata

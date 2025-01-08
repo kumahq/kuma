@@ -16,6 +16,7 @@ on:
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+permissions: {}
 jobs:
   trigger-ci:
     runs-on: ubuntu-24.04

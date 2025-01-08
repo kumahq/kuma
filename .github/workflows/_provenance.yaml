@@ -23,12 +23,13 @@ on:
         type: string
         description: notary repository
 permissions:
-  contents: write
-  id-token: write # needed for signing the images
-  actions: read # For getting workflow run info to build provenance
-  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+  contents: read
 jobs:
   artifact-provenance:
+    permissions:
+      actions: read # For getting workflow run info to build provenance
+      id-token: write # needed for signing the images
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
     with:
@@ -47,6 +48,10 @@ jobs:
   # TODO:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
+    permissions:
+      actions: read # For getting workflow run info to build provenance
+      id-token: write # needed for signing the images
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     strategy:
       fail-fast: true
       matrix:
