@@ -10,13 +10,13 @@ paths:
       summary: The index endpoint
       description: The index endpoint, some common metadata
       tags: ["System"]
-      resources:
+      responses:
         '200':
           $ref: '#/components/responses/IndexResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -29,7 +29,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /global-insight:
     get:
       operationId: get-global-insight
@@ -42,7 +42,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -77,7 +77,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       summary: Get a proxy XDS config on a CP
@@ -118,7 +118,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -171,7 +171,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
 components:
   schemas:
     Index:
@@ -485,7 +485,7 @@ components:
         application/problem+json:
           schema:
             $ref: './common/error_schema.yaml#/components/schemas/Error'
-    InternalServerError:
+    Internal:
       description: Internal Server Error
       content:
         application/problem+json:
