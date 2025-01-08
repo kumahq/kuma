@@ -10,7 +10,7 @@ paths:
       summary: The index endpoint
       description: The index endpoint, some common metadata
       tags: ["System"]
-      resources:
+      responses:
         '200':
           $ref: '#/components/responses/IndexResponse'
         '400':
