@@ -106,6 +106,7 @@ jobs:
     secrets: inherit
   build_publish:
     permissions:
+      contents: read
       id-token: write # Required for image signing
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
