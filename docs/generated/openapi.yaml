@@ -18,7 +18,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /_resources:
     get:
       operationId: get-resource-type-description
@@ -32,7 +32,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /global-insight:
     get:
       operationId: get-global-insight
@@ -46,7 +46,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{resourceType}/{resourceName}/_rules:
     get:
       operationId: inspect-dataplanes-rules
@@ -84,7 +84,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       summary: Get a proxy XDS config on a CP
@@ -133,7 +133,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -189,7 +189,7 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       summary: Returns MeshAccessLog entity
@@ -12880,7 +12880,7 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Error'
-    InternalServerError:
+    Internal:
       description: Internal Server Error
       content:
         application/problem+json:
