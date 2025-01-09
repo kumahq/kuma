@@ -16,8 +16,11 @@ type JsonPatchItem struct {
 	Op JsonPatchItemOp `json:"op"`
 
 	// Path A JSON Pointer path indicating the part of the document to operate on.
-	Path  string      `json:"path"`
-	Value interface{} `json:"value"`
+	Path  string `json:"path"`
+	Value struct {
+		// AnyValue The value to be used within the operations.
+		AnyValue *interface{} `json:"AnyValue,omitempty"`
+	} `json:"value"`
 }
 
 // JsonPatchItemOp Operation to be performed.
