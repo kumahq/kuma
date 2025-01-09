@@ -496,6 +496,7 @@ components:
   examples:
     GlobalInsightExample:
       value:
+        createdAt: '2023-01-11T02:30:42.227Z'
         services:
           total: 5
           internal: 4
@@ -532,6 +533,8 @@ components:
               total: 84
     InspectDataplanesForPolicyExample:
       value:
+        labels:
+          k8s.kuma.io/namespace: kuma-system
         total: 100
         next: http://localhost:5681/meshes/default/meshretries/_resources/dataplanes?offset=100
         items:
