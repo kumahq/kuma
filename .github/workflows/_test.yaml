@@ -1,0 +1,123 @@
+on:
+  workflow_call:
+    inputs:
+      FULL_MATRIX:
+        required: true
+        type: string
+      RUNNERS_BY_ARCH:
+        required: true
+        type: string
+permissions:
+  contents: read
+env:
+  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  # This is automatically managed by CI
+  K8S_MIN_VERSION: v1.25.16-k3s4
+  K8S_MAX_VERSION: v1.31.1-k3s1
+jobs:
+  test_unit:
+    timeout-minutes: 20
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+        with:
+          go-version-file: go.mod
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: |
+            ${{ env.CI_TOOLS_DIR }}
+          key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ runner.arch }}-devtools
+      - run: |
+          make dev/tools
+      - run: |
+          make test
+  gen_e2e_matrix:
+    timeout-minutes: 2
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - id: generate-matrix
+        name: Generate matrix
+        env:
+          BASE_MATRIX: |-
+            {
+              "test_e2e": {
+                "target": [""],
+                "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
+                "arch": ["amd64"],
+                "parallelism": [4],
+                "cniNetworkPlugin": ["flannel"],
+                "sidecarContainers": [""]
+              },
+              "test_e2e_env": {
+                "target": ["kubernetes", "universal", "multizone"],
+                "k8sVersion": ["kind", "kindIpv6", "${{ env.K8S_MAX_VERSION }}"],
+                "arch": ["amd64"],
+                "parallelism": [1],
+                "cniNetworkPlugin": ["flannel"],
+                "sidecarContainers": [""],
+                "exclude":[
+                  {"target": "kubernetes", "k8sVersion":"kind"},
+                  {"target": "multizone", "k8sVersion":"kind"},
+                  {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
+                ],
+                "include":[
+                  {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
+                  {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},
+                  {"k8sVersion": "kind", "target": "universal", "arch": "arm64"},
+                  {"k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "gatewayapi", "arch": "amd64"},
+                  {"cniNetworkPlugin": "calico", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "multizone", "arch": "amd64"}
+                ]
+              }
+            }
+          # You can modify the include to run one of test suites on PRs (though you'd need to then remove it)
+          OVERRIDE_JQ_CMD: |-
+            .test_e2e = false
+            | .test_e2e_env.include = []
+            | .test_e2e_env.exclude += [{"arch": "arm64"}, {"k8sVersion": "kindIpv6"}, {"k8sVersion": "${{ inputs.K8S_MIN_VERSION}}"}]
+        run: |-
+          BASE_MATRIX_ALL='${{ env.BASE_MATRIX }}'
+          if [[ "${{ inputs.FULL_MATRIX }}" != "true" ]]; then
+            BASE_MATRIX_ALL=$(echo $BASE_MATRIX_ALL | jq -r '${{ env.OVERRIDE_JQ_CMD }}')
+          fi
+          # Skip e2e tests if the PR has the label "ci/skip-e2e-test" or "ci/skip-test"
+          if [[ "${{ contains(github.event.pull_request.labels.*.name, 'ci/skip-e2e-test') || contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}" == "true" ]]; then
+            BASE_MATRIX_ALL='{}'
+          fi
+
+          echo "final matrix: $BASE_MATRIX_ALL"
+          echo "matrix<<EOF" >> $GITHUB_OUTPUT
+          echo "$BASE_MATRIX_ALL" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+  test_e2e:
+    needs: ["gen_e2e_matrix"]
+    if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e
+    strategy:
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e }}
+      fail-fast: false
+    uses: ./.github/workflows/_e2e.yaml
+    with:
+      matrix: ${{ toJSON(matrix) }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+    secrets: inherit
+  test_e2e_env:
+    needs: ["gen_e2e_matrix"]
+    if: fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env
+    strategy:
+      max-parallel: 5
+      matrix: ${{ fromJSON(needs.gen_e2e_matrix.outputs.matrix).test_e2e_env }}
+      fail-fast: false
+    uses: ./.github/workflows/_e2e.yaml
+    with:
+      matrix: ${{ toJSON(matrix) }}
+      runner: ${{ fromJSON(inputs.RUNNERS_BY_ARCH)[matrix.arch] }}
+    secrets: inherit

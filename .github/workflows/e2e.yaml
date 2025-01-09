@@ -35,7 +35,11 @@ jobs:
       - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
         with:
           go-version-file: go.mod
+<<<<<<< HEAD:.github/workflows/e2e.yaml
       - uses: actions/cache@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+=======
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+>>>>>>> ef8eb9fce (chore(deps): upgrade actions/cache from v4.1.0 to v4.2.0 (#12485)):.github/workflows/_e2e.yaml
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
