@@ -8,6 +8,7 @@ info:
 paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
     get:
+      operationId: get-{{ .Name }}
       summary: Returns {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
           $ref: "#/components/responses/{{.Name}}Item"
 
     put:
+      operationId: create-or-update-{{ .Name }}
       summary: Creates or Updates {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -69,6 +71,7 @@ paths:
                 $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-{{ .Name }}
       summary: Deletes {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -89,9 +92,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
+      operationId: get-{{ .Name }}-list
       summary: Returns a list of {{ .Name }} in the mesh.
       tags: [ "{{ .Name }}" ]
       {{- if eq .Scope "Mesh"}}

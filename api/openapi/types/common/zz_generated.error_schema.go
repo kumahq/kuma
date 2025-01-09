@@ -31,3 +31,18 @@ type InvalidParameters struct {
 	Reason  *string   `json:"reason,omitempty"`
 	Rule    *string   `json:"rule,omitempty"`
 }
+
+// NotFoundError defines model for NotFoundError.
+type NotFoundError struct {
+	Detail   *interface{} `json:"detail,omitempty"`
+	Instance interface{}  `json:"instance"`
+
+	// InvalidParameters TODO
+	InvalidParameters *[]InvalidParameters `json:"invalid_parameters,omitempty"`
+	Status            interface{}          `json:"status"`
+	Title             interface{}          `json:"title"`
+	Type              *interface{}         `json:"type,omitempty"`
+}
+
+// NotFound defines model for NotFound.
+type NotFound = NotFoundError

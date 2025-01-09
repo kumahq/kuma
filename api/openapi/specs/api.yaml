@@ -60,6 +60,7 @@ paths:
         - in: path
           name: resourceType
           example: dataplanes
+          required: true
           schema:
             type: string
             enum: [dataplanes, meshgateways]
@@ -80,6 +81,7 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
+      operationId: get-meshes-mesh-dataplanes-name-config
       summary: Get a proxy XDS config on a CP
       description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
       parameters:

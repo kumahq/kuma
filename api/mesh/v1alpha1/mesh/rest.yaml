@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{name}:
     get:
+      operationId: get-Mesh
       summary: Returns Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -22,6 +23,7 @@ paths:
           $ref: "#/components/responses/MeshItem"
 
     put:
+      operationId: create-or-update-Mesh
       summary: Creates or Updates Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -53,6 +55,7 @@ paths:
                 $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-Mesh
       summary: Deletes Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -65,9 +68,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes:
     get:
+      operationId: get-Mesh-list
       summary: Returns a list of Mesh in the mesh.
       tags: [ "Mesh" ]
       responses:

@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtraces/{name}:
     get:
+      operationId: get-MeshTrace
       summary: Returns MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTraceItem"
 
     put:
+      operationId: create-or-update-MeshTrace
       summary: Creates or Updates MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-MeshTrace
       summary: Deletes MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshtraces:
     get:
+      operationId: get-MeshTrace-list
       summary: Returns a list of MeshTrace in the mesh.
       tags: [ "MeshTrace" ]
       parameters:

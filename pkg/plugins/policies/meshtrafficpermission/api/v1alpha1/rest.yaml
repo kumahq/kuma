@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtrafficpermissions/{name}:
     get:
+      operationId: get-MeshTrafficPermission
       summary: Returns MeshTrafficPermission entity
       tags: [ "MeshTrafficPermission" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTrafficPermissionItem"
 
     put:
+      operationId: create-or-update-MeshTrafficPermission
       summary: Creates or Updates MeshTrafficPermission entity
       tags: [ "MeshTrafficPermission" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-MeshTrafficPermission
       summary: Deletes MeshTrafficPermission entity
       tags: [ "MeshTrafficPermission" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshtrafficpermissions:
     get:
+      operationId: get-MeshTrafficPermission-list
       summary: Returns a list of MeshTrafficPermission in the mesh.
       tags: [ "MeshTrafficPermission" ]
       parameters:

@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshmetrics/{name}:
     get:
+      operationId: get-MeshMetric
       summary: Returns MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshMetricItem"
 
     put:
+      operationId: create-or-update-MeshMetric
       summary: Creates or Updates MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-MeshMetric
       summary: Deletes MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshmetrics:
     get:
+      operationId: get-MeshMetric-list
       summary: Returns a list of MeshMetric in the mesh.
       tags: [ "MeshMetric" ]
       parameters:
