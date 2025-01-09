@@ -3,12 +3,12 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/pkg/errors"
 	"sync/atomic"
 	"time"
 
-	"cirello.io/pglock"
+	"github.com/pkg/errors"
 
+	"cirello.io/pglock"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	util_channels "github.com/kumahq/kuma/pkg/util/channels"
