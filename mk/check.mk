@@ -56,11 +56,11 @@ kube-lint:
 
 .PHONY: hadolint
 hadolint:
-	@if [ `find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile" | grep -vc dockerignore` -eq 0 ]; then \
+	@if [ $$(find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile*" ! -iname "*dockerignore*" | wc -l) -eq 0 ]; then \
 	  echo "No Dockerfiles found, exiting with failure."; \
 	  exit 1; \
 	fi; \
-	find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile" | grep -v dockerignore | xargs -I {} $(HADOLINT) {}
+	find ./tools/releases/dockerfiles/ -type f -iname "*Dockerfile*" ! -iname "*dockerignore*" -exec $(HADOLINT) {} \;
 
 .PHONY: lint
 lint: helm-lint golangci-lint shellcheck kube-lint hadolint ginkgo/lint
