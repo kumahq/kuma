@@ -77,11 +77,15 @@ func generateFromService(
 	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
 		outboundRouteName = resourceName
 	}
+	var dpTags mesh_proto.MultiValueTagSet
+	if meshCtx.IsXKumaTagsUsed() {
+		dpTags = proxy.Dataplane.Spec.TagSet()
+	}
 	outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
 		Name:    outboundRouteName,
 		Service: svc.ServiceName,
 		Routes:  routes,
-		DpTags:  proxy.Dataplane.Spec.TagSet(),
+		DpTags:  dpTags,
 	}
 
 	filterChainBuilder.

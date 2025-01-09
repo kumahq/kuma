@@ -12,6 +12,8 @@ permissions:
   contents: read
 jobs:
   find-prs:
+    permissions:
+      pull-requests: read
     env:
       LOOK_BACK: ${{ github.event.inputs.lookback || '10 minutes' }}
       GH_TOKEN: ${{ github.token }}

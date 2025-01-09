@@ -2,7 +2,6 @@ package meshretry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -101,44 +100,33 @@ spec:
 			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
 
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			if len(failureStats.Stats) != 0 {
-				defer func() { lastFailureStats = failureStats.Stats[0] }()
-				g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-			}
-		}).Should(Succeed())
-
 		By("Adding a faulty dataplane")
 		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+
+		By("Clean counters")
+		Expect(admin.ResetCounters()).To(Succeed())
 
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
-			g.Expect(grpcFailureStats(g)).To(stats.BeGreaterThanZero())
-		}, "90s", "10s").Should(Succeed())
-		time.Sleep(10 * time.Second)
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(stats.BeGreaterThanZero())
 			g.Expect(failureStats).To(stats.BeGreaterThan(lastFailureStats))
-		}, "40s", "10s").Should(Succeed())
+		}, "60s", "5s").MustPassRepeatedly(3).Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+		By("Clean counters")
+		Expect(admin.ResetCounters()).To(Succeed())
+		lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-		}, "50s", "10s").Should(Succeed())
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			defer func() { lastFailureStats = failureStats.Stats[0] }()
-			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-		}, "60s", "10s").Should(Succeed())
+			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
+		}, "30s", "5s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }
