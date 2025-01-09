@@ -18,10 +18,6 @@ resources:
           normalizePath: true
           routeConfig:
             name: outbound:default_backend___msvc_80
-            requestHeadersToAdd:
-            - header:
-                key: x-kuma-tags
-                value: '&kuma.io/protocol=http&&kuma.io/service=web&'
             validateClusters: false
             virtualHosts:
             - domains:
