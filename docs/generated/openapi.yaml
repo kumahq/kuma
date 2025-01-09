@@ -2773,6 +2773,7 @@ components:
             kuma.io/origin: zone
           description: the label of the resource
     ProxyRule:
+      description: a rule that affects the entire proxy
       type: object
       required:
         - conf
@@ -2895,7 +2896,6 @@ components:
           example: MeshRetry
           description: the type of the policy
         proxyRule:
-          description: a rule that affects the entire proxy
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
@@ -2954,8 +2954,10 @@ components:
             A JSON Pointer path indicating the part of the document to operate
             on.
         value:
-          AnyValue:
-            description: The value to be used within the operations.
+          type: object
+          properties:
+            AnyValue:
+              description: The value to be used within the operations.
     MeshAccessLogItem:
       type: object
       required:
