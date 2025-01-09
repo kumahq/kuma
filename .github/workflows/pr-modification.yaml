@@ -1,0 +1,78 @@
+on:
+  schedule:
+    - cron: '*/5 * * * *' #every 5mins
+  workflow_dispatch:
+    inputs:
+      lookback:
+        description: 'How far back to look for PRs'
+        required: false
+        default: '10 minutes'
+
+permissions:
+  contents: read
+jobs:
+  find-prs:
+    permissions:
+      pull-requests: read
+    env:
+      LOOK_BACK: ${{ github.event.inputs.lookback || '10 minutes' }}
+      GH_TOKEN: ${{ github.token }}
+    runs-on: ubuntu-24.04
+    outputs:
+      recent_prs: ${{ steps.get-recent-prs.outputs.out }}
+      active_branches: ${{ steps.active-branches.outputs.out }}
+    steps:
+      - id: active-branches
+        name: Get active branches
+        run: |
+          echo "out<<EOF" >> $GITHUB_OUTPUT
+          gh api /repos/${{ github.repository }}/contents/active-branches.json --jq '.content | @base64d' >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - id: get-recent-prs
+        name: Get recent PRs
+        run: |
+          echo "out<<EOF" >> $GITHUB_OUTPUT
+          gh pr list -R ${{ github.repository }} --json number,title,url --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:dependabot" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: Show outputs
+        env:
+          RECENT_PRS: ${{ steps.get-recent-prs.outputs.out }}
+          ACTIVE_BRANCHES: ${{ steps.active-branches.outputs.out }}
+        run: |
+          echo "::group::recent-prs"
+          echo "${RECENT_PRS}"
+          echo "::endgroup::"
+          echo "::group::active-branches"
+          echo "${ACTIVE_BRANCHES}"
+          echo "::endgroup::"
+
+  pr-comment:
+    needs: find-prs
+    runs-on: ubuntu-24.04
+    if: needs.find-prs.outputs.recent_prs != '[]'
+    strategy:
+      matrix: 
+        include: ${{ fromJson(needs.find-prs.outputs.recent_prs) }}
+      max-parallel: 1 # to avoid using too many runners
+    permissions:
+      pull-requests: write
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@daa4a82a0a3f6c162c02b83fa44b3ab83946f7cb # v2.9.0
+        with:
+          header: PR reviewer checklist
+          only_create: true
+          number: ${{ matrix.number }}
+          message: |
+            ## Reviewer Checklist
+            :mag: Each of these sections need to be checked by the reviewer of the PR :mag::
+            If something doesn't apply please check the box and add a justification if the reason is non obvious.
+            - [ ] Is the PR title satisfactory? Is this part of a larger feature and should be grouped using `> Changelog`?
+            - [ ] PR description is clear and complete. It [Links to relevant issue][1] as well as docs and UI issues
+            - [ ] This will not break child repos: it doesn't hardcode values (.e.g "kumahq" as an image registry)
+            - [ ] IPv6 is taken into account (.e.g: no string concatenation of host port)
+            - [ ] Tests (Unit test, E2E tests, manual test on universal and k8s)
+                - Don't forget `ci/` labels to run additional/fewer tests
+            - [ ] Does this contain a change that needs to be notified to users? In this case, [`UPGRADE.md`](../blob/master/UPGRADE.md) should be updated.
+            - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
+            
+            [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword

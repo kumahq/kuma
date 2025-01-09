@@ -24,6 +24,7 @@ kumahq org group: https://github.com/orgs/kumahq/teams/kuma-maintainers
 - Marcin Skalski @Automaat (marcin.skalski@konghq.com)
 - Lukasz Dziedziak @lukidzi (lukidzi@gmail.com)
 - Icarus Wu @Icarus9913 (icarus.wu@konghq.com)
+- Jay Jijie Chen @jijiechen (jijie.chen@outlook.com)
 
 # Reviewers
 

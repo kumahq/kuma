@@ -5,27 +5,27 @@ on:
     tags: ["*"]
   pull_request:
     branches: ["master", "release-*"]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI or via REST call
 permissions:
-  contents: write # To upload assets
-  id-token: write # For using token to sign images
-  actions: read # For getting workflow run info to build provenance
-  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+  contents: read
 env:
   KUMA_DIR: "."
-  CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
+  # To keep CI tools out of the SBOM, we use a `.ci_tools` directory in the parent
+  # of the code checkout path (typically /home/runner/work/<repo-name>/<repo-name>
+  # on the runner).
+  CI_TOOLS_DIR: "/home/runner/work/kuma/.ci_tools"
 concurrency:
-  group: ${{github.workflow}}-${{ github.event_name == 'push' && github.sha || github.event.pull_request.number }}
+  group: ${{ format('{0}-{1}-{2}', github.workflow, github.event_name, github.event_name == 'push' && github.sha || github.event_name == 'pull_request' && github.event.pull_request.number || github.event_name == 'workflow_dispatch' && github.ref_name) }}
   cancel-in-progress: ${{ github.event_name == 'push' && false || true }}
 jobs:
   check:
     permissions:
       contents: read
-      # golangci-lint-action
-      checks: write
-    timeout-minutes: 20
-    runs-on: ubuntu-latest
+      checks: write # needed for golangci/golangci-lint-action to add code annotations in PRs
+    timeout-minutes: 25
+    runs-on: ubuntu-24.04
     env:
-      FULL_MATRIX: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
+      FULL_MATRIX: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' || contains(github.event.pull_request.labels.*.name, 'ci/run-full-matrix') }}
       ALLOW_PUSH: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       BUILD: ${{ github.event_name == 'push' || contains(github.event.pull_request.labels.*.name, 'ci/run-build') || contains(github.event.pull_request.labels.*.name, 'ci/force-publish') }}
       FORCE_PUBLISH_FROM_FORK: ${{ github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'ci/force-publish') && github.event.pull_request.head.repo.full_name != github.repository }}
@@ -47,7 +47,7 @@ jobs:
       - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@41dfa10bad2bb2ae585af6ee5bb4d7d973ad74ed # v5.1.0
+      - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version-file: go.mod
           cache: false
@@ -55,7 +55,7 @@ jobs:
         with:
           args: --fix=false --verbose
           version: v1.61.0
-      - uses: actions/cache@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+      - uses: actions/cache@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -68,31 +68,46 @@ jobs:
           make clean
       - run: |
           make check
-      - id: sca-project
-        uses: Kong/public-shared-actions/security-actions/sca@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
-        with:
-          dir: .
-          config: .syft.yaml
-          upload-sbom-release-assets: true
-      - id: metadata
+      - name: "Set metadata for downstream jobs"
+        id: metadata
         run: |
           echo "images=$(make images/info/release/json)" >> $GITHUB_OUTPUT
           echo "registry=$(make docker/info/registry)" >> $GITHUB_OUTPUT
           echo "version=$(make build/info/version)" >> $GITHUB_OUTPUT
           echo "distribution_repository=$(make build/info/cloudsmith_repository)" >> $GITHUB_OUTPUT
+      # "make check" puts binaries in ./build/tools (see mk/generate.mk: $(POLICY_GEN)
+      # and $(RESOURCE_GEN)), which are unnecessarily included in the SBOM.
+      # Running the SCA step before "make check" might seem like a solution, but it
+      # generates report files (e.g., sbom.spdx.json, cve-report.json) in the working
+      # directory. These files cause "make check" to fail, as it checks if no files
+      # in the repository were modified, deleted, or added after its process.
+      # It doesn't recognize that the SBOM and CVE report files were added earlier
+      # and should be ignored. Since we currently can't change the working directory
+      # for the SCA step, it must run after "make check." Instead, we clean ./build
+      # after "make check" to exclude tool binaries from the SBOM.
+      - run: |
+          make clean/build
+      - name: "Generate SBOM and CVE report (Software Composition Analysis)"
+        id: sca-project
+        uses: Kong/public-shared-actions/security-actions/sca@0ccacffed804d85da3f938a1b78c12831935f992 # v2.8.0
+        env:
+          SYFT_SOURCE_NAME: ${{ github.repository }}
+          SYFT_SOURCE_VERSION: ${{ steps.metadata.outputs.version }}
+        with:
+          dir: .
+          config: .syft.yaml
+          upload-sbom-release-assets: true
   test:
-    permissions:
-      contents: read
     needs: ["check"]
     uses: ./.github/workflows/_test.yaml
     with:
       FULL_MATRIX: ${{ needs.check.outputs.FULL_MATRIX }}
-      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-latest","arm64":""}' }}
+      RUNNERS_BY_ARCH: ${{ (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) && '{"amd64":"ubuntu-latest-kong","arm64":"ubuntu-latest-arm64-kong"}' || '{"amd64":"ubuntu-24.04","arm64":""}' }}
     secrets: inherit
   build_publish:
     permissions:
       contents: read
-      id-token: write
+      id-token: write # Required for image signing
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
@@ -112,9 +127,9 @@ jobs:
     uses: ./.github/workflows/_provenance.yaml
     secrets: inherit
     permissions:
-      contents: write
-      id-token: write # For using token to sign images
       actions: read # For getting workflow run info to build provenance
+      contents: write # To add assets to a release
+      id-token: write # For using token to sign images
       packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     with:
       BINARY_ARTIFACTS_HASH_AS_FILE: ${{ needs.build_publish.outputs.BINARY_ARTIFACT_DIGEST_BASE64 }}
@@ -126,10 +141,7 @@ jobs:
     needs: ["build_publish", "check", "test", "provenance"]
     timeout-minutes: 10
     if: ${{ always() }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: read # For getting workflow run info
+    runs-on: ubuntu-24.04
     env:
       SECURITY_ASSETS_DOWNLOAD_PATH: "${{ github.workspace }}/security-assets"
       SECURITY_ASSETS_PACKAGE_NAME: "security-assets" # Cloudsmith package for hosting security assets
@@ -149,8 +161,6 @@ jobs:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: "*sbom.{cyclonedx,spdx}.json"
           merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Download binary artifact provenance"
         if: ${{ needs.provenance.result == 'success' && github.ref_type == 'tag' }}
         id: collect_provenance
@@ -159,8 +169,6 @@ jobs:
           path: ${{ env.SECURITY_ASSETS_DOWNLOAD_PATH }}
           pattern: ${{ github.event.repository.name }}.intoto.jsonl
           merge-multiple: true
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: "Generate security assets TAR"
         if: ${{ needs.build_publish.result == 'success' }}
         id: security_assets_metadata

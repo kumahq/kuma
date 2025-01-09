@@ -1,64 +1,50 @@
 name: "PR health"
 on:
   pull_request:
-    types:
-      - edited
-      - opened
-      - reopened
-      - synchronize
+    types: [edited, opened, reopened, synchronize]
 permissions:
   contents: read
-  pull-requests: write
 jobs:
-  commit-lint:
+  pr-check:
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - name: Check PR title
-        # This job checks the PR title using
-        # https://github.com/conventional-changelog/commitlint
-        # for the conventional commit format at
-        # https://www.conventionalcommits.org/en/v1.0.0/
-        # See also /.github/commitlint.config.js for more details
-        # We only need to check the PR title because it will end up being the
-        # (default) commit title when doing squash merges with Github.
-        # See
-        # https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge
-        # for more info. We have "Default to PR title for squash merge commits" enabled.
+        # Check PR title against the Conventional Commits format using commitlint.
+        # For more details, see: https://www.conventionalcommits.org/en/v1.0.0/
+        # This ensures the PR title matches the conventonal commit title format
+        # as it will be usead as a commit name after squashing.
+        # See: https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#merge-message-for-a-squash-merge.
         if: github.event.action != 'synchronize'
-        # Inject as env variable to escape properly
         env:
+          # Use an intermediate environment variable to safely handle the PR title
+          # and avoid potential injection risks. See:
+          # https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
           TITLE: ${{ github.event.pull_request.title }}
         run: |
-          npm install -g @commitlint/cli@19.0.1 @commitlint/config-conventional@19.0.0
-          commitlint --config .github/commitlint.config.js --edit=<(echo "${TITLE}")
-      - name: Maybe add backport label
-        if: github.event.action == 'synchronize' && false # disable until https://github.com/kumahq/kuma/issues/9482
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          PREDEFINED_GLOBS: ".github/**/*,Makefile,mk/**/*,tools/**/*,.golangci.yml,.kube-linter.yaml"
-          LABEL_TO_ADD: backport
-          NO_BACKPORT_AUTOLABEL: no-backport-autolabel
-        run: |
-          tools/ci/needs_backporting.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "origin/${{ github.base_ref }}" "HEAD" "$PREDEFINED_GLOBS" "$LABEL_TO_ADD" "$NO_BACKPORT_AUTOLABEL"
-      - name: Add checklist comment
-        if: false # disable as it doesn't work github.event.action == 'opened' && github.event.pull_request.author != 'dependabot'
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-          CHECKLIST_MESSAGE: |
-            :mag: Each of these sections need to be checked by the reviewer of the PR :mag::
-            
-            If something doesn't apply please check the box and add a justification if the reason is non obvious.
-            
-            - [ ] Is the PR title satisfactory? Is this part of a larger feature and should be grouped using `> Changelog`?
-            - [ ] PR description is clear and complete. It [Link to relevant issue][1] as well as docs and UI issues
-            - [ ] This will not break child repos: it doesn't hardcode values (.e.g "kumahq" as a image registry) 
-            - [ ] IPv6 is taken into account (.e.g: no concatenation of host port)
-            - [ ] Tests (Unit test, E2E tests, manual test on universal and k8s)
-                - Don't forget `ci/` labels to run additional/fewer tests
-            - [ ] Does this contain a change that needs to be notified to users? In this case it [`UPGRADE.md`](../blob/master/UPGRADE.md) should be updated.
-            - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
-            [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
+          # Create a temporary commitlint configuration file
+          cat <<EOF > commitlint.config.js
+          module.exports = {
+            extends: ["@commitlint/config-conventional"],
+            helpUrl: "https://github.com/kumahq/kuma/blob/master/CONTRIBUTING.md#commit-message-format",
+            rules: {
+              "body-max-line-length": [0],
+              "footer-max-line-length": [0],
+              "footer-leading-blank": [0],
+              "header-max-length": [0],
+              "scope-enum": [2, "never", [
+                "kumacp", "kumadp", "kumacni", "kumainit", "*", "madr", "test", "ci", "perf", "policies", "tests"
+              ]],
+              "scope-empty": [2, "never"]
+            },
+          };
+          EOF
 
-        run: echo '${{ env.CHECKLIST_MESSAGE }}' | gh pr comment -R "${{ github.repository }}" "${{ github.event.pull_request.number }}" -F -
+          # Install commitlint CLI and configuration
+          npm install -g @commitlint/cli@19.6.0 @commitlint/config-conventional@19.6.0
+
+          # Validate the PR title. Use the intermediate variable to safely handle the title.
+          # '${{ env.TITLE }}' doesn't protect against injection, so "$TITLE" must be used instead.
+          echo "$TITLE" | commitlint --config commitlint.config.js

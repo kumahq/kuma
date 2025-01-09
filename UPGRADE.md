@@ -6,6 +6,15 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.10.x`
+
+### MeshLoadBalancingStrategy
+
+#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+
+The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
+is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog

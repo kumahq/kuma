@@ -22,9 +22,9 @@ var _ = Describe("Match order", func() {
 	DescribeTable("should generate proper order",
 		func(given validTestCase) {
 			// when
-			ordered, _ := plugin_xds.GetOrderedMatchers(given.conf)
+			orderedFilterChainMatches, _ := plugin_xds.GetOrderedMatchers(given.conf)
 
-			yaml, err := yaml.Marshal(ordered)
+			yaml, err := yaml.Marshal(orderedFilterChainMatches)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(yaml).To(matchers.MatchGoldenYAML(fmt.Sprintf("testdata/%s", given.orderedGolden)))
@@ -35,7 +35,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
@@ -46,49 +46,59 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "example.com",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "*.example.com",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "example.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "other.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "anotherhttp.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "http2.com",
-						Port:     pointer.To[int](9000),
+						Port:     pointer.To[uint32](9000),
 						Protocol: api.ProtocolType("http2"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "grpc.com",
-						Port:     pointer.To[int](9001),
+						Port:     pointer.To[uint32](9001),
 						Protocol: api.ProtocolType("grpc"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "*.example.com",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "*.example.com",
 						Protocol: api.ProtocolType("tls"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.42.0.8",
+						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("IP"),
@@ -98,7 +108,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("IP"),
 						Value:    "192.168.0.1",
-						Port:     pointer.To[int](9091),
+						Port:     pointer.To[uint32](9091),
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
@@ -117,6 +127,16 @@ var _ = Describe("Match order", func() {
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "240.0.0.0/4",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("CIDR"),
+						Value:    "172.18.0.0/16",
+						Protocol: api.ProtocolType("http"),
+					},
+					{
 						Type:     api.MatchType("IP"),
 						Value:    "b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6",
 						Protocol: api.ProtocolType("tls"),
@@ -124,7 +144,7 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("IP"),
 						Value:    "9942:9abf:d0e0:f2da:2290:333b:e590:f497",
-						Port:     pointer.To[int](9091),
+						Port:     pointer.To[uint32](9091),
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
@@ -147,56 +167,72 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("IP"),
 						Value:    "127.0.0.1",
-						Port:     pointer.To[int](443),
+						Port:     pointer.To[uint32](443),
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](9090),
+						Port:     pointer.To[uint32](9090),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](9090),
+						Port:     pointer.To[uint32](9090),
 						Protocol: api.ProtocolType("http2"),
 					},
 					{
 						Type:     api.MatchType("IP"),
 						Value:    "127.0.0.1",
-						Port:     pointer.To[int](9090),
+						Port:     pointer.To[uint32](9090),
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](9091),
+						Port:     pointer.To[uint32](9091),
 						Protocol: api.ProtocolType("tls"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
-						Port:     pointer.To[int](9091),
+						Port:     pointer.To[uint32](9091),
 						Protocol: api.ProtocolType("grpc"),
 					},
 					{
 						Type:     api.MatchType("IP"),
 						Value:    "127.0.0.1",
-						Port:     pointer.To[int](9091),
+						Port:     pointer.To[uint32](9091),
 						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "127.0.0.1",
+						Protocol: api.ProtocolType("tcp"),
+					},
+					{
+						Type:     api.MatchType("Domain"),
+						Value:    "httpbin.com",
+						Port:     pointer.To[uint32](80),
+						Protocol: api.ProtocolType("http"),
+					},
+					{
+						Type:     api.MatchType("IP"),
+						Value:    "10.22.22.1",
+						Protocol: api.ProtocolType("http"),
 					},
 				},
 			},
@@ -225,37 +261,37 @@ var _ = Describe("Match order", func() {
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "example.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "another.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("http2"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "other.com",
-						Port:     pointer.To[int](8080),
+						Port:     pointer.To[uint32](8080),
 						Protocol: api.ProtocolType("tcp"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "anotherhttp.com",
-						Port:     pointer.To[int](9001),
+						Port:     pointer.To[uint32](9001),
 						Protocol: api.ProtocolType("http"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "http2.com",
-						Port:     pointer.To[int](9001),
+						Port:     pointer.To[uint32](9001),
 						Protocol: api.ProtocolType("http2"),
 					},
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "grpc.com",
-						Port:     pointer.To[int](9001),
+						Port:     pointer.To[uint32](9001),
 						Protocol: api.ProtocolType("grpc"),
 					},
 				},
