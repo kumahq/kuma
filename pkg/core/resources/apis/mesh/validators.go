@@ -64,6 +64,7 @@ type ValidateTargetRefOpts struct {
 	//   includes a forward slash, but it's allowed as an exception to
 	//   handle unresolved references.
 	AllowedInvalidNames []string
+	IsInboundPolicy     bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -376,6 +377,16 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", ref.Labels, ref.Kind))
 		err.Add(disallowedField("namespace", ref.Namespace, ref.Kind))
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
+	case common_api.Dataplane:
+		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
+		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
+			err.AddViolation("labels", "either labels or name and namespace must be specified")
+		}
+		if !opts.IsInboundPolicy && ref.SectionName != "" {
+			err.AddViolation("sectionName", "can only be used with inbound policies")
+		}
 	case common_api.MeshSubset:
 		err.Add(disallowedField("name", ref.Name, ref.Kind))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
