@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtlses/{name}:
     get:
+      operationId: get-mtls
       summary: Returns MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTLSItem"
 
     put:
+      operationId: create-or-update-mtls
       summary: Creates or Updates MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-mtls
       summary: Deletes MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshtlses:
     get:
+      operationId: get-mtls-list
       summary: Returns a list of MeshTLS in the mesh.
       tags: [ "MeshTLS" ]
       parameters:

@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshretries/{name}:
     get:
+      operationId: get-mr
       summary: Returns MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshRetryItem"
 
     put:
+      operationId: create-or-update-mr
       summary: Creates or Updates MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-mr
       summary: Deletes MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshretries:
     get:
+      operationId: get-mr-list
       summary: Returns a list of MeshRetry in the mesh.
       tags: [ "MeshRetry" ]
       parameters:

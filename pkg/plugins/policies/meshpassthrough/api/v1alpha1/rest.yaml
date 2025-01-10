@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
+      operationId: get-mp
       summary: Returns MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshPassthroughItem"
 
     put:
+      operationId: create-or-update-mp
       summary: Creates or Updates MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-mp
       summary: Deletes MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshpassthroughs:
     get:
+      operationId: get-mp-list
       summary: Returns a list of MeshPassthrough in the mesh.
       tags: [ "MeshPassthrough" ]
       parameters:
