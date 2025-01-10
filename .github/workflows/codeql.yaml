@@ -1,16 +1,28 @@
 name: "CodeQL"
+
 on:
-  workflow_dispatch: {}
+  push:
+    branches: ["master", "release-*", "!*-merge-master"]
+  pull_request:
+    branches: ["master", "release-*"]
   schedule:
     - cron: '35 3 * * *' # Runs daily at 3:35 AM UTC
-permissions:
-  contents: read
+  workflow_dispatch: {}
+
+permissions: {}
+
+concurrency:
+  # Run only for most recent commit in PRs but for all commits on master
+  # Ref: https://docs.github.com/en/actions/using-jobs/using-concurrency
+  group: ${{ github.workflow }}-${{ github.head_ref || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   analyze:
-    timeout-minutes: 30
-    name: Analyze
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
+      contents: read
       actions: read
       security-events: write
     strategy:
