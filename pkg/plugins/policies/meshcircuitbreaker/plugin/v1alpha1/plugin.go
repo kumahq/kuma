@@ -83,7 +83,7 @@ func applyToInbounds(
 			continue
 		}
 
-		if err := configure(rules, core_rules.MeshSubset(), cluster); err != nil {
+		if err := configure(rules, core_rules.MeshElement(), cluster); err != nil {
 			return err
 		}
 	}
@@ -104,7 +104,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, core_rules.MeshService(serviceName), cluster); err != nil {
+		if err := configure(rules.Rules, core_rules.MeshServiceElement(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -142,7 +142,7 @@ func applyToGateways(
 
 					if err := configure(
 						rules,
-						core_rules.MeshService(serviceName),
+						core_rules.MeshServiceElement(serviceName),
 						cluster,
 					); err != nil {
 						return err
@@ -157,10 +157,10 @@ func applyToGateways(
 
 func configure(
 	rules core_rules.Rules,
-	subset core_rules.Subset,
+	element core_rules.Element,
 	cluster *envoy_cluster.Cluster,
 ) error {
-	if computed := rules.Compute(subset); computed != nil {
+	if computed := rules.Compute(element); computed != nil {
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
