@@ -74,7 +74,6 @@ components:
           example: MeshRetry
           description: the type of the policy
         proxyRule:
-          description: a rule that affects the entire proxy
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
@@ -119,6 +118,7 @@ components:
         port:
           type: integer
     ProxyRule:
+      description: a rule that affects the entire proxy
       type: object
       required: [conf, origin]
       properties:

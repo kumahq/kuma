@@ -20,6 +20,7 @@ message Mesh {
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "mesh";
   option (kuma.mesh.resource).ws.plural = "meshes";
+  option (kuma.mesh.resource).short_name = "m";
 
   // mTLS settings of a Mesh.
   message Mtls {

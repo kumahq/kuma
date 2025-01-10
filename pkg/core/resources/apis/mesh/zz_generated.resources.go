@@ -979,6 +979,7 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh",
 	PluralDisplayName:   "Meshes",
+	ShortName:           "m",
 	IsExperimental:      false,
 }
 

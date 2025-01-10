@@ -31,7 +31,9 @@ type Inbound struct {
 type InspectRule struct {
 	// FromRules a set of rules for each inbound of this proxy
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
-	ProxyRule *ProxyRule  `json:"proxyRule,omitempty"`
+
+	// ProxyRule a rule that affects the entire proxy
+	ProxyRule *ProxyRule `json:"proxyRule,omitempty"`
 
 	// ToResourceRules a set of rules for the outbounds produced by real resources (i.e MeshService, MeshExternalService, MeshMultiZoneService).
 	ToResourceRules *[]ResourceRule `json:"toResourceRules,omitempty"`
@@ -73,7 +75,7 @@ type PolicyDescription struct {
 	IsTargetRef bool `json:"isTargetRef"`
 }
 
-// ProxyRule defines model for ProxyRule.
+// ProxyRule a rule that affects the entire proxy
 type ProxyRule struct {
 	// Conf The actual conf generated
 	Conf   interface{} `json:"conf"`

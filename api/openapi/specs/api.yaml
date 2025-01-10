@@ -60,6 +60,7 @@ paths:
         - in: path
           name: resourceType
           example: dataplanes
+          required: true
           schema:
             type: string
             enum: [dataplanes, meshgateways]
@@ -80,6 +81,7 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
+      operationId: get-meshes-mesh-dataplanes-name-config
       summary: Get a proxy XDS config on a CP
       description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
       parameters:
@@ -170,6 +172,44 @@ paths:
           $ref: '#/components/responses/InspectDataplanesForPolicyResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
+    get:
+      operationId: inspect-hostnames
+      summary: Returns hostnames for service
+      description: Returns hostnames for a service
+      tags: ["Inspect"]
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: serviceType
+          example: meshservices
+          schema:
+            type: string
+            enum: [meshservices, meshmultizoneservices, meshexternalservices]
+          required: true
+          description: The type of the service
+        - in: path
+          name: serviceName
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectHostnamesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
           $ref: '#/components/responses/Internal'
 components:
@@ -436,6 +476,42 @@ components:
     GlobalInsight:
       allOf:
         - $ref: '#/components/schemas/schemas-GlobalInsight'
+    InspectHostnames:
+      type: object
+      title: InspectHostnames
+      description: A list of hostnames
+      required: [total, items]
+      properties:
+        total:
+          type: integer
+          example: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostname'
+    InspectHostname:
+      type: object
+      title: InspectHostname
+      description: An supported hostname along with the zones it exists in
+      required: [hostname, zones]
+      properties:
+        hostname:
+          type: string
+          description: Generated hostname
+          example: redis.redis-system.svc.east.mesh.local
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostnameZone'
+    InspectHostnameZone:
+      type: object
+      title: InspectHostnameZone
+      description: A name of the zone in which the hostname is available
+      required: [name]
+      properties:
+        name:
+          type: string
+          example: east
   responses:
     IndexResponse:
       description: A response for the index endpoint
@@ -479,6 +555,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InspectRules'
+    InspectHostnamesResponse:
+      description: A response containing hostnames that match a service.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectHostnames'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
       content:
@@ -494,13 +579,28 @@ components:
   examples:
     GlobalInsightExample:
       value:
+        createdAt: '2023-01-11T02:30:42.227Z'
         services:
           total: 5
-          internal: 4
-          external: 1
-          gatewayBuiltin: 1
-          gatewayProvided: 2
+          internal:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          external:
+            total: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
           internalByStatus:
+            total: 4
             online: 2
             offline: 1
             partiallyDegraded: 1
@@ -514,20 +614,31 @@ components:
           zoneIngresses:
             online: 1
             total: 1
-          dataplanes:
-            online: 23
-            offline: 10
-            partiallyDegraded: 17
-            total: 50
-          policies:
-            total: 100
-          meshes:
-            total: 3
-          resources:
-            MeshTrafficPermission:
-              total: 42
-            MeshService:
-              total: 84
+        dataplanes:
+          standard:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+        policies:
+          total: 100
+        meshes:
+          total: 3
+        resources:
+          MeshTrafficPermission:
+            total: 42
+          MeshService:
+            total: 84
     InspectDataplanesForPolicyExample:
       value:
         total: 100
@@ -536,6 +647,18 @@ components:
           - type: Dataplane
             mesh: default
             name: dp-1
+            labels:
+              k8s.kuma.io/namespace: kuma-system
           - type: Dataplane
             mesh: default
             name: dp-2
+            labels:
+              k8s.kuma.io/namespace: kuma-system
+    InspectHostnamesExample:
+      value:
+        total: 100
+        items:
+          - hostname: redis.redis-system.svc.east.mesh.local
+            zones:
+              - name: east
+              - name: west
