@@ -21,6 +21,8 @@ jobs:
   get-checks-for-commits:
     runs-on: ubuntu-24.04
     permissions:
+      contents: read
+      checks: read
       statuses: read
 
     steps:
