@@ -22,20 +22,26 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - name: Get last 5 commits and their checks
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Get the last 5 commits
-          commits=$(gh api repos/${{ github.repository }}/commits --jq '.[0:5] | .[].sha')
-          echo "Fetching checks for the following commits:"
-          echo "$commits"
-
-          # Fetch checks for each commit
-          for sha in $commits; do
-            echo "Commit: $sha"
-            gh api repos/${{ github.repository }}/commits/$sha/statuses
-          done
+      - run: env
+      - run: |
+          cat <<EOF | jq
+          ${{ github }}
+          EOF
+#      - name: Get last 5 commits and their checks
+#        env:
+#          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+#        run: |
+#          # Get the last 5 commits
+#          commits=$(gh api repos/${{ github.repository }}/commits --jq '.[0:5] | .[].sha')
+#          echo "Fetching checks for the following commits:"
+#          echo "$commits"
+#
+#          # Fetch checks for each commit
+#          for sha in $commits; do
+#            echo "Commit: $sha"
+#            gh api repos/${{ github.repository }}/commits/$sha/statuses
+#            echo ""
+#          done
 
 #  analyze:
 #    runs-on: ubuntu-24.04
