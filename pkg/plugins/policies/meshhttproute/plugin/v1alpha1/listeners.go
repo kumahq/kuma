@@ -149,7 +149,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 	var conf *api.PolicyDefault
 	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
-	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
+	ruleHTTP := toRules.Rules.Compute(core_rules.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
 		for hash := range ruleHTTP.BackendRefOriginIndex {
