@@ -653,7 +653,7 @@ func init() {
 }
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Cluster
+// +kubebuilder:resource:categories=kuma,scope=Cluster,shortName=m
 type Mesh struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
