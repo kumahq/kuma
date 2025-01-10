@@ -81,7 +81,7 @@ func (p plugin) configureDPP(
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 		serviceName := outbound.GetService()
 
-		computed := toRules.Rules.Compute(core_rules.MeshService(serviceName))
+		computed := toRules.Rules.Compute(core_rules.MeshServiceElement(serviceName))
 		if computed == nil {
 			continue
 		}
@@ -202,7 +202,7 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshService(serviceName))
+					localityConf := core_rules.ComputeConf[api.Conf](rules, core_rules.MeshServiceElement(serviceName))
 					if localityConf == nil {
 						continue
 					}
@@ -264,7 +264,7 @@ func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
 	if len(rules) == 0 {
 		return nil
 	}
-	return rules[0].Compute(core_rules.MeshSubset())
+	return rules[0].Compute(core_rules.MeshElement())
 }
 
 func (p plugin) configureListener(
