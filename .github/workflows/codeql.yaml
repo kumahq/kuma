@@ -43,3 +43,4 @@ jobs:
           ref: ${{ steps.checkout.outputs.ref }}
           sha: ${{ steps.checkout.outputs.commit }}
           category: "/language:${{matrix.language}}"
+          check_name: CodeQL

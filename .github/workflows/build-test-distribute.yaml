@@ -107,7 +107,9 @@ jobs:
   build_publish:
     permissions:
       contents: read
+      actions: read # Required for CodeQL
       id-token: write # Required for image signing
+      security-events: write # Required for CodeQL
     needs: ["check", "test"]
     uses: ./.github/workflows/_build_publish.yaml
     if: ${{ fromJSON(needs.check.outputs.BUILD) }}
