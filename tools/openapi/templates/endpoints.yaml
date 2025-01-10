@@ -8,7 +8,7 @@ info:
 paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
     get:
-      operationId: get-{{ .Name }}
+      operationId: get-{{ .ShortName }}
       summary: Returns {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -31,7 +31,7 @@ paths:
           $ref: "#/components/responses/{{.Name}}Item"
 
     put:
-      operationId: create-or-update-{{ .Name }}
+      operationId: create-or-update-{{ .ShortName }}
       summary: Creates or Updates {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -71,7 +71,7 @@ paths:
                 $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-{{ .Name }}
+      operationId: delete-{{ .ShortName }}
       summary: Deletes {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -97,7 +97,7 @@ paths:
 
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
-      operationId: get-{{ .Name }}-list
+      operationId: get-{{ .ShortName }}-list
       summary: Returns a list of {{ .Name }} in the mesh.
       tags: [ "{{ .Name }}" ]
       {{- if eq .Scope "Mesh"}}

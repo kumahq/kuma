@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{name}:
     get:
-      operationId: get-Mesh
+      operationId: get-m
       summary: Returns Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -23,7 +23,7 @@ paths:
           $ref: "#/components/responses/MeshItem"
 
     put:
-      operationId: create-or-update-Mesh
+      operationId: create-or-update-m
       summary: Creates or Updates Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -55,7 +55,7 @@ paths:
                 $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-Mesh
+      operationId: delete-m
       summary: Deletes Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -73,7 +73,7 @@ paths:
 
   /meshes:
     get:
-      operationId: get-Mesh-list
+      operationId: get-m-list
       summary: Returns a list of Mesh in the mesh.
       tags: [ "Mesh" ]
       responses:

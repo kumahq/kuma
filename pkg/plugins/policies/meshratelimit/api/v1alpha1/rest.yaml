@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshratelimits/{name}:
     get:
-      operationId: get-MeshRateLimit
+      operationId: get-mrl
       summary: Returns MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshRateLimitItem"
 
     put:
-      operationId: create-or-update-MeshRateLimit
+      operationId: create-or-update-mrl
       summary: Creates or Updates MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshRateLimit
+      operationId: delete-mrl
       summary: Deletes MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshratelimits:
     get:
-      operationId: get-MeshRateLimit-list
+      operationId: get-mrl-list
       summary: Returns a list of MeshRateLimit in the mesh.
       tags: [ "MeshRateLimit" ]
       parameters:

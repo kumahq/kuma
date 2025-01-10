@@ -8,7 +8,7 @@ info:
 paths:
   /hostnamegenerators/{name}:
     get:
-      operationId: get-HostnameGenerator
+      operationId: get-hg
       summary: Returns HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -23,7 +23,7 @@ paths:
           $ref: "#/components/responses/HostnameGeneratorItem"
 
     put:
-      operationId: create-or-update-HostnameGenerator
+      operationId: create-or-update-hg
       summary: Creates or Updates HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -55,7 +55,7 @@ paths:
                 $ref: '#/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-HostnameGenerator
+      operationId: delete-hg
       summary: Deletes HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -73,7 +73,7 @@ paths:
 
   /hostnamegenerators:
     get:
-      operationId: get-HostnameGenerator-list
+      operationId: get-hg-list
       summary: Returns a list of HostnameGenerator in the mesh.
       tags: [ "HostnameGenerator" ]
       responses:

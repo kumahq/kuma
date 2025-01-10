@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtimeouts/{name}:
     get:
-      operationId: get-MeshTimeout
+      operationId: get-mt
       summary: Returns MeshTimeout entity
       tags: [ "MeshTimeout" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTimeoutItem"
 
     put:
-      operationId: create-or-update-MeshTimeout
+      operationId: create-or-update-mt
       summary: Creates or Updates MeshTimeout entity
       tags: [ "MeshTimeout" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshTimeout
+      operationId: delete-mt
       summary: Deletes MeshTimeout entity
       tags: [ "MeshTimeout" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshtimeouts:
     get:
-      operationId: get-MeshTimeout-list
+      operationId: get-mt-list
       summary: Returns a list of MeshTimeout in the mesh.
       tags: [ "MeshTimeout" ]
       parameters:

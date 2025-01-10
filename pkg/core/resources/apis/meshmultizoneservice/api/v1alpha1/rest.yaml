@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshmultizoneservices/{name}:
     get:
-      operationId: get-MeshMultiZoneService
+      operationId: get-mzsvc
       summary: Returns MeshMultiZoneService entity
       tags: [ "MeshMultiZoneService" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshMultiZoneServiceItem"
 
     put:
-      operationId: create-or-update-MeshMultiZoneService
+      operationId: create-or-update-mzsvc
       summary: Creates or Updates MeshMultiZoneService entity
       tags: [ "MeshMultiZoneService" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshMultiZoneService
+      operationId: delete-mzsvc
       summary: Deletes MeshMultiZoneService entity
       tags: [ "MeshMultiZoneService" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshmultizoneservices:
     get:
-      operationId: get-MeshMultiZoneService-list
+      operationId: get-mzsvc-list
       summary: Returns a list of MeshMultiZoneService in the mesh.
       tags: [ "MeshMultiZoneService" ]
       parameters:

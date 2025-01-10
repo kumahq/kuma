@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshproxypatches/{name}:
     get:
-      operationId: get-MeshProxyPatch
+      operationId: get-mpp
       summary: Returns MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshProxyPatchItem"
 
     put:
-      operationId: create-or-update-MeshProxyPatch
+      operationId: create-or-update-mpp
       summary: Creates or Updates MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshProxyPatch
+      operationId: delete-mpp
       summary: Deletes MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshproxypatches:
     get:
-      operationId: get-MeshProxyPatch-list
+      operationId: get-mpp-list
       summary: Returns a list of MeshProxyPatch in the mesh.
       tags: [ "MeshProxyPatch" ]
       parameters:

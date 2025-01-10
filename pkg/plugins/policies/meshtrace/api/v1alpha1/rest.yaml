@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtraces/{name}:
     get:
-      operationId: get-MeshTrace
+      operationId: get-mtr
       summary: Returns MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTraceItem"
 
     put:
-      operationId: create-or-update-MeshTrace
+      operationId: create-or-update-mtr
       summary: Creates or Updates MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshTrace
+      operationId: delete-mtr
       summary: Deletes MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshtraces:
     get:
-      operationId: get-MeshTrace-list
+      operationId: get-mtr-list
       summary: Returns a list of MeshTrace in the mesh.
       tags: [ "MeshTrace" ]
       parameters:

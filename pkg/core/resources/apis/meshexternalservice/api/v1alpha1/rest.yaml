@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshexternalservices/{name}:
     get:
-      operationId: get-MeshExternalService
+      operationId: get-extsvc
       summary: Returns MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshExternalServiceItem"
 
     put:
-      operationId: create-or-update-MeshExternalService
+      operationId: create-or-update-extsvc
       summary: Creates or Updates MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshExternalService
+      operationId: delete-extsvc
       summary: Deletes MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshexternalservices:
     get:
-      operationId: get-MeshExternalService-list
+      operationId: get-extsvc-list
       summary: Returns a list of MeshExternalService in the mesh.
       tags: [ "MeshExternalService" ]
       parameters:

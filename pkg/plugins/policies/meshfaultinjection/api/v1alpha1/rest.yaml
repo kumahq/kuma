@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshfaultinjections/{name}:
     get:
-      operationId: get-MeshFaultInjection
+      operationId: get-mfi
       summary: Returns MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshFaultInjectionItem"
 
     put:
-      operationId: create-or-update-MeshFaultInjection
+      operationId: create-or-update-mfi
       summary: Creates or Updates MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshFaultInjection
+      operationId: delete-mfi
       summary: Deletes MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshfaultinjections:
     get:
-      operationId: get-MeshFaultInjection-list
+      operationId: get-mfi-list
       summary: Returns a list of MeshFaultInjection in the mesh.
       tags: [ "MeshFaultInjection" ]
       parameters:

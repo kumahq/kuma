@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshservices/{name}:
     get:
-      operationId: get-MeshService
+      operationId: get-msvc
       summary: Returns MeshService entity
       tags: [ "MeshService" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshServiceItem"
 
     put:
-      operationId: create-or-update-MeshService
+      operationId: create-or-update-msvc
       summary: Creates or Updates MeshService entity
       tags: [ "MeshService" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-MeshService
+      operationId: delete-msvc
       summary: Deletes MeshService entity
       tags: [ "MeshService" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshservices:
     get:
-      operationId: get-MeshService-list
+      operationId: get-msvc-list
       summary: Returns a list of MeshService in the mesh.
       tags: [ "MeshService" ]
       parameters:
