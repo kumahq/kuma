@@ -537,10 +537,6 @@ components:
             online: 2
             offline: 1
             partiallyDegraded: 1
-          online: 23
-          offline: 10
-          partiallyDegraded: 17
-          total: 51
           gatewayBuiltin:
             total: 4
             online: 2
