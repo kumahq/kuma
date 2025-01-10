@@ -13,8 +13,11 @@ func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	}
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 && len(r.Spec.Rules) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateFrom(r.Spec.From, topLevel.Kind))
