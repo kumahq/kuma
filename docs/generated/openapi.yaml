@@ -192,6 +192,48 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/{serviceType}/{serviceName}/_hostnames:
+    get:
+      operationId: inspect-hostnames
+      summary: Returns hostnames for service
+      description: Returns hostnames for a service
+      tags:
+        - Inspect
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the service is part of
+        - in: path
+          name: serviceType
+          example: meshservices
+          schema:
+            type: string
+            enum:
+              - meshservices
+              - meshmultizoneservices
+              - meshexternalservices
+          required: true
+          description: The type of the service
+        - in: path
+          name: serviceName
+          example: redis
+          schema:
+            type: string
+          required: true
+          description: The name of the service
+      responses:
+        '200':
+          $ref: '#/components/responses/InspectHostnamesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       operationId: get-mal
@@ -2628,6 +2670,47 @@ components:
     GlobalInsight:
       allOf:
         - $ref: '#/components/schemas/schemas-GlobalInsight'
+    InspectHostnames:
+      type: object
+      title: InspectHostnames
+      description: A list of hostnames
+      required:
+        - total
+        - items
+      properties:
+        total:
+          type: integer
+          example: 200
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostname'
+    InspectHostname:
+      type: object
+      title: InspectHostname
+      description: An supported hostname along with the zones it exists in
+      required:
+        - hostname
+        - zones
+      properties:
+        hostname:
+          type: string
+          description: Generated hostname
+          example: redis.redis-system.svc.east.mesh.local
+        zones:
+          type: array
+          items:
+            $ref: '#/components/schemas/InspectHostnameZone'
+    InspectHostnameZone:
+      type: object
+      title: InspectHostnameZone
+      description: A name of the zone in which the hostname is available
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: east
     InvalidParameters:
       type: object
       title: Invalid Parameters
@@ -2955,6 +3038,21 @@ components:
             on.
         value:
           description: The value to be used within the operations.
+    NotFoundError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            status:
+              example: 404
+            title:
+              example: Not Found
+            type:
+              example: https://httpstatuses.com/404
+            instance:
+              example: kong:trace:1234567890
+            detail:
+              example: Not found
     MeshAccessLogItem:
       type: object
       required:
@@ -3598,21 +3696,6 @@ components:
             request should correct or be aware of.
           items:
             type: string
-    NotFoundError:
-      allOf:
-        - $ref: '#/components/schemas/Error'
-        - type: object
-          properties:
-            status:
-              example: 404
-            title:
-              example: Not Found
-            type:
-              example: https://httpstatuses.com/404
-            instance:
-              example: kong:trace:1234567890
-            detail:
-              example: Not found
     MeshCircuitBreakerItem:
       type: object
       required:
@@ -13022,6 +13105,15 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/InspectRules'
+    InspectHostnamesResponse:
+      description: A response containing hostnames that match a service.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/InspectHostnames'
+          examples:
+            ResponseForDataplane:
+              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
       content:
@@ -13034,6 +13126,12 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not Found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/NotFoundError'
     MeshAccessLogItem:
       description: Successful response
       content:
@@ -13057,12 +13155,6 @@ components:
               next:
                 type: string
                 description: URL to the next page
-    NotFound:
-      description: Not Found
-      content:
-        application/problem+json:
-          schema:
-            $ref: '#/components/schemas/NotFoundError'
     MeshCircuitBreakerItem:
       description: Successful response
       content:
@@ -13625,4 +13717,12 @@ components:
             name: dp-2
             labels:
               k8s.kuma.io/namespace: kuma-system
+    InspectHostnamesExample:
+      value:
+        total: 100
+        items:
+          - hostname: redis.redis-system.svc.east.mesh.local
+            zones:
+              - name: east
+              - name: west
 
