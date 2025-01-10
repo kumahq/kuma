@@ -1,0 +1,31 @@
+Rules:
+  127.0.0.1:80:
+    - BackendRefOriginIndex: {}
+      Conf:
+        action: Allow
+      Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: default
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mtp-allow-kuma-other-ns-and-tag
+          type: MeshTrafficPermission
+      Subset:
+        - Key: abcd
+          Not: false
+          Value: abcd
+        - Key: k8s.kuma.io/namespace
+          Not: false
+          Value: kuma-other
+    - BackendRefOriginIndex: {}
+      Conf:
+        action: Allow
+      Origin:
+        - creationTime: "0001-01-01T00:00:00Z"
+          mesh: default
+          modificationTime: "0001-01-01T00:00:00Z"
+          name: mtp-allow-kuma-one
+          type: MeshTrafficPermission
+      Subset:
+        - Key: k8s.kuma.io/namespace
+          Not: false
+          Value: kuma-one

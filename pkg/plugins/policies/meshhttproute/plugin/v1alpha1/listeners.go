@@ -118,7 +118,7 @@ func prepareRoutes(
 	protocol core_mesh.Protocol,
 	tags map[string]string,
 ) []Route {
-	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(serviceName))
+	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshServiceElement(serviceName))
 
 	var apiRules []api.Rule
 	if conf != nil {

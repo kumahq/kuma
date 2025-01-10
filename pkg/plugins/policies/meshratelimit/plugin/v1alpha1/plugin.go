@@ -155,7 +155,7 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
 						var conf api.Conf
-						if computed := rule.Compute(core_rules.MeshSubset()); computed != nil {
+						if computed := rule.Compute(core_rules.MeshElement()); computed != nil {
 							conf = computed.Conf.(api.Conf)
 						} else {
 							continue
@@ -182,7 +182,7 @@ func configure(
 ) error {
 	var conf api.Conf
 	// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
-	if computed := fromRules.Compute(core_rules.MeshSubset()); computed != nil {
+	if computed := fromRules.Compute(core_rules.MeshElement()); computed != nil {
 		conf = computed.Conf.(api.Conf)
 	} else {
 		return nil
