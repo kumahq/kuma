@@ -35,6 +35,6 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
-          ref: ${{ steps.checkout.outputs.commit }}
+          ref: ${{ steps.checkout.outputs.ref }}
           sha: ${{ steps.checkout.outputs.commit }}
           category: "/language:${{matrix.language}}"
