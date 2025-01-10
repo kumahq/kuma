@@ -2,7 +2,7 @@ name: "CodeQL"
 
 on:
   schedule:
-    - cron: '35 3 * * *' # Runs daily at 3:35 AM UTC
+    - cron: '15 3 * * *' # Runs daily at 3:15 AM UTC
   workflow_dispatch: {}
 
 permissions: {}
@@ -30,8 +30,13 @@ jobs:
         with:
           config-file: ./.github/codeql/codeql-config.yml
           languages: ${{ matrix.language }}
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
+          build-mode: manual
+          debug: ${{ runner.debug == '1' }}
+      - name: Build
+        run: |
+          echo "${{ steps.checkout.outputs.ref }}"
+          echo "${{ steps.checkout.outputs.commit }}"
+          make build
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
