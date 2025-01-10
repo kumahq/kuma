@@ -15,5 +15,4 @@ components:
           type: string
           description: A JSON Pointer path indicating the part of the document to operate on.
         value:
-          AnyValue:
-            description: The value to be used within the operations.
+          description: The value to be used within the operations.

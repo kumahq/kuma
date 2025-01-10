@@ -7,12 +7,11 @@ on:
         description: 'How far back to look for PRs'
         required: false
         default: '10 minutes'
-
-permissions:
-  contents: read
+permissions: {}
 jobs:
   find-prs:
     permissions:
+      contents: read
       pull-requests: read
     env:
       LOOK_BACK: ${{ github.event.inputs.lookback || '10 minutes' }}

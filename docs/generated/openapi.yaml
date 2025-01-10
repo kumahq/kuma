@@ -65,6 +65,7 @@ paths:
         - in: path
           name: resourceType
           example: dataplanes
+          required: true
           schema:
             type: string
             enum:
@@ -87,6 +88,7 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
+      operationId: get-meshes-mesh-dataplanes-name-config
       summary: Get a proxy XDS config on a CP
       description: >-
         Returns the configuration of the proxy
@@ -234,6 +236,7 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
+      operationId: get-mal
       summary: Returns MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -254,6 +257,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshAccessLogItem'
     put:
+      operationId: create-or-update-mal
       summary: Creates or Updates MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -293,6 +297,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mal
       summary: Deletes MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -312,8 +317,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshaccesslogs:
     get:
+      operationId: get-mal-list
       summary: Returns a list of MeshAccessLog in the mesh.
       tags:
         - MeshAccessLog
@@ -329,6 +337,7 @@ paths:
           $ref: '#/components/responses/MeshAccessLogList'
   /meshes/{mesh}/meshcircuitbreakers/{name}:
     get:
+      operationId: get-mcb
       summary: Returns MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -349,6 +358,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshCircuitBreakerItem'
     put:
+      operationId: create-or-update-mcb
       summary: Creates or Updates MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -388,6 +398,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mcb
       summary: Deletes MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -407,8 +418,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshcircuitbreakers:
     get:
+      operationId: get-mcb-list
       summary: Returns a list of MeshCircuitBreaker in the mesh.
       tags:
         - MeshCircuitBreaker
@@ -424,6 +438,7 @@ paths:
           $ref: '#/components/responses/MeshCircuitBreakerList'
   /meshes/{mesh}/meshfaultinjections/{name}:
     get:
+      operationId: get-mfi
       summary: Returns MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -444,6 +459,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshFaultInjectionItem'
     put:
+      operationId: create-or-update-mfi
       summary: Creates or Updates MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -483,6 +499,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mfi
       summary: Deletes MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -502,8 +519,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshfaultinjections:
     get:
+      operationId: get-mfi-list
       summary: Returns a list of MeshFaultInjection in the mesh.
       tags:
         - MeshFaultInjection
@@ -519,6 +539,7 @@ paths:
           $ref: '#/components/responses/MeshFaultInjectionList'
   /meshes/{mesh}/meshhealthchecks/{name}:
     get:
+      operationId: get-mhc
       summary: Returns MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -539,6 +560,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshHealthCheckItem'
     put:
+      operationId: create-or-update-mhc
       summary: Creates or Updates MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -578,6 +600,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mhc
       summary: Deletes MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -597,8 +620,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhealthchecks:
     get:
+      operationId: get-mhc-list
       summary: Returns a list of MeshHealthCheck in the mesh.
       tags:
         - MeshHealthCheck
@@ -614,6 +640,7 @@ paths:
           $ref: '#/components/responses/MeshHealthCheckList'
   /meshes/{mesh}/meshhttproutes/{name}:
     get:
+      operationId: get-mhttpr
       summary: Returns MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -634,6 +661,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshHTTPRouteItem'
     put:
+      operationId: create-or-update-mhttpr
       summary: Creates or Updates MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -673,6 +701,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mhttpr
       summary: Deletes MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -692,8 +721,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshhttproutes:
     get:
+      operationId: get-mhttpr-list
       summary: Returns a list of MeshHTTPRoute in the mesh.
       tags:
         - MeshHTTPRoute
@@ -709,6 +741,7 @@ paths:
           $ref: '#/components/responses/MeshHTTPRouteList'
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
     get:
+      operationId: get-mlbs
       summary: Returns MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -729,6 +762,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshLoadBalancingStrategyItem'
     put:
+      operationId: create-or-update-mlbs
       summary: Creates or Updates MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -768,6 +802,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mlbs
       summary: Deletes MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -787,8 +822,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshloadbalancingstrategies:
     get:
+      operationId: get-mlbs-list
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
       tags:
         - MeshLoadBalancingStrategy
@@ -804,6 +842,7 @@ paths:
           $ref: '#/components/responses/MeshLoadBalancingStrategyList'
   /meshes/{mesh}/meshmetrics/{name}:
     get:
+      operationId: get-mm
       summary: Returns MeshMetric entity
       tags:
         - MeshMetric
@@ -824,6 +863,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshMetricItem'
     put:
+      operationId: create-or-update-mm
       summary: Creates or Updates MeshMetric entity
       tags:
         - MeshMetric
@@ -861,6 +901,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mm
       summary: Deletes MeshMetric entity
       tags:
         - MeshMetric
@@ -880,8 +921,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmetrics:
     get:
+      operationId: get-mm-list
       summary: Returns a list of MeshMetric in the mesh.
       tags:
         - MeshMetric
@@ -897,6 +941,7 @@ paths:
           $ref: '#/components/responses/MeshMetricList'
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
+      operationId: get-mp
       summary: Returns MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -917,6 +962,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshPassthroughItem'
     put:
+      operationId: create-or-update-mp
       summary: Creates or Updates MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -956,6 +1002,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mp
       summary: Deletes MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -975,8 +1022,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshpassthroughs:
     get:
+      operationId: get-mp-list
       summary: Returns a list of MeshPassthrough in the mesh.
       tags:
         - MeshPassthrough
@@ -992,6 +1042,7 @@ paths:
           $ref: '#/components/responses/MeshPassthroughList'
   /meshes/{mesh}/meshproxypatches/{name}:
     get:
+      operationId: get-mpp
       summary: Returns MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1012,6 +1063,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshProxyPatchItem'
     put:
+      operationId: create-or-update-mpp
       summary: Creates or Updates MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1051,6 +1103,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mpp
       summary: Deletes MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1070,8 +1123,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshproxypatches:
     get:
+      operationId: get-mpp-list
       summary: Returns a list of MeshProxyPatch in the mesh.
       tags:
         - MeshProxyPatch
@@ -1087,6 +1143,7 @@ paths:
           $ref: '#/components/responses/MeshProxyPatchList'
   /meshes/{mesh}/meshratelimits/{name}:
     get:
+      operationId: get-mrl
       summary: Returns MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1107,6 +1164,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshRateLimitItem'
     put:
+      operationId: create-or-update-mrl
       summary: Creates or Updates MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1146,6 +1204,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mrl
       summary: Deletes MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1165,8 +1224,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshratelimits:
     get:
+      operationId: get-mrl-list
       summary: Returns a list of MeshRateLimit in the mesh.
       tags:
         - MeshRateLimit
@@ -1182,6 +1244,7 @@ paths:
           $ref: '#/components/responses/MeshRateLimitList'
   /meshes/{mesh}/meshretries/{name}:
     get:
+      operationId: get-mr
       summary: Returns MeshRetry entity
       tags:
         - MeshRetry
@@ -1202,6 +1265,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshRetryItem'
     put:
+      operationId: create-or-update-mr
       summary: Creates or Updates MeshRetry entity
       tags:
         - MeshRetry
@@ -1239,6 +1303,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mr
       summary: Deletes MeshRetry entity
       tags:
         - MeshRetry
@@ -1258,8 +1323,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshretries:
     get:
+      operationId: get-mr-list
       summary: Returns a list of MeshRetry in the mesh.
       tags:
         - MeshRetry
@@ -1275,6 +1343,7 @@ paths:
           $ref: '#/components/responses/MeshRetryList'
   /meshes/{mesh}/meshtcproutes/{name}:
     get:
+      operationId: get-mtcpr
       summary: Returns MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1295,6 +1364,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTCPRouteItem'
     put:
+      operationId: create-or-update-mtcpr
       summary: Creates or Updates MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1332,6 +1402,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mtcpr
       summary: Deletes MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1351,8 +1422,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtcproutes:
     get:
+      operationId: get-mtcpr-list
       summary: Returns a list of MeshTCPRoute in the mesh.
       tags:
         - MeshTCPRoute
@@ -1368,6 +1442,7 @@ paths:
           $ref: '#/components/responses/MeshTCPRouteList'
   /meshes/{mesh}/meshtimeouts/{name}:
     get:
+      operationId: get-mt
       summary: Returns MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1388,6 +1463,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTimeoutItem'
     put:
+      operationId: create-or-update-mt
       summary: Creates or Updates MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1425,6 +1501,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mt
       summary: Deletes MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1444,8 +1521,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtimeouts:
     get:
+      operationId: get-mt-list
       summary: Returns a list of MeshTimeout in the mesh.
       tags:
         - MeshTimeout
@@ -1461,6 +1541,7 @@ paths:
           $ref: '#/components/responses/MeshTimeoutList'
   /meshes/{mesh}/meshtlses/{name}:
     get:
+      operationId: get-mtls
       summary: Returns MeshTLS entity
       tags:
         - MeshTLS
@@ -1481,6 +1562,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTLSItem'
     put:
+      operationId: create-or-update-mtls
       summary: Creates or Updates MeshTLS entity
       tags:
         - MeshTLS
@@ -1518,6 +1600,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mtls
       summary: Deletes MeshTLS entity
       tags:
         - MeshTLS
@@ -1537,8 +1620,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtlses:
     get:
+      operationId: get-mtls-list
       summary: Returns a list of MeshTLS in the mesh.
       tags:
         - MeshTLS
@@ -1554,6 +1640,7 @@ paths:
           $ref: '#/components/responses/MeshTLSList'
   /meshes/{mesh}/meshtraces/{name}:
     get:
+      operationId: get-mtr
       summary: Returns MeshTrace entity
       tags:
         - MeshTrace
@@ -1574,6 +1661,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTraceItem'
     put:
+      operationId: create-or-update-mtr
       summary: Creates or Updates MeshTrace entity
       tags:
         - MeshTrace
@@ -1611,6 +1699,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mtr
       summary: Deletes MeshTrace entity
       tags:
         - MeshTrace
@@ -1630,8 +1719,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtraces:
     get:
+      operationId: get-mtr-list
       summary: Returns a list of MeshTrace in the mesh.
       tags:
         - MeshTrace
@@ -1647,6 +1739,7 @@ paths:
           $ref: '#/components/responses/MeshTraceList'
   /meshes/{mesh}/meshtrafficpermissions/{name}:
     get:
+      operationId: get-mtp
       summary: Returns MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1667,6 +1760,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionItem'
     put:
+      operationId: create-or-update-mtp
       summary: Creates or Updates MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1706,6 +1800,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mtp
       summary: Deletes MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1725,8 +1820,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshtrafficpermissions:
     get:
+      operationId: get-mtp-list
       summary: Returns a list of MeshTrafficPermission in the mesh.
       tags:
         - MeshTrafficPermission
@@ -1742,6 +1840,7 @@ paths:
           $ref: '#/components/responses/MeshTrafficPermissionList'
   /meshes/{name}:
     get:
+      operationId: get-m
       summary: Returns Mesh entity
       tags:
         - Mesh
@@ -1756,6 +1855,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshItem'
     put:
+      operationId: create-or-update-m
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
@@ -1787,6 +1887,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-m
       summary: Deletes Mesh entity
       tags:
         - Mesh
@@ -1800,8 +1901,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes:
     get:
+      operationId: get-m-list
       summary: Returns a list of Mesh in the mesh.
       tags:
         - Mesh
@@ -1810,6 +1914,7 @@ paths:
           $ref: '#/components/responses/MeshList'
   /meshes/{mesh}/meshgateways/{name}:
     get:
+      operationId: get-mgw
       summary: Returns MeshGateway entity
       tags:
         - MeshGateway
@@ -1830,6 +1935,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshGatewayItem'
     put:
+      operationId: create-or-update-mgw
       summary: Creates or Updates MeshGateway entity
       tags:
         - MeshGateway
@@ -1867,6 +1973,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-mgw
       summary: Deletes MeshGateway entity
       tags:
         - MeshGateway
@@ -1886,8 +1993,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshgateways:
     get:
+      operationId: get-mgw-list
       summary: Returns a list of MeshGateway in the mesh.
       tags:
         - MeshGateway
@@ -1903,6 +2013,7 @@ paths:
           $ref: '#/components/responses/MeshGatewayList'
   /hostnamegenerators/{name}:
     get:
+      operationId: get-hg
       summary: Returns HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -1917,6 +2028,7 @@ paths:
         '200':
           $ref: '#/components/responses/HostnameGeneratorItem'
     put:
+      operationId: create-or-update-hg
       summary: Creates or Updates HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -1950,6 +2062,7 @@ paths:
                 $ref: >-
                   #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-hg
       summary: Deletes HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -1963,8 +2076,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /hostnamegenerators:
     get:
+      operationId: get-hg-list
       summary: Returns a list of HostnameGenerator in the mesh.
       tags:
         - HostnameGenerator
@@ -1973,6 +2089,7 @@ paths:
           $ref: '#/components/responses/HostnameGeneratorList'
   /meshes/{mesh}/meshexternalservices/{name}:
     get:
+      operationId: get-extsvc
       summary: Returns MeshExternalService entity
       tags:
         - MeshExternalService
@@ -1993,6 +2110,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshExternalServiceItem'
     put:
+      operationId: create-or-update-extsvc
       summary: Creates or Updates MeshExternalService entity
       tags:
         - MeshExternalService
@@ -2032,6 +2150,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-extsvc
       summary: Deletes MeshExternalService entity
       tags:
         - MeshExternalService
@@ -2051,8 +2170,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshexternalservices:
     get:
+      operationId: get-extsvc-list
       summary: Returns a list of MeshExternalService in the mesh.
       tags:
         - MeshExternalService
@@ -2068,6 +2190,7 @@ paths:
           $ref: '#/components/responses/MeshExternalServiceList'
   /meshes/{mesh}/meshmultizoneservices/{name}:
     get:
+      operationId: get-mzsvc
       summary: Returns MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2088,6 +2211,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshMultiZoneServiceItem'
     put:
+      operationId: create-or-update-mzsvc
       summary: Creates or Updates MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2127,6 +2251,7 @@ paths:
                 $ref: >-
                   #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
     delete:
+      operationId: delete-mzsvc
       summary: Deletes MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2146,8 +2271,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshmultizoneservices:
     get:
+      operationId: get-mzsvc-list
       summary: Returns a list of MeshMultiZoneService in the mesh.
       tags:
         - MeshMultiZoneService
@@ -2163,6 +2291,7 @@ paths:
           $ref: '#/components/responses/MeshMultiZoneServiceList'
   /meshes/{mesh}/meshservices/{name}:
     get:
+      operationId: get-msvc
       summary: Returns MeshService entity
       tags:
         - MeshService
@@ -2183,6 +2312,7 @@ paths:
         '200':
           $ref: '#/components/responses/MeshServiceItem'
     put:
+      operationId: create-or-update-msvc
       summary: Creates or Updates MeshService entity
       tags:
         - MeshService
@@ -2220,6 +2350,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
     delete:
+      operationId: delete-msvc
       summary: Deletes MeshService entity
       tags:
         - MeshService
@@ -2239,8 +2370,11 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
   /meshes/{mesh}/meshservices:
     get:
+      operationId: get-msvc-list
       summary: Returns a list of MeshService in the mesh.
       tags:
         - MeshService
@@ -2722,6 +2856,7 @@ components:
             kuma.io/origin: zone
           description: the label of the resource
     ProxyRule:
+      description: a rule that affects the entire proxy
       type: object
       required:
         - conf
@@ -2844,7 +2979,6 @@ components:
           example: MeshRetry
           description: the type of the policy
         proxyRule:
-          description: a rule that affects the entire proxy
           $ref: '#/components/schemas/ProxyRule'
         toRules:
           type: array
@@ -2903,8 +3037,7 @@ components:
             A JSON Pointer path indicating the part of the document to operate
             on.
         value:
-          AnyValue:
-            description: The value to be used within the operations.
+          description: The value to be used within the operations.
     MeshAccessLogItem:
       type: object
       required:
@@ -3548,6 +3681,21 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    NotFoundError:
+      allOf:
+        - $ref: '#/components/schemas/Error'
+        - type: object
+          properties:
+            status:
+              example: 404
+            title:
+              example: Not Found
+            type:
+              example: https://httpstatuses.com/404
+            instance:
+              example: kong:trace:1234567890
+            detail:
+              example: Not found
     MeshCircuitBreakerItem:
       type: object
       required:
@@ -12977,7 +13125,7 @@ components:
       content:
         application/problem+json:
           schema:
-            $ref: '#/components/schemas/Error'
+            $ref: '#/components/schemas/NotFoundError'
     Internal:
       description: Internal Server Error
       content:
@@ -13493,13 +13641,28 @@ components:
   examples:
     GlobalInsightExample:
       value:
+        createdAt: '2023-01-11T02:30:42.227Z'
         services:
           total: 5
-          internal: 4
-          external: 1
-          gatewayBuiltin: 1
-          gatewayProvided: 2
+          internal:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          external:
+            total: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
           internalByStatus:
+            total: 4
             online: 2
             offline: 1
             partiallyDegraded: 1
@@ -13513,20 +13676,31 @@ components:
           zoneIngresses:
             online: 1
             total: 1
-          dataplanes:
-            online: 23
-            offline: 10
-            partiallyDegraded: 17
-            total: 50
-          policies:
-            total: 100
-          meshes:
-            total: 3
-          resources:
-            MeshTrafficPermission:
-              total: 42
-            MeshService:
-              total: 84
+        dataplanes:
+          standard:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayBuiltin:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+          gatewayDelegated:
+            total: 4
+            online: 2
+            offline: 1
+            partiallyDegraded: 1
+        policies:
+          total: 100
+        meshes:
+          total: 3
+        resources:
+          MeshTrafficPermission:
+            total: 42
+          MeshService:
+            total: 84
     InspectDataplanesForPolicyExample:
       value:
         total: 100
@@ -13536,9 +13710,13 @@ components:
           - type: Dataplane
             mesh: default
             name: dp-1
+            labels:
+              k8s.kuma.io/namespace: kuma-system
           - type: Dataplane
             mesh: default
             name: dp-2
+            labels:
+              k8s.kuma.io/namespace: kuma-system
     InspectHostnamesExample:
       value:
         total: 100
