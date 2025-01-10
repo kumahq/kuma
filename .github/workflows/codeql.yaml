@@ -9,7 +9,7 @@ on:
     - cron: '35 3 * * *' # Runs daily at 3:35 AM UTC
   workflow_dispatch: {}
 
-permissions: {}
+permissions: read-all
 
 concurrency:
   # Run only for most recent commit in PRs but for all commits on master
@@ -20,10 +20,6 @@ concurrency:
 jobs:
   get-checks-for-commits:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      checks: read
-      statuses: read
 
     steps:
       - name: Get last 5 commits and their checks
