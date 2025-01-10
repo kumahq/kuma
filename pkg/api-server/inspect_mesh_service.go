@@ -99,6 +99,7 @@ func matchingHostnames(resManager manager.ResourceManager) restful.RouteFunction
 				&validators.ValidationError{},
 				fmt.Sprintf("only %q are available for inspection", strings.Join(availableServiceTypes, ",")),
 			)
+			return
 		}
 
 		svc := desc.NewObject()

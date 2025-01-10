@@ -220,6 +220,9 @@ type InspectRulesResponse = InspectRules
 // Internal standard error
 type Internal = externalRef0.Error
 
+// NotFound standard error
+type NotFound = externalRef0.Error
+
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
 

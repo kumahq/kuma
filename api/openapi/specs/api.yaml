@@ -206,6 +206,8 @@ paths:
           $ref: '#/components/responses/InspectHostnamesResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Internal'
 components:
@@ -562,6 +564,12 @@ components:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
     BadRequest:
       description: Bad Request
+      content:
+        application/problem+json:
+          schema:
+            $ref: './common/error_schema.yaml#/components/schemas/Error'
+    NotFound:
+      description: Not Found
       content:
         application/problem+json:
           schema:
