@@ -1,7 +1,6 @@
 Rules:
   127.0.0.1:80:
-    - BackendRefOriginIndex: {}
-      Conf:
+    - Conf:
         action: Deny
       Origin:
         - creationTime: "0001-01-01T00:00:00Z"
@@ -16,8 +15,7 @@ Rules:
         - Key: k8s.kuma.io/namespace
           Not: false
           Value: kuma-one
-    - BackendRefOriginIndex: {}
-      Conf:
+    - Conf:
         action: Allow
       Origin:
         - creationTime: "0001-01-01T00:00:00Z"
