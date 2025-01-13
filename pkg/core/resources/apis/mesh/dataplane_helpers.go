@@ -260,3 +260,11 @@ func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentif
 	}
 	return outbounds
 }
+
+func (d *DataplaneResource) GetProxyType() mesh_proto.ProxyTypeLabelValues {
+	spec := d.GetSpec().(*mesh_proto.Dataplane)
+	if spec.IsBuiltinGateway() {
+		return mesh_proto.GatewayLabel
+	}
+	return mesh_proto.SidecarLabel
+}
