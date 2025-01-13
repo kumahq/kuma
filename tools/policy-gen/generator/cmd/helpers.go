@@ -38,6 +38,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
+				"generateRules":         pconfig.HasRules,
 				"skipGetDefault":        pconfig.SkipGetDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
@@ -102,6 +103,21 @@ func (x *{{.name}}) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
 	for i := range(x.To) {
 		item := x.To[i]
+		result = append(result, &item)
+	}
+	return result
+}
+{{- end }}
+
+{{ if .generateRules }}
+func (x *Rule) GetDefault() interface{} {
+	return x.Default
+}
+
+func (x *{{.name}}) GetRules() []core_model.RuleItem {
+	var result []core_model.RuleItem
+	for i := range x.Rules {
+		item := x.Rules[i]
 		result = append(result, &item)
 	}
 	return result

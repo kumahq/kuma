@@ -35,6 +35,7 @@ type PolicyConfig struct {
 	AlternativeNames             []string
 	HasTo                        bool
 	HasFrom                      bool
+	HasRules                     bool
 	HasStatus                    bool
 	GoModule                     string
 	ResourceDir                  string
@@ -143,6 +144,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
+		HasRules:            fields["Rules"],
 		IsPolicy:            true,
 	}
 
