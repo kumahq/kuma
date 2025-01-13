@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshgateways/{name}:
     get:
+      operationId: get-mgw
       summary: Returns MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshGatewayItem"
 
     put:
+      operationId: create-or-update-mgw
       summary: Creates or Updates MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-mgw
       summary: Deletes MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshgateways:
     get:
+      operationId: get-mgw-list
       summary: Returns a list of MeshGateway in the mesh.
       tags: [ "MeshGateway" ]
       parameters:

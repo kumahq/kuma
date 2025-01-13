@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshhttproutes/{name}:
     get:
+      operationId: get-mhttpr
       summary: Returns MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -28,6 +29,7 @@ paths:
           $ref: "#/components/responses/MeshHTTPRouteItem"
 
     put:
+      operationId: create-or-update-mhttpr
       summary: Creates or Updates MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -65,6 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: delete-mhttpr
       summary: Deletes MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -83,9 +86,12 @@ paths:
       responses:
         '200':
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshhttproutes:
     get:
+      operationId: get-mhttpr-list
       summary: Returns a list of MeshHTTPRoute in the mesh.
       tags: [ "MeshHTTPRoute" ]
       parameters:

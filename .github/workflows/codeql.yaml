@@ -1,16 +1,18 @@
 name: "CodeQL"
+
 on:
-  workflow_dispatch: {}
   schedule:
     - cron: '35 3 * * *' # Runs daily at 3:35 AM UTC
-permissions:
-  contents: read
+  workflow_dispatch: {}
+
+permissions: {}
+
 jobs:
   analyze:
-    timeout-minutes: 30
-    name: Analyze
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
+      contents: read
       actions: read
       security-events: write
     strategy:
@@ -18,7 +20,8 @@ jobs:
       matrix:
         language: ['go']
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - id: checkout
+        uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
       - uses: actions/setup-go@3041bf56c941b39c61721a86cd11f3bb1338122a # v5.2.0
         with:
           go-version-file: go.mod
@@ -32,4 +35,6 @@ jobs:
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
         with:
+          ref: ${{ steps.checkout.outputs.ref }}
+          sha: ${{ steps.checkout.outputs.commit }}
           category: "/language:${{matrix.language}}"
