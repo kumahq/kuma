@@ -88,6 +88,9 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-22.04 # pining to this version since we use older base image for kuma-init and we don't want to change it since it can break users environment
+    permissions:
+      id-token: write # Required for image signing
+      contents: read
     timeout-minutes: 30
     strategy:
       fail-fast: false
