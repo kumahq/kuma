@@ -28,7 +28,7 @@ import (
 type ListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
-	Subset   rules.Subset
+	Element  rules.Element
 }
 
 func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -48,7 +48,7 @@ func (c *ListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf := c.getConf(c.Subset); conf != nil {
+		if conf := c.getConf(c.Element); conf != nil {
 			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
 		}
 		return nil
@@ -73,9 +73,9 @@ func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_r
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
-				conf := c.getConf(c.Subset.WithTag(rules.RuleMatchesHashTag, route.Name, false))
+				conf := c.getConf(c.Element.WithKeyValue(rules.RuleMatchesHashTag, route.Name))
 				if conf == nil {
-					conf = c.getConf(c.Subset)
+					conf = c.getConf(c.Element)
 				}
 				if conf == nil {
 					continue
@@ -91,7 +91,7 @@ func (c *ListenerConfigurer) configureRequestTimeout(routeConfiguration *envoy_r
 }
 
 func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
-	if conf := c.getConf(c.Subset); conf != nil {
+	if conf := c.getConf(c.Element); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
 			policies_defaults.DefaultRequestHeadersTimeout,
@@ -99,11 +99,11 @@ func (c *ListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpC
 	}
 }
 
-func (c *ListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
+func (c *ListenerConfigurer) getConf(element rules.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
-	return rules.ComputeConf[api.Conf](c.Rules, subset)
+	return rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type ClusterConfigurer struct {

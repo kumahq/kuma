@@ -138,7 +138,7 @@ func prepareRoutes(
 	svc meshroute_xds.DestinationService,
 ) []api.Route {
 	// policy matching for real MeshService is not yet ready
-	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshService(svc.ServiceName))
+	conf := rules.ComputeConf[api.PolicyDefault](toRules, core_rules.MeshServiceElement(svc.ServiceName))
 
 	var apiRules []api.Rule
 	if conf != nil {

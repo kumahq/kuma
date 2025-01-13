@@ -16,9 +16,9 @@ func getBackendRefs(
 	protocol core_mesh.Protocol,
 	tags map[string]string,
 ) []common_api.BackendRef {
-	service := core_xds.MeshService(serviceName)
+	serviceElement := core_xds.MeshServiceElement(serviceName)
 
-	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, service)
+	tcpConf := core_xds.ComputeConf[api.Rule](toRulesTCP, serviceElement)
 
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
@@ -30,7 +30,7 @@ func getBackendRefs(
 		// MeshHTTPRoutes
 		httpConf := core_xds.ComputeConf[meshhttproute_api.PolicyDefault](
 			toRulesHTTP,
-			service,
+			serviceElement,
 		)
 		if tcpConf == nil || httpConf != nil {
 			return nil

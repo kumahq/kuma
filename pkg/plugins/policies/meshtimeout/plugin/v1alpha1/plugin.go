@@ -85,7 +85,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    fromRules.Rules[listenerKey],
-			Subset:   core_rules.MeshSubset(),
+			Element:  core_rules.MeshElement(),
 			Protocol: protocol,
 		}
 
@@ -98,7 +98,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		conf := getConf(fromRules.Rules[listenerKey], core_rules.MeshElement())
 		if conf == nil {
 			continue
 		}
@@ -130,7 +130,7 @@ func applyToOutbounds(
 		configurer := plugin_xds.ListenerConfigurer{
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
-			Subset:   core_rules.MeshService(serviceName),
+			Element:  core_rules.MeshServiceElement(serviceName),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -147,7 +147,7 @@ func applyToClusters(
 	protocol core_mesh.Protocol,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf := getConf(rules, core_rules.MeshService(serviceName))
+	conf := getConf(rules, core_rules.MeshServiceElement(serviceName))
 	if conf == nil {
 		return nil
 	}
@@ -175,7 +175,7 @@ func applyToGateway(
 			Port:    listenerInfo.Listener.Port,
 		}
 
-		conf := getConf(gatewayRules.FromRules[key], core_rules.MeshSubset())
+		conf := getConf(gatewayRules.FromRules[key], core_rules.MeshElement())
 		if err := plugin_xds.ConfigureGatewayListener(
 			conf,
 			listenerInfo.Listener.Protocol,
@@ -189,14 +189,14 @@ func applyToGateway(
 			continue
 		}
 
-		conf = getConf(toRules, core_rules.MeshSubset())
+		conf = getConf(toRules, core_rules.MeshElement())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
 			if ok {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
-						routeConf := getConf(toRules, core_rules.MeshSubset().WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
+						routeConf := getConf(toRules, core_rules.MeshElement().WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
 						if routeConf == nil {
 							if conf == nil {
 								continue
@@ -229,7 +229,7 @@ func applyToGateway(
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-					conf := getConf(toRules, core_rules.MeshService(serviceName))
+					conf := getConf(toRules, core_rules.MeshServiceElement(serviceName))
 					if conf == nil {
 						continue
 					}
@@ -252,12 +252,12 @@ func applyToGateway(
 
 func getConf(
 	rules core_rules.Rules,
-	subset core_rules.Subset,
+	element core_rules.Element,
 ) *api.Conf {
 	if rules == nil {
 		return &api.Conf{}
 	} else {
-		if computed := rules.Compute(subset); computed != nil {
+		if computed := rules.Compute(element); computed != nil {
 			return pointer.To(computed.Conf.(api.Conf))
 		} else {
 			return nil
