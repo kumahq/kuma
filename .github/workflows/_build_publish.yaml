@@ -88,6 +88,9 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
+    permissions:
+      id-token: write # Required for image signing
+      contents: read
     timeout-minutes: 30
     strategy:
       fail-fast: false
