@@ -2,14 +2,11 @@ name: "PR health"
 on:
   pull_request:
     types: [edited, opened, reopened, synchronize]
-permissions:
-  contents: read
+permissions: {}
 jobs:
   pr-check:
     timeout-minutes: 10
     runs-on: ubuntu-24.04
-    permissions:
-      pull-requests: write
     steps:
       - name: Check PR title
         # Check PR title against the Conventional Commits format using commitlint.
