@@ -155,8 +155,8 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 				for _, filterChain := range listeners.Egress.FilterChains {
 					if filterChain.Name == names.GetEgressFilterChainName(esName, meshName) {
 						configurer := plugin_xds.Configurer{
-							Rules:  rule,
-							Subset: core_rules.MeshSubset(),
+							Rules:   rule,
+							Element: core_rules.MeshElement(),
 						}
 						if err := configurer.ConfigureFilterChain(filterChain); err != nil {
 							return err
@@ -177,7 +177,7 @@ func configure(
 	configurer := plugin_xds.Configurer{
 		Rules: fromRules,
 		// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
-		Subset: core_rules.MeshSubset(),
+		Element: core_rules.MeshElement(),
 	}
 
 	for _, chain := range listener.FilterChains {
@@ -198,8 +198,8 @@ func configureGateway(
 	route *envoy_route.RouteConfiguration,
 ) error {
 	configurer := plugin_xds.Configurer{
-		Rules:  fromRules,
-		Subset: core_rules.MeshSubset(),
+		Rules:   fromRules,
+		Element: core_rules.MeshElement(),
 	}
 
 	for _, chain := range listener.FilterChains {
