@@ -1,0 +1,13 @@
+{
+ "items": [
+  {
+   "hostname": "test-server.mzsvc.mesh.local",
+   "zones": [
+    {
+     "name": "test-server"
+    }
+   ]
+  }
+ ],
+ "total": 1
+}

@@ -230,6 +230,8 @@ spec:
     kind: Mesh
     listKind: MeshList
     plural: meshes
+    shortNames:
+    - m
     singular: mesh
   scope: Cluster
   versions:
