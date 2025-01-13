@@ -57,7 +57,7 @@ func applyToOutbounds(
 	targetedClusters := policies_xds.GatherTargetedClusters(dataplane.Spec.Networking.GetOutbound(), outboundSplitClusters, outboundClusters)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, core_rules.MeshService(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, core_rules.MeshServiceElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -96,7 +96,7 @@ func applyToGateways(
 					if err := configure(
 						proxy.Dataplane,
 						rules,
-						core_rules.MeshService(serviceName),
+						core_rules.MeshServiceElement(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
 					); err != nil {
@@ -123,11 +123,11 @@ func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
 func configure(
 	dataplane *core_mesh.DataplaneResource,
 	rules core_rules.Rules,
-	subset core_rules.Subset,
+	element core_rules.Element,
 	protocol core_mesh.Protocol,
 	cluster *envoy_cluster.Cluster,
 ) error {
-	conf := core_rules.ComputeConf[api.Conf](rules, subset)
+	conf := core_rules.ComputeConf[api.Conf](rules, element)
 	if conf == nil {
 		return nil
 	}
