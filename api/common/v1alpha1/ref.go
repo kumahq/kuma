@@ -14,6 +14,7 @@ type TargetRefKind string
 
 var (
 	Mesh                 TargetRefKind = "Mesh"
+	Dataplane            TargetRefKind = "Dataplane"
 	MeshSubset           TargetRefKind = "MeshSubset"
 	MeshGateway          TargetRefKind = "MeshGateway"
 	MeshService          TargetRefKind = "MeshService"
@@ -25,13 +26,14 @@ var (
 
 var order = map[TargetRefKind]int{
 	Mesh:                 1,
-	MeshSubset:           2,
-	MeshGateway:          3,
-	MeshService:          4,
-	MeshExternalService:  5,
-	MeshMultiZoneService: 6,
-	MeshServiceSubset:    7,
-	MeshHTTPRoute:        8,
+	Dataplane:            2,
+	MeshSubset:           3,
+	MeshGateway:          4,
+	MeshService:          5,
+	MeshExternalService:  6,
+	MeshMultiZoneService: 7,
+	MeshServiceSubset:    8,
+	MeshHTTPRoute:        9,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway

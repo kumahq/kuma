@@ -32,7 +32,6 @@ on:
         value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
   contents: read
-  id-token: write # Required for image signing
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -93,6 +92,9 @@ jobs:
           make publish/pulp
   build-images:
     runs-on: ubuntu-24.04
+    permissions:
+      id-token: write # Required for image signing
+      contents: read
     timeout-minutes: 30
     strategy:
       fail-fast: false

@@ -144,6 +144,15 @@ func (r PolicyRole) Compare(o PolicyRole) int {
 	return roleOrder[r] - roleOrder[o]
 }
 
+type ProxyTypeLabelValues string
+
+const (
+	SidecarLabel     ProxyTypeLabelValues = "sidecar"
+	GatewayLabel     ProxyTypeLabelValues = "gateway"
+	ZoneIngressLabel ProxyTypeLabelValues = "zoneingress"
+	ZoneEgressLabel  ProxyTypeLabelValues = "zoneegress"
+)
+
 type ProxyType string
 
 const (

@@ -97,7 +97,7 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		conf := core_rules.ComputeConf[api.Conf](fromRules.Rules[listenerKey], core_rules.MeshSubset())
+		conf := core_rules.ComputeConf[api.Conf](fromRules.Rules[listenerKey], core_rules.MeshElement())
 		if conf == nil {
 			continue
 		}
@@ -138,7 +138,7 @@ func applyToOutbounds(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
 			break
 		}
 		if conf == nil {
@@ -166,7 +166,7 @@ func applyToGateways(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range gatewayRules.FromRules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
 			break
 		}
 		if conf == nil {
@@ -187,7 +187,7 @@ func applyToRealResources(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshSubset())
+			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
 			break
 		}
 		if conf == nil {

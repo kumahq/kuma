@@ -20,6 +20,13 @@ const (
 	Meshgateways InspectDataplanesRulesParamsResourceType = "meshgateways"
 )
 
+// Defines values for InspectHostnamesParamsServiceType.
+const (
+	Meshexternalservices  InspectHostnamesParamsServiceType = "meshexternalservices"
+	Meshmultizoneservices InspectHostnamesParamsServiceType = "meshmultizoneservices"
+	Meshservices          InspectHostnamesParamsServiceType = "meshservices"
+)
+
 // BaseStatus defines model for BaseStatus.
 type BaseStatus struct {
 	Online int `json:"online"`
@@ -47,28 +54,7 @@ type FullStatus struct {
 }
 
 // GlobalInsight Global Insight contains statistics for all main resources
-type GlobalInsight struct {
-	// CreatedAt Time of Global Insight creation
-	CreatedAt time.Time `json:"createdAt"`
-
-	// Dataplanes Dataplane proxy statistics
-	Dataplanes DataplanesStats `json:"dataplanes"`
-
-	// Meshes Mesh statistics
-	Meshes MeshesStats `json:"meshes"`
-
-	// Policies Policies statistics
-	Policies PoliciesStats `json:"policies"`
-
-	// Resources A map of resource names to their corresponding statistics
-	Resources map[string]ResourceStats `json:"resources"`
-
-	// Services Mesh services statistics
-	Services ServicesStats `json:"services"`
-
-	// Zones Zones statistics
-	Zones ZonesStats `json:"zones"`
-}
+type GlobalInsight = SchemasGlobalInsight
 
 // Index Some metadata about the service
 type Index struct {
@@ -107,6 +93,24 @@ type InspectDataplanesForPolicy struct {
 	Items []externalRef0.Meta `json:"items"`
 	Next  *string             `json:"next,omitempty"`
 	Total int                 `json:"total"`
+}
+
+// InspectHostname An supported hostname along with the zones it exists in
+type InspectHostname struct {
+	// Hostname Generated hostname
+	Hostname string                `json:"hostname"`
+	Zones    []InspectHostnameZone `json:"zones"`
+}
+
+// InspectHostnameZone A name of the zone in which the hostname is available
+type InspectHostnameZone struct {
+	Name string `json:"name"`
+}
+
+// InspectHostnames A list of hostnames
+type InspectHostnames struct {
+	Items []InspectHostname `json:"items"`
+	Total int               `json:"total"`
 }
 
 // InspectRules A list of rules for a dataplane
@@ -168,10 +172,34 @@ type ZonesStats struct {
 	ZoneIngresses BaseStatus `json:"zoneIngresses"`
 }
 
+// SchemasGlobalInsight Global Insight contains statistics for all main resources
+type SchemasGlobalInsight struct {
+	// CreatedAt Time of Global Insight creation
+	CreatedAt time.Time `json:"createdAt"`
+
+	// Dataplanes Dataplane proxy statistics
+	Dataplanes DataplanesStats `json:"dataplanes"`
+
+	// Meshes Mesh statistics
+	Meshes MeshesStats `json:"meshes"`
+
+	// Policies Policies statistics
+	Policies PoliciesStats `json:"policies"`
+
+	// Resources A map of resource names to their corresponding statistics
+	Resources map[string]ResourceStats `json:"resources"`
+
+	// Services Mesh services statistics
+	Services ServicesStats `json:"services"`
+
+	// Zones Zones statistics
+	Zones ZonesStats `json:"zones"`
+}
+
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
-// GlobalInsightResponse Global Insight contains statistics for all main resources
+// GlobalInsightResponse defines model for GlobalInsightResponse.
 type GlobalInsightResponse = GlobalInsight
 
 // IndexResponse Some metadata about the service
@@ -183,11 +211,14 @@ type InspectDataplanesConfigResponse = InspectDataplanesConfig
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
 
+// InspectHostnamesResponse A list of hostnames
+type InspectHostnamesResponse = InspectHostnames
+
 // InspectRulesResponse A list of rules for a dataplane
 type InspectRulesResponse = InspectRules
 
-// InternalServerError standard error
-type InternalServerError = externalRef0.Error
+// Internal standard error
+type Internal = externalRef0.Error
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
@@ -219,3 +250,6 @@ type InspectResourcesParams struct {
 
 // InspectDataplanesRulesParamsResourceType defines parameters for InspectDataplanesRules.
 type InspectDataplanesRulesParamsResourceType string
+
+// InspectHostnamesParamsServiceType defines parameters for InspectHostnames.
+type InspectHostnamesParamsServiceType string

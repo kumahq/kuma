@@ -146,7 +146,7 @@ type ResourceWithInsights interface {
 }
 
 type ProxyResource interface {
-	GetProxyType() common_api.TargetRefProxyType
+	GetProxyType() mesh_proto.ProxyTypeLabelValues
 }
 
 type ResourceTypeDescriptor struct {

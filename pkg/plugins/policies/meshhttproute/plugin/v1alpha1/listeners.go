@@ -77,11 +77,15 @@ func generateFromService(
 	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
 		outboundRouteName = resourceName
 	}
+	var dpTags mesh_proto.MultiValueTagSet
+	if meshCtx.IsXKumaTagsUsed() {
+		dpTags = proxy.Dataplane.Spec.TagSet()
+	}
 	outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
 		Name:    outboundRouteName,
 		Service: svc.ServiceName,
 		Routes:  routes,
-		DpTags:  proxy.Dataplane.Spec.TagSet(),
+		DpTags:  dpTags,
 	}
 
 	filterChainBuilder.
@@ -145,7 +149,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 	var conf *api.PolicyDefault
 	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
-	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
+	ruleHTTP := toRules.Rules.Compute(core_rules.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
 		for hash := range ruleHTTP.BackendRefOriginIndex {

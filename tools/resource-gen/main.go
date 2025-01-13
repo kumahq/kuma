@@ -503,10 +503,11 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			scope = "Global"
 		}
 		opts := map[string]interface{}{
-			"Package": "v1alpha1",
-			"Name":    r.ResourceType,
-			"Scope":   scope,
-			"Path":    r.WsPath,
+			"Package":   "v1alpha1",
+			"Name":      r.ResourceType,
+			"ShortName": r.ShortName,
+			"Scope":     scope,
+			"Path":      r.WsPath,
 		}
 		err = save.PlainTemplate(tmpl, opts, path.Join(outDir, "rest.yaml"))
 		if err != nil {
