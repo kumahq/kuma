@@ -430,24 +430,6 @@ violations:
     message: using name with kind Mesh is not yet supported 
 `,
 		}),
-		Entry("Mesh unsupported proxy type", testCase{
-			inputYaml: `
-kind: Mesh
-proxyTypes: ["ZoneIngress", "ZoneEgress"]
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.Mesh,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.proxyTypes[0]
-    message: unsupported proxy type ZoneIngress
-  - field: targetRef.proxyTypes[1]
-    message: unsupported proxy type ZoneEgress
-`,
-		}),
 		Entry("MeshSubset when it's not supported", testCase{
 			inputYaml: `
 kind: MeshSubset

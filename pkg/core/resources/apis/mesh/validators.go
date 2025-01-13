@@ -434,13 +434,6 @@ func ValidateTargetRef(
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	}
 
-	for idx, proxyType := range ref.ProxyTypes {
-		path := validators.RootedAt("proxyTypes")
-		if proxyType == common_api.ZoneIngress || proxyType == common_api.ZoneEgress {
-			err.AddViolationAt(path.Index(idx), fmt.Sprintf("unsupported proxy type %v", proxyType))
-		}
-	}
-
 	return err
 }
 
