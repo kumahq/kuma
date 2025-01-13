@@ -319,7 +319,8 @@ var _ = Describe("ComputeLabels", func() {
 	DescribeTable("should return correct label map",
 		func(given testCase) {
 			labels, err := core_model.ComputeLabels(
-				given.r,
+				given.r.Descriptor(),
+				given.r.GetSpec(),
 				given.r.GetMeta().GetLabels(),
 				core_model.GetNamespace(given.r.GetMeta(), "kuma-system"),
 				given.r.GetMeta().GetMesh(),

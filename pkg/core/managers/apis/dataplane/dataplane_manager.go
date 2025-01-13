@@ -56,7 +56,8 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
 	labels, err := core_model.ComputeLabels(
-		resource,
+		resource.Descriptor(),
+		resource.GetSpec(),
 		opts.Labels,
 		core_model.UnsetNamespace,
 		opts.Mesh,
@@ -94,7 +95,8 @@ func (m *dataplaneManager) Update(ctx context.Context, resource core_model.Resou
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	labels, err := core_model.ComputeLabels(
-		resource,
+		resource.Descriptor(),
+		resource.GetSpec(),
 		resource.GetMeta().GetLabels(),
 		core_model.GetNamespace(resource.GetMeta(), m.systemNamespace),
 		resource.GetMeta().GetMesh(),
