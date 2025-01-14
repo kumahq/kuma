@@ -15,6 +15,10 @@
     "gomod",
     "helm-values"
   ],
+  "postUpdateOptions": [
+    "gomodMassage",
+    "gomodTidy"
+  ],
   "ignorePaths": [
     "(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*\\.dockerignore$"
   ],
