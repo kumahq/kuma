@@ -44,6 +44,10 @@ jobs:
   build-binaries:
     timeout-minutes: 40
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      actions: read
+      security-events: write
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
@@ -60,8 +64,20 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-devtools-${{ hashFiles('mk/dependencies/deps.lock') }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-devtools
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
+        with:
+          config-file: ./.github/codeql/codeql-config.yml
+          languages: go
+          build-mode: manual
+          debug: ${{ runner.debug == '1' }}
       - run: |
           make build
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@df409f7d9260372bd5f19e5b04e83cb3c43714ae # v3.27.9
+        with:
+          category: "/language:go"
+          check_name: CodeQL
       - id: annotate-image-tag
         name: Image tag
         run: |
