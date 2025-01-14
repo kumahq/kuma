@@ -17,6 +17,14 @@ type MeshTimeout struct {
 	To []To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
+	// Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
+	// default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+	Rules []Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound timeouts
+	Default Conf `json:"default,omitempty"`
 }
 
 type To struct {

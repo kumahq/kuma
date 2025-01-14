@@ -141,6 +141,63 @@ properties:
             - targetRef
           type: object
         type: array
+      rules:
+        description: |-
+          Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
+          default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+        items:
+          properties:
+            default:
+              description: Default contains configuration of the inbound timeouts
+              properties:
+                connectionTimeout:
+                  description: |-
+                    ConnectionTimeout specifies the amount of time proxy will wait for an TCP connection to be established.
+                    Default value is 5 seconds. Cannot be set to 0.
+                  type: string
+                http:
+                  description: Http provides configuration for HTTP specific timeouts
+                  properties:
+                    maxConnectionDuration:
+                      description: |-
+                        MaxConnectionDuration is the time after which a connection will be drained and/or closed,
+                        starting from when it was first established. Setting this timeout to 0 will disable it.
+                        Disabled by default.
+                      type: string
+                    maxStreamDuration:
+                      description: |-
+                        MaxStreamDuration is the maximum time that a stream’s lifetime will span.
+                        Setting this timeout to 0 will disable it. Disabled by default.
+                      type: string
+                    requestHeadersTimeout:
+                      description: |-
+                        RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
+                        activated when the first byte of the headers is received, and is disarmed when the last byte of
+                        the headers has been received. If not specified or set to 0, this timeout is disabled.
+                        Disabled by default.
+                      type: string
+                    requestTimeout:
+                      description: |-
+                        RequestTimeout The amount of time that proxy will wait for the entire request to be received.
+                        The timer is activated when the request is initiated, and is disarmed when the last byte of the request is sent,
+                        OR when the response is initiated. Setting this timeout to 0 will disable it.
+                        Default is 15s.
+                      type: string
+                    streamIdleTimeout:
+                      description: |-
+                        StreamIdleTimeout is the amount of time that proxy will allow a stream to exist with no activity.
+                        Setting this timeout to 0 will disable it. Default is 30m
+                      type: string
+                  type: object
+                idleTimeout:
+                  description: |-
+                    IdleTimeout is defined as the period in which there are no bytes sent or received on connection
+                    Setting this timeout to 0 will disable it. Be cautious when disabling it because
+                    it can lead to connection leaking. Default value is 1h.
+                  type: string
+              type: object
+          type: object
+        type: array
       targetRef:
         description: |-
           TargetRef is a reference to the resource the policy takes an effect on.

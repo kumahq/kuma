@@ -60,7 +60,7 @@ func validateTo(to []To) validators.ValidationError {
 	return verr
 }
 
-func validateDefault(conf Conf) validators.ValidationError {
+func validateDefault(_ Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	// TODO add default conf validation
 	return verr

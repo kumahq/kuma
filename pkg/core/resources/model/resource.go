@@ -725,6 +725,10 @@ type PolicyItem interface {
 	GetDefault() interface{}
 }
 
+type RuleItem interface {
+	GetDefault() interface{}
+}
+
 type TransformDefaultAfterMerge interface {
 	Transform()
 }

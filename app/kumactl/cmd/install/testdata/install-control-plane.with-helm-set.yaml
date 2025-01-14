@@ -56,7 +56,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -106,7 +106,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -272,7 +272,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -607,7 +607,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -1029,7 +1029,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1256,7 +1256,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1612,7 +1612,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1662,7 +1662,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1714,7 +1714,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2098,7 +2098,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2768,7 +2768,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -2818,7 +2818,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -2868,7 +2868,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3444,7 +3444,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -3738,7 +3738,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -3939,7 +3939,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4106,7 +4106,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -4658,7 +4658,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -5159,7 +5159,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -5668,7 +5668,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -5888,7 +5888,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6172,7 +6172,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -6339,6 +6339,64 @@ spec:
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
+                  default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound timeouts
+                      properties:
+                        connectionTimeout:
+                          description: |-
+                            ConnectionTimeout specifies the amount of time proxy will wait for an TCP connection to be established.
+                            Default value is 5 seconds. Cannot be set to 0.
+                          type: string
+                        http:
+                          description: Http provides configuration for HTTP specific
+                            timeouts
+                          properties:
+                            maxConnectionDuration:
+                              description: |-
+                                MaxConnectionDuration is the time after which a connection will be drained and/or closed,
+                                starting from when it was first established. Setting this timeout to 0 will disable it.
+                                Disabled by default.
+                              type: string
+                            maxStreamDuration:
+                              description: |-
+                                MaxStreamDuration is the maximum time that a stream’s lifetime will span.
+                                Setting this timeout to 0 will disable it. Disabled by default.
+                              type: string
+                            requestHeadersTimeout:
+                              description: |-
+                                RequestHeadersTimeout The amount of time that proxy will wait for the request headers to be received. The timer is
+                                activated when the first byte of the headers is received, and is disarmed when the last byte of
+                                the headers has been received. If not specified or set to 0, this timeout is disabled.
+                                Disabled by default.
+                              type: string
+                            requestTimeout:
+                              description: |-
+                                RequestTimeout The amount of time that proxy will wait for the entire request to be received.
+                                The timer is activated when the request is initiated, and is disarmed when the last byte of the request is sent,
+                                OR when the response is initiated. Setting this timeout to 0 will disable it.
+                                Default is 15s.
+                              type: string
+                            streamIdleTimeout:
+                              description: |-
+                                StreamIdleTimeout is the amount of time that proxy will allow a stream to exist with no activity.
+                                Setting this timeout to 0 will disable it. Default is 30m
+                              type: string
+                          type: object
+                        idleTimeout:
+                          description: |-
+                            IdleTimeout is defined as the period in which there are no bytes sent or received on connection
+                            Setting this timeout to 0 will disable it. Be cautious when disabling it because
+                            it can lead to connection leaking. Default value is 1h.
+                          type: string
+                      type: object
                   type: object
                 type: array
               targetRef:
@@ -6537,7 +6595,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6609,7 +6667,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -6850,7 +6908,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7135,7 +7193,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7340,7 +7398,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -7390,7 +7448,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -7440,7 +7498,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -7490,7 +7548,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -7540,7 +7598,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -7590,7 +7648,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -7640,7 +7698,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7690,7 +7748,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -7740,7 +7798,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -7790,7 +7848,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -7840,7 +7898,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -7890,7 +7948,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -7948,7 +8006,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -7998,7 +8056,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -8056,7 +8114,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8107,7 +8165,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -8157,7 +8215,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -8207,7 +8265,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -8257,7 +8315,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -8307,7 +8365,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -8381,7 +8439,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -8940,7 +8998,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.0
+    controller-gen.kubebuilder.io/version: v0.17.1
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
