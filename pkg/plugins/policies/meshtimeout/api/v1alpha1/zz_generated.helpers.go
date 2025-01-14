@@ -47,3 +47,16 @@ func (x *MeshTimeout) GetToList() []core_model.PolicyItem {
 	}
 	return result
 }
+
+func (x *Rule) GetDefault() interface{} {
+	return x.Default
+}
+
+func (x *MeshTimeout) GetRules() []core_model.RuleItem {
+	var result []core_model.RuleItem
+	for i := range x.Rules {
+		item := x.Rules[i]
+		result = append(result, &item)
+	}
+	return result
+}
