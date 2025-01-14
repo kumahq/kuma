@@ -609,6 +609,13 @@ func (d *Dataplane) IsBuiltinGateway() bool {
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
 }
 
+func (d *Dataplane) GetProxyType() ProxyTypeLabelValues {
+	if d.IsBuiltinGateway() {
+		return GatewayLabel
+	}
+	return SidecarLabel
+}
+
 func (t MultiValueTagSet) String() string {
 	var tags []string
 	for tag := range t {
