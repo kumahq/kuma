@@ -3,6 +3,7 @@
   "schedule": "before 5am every weekday",
   "extends": [
     "config:best-practices",
+    ":semanticCommitTypeAll(chore)",
     ":automergeDisabled",
     ":gitSignOff"
   ],
