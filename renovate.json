@@ -1,0 +1,41 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "schedule": "before 5am every weekday",
+  "extends": [
+    "config:best-practices",
+    ":automergeDisabled",
+    ":gitSignOff"
+  ],
+  "baseBranches": [
+    "release-2.6",
+    "release-2.7",
+    "release-2.8",
+    "release-2.9",
+    "master"
+  ],
+  "enabledManagers": [
+    "dockerfile",
+    "github-actions",
+    "gomod",
+    "helm-values"
+  ],
+  "ignorePaths": [
+    "(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*\\.dockerignore$"
+  ],
+  "labels": [
+    "dependencies"
+  ],
+  "packageRules": [
+    {
+      "description": "go-control-plane v0.12.0 introduced a potential deadlock issue. This issue is being tracked in https://github.com/envoyproxy/go-control-plane/issues/875. Remove this once the issue is resolved",
+      "enabled": false,
+      "matchManagers": ["gomod"],
+      "matchPackageNames": ["github.com/envoyproxy/go-control-plane"]
+    },
+    {
+      "description": "No need to run tests on github actions updates",
+      "matchManagers": ["github-actions"],
+      "addLabels": ["ci/skip-test"]
+    }
+  ]
+}
