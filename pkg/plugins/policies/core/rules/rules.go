@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -212,7 +213,12 @@ func BuildToRules(matchedPolicies []core_model.Resource, reader common.ResourceR
 		return ToRules{}, err
 	}
 
-	resourceRules, err := outbound.BuildRules(matchedPolicies, reader)
+	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
+	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
+	excludeTopLevelMeshHTTPRoute := slices.DeleteFunc(slices.Clone(matchedPolicies), func(r core_model.Resource) bool {
+		return r.GetSpec().(core_model.Policy).GetTargetRef().Kind == common_api.MeshHTTPRoute
+	})
+	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
 	if err != nil {
 		return ToRules{}, err
 	}

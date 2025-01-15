@@ -385,7 +385,7 @@ func mustUnwrapStruct(val reflect.Value) reflect.Value {
 	return resVal
 }
 
-func Entries[D interface{ GetDefault() interface{} }, T common.Entry[D]](items []T) ([]interface{}, error) {
+func Entries[B common.BaseEntry, T common.Entry[B]](items []T) ([]interface{}, error) {
 	var confs []interface{}
 	for _, item := range items {
 		confs = append(confs, item.GetEntry().GetDefault())
