@@ -1,14 +1,14 @@
-- PolicyItem:
+- Entry:
     default:
       connectionTimeout: 11s
       http:
         requestTimeout: 12s
     targetRef:
       kind: Mesh
-  ResourceMeta:
+  Meta:
     creationTime: "0001-01-01T00:00:00Z"
     labels:
-      kuma.io/policy-role: system
+      kuma.io/origin: global
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
     name: matched-for-rules-aaa
@@ -16,37 +16,35 @@
   RuleIndex: 0
   TopLevel:
     kind: Mesh
-- PolicyItem:
+- Entry:
     default:
       connectionTimeout: 3m31s
       http:
-        requestTimeout: 3m32s
+        requestTimeout: 3m29s
     targetRef:
       kind: Mesh
-  ResourceMeta:
+  Meta:
     creationTime: "0001-01-01T00:00:00Z"
-    labels:
-      kuma.io/policy-role: producer
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-    name: matched-for-rules-aaa
+    name: matched-for-rules-bbb
     type: MeshTimeout
   RuleIndex: 0
   TopLevel:
     kind: Mesh
-- PolicyItem:
+- Entry:
     default:
       connectionTimeout: 1m51s
       idleTimeout: 1m49s
     targetRef:
       kind: Mesh
-  ResourceMeta:
+  Meta:
     creationTime: "0001-01-01T00:00:00Z"
     labels:
-      kuma.io/policy-role: consumer
+      kuma.io/origin: zone
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-    name: matched-for-rules-bbb
+    name: matched-for-rules-ccc
     type: MeshTimeout
   RuleIndex: 0
   TopLevel:

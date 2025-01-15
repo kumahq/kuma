@@ -12,6 +12,8 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/plugin/xds"
@@ -68,7 +70,7 @@ func applyToOutbounds(
 		serviceName := outbound.LegacyOutbound.GetService()
 
 		configurer := plugin_xds.DeprecatedConfigurer{
-			Element:  core_rules.MeshServiceElement(serviceName),
+			Element:  subsetutils.MeshServiceElement(serviceName),
 			Rules:    rules.Rules,
 			Protocol: meshCtx.GetServiceProtocol(serviceName),
 		}
@@ -117,7 +119,7 @@ func applyToGateway(
 		configurer := plugin_xds.DeprecatedConfigurer{
 			Rules:    toRules.Rules,
 			Protocol: protocol,
-			Element:  core_rules.MeshElement(),
+			Element:  subsetutils.MeshElement(),
 		}
 
 		if err := configurer.ConfigureListener(listener); err != nil {
@@ -139,7 +141,7 @@ func applyToGateway(
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext) error {
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext) error {
 	for uri, resType := range rs.IndexByOrigin() {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
