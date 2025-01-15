@@ -1,0 +1,21 @@
+# MeshTimeout with targetRef to the real MeshService resource
+type: MeshTimeout
+name: matched-for-rules-mt-aaaaaa
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        idleTimeout: 10s
+        http:
+          requestTimeout: 12s
+---
+type: MeshTimeout
+name: matched-for-rules-mt-bbbbbb
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        idleTimeout: 100s
+        connectionTimeout: 101s
+        http:
+          requestTimeout: 102s

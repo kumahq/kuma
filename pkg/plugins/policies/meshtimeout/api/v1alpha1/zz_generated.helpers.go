@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -52,8 +53,8 @@ func (x *Rule) GetDefault() interface{} {
 	return x.Default
 }
 
-func (x *MeshTimeout) GetRules() []core_model.RuleItem {
-	var result []core_model.RuleItem
+func (x *MeshTimeout) GetRules() []inbound.RuleEntry {
+	var result []inbound.RuleEntry
 	for i := range x.Rules {
 		item := x.Rules[i]
 		result = append(result, &item)
