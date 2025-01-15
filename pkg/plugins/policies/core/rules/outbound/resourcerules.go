@@ -86,6 +86,8 @@ type ToEntry interface {
 	GetTargetRef() common_api.TargetRef
 }
 
+// BuildRules constructs ResourceRules from the given policies and resource reader.
+// It first extracts 'to' entries from the policies and then builds the rules based on these entries.
 func BuildRules(policies []core_model.Resource, reader common.ResourceReader) (ResourceRules, error) {
 	entries, err := GetEntries(policies)
 	if err != nil {
