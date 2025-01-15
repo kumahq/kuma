@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshmetrics/{name}:
     get:
       operationId: get-mm
+      x-speakeasy-entity-operation: "MeshMetric#get"
       summary: Returns MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mm
+      x-speakeasy-entity-operation: "MeshMetric#put"
       summary: Creates or Updates MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mm
+      x-speakeasy-entity-operation: "MeshMetric#delete"
       summary: Deletes MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshmetrics:
     get:
       operationId: get-mm-list
+      x-speakeasy-entity-operation: "MeshMetricList#get"
       summary: Returns a list of MeshMetric in the mesh.
       tags: [ "MeshMetric" ]
       parameters:

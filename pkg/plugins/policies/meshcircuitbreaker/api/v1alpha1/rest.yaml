@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshcircuitbreakers/{name}:
     get:
       operationId: get-mcb
+      x-speakeasy-entity-operation: "MeshCircuitBreaker#get"
       summary: Returns MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mcb
+      x-speakeasy-entity-operation: "MeshCircuitBreaker#put"
       summary: Creates or Updates MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mcb
+      x-speakeasy-entity-operation: "MeshCircuitBreaker#delete"
       summary: Deletes MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshcircuitbreakers:
     get:
       operationId: get-mcb-list
+      x-speakeasy-entity-operation: "MeshCircuitBreakerList#get"
       summary: Returns a list of MeshCircuitBreaker in the mesh.
       tags: [ "MeshCircuitBreaker" ]
       parameters:

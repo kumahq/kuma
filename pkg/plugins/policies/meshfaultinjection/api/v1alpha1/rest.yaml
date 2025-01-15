@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshfaultinjections/{name}:
     get:
       operationId: get-mfi
+      x-speakeasy-entity-operation: "MeshFaultInjection#get"
       summary: Returns MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mfi
+      x-speakeasy-entity-operation: "MeshFaultInjection#put"
       summary: Creates or Updates MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mfi
+      x-speakeasy-entity-operation: "MeshFaultInjection#delete"
       summary: Deletes MeshFaultInjection entity
       tags: [ "MeshFaultInjection" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshfaultinjections:
     get:
       operationId: get-mfi-list
+      x-speakeasy-entity-operation: "MeshFaultInjectionList#get"
       summary: Returns a list of MeshFaultInjection in the mesh.
       tags: [ "MeshFaultInjection" ]
       parameters:

@@ -9,6 +9,7 @@ paths:
   /meshes/{name}:
     get:
       operationId: get-m
+      x-speakeasy-entity-operation: "Mesh#get"
       summary: Returns Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -24,6 +25,7 @@ paths:
 
     put:
       operationId: create-or-update-m
+      x-speakeasy-entity-operation: "Mesh#put"
       summary: Creates or Updates Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -56,6 +58,7 @@ paths:
 
     delete:
       operationId: delete-m
+      x-speakeasy-entity-operation: "Mesh#delete"
       summary: Deletes Mesh entity
       tags: [ "Mesh" ]
       parameters:
@@ -74,6 +77,7 @@ paths:
   /meshes:
     get:
       operationId: get-m-list
+      x-speakeasy-entity-operation: "MeshList#get"
       summary: Returns a list of Mesh in the mesh.
       tags: [ "Mesh" ]
       responses:
