@@ -151,6 +151,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -218,6 +219,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                     type: string
                   labels:
                     additionalProperties:
@@ -365,6 +367,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
