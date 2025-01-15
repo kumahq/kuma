@@ -12,7 +12,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -22,7 +22,7 @@ import (
 
 type Configurer struct {
 	FaultInjections []api.FaultInjectionConf
-	From            core_xds.Subset
+	From            subsetutils.Subset
 }
 
 func (c *Configurer) ConfigureHttpListener(filterChain *envoy_listener.FilterChain) error {
@@ -95,7 +95,7 @@ func regexHeaderMatcher(tagSet mesh_proto.SingleValueTagSet, invert bool) *envoy
 	}
 }
 
-func (c *Configurer) createHeaders(from core_xds.Subset) []*envoy_route.HeaderMatcher {
+func (c *Configurer) createHeaders(from subsetutils.Subset) []*envoy_route.HeaderMatcher {
 	tagsMap := map[bool]map[string]string{false: {}, true: {}}
 	for _, tag := range from {
 		tagsMap[tag.Not][tag.Key] = tag.Value

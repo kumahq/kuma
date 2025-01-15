@@ -12,6 +12,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
@@ -98,7 +99,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func (p plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{
-			Subset: core_rules.MeshSubset(),
+			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
 				Action: api.Deny,
 			},
@@ -109,7 +110,7 @@ func (p plugin) denyRules() core_rules.Rules {
 func (p plugin) allowRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{
-			Subset: core_rules.MeshSubset(),
+			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
 				Action: api.Allow,
 			},

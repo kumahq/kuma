@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -104,7 +105,7 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Subset: []core_rules.Tag{
+										Subset: []subsetutils.Tag{
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
@@ -218,7 +219,7 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshService("frontend"),
+														Subset: subsetutils.MeshService("frontend"),
 														Conf:   policies_api.Conf{Action: policies_api.Allow},
 													},
 												},
@@ -234,7 +235,7 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshSubset(),
+														Subset: subsetutils.MeshSubset(),
 														Conf:   policies_api.Conf{Action: policies_api.Allow},
 													},
 												},
@@ -271,7 +272,7 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshSubset(),
+														Subset: subsetutils.MeshSubset(),
 														Conf:   policies_api.Conf{Action: policies_api.Allow},
 													},
 												},

@@ -20,6 +20,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -177,7 +180,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -200,7 +203,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -223,7 +226,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -246,7 +249,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -270,7 +273,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "second-service",
 						}},
@@ -298,7 +301,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Port:    builders.FirstInboundPort,
 					}: []*core_rules.Rule{
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 							},
@@ -323,7 +326,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Port:    builders.FirstInboundPort,
 					}: []*core_rules.Rule{
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								OutlierDetection: genOutlierDetection(false),
 							},
@@ -348,7 +351,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Port:    builders.FirstInboundPort,
 					}: []*core_rules.Rule{
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								OutlierDetection: genOutlierDetection(true),
 							},
@@ -373,7 +376,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Port:    builders.FirstInboundPort,
 					}: []*core_rules.Rule{
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(false),
@@ -399,7 +402,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 						Port:    builders.FirstInboundPort,
 					}: []*core_rules.Rule{
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								ConnectionLimits: genConnectionLimits(),
 								OutlierDetection: genOutlierDetection(true),
@@ -426,7 +429,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -452,7 +455,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				},
 			},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -512,7 +515,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							mesDefault.DestinationName(0): {
 								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
-										ResourceRules: core_rules.ResourceRules{
+										ResourceRules: outbound.ResourceRules{
 											*backendMeshExternalServiceIdentifier("default"): {
 												Conf: []interface{}{
 													api.Conf{
@@ -538,7 +541,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							mesMesh2.DestinationName(0): {
 								api.MeshCircuitBreakerType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
-										ResourceRules: core_rules.ResourceRules{
+										ResourceRules: outbound.ResourceRules{
 											*backendMeshExternalServiceIdentifier("mesh2"): {
 												Conf: []interface{}{
 													api.Conf{
@@ -635,7 +638,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{core_rules.Tag{
+								Subset: subsetutils.Subset{subsetutils.Tag{
 									Key:   mesh_proto.ServiceTag,
 									Value: "backend",
 								}},
@@ -683,7 +686,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
@@ -704,7 +707,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 								Origin: []core_model.ResourceMeta{
 									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 								},
-								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+								BackendRefOriginIndex: rules_common.BackendRefOriginIndex{
 									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
 								},
 							}},
@@ -716,7 +719,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										api.Conf{

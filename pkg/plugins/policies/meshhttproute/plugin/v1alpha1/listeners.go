@@ -10,7 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -149,7 +149,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 	var conf *api.PolicyDefault
 	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
-	ruleHTTP := toRules.Rules.Compute(core_rules.MeshServiceElement(svc.ServiceName))
+	ruleHTTP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
 		for hash := range ruleHTTP.BackendRefOriginIndex {

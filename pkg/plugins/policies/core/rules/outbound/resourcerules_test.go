@@ -1,4 +1,4 @@
-package rules_test
+package outbound_test
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/hash"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -26,7 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ = Describe("BuildResourceRules", func() {
+var _ = Describe("BuildRules", func() {
 	DescribeTableSubtree("BuildToRules",
 		func(inputFile string) {
 			type metaFn func(name, mesh string, labels map[string]string) core_model.ResourceMeta
@@ -157,11 +157,9 @@ var _ = Describe("BuildResourceRules", func() {
 					resources := file.ReadInputFile(inputFile)
 					updFn(given.meta, resources)
 					meshCtx := xds_builders.Context().WithMeshLocalResources(resources).Build()
-					toList, err := core_rules.BuildToList(matchedPolicies(resources), meshCtx.Mesh.Resources)
-					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					rules, err := core_rules.BuildResourceRules(toList, meshCtx.Mesh.Resources)
+					rules, err := outbound.BuildRules(matchedPolicies(resources), meshCtx.Mesh.Resources)
 					Expect(err).ToNot(HaveOccurred())
 
 					// then
@@ -246,7 +244,7 @@ var _ = Describe("BuildResourceRules", func() {
 var _ = Describe("Compute", func() {
 	It("should return rule for the given resource", func() {
 		// given
-		rr := core_rules.ResourceRules{
+		rr := outbound.ResourceRules{
 			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
@@ -274,7 +272,7 @@ var _ = Describe("Compute", func() {
 
 	It("should return Mesh rule if MeshService is not found", func() {
 		// given
-		rr := core_rules.ResourceRules{
+		rr := outbound.ResourceRules{
 			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
@@ -312,7 +310,7 @@ var _ = Describe("Compute", func() {
 
 	It("should return Mesh rule if MeshMultiZoneService is not found", func() {
 		// given
-		rr := core_rules.ResourceRules{
+		rr := outbound.ResourceRules{
 			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
@@ -350,7 +348,7 @@ var _ = Describe("Compute", func() {
 
 	It("should return MeshService with section", func() {
 		// given
-		rr := core_rules.ResourceRules{
+		rr := outbound.ResourceRules{
 			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
@@ -389,7 +387,7 @@ var _ = Describe("Compute", func() {
 
 	It("should return MeshService rule if MeshService with section is not found", func() {
 		// given
-		rr := core_rules.ResourceRules{
+		rr := outbound.ResourceRules{
 			core_model.TypedResourceIdentifier{
 				ResourceType:       meshservice_api.MeshServiceType,
 				ResourceIdentifier: core_model.ResourceIdentifier{Mesh: "mesh-1", Name: "backend"},
@@ -428,7 +426,7 @@ var _ = Describe("Compute", func() {
 
 	It("should return nil if resource and parent resource are not found", func() {
 		// given
-		rr := core_rules.ResourceRules{}
+		rr := outbound.ResourceRules{}
 		meshCtx := context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{}}
 
 		// when

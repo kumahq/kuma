@@ -58,7 +58,8 @@ package {{.version}}
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"{{ if .generateRules }}
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"{{ end }}
     "github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -114,8 +115,8 @@ func (x *Rule) GetDefault() interface{} {
 	return x.Default
 }
 
-func (x *{{.name}}) GetRules() []core_model.RuleItem {
-	var result []core_model.RuleItem
+func (x *{{.name}}) GetRules() []inbound.RuleEntry {
+	var result []inbound.RuleEntry
 	for i := range x.Rules {
 		item := x.Rules[i]
 		result = append(result, &item)

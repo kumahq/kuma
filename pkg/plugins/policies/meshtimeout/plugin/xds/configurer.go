@@ -18,6 +18,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -31,7 +32,7 @@ import (
 type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
-	Element  rules.Element
+	Element  subsetutils.Element
 }
 
 func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -102,7 +103,7 @@ func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy
 	}
 }
 
-func (c *DeprecatedListenerConfigurer) getConf(element rules.Element) *api.Conf {
+func (c *DeprecatedListenerConfigurer) getConf(element subsetutils.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}

@@ -18,6 +18,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -147,7 +148,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -186,7 +187,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -225,7 +226,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Tags: &[]api.Tag{
 								{Name: "app", Literal: pointer.To("backend")},
@@ -261,7 +262,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Sampling: &api.Sampling{
 								Random: pointer.To(intstr.FromInt(50)),
@@ -291,7 +292,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
@@ -319,7 +320,7 @@ var _ = Describe("MeshTrace", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{},
 						},
@@ -369,7 +370,7 @@ var _ = Describe("MeshTrace", func() {
 			rules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{

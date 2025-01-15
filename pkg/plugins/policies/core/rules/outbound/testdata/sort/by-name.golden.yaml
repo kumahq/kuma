@@ -1,4 +1,4 @@
-- PolicyItem:
+- Entry:
     default:
       connectionTimeout: 11s
       http:
@@ -6,7 +6,7 @@
     targetRef:
       kind: MeshService
       name: backend
-  ResourceMeta:
+  Meta:
     creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
@@ -15,14 +15,14 @@
   RuleIndex: 0
   TopLevel:
     kind: Mesh
-- PolicyItem:
+- Entry:
     default:
       connectionTimeout: 1m51s
       idleTimeout: 1m49s
     targetRef:
       kind: MeshService
       name: backend
-  ResourceMeta:
+  Meta:
     creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"

@@ -10,6 +10,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshpassthrough/plugin/v1alpha1"
@@ -116,7 +117,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
 							AppendMatch: []api.Match{
@@ -220,7 +221,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -265,7 +266,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -316,7 +317,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -372,7 +373,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -433,7 +434,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -483,7 +484,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							AppendMatch: []api.Match{
 								{
@@ -527,7 +528,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("None")),
 						},
@@ -554,7 +555,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
 							AppendMatch: []api.Match{
@@ -595,7 +596,7 @@ var _ = Describe("MeshPassthrough", func() {
 			singleItemRules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: []core_rules.Tag{},
+						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
 							AppendMatch: []api.Match{

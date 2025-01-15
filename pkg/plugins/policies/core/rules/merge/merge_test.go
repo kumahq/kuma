@@ -1,13 +1,13 @@
-package rules_test
+package merge_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 )
 
-var _ = Describe("MergeConfs", func() {
+var _ = Describe("Confs", func() {
 	type subPolicy struct {
 		Ints       []int
 		AppendInts []int
@@ -35,7 +35,7 @@ var _ = Describe("MergeConfs", func() {
 			}
 
 			// when
-			merged, err := rules.MergeConfs(policies)
+			merged, err := merge.Confs(policies)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -240,7 +240,7 @@ var _ = Describe("MergeConfs", func() {
 				givens = append(givens, p)
 			}
 
-			merged, err := rules.MergeConfs(givens)
+			merged, err := merge.Confs(givens)
 			var values []testPolicy
 			for _, mergedConf := range merged {
 				values = append(values, mergedConf.(testPolicy))

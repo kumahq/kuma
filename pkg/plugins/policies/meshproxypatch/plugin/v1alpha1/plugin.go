@@ -7,7 +7,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -38,7 +38,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 	if len(policies.SingleItemRules.Rules) == 0 {
 		return nil
 	}
-	rule := policies.SingleItemRules.Rules.Compute(rules.MeshElement())
+	rule := policies.SingleItemRules.Rules.Compute(subsetutils.MeshElement())
 	conf := rule.Conf.(api.Conf)
 	if err := ApplyMods(rs, conf.AppendModifications); err != nil {
 		return err
