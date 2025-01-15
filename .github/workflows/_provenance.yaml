@@ -30,7 +30,7 @@ jobs:
       actions: read # For getting workflow run info to build provenance
       id-token: write # needed for signing the images
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@5a775b367a56d5bd118a224a811bba288150a563 # v2.0.0
     with:
       base64-subjects: ${{ inputs.BINARY_ARTIFACTS_HASH_AS_FILE }}
       upload-assets: ${{ github.ref_type == 'tag' }}
@@ -57,7 +57,7 @@ jobs:
       matrix:
         IMAGE: ${{ fromJSON(inputs.IMAGES) }}
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@5a775b367a56d5bd118a224a811bba288150a563 # v2.0.0
     with:
       image: ${{ inputs.REGISTRY }}/${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}
