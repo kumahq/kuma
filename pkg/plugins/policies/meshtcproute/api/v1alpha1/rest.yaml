@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshTCPRouteCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: delete-mtcpr
@@ -109,6 +109,7 @@ components:
   schemas:
     MeshTCPRouteItem:
       $ref: 'schema.yaml'
+  responses:
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -119,8 +120,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     MeshTCPRouteItem:
       description: Successful response
       content:

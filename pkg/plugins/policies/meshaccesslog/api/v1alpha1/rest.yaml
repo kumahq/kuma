@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshAccessLogCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: delete-mal
@@ -109,6 +109,7 @@ components:
   schemas:
     MeshAccessLogItem:
       $ref: 'schema.yaml'
+  responses:
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -119,8 +120,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     MeshAccessLogItem:
       description: Successful response
       content:
