@@ -31,6 +31,12 @@
       "description": "No need to run tests on github actions updates",
       "matchManagers": ["github-actions"],
       "addLabels": ["ci/skip-test"]
+    },
+    {
+      "groupName": "google.golang.org/genproto/googleapis/*",
+      "groupSlug": "genproto-googleapis",
+      "matchDatasources": ["go"],
+      "matchPackageNames": ["google.golang.org/genproto/googleapis/**"]
     }
   ]
 }
