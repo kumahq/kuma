@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -46,7 +47,7 @@ var _ = Describe("RBACConfigurer", func() {
 			mesh:  "allow_all_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{},
+					Subset: []subsetutils.Tag{},
 					Conf: v1alpha1.Conf{
 						Action: v1alpha1.Allow,
 					},
@@ -71,7 +72,7 @@ filters:
 			mesh:  "deny_all_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{},
+					Subset: []subsetutils.Tag{},
 					Conf: v1alpha1.Conf{
 						Action: v1alpha1.Deny,
 					},
@@ -90,7 +91,7 @@ filters:
 			mesh:  "allow_2_service_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{
+					Subset: []subsetutils.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v1"},
 					},
@@ -99,7 +100,7 @@ filters:
 					},
 				},
 				{
-					Subset: []core_xds.Tag{
+					Subset: []subsetutils.Tag{
 						{Key: "kuma.io/service", Value: "web"},
 						{Key: "kuma.io/zone", Value: "us-east"},
 					},
@@ -142,7 +143,7 @@ filters:
 			mesh:  "allow_negation_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{
+					Subset: []subsetutils.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 						{Key: "version", Value: "v2", Not: true},
 					},
@@ -178,7 +179,7 @@ filters:
 			mesh:  "allow_negation_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{
+					Subset: []subsetutils.Tag{
 						{Key: "kuma.io/service", Value: "backend", Not: true},
 						{Key: "version", Value: "v2"},
 					},
@@ -226,7 +227,7 @@ filters:
 			mesh:  "shadow_deny_mesh",
 			rules: []*core_xds.Rule{
 				{
-					Subset: []core_xds.Tag{
+					Subset: []subsetutils.Tag{
 						{Key: "kuma.io/service", Value: "backend"},
 					},
 					Conf: v1alpha1.Conf{

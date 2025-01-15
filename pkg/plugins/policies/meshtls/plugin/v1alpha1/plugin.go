@@ -17,6 +17,7 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -97,7 +98,7 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		conf := core_rules.ComputeConf[api.Conf](fromRules.Rules[listenerKey], core_rules.MeshElement())
+		conf := core_rules.ComputeConf[api.Conf](fromRules.Rules[listenerKey], subsetutils.MeshElement())
 		if conf == nil {
 			continue
 		}
@@ -138,7 +139,7 @@ func applyToOutbounds(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
+			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
 			break
 		}
 		if conf == nil {
@@ -166,7 +167,7 @@ func applyToGateways(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range gatewayRules.FromRules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
+			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
 			break
 		}
 		if conf == nil {
@@ -187,7 +188,7 @@ func applyToRealResources(
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf *api.Conf
 		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, core_rules.MeshElement())
+			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
 			break
 		}
 		if conf == nil {

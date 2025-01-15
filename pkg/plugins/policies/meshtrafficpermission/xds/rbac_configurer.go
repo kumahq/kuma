@@ -12,6 +12,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -170,7 +171,7 @@ func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
 	}
 }
 
-func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset) *rbac_config.Principal {
+func (c *RBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_config.Principal {
 	principals := []*rbac_config.Principal{}
 
 	for _, t := range ss {

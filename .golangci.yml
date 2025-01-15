@@ -165,3 +165,6 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: .* is deprecated: use FullResyncInterval instead"
+    - linters:
+        - staticcheck
+      text: "SA1019: .* is deprecated: use common.WithPolicyAttributes instead"
