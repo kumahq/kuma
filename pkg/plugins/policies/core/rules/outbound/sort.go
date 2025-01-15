@@ -19,21 +19,6 @@ func Sort[T interface {
 	))
 }
 
-func Sort0[T interface {
-	common.PolicyAttributes
-	common.Entry[ToEntry]
-}](list []T) {
-	slices.SortStableFunc(list, func(a, b T) int {
-		if less := sort.CompareByPolicyAttributes(a, b); less != 0 {
-			return less
-		}
-		if less := CompareByToEntry(a, b); less != 0 {
-			return less
-		}
-		return sort.CompareByDisplayName(a, b)
-	})
-}
-
 func CompareByToEntry[T common.Entry[ToEntry]](a, b T) int {
 	if less := a.GetEntry().GetTargetRef().Kind.Compare(b.GetEntry().GetTargetRef().Kind); less != 0 {
 		return less
