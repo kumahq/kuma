@@ -638,6 +638,14 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
+          labels:
+            app: sample
+            k8s.kuma.io/namespace: demo
+            kuma.io/env: kubernetes
+            kuma.io/mesh: poc
+            kuma.io/origin: zone
+            kuma.io/proxy-type: sidecar
+            kuma.io/zone: zone-1
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
@@ -731,6 +739,14 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
+          labels:
+            app: sample
+            k8s.kuma.io/namespace: demo
+            kuma.io/env: kubernetes
+            kuma.io/mesh: poc
+            kuma.io/origin: zone
+            kuma.io/proxy-type: sidecar
+            kuma.io/zone: zone-1
           name: pod-with-kuma-sidecar-and-ip
           namespace: demo
           ownerReferences:
@@ -874,15 +890,16 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
-          name: pod-with-custom-admin-port
-          namespace: demo
           labels:
+            app: sample
             k8s.kuma.io/namespace: demo
-            kuma.io/display-name: pod-with-custom-admin-port
             kuma.io/env: kubernetes
             kuma.io/mesh: poc
             kuma.io/origin: zone
+            kuma.io/proxy-type: sidecar
             kuma.io/zone: zone-1
+          name: pod-with-custom-admin-port
+          namespace: demo
           ownerReferences:
               - apiVersion: v1
                 blockOwnerDeletion: true
@@ -890,7 +907,7 @@ var _ = Describe("PodReconciler", func() {
                 kind: Pod
                 name: pod-with-custom-admin-port
                 uid: pod-with-custom-admin-port-demo
-          resourceVersion: "1"
+          resourceVersion: "2"
         spec:
           networking:
             address: 192.168.0.1
@@ -997,6 +1014,14 @@ var _ = Describe("PodReconciler", func() {
         mesh: poc
         metadata:
           creationTimestamp: null
+          labels:
+            app: sample
+            k8s.kuma.io/namespace: demo
+            kuma.io/env: kubernetes
+            kuma.io/mesh: poc
+            kuma.io/origin: zone
+            kuma.io/proxy-type: sidecar
+            kuma.io/zone: zone-1
           name: pod-with-custom-admin-port
           namespace: demo
           ownerReferences:

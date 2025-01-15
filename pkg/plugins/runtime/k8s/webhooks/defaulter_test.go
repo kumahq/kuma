@@ -456,6 +456,7 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "demo",
                   "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
+                  "kuma.io/proxy-type": "sidecar",
                   "kuma.io/zone": "zone-1"
                 },
                 "annotations": {

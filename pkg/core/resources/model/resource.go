@@ -566,6 +566,13 @@ func ComputeLabels(
 		labels[mesh_proto.PolicyRoleLabel] = string(role)
 	}
 
+	if rd.IsProxy {
+		proxy, ok := spec.(ProxyResource)
+		if ok {
+			labels[mesh_proto.ProxyTypeLabel] = strings.ToLower(string(proxy.GetProxyType()))
+		}
+	}
+
 	return labels, nil
 }
 

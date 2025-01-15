@@ -8,6 +8,7 @@
   "kuma.io/env": "universal",
   "kuma.io/mesh": "default",
   "kuma.io/origin": "zone",
+  "kuma.io/proxy-type": "sidecar",
   "kuma.io/zone": "default"
  },
  "networking": {
