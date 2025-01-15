@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshproxypatches/{name}:
     get:
       operationId: get-mpp
+      x-speakeasy-entity-operation: "MeshProxyPatch#get"
       summary: Returns MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mpp
+      x-speakeasy-entity-operation: "MeshProxyPatch#put"
       summary: Creates or Updates MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mpp
+      x-speakeasy-entity-operation: "MeshProxyPatch#delete"
       summary: Deletes MeshProxyPatch entity
       tags: [ "MeshProxyPatch" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshproxypatches:
     get:
       operationId: get-mpp-list
+      x-speakeasy-entity-operation: "MeshProxyPatchList#get"
       summary: Returns a list of MeshProxyPatch in the mesh.
       tags: [ "MeshProxyPatch" ]
       parameters:

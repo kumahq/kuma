@@ -237,6 +237,7 @@ paths:
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       operationId: get-mal
+      x-speakeasy-entity-operation: MeshAccessLog#get
       summary: Returns MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -258,6 +259,7 @@ paths:
           $ref: '#/components/responses/MeshAccessLogItem'
     put:
       operationId: create-or-update-mal
+      x-speakeasy-entity-operation: MeshAccessLog#put
       summary: Creates or Updates MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -298,6 +300,7 @@ paths:
                   #/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mal
+      x-speakeasy-entity-operation: MeshAccessLog#delete
       summary: Deletes MeshAccessLog entity
       tags:
         - MeshAccessLog
@@ -322,6 +325,7 @@ paths:
   /meshes/{mesh}/meshaccesslogs:
     get:
       operationId: get-mal-list
+      x-speakeasy-entity-operation: MeshAccessLogList#get
       summary: Returns a list of MeshAccessLog in the mesh.
       tags:
         - MeshAccessLog
@@ -338,6 +342,7 @@ paths:
   /meshes/{mesh}/meshcircuitbreakers/{name}:
     get:
       operationId: get-mcb
+      x-speakeasy-entity-operation: MeshCircuitBreaker#get
       summary: Returns MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -359,6 +364,7 @@ paths:
           $ref: '#/components/responses/MeshCircuitBreakerItem'
     put:
       operationId: create-or-update-mcb
+      x-speakeasy-entity-operation: MeshCircuitBreaker#put
       summary: Creates or Updates MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -399,6 +405,7 @@ paths:
                   #/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mcb
+      x-speakeasy-entity-operation: MeshCircuitBreaker#delete
       summary: Deletes MeshCircuitBreaker entity
       tags:
         - MeshCircuitBreaker
@@ -423,6 +430,7 @@ paths:
   /meshes/{mesh}/meshcircuitbreakers:
     get:
       operationId: get-mcb-list
+      x-speakeasy-entity-operation: MeshCircuitBreakerList#get
       summary: Returns a list of MeshCircuitBreaker in the mesh.
       tags:
         - MeshCircuitBreaker
@@ -439,6 +447,7 @@ paths:
   /meshes/{mesh}/meshfaultinjections/{name}:
     get:
       operationId: get-mfi
+      x-speakeasy-entity-operation: MeshFaultInjection#get
       summary: Returns MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -460,6 +469,7 @@ paths:
           $ref: '#/components/responses/MeshFaultInjectionItem'
     put:
       operationId: create-or-update-mfi
+      x-speakeasy-entity-operation: MeshFaultInjection#put
       summary: Creates or Updates MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -500,6 +510,7 @@ paths:
                   #/components/schemas/MeshFaultInjectionCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mfi
+      x-speakeasy-entity-operation: MeshFaultInjection#delete
       summary: Deletes MeshFaultInjection entity
       tags:
         - MeshFaultInjection
@@ -524,6 +535,7 @@ paths:
   /meshes/{mesh}/meshfaultinjections:
     get:
       operationId: get-mfi-list
+      x-speakeasy-entity-operation: MeshFaultInjectionList#get
       summary: Returns a list of MeshFaultInjection in the mesh.
       tags:
         - MeshFaultInjection
@@ -540,6 +552,7 @@ paths:
   /meshes/{mesh}/meshhealthchecks/{name}:
     get:
       operationId: get-mhc
+      x-speakeasy-entity-operation: MeshHealthCheck#get
       summary: Returns MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -561,6 +574,7 @@ paths:
           $ref: '#/components/responses/MeshHealthCheckItem'
     put:
       operationId: create-or-update-mhc
+      x-speakeasy-entity-operation: MeshHealthCheck#put
       summary: Creates or Updates MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -601,6 +615,7 @@ paths:
                   #/components/schemas/MeshHealthCheckCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mhc
+      x-speakeasy-entity-operation: MeshHealthCheck#delete
       summary: Deletes MeshHealthCheck entity
       tags:
         - MeshHealthCheck
@@ -625,6 +640,7 @@ paths:
   /meshes/{mesh}/meshhealthchecks:
     get:
       operationId: get-mhc-list
+      x-speakeasy-entity-operation: MeshHealthCheckList#get
       summary: Returns a list of MeshHealthCheck in the mesh.
       tags:
         - MeshHealthCheck
@@ -641,6 +657,7 @@ paths:
   /meshes/{mesh}/meshhttproutes/{name}:
     get:
       operationId: get-mhttpr
+      x-speakeasy-entity-operation: MeshHTTPRoute#get
       summary: Returns MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -662,6 +679,7 @@ paths:
           $ref: '#/components/responses/MeshHTTPRouteItem'
     put:
       operationId: create-or-update-mhttpr
+      x-speakeasy-entity-operation: MeshHTTPRoute#put
       summary: Creates or Updates MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -702,6 +720,7 @@ paths:
                   #/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mhttpr
+      x-speakeasy-entity-operation: MeshHTTPRoute#delete
       summary: Deletes MeshHTTPRoute entity
       tags:
         - MeshHTTPRoute
@@ -726,6 +745,7 @@ paths:
   /meshes/{mesh}/meshhttproutes:
     get:
       operationId: get-mhttpr-list
+      x-speakeasy-entity-operation: MeshHTTPRouteList#get
       summary: Returns a list of MeshHTTPRoute in the mesh.
       tags:
         - MeshHTTPRoute
@@ -742,6 +762,7 @@ paths:
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
     get:
       operationId: get-mlbs
+      x-speakeasy-entity-operation: MeshLoadBalancingStrategy#get
       summary: Returns MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -763,6 +784,7 @@ paths:
           $ref: '#/components/responses/MeshLoadBalancingStrategyItem'
     put:
       operationId: create-or-update-mlbs
+      x-speakeasy-entity-operation: MeshLoadBalancingStrategy#put
       summary: Creates or Updates MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -803,6 +825,7 @@ paths:
                   #/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mlbs
+      x-speakeasy-entity-operation: MeshLoadBalancingStrategy#delete
       summary: Deletes MeshLoadBalancingStrategy entity
       tags:
         - MeshLoadBalancingStrategy
@@ -827,6 +850,7 @@ paths:
   /meshes/{mesh}/meshloadbalancingstrategies:
     get:
       operationId: get-mlbs-list
+      x-speakeasy-entity-operation: MeshLoadBalancingStrategyList#get
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
       tags:
         - MeshLoadBalancingStrategy
@@ -843,6 +867,7 @@ paths:
   /meshes/{mesh}/meshmetrics/{name}:
     get:
       operationId: get-mm
+      x-speakeasy-entity-operation: MeshMetric#get
       summary: Returns MeshMetric entity
       tags:
         - MeshMetric
@@ -864,6 +889,7 @@ paths:
           $ref: '#/components/responses/MeshMetricItem'
     put:
       operationId: create-or-update-mm
+      x-speakeasy-entity-operation: MeshMetric#put
       summary: Creates or Updates MeshMetric entity
       tags:
         - MeshMetric
@@ -902,6 +928,7 @@ paths:
                 $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mm
+      x-speakeasy-entity-operation: MeshMetric#delete
       summary: Deletes MeshMetric entity
       tags:
         - MeshMetric
@@ -926,6 +953,7 @@ paths:
   /meshes/{mesh}/meshmetrics:
     get:
       operationId: get-mm-list
+      x-speakeasy-entity-operation: MeshMetricList#get
       summary: Returns a list of MeshMetric in the mesh.
       tags:
         - MeshMetric
@@ -942,6 +970,7 @@ paths:
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
       operationId: get-mp
+      x-speakeasy-entity-operation: MeshPassthrough#get
       summary: Returns MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -963,6 +992,7 @@ paths:
           $ref: '#/components/responses/MeshPassthroughItem'
     put:
       operationId: create-or-update-mp
+      x-speakeasy-entity-operation: MeshPassthrough#put
       summary: Creates or Updates MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -1003,6 +1033,7 @@ paths:
                   #/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mp
+      x-speakeasy-entity-operation: MeshPassthrough#delete
       summary: Deletes MeshPassthrough entity
       tags:
         - MeshPassthrough
@@ -1027,6 +1058,7 @@ paths:
   /meshes/{mesh}/meshpassthroughs:
     get:
       operationId: get-mp-list
+      x-speakeasy-entity-operation: MeshPassthroughList#get
       summary: Returns a list of MeshPassthrough in the mesh.
       tags:
         - MeshPassthrough
@@ -1043,6 +1075,7 @@ paths:
   /meshes/{mesh}/meshproxypatches/{name}:
     get:
       operationId: get-mpp
+      x-speakeasy-entity-operation: MeshProxyPatch#get
       summary: Returns MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1064,6 +1097,7 @@ paths:
           $ref: '#/components/responses/MeshProxyPatchItem'
     put:
       operationId: create-or-update-mpp
+      x-speakeasy-entity-operation: MeshProxyPatch#put
       summary: Creates or Updates MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1104,6 +1138,7 @@ paths:
                   #/components/schemas/MeshProxyPatchCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mpp
+      x-speakeasy-entity-operation: MeshProxyPatch#delete
       summary: Deletes MeshProxyPatch entity
       tags:
         - MeshProxyPatch
@@ -1128,6 +1163,7 @@ paths:
   /meshes/{mesh}/meshproxypatches:
     get:
       operationId: get-mpp-list
+      x-speakeasy-entity-operation: MeshProxyPatchList#get
       summary: Returns a list of MeshProxyPatch in the mesh.
       tags:
         - MeshProxyPatch
@@ -1144,6 +1180,7 @@ paths:
   /meshes/{mesh}/meshratelimits/{name}:
     get:
       operationId: get-mrl
+      x-speakeasy-entity-operation: MeshRateLimit#get
       summary: Returns MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1165,6 +1202,7 @@ paths:
           $ref: '#/components/responses/MeshRateLimitItem'
     put:
       operationId: create-or-update-mrl
+      x-speakeasy-entity-operation: MeshRateLimit#put
       summary: Creates or Updates MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1205,6 +1243,7 @@ paths:
                   #/components/schemas/MeshRateLimitCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mrl
+      x-speakeasy-entity-operation: MeshRateLimit#delete
       summary: Deletes MeshRateLimit entity
       tags:
         - MeshRateLimit
@@ -1229,6 +1268,7 @@ paths:
   /meshes/{mesh}/meshratelimits:
     get:
       operationId: get-mrl-list
+      x-speakeasy-entity-operation: MeshRateLimitList#get
       summary: Returns a list of MeshRateLimit in the mesh.
       tags:
         - MeshRateLimit
@@ -1245,6 +1285,7 @@ paths:
   /meshes/{mesh}/meshretries/{name}:
     get:
       operationId: get-mr
+      x-speakeasy-entity-operation: MeshRetry#get
       summary: Returns MeshRetry entity
       tags:
         - MeshRetry
@@ -1266,6 +1307,7 @@ paths:
           $ref: '#/components/responses/MeshRetryItem'
     put:
       operationId: create-or-update-mr
+      x-speakeasy-entity-operation: MeshRetry#put
       summary: Creates or Updates MeshRetry entity
       tags:
         - MeshRetry
@@ -1304,6 +1346,7 @@ paths:
                 $ref: '#/components/schemas/MeshRetryCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mr
+      x-speakeasy-entity-operation: MeshRetry#delete
       summary: Deletes MeshRetry entity
       tags:
         - MeshRetry
@@ -1328,6 +1371,7 @@ paths:
   /meshes/{mesh}/meshretries:
     get:
       operationId: get-mr-list
+      x-speakeasy-entity-operation: MeshRetryList#get
       summary: Returns a list of MeshRetry in the mesh.
       tags:
         - MeshRetry
@@ -1344,6 +1388,7 @@ paths:
   /meshes/{mesh}/meshtcproutes/{name}:
     get:
       operationId: get-mtcpr
+      x-speakeasy-entity-operation: MeshTCPRoute#get
       summary: Returns MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1365,6 +1410,7 @@ paths:
           $ref: '#/components/responses/MeshTCPRouteItem'
     put:
       operationId: create-or-update-mtcpr
+      x-speakeasy-entity-operation: MeshTCPRoute#put
       summary: Creates or Updates MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1403,6 +1449,7 @@ paths:
                 $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mtcpr
+      x-speakeasy-entity-operation: MeshTCPRoute#delete
       summary: Deletes MeshTCPRoute entity
       tags:
         - MeshTCPRoute
@@ -1427,6 +1474,7 @@ paths:
   /meshes/{mesh}/meshtcproutes:
     get:
       operationId: get-mtcpr-list
+      x-speakeasy-entity-operation: MeshTCPRouteList#get
       summary: Returns a list of MeshTCPRoute in the mesh.
       tags:
         - MeshTCPRoute
@@ -1443,6 +1491,7 @@ paths:
   /meshes/{mesh}/meshtimeouts/{name}:
     get:
       operationId: get-mt
+      x-speakeasy-entity-operation: MeshTimeout#get
       summary: Returns MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1464,6 +1513,7 @@ paths:
           $ref: '#/components/responses/MeshTimeoutItem'
     put:
       operationId: create-or-update-mt
+      x-speakeasy-entity-operation: MeshTimeout#put
       summary: Creates or Updates MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1502,6 +1552,7 @@ paths:
                 $ref: '#/components/schemas/MeshTimeoutCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mt
+      x-speakeasy-entity-operation: MeshTimeout#delete
       summary: Deletes MeshTimeout entity
       tags:
         - MeshTimeout
@@ -1526,6 +1577,7 @@ paths:
   /meshes/{mesh}/meshtimeouts:
     get:
       operationId: get-mt-list
+      x-speakeasy-entity-operation: MeshTimeoutList#get
       summary: Returns a list of MeshTimeout in the mesh.
       tags:
         - MeshTimeout
@@ -1542,6 +1594,7 @@ paths:
   /meshes/{mesh}/meshtlses/{name}:
     get:
       operationId: get-mtls
+      x-speakeasy-entity-operation: MeshTLS#get
       summary: Returns MeshTLS entity
       tags:
         - MeshTLS
@@ -1563,6 +1616,7 @@ paths:
           $ref: '#/components/responses/MeshTLSItem'
     put:
       operationId: create-or-update-mtls
+      x-speakeasy-entity-operation: MeshTLS#put
       summary: Creates or Updates MeshTLS entity
       tags:
         - MeshTLS
@@ -1601,6 +1655,7 @@ paths:
                 $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mtls
+      x-speakeasy-entity-operation: MeshTLS#delete
       summary: Deletes MeshTLS entity
       tags:
         - MeshTLS
@@ -1625,6 +1680,7 @@ paths:
   /meshes/{mesh}/meshtlses:
     get:
       operationId: get-mtls-list
+      x-speakeasy-entity-operation: MeshTLSList#get
       summary: Returns a list of MeshTLS in the mesh.
       tags:
         - MeshTLS
@@ -1641,6 +1697,7 @@ paths:
   /meshes/{mesh}/meshtraces/{name}:
     get:
       operationId: get-mtr
+      x-speakeasy-entity-operation: MeshTrace#get
       summary: Returns MeshTrace entity
       tags:
         - MeshTrace
@@ -1662,6 +1719,7 @@ paths:
           $ref: '#/components/responses/MeshTraceItem'
     put:
       operationId: create-or-update-mtr
+      x-speakeasy-entity-operation: MeshTrace#put
       summary: Creates or Updates MeshTrace entity
       tags:
         - MeshTrace
@@ -1700,6 +1758,7 @@ paths:
                 $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mtr
+      x-speakeasy-entity-operation: MeshTrace#delete
       summary: Deletes MeshTrace entity
       tags:
         - MeshTrace
@@ -1724,6 +1783,7 @@ paths:
   /meshes/{mesh}/meshtraces:
     get:
       operationId: get-mtr-list
+      x-speakeasy-entity-operation: MeshTraceList#get
       summary: Returns a list of MeshTrace in the mesh.
       tags:
         - MeshTrace
@@ -1740,6 +1800,7 @@ paths:
   /meshes/{mesh}/meshtrafficpermissions/{name}:
     get:
       operationId: get-mtp
+      x-speakeasy-entity-operation: MeshTrafficPermission#get
       summary: Returns MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1761,6 +1822,7 @@ paths:
           $ref: '#/components/responses/MeshTrafficPermissionItem'
     put:
       operationId: create-or-update-mtp
+      x-speakeasy-entity-operation: MeshTrafficPermission#put
       summary: Creates or Updates MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1801,6 +1863,7 @@ paths:
                   #/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mtp
+      x-speakeasy-entity-operation: MeshTrafficPermission#delete
       summary: Deletes MeshTrafficPermission entity
       tags:
         - MeshTrafficPermission
@@ -1825,6 +1888,7 @@ paths:
   /meshes/{mesh}/meshtrafficpermissions:
     get:
       operationId: get-mtp-list
+      x-speakeasy-entity-operation: MeshTrafficPermissionList#get
       summary: Returns a list of MeshTrafficPermission in the mesh.
       tags:
         - MeshTrafficPermission
@@ -1841,6 +1905,7 @@ paths:
   /meshes/{name}:
     get:
       operationId: get-m
+      x-speakeasy-entity-operation: Mesh#get
       summary: Returns Mesh entity
       tags:
         - Mesh
@@ -1856,6 +1921,7 @@ paths:
           $ref: '#/components/responses/MeshItem'
     put:
       operationId: create-or-update-m
+      x-speakeasy-entity-operation: Mesh#put
       summary: Creates or Updates Mesh entity
       tags:
         - Mesh
@@ -1888,6 +1954,7 @@ paths:
                 $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-m
+      x-speakeasy-entity-operation: Mesh#delete
       summary: Deletes Mesh entity
       tags:
         - Mesh
@@ -1906,6 +1973,7 @@ paths:
   /meshes:
     get:
       operationId: get-m-list
+      x-speakeasy-entity-operation: MeshList#get
       summary: Returns a list of Mesh in the mesh.
       tags:
         - Mesh
@@ -1915,6 +1983,7 @@ paths:
   /meshes/{mesh}/meshgateways/{name}:
     get:
       operationId: get-mgw
+      x-speakeasy-entity-operation: MeshGateway#get
       summary: Returns MeshGateway entity
       tags:
         - MeshGateway
@@ -1936,6 +2005,7 @@ paths:
           $ref: '#/components/responses/MeshGatewayItem'
     put:
       operationId: create-or-update-mgw
+      x-speakeasy-entity-operation: MeshGateway#put
       summary: Creates or Updates MeshGateway entity
       tags:
         - MeshGateway
@@ -1974,6 +2044,7 @@ paths:
                 $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-mgw
+      x-speakeasy-entity-operation: MeshGateway#delete
       summary: Deletes MeshGateway entity
       tags:
         - MeshGateway
@@ -1998,6 +2069,7 @@ paths:
   /meshes/{mesh}/meshgateways:
     get:
       operationId: get-mgw-list
+      x-speakeasy-entity-operation: MeshGatewayList#get
       summary: Returns a list of MeshGateway in the mesh.
       tags:
         - MeshGateway
@@ -2014,6 +2086,7 @@ paths:
   /hostnamegenerators/{name}:
     get:
       operationId: get-hg
+      x-speakeasy-entity-operation: HostnameGenerator#get
       summary: Returns HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -2029,6 +2102,7 @@ paths:
           $ref: '#/components/responses/HostnameGeneratorItem'
     put:
       operationId: create-or-update-hg
+      x-speakeasy-entity-operation: HostnameGenerator#put
       summary: Creates or Updates HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -2063,6 +2137,7 @@ paths:
                   #/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-hg
+      x-speakeasy-entity-operation: HostnameGenerator#delete
       summary: Deletes HostnameGenerator entity
       tags:
         - HostnameGenerator
@@ -2081,6 +2156,7 @@ paths:
   /hostnamegenerators:
     get:
       operationId: get-hg-list
+      x-speakeasy-entity-operation: HostnameGeneratorList#get
       summary: Returns a list of HostnameGenerator in the mesh.
       tags:
         - HostnameGenerator
@@ -2090,6 +2166,7 @@ paths:
   /meshes/{mesh}/meshexternalservices/{name}:
     get:
       operationId: get-extsvc
+      x-speakeasy-entity-operation: MeshExternalService#get
       summary: Returns MeshExternalService entity
       tags:
         - MeshExternalService
@@ -2111,6 +2188,7 @@ paths:
           $ref: '#/components/responses/MeshExternalServiceItem'
     put:
       operationId: create-or-update-extsvc
+      x-speakeasy-entity-operation: MeshExternalService#put
       summary: Creates or Updates MeshExternalService entity
       tags:
         - MeshExternalService
@@ -2151,6 +2229,7 @@ paths:
                   #/components/schemas/MeshExternalServiceCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-extsvc
+      x-speakeasy-entity-operation: MeshExternalService#delete
       summary: Deletes MeshExternalService entity
       tags:
         - MeshExternalService
@@ -2175,6 +2254,7 @@ paths:
   /meshes/{mesh}/meshexternalservices:
     get:
       operationId: get-extsvc-list
+      x-speakeasy-entity-operation: MeshExternalServiceList#get
       summary: Returns a list of MeshExternalService in the mesh.
       tags:
         - MeshExternalService
@@ -2191,6 +2271,7 @@ paths:
   /meshes/{mesh}/meshmultizoneservices/{name}:
     get:
       operationId: get-mzsvc
+      x-speakeasy-entity-operation: MeshMultiZoneService#get
       summary: Returns MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2212,6 +2293,7 @@ paths:
           $ref: '#/components/responses/MeshMultiZoneServiceItem'
     put:
       operationId: create-or-update-mzsvc
+      x-speakeasy-entity-operation: MeshMultiZoneService#put
       summary: Creates or Updates MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2252,6 +2334,7 @@ paths:
                   #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
     delete:
       operationId: delete-mzsvc
+      x-speakeasy-entity-operation: MeshMultiZoneService#delete
       summary: Deletes MeshMultiZoneService entity
       tags:
         - MeshMultiZoneService
@@ -2276,6 +2359,7 @@ paths:
   /meshes/{mesh}/meshmultizoneservices:
     get:
       operationId: get-mzsvc-list
+      x-speakeasy-entity-operation: MeshMultiZoneServiceList#get
       summary: Returns a list of MeshMultiZoneService in the mesh.
       tags:
         - MeshMultiZoneService
@@ -2292,6 +2376,7 @@ paths:
   /meshes/{mesh}/meshservices/{name}:
     get:
       operationId: get-msvc
+      x-speakeasy-entity-operation: MeshService#get
       summary: Returns MeshService entity
       tags:
         - MeshService
@@ -2313,6 +2398,7 @@ paths:
           $ref: '#/components/responses/MeshServiceItem'
     put:
       operationId: create-or-update-msvc
+      x-speakeasy-entity-operation: MeshService#put
       summary: Creates or Updates MeshService entity
       tags:
         - MeshService
@@ -2351,6 +2437,7 @@ paths:
                 $ref: '#/components/schemas/MeshServiceCreateOrUpdateSuccessResponse'
     delete:
       operationId: delete-msvc
+      x-speakeasy-entity-operation: MeshService#delete
       summary: Deletes MeshService entity
       tags:
         - MeshService
@@ -2375,6 +2462,7 @@ paths:
   /meshes/{mesh}/meshservices:
     get:
       operationId: get-msvc-list
+      x-speakeasy-entity-operation: MeshServiceList#get
       summary: Returns a list of MeshService in the mesh.
       tags:
         - MeshService

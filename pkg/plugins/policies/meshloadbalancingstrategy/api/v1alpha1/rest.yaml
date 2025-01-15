@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
     get:
       operationId: get-mlbs
+      x-speakeasy-entity-operation: "MeshLoadBalancingStrategy#get"
       summary: Returns MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mlbs
+      x-speakeasy-entity-operation: "MeshLoadBalancingStrategy#put"
       summary: Creates or Updates MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mlbs
+      x-speakeasy-entity-operation: "MeshLoadBalancingStrategy#delete"
       summary: Deletes MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshloadbalancingstrategies:
     get:
       operationId: get-mlbs-list
+      x-speakeasy-entity-operation: "MeshLoadBalancingStrategyList#get"
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
