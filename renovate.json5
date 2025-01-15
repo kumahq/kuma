@@ -5,26 +5,69 @@
     "config:best-practices",
     ":semanticCommitTypeAll(chore)",
     ":automergeDisabled",
-    ":gitSignOff"
+    ":gitSignOff",
+    ":label(dependencies)",
   ],
   "baseBranches": [
-    "master"
+    "master",
   ],
   "enabledManagers": [
+    "custom.regex",
     "dockerfile",
     "github-actions",
     "gomod",
-    "helm-values"
+    "helm-values",
   ],
   "postUpdateOptions": [
     "gomodMassage",
-    "gomodTidy"
+    "gomodTidy",
   ],
   "ignorePaths": [
-    "(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*\\.dockerignore$"
+    "(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*\\.dockerignore$",
   ],
-  "labels": [
-    "dependencies"
+  "customDatasources": {
+    "public-shared-actions": {
+      "defaultRegistryUrlTemplate": "https://api.github.com/repos/Kong/public-shared-actions/tags?per_page=100",
+      "transformTemplates": [
+        '( \
+          $url_base := "https://github.com/Kong/public-shared-actions"; \
+          { \
+            "sourceUrl": $url_base, \
+            "homepage": $url_base, \
+            "releases": $[$contains(name, /^@/)].( \
+              $dep_with_version := $.name ~> $substringAfter("@"); \
+              $dep_name := $dep_with_version ~> $substringBefore("@"); \
+              $url_sha := $url_base & "/tree/" & $.commit.sha & "/"; \
+              { \
+                "version" : $dep_with_version, \
+                "digest": $v.commit.sha, \
+                "sourceUrl": $url_sha, \
+                "sourceDirectory": $dep_name, \
+                "changelogUrl": $url_sha & $dep_name & "/CHANGELOG.md" \
+              } \
+            ) \
+          } \
+        )',
+      ],
+    },
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": [
+        // taken from github-actions builtin manager ref. https://docs.renovatebot.com/modules/manager/github-actions/
+        "(^|/)(workflow-templates|\\.(?:github|gitea|forgejo)/(?:workflows|actions))/.+\\.ya?ml$",
+        "(^|/)action\\.ya?ml$",
+      ],
+      "matchStrings": [
+        "Kong/public-shared-actions/(?<depName>[^\\s@])@(?<currentDigest>[^\\s]+) # (?<currentValue>[^\\s]+)",
+        "Kong/public-shared-actions/(?<depName>[^\\s@])@(?<currentValue>[^\\s]+)",
+      ],
+      "autoReplaceStringTemplate": "Kong/public-shared-actions/{{{depName}}}@{{{newDigest}}} # {{{newVersion}}}",
+      "datasourceTemplate": "custom.public-shared-actions",
+      "versioningTemplate": "semver",
+      "extractVersionTemplate": "^{{{depName}}}@(?<version>.*)$",
+    }
   ],
   "packageRules": [
     {
@@ -37,6 +80,12 @@
       "groupSlug": "genproto-googleapis",
       "matchDatasources": ["go"],
       "matchPackageNames": ["google.golang.org/genproto/googleapis/**"]
-    }
+    },
+    {
+      "matchPackageNames": ["Kong/public-shared-actions"],
+      "matchDatasources": ["github-tags"],
+      "matchCurrentVersion": ">=4",
+      "enabled": false
+    },
   ]
 }
