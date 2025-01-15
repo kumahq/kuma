@@ -29,11 +29,12 @@ import (
 var log = core.Log.WithName("mesh-insight-resyncer")
 
 const (
-	ReasonResync    = "resync"
-	ReasonForce     = "force"
-	ReasonEvent     = "event"
-	ResultChanged   = "changed"
-	ResultNoChanges = "no_changes"
+	ReasonResync             = "resync"
+	ReasonForce              = "force"
+	ReasonEvent              = "event"
+	ResultChanged            = "changed"
+	ResultNoChanges          = "no_changes"
+	foreignKeyViolationError = "violates foreign key constraint \"owner_fk\""
 )
 
 func ServiceInsightKey(mesh string) model.ResourceKey {
@@ -720,7 +721,9 @@ func (r *resyncer) createOrUpdateMeshInsight(
 		return resource.SetSpec(insight)
 	})
 	if err != nil {
-		if manager.IsMeshNotFound(err) {
+		// there can be a race situation in which during check Mesh is present, but it deleted when we try to create MeshInsight
+		// it is no longer present that is why we get foreign key violation
+		if manager.IsMeshNotFound(err) || strings.Contains(err.Error(), foreignKeyViolationError) {
 			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then allByType the resources connected with the Mesh allByType deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
