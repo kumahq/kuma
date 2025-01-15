@@ -9,6 +9,7 @@ paths:
   /meshes/{mesh}/meshtcproutes/{name}:
     get:
       operationId: get-mtcpr
+      x-speakeasy-entity-operation: "MeshTCPRoute#get"
       summary: Returns MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -30,6 +31,7 @@ paths:
 
     put:
       operationId: create-or-update-mtcpr
+      x-speakeasy-entity-operation: "MeshTCPRoute#put"
       summary: Creates or Updates MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -68,6 +70,7 @@ paths:
 
     delete:
       operationId: delete-mtcpr
+      x-speakeasy-entity-operation: "MeshTCPRoute#delete"
       summary: Deletes MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -92,6 +95,7 @@ paths:
   /meshes/{mesh}/meshtcproutes:
     get:
       operationId: get-mtcpr-list
+      x-speakeasy-entity-operation: "MeshTCPRouteList#get"
       summary: Returns a list of MeshTCPRoute in the mesh.
       tags: [ "MeshTCPRoute" ]
       parameters:

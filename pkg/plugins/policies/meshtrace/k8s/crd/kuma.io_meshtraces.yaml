@@ -232,6 +232,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                     type: string
                   labels:
                     additionalProperties:

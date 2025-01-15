@@ -1,6 +1,12 @@
 mesh: default
 metadata:
   creationTimestamp: null
+  labels:
+    app: example
+    k8s.kuma.io/namespace: demo
+    kuma.io/mesh: default
+    kuma.io/proxy-type: sidecar
+    version: "0.1"
 spec:
   metrics:
     conf:

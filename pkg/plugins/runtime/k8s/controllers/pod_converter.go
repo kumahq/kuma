@@ -63,7 +63,7 @@ func (p *PodConverter) PodToDataplane(
 	labels, err := model.ComputeLabels(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
-		map[string]string{},
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
 		p.Mode,
@@ -78,6 +78,7 @@ func (p *PodConverter) PodToDataplane(
 		return nil
 	}
 	dataplane.SetSpec(dataplaneProto)
+	dataplane.SetLabels(labels)
 	return nil
 }
 
@@ -102,7 +103,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
-		map[string]string{},
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
@@ -141,7 +142,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
-		map[string]string{},
+		pod.Labels,
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,

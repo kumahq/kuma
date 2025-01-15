@@ -165,7 +165,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(tenantZoneID.String(), stream)
 	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
-		if errors.Is(err, context.Canceled) {
+		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
 			return status.Error(codes.Canceled, "stream was cancelled")
 		}
 		logger.Error(err, "could not store stream connection")
