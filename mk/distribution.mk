@@ -15,6 +15,7 @@ ifneq (,$(findstring preview,$(BUILD_INFO_VERSION)))
 	PULP_DIST_VERSION=preview
 endif
 DISTRIBUTION_FOLDER=build/distributions/$(GOOS)-$(GOARCH)/$(DISTRIBUTION_TARGET_NAME)
+TAR_EXCLUDES=--exclude=passwd --exclude=group
 
 # This function dynamically builds targets for building distribution packages and uploading them to pulp with a set of parameters
 # $(1) - GOOS to build for
@@ -56,9 +57,9 @@ build/distributions/out/$(DISTRIBUTION_TARGET_NAME)-$(1)-$(2).tar.gz: build/dist
 	# Have the tar be just the `kuma-version` folder and nothing else at root
 	# tar is different between darwin and Linux so executre different commands
 ifeq ($(shell uname),Darwin)
-	tar --strip-components 3 --numeric-owner -czvf $$@ $$<
+	tar $(TAR_EXCLUDES) --strip-components 3 --numeric-owner -czvf $$@ $$<
 else
-	tar --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ $$(notdir $$<)
+	tar $(TAR_EXCLUDES) --mtime='1970-01-01 00:00:00' -C $$(dir $$<) --sort=name --owner=root:0 --group=root:0 --numeric-owner -czvf $$@ $$(notdir $$<)
 endif
 	cd $$(@D) && shasum -a 256 $$(notdir $$@) > $$(notdir $$@).sha256
 
