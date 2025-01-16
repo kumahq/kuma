@@ -9,7 +9,6 @@ paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
     get:
       operationId: get-{{ .ShortName }}
-      x-speakeasy-entity-operation: "{{.Name}}#get"
       summary: Returns {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -33,7 +32,6 @@ paths:
 
     put:
       operationId: create-or-update-{{ .ShortName }}
-      x-speakeasy-entity-operation: "{{.Name}}#put"
       summary: Creates or Updates {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -74,7 +72,6 @@ paths:
 
     delete:
       operationId: delete-{{ .ShortName }}
-      x-speakeasy-entity-operation: "{{.Name}}#delete"
       summary: Deletes {{ .Name }} entity
       tags: [ "{{ .Name }}" ]
       parameters:
@@ -101,7 +98,6 @@ paths:
   {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
     get:
       operationId: get-{{ .ShortName }}-list
-      x-speakeasy-entity-operation: "{{.Name}}List#get"
       summary: Returns a list of {{ .Name }} in the mesh.
       tags: [ "{{ .Name }}" ]
       {{- if eq .Scope "Mesh"}}
