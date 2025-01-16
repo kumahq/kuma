@@ -130,17 +130,14 @@ func buildRules[T interface {
 		resolvedItems = append(resolvedItems, resolveTargetRef(item, reader)...)
 	}
 
-	indexResources := func() map[core_model.TypedResourceIdentifier]core_model.Resource {
-		index := map[core_model.TypedResourceIdentifier]core_model.Resource{}
-		for _, i := range resolvedItems {
-			index[UniqueKey(i.resource, i.sectionName())] = i.resource
-		}
-		return index
+	indexed := map[core_model.TypedResourceIdentifier]core_model.Resource{}
+	for _, i := range resolvedItems {
+		indexed[UniqueKey(i.resource, i.sectionName())] = i.resource
 	}
 
 	// we could've built ResourceRule for all resources in the cluster, but we only need to build rules for resources
 	// that are part of the policy to reduce the size of the ResourceRules
-	for uri, resource := range indexResources() {
+	for uri, resource := range indexed {
 		// take only policy items that have isRelevant conf for the resource
 		var relevant []T
 		for _, policyItem := range resolvedItems {
