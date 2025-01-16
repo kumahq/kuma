@@ -24,7 +24,7 @@ func MeshTimeout() {
 		mesh := fmt.Sprintf("meshtimeout-ms-%s", strings.ToLower(mode.String()))
 		namespace := fmt.Sprintf("%s-namespace", mesh)
 		testServerURL := fmt.Sprintf("test-server.%s.svc:80", namespace)
-		testServerSecondaryInboundUrl := fmt.Sprintf("test-server.%s.svc:8080", namespace)
+		testServerSecondaryInboundUrl := fmt.Sprintf("test-server.%s.svc:9090", namespace)
 
 		BeforeAll(func() {
 			err := NewClusterSetup().

@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
-const secondaryPort = 8080
+const secondaryPort = 9090
 
 type k8SDeployment struct {
 	opts DeploymentOpts

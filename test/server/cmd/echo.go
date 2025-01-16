@@ -20,6 +20,8 @@ import (
 	"github.com/kumahq/kuma/test/server/types"
 )
 
+const secondaryInboundPort = 9090
+
 func newEchoHTTPCmd() *cobra.Command {
 	counters := newCounters()
 
@@ -127,7 +129,7 @@ func newEchoHTTPCmd() *cobra.Command {
 			secondInboundMux := http.NewServeMux()
 			secondInboundMux.HandleFunc("/", handleEcho)
 			go func() {
-				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(8080)), secondInboundMux) // nolint: gosec
+				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)), secondInboundMux) // nolint: gosec
 			}()
 			return srv.ListenAndServe()
 		},
