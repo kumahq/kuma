@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshratelimits/{name}:
     get:
       operationId: get-mrl
-      x-speakeasy-entity-operation: "MeshRateLimit#get"
       summary: Returns MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mrl
-      x-speakeasy-entity-operation: "MeshRateLimit#put"
       summary: Creates or Updates MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mrl
-      x-speakeasy-entity-operation: "MeshRateLimit#delete"
       summary: Deletes MeshRateLimit entity
       tags: [ "MeshRateLimit" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshratelimits:
     get:
       operationId: get-mrl-list
-      x-speakeasy-entity-operation: "MeshRateLimitList#get"
       summary: Returns a list of MeshRateLimit in the mesh.
       tags: [ "MeshRateLimit" ]
       parameters:

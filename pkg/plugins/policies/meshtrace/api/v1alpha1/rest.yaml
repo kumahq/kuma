@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshtraces/{name}:
     get:
       operationId: get-mtr
-      x-speakeasy-entity-operation: "MeshTrace#get"
       summary: Returns MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mtr
-      x-speakeasy-entity-operation: "MeshTrace#put"
       summary: Creates or Updates MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mtr
-      x-speakeasy-entity-operation: "MeshTrace#delete"
       summary: Deletes MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshtraces:
     get:
       operationId: get-mtr-list
-      x-speakeasy-entity-operation: "MeshTraceList#get"
       summary: Returns a list of MeshTrace in the mesh.
       tags: [ "MeshTrace" ]
       parameters:

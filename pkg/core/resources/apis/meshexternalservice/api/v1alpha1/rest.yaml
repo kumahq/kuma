@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshexternalservices/{name}:
     get:
       operationId: get-extsvc
-      x-speakeasy-entity-operation: "MeshExternalService#get"
       summary: Returns MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-extsvc
-      x-speakeasy-entity-operation: "MeshExternalService#put"
       summary: Creates or Updates MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-extsvc
-      x-speakeasy-entity-operation: "MeshExternalService#delete"
       summary: Deletes MeshExternalService entity
       tags: [ "MeshExternalService" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshexternalservices:
     get:
       operationId: get-extsvc-list
-      x-speakeasy-entity-operation: "MeshExternalServiceList#get"
       summary: Returns a list of MeshExternalService in the mesh.
       tags: [ "MeshExternalService" ]
       parameters:

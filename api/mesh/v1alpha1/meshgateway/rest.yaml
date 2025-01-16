@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshgateways/{name}:
     get:
       operationId: get-mgw
-      x-speakeasy-entity-operation: "MeshGateway#get"
       summary: Returns MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mgw
-      x-speakeasy-entity-operation: "MeshGateway#put"
       summary: Creates or Updates MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mgw
-      x-speakeasy-entity-operation: "MeshGateway#delete"
       summary: Deletes MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshgateways:
     get:
       operationId: get-mgw-list
-      x-speakeasy-entity-operation: "MeshGatewayList#get"
       summary: Returns a list of MeshGateway in the mesh.
       tags: [ "MeshGateway" ]
       parameters:

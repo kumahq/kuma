@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
       operationId: get-mal
-      x-speakeasy-entity-operation: "MeshAccessLog#get"
       summary: Returns MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mal
-      x-speakeasy-entity-operation: "MeshAccessLog#put"
       summary: Creates or Updates MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mal
-      x-speakeasy-entity-operation: "MeshAccessLog#delete"
       summary: Deletes MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshaccesslogs:
     get:
       operationId: get-mal-list
-      x-speakeasy-entity-operation: "MeshAccessLogList#get"
       summary: Returns a list of MeshAccessLog in the mesh.
       tags: [ "MeshAccessLog" ]
       parameters:

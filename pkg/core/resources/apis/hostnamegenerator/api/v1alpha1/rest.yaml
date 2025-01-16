@@ -9,7 +9,6 @@ paths:
   /hostnamegenerators/{name}:
     get:
       operationId: get-hg
-      x-speakeasy-entity-operation: "HostnameGenerator#get"
       summary: Returns HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -25,7 +24,6 @@ paths:
 
     put:
       operationId: create-or-update-hg
-      x-speakeasy-entity-operation: "HostnameGenerator#put"
       summary: Creates or Updates HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -58,7 +56,6 @@ paths:
 
     delete:
       operationId: delete-hg
-      x-speakeasy-entity-operation: "HostnameGenerator#delete"
       summary: Deletes HostnameGenerator entity
       tags: [ "HostnameGenerator" ]
       parameters:
@@ -77,7 +74,6 @@ paths:
   /hostnamegenerators:
     get:
       operationId: get-hg-list
-      x-speakeasy-entity-operation: "HostnameGeneratorList#get"
       summary: Returns a list of HostnameGenerator in the mesh.
       tags: [ "HostnameGenerator" ]
       responses:

@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshretries/{name}:
     get:
       operationId: get-mr
-      x-speakeasy-entity-operation: "MeshRetry#get"
       summary: Returns MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mr
-      x-speakeasy-entity-operation: "MeshRetry#put"
       summary: Creates or Updates MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mr
-      x-speakeasy-entity-operation: "MeshRetry#delete"
       summary: Deletes MeshRetry entity
       tags: [ "MeshRetry" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshretries:
     get:
       operationId: get-mr-list
-      x-speakeasy-entity-operation: "MeshRetryList#get"
       summary: Returns a list of MeshRetry in the mesh.
       tags: [ "MeshRetry" ]
       parameters:
