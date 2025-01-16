@@ -3,7 +3,6 @@ info:
   title: Kuma API
   description: Kuma API
   version: v1alpha1
-  x-ref-schema-name: MeshService
 paths:
   /:
     get:
