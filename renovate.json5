@@ -30,11 +30,11 @@
       "customType": "regex",
       "fileMatch": ["\\.github\/.*\\.ya?ml$"],
       "matchStrings": [
-        "(?<packageName>Kong\\/public-shared-actions\\/(?<depName>[^\\s@]+))@(?:(?<currentDigest>[^\\s]+) # v?)?(?<currentValue>[^\\s]+)",
+        "(?<packageName>Kong\\/public-shared-actions\\/(?<depName>[^\\s@]+))@(?:(?<currentDigest>[^\\s]+) # )?v(?<currentValue>[^\\s]+)",
       ],
       "datasourceTemplate": "github-tags",
       "extractVersionTemplate": "^(?:@{{{depName}}}@|v)(?<version>[0-9\\.]+)$",
-      "autoReplaceStringTemplate": "{{{packageName}}}@{{{newDigest}}} # v{{{newVersion}}}",
+      "autoReplaceStringTemplate": "{{{packageName}}}@{{#if newDigest}}{{{newDigest}}} # {{/if}}v{{{newVersion}}}",
       "versioningTemplate": "semver",
     },
   ],
