@@ -162,6 +162,12 @@ func dppSelectedByPolicy(
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
+	case common_api.Dataplane:
+		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref) || isSelectedByLabels(dpp, ref) {
+			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
+			return inbounds, nil, false, nil
+		}
+		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:
 		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
@@ -197,6 +203,44 @@ func dppSelectedByPolicy(
 	default:
 		return nil, nil, false, fmt.Errorf("unsupported targetRef kind '%s'", ref.Kind)
 	}
+}
+
+func allDataplanesSelected(ref common_api.TargetRef) bool {
+	return ref.Name == "" && ref.Namespace == "" && ref.Labels == nil
+}
+
+func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
+	var selectedInbounds []core_rules.InboundListener
+	for _, inbound := range dpp.Spec.GetNetworking().Inbound {
+		if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ignored {
+			continue
+		}
+		if sectionName == "" || inbound.Name == sectionName {
+			intf := dpp.Spec.GetNetworking().ToInboundInterface(inbound)
+			selectedInbounds = append(selectedInbounds, core_rules.InboundListener{
+				Address: intf.DataplaneIP,
+				Port:    intf.DataplanePort,
+			})
+		}
+	}
+	return selectedInbounds
+}
+
+func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
+	if ref.Labels == nil {
+		return false
+	}
+
+	for label, value := range ref.Labels {
+		if dpp.GetMeta().GetLabels()[label] != value {
+			return false
+		}
+	}
+	return true
+}
+
+func isSelectedByName(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
+	return core_model.GetDisplayName(dpp.GetMeta()) == ref.Name
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {

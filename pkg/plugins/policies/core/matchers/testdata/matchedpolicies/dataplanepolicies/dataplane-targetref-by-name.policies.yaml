@@ -1,0 +1,26 @@
+# 01. policies using kind Dataplane selecting Dataplanes by labels
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Deny
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-2
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow

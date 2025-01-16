@@ -1,0 +1,27 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: demo
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Deny
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow

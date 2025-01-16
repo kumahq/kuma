@@ -1,0 +1,18 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-1
+  spec:
+    from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: demo
+  type: MeshTrafficPermission
+next: null
+total: 0

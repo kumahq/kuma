@@ -13,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 )
 
+const secondaryPort = 8080
+
 type k8SDeployment struct {
 	opts DeploymentOpts
 }
@@ -49,6 +51,12 @@ func (k *k8SDeployment) service() *corev1.Service {
 					Name:        "main",
 					Port:        int32(servicePort),
 					TargetPort:  intstr.FromString("main"),
+					AppProtocol: &appProtocol,
+				},
+				{
+					Name:        "secondary",
+					Port:        int32(secondaryPort),
+					TargetPort:  intstr.FromString("secondary"),
 					AppProtocol: &appProtocol,
 				},
 			},
@@ -213,6 +221,10 @@ func (k *k8SDeployment) podSpec() corev1.PodTemplateSpec {
 						{
 							ContainerPort: int32(containerPort),
 							Name:          "main",
+						},
+						{
+							ContainerPort: int32(secondaryPort),
+							Name:          "secondary",
 						},
 					},
 					Env: []corev1.EnvVar{
