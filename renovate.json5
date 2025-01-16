@@ -46,8 +46,10 @@
       "matchPackageNames": ["google.golang.org/genproto/googleapis/**"],
     },
     {
-      // Skip tests for GitHub Actions updates
-      "matchManagers": ["github-actions"],
+      // Skip tests for GitHub Actions updates. We match by depType because
+      // there isn’t an idiomatic way to target our custom manager, which handles
+      // Kong/public-shared-actions
+      "matchDepTypes": ["action"],
       "addLabels": ["ci/skip-test"],
     },
     {
