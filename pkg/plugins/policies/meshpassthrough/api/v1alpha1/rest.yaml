@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
       operationId: get-mp
-      x-speakeasy-entity-operation: "MeshPassthrough#get"
       summary: Returns MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mp
-      x-speakeasy-entity-operation: "MeshPassthrough#put"
       summary: Creates or Updates MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mp
-      x-speakeasy-entity-operation: "MeshPassthrough#delete"
       summary: Deletes MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshpassthroughs:
     get:
       operationId: get-mp-list
-      x-speakeasy-entity-operation: "MeshPassthroughList#get"
       summary: Returns a list of MeshPassthrough in the mesh.
       tags: [ "MeshPassthrough" ]
       parameters:

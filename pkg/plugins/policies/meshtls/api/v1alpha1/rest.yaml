@@ -9,7 +9,6 @@ paths:
   /meshes/{mesh}/meshtlses/{name}:
     get:
       operationId: get-mtls
-      x-speakeasy-entity-operation: "MeshTLS#get"
       summary: Returns MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -31,7 +30,6 @@ paths:
 
     put:
       operationId: create-or-update-mtls
-      x-speakeasy-entity-operation: "MeshTLS#put"
       summary: Creates or Updates MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -70,7 +68,6 @@ paths:
 
     delete:
       operationId: delete-mtls
-      x-speakeasy-entity-operation: "MeshTLS#delete"
       summary: Deletes MeshTLS entity
       tags: [ "MeshTLS" ]
       parameters:
@@ -95,7 +92,6 @@ paths:
   /meshes/{mesh}/meshtlses:
     get:
       operationId: get-mtls-list
-      x-speakeasy-entity-operation: "MeshTLSList#get"
       summary: Returns a list of MeshTLS in the mesh.
       tags: [ "MeshTLS" ]
       parameters:
