@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"os"
 	"path"
 
@@ -58,7 +59,7 @@ var _ = Describe("prepareKubeconfig", func() {
 		}
 
 		// when
-		err := prepareKubeconfig(&ic, mockServiceAccountPath)
+		err := prepareKubeconfig(&ic, mockServiceAccountPath + "/token", mockServiceAccountPath + "/ca.crt")
 
 		// then
 		Expect(err).To(Not(HaveOccurred()))
@@ -81,7 +82,7 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		}
 
 		// when
-		err := prepareKumaCniConfig(&ic, mockServiceAccountPath)
+		err := prepareKumaCniConfig(context.Background(), &ic, mockServiceAccountPath + "/token")
 
 		// then
 		Expect(err).To(Not(HaveOccurred()))
@@ -102,7 +103,7 @@ var _ = Describe("prepareKumaCniConfig", func() {
 		}
 
 		// when
-		err := prepareKumaCniConfig(&ic, mockServiceAccountPath)
+		err := prepareKumaCniConfig(context.Background(), &ic, mockServiceAccountPath + "/token")
 
 		// then
 		Expect(err).To(Not(HaveOccurred()))
