@@ -195,18 +195,12 @@ func tryWritingToDir(dir string) error {
 	log.V(1).Info("cni binary file permissions", "permissions", int(stat.Mode()), "path", kumaCniBinaryPath)
 
 	destination := dir + "/kuma-cni"
-	err = atomic.WriteFile(destination, file)
-	if err != nil {
+	if err := atomic.WriteFile(destination, file); err != nil {
 		return errors.Wrap(err, "can't atomically write kuma-cni file")
 	}
 
-	err = os.Chmod(destination, stat.Mode()|0o111)
-	if err != nil {
+	if err := os.Chmod(destination, stat.Mode()|0o111); err != nil {
 		return errors.Wrap(err, "can't chmod kuma-cni file")
-	}
-
-	if err != nil {
-		return errors.Wrap(err, "can't atomically write cni file")
 	}
 
 	return nil
@@ -219,20 +213,17 @@ func Run() {
 		os.Exit(1)
 	}
 
-	err = SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
-	if err != nil {
+	if err := SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName); err != nil {
 		log.Error(err, "error occurred during setting the log level")
 		os.Exit(2)
 	}
 
-	err = install(installerConfig)
-	if err != nil {
+	if err := install(installerConfig); err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(3)
 	}
 
-	err = atomic.WriteFile(readyFilePath, strings.NewReader(""))
-	if err != nil {
+	if err := atomic.WriteFile(readyFilePath, strings.NewReader("")); err != nil {
 		log.Error(err, "unable to mark as ready")
 		os.Exit(4)
 	}
@@ -257,8 +248,7 @@ func runLoop(ic *InstallerConfig) error {
 		case <-osSignals:
 			return nil
 		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
-			err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
-			if err != nil {
+			if err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin); err != nil {
 				return err
 			}
 		}
