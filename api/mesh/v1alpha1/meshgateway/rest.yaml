@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshgateways/{name}:
     get:
-      operationId: get-mgw
+      operationId: getMeshGateway
       summary: Returns MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshGatewayItem"
 
     put:
-      operationId: create-or-update-mgw
+      operationId: putMeshGateway
       summary: Creates or Updates MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mgw
+      operationId: deleteMeshGateway
       summary: Deletes MeshGateway entity
       tags: [ "MeshGateway" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshgateways:
     get:
-      operationId: get-mgw-list
+      operationId: getMeshGatewayList
       summary: Returns a list of MeshGateway in the mesh.
       tags: [ "MeshGateway" ]
       parameters:

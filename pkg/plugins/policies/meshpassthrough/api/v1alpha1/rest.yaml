@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshpassthroughs/{name}:
     get:
-      operationId: get-mp
+      operationId: getMeshPassthrough
       summary: Returns MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshPassthroughItem"
 
     put:
-      operationId: create-or-update-mp
+      operationId: putMeshPassthrough
       summary: Creates or Updates MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshPassthroughCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mp
+      operationId: deleteMeshPassthrough
       summary: Deletes MeshPassthrough entity
       tags: [ "MeshPassthrough" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshpassthroughs:
     get:
-      operationId: get-mp-list
+      operationId: getMeshPassthroughList
       summary: Returns a list of MeshPassthrough in the mesh.
       tags: [ "MeshPassthrough" ]
       parameters:
