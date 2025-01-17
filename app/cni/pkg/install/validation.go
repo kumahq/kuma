@@ -50,45 +50,42 @@ func isValidConflistFile(file string) error {
 
 func checkInstall(cniConfPath string, isPluginChained bool) error {
 	if !files.FileExists(cniConfPath) {
-		return errors.New("cni config file does not exist")
+		return errors.Errorf("cni config file does not exist at the specified path: %s", cniConfPath)
 	}
 
 	parsed, err := parseFileToHashMap(cniConfPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to parse cni config file")
 	}
 
 	if isPluginChained {
-		err := isValidConflistFile(cniConfPath)
-		if err != nil {
-			return errors.Wrap(err, "chained plugin requires a valid conflist file")
+		if err := isValidConflistFile(cniConfPath); err != nil {
+			return errors.Wrap(err, "chained plugin requires a valid conflist file format")
 		}
+
 		plugins, err := getPluginsArray(parsed)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to retrieve plugins array from cni config")
 		}
-		index, err := findKumaCniConfigIndex(plugins)
-		if err != nil {
-			return err
+
+		if index, err := findKumaCniConfigIndex(plugins); err != nil {
+			return errors.Wrap(err, "failed to find kuma-cni plugin in chained config file")
+		} else if index < 0 {
+			return errors.New("kuma-cni plugin is missing in the chained config file")
 		}
-		if index >= 0 {
-			return nil
-		} else {
-			return errors.New("chained plugin config file does not contain kuma-cni plugin")
-		}
-	} else {
-		err := isValidConfFile(cniConfPath)
-		if err != nil {
-			return errors.Wrap(err, "standalone plugin requires a valid conf file")
-		}
-		pluginType, ok := parsed["type"]
-		if !ok {
-			return errors.New("cni config was modified and does not have a type")
-		}
-		if pluginType == "kuma-cni" {
-			return nil
-		} else {
-			return errors.New("config file does not contain kuma-cni configuration")
-		}
+
+		return nil
 	}
+
+	if err := isValidConfFile(cniConfPath); err != nil {
+		return errors.Wrap(err, "standalone plugin requires a valid conf file format")
+	}
+
+	if pluginType, ok := parsed["type"]; !ok {
+		return errors.New("cni config is missing the required 'type' field")
+	} else if pluginType != "kuma-cni" {
+		return errors.New("cni config 'type' field is not set to 'kuma-cni'")
+	}
+
+	return nil
 }
