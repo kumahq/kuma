@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshmetrics/{name}:
     get:
-      operationId: get-mm
+      operationId: getMeshMetric
       summary: Returns MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshMetricItem"
 
     put:
-      operationId: create-or-update-mm
+      operationId: putMeshMetric
       summary: Creates or Updates MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mm
+      operationId: deleteMeshMetric
       summary: Deletes MeshMetric entity
       tags: [ "MeshMetric" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshmetrics:
     get:
-      operationId: get-mm-list
+      operationId: getMeshMetricList
       summary: Returns a list of MeshMetric in the mesh.
       tags: [ "MeshMetric" ]
       parameters:

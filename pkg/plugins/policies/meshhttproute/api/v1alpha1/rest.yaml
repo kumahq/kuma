@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshhttproutes/{name}:
     get:
-      operationId: get-mhttpr
+      operationId: getMeshHTTPRoute
       summary: Returns MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshHTTPRouteItem"
 
     put:
-      operationId: create-or-update-mhttpr
+      operationId: putMeshHTTPRoute
       summary: Creates or Updates MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshHTTPRouteCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mhttpr
+      operationId: deleteMeshHTTPRoute
       summary: Deletes MeshHTTPRoute entity
       tags: [ "MeshHTTPRoute" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshhttproutes:
     get:
-      operationId: get-mhttpr-list
+      operationId: getMeshHTTPRouteList
       summary: Returns a list of MeshHTTPRoute in the mesh.
       tags: [ "MeshHTTPRoute" ]
       parameters:
