@@ -63,7 +63,7 @@ func (p *PodConverter) PodToDataplane(
 	labels, err := model.ComputeLabels(
 		core_mesh.DataplaneResourceTypeDescriptor,
 		currentSpec,
-		pod.Labels,
+		mergeLabels(dataplane.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		dataplane.Mesh,
 		p.Mode,
@@ -103,7 +103,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneIngressResourceTypeDescriptor,
 		currentSpec,
-		pod.Labels,
+		mergeLabels(zoneIngress.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
@@ -142,7 +142,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	labels, err := model.ComputeLabels(
 		core_mesh.ZoneEgressResourceTypeDescriptor,
 		currentSpec,
-		pod.Labels,
+		mergeLabels(zoneEgress.GetLabels(), pod.Labels),
 		model.NewNamespace(pod.Namespace, pod.Namespace == p.SystemNamespace),
 		model.NoMesh,
 		p.Mode,
@@ -409,6 +409,16 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 		aggregateConfig = append(aggregateConfig, config)
 	}
 	return aggregateConfig, nil
+}
+
+func mergeLabels(existingLabels map[string]string, podLabels map[string]string) map[string]string {
+	if existingLabels == nil {
+		return podLabels
+	}
+	for k, v := range podLabels {
+		existingLabels[k] = v
+	}
+	return existingLabels
 }
 
 type ReachableBackendRefs struct {

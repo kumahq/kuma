@@ -14,7 +14,6 @@ func TestE2E(t *testing.T) {
 }
 
 var (
-	// TODO(bartsmykla): disabled while investingating flake (https://github.com/kumahq/kuma/issues/12142)
-	_ = XDescribe("Federation with Kube Global", Label("job-3"), federation.FederateKubeZoneCPToKubeGlobal, Ordered)
-	_ = XDescribe("Federation with Universal Global", Label("job-3"), federation.FederateKubeZoneCPToUniversalGlobal, Ordered)
+	_ = Describe("Federation with Kube Global", Label("job-3"), federation.FederateKubeZoneCPToKubeGlobal, Ordered)
+	_ = Describe("Federation with Universal Global", Label("job-3"), federation.FederateKubeZoneCPToUniversalGlobal, Ordered)
 )
