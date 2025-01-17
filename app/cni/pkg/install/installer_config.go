@@ -38,8 +38,8 @@ type InstallerConfig struct {
 	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
 }
 
-func (i InstallerConfig) Validate() error {
-	if i.CfgCheckInterval <= 0 {
+func (c InstallerConfig) Validate() error {
+	if c.CfgCheckInterval <= 0 {
 		return errors.New("CFGCHECK_INTERVAL env variable needs to be greater than 0")
 	}
 
