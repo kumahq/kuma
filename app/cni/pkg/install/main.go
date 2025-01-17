@@ -21,12 +21,14 @@ import (
 )
 
 const (
-	kumaCniBinaryPath  = "/opt/cni/bin/kuma-cni"
-	primaryBinDir      = "/host/opt/cni/bin"
-	secondaryBinDir    = "/host/secondary-bin-dir"
-	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-	readyFilePath      = "/tmp/ready"
-	defaultLogName     = "install-cni"
+	kumaCniBinaryPath = "/opt/cni/bin/kuma-cni"
+	primaryBinDir     = "/host/opt/cni/bin"
+	secondaryBinDir   = "/host/secondary-bin-dir"
+	saPath            = "/var/run/secrets/kubernetes.io/serviceaccount"
+	saToken           = saPath + "/token"
+	saCACrt           = saPath + "/ca.crt"
+	readyFilePath     = "/tmp/ready"
+	defaultLogName    = "install-cni"
 )
 
 var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
@@ -107,11 +109,11 @@ func install(ic *InstallerConfig) error {
 		return errors.Wrap(err, "could not copy binary files")
 	}
 
-	if err := prepareKubeconfig(ic, serviceAccountPath); err != nil {
+	if err := prepareKubeconfig(ic, saToken, saCACrt); err != nil {
 		return errors.Wrap(err, "could not prepare kubeconfig")
 	}
 
-	if err := prepareKumaCniConfig(ic, serviceAccountPath); err != nil {
+	if err := prepareKumaCniConfig(ic, saToken); err != nil {
 		return errors.Wrap(err, "could not prepare kuma cni config")
 	}
 

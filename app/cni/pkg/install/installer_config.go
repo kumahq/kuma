@@ -72,10 +72,9 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	return "", errors.New("cni conf file not found - use default")
 }
 
-func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
+func prepareKubeconfig(ic *InstallerConfig, token string, caCrt string) error {
 	kubeconfigPath := ic.MountedCniNetDir + "/" + ic.KubeconfigName
-	serviceAccountTokenPath := serviceAccountPath + "/token"
-	serviceAccountToken, err := os.ReadFile(serviceAccountTokenPath)
+	serviceAccountToken, err := os.ReadFile(token)
 	if err != nil {
 		return err
 	}
@@ -89,7 +88,7 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 	}
 
 	if ic.KubernetesCaFile == "" {
-		ic.KubernetesCaFile = serviceAccountPath + "/ca.crt"
+		ic.KubernetesCaFile = caCrt
 	}
 
 	kubeCa, err := os.ReadFile(ic.KubernetesCaFile)
@@ -134,14 +133,14 @@ contexts:
 current-context: kuma-cni-context`
 }
 
-func prepareKumaCniConfig(ic *InstallerConfig, serviceAccountPath string) error {
+func prepareKumaCniConfig(ic *InstallerConfig, token string) error {
 	rawConfig := ic.CniNetworkConfig
 	kubeconfigFilePath := ic.HostCniNetDir + "/" + ic.KubeconfigName
 
 	cniConfig := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
 	log.V(1).Info("cni config after replace", "cni config", cniConfig)
 
-	serviceAccountToken, err := os.ReadFile(serviceAccountPath + "/token")
+	serviceAccountToken, err := os.ReadFile(token)
 	if err != nil {
 		return err
 	}
