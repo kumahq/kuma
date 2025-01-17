@@ -8,44 +8,56 @@ import (
 
 func lookForValidConfig(files []string, checkerFn func(string) error) (string, bool) {
 	for _, file := range files {
-		err := checkerFn(file)
-		if err != nil {
+		if err := checkerFn(file); err != nil {
 			log.Info("error occurred testing config file", "file", file)
-		} else {
-			return file, true
+			continue
 		}
+
+		return file, true
 	}
+
 	return "", false
 }
 
 func isValidConfFile(file string) error {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {
-		return errors.Wrap(err, "could not unmarshal conf file")
+		return errors.Wrap(err, "failed to parse configuration file")
 	}
 
-	configType, ok := parsed["type"]
-	if ok {
-		log.V(1).Info("config valid", "file", file, "type", configType)
+	if configType, ok := parsed["type"]; ok {
+		log.V(1).Info("configuration validated", "file", file, "type", configType)
 		return nil
 	}
-	return errors.Errorf(`config file %v not valid - does not contain "type" field`, file)
+
+	return errors.Errorf(`configuration file "%s" missing "type" field`, file)
 }
 
 func isValidConflistFile(file string) error {
 	parsed, err := parseFileToHashMap(file)
 	if err != nil {
-		return errors.Wrap(err, "could not unmarshal conflist file")
+		return errors.Wrap(err, "failed to parse conflist file")
 	}
 
-	configName, hasName := parsed["name"]
-	plugins, hasPlugins := parsed["plugins"]
-	if hasName && hasPlugins {
-		log.V(1).Info("config valid", "file", file, "name", configName, "plugins", plugins)
-		return nil
+	var missingFields []string
+
+	configName, ok := parsed["name"]
+	if !ok {
+		missingFields = append(missingFields, "name")
 	}
 
-	return errors.Errorf(`config file %v not valid - does not contain "name" and "plugin" fields`, file)
+	plugins, ok := parsed["plugins"]
+	if !ok {
+		missingFields = append(missingFields, "plugins")
+	}
+
+	if len(missingFields) > 0 {
+		return errors.Errorf("conflist file %s missing required fields: %+v", file, missingFields)
+	}
+
+	log.V(1).Info("conflist validated", "file", file, "name", configName, "plugins", plugins)
+
+	return nil
 }
 
 func checkInstall(cniConfPath string, isPluginChained bool) error {
