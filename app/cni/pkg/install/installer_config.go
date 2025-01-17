@@ -1,6 +1,7 @@
 package install
 
 import (
+	"context"
 	"encoding/base64"
 	"net"
 	"net/url"
@@ -133,7 +134,7 @@ contexts:
 current-context: kuma-cni-context`
 }
 
-func prepareKumaCniConfig(ic *InstallerConfig, token string) error {
+func prepareKumaCniConfig(ctx context.Context, ic *InstallerConfig, token string) error {
 	rawConfig := ic.CniNetworkConfig
 	kubeconfigFilePath := ic.HostCniNetDir + "/" + ic.KubeconfigName
 
@@ -147,7 +148,7 @@ func prepareKumaCniConfig(ic *InstallerConfig, token string) error {
 	cniConfig = strings.Replace(cniConfig, "__SERVICEACCOUNT_TOKEN__", string(serviceAccountToken), 1)
 
 	if ic.ChainedCniPlugin {
-		err := setupChainedPlugin(ic.MountedCniNetDir, ic.CniConfName, cniConfig)
+		err := setupChainedPlugin(ctx, ic.MountedCniNetDir, ic.CniConfName, cniConfig)
 		if err != nil {
 			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
 		}
