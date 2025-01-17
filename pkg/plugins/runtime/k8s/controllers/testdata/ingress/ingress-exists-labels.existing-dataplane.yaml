@@ -1,10 +1,14 @@
 metadata:
   creationTimestamp: null
   labels:
-    app: kuma-ingress
-    k8s.kuma.io/namespace: kuma-system
-    kuma.io/proxy-type: zoneingress
+    test: old
 spec:
+  availableServices:
+  - instances: 3
+    mesh: mesh-1
+    tags:
+      kuma.io/protocol: http
+      kuma.io/service: service-1-zone-2
   networking:
     address: 192.168.0.1
     advertisedAddress: 192.168.100.1

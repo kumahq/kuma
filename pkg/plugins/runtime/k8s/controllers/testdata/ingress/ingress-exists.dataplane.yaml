@@ -1,5 +1,9 @@
 metadata:
   creationTimestamp: null
+  labels:
+    app: kuma-ingress
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/proxy-type: zoneingress
 spec:
   availableServices:
   - instances: 3

@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtcproutes/{name}:
     get:
-      operationId: get-mtcpr
+      operationId: getMeshTCPRoute
       summary: Returns MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshTCPRouteItem"
 
     put:
-      operationId: create-or-update-mtcpr
+      operationId: putMeshTCPRoute
       summary: Creates or Updates MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshTCPRouteCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mtcpr
+      operationId: deleteMeshTCPRoute
       summary: Deletes MeshTCPRoute entity
       tags: [ "MeshTCPRoute" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshtcproutes:
     get:
-      operationId: get-mtcpr-list
+      operationId: getMeshTCPRouteList
       summary: Returns a list of MeshTCPRoute in the mesh.
       tags: [ "MeshTCPRoute" ]
       parameters:

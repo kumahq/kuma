@@ -811,6 +811,7 @@ var _ = Describe("PodReconciler", func() {
 					mesh_proto.MeshTag:             "poc",
 					mesh_proto.ResourceOriginLabel: "zone",
 					mesh_proto.EnvTag:              mesh_proto.KubernetesEnvironment,
+					mesh_proto.ProxyTypeLabel:      "sidecar",
 				},
 				OwnerReferences: []kube_meta.OwnerReference{
 					{
@@ -893,6 +894,7 @@ var _ = Describe("PodReconciler", func() {
           labels:
             app: sample
             k8s.kuma.io/namespace: demo
+            kuma.io/display-name: pod-with-custom-admin-port
             kuma.io/env: kubernetes
             kuma.io/mesh: poc
             kuma.io/origin: zone
