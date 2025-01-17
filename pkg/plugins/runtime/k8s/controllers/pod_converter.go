@@ -120,6 +120,7 @@ func (p *PodConverter) PodToIngress(ctx context.Context, zoneIngress *mesh_k8s.Z
 		return nil
 	}
 	zoneIngress.SetSpec(zoneIngressRes.Spec)
+	zoneIngress.SetLabels(labels)
 	return nil
 }
 
@@ -159,6 +160,7 @@ func (p *PodConverter) PodToEgress(ctx context.Context, zoneEgress *mesh_k8s.Zon
 	}
 
 	zoneEgress.SetSpec(zoneEgressRes.Spec)
+	zoneEgress.SetLabels(labels)
 	return nil
 }
 
