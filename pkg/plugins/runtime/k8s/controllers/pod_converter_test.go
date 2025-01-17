@@ -144,7 +144,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			// dataplane := &mesh_k8s.Dataplane{}
 			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes)
 
 			// then

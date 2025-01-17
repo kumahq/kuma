@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"maps"
 	"reflect"
 	"regexp"
 
@@ -412,13 +413,14 @@ func MetricsAggregateFor(pod *kube_core.Pod) ([]*mesh_proto.PrometheusAggregateM
 }
 
 func mergeLabels(existingLabels map[string]string, podLabels map[string]string) map[string]string {
-	if existingLabels == nil {
-		return podLabels
+	mergedLabels := map[string]string{}
+	if existingLabels != nil {
+		mergedLabels = maps.Clone(existingLabels)
 	}
 	for k, v := range podLabels {
-		existingLabels[k] = v
+		mergedLabels[k] = v
 	}
-	return existingLabels
+	return mergedLabels
 }
 
 type ReachableBackendRefs struct {
