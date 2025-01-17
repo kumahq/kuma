@@ -1,13 +1,9 @@
 package outbound
 
 import (
-	"strconv"
-	"strings"
-
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -15,7 +11,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
@@ -67,12 +62,12 @@ func (rr ResourceRules) Compute(uri core_model.TypedResourceIdentifier, reader c
 		}
 		// find MeshService's Mesh and compute rules for it
 		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(UniqueKey(mesh, ""), reader)
+			return rr.Compute(common.UniqueKey(mesh, ""), reader)
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
 		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(UniqueKey(mesh, ""), reader)
+			return rr.Compute(common.UniqueKey(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// todo(lobkovilya): handle MeshHTTPRoute
@@ -127,12 +122,15 @@ func buildRules[T interface {
 
 	var resolvedItems []*withResolvedResource[T]
 	for _, item := range list {
-		resolvedItems = append(resolvedItems, resolveTargetRef(item, reader)...)
+		rs := common.ResolveTargetRef(item.GetEntry().GetTargetRef(), item.GetResourceMeta(), reader)
+		for _, r := range rs {
+			resolvedItems = append(resolvedItems, &withResolvedResource[T]{entry: item, rs: r})
+		}
 	}
 
 	indexed := map[core_model.TypedResourceIdentifier]core_model.Resource{}
 	for _, i := range resolvedItems {
-		indexed[UniqueKey(i.resource, i.sectionName())] = i.resource
+		indexed[i.rs.Identifier()] = i.rs.Resource
 	}
 
 	// we could've built ResourceRule for all resources in the cluster, but we only need to build rules for resources
@@ -142,7 +140,7 @@ func buildRules[T interface {
 		var relevant []T
 		for _, policyItem := range resolvedItems {
 			if policyItem.isRelevant(resource, uri.SectionName) {
-				relevant = append(relevant, policyItem.item)
+				relevant = append(relevant, policyItem.entry)
 			}
 		}
 
@@ -166,49 +164,29 @@ func buildRules[T interface {
 	return rules, nil
 }
 
-func UniqueKey(r core_model.Resource, sectionName string) core_model.TypedResourceIdentifier {
-	return core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.NewResourceIdentifier(r),
-		ResourceType:       r.Descriptor().Name,
-		SectionName:        sectionName,
-	}
-}
-
-type withResolvedResource[T interface {
-	common.PolicyAttributes
-	common.Entry[ToEntry]
-}] struct {
-	item T
-
-	resource            core_model.Resource
-	implicitSectionName string
-}
-
-func (rw *withResolvedResource[T]) sectionName() string {
-	if refSectionName := rw.item.GetEntry().GetTargetRef().SectionName; refSectionName != "" {
-		return refSectionName
-	}
-	return rw.implicitSectionName
+type withResolvedResource[T any] struct {
+	entry T
+	rs    *common.ResourceSection
 }
 
 // isRelevant returns true if the resolvedWrapper's resource is relevant to the other resource or section of the resource
 func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, sectionName string) bool {
-	switch itemDescriptorName := rw.resource.Descriptor().Name; itemDescriptorName {
+	switch itemDescriptorName := rw.rs.Resource.Descriptor().Name; itemDescriptorName {
 	case core_mesh.MeshType:
 		switch other.Descriptor().Name {
 		case core_mesh.MeshType:
-			return rw.resource.GetMeta().GetName() == other.GetMeta().GetName()
+			return rw.rs.Resource.GetMeta().GetName() == other.GetMeta().GetName()
 		default:
-			return rw.resource.GetMeta().GetName() == other.GetMeta().GetMesh()
+			return rw.rs.Resource.GetMeta().GetName() == other.GetMeta().GetMesh()
 		}
 	case meshservice_api.MeshServiceType, meshmultizoneservice_api.MeshMultiZoneServiceType:
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
 		switch {
-		case UniqueKey(rw.resource, rw.sectionName()) == UniqueKey(other, sectionName):
+		case common.UniqueKey(rw.rs.Resource, rw.rs.SectionName) == common.UniqueKey(other, sectionName):
 			return true
-		case UniqueKey(rw.resource, "") == UniqueKey(other, "") && rw.sectionName() == "" && sectionName != "":
+		case common.UniqueKey(rw.rs.Resource, "") == common.UniqueKey(other, "") && rw.rs.SectionName == "" && sectionName != "":
 			return true
 		default:
 			return false
@@ -217,85 +195,8 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return UniqueKey(rw.resource, "") == UniqueKey(other, "")
+		return common.UniqueKey(rw.rs.Resource, "") == common.UniqueKey(other, "")
 	default:
 		return false
 	}
-}
-
-func resolveTargetRef[T interface {
-	common.PolicyAttributes
-	common.Entry[ToEntry]
-}](item T, reader common.ResourceReader) []*withResolvedResource[T] {
-	if !item.GetEntry().GetTargetRef().Kind.IsRealResource() {
-		return nil
-	}
-	rtype := core_model.ResourceType(item.GetEntry().GetTargetRef().Kind)
-	list := reader.ListOrEmpty(rtype).GetItems()
-
-	var implicitPort uint32
-	implicitLabels := map[string]string{}
-	if item.GetEntry().GetTargetRef().Kind == common_api.MeshService && item.GetEntry().GetTargetRef().SectionName == "" {
-		if name, namespace, port, err := parseService(item.GetEntry().GetTargetRef().Name); err == nil {
-			implicitLabels[mesh_proto.KubeNamespaceTag] = namespace
-			implicitLabels[mesh_proto.DisplayName] = name
-			implicitPort = port
-		}
-	}
-
-	labels := item.GetEntry().GetTargetRef().Labels
-	if len(implicitLabels) > 0 {
-		labels = implicitLabels
-	}
-
-	if len(labels) > 0 {
-		var rv []*withResolvedResource[T]
-		trLabels := subsetutils.NewSubset(labels)
-		for _, r := range list {
-			rLabels := subsetutils.NewSubset(r.GetMeta().GetLabels())
-			var implicitSectionName string
-			if ms, ok := r.(*meshservice_api.MeshServiceResource); ok && implicitPort != 0 {
-				for _, port := range ms.Spec.Ports {
-					if port.Port == implicitPort {
-						implicitSectionName = port.Name
-					}
-				}
-			}
-			if trLabels.IsSubset(rLabels) {
-				rv = append(rv, &withResolvedResource[T]{resource: r, item: item, implicitSectionName: implicitSectionName})
-			}
-		}
-		return rv
-	}
-
-	ri := core_model.TargetRefToResourceIdentifier(item.GetResourceMeta(), item.GetEntry().GetTargetRef())
-	if resource := reader.Get(rtype, ri); resource != nil {
-		return []*withResolvedResource[T]{{resource: resource, item: item}}
-	}
-
-	return nil
-}
-
-func parseService(host string) (string, string, uint32, error) {
-	// split host into <name>_<namespace>_svc_<port>
-	segments := strings.Split(host, "_")
-
-	var port uint32
-	switch len(segments) {
-	case 4:
-		p, err := strconv.ParseInt(segments[3], 10, 32)
-		if err != nil {
-			return "", "", 0, err
-		}
-		port = uint32(p)
-	case 3:
-		// service less service names have no port, so we just put the reserved
-		// one here to note that this service is actually
-		port = mesh_proto.TCPPortReserved
-	default:
-		return "", "", 0, errors.Errorf("service tag in unexpected format")
-	}
-
-	name, namespace := segments[0], segments[1]
-	return name, namespace, port, nil
 }
