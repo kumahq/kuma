@@ -12,6 +12,25 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 )
 
+const expectedKubeconfig = `# Kubeconfig file for kuma CNI plugin.
+apiVersion: v1
+kind: Config
+clusters:
+- name: local
+  cluster:
+    server: https://[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:3000
+    certificate-authority-data: YWJjCg==
+users:
+- name: kuma-cni
+  user:
+    token: token
+contexts:
+- name: kuma-cni-context
+  context:
+    cluster: local
+    user: kuma-cni
+current-context: kuma-cni-context`
+
 var _ = Describe("InstallerConfig", func() {
 	Describe("PostProcess", func() {
 		It("should use default CNI config when none is found", func() {
@@ -42,28 +61,45 @@ var _ = Describe("InstallerConfig", func() {
 			Expect(ic.CniConfName).To(Equal("10-flannel.conf"))
 		})
 	})
-})
 
-var _ = Describe("prepareKubeconfig", func() {
-	It("should successfully prepare kubeconfig file", func() {
-		// given
-		mockServiceAccountPath := filepath.Join("testdata", "prepare-kubeconfig")
-		ic := InstallerConfig{
-			KubernetesServiceHost:     "localhost",
-			KubernetesServicePort:     "3000",
-			KubernetesServiceProtocol: "https",
-			MountedCniNetDir:          filepath.Join("testdata", "prepare-kubeconfig"),
-			KubeconfigName:            "ZZZ-kuma-cni-kubeconfig",
-		}
+	Describe("PrepareKubeconfig", func() {
+		It("should successfully prepare kubeconfig file", func() {
+			// given
+			mockServiceAccountPath := filepath.Join("testdata", "prepare-kubeconfig")
+			ic := InstallerConfig{
+				KubernetesServiceHost:     "localhost",
+				KubernetesServicePort:     "3000",
+				KubernetesServiceProtocol: "https",
+				MountedCniNetDir:          filepath.Join("testdata", "prepare-kubeconfig"),
+				KubeconfigName:            "ZZZ-kuma-cni-kubeconfig",
+			}
 
-		// when
-		err := prepareKubeconfig(&ic, filepath.Join(mockServiceAccountPath, "token"), filepath.Join(mockServiceAccountPath, "ca.crt"))
+			// when
+			err := ic.PrepareKubeconfig(filepath.Join(mockServiceAccountPath, "token"), filepath.Join(mockServiceAccountPath, "ca.crt"))
 
-		// then
-		Expect(err).To(Not(HaveOccurred()))
-		// and
-		kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
-		Expect(kubeconfig).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+			// and
+			kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig"))
+			Expect(kubeconfig).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "prepare-kubeconfig", "ZZZ-kuma-cni-kubeconfig.golden")))
+		})
+	})
+
+	Describe("GenerateKubeconfigTemplate", func() {
+		It("should work properly with unescaped IPv6 addresses", func() {
+			// given
+			ic := InstallerConfig{
+				KubernetesServiceProtocol: "https",
+				KubernetesServiceHost:     "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
+				KubernetesServicePort:     "3000",
+			}
+
+			// when
+			result := ic.GenerateKubeconfigTemplate([]byte("token"), []byte("abc\n"))
+
+			// then
+			Expect(result).To(Equal(expectedKubeconfig))
+		})
 	})
 })
 

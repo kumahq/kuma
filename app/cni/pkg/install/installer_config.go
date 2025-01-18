@@ -3,6 +3,7 @@ package install
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net"
 	"net/url"
 	"os"
@@ -74,65 +75,75 @@ func (c *InstallerConfig) PostProcess() error {
 	return nil
 }
 
-func prepareKubeconfig(ic *InstallerConfig, token string, caCrt string) error {
-	kubeconfigPath := ic.MountedCniNetDir + "/" + ic.KubeconfigName
-	serviceAccountToken, err := os.ReadFile(token)
+func (c *InstallerConfig) PrepareKubeconfig(tokenPath, caCrtPath string) error {
+	token, err := os.ReadFile(tokenPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read service account token")
 	}
 
-	if ic.KubernetesServiceHost == "" {
-		return errors.New("KUBERNETES_SERVICE_HOST env variable not set")
+	if c.KubernetesServiceHost == "" {
+		return errors.New("kubernetes service host is not set")
 	}
 
-	if ic.KubernetesServicePort == "" {
-		return errors.New("KUBERNETES_SERVICE_PORT env variable not set")
+	if c.KubernetesServicePort == "" {
+		return errors.New("kubernetes service port is not set")
 	}
 
-	if ic.KubernetesCaFile == "" {
-		ic.KubernetesCaFile = caCrt
+	if c.KubernetesCaFile == "" {
+		c.KubernetesCaFile = caCrtPath
 	}
 
-	kubeCa, err := os.ReadFile(ic.KubernetesCaFile)
+	kubeCa, err := os.ReadFile(c.KubernetesCaFile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read Kubernetes CA file")
 	}
-	caData := base64.StdEncoding.EncodeToString(kubeCa)
 
-	kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
-	log.Info("writing kubernetes config", "path", kubeconfigPath)
-	err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
-	if err != nil {
-		return err
+	return c.writeKubeconfig(c.GenerateKubeconfigTemplate(token, kubeCa))
+}
+
+func (c *InstallerConfig) writeKubeconfig(kubeconfig string) error {
+	path := filepath.Join(c.MountedCniNetDir, c.KubeconfigName)
+
+	log.Info("writing kubernetes config", "path", path)
+
+	if err := atomic.WriteFile(path, strings.NewReader(kubeconfig)); err != nil {
+		return errors.Wrap(err, "failed to write kubeconfig")
 	}
 
 	return nil
 }
 
-func kubeconfigTemplate(protocol, host, port, token, caData string) string {
-	serverUrl := url.URL{
-		Scheme: protocol,
-		Host:   net.JoinHostPort(host, port),
-	}
-
-	return `# Kubeconfig file for kuma CNI plugin.
+func (c *InstallerConfig) GenerateKubeconfigTemplate(token, caData []byte) string {
+	return fmt.Sprintf(
+		`# Kubeconfig file for kuma CNI plugin.
 apiVersion: v1
 kind: Config
 clusters:
 - name: local
   cluster:
-    server: ` + serverUrl.String() + `
-    certificate-authority-data: ` + caData + `
+    server: %s
+    certificate-authority-data: %s
 users:
 - name: kuma-cni
   user:
-    token: ` + token + `
+    token: %s
 contexts:
 - name: kuma-cni-context
   context:
     cluster: local
     user: kuma-cni
-current-context: kuma-cni-context`
+current-context: kuma-cni-context`,
+		c.kubernetesServiceURL(),
+		base64.StdEncoding.EncodeToString(caData),
+		token,
+	)
+}
+
+func (c *InstallerConfig) kubernetesServiceURL() *url.URL {
+	return &url.URL{
+		Scheme: c.KubernetesServiceProtocol,
+		Host:   net.JoinHostPort(c.KubernetesServiceHost, c.KubernetesServicePort),
+	}
 }
 
 func prepareKumaCniConfig(ctx context.Context, ic *InstallerConfig, token string) error {

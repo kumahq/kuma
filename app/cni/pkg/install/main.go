@@ -109,7 +109,7 @@ func install(ctx context.Context, ic *InstallerConfig) error {
 		return errors.Wrap(err, "could not copy binary files")
 	}
 
-	if err := prepareKubeconfig(ic, saToken, saCACrt); err != nil {
+	if err := ic.PrepareKubeconfig(saToken, saCACrt); err != nil {
 		return errors.Wrap(err, "could not prepare kubeconfig")
 	}
 
