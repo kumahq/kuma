@@ -66,17 +66,18 @@ var _ = Describe("InstallerConfig", func() {
 		It("should successfully prepare kubeconfig file", func() {
 			// given
 			mockServiceAccountPath := filepath.Join("testdata", "prepare-kubeconfig")
-			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
 			ic := InstallerConfig{
-				KubernetesServiceHost:     "localhost",
-				KubernetesServicePort:     "3000",
-				KubernetesServiceProtocol: "https",
-				MountedCniNetDir:          filepath.Join("testdata", "prepare-kubeconfig"),
-				KubeconfigName:            "ZZZ-kuma-cni-kubeconfig",
+				KubernetesServiceHost:             "localhost",
+				KubernetesServicePort:             "3000",
+				KubernetesServiceProtocol:         "https",
+				KubernetesCaFile:                  filepath.Join(mockServiceAccountPath, "ca.crt"),
+				KubernetesServiceAccountTokenPath: filepath.Join(mockServiceAccountPath, "token"),
+				MountedCniNetDir:                  filepath.Join("testdata", "prepare-kubeconfig"),
+				KubeconfigName:                    "ZZZ-kuma-cni-kubeconfig",
 			}
 
 			// when
-			err := ic.PrepareKubeconfig(token, filepath.Join(mockServiceAccountPath, "ca.crt"))
+			err := ic.PrepareKubeconfig()
 
 			// then
 			Expect(err).To(Not(HaveOccurred()))
@@ -107,18 +108,18 @@ var _ = Describe("InstallerConfig", func() {
 		It("should successfully prepare chained kuma CNI file", func() {
 			// given
 			mockServiceAccountPath := filepath.Join("testdata", "prepare-chained-kuma-config")
-			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
 			ic := InstallerConfig{
-				CniNetworkConfig: kumaCniConfigTemplate,
-				MountedCniNetDir: filepath.Join("testdata", "prepare-chained-kuma-config"),
-				HostCniNetDir:    "/foo/bar",
-				KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
-				CniConfName:      "10-calico.conflist",
-				ChainedCniPlugin: true,
+				CniNetworkConfig:                  kumaCniConfigTemplate,
+				MountedCniNetDir:                  mockServiceAccountPath,
+				HostCniNetDir:                     "/foo/bar",
+				KubeconfigName:                    "ZZZ-kuma-cni-kubeconfig",
+				KubernetesServiceAccountTokenPath: filepath.Join(mockServiceAccountPath, "token"),
+				CniConfName:                       "10-calico.conflist",
+				ChainedCniPlugin:                  true,
 			}
 
 			// when
-			err := ic.PrepareKumaCniConfig(context.Background(), token)
+			err := ic.PrepareKumaCniConfig(context.Background())
 
 			// then
 			Expect(err).To(Not(HaveOccurred()))
@@ -130,18 +131,18 @@ var _ = Describe("InstallerConfig", func() {
 		It("should successfully prepare standalone kuma CNI file", func() {
 			// given
 			mockServiceAccountPath := filepath.Join("testdata", "prepare-standalone-kuma-config")
-			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
 			ic := InstallerConfig{
-				CniNetworkConfig: kumaCniConfigTemplate,
-				MountedCniNetDir: filepath.Join("testdata", "prepare-standalone-kuma-config"),
-				HostCniNetDir:    "/etc/cni/net.d",
-				KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
-				CniConfName:      "kuma-cni.conf",
-				ChainedCniPlugin: false,
+				CniNetworkConfig:                  kumaCniConfigTemplate,
+				MountedCniNetDir:                  mockServiceAccountPath,
+				HostCniNetDir:                     "/etc/cni/net.d",
+				KubeconfigName:                    "ZZZ-kuma-cni-kubeconfig",
+				KubernetesServiceAccountTokenPath: filepath.Join(mockServiceAccountPath, "token"),
+				CniConfName:                       "kuma-cni.conf",
+				ChainedCniPlugin:                  false,
 			}
 
 			// when
-			err := ic.PrepareKumaCniConfig(context.Background(), token)
+			err := ic.PrepareKumaCniConfig(context.Background())
 
 			// then
 			Expect(err).To(Not(HaveOccurred()))

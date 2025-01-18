@@ -26,19 +26,20 @@ var _ config.Config = &InstallerConfig{}
 type InstallerConfig struct {
 	config.BaseConfig
 
-	CfgCheckInterval          int    `envconfig:"cfgcheck_interval" default:"1"`
-	ChainedCniPlugin          bool   `envconfig:"chained_cni_plugin" default:"true"`
-	CniConfName               string `envconfig:"cni_conf_name" default:""`
-	CniLogLevel               string `envconfig:"cni_log_level" default:"info"`
-	CniNetworkConfig          string `envconfig:"cni_network_config" default:""`
-	HostCniNetDir             string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
-	KubeconfigName            string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
-	KubernetesCaFile          string `envconfig:"kube_ca_file"`
-	KubernetesServiceHost     string `envconfig:"kubernetes_service_host"`
-	KubernetesServicePort     string `envconfig:"kubernetes_service_port"`
-	KubernetesServiceProtocol string `envconfig:"kubernetes_service_protocol" default:"https"`
-	MountedCniNetDir          string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
-	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
+	CfgCheckInterval                  int    `envconfig:"cfgcheck_interval" default:"1"`
+	ChainedCniPlugin                  bool   `envconfig:"chained_cni_plugin" default:"true"`
+	CniConfName                       string `envconfig:"cni_conf_name" default:""`
+	CniLogLevel                       string `envconfig:"cni_log_level" default:"info"`
+	CniNetworkConfig                  string `envconfig:"cni_network_config" default:""`
+	HostCniNetDir                     string `envconfig:"cni_net_dir" default:"/etc/cni/net.d"`
+	KubeconfigName                    string `envconfig:"kubecfg_file_name" default:"ZZZ-kuma-cni-kubeconfig"`
+	KubernetesCaFile                  string `envconfig:"kube_ca_file" default:"/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"`
+	KubernetesServiceAccountTokenPath string `envconfig:"kube_service_account_token_path" default:"/var/run/secrets/kubernetes.io/serviceaccount/token"`
+	KubernetesServiceHost             string `envconfig:"kubernetes_service_host"`
+	KubernetesServicePort             string `envconfig:"kubernetes_service_port"`
+	KubernetesServiceProtocol         string `envconfig:"kubernetes_service_protocol" default:"https"`
+	MountedCniNetDir                  string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
+	ShouldSleep                       bool   `envconfig:"sleep" default:"true"`
 }
 
 func (c *InstallerConfig) Validate() error {
@@ -76,17 +77,18 @@ func (c *InstallerConfig) PostProcess() error {
 	return nil
 }
 
-func (c *InstallerConfig) PrepareKubeconfig(token []byte, caCrtPath string) error {
+func (c *InstallerConfig) PrepareKubeconfig() error {
+	token, err := os.ReadFile(c.KubernetesServiceAccountTokenPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to read service account token")
+	}
+
 	if c.KubernetesServiceHost == "" {
 		return errors.New("kubernetes service host is not set")
 	}
 
 	if c.KubernetesServicePort == "" {
 		return errors.New("kubernetes service port is not set")
-	}
-
-	if c.KubernetesCaFile == "" {
-		c.KubernetesCaFile = caCrtPath
 	}
 
 	kubeCa, err := os.ReadFile(c.KubernetesCaFile)
@@ -142,7 +144,12 @@ func (c *InstallerConfig) kubernetesServiceURL() *url.URL {
 	}
 }
 
-func (c *InstallerConfig) PrepareKumaCniConfig(ctx context.Context, token []byte) error {
+func (c *InstallerConfig) PrepareKumaCniConfig(ctx context.Context) error {
+	token, err := os.ReadFile(c.KubernetesServiceAccountTokenPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to read service account token")
+	}
+
 	// Replace placeholders in the CNI network configuration
 	cniConfig := strings.NewReplacer(
 		"__KUBECONFIG_FILEPATH__", filepath.Join(c.HostCniNetDir, c.KubeconfigName),

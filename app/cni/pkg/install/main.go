@@ -24,9 +24,6 @@ const (
 	binaryPath      = "/opt/cni/bin/" + binaryName
 	primaryBinDir   = "/host/opt/cni/bin"
 	secondaryBinDir = "/host/secondary-bin-dir"
-	saPath          = "/var/run/secrets/kubernetes.io/serviceaccount"
-	saPathToken     = saPath + "/token"
-	saPathCACrt     = saPath + "/ca.crt"
 	readyFilePath   = "/tmp/ready"
 	defaultLogName  = "install-cni"
 )
@@ -105,22 +102,26 @@ func revertConfig(configPath string, chained bool) error {
 }
 
 func install(ctx context.Context, ic *InstallerConfig) error {
+	if err := ic.PrepareKubeconfig(); err != nil {
+		return errors.Wrap(err, "failed to prepare kubeconfig")
+	}
+
+	if err := ic.CheckInstall(); err == nil {
+		log.Info("Kuma CNI is already installed and configured")
+		return nil
+	} else {
+		log.Info("no valid installation found, will proceed with installation", "error", err)
+	}
+
 	if err := copyBinaries(); err != nil {
-		return errors.Wrap(err, "could not copy binary files")
+		return errors.Wrap(err, "failed to copy binary files")
 	}
 
-	saToken, err := os.ReadFile(saPathToken)
-	if err != nil {
-		return errors.Wrap(err, "failed to read service account token")
+	if err := ic.PrepareKumaCniConfig(ctx); err != nil {
+		return errors.Wrap(err, "failed to prepare Kuma CNI configuration")
 	}
 
-	if err := ic.PrepareKubeconfig(saToken, saPathCACrt); err != nil {
-		return errors.Wrap(err, "could not prepare kubeconfig")
-	}
-
-	if err := ic.PrepareKumaCniConfig(ctx, saToken); err != nil {
-		return errors.Wrap(err, "could not prepare kuma cni config")
-	}
+	log.Info("Kuma CNI installation completed successfully")
 
 	return nil
 }
