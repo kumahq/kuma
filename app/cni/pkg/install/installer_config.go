@@ -19,7 +19,7 @@ const (
 	defaultKumaCniConfName = "YYY-kuma-cni.conflist"
 )
 
-var _ config.Config = InstallerConfig{}
+var _ config.Config = &InstallerConfig{}
 
 type InstallerConfig struct {
 	config.BaseConfig
@@ -39,7 +39,7 @@ type InstallerConfig struct {
 	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
 }
 
-func (c InstallerConfig) Validate() error {
+func (c *InstallerConfig) Validate() error {
 	if c.CfgCheckInterval <= 0 {
 		return errors.New("CFGCHECK_INTERVAL env variable needs to be greater than 0")
 	}
