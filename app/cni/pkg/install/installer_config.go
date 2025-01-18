@@ -55,8 +55,7 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 		return "", err
 	}
 
-	file, found := lookForValidConfig(matches, isValidConfFile)
-	if found {
+	if file, ok := lookForValidConfig(matches, isValidConfFile); ok {
 		return filepath.Base(file), nil
 	}
 
@@ -64,8 +63,8 @@ func findCniConfFile(mountedCNINetDir string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	file, found = lookForValidConfig(matches, isValidConflistFile)
-	if found {
+
+	if file, ok := lookForValidConfig(matches, isValidConflistFile); ok {
 		return filepath.Base(file), nil
 	}
 
