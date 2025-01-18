@@ -150,4 +150,51 @@ var _ = Describe("InstallerConfig", func() {
 			Expect(kubeconfig).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
 		})
 	})
+
+	Context("CheckInstall", func() {
+		It("should not return an error when a file is a conflist file with kuma-cni installed", func() {
+			// given
+			ic := InstallerConfig{
+				MountedCniNetDir: "testdata",
+				CniConfName:      "10-flannel-cni-injected.conf",
+				ChainedCniPlugin: true,
+			}
+
+			// when
+			err := ic.CheckInstall()
+
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+		})
+
+		It("should not return an error when a file is a conf file with kuma-cni", func() {
+			// given
+			ic := InstallerConfig{
+				MountedCniNetDir: "testdata",
+				CniConfName:      "10-kuma-cni.conf",
+				ChainedCniPlugin: false,
+			}
+
+			// when
+			err := ic.CheckInstall()
+
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+		})
+
+		It("should return an error when a file does not have kuma-cni installed", func() {
+			// given
+			ic := InstallerConfig{
+				MountedCniNetDir: "testdata",
+				CniConfName:      "10-flannel.conf",
+				ChainedCniPlugin: false,
+			}
+
+			// when
+			err := ic.CheckInstall()
+
+			// then
+			Expect(err).To(HaveOccurred())
+		})
+	})
 })

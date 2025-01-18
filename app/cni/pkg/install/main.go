@@ -265,7 +265,7 @@ func runLoop(ic *InstallerConfig) error {
 		case <-osSignals:
 			return nil
 		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
-			if err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin); err != nil {
+			if err := ic.CheckInstall(); err != nil {
 				return err
 			}
 		}

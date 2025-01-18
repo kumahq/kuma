@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
@@ -163,6 +164,50 @@ func (c *InstallerConfig) PrepareKumaCniConfig(ctx context.Context, token []byte
 
 	if err := atomic.WriteFile(configPath, strings.NewReader(cniConfig)); err != nil {
 		return errors.Wrap(err, "failed to write standalone CNI config")
+	}
+
+	return nil
+}
+
+func (c *InstallerConfig) CheckInstall() error {
+	confPath := filepath.Join(c.MountedCniNetDir, c.CniConfName)
+
+	if !files.FileExists(confPath) {
+		return errors.Errorf("cni config file does not exist at the specified path: %s", confPath)
+	}
+
+	parsed, err := parseFileToHashMap(confPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to parse cni config file")
+	}
+
+	if c.ChainedCniPlugin {
+		if err := isValidConflistFile(confPath); err != nil {
+			return errors.Wrap(err, "chained plugin requires a valid conflist file format")
+		}
+
+		plugins, err := getPluginsArray(parsed)
+		if err != nil {
+			return errors.Wrap(err, "failed to retrieve plugins array from cni config")
+		}
+
+		if index, err := findKumaCniConfigIndex(plugins); err != nil {
+			return errors.Wrap(err, "failed to find kuma-cni plugin in chained config file")
+		} else if index < 0 {
+			return errors.New("kuma-cni plugin is missing in the chained config file")
+		}
+
+		return nil
+	}
+
+	if err := isValidConfFile(confPath); err != nil {
+		return errors.Wrap(err, "standalone plugin requires a valid conf file format")
+	}
+
+	if pluginType, ok := parsed["type"]; !ok {
+		return errors.New("cni config is missing the required 'type' field")
+	} else if pluginType != "kuma-cni" {
+		return errors.New("cni config 'type' field is not set to 'kuma-cni'")
 	}
 
 	return nil
