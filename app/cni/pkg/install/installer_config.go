@@ -49,27 +49,29 @@ func (c *InstallerConfig) Validate() error {
 	return nil
 }
 
-func findCniConfFile(mountedCNINetDir string) (string, error) {
-	matches, err := filepath.Glob(mountedCNINetDir + "/*.conf")
-	if err != nil {
-		return "", err
+func (c *InstallerConfig) PostProcess() error {
+	if c.CniConfName != "" {
+		return nil
 	}
 
-	if file, ok := lookForValidConfig(matches, isValidConfFile); ok {
-		return filepath.Base(file), nil
+	for _, ext := range []string{"*.conf", "*.conflist"} {
+		matches, err := filepath.Glob(filepath.Join(c.MountedCniNetDir, ext))
+		if err != nil {
+			log.Info("failed to search for CNI config files", "error", err)
+			continue
+		}
+
+		if file, ok := lookForValidConfig(matches, isValidConfFile); ok {
+			log.Info("found CNI config file", "file", file)
+			c.CniConfName = filepath.Base(file)
+			return nil
+		}
 	}
 
-	matches, err = filepath.Glob(mountedCNINetDir + "/*.conflist")
-	if err != nil {
-		return "", err
-	}
+	log.Info("could not find CNI config file, using default")
+	c.CniConfName = defaultKumaCniConfName
 
-	if file, ok := lookForValidConfig(matches, isValidConflistFile); ok {
-		return filepath.Base(file), nil
-	}
-
-	// use default
-	return "", errors.New("cni conf file not found - use default")
+	return nil
 }
 
 func prepareKubeconfig(ic *InstallerConfig, token string, caCrt string) error {
@@ -163,20 +165,9 @@ func prepareKumaCniConfig(ctx context.Context, ic *InstallerConfig, token string
 
 func loadInstallerConfig() (*InstallerConfig, error) {
 	var installerConfig InstallerConfig
-	err := config.Load("", &installerConfig)
-	if err != nil {
-		return nil, err
-	}
 
-	if installerConfig.CniConfName == "" {
-		cniConfFile, err := findCniConfFile(installerConfig.MountedCniNetDir)
-		if err != nil {
-			log.Info("could not find cni conf file using default")
-			installerConfig.CniConfName = defaultKumaCniConfName
-		} else {
-			log.Info("found CNI config file", "file", cniConfFile)
-			installerConfig.CniConfName = cniConfFile
-		}
+	if err := config.Load("", &installerConfig); err != nil {
+		return nil, err
 	}
 
 	return &installerConfig, nil
