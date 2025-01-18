@@ -75,12 +75,7 @@ func (c *InstallerConfig) PostProcess() error {
 	return nil
 }
 
-func (c *InstallerConfig) PrepareKubeconfig(tokenPath, caCrtPath string) error {
-	token, err := os.ReadFile(tokenPath)
-	if err != nil {
-		return errors.Wrap(err, "failed to read service account token")
-	}
-
+func (c *InstallerConfig) PrepareKubeconfig(token []byte, caCrtPath string) error {
 	if c.KubernetesServiceHost == "" {
 		return errors.New("kubernetes service host is not set")
 	}
@@ -146,29 +141,28 @@ func (c *InstallerConfig) kubernetesServiceURL() *url.URL {
 	}
 }
 
-func prepareKumaCniConfig(ctx context.Context, ic *InstallerConfig, token string) error {
-	rawConfig := ic.CniNetworkConfig
-	kubeconfigFilePath := ic.HostCniNetDir + "/" + ic.KubeconfigName
+func (c *InstallerConfig) PrepareKumaCniConfig(ctx context.Context, token []byte) error {
+	// Replace placeholders in the CNI network configuration
+	cniConfig := strings.NewReplacer(
+		"__KUBECONFIG_FILEPATH__", filepath.Join(c.HostCniNetDir, c.KubeconfigName),
+		"__SERVICEACCOUNT_TOKEN__", string(token),
+	).Replace(c.CniNetworkConfig)
 
-	cniConfig := strings.Replace(rawConfig, "__KUBECONFIG_FILEPATH__", kubeconfigFilePath, 1)
-	log.V(1).Info("cni config after replace", "cni config", cniConfig)
+	log.V(1).Info("CNI config after replacement", "CNI config", cniConfig)
 
-	serviceAccountToken, err := os.ReadFile(token)
-	if err != nil {
-		return err
+	if c.ChainedCniPlugin {
+		if err := setupChainedPlugin(ctx, c.MountedCniNetDir, c.CniConfName, cniConfig); err != nil {
+			return errors.Wrap(err, "unable to setup kuma CNI as chained plugin")
+		}
+
+		return nil
 	}
-	cniConfig = strings.Replace(cniConfig, "__SERVICEACCOUNT_TOKEN__", string(serviceAccountToken), 1)
 
-	if ic.ChainedCniPlugin {
-		err := setupChainedPlugin(ctx, ic.MountedCniNetDir, ic.CniConfName, cniConfig)
-		if err != nil {
-			return errors.Wrap(err, "unable to setup kuma cni as chained plugin")
-		}
-	} else {
-		err := atomic.WriteFile(ic.MountedCniNetDir+"/"+ic.CniConfName, strings.NewReader(cniConfig))
-		if err != nil {
-			return err
-		}
+	configPath := filepath.Join(c.MountedCniNetDir, c.CniConfName)
+	log.Info("writing standalone CNI config", "path", configPath)
+
+	if err := atomic.WriteFile(configPath, strings.NewReader(cniConfig)); err != nil {
+		return errors.Wrap(err, "failed to write standalone CNI config")
 	}
 
 	return nil

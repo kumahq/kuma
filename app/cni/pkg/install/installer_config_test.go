@@ -66,6 +66,7 @@ var _ = Describe("InstallerConfig", func() {
 		It("should successfully prepare kubeconfig file", func() {
 			// given
 			mockServiceAccountPath := filepath.Join("testdata", "prepare-kubeconfig")
+			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
 			ic := InstallerConfig{
 				KubernetesServiceHost:     "localhost",
 				KubernetesServicePort:     "3000",
@@ -75,7 +76,7 @@ var _ = Describe("InstallerConfig", func() {
 			}
 
 			// when
-			err := ic.PrepareKubeconfig(filepath.Join(mockServiceAccountPath, "token"), filepath.Join(mockServiceAccountPath, "ca.crt"))
+			err := ic.PrepareKubeconfig(token, filepath.Join(mockServiceAccountPath, "ca.crt"))
 
 			// then
 			Expect(err).To(Not(HaveOccurred()))
@@ -101,48 +102,52 @@ var _ = Describe("InstallerConfig", func() {
 			Expect(result).To(Equal(expectedKubeconfig))
 		})
 	})
-})
 
-var _ = Describe("prepareKumaCniConfig", func() {
-	It("should successfully prepare chained kuma CNI file", func() {
-		// given
-		mockServiceAccountPath := filepath.Join("testdata", "prepare-chained-kuma-config")
-		ic := InstallerConfig{
-			CniNetworkConfig: kumaCniConfigTemplate,
-			MountedCniNetDir: filepath.Join("testdata", "prepare-chained-kuma-config"),
-			KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
-			CniConfName:      "10-calico.conflist",
-			ChainedCniPlugin: true,
-		}
+	Describe("PrepareKumaCniConfig", func() {
+		It("should successfully prepare chained kuma CNI file", func() {
+			// given
+			mockServiceAccountPath := filepath.Join("testdata", "prepare-chained-kuma-config")
+			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
+			ic := InstallerConfig{
+				CniNetworkConfig: kumaCniConfigTemplate,
+				MountedCniNetDir: filepath.Join("testdata", "prepare-chained-kuma-config"),
+				HostCniNetDir:    "/foo/bar",
+				KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
+				CniConfName:      "10-calico.conflist",
+				ChainedCniPlugin: true,
+			}
 
-		// when
-		err := prepareKumaCniConfig(context.Background(), &ic, filepath.Join(mockServiceAccountPath, "token"))
+			// when
+			err := ic.PrepareKumaCniConfig(context.Background(), token)
 
-		// then
-		Expect(err).To(Not(HaveOccurred()))
-		// and
-		kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
-		Expect(kubeconfig).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
-	})
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+			// and
+			kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist"))
+			Expect(kubeconfig).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "prepare-chained-kuma-config", "10-calico.conflist.golden")))
+		})
 
-	It("should successfully prepare standalone kuma CNI file", func() {
-		// given
-		mockServiceAccountPath := filepath.Join("testdata", "prepare-standalone-kuma-config")
-		ic := InstallerConfig{
-			CniNetworkConfig: kumaCniConfigTemplate,
-			MountedCniNetDir: filepath.Join("testdata", "prepare-standalone-kuma-config"),
-			KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
-			CniConfName:      "kuma-cni.conf",
-			ChainedCniPlugin: false,
-		}
+		It("should successfully prepare standalone kuma CNI file", func() {
+			// given
+			mockServiceAccountPath := filepath.Join("testdata", "prepare-standalone-kuma-config")
+			token, _ := os.ReadFile(filepath.Join(mockServiceAccountPath, "token"))
+			ic := InstallerConfig{
+				CniNetworkConfig: kumaCniConfigTemplate,
+				MountedCniNetDir: filepath.Join("testdata", "prepare-standalone-kuma-config"),
+				HostCniNetDir:    "/etc/cni/net.d",
+				KubeconfigName:   "ZZZ-kuma-cni-kubeconfig",
+				CniConfName:      "kuma-cni.conf",
+				ChainedCniPlugin: false,
+			}
 
-		// when
-		err := prepareKumaCniConfig(context.Background(), &ic, filepath.Join(mockServiceAccountPath, "token"))
+			// when
+			err := ic.PrepareKumaCniConfig(context.Background(), token)
 
-		// then
-		Expect(err).To(Not(HaveOccurred()))
-		// and
-		kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
-		Expect(kubeconfig).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
+			// then
+			Expect(err).To(Not(HaveOccurred()))
+			// and
+			kubeconfig, _ := os.ReadFile(filepath.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf"))
+			Expect(kubeconfig).To(matchers.MatchGoldenJSON(filepath.Join("testdata", "prepare-standalone-kuma-config", "kuma-cni.conf.golden")))
+		})
 	})
 })

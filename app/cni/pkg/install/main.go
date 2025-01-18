@@ -25,8 +25,8 @@ const (
 	primaryBinDir   = "/host/opt/cni/bin"
 	secondaryBinDir = "/host/secondary-bin-dir"
 	saPath          = "/var/run/secrets/kubernetes.io/serviceaccount"
-	saToken         = saPath + "/token"
-	saCACrt         = saPath + "/ca.crt"
+	saPathToken     = saPath + "/token"
+	saPathCACrt     = saPath + "/ca.crt"
 	readyFilePath   = "/tmp/ready"
 	defaultLogName  = "install-cni"
 )
@@ -109,11 +109,16 @@ func install(ctx context.Context, ic *InstallerConfig) error {
 		return errors.Wrap(err, "could not copy binary files")
 	}
 
-	if err := ic.PrepareKubeconfig(saToken, saCACrt); err != nil {
+	saToken, err := os.ReadFile(saPathToken)
+	if err != nil {
+		return errors.Wrap(err, "failed to read service account token")
+	}
+
+	if err := ic.PrepareKubeconfig(saToken, saPathCACrt); err != nil {
 		return errors.Wrap(err, "could not prepare kubeconfig")
 	}
 
-	if err := prepareKumaCniConfig(ctx, ic, saToken); err != nil {
+	if err := ic.PrepareKumaCniConfig(ctx, saToken); err != nil {
 		return errors.Wrap(err, "could not prepare kuma cni config")
 	}
 
