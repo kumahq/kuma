@@ -179,12 +179,12 @@ func ComputeConf[T any](rs Rules, element subsetutils.Element) *T {
 }
 
 func BuildFromRules(
-	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
+	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 ) (FromRules, error) {
 	rulesByInbound := map[InboundListener]Rules{}
 	for inbound, policies := range matchedPoliciesByInbound {
 		fromList := []PolicyItemWithMeta{}
-		for _, p := range policies {
+		for _, p := range policies.GetItems() {
 			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
 			if !ok {
 				return FromRules{}, nil
@@ -202,8 +202,8 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies []core_model.Resource, reader common.ResourceReader) (ToRules, error) {
-	toList, err := buildToList(matchedPolicies, reader)
+func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader) (ToRules, error) {
+	toList, err := buildToList(matchedPolicies.GetItems(), reader)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -215,7 +215,7 @@ func BuildToRules(matchedPolicies []core_model.Resource, reader common.ResourceR
 
 	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
 	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
-	excludeTopLevelMeshHTTPRoute := slices.DeleteFunc(slices.Clone(matchedPolicies), func(r core_model.Resource) bool {
+	excludeTopLevelMeshHTTPRoute := slices.DeleteFunc(slices.Clone(matchedPolicies.GetItems()), func(r core_model.Resource) bool {
 		return r.GetSpec().(core_model.Policy).GetTargetRef().Kind == common_api.MeshHTTPRoute
 	})
 	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
@@ -242,8 +242,8 @@ func buildToList(matchedPolicies []core_model.Resource, reader common.ResourceRe
 }
 
 func BuildGatewayRules(
-	matchedPoliciesByInbound map[InboundListener][]core_model.Resource,
-	matchedPoliciesByListener map[InboundListenerHostname][]core_model.Resource,
+	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
+	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
 	reader common.ResourceReader,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]ToRules{}
