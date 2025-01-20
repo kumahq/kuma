@@ -8,6 +8,7 @@ import (
 	"sigs.k8s.io/yaml"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
@@ -433,6 +434,17 @@ var _ = Describe("Rules", func() {
 			Expect(bytes).To(matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.yaml", ".golden.yaml", 1)))
 		}
 
+		samePolicyTypesToList := func(policies []core_model.Resource) core_model.ResourceList {
+			Expect(policies).ToNot(BeEmpty())
+			policyType := policies[0].Descriptor().Name
+			list, err := registry.Global().NewList(policyType)
+			Expect(err).ToNot(HaveOccurred())
+			for _, policy := range policies {
+				Expect(list.AddItem(policy)).To(Succeed())
+			}
+			return list
+		}
+
 		DescribeTable("should build a rule-based view for the policy with a from list",
 			func(inputFile string) {
 				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
@@ -441,8 +453,8 @@ var _ = Describe("Rules", func() {
 						Address: "127.0.0.1",
 						Port:    80,
 					}
-					policiesByInbound := map[core_rules.InboundListener][]core_model.Resource{
-						listener: policies,
+					policiesByInbound := map[core_rules.InboundListener]core_model.ResourceList{
+						listener: samePolicyTypesToList(policies),
 					}
 					// when
 					return core_rules.BuildFromRules(policiesByInbound)
@@ -454,14 +466,19 @@ var _ = Describe("Rules", func() {
 		DescribeTable("should build a rule-based view for the policy with a to list",
 			func(inputFile string) {
 				buildRulesTestTemplate(inputFile, func(policies []core_model.Resource) (interface{}, error) {
-					actualPolicies := []core_model.Resource{}
+					var actualPolicies core_model.ResourceList
 					var httpRoutes []*v1alpha1.MeshHTTPRouteResource
 					for _, policy := range policies {
 						switch policy.Descriptor().Name {
 						case v1alpha1.MeshHTTPRouteType:
 							httpRoutes = append(httpRoutes, policy.(*v1alpha1.MeshHTTPRouteResource))
 						default:
-							actualPolicies = append(actualPolicies, policy)
+							if actualPolicies == nil {
+								var err error
+								actualPolicies, err = registry.Global().NewList(policy.Descriptor().Name)
+								Expect(err).ToNot(HaveOccurred())
+							}
+							Expect(actualPolicies.AddItem(policy)).To(Succeed())
 						}
 					}
 					return core_rules.BuildToRules(actualPolicies, context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
