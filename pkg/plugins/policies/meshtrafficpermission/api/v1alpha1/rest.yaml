@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse'
+                $ref: '#/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/responses/MeshTrafficPermissionCreateOrUpdateSuccessResponse'
+                $ref: '#/components/schemas/MeshTrafficPermissionCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshTrafficPermission
@@ -109,7 +109,6 @@ components:
   schemas:
     MeshTrafficPermissionItem:
       $ref: 'schema.yaml'
-  responses:
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -120,6 +119,8 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
+
+  responses:
     MeshTrafficPermissionItem:
       description: Successful response
       content:
