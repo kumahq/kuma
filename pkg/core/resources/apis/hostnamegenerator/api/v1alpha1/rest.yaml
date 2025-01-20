@@ -46,13 +46,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HostnameGeneratorCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/HostnameGeneratorCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteHostnameGenerator
@@ -84,6 +84,7 @@ components:
   schemas:
     HostnameGeneratorItem:
       $ref: 'schema.yaml'
+  responses:
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -94,8 +95,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     HostnameGeneratorItem:
       description: Successful response
       content:

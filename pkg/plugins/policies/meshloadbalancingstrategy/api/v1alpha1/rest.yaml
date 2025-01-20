@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshLoadBalancingStrategy
@@ -109,6 +109,7 @@ components:
   schemas:
     MeshLoadBalancingStrategyItem:
       $ref: 'schema.yaml'
+  responses:
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -119,8 +120,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     MeshLoadBalancingStrategyItem:
       description: Successful response
       content:

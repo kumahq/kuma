@@ -46,13 +46,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMesh
@@ -84,6 +84,7 @@ components:
   schemas:
     MeshItem:
       $ref: 'schema.yaml'
+  responses:
     MeshCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -94,8 +95,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     MeshItem:
       description: Successful response
       content:

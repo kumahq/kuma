@@ -58,13 +58,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+                $ref: '#/components/responses/MeshGatewayCreateOrUpdateSuccessResponse'
 
     delete:
       operationId: deleteMeshGateway
@@ -109,6 +109,7 @@ components:
   schemas:
     MeshGatewayItem:
       $ref: 'schema.yaml'
+  responses:
     MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
@@ -119,8 +120,6 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
-
-  responses:
     MeshGatewayItem:
       description: Successful response
       content:
