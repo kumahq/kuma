@@ -226,6 +226,7 @@ func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneR
 	return selectedInbounds
 }
 
+// TODO this is common functionality with selecting MeshService by labels, we should refactor this and extract to some common function
 func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
 	if ref.Labels == nil {
 		return false
