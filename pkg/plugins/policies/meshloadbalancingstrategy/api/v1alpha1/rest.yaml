@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshloadbalancingstrategies/{name}:
     get:
-      operationId: get-mlbs
+      operationId: getMeshLoadBalancingStrategy
       summary: Returns MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshLoadBalancingStrategyItem"
 
     put:
-      operationId: create-or-update-mlbs
+      operationId: putMeshLoadBalancingStrategy
       summary: Creates or Updates MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mlbs
+      operationId: deleteMeshLoadBalancingStrategy
       summary: Deletes MeshLoadBalancingStrategy entity
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshloadbalancingstrategies:
     get:
-      operationId: get-mlbs-list
+      operationId: getMeshLoadBalancingStrategyList
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:

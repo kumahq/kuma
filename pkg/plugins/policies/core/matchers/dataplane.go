@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -45,9 +46,12 @@ func MatchedPolicies(
 	policies := resources.ListOrEmpty(rType)
 	var warnings []string
 
-	matchedPoliciesByInbound := map[core_rules.InboundListener][]core_model.Resource{}
-	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname][]core_model.Resource{}
-	var dpPolicies []core_model.Resource
+	matchedPoliciesByInbound := map[core_rules.InboundListener]core_model.ResourceList{}
+	matchedPoliciesByGatewayListener := map[core_rules.InboundListenerHostname]core_model.ResourceList{}
+	dpPolicies, err := registry.Global().NewList(rType)
+	if err != nil {
+		return core_xds.TypedMatchingPolicies{}, err
+	}
 
 	zoneGateways := filterGatewaysByZone(resources.Gateways().Items, dpp)
 	gateway := xds_topology.SelectGateway(zoneGateways, dpp.Spec.Matches)
@@ -70,20 +74,38 @@ func MatchedPolicies(
 			continue
 		}
 
-		dpPolicies = append(dpPolicies, policy)
+		if err := dpPolicies.AddItem(policy); err != nil {
+			return core_xds.TypedMatchingPolicies{}, err
+		}
 
 		for _, listener := range matchedGatewayListeners {
-			matchedPoliciesByGatewayListener[listener] = append(matchedPoliciesByGatewayListener[listener], policy)
+			if _, ok := matchedPoliciesByGatewayListener[listener]; !ok {
+				matchedPoliciesByGatewayListener[listener], err = registry.Global().NewList(rType)
+				if err != nil {
+					return core_xds.TypedMatchingPolicies{}, err
+				}
+			}
+			if err := matchedPoliciesByGatewayListener[listener].AddItem(policy); err != nil {
+				return core_xds.TypedMatchingPolicies{}, err
+			}
 		}
 		for _, inbound := range selectedInbounds {
-			matchedPoliciesByInbound[inbound] = append(matchedPoliciesByInbound[inbound], policy)
+			if _, ok := matchedPoliciesByInbound[inbound]; !ok {
+				matchedPoliciesByInbound[inbound], err = registry.Global().NewList(rType)
+				if err != nil {
+					return core_xds.TypedMatchingPolicies{}, err
+				}
+			}
+			if err := matchedPoliciesByInbound[inbound].AddItem(policy); err != nil {
+				return core_xds.TypedMatchingPolicies{}, err
+			}
 		}
 	}
 
-	SortByTargetRef(dpPolicies)
+	dpPolicies = SortByTargetRef(dpPolicies)
 
-	for _, ps := range matchedPoliciesByInbound {
-		SortByTargetRef(ps)
+	for inbound, ps := range matchedPoliciesByInbound {
+		matchedPoliciesByInbound[inbound] = SortByTargetRef(ps)
 	}
 
 	fr, err := core_rules.BuildFromRules(matchedPoliciesByInbound)
@@ -105,14 +127,14 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))
 	}
 
-	sr, err := core_rules.BuildSingleItemRules(dpPolicies)
+	sr, err := core_rules.BuildSingleItemRules(dpPolicies.GetItems())
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create top level rules: %s", err.Error()))
 	}
 
 	return core_xds.TypedMatchingPolicies{
 		Type:              rType,
-		DataplanePolicies: dpPolicies,
+		DataplanePolicies: dpPolicies.GetItems(),
 		FromRules:         fr,
 		ToRules:           tr,
 		GatewayRules:      gr,
@@ -350,7 +372,8 @@ func inboundsSelectedByTags(tagsSelector mesh_proto.TagSelector, dpp *core_mesh.
 	return inbounds, gwListeners, delegatedGatewaySelected
 }
 
-func SortByTargetRef(rs []core_model.Resource) {
+func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
+	rs := rl.GetItems()
 	slices.SortFunc(rs, func(r1, r2 core_model.Resource) int {
 		p1, ok1 := r1.GetSpec().(core_model.Policy)
 		p2, ok2 := r2.GetSpec().(core_model.Policy)
@@ -381,4 +404,9 @@ func SortByTargetRef(rs []core_model.Resource) {
 
 		return cmp.Compare(core_model.GetDisplayName(r2.GetMeta()), core_model.GetDisplayName(r1.GetMeta()))
 	})
+	rv := registry.Global().MustNewList(rl.GetItemType())
+	for _, r := range rs {
+		_ = rv.AddItem(r)
+	}
+	return rv
 }

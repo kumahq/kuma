@@ -19,6 +19,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
@@ -218,7 +219,7 @@ var _ = Describe("MeshTLS", func() {
 											Origin: []core_model.ResourceMeta{
 												&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 											},
-											Subset: core_rules.MeshSubset(),
+											Subset: subsetutils.MeshSubset(),
 											Conf: meshhttproute_api.PolicyDefault{
 												Rules: []meshhttproute_api.Rule{
 													{
@@ -392,7 +393,7 @@ func getFromRules(froms []api.From) core_rules.FromRules {
 
 	for _, from := range froms {
 		rules = append(rules, &core_rules.Rule{
-			Subset: core_rules.Subset{},
+			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
 	}
@@ -416,7 +417,7 @@ func getGatewayRules(froms []api.From) core_rules.GatewayRules {
 
 	for _, from := range froms {
 		rules = append(rules, &core_rules.Rule{
-			Subset: core_rules.Subset{},
+			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
 	}

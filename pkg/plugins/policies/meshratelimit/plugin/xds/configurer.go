@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -55,7 +56,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 }
 
 type Configurer struct {
-	Element core_rules.Element
+	Element subsetutils.Element
 	Rules   core_rules.Rules
 }
 
@@ -244,7 +245,7 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 	route.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
 }
 
-func (c *Configurer) getConf(element core_rules.Element) *api.Conf {
+func (c *Configurer) getConf(element subsetutils.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}

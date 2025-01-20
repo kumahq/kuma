@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshaccesslogs/{name}:
     get:
-      operationId: get-mal
+      operationId: getMeshAccessLog
       summary: Returns MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshAccessLogItem"
 
     put:
-      operationId: create-or-update-mal
+      operationId: putMeshAccessLog
       summary: Creates or Updates MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshAccessLogCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mal
+      operationId: deleteMeshAccessLog
       summary: Deletes MeshAccessLog entity
       tags: [ "MeshAccessLog" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshaccesslogs:
     get:
-      operationId: get-mal-list
+      operationId: getMeshAccessLogList
       summary: Returns a list of MeshAccessLog in the mesh.
       tags: [ "MeshAccessLog" ]
       parameters:

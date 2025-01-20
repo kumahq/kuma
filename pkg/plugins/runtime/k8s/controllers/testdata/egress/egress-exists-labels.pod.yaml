@@ -1,0 +1,14 @@
+metadata:
+  namespace: kuma-system
+  name: kuma-egress
+  labels:
+    app: kuma-egress
+    test: new
+  annotations:
+    kuma.io/egress: enabled
+spec:
+  containers:
+    - ports:
+        - containerPort: 10002
+status:
+  podIP: 192.168.0.1

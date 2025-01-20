@@ -22,7 +22,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -652,7 +652,7 @@ func createMeshExternalServiceEndpoint(
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
+		OwnerResource: pointer.To(rules_common.UniqueKey(mes, "")),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
 	if tags == nil {
@@ -816,7 +816,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
-			OwnerResource: pointer.To(core_rules.UniqueKey(mes, "")),
+			OwnerResource: pointer.To(rules_common.UniqueKey(mes, "")),
 		}
 		if tls != nil && tls.Enabled {
 			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)
