@@ -14,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/xds"
@@ -78,7 +80,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(dataplane, rules.Rules, core_rules.MeshServiceElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
+		if err := configure(dataplane, rules.Rules, subsetutils.MeshServiceElement(serviceName), meshCtx.GetServiceProtocol(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -123,7 +125,7 @@ func applyToGateways(
 					if err := configure(
 						proxy.Dataplane,
 						rules.Rules,
-						core_rules.MeshServiceElement(serviceName),
+						subsetutils.MeshServiceElement(serviceName),
 						toProtocol(listenerInfo.Listener.Protocol),
 						cluster,
 					); err != nil {
@@ -166,7 +168,7 @@ func toProtocol(p mesh_proto.MeshGateway_Listener_Protocol) core_mesh.Protocol {
 func configure(
 	dataplane *core_mesh.DataplaneResource,
 	rules core_rules.Rules,
-	element core_rules.Element,
+	element subsetutils.Element,
 	protocol core_mesh.Protocol,
 	cluster *envoy_cluster.Cluster,
 ) error {
@@ -222,7 +224,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 	return nil
 }
 
-func applyToRealResource(meshCtx xds_context.MeshContext, rules core_rules.ResourceRules, tagSet mesh_proto.MultiValueTagSet, uri core_model.TypedResourceIdentifier, resourcesByType core_xds.ResourcesByType) error {
+func applyToRealResource(meshCtx xds_context.MeshContext, rules outbound.ResourceRules, tagSet mesh_proto.MultiValueTagSet, uri core_model.TypedResourceIdentifier, resourcesByType core_xds.ResourcesByType) error {
 	conf := rules.Compute(uri, meshCtx.Resources)
 	if conf == nil {
 		return nil
@@ -241,7 +243,7 @@ func applyToRealResource(meshCtx xds_context.MeshContext, rules core_rules.Resou
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, tagSet mesh_proto.MultiValueTagSet) error {
 	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		if err := applyToRealResource(meshCtx, rules, tagSet, uri, resType); err != nil {
 			return err

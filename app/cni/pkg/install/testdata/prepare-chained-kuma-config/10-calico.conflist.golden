@@ -30,7 +30,7 @@
         "exclude_namespaces": [
           "kuma-system"
         ],
-        "kubeconfig": "/ZZZ-kuma-cni-kubeconfig"
+        "kubeconfig": "/foo/bar/ZZZ-kuma-cni-kubeconfig"
       },
       "log_level": "info",
       "type": "kuma-cni"

@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -199,12 +200,7 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 }
 
 func processToResourceRules(policies []core_model.Resource, resources xds_context.Resources) (core_rules.ToRules, error) {
-	toList, err := core_rules.BuildToList(policies, resources)
-	if err != nil {
-		return core_rules.ToRules{}, err
-	}
-
-	resourceRules, err := core_rules.BuildResourceRules(toList, resources)
+	resourceRules, err := outbound.BuildRules(policies, resources)
 	if err != nil {
 		return core_rules.ToRules{}, err
 	}
