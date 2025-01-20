@@ -81,6 +81,9 @@ func MatchedPolicies(
 		for _, listener := range matchedGatewayListeners {
 			if _, ok := matchedPoliciesByGatewayListener[listener]; !ok {
 				matchedPoliciesByGatewayListener[listener], err = registry.Global().NewList(rType)
+				if err != nil {
+					return core_xds.TypedMatchingPolicies{}, err
+				}
 			}
 			if err := matchedPoliciesByGatewayListener[listener].AddItem(policy); err != nil {
 				return core_xds.TypedMatchingPolicies{}, err
@@ -89,6 +92,9 @@ func MatchedPolicies(
 		for _, inbound := range selectedInbounds {
 			if _, ok := matchedPoliciesByInbound[inbound]; !ok {
 				matchedPoliciesByInbound[inbound], err = registry.Global().NewList(rType)
+				if err != nil {
+					return core_xds.TypedMatchingPolicies{}, err
+				}
 			}
 			if err := matchedPoliciesByInbound[inbound].AddItem(policy); err != nil {
 				return core_xds.TypedMatchingPolicies{}, err
