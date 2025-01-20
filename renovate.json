@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "github>Kong/public-shared-renovate:backend#1.0.0"
+  ],
+  "baseBranches": [
+    "master"
+  ],
+  "enabledManagers": [
+    "custom.regex",
+    "github-actions",
+    "gomod"
+  ],
+  "packageRules": [
+    {
+      "description": "Skip tests for GitHub Actions updates. We match by depType because there isn’t an idiomatic way to target custom manager from Kong/public-shared-renovate:backend preset, which handles Kong/public-shared-actions",
+      "matchDepTypes": ["action"],
+      "addLabels": ["ci/skip-test"]
+    }
+  ]
+}
