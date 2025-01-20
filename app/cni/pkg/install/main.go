@@ -3,9 +3,9 @@ package install
 import (
 	"bytes"
 	"context"
+	std_errors "errors"
 	"os"
 	"os/signal"
-	"path"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -14,19 +14,18 @@ import (
 	"github.com/natefinch/atomic"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
-	"go.uber.org/multierr"
 
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
-	kumaCniBinaryPath  = "/opt/cni/bin/kuma-cni"
-	primaryBinDir      = "/host/opt/cni/bin"
-	secondaryBinDir    = "/host/secondary-bin-dir"
-	serviceAccountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
-	readyFilePath      = "/tmp/ready"
-	defaultLogName     = "install-cni"
+	binaryName      = "kuma-cni"
+	binaryPath      = "/opt/cni/bin/" + binaryName
+	primaryBinDir   = "/host/opt/cni/bin"
+	secondaryBinDir = "/host/secondary-bin-dir"
+	readyFilePath   = "/tmp/ready"
+	defaultLogName  = "install-cni"
 )
 
 var log = CreateNewLogger(defaultLogName, kuma_log.DebugLevel)
@@ -42,7 +41,7 @@ func cleanup(ic *InstallerConfig) {
 	} else {
 		log.V(1).Info("removed existing binaries")
 	}
-	if err := revertConfig(ic.MountedCniNetDir, ic.CniConfName, ic.ChainedCniPlugin); err != nil {
+	if err := revertConfig(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin); err != nil {
 		log.Error(err, "could not revert config")
 	} else {
 		log.V(1).Info("reverted config")
@@ -71,166 +70,178 @@ func removeKubeconfig(mountedCniNetDir, kubeconfigName string) error {
 	return nil
 }
 
-func revertConfig(mountedCniNetDir, cniConfName string, chainedCniPlugin bool) error {
-	configPath := mountedCniNetDir + "/" + cniConfName
-
+func revertConfig(configPath string, chained bool) error {
 	if !files.FileExists(configPath) {
 		log.Info("no need to revert config - file does not exist", "configPath", configPath)
 		return nil
 	}
 
-	if chainedCniPlugin {
+	if chained {
 		contents, err := os.ReadFile(configPath)
 		if err != nil {
-			return errors.Wrap(err, "couldn't read cni conf file")
+			return errors.Wrap(err, "could not read cni conf file")
 		}
+
 		newContents, err := revertConfigContents(contents)
 		if err != nil {
 			return errors.Wrap(err, "could not revert config contents")
 		}
-		err = atomic.WriteFile(configPath, bytes.NewReader(newContents))
-		if err != nil {
+
+		if err := atomic.WriteFile(configPath, bytes.NewReader(newContents)); err != nil {
 			return errors.Wrap(err, "could not write new conf")
 		}
+
+		return nil
+	}
+
+	if err := os.Remove(configPath); err != nil {
+		return errors.Wrap(err, "could not remove cni conf file")
+	}
+
+	return nil
+}
+
+func install(ctx context.Context, ic *InstallerConfig) error {
+	if err := ic.PrepareKubeconfig(); err != nil {
+		return errors.Wrap(err, "failed to prepare kubeconfig")
+	}
+
+	if err := ic.CheckInstall(); err == nil {
+		log.Info("Kuma CNI is already installed and configured")
+		return nil
 	} else {
-		err := os.Remove(configPath)
-		if err != nil {
-			return errors.Wrap(err, "couldn't remove cni conf file")
-		}
+		log.Info("no valid installation found, will proceed with installation", "error", err)
 	}
 
-	return nil
-}
-
-func install(ic *InstallerConfig) error {
 	if err := copyBinaries(); err != nil {
-		return errors.Wrap(err, "could not copy binary files")
+		return errors.Wrap(err, "failed to copy binary files")
 	}
 
-	if err := prepareKubeconfig(ic, serviceAccountPath); err != nil {
-		return errors.Wrap(err, "could not prepare kubeconfig")
+	if err := ic.PrepareKumaCniConfig(ctx); err != nil {
+		return errors.Wrap(err, "failed to prepare Kuma CNI configuration")
 	}
 
-	if err := prepareKumaCniConfig(ic, serviceAccountPath); err != nil {
-		return errors.Wrap(err, "could not prepare kuma cni config")
-	}
+	log.Info("Kuma CNI installation completed successfully")
 
 	return nil
 }
 
-func setupChainedPlugin(mountedCniNetDir, cniConfName, kumaCniConfig string) error {
-	resolvedName := cniConfName
+func setupChainedPlugin(ctx context.Context, mountedCniNetDir, cniConfName, kumaCniConfig string) error {
 	extension := filepath.Ext(cniConfName)
-	if !files.FileExists(mountedCniNetDir+"/"+cniConfName) && extension == ".conf" && files.FileExists(mountedCniNetDir+"/"+cniConfName+"list") {
+	pathConf := filepath.Join(mountedCniNetDir, cniConfName)
+	pathConflist := filepath.Join(mountedCniNetDir, cniConfName+"list")
+
+	resolvedName := cniConfName
+	if !files.FileExists(pathConf) && extension == ".conf" && files.FileExists(pathConflist) {
 		resolvedName = cniConfName + "list"
 	}
 
-	cniConfPath := path.Join(mountedCniNetDir, resolvedName)
+	cniConfPath := filepath.Join(mountedCniNetDir, resolvedName)
+
 	backoff := retry.WithMaxDuration(5*time.Minute, retry.NewConstant(time.Second))
-	err := retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-		if !files.FileExists(cniConfPath) {
-			err := errors.Errorf("CNI config '%s' not found.", cniConfPath)
-			log.Error(err, "error chaining Kuma CNI config, will retry...")
-			return retry.RetryableError(err)
+	err := retry.Do(ctx, backoff, func(ctx context.Context) error {
+		if files.FileExists(cniConfPath) {
+			return nil
 		}
-		return nil
+
+		err := errors.Errorf("cni config '%s' not found", cniConfPath)
+		log.Error(err, "error chaining CNI config, retrying...")
+		return retry.RetryableError(err)
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to ensure CNI config presence")
 	}
 
 	hostCniConfig, err := os.ReadFile(cniConfPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read CNI config file")
 	}
 
 	marshaled, err := transformJsonConfig(kumaCniConfig, hostCniConfig)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to transform JSON config")
 	}
-	log.V(1).Info("resulting config", "config", string(marshaled))
 
-	log.Info("chaining Kuma CNI config. Updating CNI config file", "file", mountedCniNetDir+"/"+resolvedName)
-	err = atomic.WriteFile(mountedCniNetDir+"/"+resolvedName, bytes.NewReader(marshaled))
-	return err
+	log.V(1).Info("resulting config generated", "config", string(marshaled))
+	log.Info("chaining CNI config, updating config file", "file", cniConfPath)
+
+	if err := atomic.WriteFile(cniConfPath, bytes.NewReader(marshaled)); err != nil {
+		return errors.Wrap(err, "failed to write updated CNI config")
+	}
+
+	return nil
 }
 
 func copyBinaries() error {
-	dirs := []string{primaryBinDir, secondaryBinDir}
-	writtenOnce := false
-	allErrors := errors.New("combined errors for copying binaries")
-	for _, dir := range dirs {
+	var errs error
+
+	for _, dir := range []string{primaryBinDir, secondaryBinDir} {
 		err := tryWritingToDir(dir)
-		if err != nil {
-			allErrors = multierr.Append(allErrors, err)
-			log.Info("writing to dir failed", "dir", dir)
-			continue
+		if err == nil {
+			log.Info("successfully wrote kuma CNI binaries", "directory", dir)
+			return nil
 		}
 
-		log.Info("wrote kuma CNI binaries", "dir", dir)
-		writtenOnce = true
+		errs = std_errors.Join(
+			errs,
+			errors.Wrapf(err, "failed to write binaries to directory %s", dir),
+		)
+
+		log.Info("failed to write binaries", "directory", dir)
 	}
 
-	if !writtenOnce {
-		return allErrors
-	}
-	return nil
+	return errs
 }
 
 func tryWritingToDir(dir string) error {
 	if err := files.IsDirWriteable(dir); err != nil {
-		return errors.Wrap(err, "directory is not writeable")
-	}
-	file, err := os.Open(kumaCniBinaryPath)
-	if err != nil {
-		return errors.Wrap(err, "can't open kuma-cni file")
+		return errors.Wrap(err, "directory is not writable")
 	}
 
-	stat, err := os.Stat(kumaCniBinaryPath)
+	file, err := os.Open(binaryPath)
 	if err != nil {
-		return errors.Wrap(err, "can't stat kuma-cni file")
+		return errors.Wrap(err, "unable to open CNI binary file")
 	}
-	log.V(1).Info("cni binary file permissions", "permissions", int(stat.Mode()), "path", kumaCniBinaryPath)
+	defer file.Close()
 
-	destination := dir + "/kuma-cni"
-	err = atomic.WriteFile(destination, file)
+	stat, err := file.Stat()
 	if err != nil {
-		return errors.Wrap(err, "can't atomically write kuma-cni file")
-	}
-
-	err = os.Chmod(destination, stat.Mode()|0o111)
-	if err != nil {
-		return errors.Wrap(err, "can't chmod kuma-cni file")
+		return errors.Wrap(err, "unable to stat CNI binary file")
 	}
 
-	if err != nil {
-		return errors.Wrap(err, "can't atomically write cni file")
+	log.V(1).Info("CNI binary file permissions", "permissions", int(stat.Mode()), "path", binaryPath)
+
+	destination := filepath.Join(dir, binaryName)
+
+	if err := atomic.WriteFile(destination, file); err != nil {
+		return errors.Wrap(err, "unable to atomically write CNI binary file")
+	}
+
+	if err := os.Chmod(destination, stat.Mode()|0o111); err != nil {
+		return errors.Wrap(err, "unable to chmod CNI binary file")
 	}
 
 	return nil
 }
 
-func Run() {
+func Run(ctx context.Context) {
 	installerConfig, err := loadInstallerConfig()
 	if err != nil {
 		log.Error(err, "error occurred during config loading")
 		os.Exit(1)
 	}
 
-	err = SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName)
-	if err != nil {
+	if err := SetLogLevel(&log, installerConfig.CniLogLevel, defaultLogName); err != nil {
 		log.Error(err, "error occurred during setting the log level")
 		os.Exit(2)
 	}
 
-	err = install(installerConfig)
-	if err != nil {
+	if err := install(ctx, installerConfig); err != nil {
 		log.Error(err, "error occurred during cni installation")
 		os.Exit(3)
 	}
 
-	err = atomic.WriteFile(readyFilePath, strings.NewReader(""))
-	if err != nil {
+	if err := atomic.WriteFile(readyFilePath, strings.NewReader("")); err != nil {
 		log.Error(err, "unable to mark as ready")
 		os.Exit(4)
 	}
@@ -260,13 +271,11 @@ func runLoop(ic *InstallerConfig) error {
 		case <-osSignals:
 			return nil
 		case <-checkInstallTicker.C:
-			err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
-			if err != nil {
+			if err := ic.CheckInstall(); err != nil {
 				return err
 			}
 		case <-refreshSATokenTicker.C:
-			err := prepareKubeconfig(ic, serviceAccountPath)
-			if err != nil {
+			if err := ic.PrepareKubeconfig(); err != nil {
 				return err
 			}
 		}
