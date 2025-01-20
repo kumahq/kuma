@@ -8,9 +8,11 @@
   ],
   "enabledManagers": [
     "custom.regex",
+    "dockerfile",
     "github-actions",
     "gomod"
   ],
+  "ignorePaths": [],
   "packageRules": [
     {
       "description": "Skip tests for GitHub Actions updates. We match by depType because there isn’t an idiomatic way to target custom manager from Kong/public-shared-renovate:backend preset, which handles Kong/public-shared-actions",
