@@ -250,12 +250,22 @@ func runLoop(ic *InstallerConfig) error {
 		return nil
 	}
 
+	checkInstallTicker := time.NewTicker(time.Duration(ic.CfgCheckInterval) * time.Second)
+	refreshSATokenTicker := time.NewTicker(time.Duration(ic.RefreshSATokenInterval) * time.Second)
+	defer checkInstallTicker.Stop()
+	defer refreshSATokenTicker.Stop()
+
 	for {
 		select {
 		case <-osSignals:
 			return nil
-		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
+		case <-checkInstallTicker.C:
 			err := checkInstall(ic.MountedCniNetDir+"/"+ic.CniConfName, ic.ChainedCniPlugin)
+			if err != nil {
+				return err
+			}
+		case <-refreshSATokenTicker.C:
+			err := prepareKubeconfig(ic, serviceAccountPath)
 			if err != nil {
 				return err
 			}
