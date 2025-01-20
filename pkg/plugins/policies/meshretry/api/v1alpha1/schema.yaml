@@ -38,6 +38,7 @@ properties:
               - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
+              - Dataplane
             type: string
           labels:
             additionalProperties:
@@ -412,6 +413,7 @@ properties:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                   type: string
                 labels:
                   additionalProperties:

@@ -31,7 +31,10 @@ jobs:
         name: Get recent PRs
         run: |
           echo "out<<EOF" >> $GITHUB_OUTPUT
-          gh pr list -R ${{ github.repository }} --json number,title,url --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:dependabot" >> $GITHUB_OUTPUT
+          gh pr list \
+            --repo ${{ github.repository }} \
+            --json number,title,url \
+            --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:app/dependabot -author:app/renovate" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Show outputs
         env:
@@ -56,7 +59,7 @@ jobs:
     permissions:
       pull-requests: write
     steps:
-      - uses: marocchino/sticky-pull-request-comment@331f8f5b4215f0445d3c07b4967662a32a2d3e31 # v2.9.0
+      - uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 # v2.9.1
         with:
           header: PR reviewer checklist
           only_create: true

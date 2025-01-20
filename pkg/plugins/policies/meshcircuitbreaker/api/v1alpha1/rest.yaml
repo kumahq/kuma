@@ -8,7 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshcircuitbreakers/{name}:
     get:
-      operationId: get-mcb
+      operationId: getMeshCircuitBreaker
       summary: Returns MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -29,7 +29,7 @@ paths:
           $ref: "#/components/responses/MeshCircuitBreakerItem"
 
     put:
-      operationId: create-or-update-mcb
+      operationId: putMeshCircuitBreaker
       summary: Creates or Updates MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -67,7 +67,7 @@ paths:
                 $ref: '#/components/schemas/MeshCircuitBreakerCreateOrUpdateSuccessResponse'
 
     delete:
-      operationId: delete-mcb
+      operationId: deleteMeshCircuitBreaker
       summary: Deletes MeshCircuitBreaker entity
       tags: [ "MeshCircuitBreaker" ]
       parameters:
@@ -91,7 +91,7 @@ paths:
 
   /meshes/{mesh}/meshcircuitbreakers:
     get:
-      operationId: get-mcb-list
+      operationId: getMeshCircuitBreakerList
       summary: Returns a list of MeshCircuitBreaker in the mesh.
       tags: [ "MeshCircuitBreaker" ]
       parameters:

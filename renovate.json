@@ -1,35 +1,20 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "schedule": "before 5am every weekday",
   "extends": [
-    "config:best-practices",
-    ":semanticCommitTypeAll(chore)",
-    ":automergeDisabled",
-    ":gitSignOff"
+    "github>Kong/public-shared-renovate:backend#1.0.0"
   ],
   "baseBranches": [
     "master"
   ],
   "enabledManagers": [
-    "dockerfile",
+    "custom.regex",
     "github-actions",
-    "gomod",
-    "helm-values"
-  ],
-  "postUpdateOptions": [
-    "gomodMassage",
-    "gomodTidy"
-  ],
-  "ignorePaths": [
-    "(^|/)([Dd]ocker|[Cc]ontainer)file[^/]*\\.dockerignore$"
-  ],
-  "labels": [
-    "dependencies"
+    "gomod"
   ],
   "packageRules": [
     {
-      "description": "No need to run tests on github actions updates",
-      "matchManagers": ["github-actions"],
+      "description": "Skip tests for GitHub Actions updates. We match by depType because there isn’t an idiomatic way to target custom manager from Kong/public-shared-renovate:backend preset, which handles Kong/public-shared-actions",
+      "matchDepTypes": ["action"],
       "addLabels": ["ci/skip-test"]
     }
   ]
