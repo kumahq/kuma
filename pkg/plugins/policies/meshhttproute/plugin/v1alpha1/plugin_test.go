@@ -36,6 +36,9 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -506,9 +509,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Policies.Dynamic[api.MeshHTTPRouteType] = xds.TypedMatchingPolicies{
 				Type: api.MeshHTTPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
-							Origin: []core_rules.Origin{
+							Origin: []rules_common.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
 							},
 							BackendRefOriginIndex: map[common_api.MatchesHash]int{
@@ -843,9 +846,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
-										Origin: []core_rules.Origin{
+										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
 										},
 										BackendRefOriginIndex: map[common_api.MatchesHash]int{
@@ -1029,9 +1032,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
-										Origin: []core_rules.Origin{
+										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
 										},
 										BackendRefOriginIndex: map[common_api.MatchesHash]int{
@@ -1259,7 +1262,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1328,7 +1331,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1394,7 +1397,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1449,7 +1452,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: subsetutils.MeshService("backend"),
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
@@ -1508,7 +1511,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1571,7 +1574,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1631,7 +1634,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{
 									{
-										Subset: core_rules.MeshService("backend"),
+										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1735,7 +1738,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			commonRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshSubset(),
+						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -1754,7 +1757,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					{
-						Subset: core_rules.MeshSubset(),
+						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"go.dev"},
 							Rules: []api.Rule{{
@@ -1774,7 +1777,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					{
-						Subset: core_rules.MeshSubset(),
+						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"*.dev"},
 							Rules: []api.Rule{{
@@ -1794,7 +1797,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						},
 					},
 					{
-						Subset: core_rules.MeshSubset(),
+						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"other.dev"},
 							Rules: []api.Rule{{
@@ -1901,7 +1904,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			commonRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshSubset(),
+						Subset: subsetutils.MeshSubset(),
 						Origin: []core_model.ResourceMeta{
 							&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 						},
@@ -2004,7 +2007,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Rules: []api.Rule{{
 															Matches: []api.Match{{
@@ -2027,7 +2030,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "go.dev"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"go.dev"},
 														Rules: []api.Rule{{
@@ -2164,7 +2167,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "other.dev"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
 														Rules: []api.Rule{{
@@ -2188,7 +2191,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "go.dev"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
 														Rules: []api.Rule{{
@@ -2212,7 +2215,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, ""): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
 														Rules: []api.Rule{{
@@ -2236,7 +2239,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, ""): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Rules: []api.Rule{{
 															Matches: []api.Match{{
@@ -2254,7 +2257,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 														}},
 													},
 												}, {
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
 														Rules: []api.Rule{{
@@ -2278,7 +2281,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*.secure.dev"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"first-specific.secure.dev"},
 														Rules: []api.Rule{{
@@ -2297,7 +2300,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 														}},
 													},
 												}, {
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"second-specific.secure.dev"},
 														Rules: []api.Rule{{
@@ -2321,7 +2324,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*.super-secure.dev"): {
 											Rules: rules.Rules{
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"first-specific.super-secure.dev"},
 														Rules: []api.Rule{{
@@ -2340,7 +2343,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 														}},
 													},
 												}, {
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"second-specific.super-secure.dev"},
 														Rules: []api.Rule{{

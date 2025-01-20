@@ -3,7 +3,8 @@ package oapi_helpers
 import (
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -34,7 +35,7 @@ func ResourceMetaListToMetaList(resType core_model.ResourceType, in []core_model
 	return out
 }
 
-func SubsetToRuleMatcher(subset core_rules.Subset) []api_common.RuleMatcher {
+func SubsetToRuleMatcher(subset subsetutils.Subset) []api_common.RuleMatcher {
 	matchers := []api_common.RuleMatcher{}
 	for _, m := range subset {
 		matchers = append(matchers, api_common.RuleMatcher{Key: m.Key, Value: m.Value, Not: m.Not})
@@ -42,7 +43,7 @@ func SubsetToRuleMatcher(subset core_rules.Subset) []api_common.RuleMatcher {
 	return matchers
 }
 
-func OriginListToResourceRuleOrigin(resType core_model.ResourceType, origins []core_rules.Origin) []api_common.ResourceRuleOrigin {
+func OriginListToResourceRuleOrigin(resType core_model.ResourceType, origins []rules_common.Origin) []api_common.ResourceRuleOrigin {
 	var out []api_common.ResourceRuleOrigin
 	for _, o := range origins {
 		out = append(out, api_common.ResourceRuleOrigin{

@@ -34,6 +34,9 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
@@ -159,7 +162,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			expectedRoutes: core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -191,11 +194,11 @@ var _ = Describe("MeshTCPRoute", func() {
 							},
 						},
 						BackendRefOriginIndex: map[common_api.MatchesHash]int{
-							core_rules.EmptyMatches: 1,
+							rules_common.EmptyMatches: 1,
 						},
 					},
 				},
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{},
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
 			},
 		}),
 	)
@@ -279,9 +282,9 @@ var _ = Describe("MeshTCPRoute", func() {
 							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
 						},
 						BackendRefOriginIndex: map[common_api.MatchesHash]int{
-							core_rules.EmptyMatches: 0,
+							rules_common.EmptyMatches: 0,
 						},
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -470,13 +473,13 @@ var _ = Describe("MeshTCPRoute", func() {
 			proxy.Policies.Dynamic[api.MeshTCPRouteType] = core_xds.TypedMatchingPolicies{
 				Type: api.MeshTCPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+					ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
-							Origin: []core_rules.Origin{
+							Origin: []rules_common.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 							},
 							BackendRefOriginIndex: map[common_api.MatchesHash]int{
-								core_rules.EmptyMatches: 0,
+								rules_common.EmptyMatches: 0,
 							},
 							Conf: []interface{}{
 								api.Rule{
@@ -613,13 +616,13 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
-										Origin: []core_rules.Origin{
+										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
 										},
 										BackendRefOriginIndex: map[common_api.MatchesHash]int{
-											core_rules.EmptyMatches: 0,
+											rules_common.EmptyMatches: 0,
 										},
 										Conf: []interface{}{
 											api.Rule{
@@ -661,9 +664,9 @@ var _ = Describe("MeshTCPRoute", func() {
 							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
 						},
 						BackendRefOriginIndex: map[common_api.MatchesHash]int{
-							core_rules.EmptyMatches: 0,
+							rules_common.EmptyMatches: 0,
 						},
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -732,7 +735,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			tcpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -752,7 +755,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -846,9 +849,9 @@ var _ = Describe("MeshTCPRoute", func() {
 							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
 						},
 						BackendRefOriginIndex: map[common_api.MatchesHash]int{
-							core_rules.EmptyMatches: 0,
+							rules_common.EmptyMatches: 0,
 						},
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -868,7 +871,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			httpRules := core_rules.ToRules{
 				Rules: core_rules.Rules{
 					{
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: meshhttproute_api.PolicyDefault{
 							Rules: []meshhttproute_api.Rule{
 								{
@@ -957,9 +960,9 @@ var _ = Describe("MeshTCPRoute", func() {
 							&test_model.ResourceMeta{Mesh: "mesh-1", Name: "tcp-route"},
 						},
 						BackendRefOriginIndex: map[common_api.MatchesHash]int{
-							core_rules.EmptyMatches: 0,
+							rules_common.EmptyMatches: 0,
 						},
-						Subset: core_rules.MeshService("backend"),
+						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
 								BackendRefs: []common_api.BackendRef{
@@ -1084,7 +1087,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				WithEndpointMap(outboundTargets).Build()
 
 			rules := core_rules.Rule{
-				Subset: core_rules.MeshSubset(),
+				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
 						BackendRefs: []common_api.BackendRef{{
@@ -1095,7 +1098,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 			tlsGoRules := core_rules.Rule{
-				Subset: core_rules.MeshSubset(),
+				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
 						BackendRefs: []common_api.BackendRef{{
@@ -1109,7 +1112,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				},
 			}
 			tlsOtherRules := core_rules.Rule{
-				Subset: core_rules.MeshSubset(),
+				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
 						BackendRefs: []common_api.BackendRef{{
