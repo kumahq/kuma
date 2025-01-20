@@ -185,6 +185,9 @@ func dppSelectedByPolicy(
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.Dataplane:
+		if gateway != nil {
+			return []core_rules.InboundListener{}, nil, false, nil
+		}
 		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
 			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
 			return inbounds, nil, false, nil
