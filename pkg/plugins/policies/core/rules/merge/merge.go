@@ -1,4 +1,4 @@
-package rules
+package merge
 
 import (
 	"encoding/json"
@@ -10,16 +10,17 @@ import (
 	"github.com/pkg/errors"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // indicates that all slices that start with this prefix will be appended, not replaced
 const appendSlicesPrefix = "Append"
 
-// MergeConfs returns list of confs that may be apply to separate sets of refs.
+// Confs returns list of confs that may be apply to separate sets of refs.
 // In the usual case it has a single element but for MeshHTTPRoute it is keyed
 // by hostname.
-func MergeConfs(confs []interface{}) ([]interface{}, error) {
+func Confs(confs []interface{}) ([]interface{}, error) {
 	if len(confs) == 0 {
 		return nil, nil
 	}
@@ -261,7 +262,7 @@ func mergeByKey(vals reflect.Value) (reflect.Value, error) {
 		if confs.Skip {
 			continue
 		}
-		merged, err := MergeConfs(confs.Defaults)
+		merged, err := Confs(confs.Defaults)
 		if err != nil {
 			return reflect.Value{}, err
 		}
@@ -382,4 +383,12 @@ func mustUnwrapStruct(val reflect.Value) reflect.Value {
 		panic("expected struct or pointer to a struct got " + val.Kind().String())
 	}
 	return resVal
+}
+
+func Entries[B common.BaseEntry, T common.Entry[B]](items []T) ([]interface{}, error) {
+	var confs []interface{}
+	for _, item := range items {
+		confs = append(confs, item.GetEntry().GetDefault())
+	}
+	return Confs(confs)
 }

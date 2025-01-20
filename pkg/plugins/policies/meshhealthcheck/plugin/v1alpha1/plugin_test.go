@@ -22,6 +22,9 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/plugin/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -174,7 +177,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Interval:                     test.ParseDuration("10s"),
 							Timeout:                      test.ParseDuration("2s"),
@@ -222,7 +225,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -245,7 +248,7 @@ var _ = Describe("MeshHealthCheck", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Interval:           test.ParseDuration("10s"),
 							Timeout:            test.ParseDuration("2s"),
@@ -264,7 +267,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("TCP HealthCheck to real MeshService", testCase{
 			resources: tcpCluster,
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -331,7 +334,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							"default_external___extsvc_9000": {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
-										ResourceRules: core_rules.ResourceRules{
+										ResourceRules: outbound.ResourceRules{
 											*backendMeshExternalServiceIdentifier("default"): {
 												Conf: []interface{}{
 													api.Conf{
@@ -366,7 +369,7 @@ var _ = Describe("MeshHealthCheck", func() {
 							"mesh-2_external___extsvc_9000": {
 								api.MeshHealthCheckType: core_xds.TypedMatchingPolicies{
 									ToRules: core_rules.ToRules{
-										ResourceRules: core_rules.ResourceRules{
+										ResourceRules: outbound.ResourceRules{
 											*backendMeshExternalServiceIdentifier("mesh2"): {
 												Conf: []interface{}{
 													api.Conf{
@@ -509,7 +512,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
 									Timeout:                      test.ParseDuration("2s"),
@@ -585,7 +588,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
@@ -606,7 +609,7 @@ var _ = Describe("MeshHealthCheck", func() {
 								Origin: []core_model.ResourceMeta{
 									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 								},
-								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+								BackendRefOriginIndex: rules_common.BackendRefOriginIndex{
 									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
 								},
 							}},
@@ -619,7 +622,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
 									Timeout:                      test.ParseDuration("2s"),
@@ -695,7 +698,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
@@ -716,7 +719,7 @@ var _ = Describe("MeshHealthCheck", func() {
 								Origin: []core_model.ResourceMeta{
 									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 								},
-								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+								BackendRefOriginIndex: rules_common.BackendRefOriginIndex{
 									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
 								},
 							}},
@@ -728,7 +731,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										api.Conf{
@@ -780,7 +783,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
@@ -807,7 +810,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshtcproute_api.Rule{
 									Default: meshtcproute_api.RuleConf{
 										BackendRefs: []common_api.BackendRef{{
@@ -826,7 +829,7 @@ var _ = Describe("MeshHealthCheck", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
 									Timeout:                      test.ParseDuration("2s"),
@@ -865,7 +868,7 @@ var _ = Describe("MeshHealthCheck", func() {
 						},
 						rules.NewInboundListenerHostname("192.168.0.1", 8081, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Interval:                     test.ParseDuration("10s"),
 									Timeout:                      test.ParseDuration("2s"),

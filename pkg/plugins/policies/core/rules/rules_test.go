@@ -9,6 +9,7 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
@@ -21,17 +22,17 @@ var _ = Describe("Rules", func() {
 	Describe("SubsetIter", func() {
 		It("should return all possible subsets for the given set of tags", func() {
 			// given
-			tags := []core_rules.Tag{
+			tags := []subsetutils.Tag{
 				{Key: "k1", Value: "v1"},
 				{Key: "k2", Value: "v2"},
 				{Key: "k3", Value: "v3"},
 			}
 
 			// when
-			iter := core_rules.NewSubsetIter(tags)
+			iter := subsetutils.NewSubsetIter(tags)
 
 			// then
-			expected := [][]core_rules.Tag{
+			expected := [][]subsetutils.Tag{
 				{
 					{Key: "k1", Not: true, Value: "v1"},
 					{Key: "k2", Value: "v2"},
@@ -82,29 +83,29 @@ var _ = Describe("Rules", func() {
 
 		It("should handle empty tags", func() {
 			// given
-			tags := []core_rules.Tag{}
+			tags := []subsetutils.Tag{}
 
 			// when
-			iter := core_rules.NewSubsetIter(tags)
+			iter := subsetutils.NewSubsetIter(tags)
 
 			// then
 			empty := iter.Next()
-			Expect(empty).To(Equal(core_rules.Subset{}))
+			Expect(empty).To(Equal(subsetutils.Subset{}))
 		})
 
 		It("should handle tags with equal keys", func() {
 			// given
-			tags := []core_rules.Tag{
+			tags := []subsetutils.Tag{
 				{Key: "zone", Value: "us-east"},
 				{Key: "env", Value: "dev"},
 				{Key: "env", Value: "prod"},
 			}
 
 			// when
-			iter := core_rules.NewSubsetIter(tags)
+			iter := subsetutils.NewSubsetIter(tags)
 
 			// then
-			expected := []core_rules.Subset{
+			expected := []subsetutils.Subset{
 				{
 					{Key: "zone", Value: "us-east"},
 					{Key: "env", Value: "prod"},
@@ -142,7 +143,7 @@ var _ = Describe("Rules", func() {
 
 	Describe("IsSubset", func() {
 		type testCase struct {
-			s1, s2   core_rules.Subset
+			s1, s2   subsetutils.Subset
 			isSubset bool
 		}
 
@@ -151,41 +152,41 @@ var _ = Describe("Rules", func() {
 				Expect(given.s1.IsSubset(given.s2)).To(Equal(given.isSubset))
 			},
 			Entry("entry 1", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 					{Key: "version", Value: "v2"},
 				},
 				isSubset: false,
 			}),
 			Entry("entry 2", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 					{Key: "version", Value: "v2"},
 				},
 				isSubset: true,
 			}),
 			Entry("entry 3", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Value: "v2"},
 				},
 				isSubset: true,
 			}),
 			Entry("entry 4", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
@@ -193,8 +194,8 @@ var _ = Describe("Rules", func() {
 				isSubset: true,
 			}),
 			Entry("entry 5", testCase{
-				s1: []core_rules.Tag{},
-				s2: []core_rules.Tag{
+				s1: []subsetutils.Tag{},
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
@@ -202,27 +203,27 @@ var _ = Describe("Rules", func() {
 				isSubset: true,
 			}),
 			Entry("entry 6", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 					{Key: "version", Value: "v1"},
 				},
-				s2:       []core_rules.Tag{},
+				s2:       []subsetutils.Tag{},
 				isSubset: false,
 			}),
 			Entry("entry 7", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "key1", Not: true, Value: "val1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "key1", Value: "val2"},
 				},
 				isSubset: true,
 			}),
 			Entry("entry 8", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "key1", Not: true, Value: "val1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "key1", Value: "val2"},
 					{Key: "key2", Value: "val3"},
 				},
@@ -233,7 +234,7 @@ var _ = Describe("Rules", func() {
 
 	Describe("Intersect", func() {
 		type testCase struct {
-			s1, s2    core_rules.Subset
+			s1, s2    subsetutils.Subset
 			intersect bool
 		}
 
@@ -242,55 +243,55 @@ var _ = Describe("Rules", func() {
 				Expect(given.s1.Intersect(given.s2)).To(Equal(given.intersect))
 			},
 			Entry("positive, same key and value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
 				intersect: true,
 			}),
 			Entry("positive, same key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 				},
 				intersect: false,
 			}),
 			Entry("positive, multiple key-values with overlap key-value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 					{Key: "version", Value: "v1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
 				intersect: true,
 			}),
 			Entry("positive, multiple key-values with overlap key but different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 					{Key: "version", Value: "v1"},
 				},
 				intersect: false,
 			}),
 			Entry("positive, different key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "version", Value: "v1"},
 				},
 				intersect: true,
 			}),
 			Entry("positive, superset", testCase{
-				s1: []core_rules.Tag{},
-				s2: []core_rules.Tag{
+				s1: []subsetutils.Tag{},
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 					{Key: "version", Value: "v1"},
 					{Key: "zone", Value: "east"},
@@ -298,88 +299,76 @@ var _ = Describe("Rules", func() {
 				intersect: true,
 			}),
 			Entry("a part of negation, same key and value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
 				intersect: true,
 			}),
 			Entry("a part of negation, same key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 				},
 				intersect: true,
 			}),
 			Entry("a part of negation, multiple key-values with overlap key-value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 					{Key: "version", Value: "v1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "frontend"},
 				},
 				intersect: true,
 			}),
 			Entry("a part of negation, multiple key-values with overlap key but different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 					{Key: "version", Value: "v1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Value: "backend"},
 				},
 				intersect: true,
 			}),
 			Entry("a part of negation, different key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "version", Value: "v1"},
 				},
 				intersect: true,
 			}),
 			Entry("negation, same key and value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
 				intersect: true,
 			}),
 			Entry("negation, same key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 				},
 				intersect: true,
 			}),
 			Entry("negation, multiple key-values with overlap key-value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 				},
-				s2: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "backend"},
-					{Key: "version", Not: true, Value: "v1"},
-					{Key: "zone", Value: "east"},
-				},
-				intersect: true,
-			}),
-			Entry("negation, multiple key-values with overlap key but different value", testCase{
-				s1: []core_rules.Tag{
-					{Key: "service", Not: true, Value: "frontend"},
-					{Key: "version", Not: true, Value: "v1"},
-				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
@@ -387,11 +376,23 @@ var _ = Describe("Rules", func() {
 				intersect: true,
 			}),
 			Entry("negation, multiple key-values with overlap key but different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 					{Key: "version", Not: true, Value: "v1"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
+					{Key: "service", Not: true, Value: "backend"},
+					{Key: "version", Not: true, Value: "v1"},
+					{Key: "zone", Value: "east"},
+				},
+				intersect: true,
+			}),
+			Entry("negation, multiple key-values with overlap key but different value", testCase{
+				s1: []subsetutils.Tag{
+					{Key: "service", Not: true, Value: "frontend"},
+					{Key: "version", Not: true, Value: "v1"},
+				},
+				s2: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
@@ -399,21 +400,21 @@ var _ = Describe("Rules", func() {
 				intersect: true,
 			}),
 			Entry("negation, different key, different value", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "frontend"},
 				},
-				s2: []core_rules.Tag{
+				s2: []subsetutils.Tag{
 					{Key: "version", Not: true, Value: "v1"},
 					{Key: "zone", Value: "east"},
 				},
 				intersect: true,
 			}),
 			Entry("negation, superset", testCase{
-				s1: []core_rules.Tag{
+				s1: []subsetutils.Tag{
 					{Key: "service", Not: true, Value: "backend"},
 					{Key: "version", Not: true, Value: "v1"},
 				},
-				s2:        []core_rules.Tag{},
+				s2:        []subsetutils.Tag{},
 				intersect: true,
 			}),
 		)
@@ -484,8 +485,8 @@ var _ = Describe("Rules", func() {
 
 	Describe("ContainsElement", func() {
 		type testCase struct {
-			ss       core_rules.Subset
-			other    core_rules.Element
+			ss       subsetutils.Subset
+			other    subsetutils.Element
 			contains bool
 		}
 
@@ -494,185 +495,185 @@ var _ = Describe("Rules", func() {
 				Expect(given.ss.ContainsElement(given.other)).To(Equal(given.contains))
 			},
 			Entry("single matched rule by single rule and elements", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 					"key2": "val2",
 				},
 				contains: true,
 			}),
 			Entry("single matched rule by single rule and element", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 				},
 				contains: true,
 			}),
 			Entry("single matched rule, rule with negation, element has key with another value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val2",
 				},
 				contains: true,
 			}),
 			Entry("empty set is a superset for all element", testCase{
-				ss: []core_rules.Tag{},
-				other: core_rules.Element{
+				ss: []subsetutils.Tag{},
+				other: subsetutils.Element{
 					"key1": "val2",
 				},
 				contains: true,
 			}),
 			Entry("empty element", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 				},
-				other:    core_rules.Element{},
+				other:    subsetutils.Element{},
 				contains: false,
 			}),
 			Entry("no rules matched, rule with negation, element has same key value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, rule with negation, element has another key", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key2": "val2",
 				},
 				contains: true,
 			}),
 			Entry("no rules matched, element has key which is not presented in superset", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key2": "val2",
 				},
 				contains: false,
 			}),
 
 			Entry("no rules matched, rules with positive, element has key with another value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val2",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, rules with positive, element has only one overlapped key value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 				},
 				contains: false,
 			}),
 			Entry("single matched rule by rules and element, rules with a part of negation", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 				},
 				contains: true,
 			}),
 			Entry("single matched rule by rules and element, rules with a part of negation, element has key with another value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 					{Key: "key2", Value: "val2"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val2",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, rules with negation, element has same key value", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 					{Key: "key2", Value: "val2", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key1": "val1",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, rules with a part of negation, element has another key", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key3": "val3",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, rules with positive, element has another key", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key3": "val3",
 				},
 				contains: false,
 			}),
 			Entry("rules matched, rules with negation, element has another key", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 					{Key: "key2", Value: "val2", Not: true},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key3": "val3",
 				},
 				contains: true,
 			}),
 			Entry("no rules matched, n dimensions rules and n-1 dimensions elements, rules with positive, elements have another keys", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 					{Key: "key3", Value: "val3"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key4": "val4",
 					"key5": "val5",
 				},
 				contains: false,
 			}),
 			Entry("no rules matched, n dimensions rules and n-1 dimensions elements, rules with positive, elements have overlapped key by rules", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1"},
 					{Key: "key2", Value: "val2"},
 					{Key: "key3", Value: "val3"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key3": "val3",
 					"key4": "val4",
 				},
 				contains: false,
 			}),
 			Entry("rules matched, n dimensions rules and n-1 dimensions elements, rules with a part of negation, elements have overlapped key by rules", testCase{
-				ss: []core_rules.Tag{
+				ss: []subsetutils.Tag{
 					{Key: "key1", Value: "val1", Not: true},
 					{Key: "key2", Value: "val2", Not: true},
 					{Key: "key3", Value: "val3"},
 				},
-				other: core_rules.Element{
+				other: subsetutils.Element{
 					"key3": "val3",
 					"key4": "val4",
 				},
@@ -684,7 +685,7 @@ var _ = Describe("Rules", func() {
 	Describe("Eval", func() {
 		type testCase struct {
 			rules    core_rules.Rules
-			element  core_rules.Element
+			element  subsetutils.Element
 			confYAML []byte
 		}
 
@@ -702,7 +703,7 @@ var _ = Describe("Rules", func() {
 			Entry("single matched rule by single rule and elements", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -710,7 +711,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val1",
 					"key2": "val2",
 				},
@@ -719,7 +720,7 @@ var _ = Describe("Rules", func() {
 			Entry("single matched rule by single rule and element", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -727,7 +728,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val1",
 				},
 				confYAML: []byte(`action: Allow`),
@@ -735,7 +736,7 @@ var _ = Describe("Rules", func() {
 			Entry("single matched rule, rule with negation, element has key with another value", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -743,7 +744,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val2",
 				},
 				confYAML: []byte(`action: Allow`),
@@ -751,13 +752,13 @@ var _ = Describe("Rules", func() {
 			Entry("empty set is a superset for all element", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{}, // empty set
+						Subset: []subsetutils.Tag{}, // empty set
 						Conf: meshtrafficpermission_api.Conf{
 							Action: "Allow",
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val1",
 					"key2": "val2",
 				},
@@ -766,7 +767,7 @@ var _ = Describe("Rules", func() {
 			Entry("empty element", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -774,13 +775,13 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element:  core_rules.Element{},
+				element:  subsetutils.Element{},
 				confYAML: nil,
 			}),
 			Entry("no rules matched, rule with negation, element has same key value", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -788,7 +789,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val1",
 				},
 				confYAML: nil,
@@ -796,7 +797,7 @@ var _ = Describe("Rules", func() {
 			Entry("no rules matched, rule with negation, element has another key", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -804,7 +805,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key2": "val2",
 				},
 				confYAML: []byte(`action: Allow`),
@@ -812,7 +813,7 @@ var _ = Describe("Rules", func() {
 			Entry("no rules matched, element has key which is not presented in superset", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -820,7 +821,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key2": "val2", // key2 is not in rules[0].Subset
 				},
 				confYAML: nil,
@@ -828,7 +829,7 @@ var _ = Describe("Rules", func() {
 			Entry("no rules matched, element has key with another value", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -836,7 +837,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val2", // val2 is not equal to rules[0].Subset["key1"]
 				},
 				confYAML: nil,
@@ -844,7 +845,7 @@ var _ = Describe("Rules", func() {
 			Entry("the first matched conf is taken", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: core_rules.Subset{
+						Subset: subsetutils.Subset{
 							{Key: "key1", Value: "val1"}, // not matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -852,7 +853,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{
+						Subset: subsetutils.Subset{
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
@@ -860,13 +861,13 @@ var _ = Describe("Rules", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{}, // matched but not the first
+						Subset: subsetutils.Subset{}, // matched but not the first
 						Conf: meshtrafficpermission_api.Conf{
 							Action: "AllowWithShadowDeny",
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key2": "val2",
 					"key3": "val3",
 				},
@@ -875,7 +876,7 @@ var _ = Describe("Rules", func() {
 			Entry("n dimensions subset and n-1 dimensions elements", testCase{
 				rules: core_rules.Rules{
 					{
-						Subset: []core_rules.Tag{
+						Subset: []subsetutils.Tag{
 							{Key: "key1", Value: "val1"},
 							{Key: "key2", Value: "val1", Not: true},
 						},
@@ -884,7 +885,7 @@ var _ = Describe("Rules", func() {
 						},
 					},
 				},
-				element: core_rules.Element{
+				element: subsetutils.Element{
 					"key1": "val1",
 				},
 				confYAML: []byte(`action: Allow`),
