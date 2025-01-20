@@ -261,12 +261,21 @@ func runLoop(ic *InstallerConfig) error {
 		return nil
 	}
 
+	checkInstallTicker := time.NewTicker(time.Duration(ic.CfgCheckInterval) * time.Second)
+	refreshSATokenTicker := time.NewTicker(time.Duration(ic.RefreshSATokenInterval) * time.Second)
+	defer checkInstallTicker.Stop()
+	defer refreshSATokenTicker.Stop()
+
 	for {
 		select {
 		case <-osSignals:
 			return nil
-		case <-time.After(time.Duration(ic.CfgCheckInterval) * time.Second):
+		case <-checkInstallTicker.C:
 			if err := ic.CheckInstall(); err != nil {
+				return err
+			}
+		case <-refreshSATokenTicker.C:
+			if err := ic.PrepareKubeconfig(); err != nil {
 				return err
 			}
 		}
