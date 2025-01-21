@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
@@ -36,6 +37,7 @@ type InstallerConfig struct {
 	KubernetesServiceProtocol string `envconfig:"kubernetes_service_protocol" default:"https"`
 	MountedCniNetDir          string `envconfig:"mounted_cni_net_dir" default:"/host/etc/cni/net.d"`
 	ShouldSleep               bool   `envconfig:"sleep" default:"true"`
+	RefreshSATokenInterval    int    `envconfig:"refresh_sa_token_interval" default:"60"`
 }
 
 func (i InstallerConfig) Validate() error {
@@ -99,7 +101,11 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 	caData := base64.StdEncoding.EncodeToString(kubeCa)
 
 	kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
-	log.Info("writing kubernetes config", "path", kubeconfigPath)
+	logLevel := 0
+	if files.FileExists(kubeconfigPath) {
+		logLevel = 1
+	}
+	log.V(logLevel).Info("writing kubernetes config", "path", kubeconfigPath)
 	err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
 	if err != nil {
 		return err
