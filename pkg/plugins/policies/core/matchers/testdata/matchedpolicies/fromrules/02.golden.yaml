@@ -95,3 +95,6 @@ Rules:
     - Key: kuma.io/zone
       Not: false
       Value: us-east
+RulesNew:
+  1.1.1.1:8080: []
+  1.1.1.1:8081: []

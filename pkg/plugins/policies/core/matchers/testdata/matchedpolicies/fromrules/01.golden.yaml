@@ -63,3 +63,6 @@ Rules:
       name: mtp-2
       type: MeshTrafficPermission
     Subset: []
+RulesNew:
+  1.1.1.1:8080: []
+  1.1.1.1:8081: []

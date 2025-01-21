@@ -1,4 +1,4 @@
-# MeshTimeout with targetRef to the real MeshService resource
+# it should build rules correctly when the resource list contains policies with rules
 type: MeshTimeout
 name: matched-for-rules-mt-aaaaaa
 mesh: mesh-1

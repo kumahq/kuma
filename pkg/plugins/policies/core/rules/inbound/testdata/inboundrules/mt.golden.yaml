@@ -1,5 +1,0 @@
-- Conf:
-  - connectionTimeout: 1m41s
-    http:
-      requestTimeout: 12s
-    idleTimeout: 10s

@@ -17,3 +17,24 @@ Rules:
       name: mt-1
       type: MeshTimeout
     Subset: []
+RulesNew:
+  :0:
+  - conf:
+    - connectionTimeout: 33s
+      http:
+        requestTimeout: 33s
+    origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mt-2
+        type: MeshTimeout
+      RuleIndex: 0
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mt-1
+        type: MeshTimeout
+      RuleIndex: 0

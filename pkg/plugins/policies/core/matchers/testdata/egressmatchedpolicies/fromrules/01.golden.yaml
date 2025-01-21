@@ -52,3 +52,5 @@ Rules:
     - Key: kuma.io/service
       Not: true
       Value: orders
+RulesNew:
+  :0: []

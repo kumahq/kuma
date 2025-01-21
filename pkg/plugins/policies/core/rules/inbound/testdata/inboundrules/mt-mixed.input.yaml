@@ -1,0 +1,29 @@
+# it should handle policies when some of them have 'rules', some have 'from' and InterpretFromEntriesAsRules is set to true
+type: MeshTimeout
+name: matched-for-rules-mt-aaaaaa
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        idleTimeout: 10s
+---
+type: MeshTimeout
+name: matched-for-rules-mt-bbbbbb
+mesh: mesh-1
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 100s
+        connectionTimeout: 101s
+---
+type: MeshTimeout
+name: matched-for-rules-mt-cccccc
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        idleTimeout: 200s
+        http:
+          requestTimeout: 202s
