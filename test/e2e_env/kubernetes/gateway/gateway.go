@@ -569,7 +569,8 @@ spec:
 
 			for _, fn := range []InstallFunc{
 				WaitNumPods(namespace, 3, testServerApp),
-				WaitPodsAvailable(namespace, testServerApp)} {
+				WaitPodsAvailable(namespace, testServerApp),
+			} {
 				Expect(fn(kubernetes.Cluster)).To(Succeed())
 			}
 		})
