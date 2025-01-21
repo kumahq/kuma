@@ -12,6 +12,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 const (
@@ -100,7 +101,11 @@ func prepareKubeconfig(ic *InstallerConfig, serviceAccountPath string) error {
 	caData := base64.StdEncoding.EncodeToString(kubeCa)
 
 	kubeconfig := kubeconfigTemplate(ic.KubernetesServiceProtocol, ic.KubernetesServiceHost, ic.KubernetesServicePort, string(serviceAccountToken), caData)
-	log.Info("writing kubernetes config", "path", kubeconfigPath)
+	logLevel := 0
+	if files.FileExists(kubeconfigPath) {
+		logLevel = 1
+	}
+	log.V(logLevel).Info("writing kubernetes config", "path", kubeconfigPath)
 	err = atomic.WriteFile(kubeconfigPath, strings.NewReader(kubeconfig))
 	if err != nil {
 		return err
