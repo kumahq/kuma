@@ -309,5 +309,5 @@ func getResourceType(resTypes []core_model.ResourceType) core_model.ResourceType
 }
 
 func buildGoldenFilePath(caseName, testName string) string {
-	return filepath.Join("testdata", "matchedpolicies", "dataplane-kind", "golden", fmt.Sprintf("%s.%s.golden.yaml", caseName, testName))
+	return filepath.Join("testdata", "matchedpolicies", "dataplane-kind", testName, fmt.Sprintf("%s.golden.yaml", caseName))
 }
