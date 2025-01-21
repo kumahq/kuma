@@ -69,12 +69,10 @@ jobs:
             :mag: Each of these sections need to be checked by the reviewer of the PR :mag::
             If something doesn't apply please check the box and add a justification if the reason is non obvious.
             - [ ] Is the PR title satisfactory? Is this part of a larger feature and should be grouped using `> Changelog`?
-            - [ ] PR description is clear and complete. It [Links to relevant issue][1] as well as docs and UI issues
+            - [ ] PR description is clear and complete. It [Links to relevant issue](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword) as well as docs and UI issues
             - [ ] This will not break child repos: it doesn't hardcode values (.e.g "kumahq" as an image registry)
             - [ ] IPv6 is taken into account (.e.g: no string concatenation of host port)
             - [ ] Tests (Unit test, E2E tests, manual test on universal and k8s)
                 - Don't forget `ci/` labels to run additional/fewer tests
             - [ ] Does this contain a change that needs to be notified to users? In this case, [`UPGRADE.md`](../blob/master/UPGRADE.md) should be updated.
             - [ ] Does it need to be backported according to the [backporting policy](../blob/master/CONTRIBUTING.md#backporting)? ([this](https://github.com/kumahq/kuma/actions/workflows/auto-backport.yaml) GH action will add "backport" label based on these [file globs](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L6), if you want to prevent it from adding the "backport" label use [no-backport-autolabel](https://github.com/kumahq/kuma/blob/master/.github/workflows/auto-backport.yaml#L8) label)
-            
-            [1]: https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword
