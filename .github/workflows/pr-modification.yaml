@@ -34,7 +34,7 @@ jobs:
           gh pr list \
             --repo ${{ github.repository }} \
             --json number,title,url \
-            --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:app/dependabot -author:app/renovate" >> $GITHUB_OUTPUT
+            --search "updated:>=$(date --date='${{ env.LOOK_BACK }} ago' +'%Y-%m-%dT%H:%M:%S%z') -author:app/dependabot -author:app/renovate -author:app/kumahq" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
       - name: Show outputs
         env:
