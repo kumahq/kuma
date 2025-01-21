@@ -58,3 +58,5 @@ Rules:
     - Key: app.kubernetes.io/name
       Not: true
       Value: ui
+RulesNew:
+  127.0.0.1:80: []

@@ -52,3 +52,5 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: backend
+RulesNew:
+  127.0.0.1:80: []

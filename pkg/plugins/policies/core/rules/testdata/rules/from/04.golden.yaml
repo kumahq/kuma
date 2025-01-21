@@ -10,3 +10,5 @@ Rules:
       name: mal-1
       type: MeshAccessLog
     Subset: []
+RulesNew:
+  127.0.0.1:80: []

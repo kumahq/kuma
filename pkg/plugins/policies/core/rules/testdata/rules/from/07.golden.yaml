@@ -32,3 +32,5 @@ Rules:
     - Key: k8s.kuma.io/namespace
       Not: false
       Value: kuma-one
+RulesNew:
+  127.0.0.1:80: []
