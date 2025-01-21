@@ -558,17 +558,24 @@ spec:
 		routes := httpRoute("test-server-mlbs", "/mlbs", "test-server-mlbs_simple-gateway_svc_80")
 
 		BeforeAll(func() {
+			testServerApp := "test-server-mlbs"
 			err := NewClusterSetup().
 				Install(testserver.Install(
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
-					testserver.WithName("test-server-mlbs"),
+					testserver.WithName(testServerApp),
 					testserver.WithStatefulSet(true),
 					testserver.WithReplicas(3),
 				)).
 				Install(YamlK8s(routes...)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
+
+			for _, fn := range []InstallFunc{
+				WaitNumPods(namespace, 3, testServerApp),
+				WaitPodsAvailable(namespace, testServerApp)} {
+				Expect(fn(kubernetes.Cluster)).To(Succeed())
+			}
 		})
 
 		AfterAll(func() {
