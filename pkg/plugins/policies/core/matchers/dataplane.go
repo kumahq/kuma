@@ -188,7 +188,7 @@ func dppSelectedByPolicy(
 		if gateway != nil {
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
-		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
+		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref) || isSelectedByLabels(dpp, ref) {
 			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
 			return inbounds, nil, false, nil
 		}
@@ -265,8 +265,8 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 	return true
 }
 
-func isSelectedByName(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef, meta core_model.ResourceMeta) bool {
-	return core_model.NewResourceIdentifier(dpp) == core_model.TargetRefToResourceIdentifier(meta, ref)
+func isSelectedByName(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
+	return core_model.GetDisplayName(dpp.GetMeta()) == ref.Name
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {

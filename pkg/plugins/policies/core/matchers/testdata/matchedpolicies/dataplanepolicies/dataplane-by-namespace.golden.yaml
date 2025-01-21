@@ -1,0 +1,21 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-demo
+    kuma.io/origin: zone
+    kuma.io/policy-role: consumer
+    kuma.io/zone: zone-1
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-1
+  spec:
+    from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+  type: MeshTrafficPermission
+next: null
+total: 0
