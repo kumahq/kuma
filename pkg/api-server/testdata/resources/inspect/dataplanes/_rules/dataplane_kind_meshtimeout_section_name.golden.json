@@ -1,0 +1,83 @@
+{
+ "httpMatches": [],
+ "resource": {
+  "labels": {
+   "app": "demo-app"
+  },
+  "mesh": "mesh-1",
+  "name": "dp-1",
+  "type": "Dataplane"
+ },
+ "rules": [
+  {
+   "fromRules": [
+    {
+     "inbound": {
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": {
+        "connectionTimeout": "7s",
+        "idleTimeout": "7s",
+        "http": {
+         "requestTimeout": "7s"
+        }
+       },
+       "matchers": [],
+       "origin": [
+        {
+         "labels": {},
+         "mesh": "mesh-1",
+         "name": "select-whole-dpp",
+         "type": "MeshTimeout"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "inbound": {
+      "port": 9090,
+      "tags": {
+       "kuma.io/service": "bar"
+      }
+     },
+     "rules": [
+      {
+       "conf": {
+        "connectionTimeout": "7s",
+        "idleTimeout": "7s",
+        "http": {
+         "requestTimeout": "2s"
+        }
+       },
+       "matchers": [],
+       "origin": [
+        {
+         "labels": {},
+         "mesh": "mesh-1",
+         "name": "select-whole-dpp",
+         "type": "MeshTimeout"
+        },
+        {
+         "labels": {},
+         "mesh": "mesh-1",
+         "name": "select-single-inbound",
+         "type": "MeshTimeout"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "toResourceRules": [],
+   "toRules": [],
+   "type": "MeshTimeout",
+   "warnings": []
+  }
+ ]
+}

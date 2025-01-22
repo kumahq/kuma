@@ -50,6 +50,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) valid
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
+			IsInboundPolicy: true,
 		})
 	}
 }
