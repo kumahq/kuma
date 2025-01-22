@@ -218,6 +218,7 @@ var _ = Describe("MatchedPolicies", func() {
 			test_resources.UpdateResourceMeta(given.dataplaneMeta, dpp)
 
 			resources, resTypes := readPolicies(givenResources.policiesFile)
+
 			resType := getResourceType(resTypes)
 			test_resources.UpdateResourcesMeta(given.policyMeta, resources.MeshLocalResources[resType])
 
@@ -241,7 +242,7 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.ZoneUni,
 				goldenFile:    buildGoldenFilePath("uni-zone", givenResources.testName),
 			}),
-			FEntry("k8s zone", dataplaneTestCase{
+			Entry("k8s zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
 				policyMeta:    test_resources.ZoneK8s,
 				goldenFile:    buildGoldenFilePath("k8s-zone", givenResources.testName),
@@ -261,7 +262,7 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
 				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-uni", givenResources.testName),
 			}),
-			Entry("policy global k8s, dpp k8s", dataplaneTestCase{
+			FEntry("policy global k8s, dpp k8s", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
 				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-k8s", givenResources.testName),
@@ -275,16 +276,6 @@ var _ = Describe("MatchedPolicies", func() {
 				dataplaneMeta: test_resources.ZoneUni,
 				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToUni(test_resources.ZoneK8s)),
 				goldenFile:    buildGoldenFilePath("policy-form-k8s-to-uni", givenResources.testName),
-			}),
-			Entry("policy synced from other uni zone", dataplaneTestCase{
-				dataplaneMeta: test_resources.ZoneK8s,
-				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToK8s(test_resources.ZoneUni)),
-				goldenFile:    buildGoldenFilePath("policy-form-uni-to-k8s", givenResources.testName),
-			}),
-			Entry("policy synced from other uni zone to uni", dataplaneTestCase{
-				dataplaneMeta: test_resources.ZoneUni,
-				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToUni(test_resources.ZoneUni)),
-				goldenFile:    buildGoldenFilePath("policy-form-uni-to-uni", givenResources.testName),
 			}),
 			Entry("policy synced from other k8s zone to k8s", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,

@@ -80,7 +80,7 @@ func ZoneK8s(name, mesh string, labels map[string]string) core_model.ResourceMet
 }
 
 func SystemPolicy(fn BuildMeta) BuildMeta {
-	return WithPolicyRole(fn, mesh_proto.SystemPolicyRole)
+	return WithNamespace(WithPolicyRole(fn, mesh_proto.SystemPolicyRole), "kuma-system")
 }
 
 func ProducerPolicy(fn BuildMeta) BuildMeta {
@@ -91,6 +91,14 @@ func WithPolicyRole(fn BuildMeta, policyRole mesh_proto.PolicyRole) BuildMeta {
 	return func(name, mesh string, labels map[string]string) core_model.ResourceMeta {
 		meta := fn(name, mesh, labels)
 		meta.GetLabels()[mesh_proto.PolicyRoleLabel] = string(policyRole)
+		return meta
+	}
+}
+
+func WithNamespace(fn BuildMeta, namespace string) BuildMeta {
+	return func(name, mesh string, labels map[string]string) core_model.ResourceMeta {
+		meta := fn(name, mesh, labels)
+		meta.GetLabels()[mesh_proto.KubeNamespaceTag] = namespace
 		return meta
 	}
 }

@@ -1,6 +1,7 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
   labels:
+    k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-2
     kuma.io/origin: global
     kuma.io/policy-role: system
@@ -18,6 +19,7 @@ items:
   type: MeshTrafficPermission
 - creationTime: "0001-01-01T00:00:00Z"
   labels:
+    k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-1
     kuma.io/origin: global
     kuma.io/policy-role: system
