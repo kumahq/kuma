@@ -188,7 +188,7 @@ func dppSelectedByPolicy(
 		if gateway != nil {
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
-		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref) || isSelectedByLabels(dpp, ref) {
+		if allDataplanesSelected(ref) || isSelectedByName(dpp, ref) || isSelectedByNamespace(dpp, ref) || isSelectedByLabels(dpp, ref) {
 			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
 			return inbounds, nil, false, nil
 		}
@@ -266,7 +266,17 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 }
 
 func isSelectedByName(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
+	if ref.Name == "" {
+		return false
+	}
 	return core_model.GetDisplayName(dpp.GetMeta()) == ref.Name
+}
+
+func isSelectedByNamespace(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
+	if ref.Namespace == "" {
+		return false
+	}
+	return dpp.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag] == ref.Namespace
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {

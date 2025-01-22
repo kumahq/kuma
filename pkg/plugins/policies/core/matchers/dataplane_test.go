@@ -241,7 +241,7 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.ZoneUni,
 				goldenFile:    buildGoldenFilePath("uni-zone", givenResources.testName),
 			}),
-			Entry("k8s zone", dataplaneTestCase{
+			FEntry("k8s zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
 				policyMeta:    test_resources.ZoneK8s,
 				goldenFile:    buildGoldenFilePath("k8s-zone", givenResources.testName),

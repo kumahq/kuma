@@ -2,8 +2,6 @@ type: Dataplane
 mesh: mesh-1
 name: dp-1
 labels:
-  kuma.io/origin: zone
-  kuma.io/zone: zone-1
   k8s.kuma.io/namespace: kuma-demo
 networking:
   address: 1.1.1.1

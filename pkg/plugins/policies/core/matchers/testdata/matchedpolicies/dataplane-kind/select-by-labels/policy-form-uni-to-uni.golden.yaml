@@ -1,12 +1,13 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
   labels:
+    kuma.io/display-name: mtp-1
     kuma.io/origin: zone
     kuma.io/policy-role: producer
-    kuma.io/zone: zone-2
+    kuma.io/zone: zone-uni
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: mtp-1
+  name: mtp-1-67668f5275f2c656
   spec:
     from:
     - default:
@@ -15,7 +16,8 @@ items:
         kind: Mesh
     targetRef:
       kind: Dataplane
-      name: dp-1
+      labels:
+        app: demo
   type: MeshTrafficPermission
 next: null
 total: 0
