@@ -2,7 +2,6 @@ package matchers_test
 
 import (
 	"fmt"
-	test_resources "github.com/kumahq/kuma/pkg/test/resources"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtrafficpermission_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
+	test_resources "github.com/kumahq/kuma/pkg/test/resources"
 )
 
 var _ = Describe("MatchedPolicies", func() {
@@ -262,7 +262,7 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
 				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-uni", givenResources.testName),
 			}),
-			FEntry("policy global k8s, dpp k8s", dataplaneTestCase{
+			Entry("policy global k8s, dpp k8s", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
 				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-k8s", givenResources.testName),
