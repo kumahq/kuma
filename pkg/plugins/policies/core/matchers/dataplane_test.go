@@ -211,7 +211,7 @@ var _ = Describe("MatchedPolicies", func() {
 		policyMeta    test_resources.BuildMeta
 		goldenFile    string
 	}
-	FDescribeTableSubtree("should match by kind Dataplane", func(givenResources testCase) {
+	DescribeTableSubtree("should match by kind Dataplane", func(givenResources testCase) {
 		DescribeTable("should TODO", func(given dataplaneTestCase) {
 			// given
 			dpp := readDPP(givenResources.dppFile)
