@@ -1,3 +1,5 @@
+InboundRules:
+  :0: []
 Rules:
   :0:
   - BackendRefOriginIndex: {}
@@ -52,5 +54,3 @@ Rules:
     - Key: kuma.io/service
       Not: true
       Value: orders
-RulesNew:
-  :0: []

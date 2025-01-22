@@ -1,3 +1,4 @@
+InboundRules: null
 Rules:
   :0:
   - BackendRefOriginIndex: {}
@@ -39,4 +40,3 @@ Rules:
     - Key: version
       Not: true
       Value: v2
-RulesNew: null

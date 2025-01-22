@@ -45,8 +45,11 @@ func (i InboundListener) String() string {
 }
 
 type FromRules struct {
-	Rules    map[InboundListener]Rules
-	RulesNew map[InboundListener][]*inbound.Rule
+	// Rules is a map of InboundListener to a list of rules built by using 'spec.from' field.
+	// Deprecated: use InboundRules instead
+	Rules map[InboundListener]Rules
+	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
+	InboundRules map[InboundListener][]*inbound.Rule
 }
 
 type ToRules struct {
@@ -208,8 +211,8 @@ func BuildFromRules(
 		rulesByInboundNew[inb] = rulesNew
 	}
 	return FromRules{
-		Rules:    rulesByInbound,
-		RulesNew: rulesByInboundNew,
+		Rules:        rulesByInbound,
+		InboundRules: rulesByInboundNew,
 	}, nil
 }
 

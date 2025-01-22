@@ -1,3 +1,5 @@
+InboundRules:
+  127.0.0.1:80: []
 Rules:
   127.0.0.1:80:
   - BackendRefOriginIndex: {}
@@ -58,5 +60,3 @@ Rules:
     - Key: kuma.io/service
       Not: true
       Value: c
-RulesNew:
-  127.0.0.1:80: []
