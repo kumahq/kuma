@@ -424,7 +424,9 @@ func (r *resourceEndpoints) createResource(
 			log.Error(err, "Could not write the response")
 		}
 	} else {
-		response.WriteHeader(201)
+		if err := response.WriteHeaderAndJson(201, nil, "application/json"); err != nil {
+			log.Error(err, "Could not write the response")
+		}
 	}
 }
 
@@ -476,7 +478,9 @@ func (r *resourceEndpoints) updateResource(
 			log.Error(err, "Could not write the response")
 		}
 	} else {
-		response.WriteHeader(200)
+		if err := response.WriteHeaderAndJson(200, nil, "application/json"); err != nil {
+			log.Error(err, "Could not write the response")
+		}
 	}
 }
 
