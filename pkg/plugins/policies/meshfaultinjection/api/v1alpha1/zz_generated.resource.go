@@ -154,4 +154,5 @@ var MeshFaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mfi",
+	InterpretFromEntriesAsRules:  false,
 }

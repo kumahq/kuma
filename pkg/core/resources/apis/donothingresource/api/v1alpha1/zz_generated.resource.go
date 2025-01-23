@@ -153,4 +153,5 @@ var DoNothingResourceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "dnr",
+	InterpretFromEntriesAsRules:  false,
 }
