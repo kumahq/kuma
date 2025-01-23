@@ -1,4 +1,3 @@
-# policies using kind Dataplane selecting Dataplanes by name and namespace
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
