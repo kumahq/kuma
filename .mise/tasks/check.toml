@@ -1,0 +1,3 @@
+["ginkgo:unfocus"]
+description = "Unfocus any tests"
+run = "ginkgo unfocus"

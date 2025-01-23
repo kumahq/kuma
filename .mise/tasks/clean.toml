@@ -1,0 +1,17 @@
+["clean:generate:docs:openapi"]
+usage = '''
+flag "--tmp-dir" {
+  arg "<dir>"
+  default "build/oapitmp"
+  help "Temporary directory for OpenAPI generation"
+}
+flag "--openapi-output" {
+  arg "<file>"
+  default "docs/generated/openapi.yaml"
+  help "Path to the generated OpenAPI file"
+}
+'''
+
+run = """
+rm -rf "{{ flag(name='tmp-dir') }}" "{{ flag(name='openapi-output') }}"
+"""
