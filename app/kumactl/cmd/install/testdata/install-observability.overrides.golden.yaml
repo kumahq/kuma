@@ -12005,7 +12005,7 @@ spec:
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:8.5.2"
+          image: "grafana/grafana:11.4.0"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -12022,7 +12022,6 @@ spec:
               readOnly: true
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins
-              readOnly: true
           ports:
             - name: service
               containerPort: 80
@@ -12216,7 +12215,7 @@ metadata:
     app: loki
     release: loki
 data:
-  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpjaHVua19zdG9yZV9jb25maWc6CiAgbWF4X2xvb2tfYmFja19wZXJpb2Q6IDBzCmluZ2VzdGVyOgogIGNodW5rX2Jsb2NrX3NpemU6IDI2MjE0NAogIGNodW5rX2lkbGVfcGVyaW9kOiAzbQogIGNodW5rX3JldGFpbl9wZXJpb2Q6IDFtCiAgbGlmZWN5Y2xlcjoKICAgIHJpbmc6CiAgICAgIGt2c3RvcmU6CiAgICAgICAgc3RvcmU6IGlubWVtb3J5CiAgICAgIHJlcGxpY2F0aW9uX2ZhY3RvcjogMQogIHdhbDoKICAgIGVuYWJsZWQ6IGZhbHNlCmxpbWl0c19jb25maWc6CiAgZW5mb3JjZV9tZXRyaWNfbmFtZTogZmFsc2UKc2NoZW1hX2NvbmZpZzoKICBjb25maWdzOgogIC0gZnJvbTogIjIwMTgtMDQtMTUiCiAgICBpbmRleDoKICAgICAgcGVyaW9kOiAxNjhoCiAgICAgIHByZWZpeDogaW5kZXhfCiAgICBvYmplY3Rfc3RvcmU6IGZpbGVzeXN0ZW0KICAgIHNjaGVtYTogdjkKICAgIHN0b3JlOiBib2x0ZGIKc2VydmVyOgogIGh0dHBfbGlzdGVuX3BvcnQ6IDMxMDAKc3RvcmFnZV9jb25maWc6CiAgYm9sdGRiOgogICAgZGlyZWN0b3J5OiAvZGF0YS9sb2tpL2luZGV4CiAgZmlsZXN5c3RlbToKICAgIGRpcmVjdG9yeTogL2RhdGEvbG9raS9jaHVua3MKdGFibGVfbWFuYWdlcjoKICByZXRlbnRpb25fZGVsZXRlc19lbmFibGVkOiBmYWxzZQogIHJldGVudGlvbl9wZXJpb2Q6IDBzCg==
+  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpxdWVyaWVyOgogIGVuZ2luZToKICAgIG1heF9sb29rX2JhY2tfcGVyaW9kOiAwcwppbmdlc3RlcjoKICBjaHVua19ibG9ja19zaXplOiAyNjIxNDQKICBjaHVua19pZGxlX3BlcmlvZDogM20KICBjaHVua19yZXRhaW5fcGVyaW9kOiAxbQogIGxpZmVjeWNsZXI6CiAgICByaW5nOgogICAgICBrdnN0b3JlOgogICAgICAgIHN0b3JlOiBpbm1lbW9yeQogICAgICByZXBsaWNhdGlvbl9mYWN0b3I6IDEKICB3YWw6CiAgICBlbmFibGVkOiBmYWxzZQpjb21wYWN0b3I6CiAgcmV0ZW50aW9uX2VuYWJsZWQ6IGZhbHNlCiAgd29ya2luZ19kaXJlY3Rvcnk6IC9kYXRhL2xva2kvcmV0ZW50aW9uCiAgY29tcGFjdGlvbl9pbnRlcnZhbDogMTBtCiAgZGVsZXRlX3JlcXVlc3Rfc3RvcmU6IHRzZGIKc2NoZW1hX2NvbmZpZzoKICBjb25maWdzOgogICAgLSBmcm9tOiAyMDIzLTEwLTIwCiAgICAgIHN0b3JlOiB0c2RiCiAgICAgIG9iamVjdF9zdG9yZTogZmlsZXN5c3RlbQogICAgICBzY2hlbWE6IHYxMwogICAgICBpbmRleDoKICAgICAgICBwcmVmaXg6IGluZGV4XwogICAgICAgIHBlcmlvZDogMjRoCnN0b3JhZ2VfY29uZmlnOgogIHRzZGJfc2hpcHBlcjoKICAgIGFjdGl2ZV9pbmRleF9kaXJlY3Rvcnk6IC9kYXRhL2xva2kvaW5kZXgKICAgIGNhY2hlX2xvY2F0aW9uOiAvZGF0YS9sb2tpL2NhY2hlCiAgZmlsZXN5c3RlbToKICAgIGRpcmVjdG9yeTogL2RhdGEvbG9raS9jaHVua3MKdGFibGVfbWFuYWdlcjoKICByZXRlbnRpb25fZGVsZXRlc19lbmFibGVkOiBmYWxzZQogIHJldGVudGlvbl9wZXJpb2Q6IDBzCg==
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -12692,7 +12691,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:2.4.1"
+          image: "grafana/promtail:3.3.2"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -12794,7 +12793,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:2.5.0"
+          image: "grafana/loki:3.3.2"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"

@@ -1,0 +1,32 @@
+rules:
+- conf:
+  - connectionTimeout: 1m51s
+    http:
+      requestTimeout: 3m29s
+    idleTimeout: 1m49s
+  origin:
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      labels:
+        kuma.io/origin: global
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-aaa
+      type: MeshTimeout
+    RuleIndex: 0
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-bbb
+      type: MeshTimeout
+    RuleIndex: 0
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      labels:
+        kuma.io/origin: zone
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-ccc
+      type: MeshTimeout
+    RuleIndex: 0
