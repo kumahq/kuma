@@ -215,7 +215,6 @@ spec:
 				meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
 				meshretry_api.MeshRetryResourceTypeDescriptor,
 			)).To(Succeed())
-			time.Sleep(10 * time.Hour)
 			// main inbound
 			Eventually(func(g Gomega) {
 				start := time.Now()
