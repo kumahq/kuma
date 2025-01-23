@@ -14,7 +14,7 @@
 
 
 ## 2.8.6
-> Released on 2025/01/21
+> Released on 2025/01/22
 
 * chore(deps): bump coredns from v1.11.3 to v1.12.0 [#12474](https://github.com/kumahq/kuma/pull/12474) @bartsmykla
 * chore(deps): bump envoy from 1.30.7 to 1.30.9 [#12218](https://github.com/kumahq/kuma/pull/12218) [#12460](https://github.com/kumahq/kuma/pull/12460) @lukidzi
@@ -28,7 +28,7 @@
 
 
 ## 2.7.11
-> Released on 2025/01/21
+> Released on 2025/01/22
 
 * chore(deps): bump coredns from v1.11.3 to v1.12.0 [#12475](https://github.com/kumahq/kuma/pull/12475) @bartsmykla
 * chore(deps): bump envoy from v1.29.10 to v1.29.12 [#12217](https://github.com/kumahq/kuma/pull/12217) [#12455](https://github.com/kumahq/kuma/pull/12455) @lukidzi
@@ -42,7 +42,7 @@
 
 
 ## 2.6.15
-> Released on 2025/01/17
+> Released on 2025/01/21
 
 * chore(deps): bump coredns from v1.11.3 to v1.12.0 [#12476](https://github.com/kumahq/kuma/pull/12476) @bartsmykla
 * chore(deps): bump envoy from v1.29.10 to v1.29.12 [#12216](https://github.com/kumahq/kuma/pull/12216) [#12454](https://github.com/kumahq/kuma/pull/12454) @lukidzi
@@ -56,7 +56,7 @@
 
 
 ## 2.9.2
-> Released on 2024/12/04
+> Released on 2024/12/10
 
 * chore(deps): bump golang from 1.23.2 to 1.23.3 [#12084](https://github.com/kumahq/kuma/pull/12084) @lukidzi
 * fix(meshpassthrough): Refactor MeshPassthrough implementation to generate correct route [#12157](https://github.com/kumahq/kuma/pull/12157) @kumahq
@@ -64,21 +64,21 @@
 
 
 ## 2.6.14
-> Released on 2024/12/02
+> Released on 2024/12/10
 
 * chore(deps): upgrade go from 1.22.8 to 1.22.9 [#12087](https://github.com/kumahq/kuma/pull/12087) @lukidzi
 * fix(kds): clone resource on update meta (backport of #10460) [#12121](https://github.com/kumahq/kuma/pull/12121) @kumahq
 
 
 ## 2.7.10
-> Released on 2024/11/28
+> Released on 2024/12/09
 
 * chore(deps): upgrade go from 1.22.8 to 1.22.9 [#12086](https://github.com/kumahq/kuma/pull/12086) @lukidzi
 * fix(kds): clone resource on update meta (backport of #10460) [#12122](https://github.com/kumahq/kuma/pull/12122) @kumahq
 
 
 ## 2.9.1
-> Released on 2024/11/14
+> Released on 2024/11/15
 
 * chore(deps): algin forked go-control-plane version with upstream [#12029](https://github.com/kumahq/kuma/pull/12029) @kumahq
 * chore(deps): bump envoy from 1.30.6 to 1.30.7 [#11958](https://github.com/kumahq/kuma/pull/11958) @lukidzi
@@ -90,18 +90,8 @@
 * fix(meshtimeout): don't set default timeouts on inbound cluster and listener (backport of #12043) [#12049](https://github.com/kumahq/kuma/pull/12049) @kumahq
 
 
-## 2.6.13
-> Released on 2024/11/13
-
-* chore(deps): bump envoy from 1.28.7 to 1.29.10 [#11960](https://github.com/kumahq/kuma/pull/11960) @lukidzi
-* chore(deps): security update [#11975](https://github.com/kumahq/kuma/pull/11975) @kumahq
-* fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (backport of #11923) [#11940](https://github.com/kumahq/kuma/pull/11940) @kumahq
-* fix(kuma-cp): avoid concurrent access on resource meta (backport of #11997) [#12021](https://github.com/kumahq/kuma/pull/12021) @kumahq
-* fix(store): preserve existing labels when update [#11953](https://github.com/kumahq/kuma/pull/11953) @kumahq
-
-
 ## 2.8.5
-> Released on 2024/11/12
+> Released on 2024/11/15
 
 * chore(deps): bump envoy from 1.30.6 to 1.30.7 [#11957](https://github.com/kumahq/kuma/pull/11957) @lukidzi
 * chore(deps): security update [#11973](https://github.com/kumahq/kuma/pull/11973) @kumahq
@@ -110,7 +100,7 @@
 
 
 ## 2.7.9
-> Released on 2024/11/12
+> Released on 2024/11/15
 
 * chore(deps): bump envoy from 1.29.9 to 1.29.10 [#11956](https://github.com/kumahq/kuma/pull/11956) @lukidzi
 * chore(deps): security update [#11972](https://github.com/kumahq/kuma/pull/11972) @kumahq
@@ -119,8 +109,18 @@
 * fix(store): preserve existing labels when update [#11954](https://github.com/kumahq/kuma/pull/11954) @kumahq
 
 
+## 2.6.13
+> Released on 2024/11/15
+
+* chore(deps): bump envoy from 1.28.7 to 1.29.10 [#11960](https://github.com/kumahq/kuma/pull/11960) @lukidzi
+* chore(deps): security update [#11975](https://github.com/kumahq/kuma/pull/11975) @kumahq
+* fix(k8s): set annotation kuma.io/display-name for Secrets and Configs (backport of #11923) [#11940](https://github.com/kumahq/kuma/pull/11940) @kumahq
+* fix(kuma-cp): avoid concurrent access on resource meta (backport of #11997) [#12021](https://github.com/kumahq/kuma/pull/12021) @kumahq
+* fix(store): preserve existing labels when update [#11953](https://github.com/kumahq/kuma/pull/11953) @kumahq
+
+
 ## 2.9.0
-> Released on 2024/10/18
+> Released on 2024/10/22
 
 * chore(deps): bump Kong/public-shared-actions from 2.3.0 to 2.7.3 [#11139](https://github.com/kumahq/kuma/pull/11139) [#11218](https://github.com/kumahq/kuma/pull/11218) [#11263](https://github.com/kumahq/kuma/pull/11263) [#11310](https://github.com/kumahq/kuma/pull/11310) [#11518](https://github.com/kumahq/kuma/pull/11518) [#11598](https://github.com/kumahq/kuma/pull/11598) [#11696](https://github.com/kumahq/kuma/pull/11696) @dependabot
 * chore(deps): bump coredns from v1.11.1 to v1.11.3 [#11568](https://github.com/kumahq/kuma/pull/11568) @michaelbeaumont
@@ -345,7 +345,7 @@
 
 
 ## 2.8.4
-> Released on 2024/10/07
+> Released on 2024/10/08
 
 * chore(deps): bump coredns from v1.11.1 to v1.11.3 [#11574](https://github.com/kumahq/kuma/pull/11574) @kumahq
 * chore(deps): bump golang from 1.22.7 to 1.22.8 [#11630](https://github.com/kumahq/kuma/pull/11630) @Icarus9913
@@ -359,7 +359,7 @@
 
 
 ## 2.7.8
-> Released on 2024/10/07
+> Released on 2024/10/08
 
 * chore(deps): bump coredns from v1.11.1 to v1.11.3 [#11575](https://github.com/kumahq/kuma/pull/11575) @kumahq
 * chore(deps): bump golang from 1.22.7 to 1.22.8 [#11629](https://github.com/kumahq/kuma/pull/11629) @Icarus9913
@@ -373,7 +373,7 @@
 
 
 ## 2.6.12
-> Released on 2024/10/06
+> Released on 2024/10/08
 
 * chore(deps): bump coredns from v1.11.1 to v1.11.3 [#11576](https://github.com/kumahq/kuma/pull/11576) @kumahq
 * chore(deps): bump golang from 1.22.7 to 1.22.8 [#11628](https://github.com/kumahq/kuma/pull/11628) @Icarus9913
@@ -387,7 +387,7 @@
 
 
 ## 2.5.11
-> Released on 2024/10/06
+> Released on 2024/10/08
 
 * chore(deps): bump coredns from v1.11.1 to v1.11.3 [#11573](https://github.com/kumahq/kuma/pull/11573) @kumahq
 * chore(deps): bump golang from 1.22.7 to 1.22.8 [#11627](https://github.com/kumahq/kuma/pull/11627) @Icarus9913
@@ -399,7 +399,7 @@
 
 
 ## 2.8.3
-> Released on 2024/08/30
+> Released on 2024/09/03
 
 * chore(deps): bump Kong/public-shared-actions from 2.3.0 to 2.4.0 [#11147](https://github.com/kumahq/kuma/pull/11147) @kumahq
 * chore(deps): bump github.com/testcontainers/testcontainers-go from 0.31.0 to 0.32.0 [#11158](https://github.com/kumahq/kuma/pull/11158) @kumahq
@@ -412,7 +412,7 @@
 
 
 ## 2.7.7
-> Released on 2024/08/30
+> Released on 2024/09/03
 
 * chore(deps): bump Kong/public-shared-actions from 2.3.0 to 2.4.0 [#11150](https://github.com/kumahq/kuma/pull/11150) @kumahq
 * chore(deps): bump github.com/testcontainers/testcontainers-go from 0.31.0 to 0.32.0 [#11156](https://github.com/kumahq/kuma/pull/11156) @kumahq
@@ -425,7 +425,7 @@
 
 
 ## 2.6.11
-> Released on 2024/08/30
+> Released on 2024/09/03
 
 * chore(deps): security update [#11200](https://github.com/kumahq/kuma/pull/11200) @kumahq
 * feat(kuma-dp): respond probes of kuma-sidecar from kuma-dp process instead of Envoy [#11241](https://github.com/kumahq/kuma/pull/11241) @kumahq
@@ -436,7 +436,7 @@
 
 
 ## 2.5.10
-> Released on 2024/08/30
+> Released on 2024/09/03
 
 * chore(deps): security update [#11196](https://github.com/kumahq/kuma/pull/11196) @kumahq
 * feat(kuma-dp): respond probes of kuma-sidecar from kuma-dp process instead of Envoy [#11239](https://github.com/kumahq/kuma/pull/11239) @kumahq
@@ -444,31 +444,8 @@
 * fix(xds): explicitly set initial fetch timeout to zero to keep Envoy wait for xds resources (backport of #11024) [#11029](https://github.com/kumahq/kuma/pull/11029) @kumahq
 
 
-## 2.4.10
-> Released on 2024/07/23
-
-* chore(deps): update go to 1.22.5 (backport of #10096) [#10855](https://github.com/kumahq/kuma/pull/10855) @kumahq
-* chore(deps): upgrade envoy with DNS fix [#10930](https://github.com/kumahq/kuma/pull/10930) @michaelbeaumont
-
-
-## 2.5.9
-> Released on 2024/07/22
-
-* chore(deps): update go to 1.22.5 and kube controller-tools to v0.14.0 (backport of #10096) [#10854](https://github.com/kumahq/kuma/pull/10854) @kumahq
-* chore(deps): upgrade envoy with DNS fix [#10931](https://github.com/kumahq/kuma/pull/10931) @michaelbeaumont
-* fix(transparent-proxy): allow iptables executable without mode [#10794](https://github.com/kumahq/kuma/pull/10794) @bartsmykla
-
-
-## 2.8.2
-> Released on 2024/07/18
-
-* chore(deps): update go to 1.22.5 (backport of #10096) [#10856](https://github.com/kumahq/kuma/pull/10856) @kumahq
-* chore(deps): upgrade envoy with DNS fix [#10934](https://github.com/kumahq/kuma/pull/10934) @michaelbeaumont
-* fix(k8s): avoid nil TargetRef pointer dereference (backport of #10746) [#10763](https://github.com/kumahq/kuma/pull/10763) @kumahq
-
-
 ## 2.7.6
-> Released on 2024/07/18
+> Released on 2024/07/24
 
 * chore(deps): update go to 1.22.5 (backport of #10096) [#10857](https://github.com/kumahq/kuma/pull/10857) @kumahq
 * chore(deps): upgrade envoy with DNS fix [#10933](https://github.com/kumahq/kuma/pull/10933) @michaelbeaumont
@@ -476,39 +453,51 @@
 
 
 ## 2.6.10
-> Released on 2024/07/18
+> Released on 2024/07/24
 
 * chore(deps): update go to 1.22.5 (backport of #10096) [#10853](https://github.com/kumahq/kuma/pull/10853) @kumahq
 * chore(deps): upgrade envoy with DNS fix [#10932](https://github.com/kumahq/kuma/pull/10932) @michaelbeaumont
 * fix(transparent-proxy): allow iptables executables without mode [#10793](https://github.com/kumahq/kuma/pull/10793) @bartsmykla
 
 
-## 2.8.1
-> Released on 2024/07/03
+## 2.5.9
+> Released on 2024/07/24
 
-* chore(deps): upgrade envoy to 1.30.3 [#10645](https://github.com/kumahq/kuma/pull/10645) @lukidzi
-* chore(deps): upgrade envoy to 1.30.4 [#10692](https://github.com/kumahq/kuma/pull/10692) @lukidzi
-* chore(deps): use latest kumahq/kuma-gui [#10647](https://github.com/kumahq/kuma/pull/10647) @kumahq
-* fix(cni): set proper namespace for the taint controller (backport of #10651) [#10662](https://github.com/kumahq/kuma/pull/10662) @kumahq
-* fix(hostnamegenerator): selectors validation and matching [#10688](https://github.com/kumahq/kuma/pull/10688) @jakubdyszkiewicz
-* fix(meshservice): do not wipe out identities of synced service [#10655](https://github.com/kumahq/kuma/pull/10655) @jakubdyszkiewicz
+* chore(deps): update go to 1.22.5 and kube controller-tools to v0.14.0 (backport of #10096) [#10854](https://github.com/kumahq/kuma/pull/10854) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10931](https://github.com/kumahq/kuma/pull/10931) @michaelbeaumont
+* fix(transparent-proxy): allow iptables executable without mode [#10794](https://github.com/kumahq/kuma/pull/10794) @bartsmykla
+
+
+## 2.4.10
+> Released on 2024/07/24
+
+* chore(deps): update go to 1.22.5 (backport of #10096) [#10855](https://github.com/kumahq/kuma/pull/10855) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10930](https://github.com/kumahq/kuma/pull/10930) @michaelbeaumont
+
+
+## 2.8.2
+> Released on 2024/07/23
+
+* chore(deps): update go to 1.22.5 (backport of #10096) [#10856](https://github.com/kumahq/kuma/pull/10856) @kumahq
+* chore(deps): upgrade envoy with DNS fix [#10934](https://github.com/kumahq/kuma/pull/10934) @michaelbeaumont
+* fix(k8s): avoid nil TargetRef pointer dereference (backport of #10746) [#10763](https://github.com/kumahq/kuma/pull/10763) @kumahq
 
 
 ## 2.7.5
-> Released on 2024/07/03
+> Released on 2024/07/04
 
 * chore(deps): bump envoy from 1.29.5 to 1.29.7 [#10641](https://github.com/kumahq/kuma/pull/10641) [#10691](https://github.com/kumahq/kuma/pull/10691) @lukidzi
 * fix(cni): set proper namespace for the taint controller (backport of #10651) [#10661](https://github.com/kumahq/kuma/pull/10661) @kumahq
 
 
 ## 2.6.9
-> Released on 2024/07/02
+> Released on 2024/07/04
 
 * chore(deps): upgrade envoy to 1.28.5 [#10685](https://github.com/kumahq/kuma/pull/10685) @lukidzi
 * fix(cni): set proper namespace for the taint controller (backport of #10651) [#10659](https://github.com/kumahq/kuma/pull/10659) @kumahq
 
 ## 2.5.8
-> Released on 2024/07/02
+> Released on 2024/07/04
 
 * chore(deps): upgrade envoy to 1.28.5 [#10686](https://github.com/kumahq/kuma/pull/10686) @lukidzi
 * chore(deps): upgrade go to 1.21.11 (backport of #10401) [#10406](https://github.com/kumahq/kuma/pull/10406) @kumahq
@@ -523,7 +512,7 @@
 
 
 ## 2.4.9
-> Released on 2024/07/02
+> Released on 2024/07/04
 
 * chore(deps): upgrade envoy to 1.27.7 [#10690](https://github.com/kumahq/kuma/pull/10690) @lukidzi
 * chore(deps): upgrade go from 1.21.10 to 1.21.11 (backport of #10401) [#10407](https://github.com/kumahq/kuma/pull/10407) @kumahq
@@ -531,6 +520,17 @@
 * fix(gatewayapi): validate presence of all required Gateway API resources (backport of #10079) [#10081](https://github.com/kumahq/kuma/pull/10081) @kumahq
 * fix(kuma-cp): consistently check for expiring ZoneIngress/ZoneEgress certs (backport of #10160, #10162, #10161) [#10170](https://github.com/kumahq/kuma/pull/10170) @kumahq
 * fix(jobs): jobs termination after CP restart (backport of https://github.com/kumahq/kuma/pull/10085) https://github.com/kumahq/kuma/pull/10087 @kumahq
+
+## 2.8.1
+> Released on 2024/07/03
+
+* chore(deps): upgrade envoy to 1.30.3 [#10645](https://github.com/kumahq/kuma/pull/10645) @lukidzi
+* chore(deps): upgrade envoy to 1.30.4 [#10692](https://github.com/kumahq/kuma/pull/10692) @lukidzi
+* chore(deps): use latest kumahq/kuma-gui [#10647](https://github.com/kumahq/kuma/pull/10647) @kumahq
+* fix(cni): set proper namespace for the taint controller (backport of #10651) [#10662](https://github.com/kumahq/kuma/pull/10662) @kumahq
+* fix(hostnamegenerator): selectors validation and matching [#10688](https://github.com/kumahq/kuma/pull/10688) @jakubdyszkiewicz
+* fix(meshservice): do not wipe out identities of synced service [#10655](https://github.com/kumahq/kuma/pull/10655) @jakubdyszkiewicz
+
 
 ## 2.8.0
 > Released on 2024/06/24
@@ -664,7 +664,7 @@
 
 
 ## 2.7.4
-> Released on 2024/06/19
+> Released on 2024/06/20
 
 * chore(deps): bump envoy version from 1.29.4 to 1.29.5 [#10390](https://github.com/kumahq/kuma/pull/10390) @lukidzi
 * chore(deps): ignore go-control-plane updates by dependabot (backport of #10412) [#10416](https://github.com/kumahq/kuma/pull/10416) @kumahq
@@ -677,7 +677,7 @@
 
 
 ## 2.6.8
-> Released on 2024/06/19
+> Released on 2024/06/20
 
 * chore(deps): bump envoy version from 1.28.3 to 1.28.4 [#10386](https://github.com/kumahq/kuma/pull/10386) @lukidzi
 * chore(deps): ignore go-control-plane updates by dependabot (backport of #10412) [#10418](https://github.com/kumahq/kuma/pull/10418) @kumahq
@@ -689,14 +689,14 @@
 
 
 ## 2.6.7
-> Released on 2024/05/29
+> Released on 2024/05/30
 
 * fix(MeshRoute): properly map listener TLS certs to DownstreamTlsContext (backport of #10272) [#10344](https://github.com/kumahq/kuma/pull/10344) @kumahq
 * fix(kds): fix the case when webhook/db reject resource (backport of #10315) [#10351](https://github.com/kumahq/kuma/pull/10351) @kumahq
 
 
 ## 2.7.3
-> Released on 2024/05/17
+> Released on 2024/05/20
 
 * chore(deps): bump go to 1.21.10 (backport of #10209) [#10258](https://github.com/kumahq/kuma/pull/10258) @kumahq
 * chore(deps): use latest kumahq/kuma-gui [#10092](https://github.com/kumahq/kuma/pull/10092) [#10199](https://github.com/kumahq/kuma/pull/10199) @kumahq
@@ -719,7 +719,7 @@
 
 
 ## 2.7.2
-> Released on 2024/04/25
+> Released on 2024/04/30
 
 * fix(jobs): jobs termination after CP restart (#10085)
 * fix(gatewayapi): validate presence of all required Gateway API resources (backport of #10079) (#10082) 
@@ -735,7 +735,7 @@
 
 
 ## 2.7.0
-> Released on 2024/04/17
+> Released on 2024/04/19
 
 * chore(deps): bump Envoy from 1.28.0 to 1.29.3 [#9134](https://github.com/kumahq/kuma/pull/9134) [#9222](https://github.com/kumahq/kuma/pull/9222) [#9600](https://github.com/kumahq/kuma/pull/9600) [#9853](https://github.com/kumahq/kuma/pull/9853) @lukidzi
 * chore(deps): bump Kong/public-shared-actions from 2.0.2 to 2.1.0 [#9556](https://github.com/kumahq/kuma/pull/9556) [#9711](https://github.com/kumahq/kuma/pull/9711) @dependabot
@@ -892,21 +892,21 @@
 
 
 ## 2.6.5
-> Released on 2024/04/07
+> Released on 2024/04/09
 
 * chore(deps): security update [#9820](https://github.com/kumahq/kuma/pull/9820) @kumahq
 * chore(deps): update Envoy to v1.28.2 [#9843](https://github.com/kumahq/kuma/pull/9843) [#9848](https://github.com/kumahq/kuma/pull/9848) @michaelbeaumont
 
 
 ## 2.5.7
-> Released on 2024/04/07
+> Released on 2024/04/09
 
 * chore(deps): security update [#9818](https://github.com/kumahq/kuma/pull/9818) @kumahq
 * chore(deps): update Envoy to v1.28.2 [#9845](https://github.com/kumahq/kuma/pull/9845) [#9847](https://github.com/kumahq/kuma/pull/9847) @michaelbeaumont
 
 
 ## 2.4.8
-> Released on 2024/04/05
+> Released on 2024/04/09
 
 * Revert "feat(images/kuma-init): use iptables-wrapper to use correct iptables version (backport of #9701) (#9726)" [#9757](https://github.com/kumahq/kuma/pull/9757) @bartsmykla
 * chore(deps): security update [#9684](https://github.com/kumahq/kuma/pull/9684) [#9696](https://github.com/kumahq/kuma/pull/9696) [#9815](https://github.com/kumahq/kuma/pull/9815) @kumahq
@@ -914,7 +914,7 @@
 
 
 ## 2.3.7
-> Released on 2024/04/05
+> Released on 2024/04/09
 
 * Revert "feat(images/kuma-init): use iptables-wrapper to use correct iptables version (backport of #9701) (#9725)" [#9758](https://github.com/kumahq/kuma/pull/9758) @bartsmykla
 * chore(deps): security update [#9683](https://github.com/kumahq/kuma/pull/9683) [#9694](https://github.com/kumahq/kuma/pull/9694) [#9817](https://github.com/kumahq/kuma/pull/9817) @kumahq
@@ -922,7 +922,7 @@
 
 
 ## 2.2.9
-> Released on 2024/04/05
+> Released on 2024/04/09
 
 * Revert "feat(images/kuma-init): use iptables-wrapper to use correct iptables version (backport of #9701) (#9727)" [#9759](https://github.com/kumahq/kuma/pull/9759) @bartsmykla
 * chore(deps): security update [#9680](https://github.com/kumahq/kuma/pull/9680) [#9695](https://github.com/kumahq/kuma/pull/9695) [#9816](https://github.com/kumahq/kuma/pull/9816) @kumahq
@@ -956,38 +956,38 @@
 * feat(transparent-proxy): add automatic iptables type detection (backport of #9750) [#9764](https://github.com/kumahq/kuma/pull/9764) @kumahq
 
 
+## 2.6.2
+> Released on 2024/03/19
+
+* chore(deps): security update [#9368](https://github.com/kumahq/kuma/pull/9368) [#9514](https://github.com/kumahq/kuma/pull/9514) [#9621](https://github.com/kumahq/kuma/pull/9621) @kumahq
+* fix(kuma-cp): clone outbound tags (backport of #9592) [#9599](https://github.com/kumahq/kuma/pull/9599) @kumahq
+* fix(xds): duplicated listeners (backport of #9542) [#9552](https://github.com/kumahq/kuma/pull/9552) @kumahq
+
+
 ## 2.5.4
-> Released on 2024/03/15
+> Released on 2024/03/19
 
 * chore(deps): security update [#9366](https://github.com/kumahq/kuma/pull/9366) [#9512](https://github.com/kumahq/kuma/pull/9512) [#9619](https://github.com/kumahq/kuma/pull/9619) @kumahq
 
 
 ## 2.4.7
-> Released on 2024/03/15
+> Released on 2024/03/19
 
 * chore(deps): security update [#9513](https://github.com/kumahq/kuma/pull/9513) [#9620](https://github.com/kumahq/kuma/pull/9620) @kumahq
 * chore(deps): use latest kumahq/kuma-gui [#9409](https://github.com/kumahq/kuma/pull/9409) @kumahq
 
 
 ## 2.3.6
-> Released on 2024/03/15
+> Released on 2024/03/19
 
 * chore(deps): security update [#9515](https://github.com/kumahq/kuma/pull/9515) [#9618](https://github.com/kumahq/kuma/pull/9618) @kumahq
 
 
 ## 2.2.8
-> Released on 2024/03/15
+> Released on 2024/03/19
 
 * chore(deps): manual security update release-2.2 [#9523](https://github.com/kumahq/kuma/pull/9523) @lobkovilya
 * chore(deps): security update [#9537](https://github.com/kumahq/kuma/pull/9537) [#9617](https://github.com/kumahq/kuma/pull/9617) @kumahq
-
-
-## 2.6.2
-> Released on 2024/03/13
-
-* chore(deps): security update [#9368](https://github.com/kumahq/kuma/pull/9368) [#9514](https://github.com/kumahq/kuma/pull/9514) [#9621](https://github.com/kumahq/kuma/pull/9621) @kumahq
-* fix(kuma-cp): clone outbound tags (backport of #9592) [#9599](https://github.com/kumahq/kuma/pull/9599) @kumahq
-* fix(xds): duplicated listeners (backport of #9542) [#9552](https://github.com/kumahq/kuma/pull/9552) @kumahq
 
 
 ## 2.5.3
@@ -1021,7 +1021,7 @@
 
 
 ## 2.6.1
-> Released on 2024/02/16
+> Released on 2024/02/19
 
 * chore(deps): downgrade go-control-plane to v0.11.2-0.20231010133108-1dfbe83bcebc (backport of #9163) [#9285](https://github.com/kumahq/kuma/pull/9285) @kumahq
 * chore(deps): security update [#9288](https://github.com/kumahq/kuma/pull/9288) @kumahq
@@ -1038,8 +1038,19 @@
 * fix(kuma-cp): prevent violating kubernetes label limit (backport of #9191) [#9233](https://github.com/kumahq/kuma/pull/9233) @kumahq
 
 
+## 2.5.2
+> Released on 2024/02/06
+
+* chore(deps): security update [#8678](https://github.com/kumahq/kuma/pull/8678) [#8694](https://github.com/kumahq/kuma/pull/8694) [#9103](https://github.com/kumahq/kuma/pull/9103) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8962](https://github.com/kumahq/kuma/pull/8962) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8627](https://github.com/kumahq/kuma/pull/8627) @kumahq
+* fix(kds): race condition on fill metadata (backport of #8872) [#8999](https://github.com/kumahq/kuma/pull/8999) @kumahq
+* fix(kuma-cp): assign `extensions` in `ZoneInsightSink` constructor (backport of #8940) [#8956](https://github.com/kumahq/kuma/pull/8956) @kumahq
+* fix(vips): skip ignored listeners (backport of #8937) [#8982](https://github.com/kumahq/kuma/pull/8982) @kumahq
+
+
 ## 2.4.5
-> Released on 2024/02/02
+> Released on 2024/02/06
 
 * chore(deps): bump the go-opentelemetry-io group with 3 updates  (backport of #8347) [#8352](https://github.com/kumahq/kuma/pull/8352) @kumahq
 * chore(deps): security update [#8672](https://github.com/kumahq/kuma/pull/8672) [#8699](https://github.com/kumahq/kuma/pull/8699) [#9100](https://github.com/kumahq/kuma/pull/9100) @kumahq
@@ -1052,7 +1063,7 @@
 
 
 ## 2.3.4
-> Released on 2024/02/02
+> Released on 2024/02/06
 
 * chore(deps): security update [#8204](https://github.com/kumahq/kuma/pull/8204) [#8674](https://github.com/kumahq/kuma/pull/8674) [#8697](https://github.com/kumahq/kuma/pull/8697) [#9099](https://github.com/kumahq/kuma/pull/9099) @kumahq
 * chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8958](https://github.com/kumahq/kuma/pull/8958) @kumahq
@@ -1063,6 +1074,19 @@
 * fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8306](https://github.com/kumahq/kuma/pull/8306) @kumahq
 * fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (backport of #8168) [#8196](https://github.com/kumahq/kuma/pull/8196) @kumahq
 * fix(kds): race condition on fill metadata (backport of #8872) [#8997](https://github.com/kumahq/kuma/pull/8997) @kumahq
+
+
+## 2.2.6
+> Released on 2024/02/06
+
+* chore(deps): security update [#8202](https://github.com/kumahq/kuma/pull/8202) [#8673](https://github.com/kumahq/kuma/pull/8673) [#8698](https://github.com/kumahq/kuma/pull/8698) [#9105](https://github.com/kumahq/kuma/pull/9105) @kumahq
+* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8960](https://github.com/kumahq/kuma/pull/8960) @kumahq
+* chore(deps): update go to 1.21.4 (backport of #8341) [#8346](https://github.com/kumahq/kuma/pull/8346) @kumahq
+* chore(deps): update go to 1.21.5 (backport of #8616) [#8623](https://github.com/kumahq/kuma/pull/8623) @kumahq
+* chore(deps): upgrade envoy to 1.25.11 [#8163](https://github.com/kumahq/kuma/pull/8163) @lukidzi
+* fix(MeshTrafficPermission): support permissive mtls (backport of #8171) [#8178](https://github.com/kumahq/kuma/pull/8178) @kumahq
+* fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8305](https://github.com/kumahq/kuma/pull/8305) @kumahq
+* fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (backport of #8168) [#8195](https://github.com/kumahq/kuma/pull/8195) @kumahq
 
 
 ## 2.6.0
@@ -1236,32 +1260,8 @@
 * fix(vips): skip ignored listeners [#8937](https://github.com/kumahq/kuma/pull/8937) @jakubdyszkiewicz
 
 
-## 2.5.2
-> Released on 2024/02/01
-
-* chore(deps): security update [#8678](https://github.com/kumahq/kuma/pull/8678) [#8694](https://github.com/kumahq/kuma/pull/8694) [#9103](https://github.com/kumahq/kuma/pull/9103) @kumahq
-* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8962](https://github.com/kumahq/kuma/pull/8962) @kumahq
-* chore(deps): update go to 1.21.5 (backport of #8616) [#8627](https://github.com/kumahq/kuma/pull/8627) @kumahq
-* fix(kds): race condition on fill metadata (backport of #8872) [#8999](https://github.com/kumahq/kuma/pull/8999) @kumahq
-* fix(kuma-cp): assign `extensions` in `ZoneInsightSink` constructor (backport of #8940) [#8956](https://github.com/kumahq/kuma/pull/8956) @kumahq
-* fix(vips): skip ignored listeners (backport of #8937) [#8982](https://github.com/kumahq/kuma/pull/8982) @kumahq
-
-
-## 2.2.6
-> Released on 2024/02/01
-
-* chore(deps): security update [#8202](https://github.com/kumahq/kuma/pull/8202) [#8673](https://github.com/kumahq/kuma/pull/8673) [#8698](https://github.com/kumahq/kuma/pull/8698) [#9105](https://github.com/kumahq/kuma/pull/9105) @kumahq
-* chore(deps): update go from 1.21.5 to 1.21.6 (backport of #8944) [#8960](https://github.com/kumahq/kuma/pull/8960) @kumahq
-* chore(deps): update go to 1.21.4 (backport of #8341) [#8346](https://github.com/kumahq/kuma/pull/8346) @kumahq
-* chore(deps): update go to 1.21.5 (backport of #8616) [#8623](https://github.com/kumahq/kuma/pull/8623) @kumahq
-* chore(deps): upgrade envoy to 1.25.11 [#8163](https://github.com/kumahq/kuma/pull/8163) @lukidzi
-* fix(MeshTrafficPermission): support permissive mtls (backport of #8171) [#8178](https://github.com/kumahq/kuma/pull/8178) @kumahq
-* fix(k8s): don't temporarily remove all AvailableServices on ZoneIngress Pod reconciliations (backport of #8301) [#8305](https://github.com/kumahq/kuma/pull/8305) @kumahq
-* fix(k8s): fix VIPs configmap entries with invalid keys for ExternalName services (backport of #8168) [#8195](https://github.com/kumahq/kuma/pull/8195) @kumahq
-
-
 ## 2.5.1
-> Released on 2023/12/05
+> Released on 2023/12/12
 
 * feat(dataplane): ignored listeners with ignored labels in selector (backport of #8463) [#8544](https://github.com/kumahq/kuma/pull/8544) @kumahq
 * fix(ZoneIngress): subset routing when tag is present on all subsets (backport of #8443) [#8475](https://github.com/kumahq/kuma/pull/8475) @kumahq
@@ -1448,7 +1448,7 @@
 
 
 ## 2.4.3
-> Released on 2023/10/11
+> Released on 2023/10/12
 
 * chore(deps): bump envoy from 1.27.0 to 1.27.1 [#8025](https://github.com/kumahq/kuma/pull/8025) @lahabana
 * chore(deps): bump go version to 1.21.3 (backport of #8001) [#8012](https://github.com/kumahq/kuma/pull/8012) @kumahq
@@ -1456,7 +1456,7 @@
 
 
 ## 2.3.3
-> Released on 2023/10/11
+> Released on 2023/10/12
 
 * chore(deps): bump envoy from 1.26.4 to 1.26.5 [#8024](https://github.com/kumahq/kuma/pull/8024) @lahabana
 * chore(deps): bump go from 1.20.7 to 1.21.1 [#7825](https://github.com/kumahq/kuma/pull/7825) @kumahq
@@ -1471,7 +1471,7 @@
 
 
 ## 2.2.5
-> Released on 2023/10/11
+> Released on 2023/10/12
 
 * chore(deps): bump envoy from 1.25.9 to 1.25.10 [#8026](https://github.com/kumahq/kuma/pull/8026) @lahabana
 * chore(deps): bump go from 1.20.7 to 1.21.1 [#7827](https://github.com/kumahq/kuma/pull/7827) @kumahq
@@ -1486,7 +1486,7 @@
 
 
 ## 2.1.7
-> Released on 2023/10/11
+> Released on 2023/10/12
 
 * chore(deps): bump envoy from 1.24.10 to 1.24.11 [#8027](https://github.com/kumahq/kuma/pull/8027) @lahabana
 * chore(deps): bump go from 1.20.7 to 1.21.1 [#7829](https://github.com/kumahq/kuma/pull/7829) @kumahq
@@ -1500,7 +1500,7 @@
 
 
 ## 2.0.8
-> Released on 2023/10/11
+> Released on 2023/10/12
 
 * chore(deps): bump envoy from 1.24.10 to 1.24.11 [#8028](https://github.com/kumahq/kuma/pull/8028) @lahabana
 * chore(deps): bump go from 1.18 to 1.21.1 [#7533](https://github.com/kumahq/kuma/pull/7533) [#7828](https://github.com/kumahq/kuma/pull/7828) @kumahq,@michaelbeaumont
@@ -1542,7 +1542,7 @@
 
 
 ## 2.4.0
-> Released on 2023/08/28
+> Released on 2023/08/29
 
 * chore(deps): bump CoreDNS from v1.10.1 to v1.11.1 [#7493](https://github.com/kumahq/kuma/pull/7493) [#7523](https://github.com/kumahq/kuma/pull/7523) @michaelbeaumont
 * chore(deps): bump cirello.io/pglock from 1.13.0 to 1.14.0 [#7554](https://github.com/kumahq/kuma/pull/7554) @dependabot
@@ -1645,7 +1645,7 @@
 
 
 ## 2.1.6
-> Released on 2023/08/09
+> Released on 2023/08/14
 
 * chore(deps): bump go from 1.18 to 1.20.7 [#7446](https://github.com/kumahq/kuma/pull/7446) [#7489](https://github.com/kumahq/kuma/pull/7489) @michaelbeaumont
 * chore(deps): security update [#7405](https://github.com/kumahq/kuma/pull/7405) [#7442](https://github.com/kumahq/kuma/pull/7442) @kumahq
@@ -1653,7 +1653,7 @@
 
 
 ## 2.2.4
-> Released on 2023/08/04
+> Released on 2023/08/05
 
 * chore(deps): security update [#7454](https://github.com/kumahq/kuma/pull/7454) @kumahq
 * chore(deps): update go from 1.20.5 to 1.20.6 (backport of #7414) [#7417](https://github.com/kumahq/kuma/pull/7417) @kumahq
@@ -1666,7 +1666,7 @@
 
 
 ## 2.3.2
-> Released on 2023/08/03
+> Released on 2023/08/04
 
 * chore(deps): security update [#7443](https://github.com/kumahq/kuma/pull/7443) @kumahq
 * chore(deps): update go from 1.20.5 to 1.20.6 (backport of #7414) [#7419](https://github.com/kumahq/kuma/pull/7419) @kumahq
@@ -1679,7 +1679,7 @@
 
 
 ## 2.1.5
-> Released on 2023/07/27
+> Released on 2023/07/28
 
 * chore(deps): upgrade envoy to 1.24.10 [#7363](https://github.com/kumahq/kuma/pull/7363) @lukidzi
 * fix(kuma-cp): don't leak goroutine on every tick in SimpleWatchdog (backport of #7348) [#7352](https://github.com/kumahq/kuma/pull/7352) @kumahq
@@ -1687,14 +1687,14 @@
 
 
 ## 2.0.7
-> Released on 2023/07/27
+> Released on 2023/07/28
 
 * chore(deps): upgrade envoy to 1.24.10 [#7364](https://github.com/kumahq/kuma/pull/7364) @lukidzi
 * fix(kuma-cp): order resources for building VIPs (backport of #7333) [#7358](https://github.com/kumahq/kuma/pull/7358) @kumahq
 
 
 ## 1.8.8
-> Released on 2023/07/27
+> Released on 2023/07/28
 
 * chore(deps): upgrade envoy to 1.24.10 [#7365](https://github.com/kumahq/kuma/pull/7365) @lukidzi
 * fix(kuma-cp): order resources for building VIPs (backport of #7333) [#7360](https://github.com/kumahq/kuma/pull/7360) @kumahq
@@ -1727,7 +1727,7 @@
 
 
 ## 2.1.4
-> Released on 2023/07/19
+> Released on 2023/07/21
 
 * chore(deps): bump envoy to 1.24.9 which fix [CVE-2023-35945](https://github.com/envoyproxy/envoy/security/advisories/GHSA-jfxv-29pc-x22r) [#7264](https://github.com/kumahq/kuma/pull/7264) @lukidzi
 * fix(kuma-cp): cancel OnTick when watchdog stopped (backport of #7221) [#7240](https://github.com/kumahq/kuma/pull/7240) @kumahq
@@ -1738,7 +1738,7 @@
 
 
 ## 2.0.6
-> Released on 2023/07/19
+> Released on 2023/07/21
 
 * chore(deps): bump envoy to 1.24.9 which fix [CVE-2023-35945](https://github.com/envoyproxy/envoy/security/advisories/GHSA-jfxv-29pc-x22r) [#7263](https://github.com/kumahq/kuma/pull/7263) @lukidzi
 * fix(kuma-cp): don't fail when 2 headless services pointing to the same service (backport of #7282) [#7293](https://github.com/kumahq/kuma/pull/7293) @kumahq
@@ -1746,14 +1746,14 @@
 
 
 ## 1.8.7
-> Released on 2023/07/19
+> Released on 2023/07/21
 
 * chore(deps): bump envoy to 1.24.9 which fix [CVE-2023-35945](https://github.com/envoyproxy/envoy/security/advisories/GHSA-jfxv-29pc-x22r) [#7262](https://github.com/kumahq/kuma/pull/7262) @lukidzi
 * fix(kuma-cp): don't fail when 2 headless services pointing to the same service (backport of #7282) [#7292](https://github.com/kumahq/kuma/pull/7292) @kumahq
 
 
 ## 2.3.0
-> Released on 2023/06/22
+> Released on 2023/06/23
 
 * chore(deps): bump Envoy from v1.25.4 to v1.26.2 [#6638](https://github.com/kumahq/kuma/pull/6638) [#6938](https://github.com/kumahq/kuma/pull/6938) @lukidzi,@michaelbeaumont
 * chore(deps): bump cirello.io/pglock from 1.11.0 to 1.13.0 [#6817](https://github.com/kumahq/kuma/pull/6817) [#6927](https://github.com/kumahq/kuma/pull/6927) @dependabot
@@ -1919,7 +1919,7 @@
 
 
 ## 2.2.1
-> Released on 2023/05/03
+> Released on 2023/05/11
 
 * chore(deps): bump golang from 1.20.2 to 1.20.3 [#6597](https://github.com/kumahq/kuma/pull/6597) @mergify
 * chore(deps): use latest kumahq/kuma-gui [#6574](https://github.com/kumahq/kuma/pull/6574) @kumahq
@@ -2044,6 +2044,19 @@
 * fix(tproxy): allow disabling ipv6 for tproxy [#5923](https://github.com/kumahq/kuma/pull/5923) @bartsmykla
 
 
+## 2.1.2
+> Released on 2023/04/07
+
+* chore(deps): bump coredns from 1.10.0 to 1.10.1 [#6237](https://github.com/kumahq/kuma/pull/6237) @mergify
+* chore(deps): remove dependency on github.com/prometheus/prometheus (backport #6204) [#6205](https://github.com/kumahq/kuma/pull/6205) @mergify
+* chore(deps): security update [#6062](https://github.com/kumahq/kuma/pull/6062) [#6392](https://github.com/kumahq/kuma/pull/6392) [#6471](https://github.com/kumahq/kuma/pull/6471) @kumahq
+* chore(deps): upgrade envoy to v1.22.10 [#6483](https://github.com/kumahq/kuma/pull/6483) @michaelbeaumont
+* fix(kuma-cni): ipv6 iptables with provided gateway and CNI V2 (backport #6374) [#6376](https://github.com/kumahq/kuma/pull/6376) @mergify
+* fix(kuma-cp): add components in runtime (backport #6350) [#6381](https://github.com/kumahq/kuma/pull/6381) @mergify
+* fix(kuma-cp): don't let CA requests for other meshes block generation (backport #6282) [#6284](https://github.com/kumahq/kuma/pull/6284) @mergify
+* fix(policy): matcher with same key not the same value (backport #6460) [#6466](https://github.com/kumahq/kuma/pull/6466) @mergify
+
+
 ## 2.0.4
 > Released on 2023/04/07
 
@@ -2056,21 +2069,8 @@
 * fix(policy): matcher with same key not the same value (backport #6460) [#6467](https://github.com/kumahq/kuma/pull/6467) @mergify
 
 
-## 2.1.2
-> Released on 2023/04/06
-
-* chore(deps): bump coredns from 1.10.0 to 1.10.1 [#6237](https://github.com/kumahq/kuma/pull/6237) @mergify
-* chore(deps): remove dependency on github.com/prometheus/prometheus (backport #6204) [#6205](https://github.com/kumahq/kuma/pull/6205) @mergify
-* chore(deps): security update [#6062](https://github.com/kumahq/kuma/pull/6062) [#6392](https://github.com/kumahq/kuma/pull/6392) [#6471](https://github.com/kumahq/kuma/pull/6471) @kumahq
-* chore(deps): upgrade envoy to v1.22.10 [#6483](https://github.com/kumahq/kuma/pull/6483) @michaelbeaumont
-* fix(kuma-cni): ipv6 iptables with provided gateway and CNI V2 (backport #6374) [#6376](https://github.com/kumahq/kuma/pull/6376) @mergify
-* fix(kuma-cp): add components in runtime (backport #6350) [#6381](https://github.com/kumahq/kuma/pull/6381) @mergify
-* fix(kuma-cp): don't let CA requests for other meshes block generation (backport #6282) [#6284](https://github.com/kumahq/kuma/pull/6284) @mergify
-* fix(policy): matcher with same key not the same value (backport #6460) [#6466](https://github.com/kumahq/kuma/pull/6466) @mergify
-
-
 ## 1.8.5
-> Released on 2023/04/06
+> Released on 2023/04/07
 
 * chore(deps): bump coredns from 1.10.0 to 1.10.1 [#6239](https://github.com/kumahq/kuma/pull/6239) @mergify
 * chore(deps): bump gorestful and jwt [#6203](https://github.com/kumahq/kuma/pull/6203) @lahabana
@@ -2080,7 +2080,7 @@
 
 
 ## 1.7.6
-> Released on 2023/04/06
+> Released on 2023/04/07
 
 * chore(deps): bump coredns from 1.10.0 to 1.10.1 [#6240](https://github.com/kumahq/kuma/pull/6240) @mergify
 * chore(deps): bump gorestful and jwt (backport #6203) [#6212](https://github.com/kumahq/kuma/pull/6212) @mergify
@@ -2089,7 +2089,7 @@
 
 
 ## 2.1.1
-> Released on 2023/02/14
+> Released on 2023/02/16
 
 * chore(deps): bump Envoy from 1.22.2 to 1.22.7 [#5985](https://github.com/kumahq/kuma/pull/5985) @mergify
 * chore(deps): security update [#5965](https://github.com/kumahq/kuma/pull/5965) @kumahq
@@ -2100,7 +2100,7 @@
 
 
 ## 2.0.3
-> Released on 2023/02/14
+> Released on 2023/02/16
 
 * chore(deps): bump Envoy from 1.22.2 to 1.22.7 [#5986](https://github.com/kumahq/kuma/pull/5986) @mergify
 * chore(deps): security update [#5762](https://github.com/kumahq/kuma/pull/5762) [#5969](https://github.com/kumahq/kuma/pull/5969) @kumahq
@@ -2108,7 +2108,7 @@
 
 
 ## 1.8.4
-> Released on 2023/02/14
+> Released on 2023/02/16
 
 * chore(deps): bump Envoy from 1.22.2 to 1.22.7 [#5987](https://github.com/kumahq/kuma/pull/5987) @mergify
 * chore(deps): security update [#5763](https://github.com/kumahq/kuma/pull/5763) [#5963](https://github.com/kumahq/kuma/pull/5963) @kumahq
@@ -2116,21 +2116,21 @@
 
 
 ## 1.7.5
-> Released on 2023/02/14
+> Released on 2023/02/16
 
 * chore(deps): bump Envoy from 1.22.2 to 1.22.7 [#5988](https://github.com/kumahq/kuma/pull/5988) @mergify
 * chore(deps): security update [#5766](https://github.com/kumahq/kuma/pull/5766) [#5966](https://github.com/kumahq/kuma/pull/5966) @kumahq
 
 
 ## 1.6.5
-> Released on 2023/02/14
+> Released on 2023/02/16
 
 * chore(deps): bump Envoy from 1.22.2 to 1.22.7 [#5989](https://github.com/kumahq/kuma/pull/5989) @mergify
 * chore(deps): security update [#5764](https://github.com/kumahq/kuma/pull/5764) [#5964](https://github.com/kumahq/kuma/pull/5964) @kumahq
 
 
 ## 2.1.0
-> Released on 2023/01/30
+> Released on 2023/02/01
 
 * chore(deps): bump alpine from 3.16.2 to 3.17.0 [#5308](https://github.com/kumahq/kuma/pull/5308) [#5375](https://github.com/kumahq/kuma/pull/5375) @dependabot
 * chore(deps): bump github.com/Masterminds/semver/v3 from 3.1.1 to 3.2.0 [#5377](https://github.com/kumahq/kuma/pull/5377) @dependabot
@@ -2246,18 +2246,8 @@
 * fix(xds): don't read metadata in ProxyBuilders [#5414](https://github.com/kumahq/kuma/pull/5414) @lahabana
 * fix(xds): sort resources when building MeshContext [#5391](https://github.com/kumahq/kuma/pull/5391) @lobkovilya
 
-## 1.5.4
-> Released on 2023/01/12
-
-* chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5602](https://github.com/kumahq/kuma/pull/5602) @mergify
-* chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5659](https://github.com/kumahq/kuma/pull/5659) @mergify
-* chore(helm): remove duplicate keys in resources (backport #4681) [#5642](https://github.com/kumahq/kuma/pull/5642) @mergify
-* chore: remove Apache license header from generated files (backport #5565) [#5622](https://github.com/kumahq/kuma/pull/5622) @mergify
-* chore: upgrade golang to 1.18.9 (backport #5607) [#5613](https://github.com/kumahq/kuma/pull/5613) @mergify
-* fix(kuma-cp): don't cache filtered data (backport #5574) [#5636](https://github.com/kumahq/kuma/pull/5636) @mergify
-
 ## 2.0.2
-> Released on 2023/01/11
+> Released on 2023/01/13
 
 * chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5597](https://github.com/kumahq/kuma/pull/5597) @mergify
 * chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5655](https://github.com/kumahq/kuma/pull/5655) @mergify
@@ -2266,7 +2256,7 @@
 * fix(kuma-cp): don't cache filtered data (backport #5574) [#5632](https://github.com/kumahq/kuma/pull/5632) @mergify
 
 ## 1.8.3
-> Released on 2023/01/11
+> Released on 2023/01/13
 
 * chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5598](https://github.com/kumahq/kuma/pull/5598) @mergify
 * chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5656](https://github.com/kumahq/kuma/pull/5656) @mergify
@@ -2275,7 +2265,7 @@
 * fix(kuma-cp): don't cache filtered data (backport #5574) [#5633](https://github.com/kumahq/kuma/pull/5633) @mergify
 
 ## 1.7.4
-> Released on 2023/01/11
+> Released on 2023/01/13
 
 * chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5599](https://github.com/kumahq/kuma/pull/5599) @mergify
 * chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5657](https://github.com/kumahq/kuma/pull/5657) @mergify
@@ -2285,7 +2275,7 @@
 * fix(kuma-cp): don't cache filtered data (backport #5574) [#5634](https://github.com/kumahq/kuma/pull/5634) @mergify
 
 ## 1.6.4
-> Released on 2023/01/11
+> Released on 2023/01/13
 
 * chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5601](https://github.com/kumahq/kuma/pull/5601) @mergify
 * chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5658](https://github.com/kumahq/kuma/pull/5658) @mergify
@@ -2293,6 +2283,23 @@
 * chore: remove Apache license header from generated files (backport #5565) [#5620](https://github.com/kumahq/kuma/pull/5620) @mergify
 * chore: upgrade golang to 1.18.9 (backport #5607) [#5612](https://github.com/kumahq/kuma/pull/5612) @mergify
 * fix(kuma-cp): don't cache filtered data (backport #5574) [#5635](https://github.com/kumahq/kuma/pull/5635) @mergify
+
+## 1.5.4
+> Released on 2023/01/13
+
+* chore(deps): bump helm.sh/helm/v3 from 3.8.1 to 3.10.3 [#5602](https://github.com/kumahq/kuma/pull/5602) @mergify
+* chore(deps): update coreDNS to 1.10.0 (backport #5626) [#5659](https://github.com/kumahq/kuma/pull/5659) @mergify
+* chore(helm): remove duplicate keys in resources (backport #4681) [#5642](https://github.com/kumahq/kuma/pull/5642) @mergify
+* chore: remove Apache license header from generated files (backport #5565) [#5622](https://github.com/kumahq/kuma/pull/5622) @mergify
+* chore: upgrade golang to 1.18.9 (backport #5607) [#5613](https://github.com/kumahq/kuma/pull/5613) @mergify
+* fix(kuma-cp): don't cache filtered data (backport #5574) [#5636](https://github.com/kumahq/kuma/pull/5636) @mergify
+
+## 1.8.2
+> Released on 2022/12/06
+
+* feat(kuma-cp): remove value of secret when logging Secret Resources (backport #5384) [#5393](https://github.com/kumahq/kuma/pull/5393) @mergify
+* fix(kuma-cp): kds deadlock (backport #5373) [#5398](https://github.com/kumahq/kuma/pull/5398) @mergify
+* fix: sort resources when building MeshContext (backport #5391) [#5410](https://github.com/kumahq/kuma/pull/5410) @mergify
 
 ## 2.0.1
 > Released on 2022/12/05
@@ -2305,13 +2312,6 @@
 * fix(kuma-cp): use sni to verify upstream certificate san when specified along with address (backport #5347) [#5378](https://github.com/kumahq/kuma/pull/5378) @mergify
 * fix(xds): don't read metadata in ProxyBuilders (backport #5414) [#5416](https://github.com/kumahq/kuma/pull/5416) @mergify
 * fix: sort resources when building MeshContext (backport #5391) [#5409](https://github.com/kumahq/kuma/pull/5409) @mergify
-
-## 1.8.2
-> Released on 2022/12/05
-
-* feat(kuma-cp): remove value of secret when logging Secret Resources (backport #5384) [#5393](https://github.com/kumahq/kuma/pull/5393) @mergify
-* fix(kuma-cp): kds deadlock (backport #5373) [#5398](https://github.com/kumahq/kuma/pull/5398) @mergify
-* fix: sort resources when building MeshContext (backport #5391) [#5410](https://github.com/kumahq/kuma/pull/5410) @mergify
 
 ## 2.0.0
 > Released on 2022/11/04
@@ -2433,7 +2433,7 @@
 * refactor(kuma-dp): add xds authentication customization [#4990](https://github.com/kumahq/kuma/pull/4990) @michaelbeaumont
 
 ## 1.8.1
-> Released on 2022/10/07
+> Released on 2022/10/10
 * fix(tools): support both GitHub app tokens and PATs (backport #4869) by @mergify in https://github.com/kumahq/kuma/pull/4872
 * fix(kuma-cp): remove Dataplane for Pod without IP (backport #4964) by @mergify in https://github.com/kumahq/kuma/pull/4980
 * fix(*): do not override source address when TP is not enabled (backport #4951) by @mergify in https://github.com/kumahq/kuma/pull/4961
@@ -2457,7 +2457,7 @@
 
 
 ## 1.8.0
-> Released on 2022/08/22
+> Released on 2022/08/24
 
 ### New features:
 
@@ -2632,7 +2632,7 @@ Projected service account token:
 * bump sigs.k8s.io/controller-tools from 0.9.0 to 0.9.2 [#4549](https://github.com/kumahq/kuma/pull/4549) @dependabot
 
 ## 1.7.1
-> Released on 2022/07/13
+> Released on 2022/07/19
 
 ### Fixes
 
@@ -2664,7 +2664,7 @@ Projected service account token:
 * Avoid `-<arch>` in version of the binaries (#4527)
 
 ## 1.7.0
-> Released on 2022/06/13
+> Released on 2022/06/16
 
 ### New features:
 
@@ -2785,7 +2785,7 @@ Other:
 * automate policy generation [#4197](https://github.com/kumahq/kuma/pull/4197) @lobkovilya
 
 ## 1.6.1
-> Released on 2022/06/10
+> Released on 2022/06/16
 
 ### Fixes:
 
@@ -2798,14 +2798,14 @@ CP:
 * upgrade envoy to 1.21.3 [#4457](https://github.com/kumahq/kuma/pull/4457) @lobkovilya
 
 ## 1.5.2
-> Released on 2022/06/10
+> Released on 2022/06/16
 
 ### Dependency upgrades:
 
 * upgrade envoy to 1.21.3 [#4456](https://github.com/kumahq/kuma/pull/4456) @lobkovilya
 
 ## 1.6.0
-> Released on 2022/04/11
+> Released on 2022/04/12
 
 
 ### New features:
@@ -2887,14 +2887,14 @@ Other:
 
 
 ## 1.5.1
-> Released on 2022/04/06
+> Released on 2022/04/11
 
 * chore(k8s): replace cni registry (backport #4070) [4076](https://github.com/kumahq/kuma/pull/4076)
 * fix(kuma-cp): default policy creation (backport #4073) [4080](https://github.com/kumahq/kuma/pull/4080)
 * fix(kuma-cp): guard the nil version in metadata (backport #3969) [3970](https://github.com/kumahq/kuma/pull/3970)
 
 ## 1.5.0
-> Released on 2022/02/23
+> Released on 2022/02/24
 
 * feat(*): zone egress [#3809](https://github.com//kumahq/kuma/pull/3809) [#3757](https://github.com//kumahq/kuma/pull/3757)
 * feat(kuma-cp) data plane proxy membership [#3619](https://github.com//kumahq/kuma/pull/3619)
@@ -2951,7 +2951,7 @@ Other:
 * ci(*): release on every commit in master and release branches [#3712](https://github.com//kumahq/kuma/pull/3712)
 
 ## 1.4.1
-> Released on 2021/12/15
+> Released on 2022/01/20
 
 * feat: add kubernetes tags automatically [#3439](https://github.com//kumahq/kuma/pull/3439)
 * perf: update Mesh and ServiceInsights only when really needed [#3463](https://github.com//kumahq/kuma/pull/3463)
@@ -2981,7 +2981,7 @@ Other:
 * chore: bump helm chart version to 0.8 [#3202](https://github.com//kumahq/kuma/pull/3202)
 
 ## 1.4.0
-> Released on 2021/11/19
+> Released on 2021/11/22
 
 * chore(*) scripts for build, publish and fetch Envoy binaries [#3110](https://github.com//kumahq/kuma/pull/3110) [#3182](https://github.com//kumahq/kuma/pull/3182)
 * chore(kuma-cp) upgrade gui to new version [#3178](https://github.com//kumahq/kuma/pull/3178) [#3179](https://github.com//kumahq/kuma/pull/3179)
@@ -3103,7 +3103,7 @@ Other:
 
 
 ## 1.3.0
-> Released on 2021/08/24
+> Released on 2021/08/26
 
 * feat: remove provided ca cert validation [#2663](https://github.com/kumahq/kuma/pull/2663)
  👍contributed by Nikita Pande (@nikita15p)
@@ -3162,7 +3162,7 @@ Other:
 * chore(*) make port validation consistent [#2448](https://github.com//kumahq/kuma/pull/2448)
 
 ## 1.2.3
-> Released on 2021/07/29
+> Released on 2021/08/26
 
 * fix(kumactl) warn about fail to check the CP version [#2438](https://github.com//kumahq/kuma/pull/2438)
 * fix(kuma-cp) handle missing connection info [#2439](https://github.com//kumahq/kuma/pull/2439)
@@ -3301,7 +3301,7 @@ Other:
   [#1972](https://github.com//kumahq/kuma/pull/1972)
 
 ## 1.1.5
-> Released on 2021/04/29
+> Released on 2021/05/05
 
 * feat: generate outbounds for itself [#1900](https://github.com//kumahq/kuma/pull/1900)
 * chore: migrate from bintray [#1901](https://github.com//kumahq/kuma/pull/1901)
@@ -3328,7 +3328,7 @@ Other:
 
 
 ## 1.1.2
-> Released on 2021/04/09
+> Released on 2021/04/13
 
 * feat: extend CircuitBreaker policy with Thresholds [#1688](https://github.com//kumahq/kuma/pull/1688)
 * feat: enable IPv6 support and tests [#1726](https://github.com//kumahq/kuma/pull/1726) [#1734](https://github.com//kumahq/kuma/pull/1734)
