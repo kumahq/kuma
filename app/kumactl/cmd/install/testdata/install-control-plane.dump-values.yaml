@@ -119,6 +119,9 @@ controlPlane:
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
 
+  # -- Priority Class Name of the Kuma Control Plane
+  priorityClassName: ""
+
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
 
