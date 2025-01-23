@@ -46,6 +46,15 @@ func EnvoyConfigTest() {
 		}).Should(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugUniversal(universal.Cluster, meshName)
+	})
+
+	E2EAfterAll(func() {
+		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
+		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
+	})
+
 	E2EAfterEach(func() {
 		// delete all meshtimeout policies
 		out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtimeouts", "--mesh", meshName, "-o", "json")
