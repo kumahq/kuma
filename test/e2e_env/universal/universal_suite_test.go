@@ -99,6 +99,7 @@ var (
 	_ = Describe("GRPC", grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
+	_ = Describe("MeshTimeout Envoy Config", timeout.EnvoyConfigTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
