@@ -12022,7 +12022,6 @@ spec:
               readOnly: true
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins
-              readOnly: true
           ports:
             - name: service
               containerPort: 80
@@ -12692,7 +12691,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:2.4.1"
+          image: "grafana/promtail:3.3.2"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
