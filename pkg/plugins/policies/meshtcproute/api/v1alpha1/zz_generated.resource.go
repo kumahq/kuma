@@ -154,4 +154,5 @@ var MeshTCPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mtcpr",
+	InterpretFromEntriesAsRules:  false,
 }

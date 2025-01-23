@@ -1,0 +1,33 @@
+# should sort policies by origin
+type: MeshTimeout
+name: matched-for-rules-ccc
+mesh: mesh-1
+labels:
+  kuma.io/origin: zone
+spec:
+  rules:
+    - default:
+        connectionTimeout: 111s
+        idleTimeout: 109s
+---
+type: MeshTimeout
+name: matched-for-rules-bbb
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        connectionTimeout: 211s
+        http:
+          requestTimeout: 209s
+---
+type: MeshTimeout
+name: matched-for-rules-aaa
+mesh: mesh-1
+labels:
+  kuma.io/origin: global
+spec:
+  rules:
+    - default:
+        connectionTimeout: 11s
+        http:
+          requestTimeout: 12s

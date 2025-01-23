@@ -8,6 +8,10 @@ does not have any particular instructions.
 
 ## Upgrade to `2.10.x`
 
+### API Server
+
+A successful PUT request without any warnings will now set "content-type: application/json" header and return empty json.
+
 ### MeshLoadBalancingStrategy
 
 #### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`

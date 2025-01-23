@@ -224,5 +224,6 @@ var {{.Name}}ResourceTypeDescriptor = model.ResourceTypeDescriptor{
 		AllowedOnSystemNamespaceOnly: {{.AllowedOnSystemNamespaceOnly}},
 		IsReferenceableInTo: {{.IsReferenceableInTo}},
 		ShortName: "{{.ShortName}}",
+		InterpretFromEntriesAsRules: {{.InterpretFromEntriesAsRules}},
 	}
 `))
