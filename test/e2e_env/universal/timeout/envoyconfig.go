@@ -2,6 +2,13 @@ package timeout
 
 import (
 	"encoding/json"
+	"os"
+	"regexp"
+	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -9,11 +16,6 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"os"
-	"regexp"
-	"strings"
 )
 
 func EnvoyConfigTest() {
