@@ -186,7 +186,7 @@ spec:
 			}(),
 		)
 
-		FIt("should configure timeout for single inbound", func() {
+		It("should configure timeout for single inbound", func() {
 			policy := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
