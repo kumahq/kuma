@@ -128,12 +128,13 @@ func (t TargetRef) CompareDataplaneKind(t2 TargetRef) int {
 	if t.SectionName == "" && t2.SectionName != "" {
 		return -1
 	}
-	return 01
+	return 0
 }
 
 func selectsNameAndNamespace(tr TargetRef) bool {
 	return tr.Name != ""
 }
+
 func selectsLabels(tr TargetRef) bool {
 	return tr.Labels != nil
 }
