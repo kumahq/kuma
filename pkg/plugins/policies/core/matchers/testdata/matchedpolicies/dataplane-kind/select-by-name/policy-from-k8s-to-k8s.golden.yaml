@@ -3,11 +3,13 @@ items:
   labels:
     k8s.kuma.io/namespace: kuma-demo
     kuma.io/display-name: mtp-1
+    kuma.io/mesh: mesh-1
     kuma.io/origin: zone
-    kuma.io/zone: zone-uni
+    kuma.io/policy-role: producer
+    kuma.io/zone: zone-k8s
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: mtp-1
+  name: mtp-1-dbzbf448z4f844v2.kuma-system
   spec:
     from:
     - default:

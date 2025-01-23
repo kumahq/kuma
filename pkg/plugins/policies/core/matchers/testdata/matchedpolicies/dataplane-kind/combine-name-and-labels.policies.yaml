@@ -1,10 +1,15 @@
-# 01. policies using kind Dataplane selecting Dataplanes by labels
+# policies using kind Dataplane selecting Dataplanes by name and namespace
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
+labels:
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Dataplane
+    labels:
+      app: demo
   from:
     - targetRef:
         kind: Mesh
@@ -14,9 +19,14 @@ spec:
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-2
+labels:
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
 spec:
   targetRef:
     kind: Dataplane
+    name: dp-1
+    namespace: kuma-demo
   from:
     - targetRef:
         kind: Mesh

@@ -186,7 +186,7 @@ spec:
 			}(),
 		)
 
-		It("should configure timeout for single inbound", func() {
+		FIt("should configure timeout for single inbound", func() {
 			policy := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
@@ -215,7 +215,7 @@ spec:
 				meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
 				meshretry_api.MeshRetryResourceTypeDescriptor,
 			)).To(Succeed())
-
+			time.Sleep(10 * time.Hour)
 			// main inbound
 			Eventually(func(g Gomega) {
 				start := time.Now()

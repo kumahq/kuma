@@ -275,12 +275,12 @@ var _ = Describe("MatchedPolicies", func() {
 			Entry("policy synced from other k8s zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneUni,
 				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToUni(test_resources.ZoneK8s)),
-				goldenFile:    buildGoldenFilePath("policy-form-k8s-to-uni", givenResources.testName),
+				goldenFile:    buildGoldenFilePath("policy-from-k8s-to-uni", givenResources.testName),
 			}),
 			Entry("policy synced from other k8s zone to k8s", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
 				policyMeta:    test_resources.ProducerPolicy(test_resources.SyncToK8s(test_resources.ZoneK8s)),
-				goldenFile:    buildGoldenFilePath("policy-form-k8s-to-k8s", givenResources.testName),
+				goldenFile:    buildGoldenFilePath("policy-from-k8s-to-k8s", givenResources.testName),
 			}),
 		)
 	}, generateTableEntries(filepath.Join("testdata", "matchedpolicies", "dataplane-kind")))

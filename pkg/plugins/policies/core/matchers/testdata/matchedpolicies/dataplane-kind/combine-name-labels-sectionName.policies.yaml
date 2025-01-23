@@ -8,8 +8,8 @@ labels:
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-1
-    namespace: kuma-demo
+    labels:
+      app: demo
   from:
     - targetRef:
         kind: Mesh
@@ -26,7 +26,8 @@ spec:
   targetRef:
     kind: Dataplane
     name: dp-1
-    namespace: other-namespace
+    namespace: kuma-demo
+    sectionName: main-port
   from:
     - targetRef:
         kind: Mesh
@@ -42,7 +43,25 @@ labels:
 spec:
   targetRef:
     kind: Dataplane
-    name: dp-2
+    labels:
+      app: demo
+    sectionName: main-port
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-2
+labels:
+  k8s.kuma.io/namespace: kuma-system
+  kuma.io/policy-role: system
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
     namespace: kuma-demo
   from:
     - targetRef:

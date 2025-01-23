@@ -1,7 +1,7 @@
 items:
 - creationTime: "0001-01-01T00:00:00Z"
   labels:
-    k8s.kuma.io/namespace: ns-k8s
+    k8s.kuma.io/namespace: kuma-system
     kuma.io/display-name: mtp-1
     kuma.io/mesh: mesh-1
     kuma.io/origin: zone
@@ -9,7 +9,7 @@ items:
     kuma.io/zone: zone-k8s
   mesh: mesh-1
   modificationTime: "0001-01-01T00:00:00Z"
-  name: mtp-1-dz68xw22zdcf2ffv.kuma-system
+  name: mtp-1-7fddv968x8wdzb48
   spec:
     from:
     - default:
@@ -18,7 +18,8 @@ items:
         kind: Mesh
     targetRef:
       kind: Dataplane
-      name: dp-1
+      labels:
+        app: demo
   type: MeshTrafficPermission
 next: null
 total: 0

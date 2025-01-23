@@ -112,6 +112,32 @@ type TargetRef struct {
 	SectionName string `json:"sectionName,omitempty"`
 }
 
+func (t TargetRef) CompareDataplaneKind(t2 TargetRef) int {
+	if t.Kind != Dataplane {
+		return 0
+	}
+	if selectsNameAndNamespace(t) && selectsLabels(t2) {
+		return 1
+	}
+	if selectsLabels(t) && selectsNameAndNamespace(t2) {
+		return -1
+	}
+	if t.SectionName != "" && t2.SectionName == "" {
+		return 1
+	}
+	if t.SectionName == "" && t2.SectionName != "" {
+		return -1
+	}
+	return 01
+}
+
+func selectsNameAndNamespace(tr TargetRef) bool {
+	return tr.Name != ""
+}
+func selectsLabels(tr TargetRef) bool {
+	return tr.Labels != nil
+}
+
 func IncludesGateways(ref TargetRef) bool {
 	isGateway := ref.Kind == MeshGateway
 	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset

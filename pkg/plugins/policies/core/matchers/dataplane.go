@@ -392,6 +392,10 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 			return less
 		}
 
+		if less := tr1.CompareDataplaneKind(tr2); less != 0 {
+			return less
+		}
+
 		o1, _ := core_model.ResourceOrigin(r1.GetMeta())
 		o2, _ := core_model.ResourceOrigin(r2.GetMeta())
 		if less := o1.Compare(o2); less != 0 {
