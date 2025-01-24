@@ -128,5 +128,10 @@ func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
 			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with '%s' tag instead", common_api.MeshService, common_api.MeshSubset, mesh_proto.ServiceTag),
 		}
 	}
+	if targetRef.Kind == common_api.MeshSubset {
+		return []string{
+			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", common_api.MeshSubset, common_api.Dataplane),
+		}
+	}
 	return nil
 }
