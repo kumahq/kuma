@@ -25,7 +25,7 @@ on:
       NOTARY_REPOSITORY:
         required: true
         type: string
-      PRE_RELEASE_REPOSITORY_SUFFIX:
+      IMAGES_REPOSITORY_SUFFIX:
         required: true
         type: string
     outputs:
@@ -43,7 +43,7 @@ env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
   GH_REPO: "charts"
-  PRE_RELEASE_REPOSITORY_SUFFIX: ${{ inputs.PRE_RELEASE_REPOSITORY_SUFFIX }}
+  IMAGES_REPOSITORY_SUFFIX: ${{ inputs.IMAGES_REPOSITORY_SUFFIX }}
 jobs:
   build-binaries:
     timeout-minutes: 40
