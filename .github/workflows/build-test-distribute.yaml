@@ -120,7 +120,6 @@ jobs:
       REGISTRY: ${{ needs.check.outputs.REGISTRY }}
       NOTARY_REPOSITORY: ${{ needs.check.outputs.NOTARY_REPOSITORY }}
       VERSION_NAME: ${{ needs.check.outputs.VERSION_NAME }}
-      IMAGES_REPOSITORY_SUFFIX: ${{ (contains(needs.check.outputs.VERSION_NAME, 'preview') && 'dev') || '' }}
     secrets: inherit
   provenance:
     needs: ["check", "build_publish"]
