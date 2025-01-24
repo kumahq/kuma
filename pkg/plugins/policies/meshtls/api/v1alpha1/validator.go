@@ -27,6 +27,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.Dataplane,
 		},
 	})
 	return targetRefErr

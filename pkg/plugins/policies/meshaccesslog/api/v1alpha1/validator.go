@@ -30,8 +30,10 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
+		IsInboundPolicy:            true,
 	})
 	return targetRefErr
 }

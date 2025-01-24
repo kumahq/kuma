@@ -32,8 +32,10 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
+			IsInboundPolicy:            true,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -42,7 +44,9 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
+			IsInboundPolicy: true,
 		})
 	}
 }
