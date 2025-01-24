@@ -247,30 +247,55 @@ var _ = Describe("MatchedPolicies", func() {
 				policyMeta:    test_resources.ZoneK8s,
 				goldenFile:    buildGoldenFilePath("k8s-zone", givenResources.testName),
 			}),
-			Entry("policy global uni, dpp uni", dataplaneTestCase{
-				dataplaneMeta: test_resources.ZoneUni,
+			Entry("policy global uni, dpp uni - on global", dataplaneTestCase{
+				dataplaneMeta: test_resources.SyncToUni(test_resources.ZoneUni),
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalUni),
-				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-uni", givenResources.testName),
+				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-uni-on-global", givenResources.testName),
 			}),
-			Entry("policy global uni, dpp k8s", dataplaneTestCase{
+			Entry("policy global uni, dpp uni - on zone", dataplaneTestCase{
+				dataplaneMeta: test_resources.ZoneUni,
+				policyMeta:    test_resources.SystemPolicy(test_resources.SyncToUni(test_resources.GlobalUni)),
+				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-uni-on-zone", givenResources.testName),
+			}),
+			Entry("policy global uni, dpp k8s - on zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
+				policyMeta:    test_resources.SystemPolicy(test_resources.SyncToK8s(test_resources.GlobalUni)),
+				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-k8s-on-zone", givenResources.testName),
+			}),
+			Entry("policy global uni, dpp k8s - on global", dataplaneTestCase{
+				dataplaneMeta: test_resources.SyncToUni(test_resources.ZoneK8s),
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalUni),
-				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-k8s", givenResources.testName),
+				goldenFile:    buildGoldenFilePath("policy-from-global-uni-zone-k8s-on-global", givenResources.testName),
 			}),
-			Entry("policy global k8s, dpp uni", dataplaneTestCase{
+			Entry("policy global k8s, dpp uni - on zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneUni,
-				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
-				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-uni", givenResources.testName),
+				policyMeta:    test_resources.SystemPolicy(test_resources.SyncToUni(test_resources.GlobalK8s)),
+				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-uni-on-zone", givenResources.testName),
 			}),
-			Entry("policy global k8s, dpp k8s", dataplaneTestCase{
+			Entry("policy global k8s, dpp uni - on global", dataplaneTestCase{
+				dataplaneMeta: test_resources.SyncToK8s(test_resources.ZoneUni),
+				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
+				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-uni-on-global", givenResources.testName),
+			}),
+			Entry("policy global k8s, dpp k8s - on zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneK8s,
-				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
-				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-k8s", givenResources.testName),
+				policyMeta:    test_resources.SystemPolicy(test_resources.SyncToK8s(test_resources.GlobalK8s)),
+				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-k8s-on-zone", givenResources.testName),
 			}),
-			Entry("policy global k8s, dpp uni", dataplaneTestCase{
+			Entry("policy global k8s, dpp k8s - on global", dataplaneTestCase{
+				dataplaneMeta: test_resources.SyncToK8s(test_resources.ZoneK8s),
+				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalK8s),
+				goldenFile:    buildGoldenFilePath("policy-from-global-k8s-zone-k8s-on-global", givenResources.testName),
+			}),
+			Entry("policy global k8s, dpp uni - on zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneUni,
+				policyMeta:    test_resources.SystemPolicy(test_resources.SyncToUni(test_resources.GlobalUni)),
+				goldenFile:    buildGoldenFilePath("policy-global-uni-dpp-k8s-on-zone", givenResources.testName),
+			}),
+			Entry("policy global k8s, dpp uni - on global", dataplaneTestCase{
+				dataplaneMeta: test_resources.SyncToUni(test_resources.ZoneUni),
 				policyMeta:    test_resources.SystemPolicy(test_resources.GlobalUni),
-				goldenFile:    buildGoldenFilePath("policy-global-uni-dpp-k8s", givenResources.testName),
+				goldenFile:    buildGoldenFilePath("policy-global-uni-dpp-k8s-on-global", givenResources.testName),
 			}),
 			Entry("policy synced from other k8s zone", dataplaneTestCase{
 				dataplaneMeta: test_resources.ZoneUni,
