@@ -3,11 +3,18 @@ KUMA_VERSION ?= master
 
 DOCKER_SERVER ?= docker.io
 DOCKER_REGISTRY ?= $(DOCKER_SERVER)/kumahq
+DOCKER_DEV_IMAGE_SUFFIX ?=
 DOCKER_USERNAME ?=
 DOCKER_API_KEY ?=
 
+ifdef PRE_RELEASE_REPOSITORY_SUFFIX
+ifneq ($(strip $(PRE_RELEASE_REPOSITORY_SUFFIX)),)
+DOCKER_PRE_RELEASE_IMAGE_SUFFIX = -$(PRE_RELEASE_REPOSITORY_SUFFIX)
+endif
+endif
+
 define build_image
-$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)))
+$(addsuffix :$(BUILD_INFO_VERSION)$(if $(2),-$(2)),$(addprefix $(DOCKER_REGISTRY)/,$(1)$(DOCKER_DEV_IMAGE_SUFFIX)))
 endef
 
 IMAGES_RELEASE += kuma-cp kuma-dp kumactl kuma-init kuma-cni
