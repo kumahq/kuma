@@ -1,3 +1,4 @@
+# combining policies using kind Dataplane selecting Dataplanes by name and namespace with specific inbound selected by sectionName
 type: MeshTrafficPermission
 mesh: mesh-1
 name: mtp-1
