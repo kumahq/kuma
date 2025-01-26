@@ -12012,10 +12012,7 @@ components:
               properties:
                 passthrough:
                   description: Control the passthrough cluster
-                  properties:
-                    value:
-                      type: boolean
-                  type: object
+                  type: boolean
               type: object
           type: object
         routing:
@@ -12076,10 +12073,7 @@ components:
                       (range 0.0 - 100.0).
 
                       Empty value defaults to 100.0%
-                    properties:
-                      value:
-                        type: number
-                    type: object
+                    type: number
                   type:
                     description: Type of the backend (Kuma ships with 'zipkin')
                     type: string
