@@ -255,6 +255,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshAccessLogItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshAccessLog
       summary: Creates or Updates MeshAccessLog entity
@@ -356,6 +358,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshCircuitBreakerItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshCircuitBreaker
       summary: Creates or Updates MeshCircuitBreaker entity
@@ -457,6 +461,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshFaultInjectionItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshFaultInjection
       summary: Creates or Updates MeshFaultInjection entity
@@ -558,6 +564,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshHealthCheckItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshHealthCheck
       summary: Creates or Updates MeshHealthCheck entity
@@ -659,6 +667,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshHTTPRouteItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshHTTPRoute
       summary: Creates or Updates MeshHTTPRoute entity
@@ -760,6 +770,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshLoadBalancingStrategyItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshLoadBalancingStrategy
       summary: Creates or Updates MeshLoadBalancingStrategy entity
@@ -861,6 +873,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshMetricItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshMetric
       summary: Creates or Updates MeshMetric entity
@@ -960,6 +974,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshPassthroughItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshPassthrough
       summary: Creates or Updates MeshPassthrough entity
@@ -1061,6 +1077,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshProxyPatchItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshProxyPatch
       summary: Creates or Updates MeshProxyPatch entity
@@ -1162,6 +1180,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshRateLimitItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshRateLimit
       summary: Creates or Updates MeshRateLimit entity
@@ -1263,6 +1283,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshRetryItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshRetry
       summary: Creates or Updates MeshRetry entity
@@ -1362,6 +1384,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTCPRouteItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTCPRoute
       summary: Creates or Updates MeshTCPRoute entity
@@ -1461,6 +1485,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTimeoutItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTimeout
       summary: Creates or Updates MeshTimeout entity
@@ -1560,6 +1586,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTLSItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTLS
       summary: Creates or Updates MeshTLS entity
@@ -1659,6 +1687,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTraceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTrace
       summary: Creates or Updates MeshTrace entity
@@ -1758,6 +1788,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTrafficPermission
       summary: Creates or Updates MeshTrafficPermission entity
@@ -1853,6 +1885,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMesh
       summary: Creates or Updates Mesh entity
@@ -1933,6 +1967,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshGateway
       summary: Creates or Updates MeshGateway entity
@@ -2026,6 +2062,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putHostnameGenerator
       summary: Creates or Updates HostnameGenerator entity
@@ -2108,6 +2146,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshExternalService
       summary: Creates or Updates MeshExternalService entity
@@ -2209,6 +2249,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshMultiZoneServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshMultiZoneService
       summary: Creates or Updates MeshMultiZoneService entity
@@ -2310,6 +2352,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshService
       summary: Creates or Updates MeshService entity

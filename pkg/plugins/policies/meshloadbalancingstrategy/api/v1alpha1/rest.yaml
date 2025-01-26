@@ -27,6 +27,8 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshLoadBalancingStrategyItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
       operationId: putMeshLoadBalancingStrategy
