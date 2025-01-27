@@ -9,3 +9,4 @@ components:
           description: Path to a file that logs will be written to
           type: string
       type: object
+

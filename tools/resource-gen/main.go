@@ -438,6 +438,13 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		"Mesh":                     reflect.TypeOf(v1alpha1.Mesh{}),
 		"MeshGateway":              reflect.TypeOf(v1alpha1.MeshGateway{}),
 	}
+	additionalProtoTypes := []reflect.Type{
+		reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
+	}
 
 	reflector := jsonschema.Reflector{
 		ExpandedStruct:            true,
@@ -515,14 +522,6 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if err != nil {
 			return err
 		}
-	}
-
-	additionalProtoTypes := []reflect.Type{
-		reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
-		reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}),
-		reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
-		reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
-		reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
 	}
 
 	for _, tpe := range additionalProtoTypes {
