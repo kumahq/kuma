@@ -1,0 +1,19 @@
+components:
+  schemas:
+    DatadogTracingBackendConfig:
+      properties:
+        address:
+          description: Address of datadog collector.
+          type: string
+        port:
+          description: Port of datadog collector
+          type: integer
+        splitService:
+          description: |-
+            Determines if datadog service name should be split based on traffic
+            direction and destination. For example, with `splitService: true` and a
+            `backend` service that communicates with a couple of databases, you would
+            get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
+            `backend_OUTBOUND_db2` in Datadog. Default: false
+          type: boolean
+      type: object

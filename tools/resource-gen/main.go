@@ -435,25 +435,25 @@ func main() {
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	// this is where the new types need to be added if we want to generate openAPI for it
 	protoTypeToType := map[string]reflect.Type{
-		"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
-		"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
+		"Mesh":                     reflect.TypeOf(v1alpha1.Mesh{}),
+		"MeshGateway":              reflect.TypeOf(v1alpha1.MeshGateway{}),
 	}
 
+	reflector := jsonschema.Reflector{
+		ExpandedStruct:            true,
+		DoNotReference:            true,
+		AllowAdditionalProperties: true,
+		IgnoredTypes:              []any{structpb.Struct{}},
+		Mapper:                    typeMapper,
+	}
+	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(rootDir, "api/"))
+	if err != nil {
+		return err
+	}
 	for _, r := range resources {
 		tpe, exists := protoTypeToType[r.ResourceType]
 		if !exists {
 			continue
-		}
-		reflector := jsonschema.Reflector{
-			ExpandedStruct:            true,
-			DoNotReference:            true,
-			AllowAdditionalProperties: true,
-			IgnoredTypes:              []any{structpb.Struct{}},
-			Mapper:                    typeMapper,
-		}
-		err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(rootDir, "api/"))
-		if err != nil {
-			return err
 		}
 		schemaMap := orderedmap.New[string, *jsonschema.Schema]()
 		schemaMap.Set("type", &jsonschema.Schema{Type: "string"})
@@ -516,6 +516,50 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return err
 		}
 	}
+
+	additionalProtoTypes := []reflect.Type{
+		reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.TcpLoggingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
+		reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
+	}
+
+	for _, tpe := range additionalProtoTypes {
+		properties := reflector.ReflectFromType(tpe).Properties
+
+		schema := jsonschema.Schema{
+			Type:       "object",
+			Properties: properties,
+		}
+
+		wrapped := map[string]map[string]map[string]jsonschema.Schema{
+			"components": {
+				"schemas": map[string]jsonschema.Schema{
+					tpe.Name(): schema,
+				},
+			},
+		}
+
+		out, err := yaml.Marshal(wrapped)
+		if err != nil {
+			return err
+		}
+
+		outDir := path.Join(rootDir, "api", pkg, "v1alpha1", strings.ToLower(tpe.Name()))
+
+		// Ensure the directory exists
+		err = os.MkdirAll(outDir, 0o755)
+		if err != nil {
+			return fmt.Errorf("failed to create directory: %w", err)
+		}
+
+		err = os.WriteFile(path.Join(outDir, "schema.yaml"), out, 0o600)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

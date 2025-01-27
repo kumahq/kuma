@@ -1,0 +1,8 @@
+components:
+  schemas:
+    TcpLoggingBackendConfig:
+      properties:
+        address:
+          description: Address to TCP service that will receive logs
+          type: string
+      type: object

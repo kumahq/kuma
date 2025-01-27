@@ -11947,6 +11947,12 @@ components:
     MeshTrafficPermissionDeleteSuccessResponse:
       type: object
       properties: {}
+    FileLoggingBackendConfig:
+      properties:
+        path:
+          description: Path to a file that logs will be written to
+          type: string
+      type: object
     MeshItem:
       properties:
         constraints:

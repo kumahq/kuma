@@ -1,0 +1,30 @@
+components:
+  schemas:
+    MeshItemOver:
+      properties:
+        logging:
+          properties:
+            backends:
+              items:
+                properties:
+                  conf:
+                    oneOf:
+                      - '#/components/schemas/FileLoggingBackendConfig'
+                      - '#/components/schemas/TcpLoggingBackendConfig'
+        tracing:
+          properties:
+            backends:
+              items:
+                properties:
+                  conf:
+                    oneOf:
+                      - '#/components/schemas/DatadogTracingBackendConfig'
+                      - '#/components/schemas/ZipkinTracingBackendConfig'
+        metrics:
+          properties:
+            backends:
+              items:
+                properties:
+                  conf:
+                    oneOf:
+                      - '#/components/schemas/PrometheusMetricsBackendConfig'

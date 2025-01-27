@@ -1,0 +1,23 @@
+components:
+  schemas:
+    ZipkinTracingBackendConfig:
+      properties:
+        apiVersion:
+          description: |-
+            Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
+            httpJson see
+            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
+          type: string
+        sharedSpanContext:
+          description: |-
+            Determines whether client and server spans will share the same span
+            context. Default: true.
+            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+          type: boolean
+        traceId128bit:
+          description: 'Generate 128bit traces. Default: false'
+          type: boolean
+        url:
+          description: Address of Zipkin collector.
+          type: string
+      type: object
