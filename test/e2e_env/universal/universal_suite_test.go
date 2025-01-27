@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/universal/api"
 	"github.com/kumahq/kuma/test/e2e_env/universal/auth"
 	"github.com/kumahq/kuma/test/e2e_env/universal/compatibility"
+	"github.com/kumahq/kuma/test/e2e_env/universal/envoyconfig"
 	"github.com/kumahq/kuma/test/e2e_env/universal/externalservices"
 	"github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	"github.com/kumahq/kuma/test/e2e_env/universal/grpc"
@@ -99,7 +100,6 @@ var (
 	_ = Describe("GRPC", grpc.GRPC, Ordered)
 	_ = Describe("MeshRateLimit", meshratelimit.Policy, Ordered)
 	_ = Describe("MeshTimeout", timeout.PluginTest, Ordered)
-	_ = Describe("MeshTimeout Envoy Config", timeout.EnvoyConfigTest, Ordered)
 	_ = Describe("Projected Service Account Token", projectedsatoken.ProjectedServiceAccountToken, Ordered)
 	_ = Describe("Compatibility", compatibility.UniversalCompatibility, Ordered)
 	_ = Describe("Resilience", resilience.ResilienceUniversal, Ordered)
@@ -109,4 +109,5 @@ var (
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
+	_ = Describe("Envoy Config", envoyconfig.EnvoyConfigTest, Ordered)
 )

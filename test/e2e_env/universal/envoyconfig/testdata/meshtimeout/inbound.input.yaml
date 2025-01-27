@@ -1,13 +1,12 @@
 type: MeshTimeout
 name: mt-1
-mesh: meshtimeout-envoyconfig
+mesh: envoyconfig
 labels:
   kuma.io/effect: shadow
 spec:
-  to:
+  from:
     - targetRef:
-        kind: MeshService
-        name: test-server
+        kind: Mesh
       default:
         idleTimeout: 50s
         connectionTimeout: 51s

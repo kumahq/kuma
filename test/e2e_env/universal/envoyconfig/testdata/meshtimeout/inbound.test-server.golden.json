@@ -1,6 +1,25 @@
 {
  "diff": [
   {
+   "op": "add",
+   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_demo-client__kuma-3_msvc_3000/connectTimeout",
+   "value": "5s"
+  },
+  {
+   "op": "add",
+   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions",
+   "value": {
+    "idleTimeout": "3600s",
+    "maxConnectionDuration": "5s",
+    "maxStreamDuration": "0s"
+   }
+  },
+  {
+   "op": "add",
+   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/connectTimeout",
+   "value": "5s"
+  },
+  {
    "op": "test",
    "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
    "value": "10s"
@@ -39,25 +58,6 @@
    "op": "add",
    "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
    "value": "54s"
-  },
-  {
-   "op": "add",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000/connectTimeout",
-   "value": "5s"
-  },
-  {
-   "op": "add",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/meshtimeout-envoyconfig_test-server__kuma-3_msvc_80/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions",
-   "value": {
-    "idleTimeout": "3600s",
-    "maxConnectionDuration": "5s",
-    "maxStreamDuration": "0s"
-   }
-  },
-  {
-   "op": "add",
-   "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/meshtimeout-envoyconfig_test-server__kuma-3_msvc_80/connectTimeout",
-   "value": "5s"
   },
   {
    "op": "test",
@@ -139,6 +139,49 @@
  ],
  "xds": {
   "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
+   "envoyconfig_demo-client__kuma-3_msvc_3000": {
+    "name": "envoyconfig_demo-client__kuma-3_msvc_3000",
+    "type": "EDS",
+    "edsClusterConfig": {
+     "edsConfig": {
+      "ads": {},
+      "resourceApiVersion": "V3"
+     }
+    },
+    "connectTimeout": "5s",
+    "typedExtensionProtocolOptions": {
+     "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+      "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+      "explicitHttpConfig": {
+       "http2ProtocolOptions": {}
+      }
+     }
+    }
+   },
+   "envoyconfig_test-server__kuma-3_msvc_80": {
+    "name": "envoyconfig_test-server__kuma-3_msvc_80",
+    "type": "EDS",
+    "edsClusterConfig": {
+     "edsConfig": {
+      "ads": {},
+      "resourceApiVersion": "V3"
+     }
+    },
+    "connectTimeout": "5s",
+    "typedExtensionProtocolOptions": {
+     "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+      "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+      "commonHttpProtocolOptions": {
+       "idleTimeout": "3600s",
+       "maxConnectionDuration": "5s",
+       "maxStreamDuration": "0s"
+      },
+      "explicitHttpConfig": {
+       "http2ProtocolOptions": {}
+      }
+     }
+    }
+   },
    "inbound:passthrough:ipv4": {
     "name": "inbound:passthrough:ipv4",
     "altStatName": "inbound_passthrough_ipv4",
@@ -209,49 +252,6 @@
      }
     }
    },
-   "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000": {
-    "name": "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000",
-    "type": "EDS",
-    "edsClusterConfig": {
-     "edsConfig": {
-      "ads": {},
-      "resourceApiVersion": "V3"
-     }
-    },
-    "connectTimeout": "5s",
-    "typedExtensionProtocolOptions": {
-     "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
-      "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
-      "explicitHttpConfig": {
-       "http2ProtocolOptions": {}
-      }
-     }
-    }
-   },
-   "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80": {
-    "name": "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
-    "type": "EDS",
-    "edsClusterConfig": {
-     "edsConfig": {
-      "ads": {},
-      "resourceApiVersion": "V3"
-     }
-    },
-    "connectTimeout": "5s",
-    "typedExtensionProtocolOptions": {
-     "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
-      "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
-      "commonHttpProtocolOptions": {
-       "idleTimeout": "3600s",
-       "maxConnectionDuration": "5s",
-       "maxStreamDuration": "0s"
-      },
-      "explicitHttpConfig": {
-       "http2ProtocolOptions": {}
-      }
-     }
-    }
-   },
    "outbound:passthrough:ipv4": {
     "name": "outbound:passthrough:ipv4",
     "altStatName": "outbound_passthrough_ipv4",
@@ -268,8 +268,8 @@
    }
   },
   "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {
-   "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000": {
-    "clusterName": "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000",
+   "envoyconfig_demo-client__kuma-3_msvc_3000": {
+    "clusterName": "envoyconfig_demo-client__kuma-3_msvc_3000",
     "endpoints": [
      {
       "locality": {
@@ -303,8 +303,8 @@
      }
     ]
    },
-   "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80": {
-    "clusterName": "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
+   "envoyconfig_test-server__kuma-3_msvc_80": {
+    "clusterName": "envoyconfig_test-server__kuma-3_msvc_80",
     "endpoints": [
      {
       "locality": {
@@ -494,8 +494,8 @@
         "name": "envoy.filters.network.tcp_proxy",
         "typedConfig": {
          "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
-         "statPrefix": "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000",
-         "cluster": "meshtimeout-envoyconfig_demo-client__kuma-3_msvc_3000",
+         "statPrefix": "envoyconfig_demo-client__kuma-3_msvc_3000",
+         "cluster": "envoyconfig_demo-client__kuma-3_msvc_3000",
          "idleTimeout": "3600s"
         }
        }
@@ -525,12 +525,12 @@
         "name": "envoy.filters.network.http_connection_manager",
         "typedConfig": {
          "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-         "statPrefix": "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
+         "statPrefix": "envoyconfig_test-server__kuma-3_msvc_80",
          "routeConfig": {
-          "name": "outbound:meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
+          "name": "outbound:envoyconfig_test-server__kuma-3_msvc_80",
           "virtualHosts": [
            {
-            "name": "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
+            "name": "envoyconfig_test-server__kuma-3_msvc_80",
             "domains": [
              "*"
             ],
@@ -541,7 +541,7 @@
                "prefix": "/"
               },
               "route": {
-               "cluster": "meshtimeout-envoyconfig_test-server__kuma-3_msvc_80",
+               "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
                "timeout": "15s",
                "idleTimeout": "5s"
               }

@@ -1,4 +1,4 @@
-package timeout
+package envoyconfig
 
 import (
 	"encoding/json"
@@ -19,7 +19,7 @@ import (
 )
 
 func EnvoyConfigTest() {
-	meshName := "meshtimeout-envoyconfig"
+	meshName := "envoyconfig"
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -96,6 +96,6 @@ func EnvoyConfigTest() {
 			// then
 			Expect(getConfig("demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
 			Expect(getConfig("test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
-		}, test.EntriesForFolder("meshtimeout", "timeout"),
+		}, test.EntriesForFolder("meshtimeout", "envoyconfig"),
 	)
 }
