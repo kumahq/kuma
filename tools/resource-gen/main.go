@@ -533,8 +533,12 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			Properties: properties,
 		}
 
-		wrapped := map[string]map[string]map[string]jsonschema.Schema{
-			"components": {
+		wrapped := map[string]interface{}{
+			"openapi": "3.0.3",
+			"info": map[string]string{
+				"x-ref-schema-name": tpe.Name(),
+			},
+			"components": map[string]interface{}{
 				"schemas": map[string]jsonschema.Schema{
 					tpe.Name(): schema,
 				},

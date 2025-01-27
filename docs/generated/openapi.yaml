@@ -11947,6 +11947,30 @@ components:
     MeshTrafficPermissionDeleteSuccessResponse:
       type: object
       properties: {}
+    DatadogTracingBackendConfig:
+      properties:
+        address:
+          description: Address of datadog collector.
+          type: string
+        port:
+          description: Port of datadog collector
+          type: integer
+        splitService:
+          description: >-
+            Determines if datadog service name should be split based on traffic
+
+            direction and destination. For example, with `splitService: true`
+            and a
+
+            `backend` service that communicates with a couple of databases, you
+            would
+
+            get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`,
+            and
+
+            `backend_OUTBOUND_db2` in Datadog. Default: false
+          type: boolean
+      type: object
     FileLoggingBackendConfig:
       properties:
         path:
@@ -12494,6 +12518,147 @@ components:
     MeshGatewayDeleteSuccessResponse:
       type: object
       properties: {}
+    PrometheusMetricsBackendConfig:
+      properties:
+        aggregate:
+          description: >-
+            Map with the configuration of applications which metrics are going
+            to be
+
+            scrapped by kuma-dp.
+          items:
+            description: >-
+              PrometheusAggregateMetricsConfig defines endpoints that should be
+              scrapped by kuma-dp for prometheus metrics.
+            properties:
+              address:
+                description: >-
+                  Address on which a service expose HTTP endpoint with
+                  Prometheus metrics.
+                type: string
+              enabled:
+                description: >-
+                  If false then the application won't be scrapped. If nil, then
+                  it is treated
+
+                  as true and kuma-dp scrapes metrics from the service.
+                type: boolean
+              name:
+                description: Name which identify given configuration.
+                type: string
+              path:
+                description: >-
+                  Path on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: string
+              port:
+                description: >-
+                  Port on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: integer
+            type: object
+          type: array
+        envoy:
+          description: Configuration of Envoy's metrics.
+          properties:
+            filterRegex:
+              description: >-
+                FilterRegex value that is going to be passed to Envoy for
+                filtering
+
+                Envoy metrics.
+              type: string
+            usedOnly:
+              description: >-
+                If true then return metrics that Envoy has updated (counters
+                incremented
+
+                at least once, gauges changed at least once, and histograms
+                added to at
+
+                least once). If nil, then it is treated as false.
+              type: boolean
+          type: object
+        path:
+          description: >-
+            Path on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: string
+        port:
+          description: >-
+            Port on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: integer
+        skipMTLS:
+          description: >-
+            If true then endpoints for scraping metrics won't require mTLS even
+            if mTLS
+
+            is enabled in Mesh. If nil, then it is treated as false.
+          type: boolean
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags associated with an application this dataplane is deployed next
+            to,
+
+            e.g. service=web, version=1.0.
+
+            `service` tag is mandatory.
+          type: object
+        tls:
+          description: Configuration of TLS for prometheus listener.
+          properties:
+            mode:
+              description: >-
+                mode defines how configured is the TLS for Prometheus.
+
+                Supported values, delegated, disabled, activeMTLSBackend.
+                Default to
+
+                `activeMTLSBackend`.
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
+      type: object
+    TcpLoggingBackendConfig:
+      properties:
+        address:
+          description: Address to TCP service that will receive logs
+          type: string
+      type: object
+    ZipkinTracingBackendConfig:
+      properties:
+        apiVersion:
+          description: >-
+            Version of the API. values: httpJson, httpJsonV1, httpProto.
+            Default:
+
+            httpJson see
+
+            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
+          type: string
+        sharedSpanContext:
+          description: >-
+            Determines whether client and server spans will share the same span
+
+            context. Default: true.
+
+            https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+          type: boolean
+        traceId128bit:
+          description: 'Generate 128bit traces. Default: false'
+          type: boolean
+        url:
+          description: Address of Zipkin collector.
+          type: string
+      type: object
     HostnameGeneratorItem:
       type: object
       required:

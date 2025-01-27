@@ -1,3 +1,6 @@
+openapi: 3.0.3
+info:
+  x-ref-schema-name: "FileLoggingBackendConfig"
 components:
   schemas:
     FileLoggingBackendConfig:
