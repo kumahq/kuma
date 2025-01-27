@@ -7,6 +7,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -230,5 +231,35 @@ var _ = Describe("SimpleWatchdog", func() {
 		Expect(hasTicked).Should(BeClosed())
 
 		cancel()
+		Eventually(doneCh).Should(BeClosed())
+	})
+
+	It("should not produce error on context cancelled", func() {
+		// given
+		watchdog := &SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return &time.Ticker{
+					C: timeTicks,
+				}
+			},
+			OnTick: func(ctx context.Context) error {
+				return errors.New("missing data")
+			},
+			OnError: func(err error) {
+				onErrorCalls <- err
+			},
+		}
+
+		// when context is cancelled
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		watchdog.Start(ctx)
+
+		// then no error is produced
+		select {
+		case <-onErrorCalls:
+			Fail("error should not be produced")
+		default:
+		}
 	})
 })
