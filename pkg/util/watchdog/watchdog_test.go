@@ -231,6 +231,7 @@ var _ = Describe("SimpleWatchdog", func() {
 		Expect(hasTicked).Should(BeClosed())
 
 		cancel()
+		Eventually(doneCh).Should(BeClosed())
 	})
 
 	It("should not produce error on context cancelled", func() {
