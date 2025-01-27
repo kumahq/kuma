@@ -209,7 +209,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
-			log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the find response")
 		}
 	}
 }
@@ -421,7 +421,7 @@ func (r *resourceEndpoints) createResource(
 
 	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(res)}
 	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
-		log.Error(err, "Could not write the response")
+		log.Error(err, "Could not write the create response")
 	}
 }
 
@@ -470,7 +470,7 @@ func (r *resourceEndpoints) updateResource(
 
 	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(currentRes)}
 	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
-		log.Error(err, "Could not write the response")
+		log.Error(err, "Could not write the update response")
 	}
 }
 
@@ -515,6 +515,11 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+	}
+
+	resp := api_server_types.DeleteSuccessResponse{}
+	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
+		log.Error(err, "Could not write the delete response")
 	}
 }
 

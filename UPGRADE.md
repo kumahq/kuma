@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### API Server
 
-A successful PUT request without any warnings will now set "content-type: application/json" header and return empty json.
+A successful DELETE and PUT request without any warnings will now set "content-type: application/json" header and return empty json.
 
 ### MeshLoadBalancingStrategy
 
