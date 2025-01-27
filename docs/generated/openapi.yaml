@@ -317,6 +317,10 @@ paths:
           description: name of the MeshAccessLog
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshAccessLogDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -420,6 +424,10 @@ paths:
           description: name of the MeshCircuitBreaker
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCircuitBreakerDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -523,6 +531,10 @@ paths:
           description: name of the MeshFaultInjection
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshFaultInjectionDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -626,6 +638,10 @@ paths:
           description: name of the MeshHealthCheck
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshHealthCheckDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -729,6 +745,10 @@ paths:
           description: name of the MeshHTTPRoute
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshHTTPRouteDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -832,6 +852,11 @@ paths:
           description: name of the MeshLoadBalancingStrategy
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshLoadBalancingStrategyDeleteSuccessResponse
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -933,6 +958,10 @@ paths:
           description: name of the MeshMetric
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMetricDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1036,6 +1065,10 @@ paths:
           description: name of the MeshPassthrough
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshPassthroughDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1139,6 +1172,10 @@ paths:
           description: name of the MeshProxyPatch
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshProxyPatchDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1242,6 +1279,10 @@ paths:
           description: name of the MeshRateLimit
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRateLimitDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1343,6 +1384,10 @@ paths:
           description: name of the MeshRetry
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRetryDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1444,6 +1489,10 @@ paths:
           description: name of the MeshTCPRoute
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTCPRouteDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1545,6 +1594,10 @@ paths:
           description: name of the MeshTimeout
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTimeoutDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1646,6 +1699,10 @@ paths:
           description: name of the MeshTLS
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1747,6 +1804,10 @@ paths:
           description: name of the MeshTrace
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTraceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1850,6 +1911,11 @@ paths:
           description: name of the MeshTrafficPermission
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshTrafficPermissionDeleteSuccessResponse
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1933,6 +1999,10 @@ paths:
           description: name of the Mesh
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2027,6 +2097,10 @@ paths:
           description: name of the MeshGateway
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2112,6 +2186,10 @@ paths:
           description: name of the HostnameGenerator
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostnameGeneratorDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2208,6 +2286,10 @@ paths:
           description: name of the MeshExternalService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshExternalServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2311,6 +2393,10 @@ paths:
           description: name of the MeshMultiZoneService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMultiZoneServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2412,6 +2498,10 @@ paths:
           description: name of the MeshService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -3742,6 +3832,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshAccessLogDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshCircuitBreakerItem:
       type: object
       required:
@@ -4964,6 +5057,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshCircuitBreakerDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshFaultInjectionItem:
       type: object
       required:
@@ -5480,6 +5576,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshFaultInjectionDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshHealthCheckItem:
       type: object
       required:
@@ -5969,6 +6068,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshHealthCheckDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshHTTPRouteItem:
       type: object
       required:
@@ -6777,6 +6879,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshHTTPRouteDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshLoadBalancingStrategyItem:
       type: object
       required:
@@ -7542,6 +7647,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshLoadBalancingStrategyDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshMetricItem:
       type: object
       required:
@@ -7875,6 +7983,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshMetricDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshPassthroughItem:
       type: object
       required:
@@ -8061,6 +8172,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshPassthroughDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshProxyPatchItem:
       type: object
       required:
@@ -8779,6 +8893,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshProxyPatchDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshRateLimitItem:
       type: object
       required:
@@ -9369,6 +9486,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshRateLimitDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshRetryItem:
       type: object
       required:
@@ -10017,6 +10137,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshRetryDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTCPRouteItem:
       type: object
       required:
@@ -10360,6 +10483,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTCPRouteDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTimeoutItem:
       type: object
       required:
@@ -10933,6 +11059,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTimeoutDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTLSItem:
       type: object
       required:
@@ -11215,6 +11344,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTLSDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTraceItem:
       type: object
       required:
@@ -11566,6 +11698,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTraceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTrafficPermissionItem:
       type: object
       required:
@@ -11809,6 +11944,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTrafficPermissionDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshItem:
       properties:
         constraints:
@@ -12146,6 +12284,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshGatewayItem:
       properties:
         conf:
@@ -12344,6 +12485,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshGatewayDeleteSuccessResponse:
+      type: object
+      properties: {}
     HostnameGeneratorItem:
       type: object
       required:
@@ -12417,6 +12561,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    HostnameGeneratorDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshExternalServiceItem:
       type: object
       required:
@@ -12774,6 +12921,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshExternalServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshMultiZoneServiceItem:
       type: object
       required:
@@ -12987,6 +13137,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshMultiZoneServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshServiceItem:
       type: object
       required:
@@ -13226,6 +13379,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
   responses:
     IndexResponse:
       description: A response for the index endpoint
