@@ -13,7 +13,10 @@ require (
 	github.com/containernetworking/cni v1.2.3
 	github.com/containernetworking/plugins v1.6.2
 	github.com/emicklei/go-restful/v3 v3.12.1
-	github.com/envoyproxy/go-control-plane v0.13.1
+	github.com/envoyproxy/go-control-plane v0.13.4
+	github.com/envoyproxy/go-control-plane/contrib v1.32.3
+	github.com/envoyproxy/go-control-plane/envoy v1.32.3
+	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.1.0
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/exaring/otelpgx v0.7.0
@@ -81,10 +84,10 @@ require (
 	k8s.io/apimachinery v0.32.1
 	k8s.io/client-go v0.32.1
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f
+	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
 	k8s.io/kubectl v0.32.1
-	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	sigs.k8s.io/controller-runtime v0.19.4
+	k8s.io/utils v0.0.0-20241210054802-24370beab758
+	sigs.k8s.io/controller-runtime v0.20.0
 	sigs.k8s.io/controller-tools v0.17.1
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.2.1
@@ -140,7 +143,6 @@ require (
 	github.com/boombuler/barcode v1.0.1 // indirect
 	github.com/buger/jsonparser v1.1.1 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
-	github.com/census-instrumentation/opencensus-proto v0.4.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20240905190251-b4127c9b8d78 // indirect
 	github.com/containerd/log v0.1.0 // indirect
@@ -155,6 +157,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/fatih/color v1.18.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fxamacker/cbor/v2 v2.7.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-errors/errors v1.4.2 // indirect
@@ -174,7 +177,8 @@ require (
 	github.com/gonvenience/text v1.0.7 // indirect
 	github.com/gonvenience/wrap v1.1.2 // indirect
 	github.com/gonvenience/ytbx v1.4.4 // indirect
-	github.com/google/gnostic-models v0.6.8 // indirect
+	github.com/google/btree v1.1.3 // indirect
+	github.com/google/gnostic-models v0.6.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
 	github.com/google/pprof v0.0.0-20241210010833-40e02aabc2ad // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
@@ -268,6 +272,10 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 )
 
-require github.com/fsnotify/fsnotify v1.7.0 // indirect
+replace github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.3-kong-1
 
-replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.1-kong-1
+replace github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.32.3-kong-1
+
+replace github.com/envoyproxy/go-control-plane/ratelimit => github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1
+
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-kong-1

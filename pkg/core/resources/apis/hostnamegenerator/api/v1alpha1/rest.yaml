@@ -21,6 +21,8 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/HostnameGeneratorItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
       operationId: putHostnameGenerator
@@ -67,6 +69,10 @@ paths:
           description: name of the HostnameGenerator
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostnameGeneratorDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
@@ -94,6 +100,9 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
+    HostnameGeneratorDeleteSuccessResponse:
+      type: object
+      properties: {}
 
   responses:
     HostnameGeneratorItem:

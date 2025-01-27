@@ -255,6 +255,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshAccessLogItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshAccessLog
       summary: Creates or Updates MeshAccessLog entity
@@ -315,6 +317,10 @@ paths:
           description: name of the MeshAccessLog
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshAccessLogDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -356,6 +362,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshCircuitBreakerItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshCircuitBreaker
       summary: Creates or Updates MeshCircuitBreaker entity
@@ -416,6 +424,10 @@ paths:
           description: name of the MeshCircuitBreaker
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCircuitBreakerDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -457,6 +469,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshFaultInjectionItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshFaultInjection
       summary: Creates or Updates MeshFaultInjection entity
@@ -517,6 +531,10 @@ paths:
           description: name of the MeshFaultInjection
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshFaultInjectionDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -558,6 +576,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshHealthCheckItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshHealthCheck
       summary: Creates or Updates MeshHealthCheck entity
@@ -618,6 +638,10 @@ paths:
           description: name of the MeshHealthCheck
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshHealthCheckDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -659,6 +683,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshHTTPRouteItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshHTTPRoute
       summary: Creates or Updates MeshHTTPRoute entity
@@ -719,6 +745,10 @@ paths:
           description: name of the MeshHTTPRoute
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshHTTPRouteDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -760,6 +790,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshLoadBalancingStrategyItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshLoadBalancingStrategy
       summary: Creates or Updates MeshLoadBalancingStrategy entity
@@ -820,6 +852,11 @@ paths:
           description: name of the MeshLoadBalancingStrategy
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshLoadBalancingStrategyDeleteSuccessResponse
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -861,6 +898,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshMetricItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshMetric
       summary: Creates or Updates MeshMetric entity
@@ -919,6 +958,10 @@ paths:
           description: name of the MeshMetric
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMetricDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -960,6 +1003,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshPassthroughItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshPassthrough
       summary: Creates or Updates MeshPassthrough entity
@@ -1020,6 +1065,10 @@ paths:
           description: name of the MeshPassthrough
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshPassthroughDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1061,6 +1110,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshProxyPatchItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshProxyPatch
       summary: Creates or Updates MeshProxyPatch entity
@@ -1121,6 +1172,10 @@ paths:
           description: name of the MeshProxyPatch
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshProxyPatchDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1162,6 +1217,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshRateLimitItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshRateLimit
       summary: Creates or Updates MeshRateLimit entity
@@ -1222,6 +1279,10 @@ paths:
           description: name of the MeshRateLimit
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRateLimitDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1263,6 +1324,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshRetryItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshRetry
       summary: Creates or Updates MeshRetry entity
@@ -1321,6 +1384,10 @@ paths:
           description: name of the MeshRetry
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshRetryDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1362,6 +1429,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTCPRouteItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTCPRoute
       summary: Creates or Updates MeshTCPRoute entity
@@ -1420,6 +1489,10 @@ paths:
           description: name of the MeshTCPRoute
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTCPRouteDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1461,6 +1534,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTimeoutItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTimeout
       summary: Creates or Updates MeshTimeout entity
@@ -1519,6 +1594,10 @@ paths:
           description: name of the MeshTimeout
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTimeoutDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1560,6 +1639,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTLSItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTLS
       summary: Creates or Updates MeshTLS entity
@@ -1618,6 +1699,10 @@ paths:
           description: name of the MeshTLS
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1659,6 +1744,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTraceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTrace
       summary: Creates or Updates MeshTrace entity
@@ -1717,6 +1804,10 @@ paths:
           description: name of the MeshTrace
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTraceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1758,6 +1849,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshTrafficPermission
       summary: Creates or Updates MeshTrafficPermission entity
@@ -1818,6 +1911,11 @@ paths:
           description: name of the MeshTrafficPermission
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshTrafficPermissionDeleteSuccessResponse
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1853,6 +1951,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMesh
       summary: Creates or Updates Mesh entity
@@ -1899,6 +1999,10 @@ paths:
           description: name of the Mesh
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -1933,6 +2037,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshGatewayItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshGateway
       summary: Creates or Updates MeshGateway entity
@@ -1991,6 +2097,10 @@ paths:
           description: name of the MeshGateway
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2026,6 +2136,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putHostnameGenerator
       summary: Creates or Updates HostnameGenerator entity
@@ -2074,6 +2186,10 @@ paths:
           description: name of the HostnameGenerator
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HostnameGeneratorDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2108,6 +2224,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshExternalService
       summary: Creates or Updates MeshExternalService entity
@@ -2168,6 +2286,10 @@ paths:
           description: name of the MeshExternalService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshExternalServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2209,6 +2331,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshMultiZoneServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshMultiZoneService
       summary: Creates or Updates MeshMultiZoneService entity
@@ -2269,6 +2393,10 @@ paths:
           description: name of the MeshMultiZoneService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMultiZoneServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -2310,6 +2438,8 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       operationId: putMeshService
       summary: Creates or Updates MeshService entity
@@ -2368,6 +2498,10 @@ paths:
           description: name of the MeshService
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshServiceDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: '#/components/responses/NotFound'
@@ -3698,6 +3832,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshAccessLogDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshCircuitBreakerItem:
       type: object
       required:
@@ -4920,6 +5057,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshCircuitBreakerDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshFaultInjectionItem:
       type: object
       required:
@@ -5436,6 +5576,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshFaultInjectionDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshHealthCheckItem:
       type: object
       required:
@@ -5925,6 +6068,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshHealthCheckDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshHTTPRouteItem:
       type: object
       required:
@@ -6733,6 +6879,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshHTTPRouteDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshLoadBalancingStrategyItem:
       type: object
       required:
@@ -7498,6 +7647,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshLoadBalancingStrategyDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshMetricItem:
       type: object
       required:
@@ -7831,6 +7983,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshMetricDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshPassthroughItem:
       type: object
       required:
@@ -8017,6 +8172,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshPassthroughDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshProxyPatchItem:
       type: object
       required:
@@ -8735,6 +8893,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshProxyPatchDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshRateLimitItem:
       type: object
       required:
@@ -9325,6 +9486,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshRateLimitDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshRetryItem:
       type: object
       required:
@@ -9973,6 +10137,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshRetryDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTCPRouteItem:
       type: object
       required:
@@ -10316,6 +10483,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTCPRouteDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTimeoutItem:
       type: object
       required:
@@ -10889,6 +11059,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTimeoutDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTLSItem:
       type: object
       required:
@@ -11171,6 +11344,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTLSDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTraceItem:
       type: object
       required:
@@ -11522,6 +11698,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTraceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshTrafficPermissionItem:
       type: object
       required:
@@ -11765,6 +11944,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshTrafficPermissionDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshItem:
       properties:
         constraints:
@@ -12012,10 +12194,7 @@ components:
               properties:
                 passthrough:
                   description: Control the passthrough cluster
-                  properties:
-                    value:
-                      type: boolean
-                  type: object
+                  type: boolean
               type: object
           type: object
         routing:
@@ -12076,10 +12255,7 @@ components:
                       (range 0.0 - 100.0).
 
                       Empty value defaults to 100.0%
-                    properties:
-                      value:
-                        type: number
-                    type: object
+                    type: number
                   type:
                     description: Type of the backend (Kuma ships with 'zipkin')
                     type: string
@@ -12108,6 +12284,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshGatewayItem:
       properties:
         conf:
@@ -12306,6 +12485,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshGatewayDeleteSuccessResponse:
+      type: object
+      properties: {}
     HostnameGeneratorItem:
       type: object
       required:
@@ -12379,6 +12561,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    HostnameGeneratorDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshExternalServiceItem:
       type: object
       required:
@@ -12736,6 +12921,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshExternalServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshMultiZoneServiceItem:
       type: object
       required:
@@ -12949,6 +13137,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshMultiZoneServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
     MeshServiceItem:
       type: object
       required:
@@ -13188,6 +13379,9 @@ components:
             request should correct or be aware of.
           items:
             type: string
+    MeshServiceDeleteSuccessResponse:
+      type: object
+      properties: {}
   responses:
     IndexResponse:
       description: A response for the index endpoint

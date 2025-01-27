@@ -1,3 +1,6 @@
+InboundRules:
+  1.1.1.1:8080: []
+  1.1.1.1:8081: []
 Rules:
   1.1.1.1:8080:
   - BackendRefOriginIndex: {}
