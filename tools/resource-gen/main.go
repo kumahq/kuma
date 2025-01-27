@@ -18,6 +18,7 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 	structpb "google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -448,6 +449,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			DoNotReference:            true,
 			AllowAdditionalProperties: true,
 			IgnoredTypes:              []any{structpb.Struct{}},
+			Mapper:                    typeMapper,
 		}
 		err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(rootDir, "api/"))
 		if err != nil {
@@ -539,6 +541,50 @@ func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
 		if _, err := os.Stdout.Write(out); err != nil {
 			return err
 		}
+		return nil
+	}
+}
+
+func typeMapper(r reflect.Type) *jsonschema.Schema {
+	switch r {
+	case reflect.TypeOf(wrapperspb.DoubleValue{}), reflect.TypeOf(wrapperspb.FloatValue{}):
+		return &jsonschema.Schema{
+			Type: "number",
+		}
+	case reflect.TypeOf(wrapperspb.Int64Value{}):
+		return &jsonschema.Schema{
+			Type:   "integer",
+			Format: "int64",
+		}
+	case reflect.TypeOf(wrapperspb.UInt64Value{}):
+		return &jsonschema.Schema{
+			Type:   "integer",
+			Format: "uint64",
+		}
+	case reflect.TypeOf(wrapperspb.Int32Value{}):
+		return &jsonschema.Schema{
+			Type:   "integer",
+			Format: "int32",
+		}
+	case reflect.TypeOf(wrapperspb.UInt32Value{}):
+		return &jsonschema.Schema{
+			Type:   "integer",
+			Format: "uint32",
+		}
+	case reflect.TypeOf(wrapperspb.BoolValue{}):
+		return &jsonschema.Schema{
+			Type: "boolean",
+		}
+	case reflect.TypeOf(wrapperspb.StringValue{}):
+		return &jsonschema.Schema{
+			Type: "string",
+		}
+	case reflect.TypeOf(wrapperspb.BytesValue{}):
+		return &jsonschema.Schema{
+			Type:   "string",
+			Format: "byte",
+		}
+	default:
 		return nil
 	}
 }
