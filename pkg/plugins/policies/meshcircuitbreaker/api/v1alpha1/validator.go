@@ -5,7 +5,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -13,7 +12,7 @@ import (
 func (r *MeshCircuitBreakerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef, r.Descriptor()))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -22,7 +21,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
+func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -36,7 +35,7 @@ func validateTop(targetRef *common_api.TargetRef, descriptor core_model.Resource
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
-		Descriptor:                 descriptor,
+		Descriptor:                 r.Descriptor(),
 	})
 	return targetRefErr
 }

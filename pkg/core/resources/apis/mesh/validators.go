@@ -7,14 +7,13 @@ import (
 	"sort"
 	"strings"
 
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"sigs.k8s.io/yaml"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )

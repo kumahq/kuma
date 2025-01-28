@@ -14,14 +14,14 @@ import (
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, r.Descriptor()))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
 	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
 	return verr.OrNil()
 }
 
-func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
+func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -38,7 +38,7 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, des
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
-			Descriptor:                 descriptor,
+			Descriptor:                 r.Descriptor(),
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -49,7 +49,7 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, des
 				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
-			Descriptor: descriptor,
+			Descriptor: r.Descriptor(),
 		})
 	}
 }

@@ -26,12 +26,12 @@ const (
 func (r *MeshProxyPatchResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, r.Descriptor()))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
+func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -47,7 +47,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef, de
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
-			Descriptor:                 descriptor,
+			Descriptor:                 r.Descriptor(),
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -58,7 +58,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef, de
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
-			Descriptor: descriptor,
+			Descriptor: r.Descriptor(),
 		})
 	}
 }

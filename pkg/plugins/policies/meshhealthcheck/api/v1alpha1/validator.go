@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -11,12 +10,12 @@ import (
 func (r *MeshHealthCheckResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef, r.Descriptor()))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
+func (r *MeshHealthCheckResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -30,7 +29,7 @@ func validateTop(targetRef *common_api.TargetRef, descriptor core_model.Resource
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
-		Descriptor:                 descriptor,
+		Descriptor:                 r.Descriptor(),
 	})
 	return targetRefErr
 }
