@@ -7,13 +7,14 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
+	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef(), r.Descriptor()))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -22,7 +23,7 @@ func (r *MeshAccessLogResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func validateTop(targetRef common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
@@ -33,7 +34,7 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
-		IsInboundPolicy:            true,
+		Descriptor:                 descriptor,
 	})
 	return targetRefErr
 }

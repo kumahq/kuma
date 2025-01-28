@@ -7,6 +7,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -207,7 +208,9 @@ sectionName: http-port
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.Dataplane,
 				},
-				IsInboundPolicy: true,
+				Descriptor: model.ResourceTypeDescriptor{
+					HasRulesTargetRef: true,
+				},
 			},
 		}),
 		Entry("MeshGateway", testCase{

@@ -12,7 +12,7 @@ import (
 func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, r.Descriptor()))
 	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
@@ -25,7 +25,7 @@ func (r *MeshTimeoutResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -41,6 +41,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) valid
 				common_api.MeshHTTPRoute,
 			},
 			GatewayListenerTagsAllowed: true,
+			Descriptor:                 descriptor,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -50,6 +51,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) valid
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
+			Descriptor: descriptor,
 		})
 	}
 }

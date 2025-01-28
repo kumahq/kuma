@@ -21,12 +21,12 @@ import (
 func (r *MeshTraceResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, r.Descriptor()))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -41,6 +41,7 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validat
 				common_api.MeshServiceSubset,
 			},
 			GatewayListenerTagsAllowed: false,
+			Descriptor:                 descriptor,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -50,6 +51,7 @@ func (r *MeshTraceResource) validateTop(targetRef *common_api.TargetRef) validat
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
+			Descriptor: descriptor,
 		})
 	}
 }

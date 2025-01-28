@@ -16,7 +16,7 @@ import (
 func (r *MeshRetryResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, r.Descriptor()))
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
@@ -24,7 +24,7 @@ func (r *MeshRetryResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef, descriptor core_model.ResourceTypeDescriptor) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -41,6 +41,7 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
+			Descriptor:                 descriptor,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -51,6 +52,7 @@ func (r *MeshRetryResource) validateTop(targetRef *common_api.TargetRef) validat
 				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
+			Descriptor: descriptor,
 		})
 	}
 }

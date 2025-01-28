@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"sigs.k8s.io/yaml"
@@ -64,7 +66,7 @@ type ValidateTargetRefOpts struct {
 	//   includes a forward slash, but it's allowed as an exception to
 	//   handle unresolved references.
 	AllowedInvalidNames []string
-	IsInboundPolicy     bool
+	Descriptor          core_model.ResourceTypeDescriptor
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -384,7 +386,7 @@ func ValidateTargetRef(
 		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-		if !opts.IsInboundPolicy && ref.SectionName != "" {
+		if !opts.Descriptor.HasFromTargetRef && !opts.Descriptor.HasRulesTargetRef && ref.SectionName != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
 	case common_api.MeshSubset:
