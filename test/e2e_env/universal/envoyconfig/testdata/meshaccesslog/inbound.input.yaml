@@ -1,0 +1,17 @@
+type: MeshAccessLog
+name: mal-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: "/dev/stdout"
+              format:
+                type: Plain
+                plain: "[%START_TIME%]"

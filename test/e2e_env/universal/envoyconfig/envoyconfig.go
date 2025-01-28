@@ -96,6 +96,8 @@ func EnvoyConfigTest() {
 			// then
 			Expect(getConfig("demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
 			Expect(getConfig("test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
-		}, test.EntriesForFolder("meshtimeout", "envoyconfig"),
+		},
+		test.EntriesForFolder("meshtimeout", "envoyconfig"),
+		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
 	)
 }
