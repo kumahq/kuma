@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -19,7 +20,6 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	"slices"
 )
 
 func EnvoyConfigTest() {
