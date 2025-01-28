@@ -1,0 +1,20 @@
+# user=cli-user,operation=CREATE,namespace=kuma-system
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: backend-v3
+  labels:
+    kuma.io/origin: global
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      app: demo-app
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          requestTimeout: 19s
+          streamIdleTimeout: 1h
