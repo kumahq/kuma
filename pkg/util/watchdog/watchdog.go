@@ -44,7 +44,7 @@ func (w *SimpleWatchdog) Start(ctx context.Context) {
 	defer ticker.Stop()
 	for {
 		if err := w.onTick(ctx); err != nil {
-			if !errors.Is(err, context.Canceled) && w.OnError != nil {
+			if !channels.IsClosed(ctx.Done()) && !errors.Is(err, context.Canceled) && w.OnError != nil {
 				w.OnError(err)
 			}
 		}
