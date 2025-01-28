@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
-	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"go/format"
 	"log"
 	"os"
@@ -24,6 +22,8 @@ import (
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
+	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"
 	. "github.com/kumahq/kuma/tools/resource-gen/genutils"
 )
@@ -436,8 +436,8 @@ func main() {
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	// this is where the new types need to be added if we want to generate openAPI for it
 	protoTypeToType := map[string]reflect.Type{
-		"Mesh":                     reflect.TypeOf(v1alpha1.Mesh{}),
-		"MeshGateway":              reflect.TypeOf(v1alpha1.MeshGateway{}),
+		"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
+		"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 	}
 	additionalProtoTypes := []reflect.Type{
 		reflect.TypeOf(v1alpha1.FileLoggingBackendConfig{}),
