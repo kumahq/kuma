@@ -1,0 +1,11 @@
+components:
+  schemas:
+    FileLoggingBackendConfig:
+      properties:
+        path:
+          description: Path to a file that logs will be written to
+          type: string
+      type: object
+info:
+  x-ref-schema-name: FileLoggingBackendConfig
+openapi: 3.0.3
