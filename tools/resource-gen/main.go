@@ -596,19 +596,19 @@ func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
 
 var backendToOneOfs = map[string][]*jsonschema.Schema{
 	"CertificateAuthorityBackend": {
-		{Ref: "#/components/schemas/ProvidedCertificateAuthorityConfig"},
-		{Ref: "#/components/schemas/BuiltinCertificateAuthorityConfig"},
+		{Ref: "/specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig"},
+		{Ref: "/specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig"},
 	},
 	"LoggingBackend": {
-		{Ref: "#/components/schemas/FileLoggingBackendConfig"},
-		{Ref: "#/components/schemas/TcpLoggingBackendConfig"},
+		{Ref: "/specs/protoresources/fileloggingbackendconfig/schema.yaml#/components/schemas/FileLoggingBackendConfig"},
+		{Ref: "/specs/protoresources/tcploggingbackendconfig/schema.yaml#/components/schemas/TcpLoggingBackendConfig"},
 	},
 	"TracingBackend": {
-		{Ref: "#/components/schemas/DatadogTracingBackendConfig"},
-		{Ref: "#/components/schemas/ZipkinTracingBackendConfig"},
+		{Ref: "/specs/protoresources/datadogtracingbackendconfig/schema.yaml#/components/schemas/DatadogTracingBackendConfig"},
+		{Ref: "/specs/protoresources/zipkintracingbackendconfig/schema.yaml#/components/schemas/ZipkinTracingBackendConfig"},
 	},
 	"MetricsBackend": {
-		{Ref: "#/components/schemas/PrometheusMetricsBackendConfig"},
+		{Ref: "/specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig"},
 	},
 }
 
