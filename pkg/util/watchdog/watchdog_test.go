@@ -216,9 +216,7 @@ var _ = Describe("SimpleWatchdog", func() {
 			close(doneCh)
 		}()
 		Expect(watchdog.HasTicked(false)).Should(BeFalse())
-		Consistently(func(g Gomega) {
-			g.Expect(hasTicked).ShouldNot(Receive())
-		}, "100ms", "10ms").Should(Succeed())
+		Consistently(hasTicked, "100ms", "10ms").ShouldNot(Receive())
 
 		By("simulating 1st tick")
 		// when
