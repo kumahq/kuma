@@ -1,0 +1,46 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-1
+    kuma.io/mesh: mesh-1
+    kuma.io/origin: global
+    kuma.io/policy-role: system
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-1-w6b2779598z4fd75.kuma-system
+  spec:
+    from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: demo
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-2
+    kuma.io/mesh: mesh-1
+    kuma.io/origin: global
+    kuma.io/policy-role: system
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-2-86x2565vvdw4dv5b.kuma-system
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: demo
+      sectionName: main-port
+  type: MeshTrafficPermission
+next: null
+total: 0

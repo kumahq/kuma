@@ -12,6 +12,10 @@ func CompareByPolicyAttributes[T common.PolicyAttributes](a, b T) int {
 		return less
 	}
 
+	if less := a.GetTopLevel().CompareDataplaneKind(b.GetTopLevel()); less != 0 {
+		return less
+	}
+
 	o1, _ := core_model.ResourceOrigin(a.GetResourceMeta())
 	o2, _ := core_model.ResourceOrigin(b.GetResourceMeta())
 	if less := o1.Compare(o2); less != 0 {

@@ -17,14 +17,14 @@ require (
 	github.com/envoyproxy/go-control-plane/contrib v1.32.3
 	github.com/envoyproxy/go-control-plane/envoy v1.32.3
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.1.0
-	github.com/evanphx/json-patch/v5 v5.9.0
-	github.com/exaring/otelpgx v0.7.0
+	github.com/envoyproxy/protoc-gen-validate v1.2.1
+	github.com/evanphx/json-patch/v5 v5.9.10
+	github.com/exaring/otelpgx v0.8.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
 	github.com/golang-jwt/jwt/v4 v4.5.1
-	github.com/golang-migrate/migrate/v4 v4.18.1
+	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
@@ -32,11 +32,11 @@ require (
 	github.com/gruntwork-io/terratest v0.48.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.7.2
-	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
+	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9 // indirect
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
 	github.com/onsi/ginkgo/v2 v2.22.2
@@ -73,10 +73,10 @@ require (
 	golang.org/x/sys v0.29.0
 	golang.org/x/text v0.21.0
 	gonum.org/v1/gonum v0.15.1
-	google.golang.org/genproto/googleapis/api v0.0.0-20250115164207-1a7da9e5054f
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f
-	google.golang.org/grpc v1.69.4
-	google.golang.org/protobuf v1.36.3
+	google.golang.org/genproto/googleapis/api v0.0.0-20250127172529-29210b9bc287
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287
+	google.golang.org/grpc v1.70.0
+	google.golang.org/protobuf v1.36.4
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.17.0
 	k8s.io/api v0.32.1
@@ -87,7 +87,7 @@ require (
 	k8s.io/kube-openapi v0.0.0-20241212222426-2c72e554b1e7
 	k8s.io/kubectl v0.32.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
-	sigs.k8s.io/controller-runtime v0.20.0
+	sigs.k8s.io/controller-runtime v0.20.1
 	sigs.k8s.io/controller-tools v0.17.1
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.2.1
@@ -95,7 +95,7 @@ require (
 )
 
 require (
-	cel.dev/expr v0.18.0 // indirect
+	cel.dev/expr v0.19.0 // indirect
 	dario.cat/mergo v1.0.1 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -248,6 +248,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect

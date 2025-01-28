@@ -1,0 +1,89 @@
+items:
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-1
+    kuma.io/origin: zone
+    kuma.io/policy-role: system
+    kuma.io/zone: zone-uni
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-1
+  spec:
+    from:
+    - default:
+        action: Deny
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: demo
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-2
+    kuma.io/origin: zone
+    kuma.io/policy-role: system
+    kuma.io/zone: zone-uni
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-2
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      labels:
+        app: demo
+      sectionName: main-port
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-2
+    kuma.io/origin: zone
+    kuma.io/policy-role: system
+    kuma.io/zone: zone-uni
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-2
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      name: dp-1
+      namespace: kuma-demo
+  type: MeshTrafficPermission
+- creationTime: "0001-01-01T00:00:00Z"
+  labels:
+    k8s.kuma.io/namespace: kuma-system
+    kuma.io/display-name: mtp-2
+    kuma.io/origin: zone
+    kuma.io/policy-role: system
+    kuma.io/zone: zone-uni
+  mesh: mesh-1
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mtp-2
+  spec:
+    from:
+    - default:
+        action: Allow
+      targetRef:
+        kind: Mesh
+    targetRef:
+      kind: Dataplane
+      name: dp-1
+      namespace: kuma-demo
+      sectionName: main-port
+  type: MeshTrafficPermission
+next: null
+total: 0

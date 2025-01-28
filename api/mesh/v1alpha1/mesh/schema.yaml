@@ -62,8 +62,9 @@ properties:
           description: LoggingBackend defines logging backend available to mesh.
           properties:
             conf:
-              description: Configuration of the backend
-              properties: {}
+              oneOf:
+              - $ref: /specs/protoresources/fileloggingbackendconfig/schema.yaml#/components/schemas/FileLoggingBackendConfig
+              - $ref: /specs/protoresources/tcploggingbackendconfig/schema.yaml#/components/schemas/TcpLoggingBackendConfig
               type: object
             format:
               description: |-
@@ -106,8 +107,8 @@ properties:
           description: MetricsBackend defines metric backends
           properties:
             conf:
-              description: Configuration of the backend
-              properties: {}
+              oneOf:
+              - $ref: /specs/protoresources/prometheusmetricsbackendconfig/schema.yaml#/components/schemas/PrometheusMetricsBackendConfig
               type: object
             name:
               description: Name of the backend, can be then used in Mesh.metrics.enabledBackend
@@ -132,8 +133,9 @@ properties:
           description: CertificateAuthorityBackend defines Certificate Authority backend
           properties:
             conf:
-              description: Configuration of the backend
-              properties: {}
+              oneOf:
+              - $ref: /specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig
+              - $ref: /specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig
               type: object
             dpCert:
               description: Dataplane certificate settings
@@ -242,8 +244,9 @@ properties:
           description: TracingBackend defines tracing backend available to mesh.
           properties:
             conf:
-              description: Configuration of the backend
-              properties: {}
+              oneOf:
+              - $ref: /specs/protoresources/datadogtracingbackendconfig/schema.yaml#/components/schemas/DatadogTracingBackendConfig
+              - $ref: /specs/protoresources/zipkintracingbackendconfig/schema.yaml#/components/schemas/ZipkinTracingBackendConfig
               type: object
             name:
               description: |-

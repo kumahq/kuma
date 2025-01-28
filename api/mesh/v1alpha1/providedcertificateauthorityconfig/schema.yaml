@@ -1,0 +1,22 @@
+components:
+  schemas:
+    ProvidedCertificateAuthorityConfig:
+      properties:
+        cert:
+          properties:
+            Type:
+              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+          required:
+          - Type
+          type: object
+        key:
+          properties:
+            Type:
+              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+          required:
+          - Type
+          type: object
+      type: object
+info:
+  x-ref-schema-name: ProvidedCertificateAuthorityConfig
+openapi: 3.0.3

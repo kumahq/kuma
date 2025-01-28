@@ -24,6 +24,7 @@ func MeshTimeout() {
 		mesh := fmt.Sprintf("meshtimeout-ms-%s", strings.ToLower(mode.String()))
 		namespace := fmt.Sprintf("%s-namespace", mesh)
 		testServerURL := fmt.Sprintf("test-server.%s.svc:80", namespace)
+		testServerSecondaryInboundUrl := fmt.Sprintf("test-server.%s.svc:9090", namespace)
 
 		BeforeAll(func() {
 			err := NewClusterSetup().
@@ -118,6 +119,27 @@ spec:
         http:
           requestTimeout: 2s
           maxStreamDuration: 20s`, Config.KumaNamespace, mesh)),
+			Entry("outbound dataplane kind", fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: demo-client
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, Config.KumaNamespace, mesh)),
 			Entry("consumer policy", fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: MeshTimeout
@@ -163,6 +185,86 @@ spec:
 				return out
 			}(),
 		)
+
+		It("should configure timeout for single inbound", func() {
+			policy := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt1
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: test-server
+    sectionName: secondary
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 20s
+        http:
+          requestTimeout: 2s
+          maxStreamDuration: 20s`, Config.KumaNamespace, mesh)
+
+			// Delete all retries and timeouts policy
+			Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
+				meshtimeout_api.MeshTimeoutResourceTypeDescriptor,
+				meshretry_api.MeshRetryResourceTypeDescriptor,
+			)).To(Succeed())
+			// main inbound
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				g.Expect(client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", testServerURL,
+					client.FromKubernetesPod(namespace, "demo-client"),
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10),
+				)).Should(HaveField("Instance", ContainSubstring("test-server")))
+				g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			}, "30s", "1s").Should(Succeed())
+
+			// secondary inbound
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				g.Expect(client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", testServerSecondaryInboundUrl,
+					client.FromKubernetesPod(namespace, "demo-client"),
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10),
+				)).Should(HaveField("Instance", ContainSubstring("test-server")))
+				g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			}, "30s", "1s").Should(Succeed())
+
+			// when
+			Expect(YamlK8s(policy)(kubernetes.Cluster)).To(Succeed())
+
+			// then
+			// main inbound
+			Eventually(func(g Gomega) {
+				start := time.Now()
+				g.Expect(client.CollectEchoResponse(
+					kubernetes.Cluster, "demo-client", testServerURL,
+					client.FromKubernetesPod(namespace, "demo-client"),
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10),
+				)).Should(HaveField("Instance", ContainSubstring("test-server")))
+				g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*5))
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+
+			// secondary inbound
+			Eventually(func(g Gomega) {
+				g.Expect(client.CollectFailure(
+					kubernetes.Cluster, "demo-client", testServerSecondaryInboundUrl,
+					client.FromKubernetesPod(namespace, "demo-client"),
+					client.WithHeader("x-set-response-delay-ms", "5000"),
+					client.WithMaxTime(10), // we don't want 'curl' to return early
+				)).Should(HaveField("ResponseCode", 504))
+			}, "1m", "1s", MustPassRepeatedly(5)).Should(Succeed())
+		})
 	},
 		Entry("Disabled", mesh_proto.Mesh_MeshServices_Disabled),
 		Entry("Exclusive", mesh_proto.Mesh_MeshServices_Exclusive),
