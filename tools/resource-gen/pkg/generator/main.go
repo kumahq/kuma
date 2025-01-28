@@ -554,7 +554,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			return err
 		}
 
-		outDir := path.Join(readDir, "api", pkg, "v1alpha1", strings.ToLower(tpe.Name()))
+		outDir := path.Join(writeDir, "api", pkg, "v1alpha1", strings.ToLower(tpe.Name()))
 
 		// Ensure the directory exists
 		err = os.MkdirAll(outDir, 0o755)
