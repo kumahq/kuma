@@ -378,8 +378,10 @@ func init() {
 {{end}}
 `))
 
-var readDir = "."
-var writeDir = "."
+var (
+	readDir  = "."
+	writeDir = "."
+)
 
 func Run() {
 	var gen string

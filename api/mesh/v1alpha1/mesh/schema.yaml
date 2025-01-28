@@ -136,9 +136,6 @@ properties:
               oneOf:
               - $ref: /specs/protoresources/providedcertificateauthorityconfig/schema.yaml#/components/schemas/ProvidedCertificateAuthorityConfig
               - $ref: /specs/protoresources/builtincertificateauthorityconfig/schema.yaml#/components/schemas/BuiltinCertificateAuthorityConfig
-              - $ref: /specs/protoresources/vaultcertificateauthorityconfig/schema.yaml#/components/schemas/VaultCertificateAuthorityConfig
-              - $ref: /specs/protoresources/acmcertificateauthorityconfig/schema.yaml#/components/schemas/ACMCertificateAuthorityConfig
-              - $ref: /specs/protoresources/certmanagercertificateauthorityconfig/schema.yaml#/components/schemas/CertManagerCertificateAuthorityConfig
               type: object
             dpCert:
               description: Dataplane certificate settings
