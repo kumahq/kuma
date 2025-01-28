@@ -228,9 +228,9 @@ var DefaultTimeoutConf = api.Conf{
 	IdleTimeout:       &kube_meta.Duration{Duration: policies_defaults.DefaultIdleTimeout},
 	Http: &api.Http{
 		RequestTimeout:        &kube_meta.Duration{Duration: policies_defaults.DefaultRequestTimeout},
-		StreamIdleTimeout:     &kube_meta.Duration{Duration: policies_defaults.DefaultGatewayStreamIdleTimeout},
+		StreamIdleTimeout:     &kube_meta.Duration{Duration: policies_defaults.DefaultStreamIdleTimeout},
 		MaxStreamDuration:     &kube_meta.Duration{Duration: policies_defaults.DefaultMaxStreamDuration},
-		MaxConnectionDuration: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
+		MaxConnectionDuration: &kube_meta.Duration{Duration: policies_defaults.DefaultMaxConnectionDuration},
 		RequestHeadersTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultRequestHeadersTimeout},
 	},
 }

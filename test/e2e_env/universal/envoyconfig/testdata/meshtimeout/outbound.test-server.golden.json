@@ -20,6 +20,66 @@
       }
     },
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
+      "value": "10s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/connectTimeout",
+      "value": "5s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "7200s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "3600s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/localhost:8080/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
+      "value": "0s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/commonHttpProtocolOptions/idleTimeout",
+      "value": "7200s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/commonHttpProtocolOptions/idleTimeout",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/requestHeadersTimeout",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0/route/idleTimeout",
+      "value": "1800s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0/route/timeout",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/routeConfig/virtualHosts/0/routes/0/route/timeout",
+      "value": "15s"
+    },
+    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/outbound:IP_REDACTED:3000/filterChains/0/filters/0/typedConfig/idleTimeout",
       "value": "3600s"
@@ -125,7 +185,7 @@
       },
       "localhost:8080": {
         "altStatName": "localhost_8080",
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:8080",
           "endpoints": [
@@ -151,7 +211,9 @@
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
             "commonHttpProtocolOptions": {
-              "idleTimeout": "7200s"
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
             },
             "explicitHttpConfig": {
               "httpProtocolOptions": {}
@@ -276,7 +338,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
                   "commonHttpProtocolOptions": {
-                    "idleTimeout": "7200s"
+                    "idleTimeout": "0s"
                   },
                   "forwardClientCertDetails": "SANITIZE_SET",
                   "httpFilters": [
@@ -287,6 +349,7 @@
                       }
                     }
                   ],
+                  "requestHeadersTimeout": "0s",
                   "routeConfig": {
                     "name": "inbound:test-server",
                     "requestHeadersToRemove": [
@@ -306,7 +369,8 @@
                             },
                             "route": {
                               "cluster": "localhost:8080",
-                              "timeout": "0s"
+                              "idleTimeout": "1800s",
+                              "timeout": "15s"
                             }
                           }
                         ]
