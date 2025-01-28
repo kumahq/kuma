@@ -447,12 +447,13 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
 }
 
+var ProtoTypeToType = map[string]reflect.Type{
+	"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
+	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
+}
+
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	// this is where the new types need to be added if we want to generate openAPI for it
-	protoTypeToType := map[string]reflect.Type{
-		"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
-		"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
-	}
 
 	reflector := jsonschema.Reflector{
 		ExpandedStruct:            true,
@@ -465,7 +466,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	}
 	reflector.Mapper = typeMapperFactory(reflector)
 	for _, r := range resources {
-		tpe, exists := protoTypeToType[r.ResourceType]
+		tpe, exists := ProtoTypeToType[r.ResourceType]
 		if !exists {
 			continue
 		}
