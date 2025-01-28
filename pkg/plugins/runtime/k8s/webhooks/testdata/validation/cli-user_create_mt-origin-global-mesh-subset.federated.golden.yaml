@@ -1,0 +1,15 @@
+Patches: null
+allowed: false
+status:
+  code: 403
+  details:
+    causes:
+    - field: metadata.labels[kuma.io/origin]
+      message: cannot be empty
+      reason: FieldValueInvalid
+  message: Operation not allowed. Applying policies on Zone CP requires 'kuma.io/origin'
+    label to be set to 'zone'.
+  metadata: {}
+  reason: Forbidden
+  status: Failure
+uid: "12345"
