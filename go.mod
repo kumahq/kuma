@@ -17,7 +17,7 @@ require (
 	github.com/envoyproxy/go-control-plane/contrib v1.32.3
 	github.com/envoyproxy/go-control-plane/envoy v1.32.3
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.1.0
+	github.com/envoyproxy/protoc-gen-validate v1.2.1
 	github.com/evanphx/json-patch/v5 v5.9.0
 	github.com/exaring/otelpgx v0.7.0
 	github.com/go-logr/logr v1.4.2
