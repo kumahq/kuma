@@ -59,7 +59,7 @@
     "lbPolicy": "CLUSTER_PROVIDED",
     "upstreamBindConfig": {
      "sourceAddress": {
-      "address": "::6",
+      "address": "IP_REDACTED",
       "portValue": 0
      }
     }
@@ -255,7 +255,7 @@
     "name": "inbound:passthrough:ipv6",
     "address": {
      "socketAddress": {
-      "address": "::",
+      "address": "IP_REDACTED",
       "portValue": 15006
      }
     },
@@ -398,7 +398,7 @@
     "name": "outbound:passthrough:ipv6",
     "address": {
      "socketAddress": {
-      "address": "::",
+      "address": "IP_REDACTED",
       "portValue": 15001
      }
     },

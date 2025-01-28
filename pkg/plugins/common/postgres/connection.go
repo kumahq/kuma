@@ -46,6 +46,9 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 		return nil, err
 	}
 	pgxConfig, err := pgxpool.ParseConfig(connectionString)
+	if err != nil {
+		return nil, err
+	}
 
 	if postgresStoreConfig.MaxOpenConnections == 0 {
 		// pgx MaxCons must be > 0, see https://github.com/jackc/puddle/blob/c5402ce53663d3c6481ea83c2912c339aeb94adc/pool.go#L160
@@ -59,13 +62,9 @@ func ConnectToDbPgx(postgresStoreConfig config.PostgresStoreConfig, customizers 
 	pgxConfig.MaxConnLifetime = postgresStoreConfig.MaxConnectionLifetime.Duration
 	pgxConfig.MaxConnLifetimeJitter = postgresStoreConfig.MaxConnectionLifetimeJitter.Duration
 	pgxConfig.HealthCheckPeriod = postgresStoreConfig.HealthCheckInterval.Duration
-	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithAttributes(spanTypeSQLAttribute))
+	pgxConfig.ConnConfig.Tracer = otelpgx.NewTracer(otelpgx.WithTracerAttributes(spanTypeSQLAttribute))
 	for _, customizer := range customizers {
 		customizer.Customize(pgxConfig)
-	}
-
-	if err != nil {
-		return nil, err
 	}
 
 	return pgxpool.NewWithConfig(context.Background(), pgxConfig)
