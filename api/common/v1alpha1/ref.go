@@ -112,20 +112,20 @@ type TargetRef struct {
 	SectionName string `json:"sectionName,omitempty"`
 }
 
-func (t TargetRef) CompareDataplaneKind(t2 TargetRef) int {
-	if t.Kind != Dataplane {
+func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
+	if t.Kind != Dataplane || other.Kind != Dataplane {
 		return 0
 	}
-	if selectsNameAndNamespace(t) && selectsLabels(t2) {
+	if selectsNameAndNamespace(t) && selectsLabels(other) {
 		return 1
 	}
-	if selectsLabels(t) && selectsNameAndNamespace(t2) {
+	if selectsLabels(t) && selectsNameAndNamespace(other) {
 		return -1
 	}
-	if t.SectionName != "" && t2.SectionName == "" {
+	if t.SectionName != "" && other.SectionName == "" {
 		return 1
 	}
-	if t.SectionName == "" && t2.SectionName != "" {
+	if t.SectionName == "" && other.SectionName != "" {
 		return -1
 	}
 	return 0
