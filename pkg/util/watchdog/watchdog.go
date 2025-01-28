@@ -48,12 +48,12 @@ func (w *SimpleWatchdog) Start(ctx context.Context) {
 				w.OnError(err)
 			}
 		}
-		if w.hasTickedChan != nil && !channels.IsClosed(w.hasTickedChan) { // On the first tick we close the channel
-			close(w.hasTickedChan)
-		}
 		select {
 		case <-ctx.Done():
 		case <-ticker.C:
+		}
+		if w.hasTickedChan != nil && !channels.IsClosed(w.hasTickedChan) { // On the first tick we close the channel
+			close(w.hasTickedChan)
 		}
 		// cases are non prioritized so we first check is the context is done
 		select {
