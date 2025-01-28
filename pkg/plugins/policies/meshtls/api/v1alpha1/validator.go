@@ -29,6 +29,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
+		IsInboundPolicy: true,
 	})
 	return targetRefErr
 }
