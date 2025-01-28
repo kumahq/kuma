@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
+	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"go/format"
 	"log"
 	"os"
@@ -17,7 +19,6 @@ import (
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
-	structpb "google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	"sigs.k8s.io/yaml"
 
@@ -444,19 +445,20 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		reflect.TypeOf(v1alpha1.ZipkinTracingBackendConfig{}),
 		reflect.TypeOf(v1alpha1.DatadogTracingBackendConfig{}),
 		reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
+		reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
+		reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
 	}
 
 	reflector := jsonschema.Reflector{
 		ExpandedStruct:            true,
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
-		IgnoredTypes:              []any{structpb.Struct{}},
-		Mapper:                    typeMapper,
 	}
 	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(rootDir, "api/"))
 	if err != nil {
 		return err
 	}
+	reflector.Mapper = typeMapperFactory(reflector)
 	for _, r := range resources {
 		tpe, exists := protoTypeToType[r.ResourceType]
 		if !exists {
@@ -592,7 +594,40 @@ func TemplateGeneratorFn(tmpl *template.Template) GeneratorFn {
 	}
 }
 
-func typeMapper(r reflect.Type) *jsonschema.Schema {
+var backendToOneOfs = map[string][]*jsonschema.Schema{
+	"CertificateAuthorityBackend": {
+		{Ref: "#/components/schemas/ProvidedCertificateAuthorityConfig"},
+		{Ref: "#/components/schemas/BuiltinCertificateAuthorityConfig"},
+	},
+	"LoggingBackend": {
+		{Ref: "#/components/schemas/FileLoggingBackendConfig"},
+		{Ref: "#/components/schemas/TcpLoggingBackendConfig"},
+	},
+	"TracingBackend": {
+		{Ref: "#/components/schemas/DatadogTracingBackendConfig"},
+		{Ref: "#/components/schemas/ZipkinTracingBackendConfig"},
+	},
+	"MetricsBackend": {
+		{Ref: "#/components/schemas/PrometheusMetricsBackendConfig"},
+	},
+}
+
+func typeMapperFactory(self jsonschema.Reflector) func(r reflect.Type) *jsonschema.Schema {
+	f := func(r reflect.Type) *jsonschema.Schema {
+		schema, done := confMapper(r, self)
+		if done {
+			return schema
+		}
+
+		return valueMapper(r)
+	}
+
+	self.Mapper = valueMapper
+
+	return f
+}
+
+func valueMapper(r reflect.Type) *jsonschema.Schema {
 	switch r {
 	case reflect.TypeOf(wrapperspb.DoubleValue{}), reflect.TypeOf(wrapperspb.FloatValue{}):
 		return &jsonschema.Schema{
@@ -634,4 +669,19 @@ func typeMapper(r reflect.Type) *jsonschema.Schema {
 	default:
 		return nil
 	}
+}
+
+func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, bool) {
+	backendConf := backendToOneOfs[r.Name()]
+	if backendConf != nil {
+		schema := self.ReflectFromType(r)
+		schema.ID = ""
+		schema.Version = ""
+		schema.Properties.Set("conf", &jsonschema.Schema{
+			Type:  "object",
+			OneOf: backendConf,
+		})
+		return schema, true
+	}
+	return nil, false
 }

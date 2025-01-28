@@ -1,6 +1,3 @@
-openapi: 3.0.3
-info:
-  x-ref-schema-name: "DatadogTracingBackendConfig"
 components:
   schemas:
     DatadogTracingBackendConfig:
@@ -20,3 +17,6 @@ components:
             `backend_OUTBOUND_db2` in Datadog. Default: false
           type: boolean
       type: object
+info:
+  x-ref-schema-name: DatadogTracingBackendConfig
+openapi: 3.0.3

@@ -1,6 +1,3 @@
-openapi: 3.0.3
-info:
-  x-ref-schema-name: "PrometheusMetricsBackendConfig"
 components:
   schemas:
     PrometheusMetricsBackendConfig:
@@ -86,3 +83,6 @@ components:
               - type: integer
           type: object
       type: object
+info:
+  x-ref-schema-name: PrometheusMetricsBackendConfig
+openapi: 3.0.3

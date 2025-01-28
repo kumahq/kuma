@@ -11947,6 +11947,17 @@ components:
     MeshTrafficPermissionDeleteSuccessResponse:
       type: object
       properties: {}
+    BuiltinCertificateAuthorityConfig:
+      properties:
+        caCert:
+          properties:
+            RSAbits:
+              format: uint32
+              type: integer
+            expiration:
+              type: string
+          type: object
+      type: object
     DatadogTracingBackendConfig:
       properties:
         address:
@@ -12625,6 +12636,23 @@ components:
               oneOf:
                 - type: string
                 - type: integer
+          type: object
+      type: object
+    ProvidedCertificateAuthorityConfig:
+      properties:
+        cert:
+          properties:
+            Type:
+              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+          required:
+            - Type
+          type: object
+        key:
+          properties:
+            Type:
+              description: "Types that are assignable to Type:\n\n\t*DataSource_Secret\n\t*DataSource_File\n\t*DataSource_Inline\n\t*DataSource_InlineString"
+          required:
+            - Type
           type: object
       type: object
     TcpLoggingBackendConfig:
