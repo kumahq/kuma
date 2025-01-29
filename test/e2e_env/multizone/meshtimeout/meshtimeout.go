@@ -83,6 +83,7 @@ spec:
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -251,6 +252,48 @@ spec:
 		Eventually(func(g Gomega) {
 			response, err := framework_client.CollectFailure(
 				multizone.KubeZone1, "test-client", "http://test-server.mzsvc.mesh.local:80",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "4000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	FIt("should apply MeshTimeout policy on MeshService from other zone", func() {
+		Eventually(func(g Gomega) {
+			start := time.Now()
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+				framework_client.WithHeader("x-set-response-delay-ms", "4000"),
+				framework_client.WithMaxTime(10),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(time.Since(start)).To(BeNumerically(">", time.Second*4))
+		}, "30s", "1s").Should(Succeed())
+
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshTimeout
+name: mesh-timeout-ms-kuma-2
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 2s
+        http:
+          requestTimeout: 2s
+          streamIdleTimeout: 2s
+`, mesh))(multizone.Global)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			response, err := framework_client.CollectFailure(
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 				framework_client.WithHeader("x-set-response-delay-ms", "4000"),
 				framework_client.WithMaxTime(10),
