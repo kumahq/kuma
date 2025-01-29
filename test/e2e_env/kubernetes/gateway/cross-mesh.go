@@ -138,7 +138,7 @@ func CrossMeshGatewayOnKubernetes() {
 				kubernetes.Cluster,
 				gatewayAddr,
 				gatewayClientOutsideMesh,
-			), "1m", "1s").Should(Succeed())
+			), "1m", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 
 		It("HTTP requests to a non-crossMesh gateway should still be proxied", func() {
