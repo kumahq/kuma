@@ -9,6 +9,7 @@ import (
 
 // MeshAccessLog defines access log policies between different data plane
 // proxies entities.
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

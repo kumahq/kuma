@@ -93,7 +93,6 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 			continue
 		}
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
-		log.Info("SELECTING", "conf", conf, "rules", rules, "lk", listenerKey)
 		if err := configureInbound(&conf, dataplane, listener, backends, path); err != nil {
 			return err
 		}
