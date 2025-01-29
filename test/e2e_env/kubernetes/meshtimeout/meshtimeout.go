@@ -111,10 +111,8 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
@@ -149,12 +147,8 @@ metadata:
   labels:
     kuma.io/mesh: %s
 spec:
-  targetRef:
-    kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
@@ -201,10 +195,8 @@ spec:
     labels:
       app: test-server
     sectionName: secondary
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         idleTimeout: 20s
         http:
           requestTimeout: 2s
