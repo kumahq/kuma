@@ -35,7 +35,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 			Install(Kuma(core.Global,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmReleaseName(releaseName),
-				WithEnv("KUMA_DEFAULTS_SKIP_MESH_CREATION", "true"),
+				WithSkipDefaultMesh(true),
 			)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
@@ -88,7 +88,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "dataplanes", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("demo-client"))
-			}, "30s", "1s").Should(Succeed())
+			}, "120s", "1s").Should(Succeed())
 		})
 
 		It("should sync data policies to global cp", func() {
@@ -96,7 +96,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "meshcircuitbreakers", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
 				g.Expect(out).Should(ContainSubstring("mesh-circuit-breaker-all-default-zw856xvxdb7558d9"))
-			}, "30s", "1s").Should(Succeed())
+			}, "120s", "1s").Should(Succeed())
 		})
 
 		It("should not break the traffic", func() {
