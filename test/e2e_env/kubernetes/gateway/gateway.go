@@ -730,7 +730,7 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s"). MustPassRepeatedly(5).Should(Succeed())
+			}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		})
 	})
 
