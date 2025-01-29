@@ -552,6 +552,8 @@ func WithDockerContainerName(name string) AppDeploymentOption {
 	})
 }
 
+type NamespaceDeleteHookFunc func(c Cluster, namespace string) error
+
 type Deployment interface {
 	Name() string
 	Deploy(cluster Cluster) error
@@ -583,7 +585,7 @@ type Cluster interface {
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
-	DeleteNamespace(namespace string) error
+	DeleteNamespace(namespace string, fns ...NamespaceDeleteHookFunc) error
 	DeployApp(fs ...AppDeploymentOption) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 
