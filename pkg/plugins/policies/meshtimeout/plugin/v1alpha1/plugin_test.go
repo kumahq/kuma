@@ -18,6 +18,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -245,6 +246,23 @@ var _ = Describe("MeshTimeout", func() {
 						},
 					},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: {{
+						Conf: []interface{}{api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
+						}},
+					}},
+				},
 			},
 			expectedClusters:  []string{"basic_inbound_cluster.golden.yaml"},
 			expectedListeners: []string{"basic_inbound_listener.golden.yaml"},
@@ -390,6 +408,23 @@ var _ = Describe("MeshTimeout", func() {
 							},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{
+						Address: "127.0.0.1",
+						Port:    80,
+					}: {{
+						Conf: []interface{}{api.Conf{
+							ConnectionTimeout: test.ParseDuration("10s"),
+							IdleTimeout:       test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("5s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+							},
+						}},
+					}},
 				},
 			},
 			expectedClusters:  []string{"modified_inbound_cluster.golden.yaml", "default_outbound_cluster.golden.yaml"},
