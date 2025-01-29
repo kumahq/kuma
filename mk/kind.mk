@@ -65,7 +65,7 @@ kind/wait:
 
 .PHONY: kind/stop
 kind/stop: kind/cleanup-docker-credentials
-	@$(KIND) delete cluster --name $(KIND_CLUSTER_NAME)
+	@$(KIND) delete cluster --kubeconfig $(KIND_KUBECONFIG) --name $(KIND_CLUSTER_NAME)
 	@rm -f $(KUBECONFIG_DIR)/$(KIND_KUBECONFIG)
 
 .PHONY: kind/stop/all
