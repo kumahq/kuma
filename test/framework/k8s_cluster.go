@@ -3,12 +3,14 @@ package framework
 import (
 	"bytes"
 	"context"
+	std_errors "errors"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -197,7 +199,12 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 		})
 }
 
-func (c *K8sCluster) WaitNamespaceDelete(namespace string) error {
+func WaitNamespaceDelete(cluster Cluster, namespace string) error {
+	c, ok := cluster.(*K8sCluster)
+	if !ok {
+		return errors.New("cluster is not a K8sCluster")
+	}
+
 	_, err := retry.DoWithRetryE(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		c.defaultRetries,
@@ -995,11 +1002,9 @@ func (c *K8sCluster) deleteKumaViaKumactl() error {
 		return err
 	}
 
-	_ = k8s.KubectlDeleteFromStringE(c.t,
-		c.GetKubectlOptions(),
-		yaml)
+	_ = k8s.KubectlDeleteFromStringE(c.t, c.GetKubectlOptions(), yaml)
 
-	return c.WaitNamespaceDelete(Config.KumaNamespace)
+	return WaitNamespaceDelete(c, Config.KumaNamespace)
 }
 
 func (c *K8sCluster) DeleteKuma() error {
@@ -1070,15 +1075,41 @@ func (c *K8sCluster) CreateNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) DeleteNamespace(namespace string) error {
-	if err := c.TriggerDeleteNamespace(namespace); err != nil {
-		return err
-	}
+func DeleteAllResources(kinds string, flags ...string) NamespaceDeleteHookFunc {
+	return func(c Cluster, namespace string) error {
+		baseArgs := []string{"delete", "--all", kinds}
 
-	return c.WaitNamespaceDelete(namespace)
+		return k8s.RunKubectlE(
+			c.GetTesting(),
+			c.GetKubectlOptions(namespace),
+			slices.Concat(baseArgs, flags)...,
+		)
+	}
 }
 
-func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
+// DeleteNamespace deletes a namespace and waits for it to be fully removed. It uses the
+// default hook that force deletes services and pods for faster deletion and appends a wait
+// hook to ensure the namespace is gone before returning.
+func (c *K8sCluster) DeleteNamespace(namespace string, hooks ...NamespaceDeleteHookFunc) error {
+	return c.TriggerDeleteNamespace(namespace, append(hooks, WaitNamespaceDelete)...)
+}
+
+// TriggerDeleteNamespace deletes a namespace with a default hook that force deletes all
+// services and pods, making the namespace removal significantly faster. Additional custom
+// hooks can be provided to run after deletion.
+func (c *K8sCluster) TriggerDeleteNamespace(namespace string, hooks ...NamespaceDeleteHookFunc) error {
+	baseHooks := []NamespaceDeleteHookFunc{
+		DeleteAllResources("services,pods", "--grace-period=0", "--force"),
+	}
+
+	return c.TriggerDeleteNamespaceCustomHooks(namespace, slices.Concat(baseHooks, hooks)...)
+}
+
+// TriggerDeleteNamespaceCustomHooks deletes a namespace without the default hook that force
+// deletes all services and pods. This means the namespace deletion might take longer compared
+// to TriggerDeleteNamespace, which removes resources aggressively to speed up the process.
+// Custom hooks can be provided to run additional actions after deletion.
+func (c *K8sCluster) TriggerDeleteNamespaceCustomHooks(namespace string, hooks ...NamespaceDeleteHookFunc) error {
 	if err := k8s.DeleteNamespaceE(c.GetTesting(), c.GetKubectlOptions(), namespace); err != nil {
 		if k8s_errors.IsNotFound(err) {
 			return nil
@@ -1086,9 +1117,12 @@ func (c *K8sCluster) TriggerDeleteNamespace(namespace string) error {
 		return err
 	}
 
-	// speed up namespace termination by terminating pods without grace period.
-	// Namespace is then deleted in ~6s instead of ~43s.
-	return k8s.RunKubectlE(c.GetTesting(), c.GetKubectlOptions(namespace), "delete", "pods", "--all", "--grace-period=0")
+	var errs []error
+	for _, fn := range hooks {
+		errs = append(errs, fn(c, namespace))
+	}
+
+	return std_errors.Join(errs...)
 }
 
 func (c *K8sCluster) DeleteMesh(mesh string) error {

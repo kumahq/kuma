@@ -8,8 +8,16 @@ import (
 )
 
 type Rule struct {
-	Conf   interface{}     `json:"conf"`
+	Conf   []interface{}   `json:"conf"`
 	Origin []common.Origin `json:"origin"`
+}
+
+func MatchesAllIncomingTraffic[T any](rules []*Rule) T {
+	var result T
+	if len(rules) > 0 && len(rules[0].Conf) > 0 {
+		result = rules[0].Conf[0].(T)
+	}
+	return result
 }
 
 type RuleEntry interface {
