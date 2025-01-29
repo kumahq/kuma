@@ -68,7 +68,14 @@ kind/cluster/wait:
 		fi; \
 	done
 
+<<<<<<< HEAD
 KIND_CLUSTER_START_RETRIES ?= 3
+=======
+.PHONY: kind/stop
+kind/stop: kind/cleanup-docker-credentials
+	@$(KIND) delete cluster --kubeconfig $(KIND_KUBECONFIG) --name $(KIND_CLUSTER_NAME)
+	@rm -f $(KUBECONFIG_DIR)/$(KIND_KUBECONFIG)
+>>>>>>> d5315dd1b2 (test(e2e): provide kubeconfig on kind cluster removal (#12695))
 
 .PHONY: kind/cluster/start/with-retry
 kind/cluster/start/with-retry:
