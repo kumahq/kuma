@@ -1,5 +1,24 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:3000/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "[%START_TIME%]\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
@@ -64,11 +83,11 @@
           }
         }
       },
-      "localhost:8080": {
-        "altStatName": "localhost_8080",
+      "localhost:3000": {
+        "altStatName": "localhost_3000",
         "connectTimeout": "10s",
         "loadAssignment": {
-          "clusterName": "localhost:8080",
+          "clusterName": "localhost:3000",
           "endpoints": [
             {
               "lbEndpoints": [
@@ -77,7 +96,7 @@
                     "address": {
                       "socketAddress": {
                         "address": "IP_REDACTED",
-                        "portValue": 8080
+                        "portValue": 3000
                       }
                     }
                   }
@@ -86,19 +105,8 @@
             }
           ]
         },
-        "name": "localhost:8080",
+        "name": "localhost:3000",
         "type": "STATIC",
-        "typedExtensionProtocolOptions": {
-          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
-            "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
-            "commonHttpProtocolOptions": {
-              "idleTimeout": "7200s"
-            },
-            "explicitHttpConfig": {
-              "httpProtocolOptions": {}
-            }
-          }
-        },
         "upstreamBindConfig": {
           "sourceAddress": {
             "address": "IP_REDACTED",
@@ -200,11 +208,11 @@
       }
     },
     "type.googleapis.com/envoy.config.listener.v3.Listener": {
-      "inbound:IP_REDACTED:80": {
+      "inbound:IP_REDACTED:3000": {
         "address": {
           "socketAddress": {
             "address": "IP_REDACTED",
-            "portValue": 80
+            "portValue": 3000
           }
         },
         "bindToPort": false,
@@ -213,52 +221,26 @@
           {
             "filters": [
               {
-                "name": "envoy.filters.network.http_connection_manager",
+                "name": "envoy.filters.network.tcp_proxy",
                 "typedConfig": {
-                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
-                  "commonHttpProtocolOptions": {
-                    "idleTimeout": "7200s"
-                  },
-                  "forwardClientCertDetails": "SANITIZE_SET",
-                  "httpFilters": [
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
+                  "accessLog": [
                     {
-                      "name": "envoy.filters.http.router",
+                      "name": "envoy.access_loggers.file",
                       "typedConfig": {
-                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "[%START_TIME%]\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
                       }
                     }
                   ],
-                  "routeConfig": {
-                    "name": "inbound:test-server",
-                    "requestHeadersToRemove": [
-                      "x-kuma-tags"
-                    ],
-                    "validateClusters": false,
-                    "virtualHosts": [
-                      {
-                        "domains": [
-                          "*"
-                        ],
-                        "name": "test-server",
-                        "routes": [
-                          {
-                            "match": {
-                              "prefix": "/"
-                            },
-                            "route": {
-                              "cluster": "localhost:8080",
-                              "timeout": "0s"
-                            }
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  "setCurrentClientCertDetails": {
-                    "uri": true
-                  },
-                  "statPrefix": "localhost_8080",
-                  "streamIdleTimeout": "3600s"
+                  "cluster": "localhost:3000",
+                  "idleTimeout": "7200s",
+                  "statPrefix": "localhost_3000"
                 }
               }
             ]
@@ -267,16 +249,13 @@
         "metadata": {
           "filterMetadata": {
             "io.kuma.tags": {
-              "instance": "1",
-              "kuma.io/protocol": "http",
-              "kuma.io/service": "test-server",
+              "kuma.io/service": "demo-client",
               "kuma.io/zone": "kuma-3",
-              "team": "server-owners",
-              "version": "v1"
+              "team": "client-owners"
             }
           }
         },
-        "name": "inbound:IP_REDACTED:80",
+        "name": "inbound:IP_REDACTED:3000",
         "trafficDirection": "INBOUND"
       },
       "inbound:passthrough:ipv4": {

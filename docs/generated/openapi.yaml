@@ -3471,6 +3471,179 @@ components:
                   - targetRef
                 type: object
               type: array
+            rules:
+              description: >-
+                Rules defines inbound timeout configurations. Currently limited
+                to exactly one rule containing
+
+                default timeouts that apply to all inbound traffic, as L7
+                matching is not yet implemented.
+              items:
+                properties:
+                  default:
+                    description: Default contains configuration of the inbound timeouts
+                    properties:
+                      backends:
+                        items:
+                          properties:
+                            file:
+                              description: >-
+                                FileBackend defines configuration for file based
+                                access logs
+                              properties:
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                path:
+                                  description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - path
+                              type: object
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
+                              properties:
+                                attributes:
+                                  description: >-
+                                    Attributes can contain placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    type: object
+                                  type: array
+                                body:
+                                  description: >-
+                                    Body is a raw string or an OTLP any value as
+                                    described at
+
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+
+                                    It can contain placeholders available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
+                                  x-kubernetes-preserve-unknown-fields: true
+                                endpoint:
+                                  description: >-
+                                    Endpoint of OpenTelemetry collector. An
+                                    empty port defaults to 4317.
+                                  example: otel-collector:4317
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - endpoint
+                              type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
+                                  type: string
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
+                          type: object
+                        type: array
+                    type: object
+                type: object
+              type: array
             targetRef:
               description: >-
                 TargetRef is a reference to the resource the policy takes an

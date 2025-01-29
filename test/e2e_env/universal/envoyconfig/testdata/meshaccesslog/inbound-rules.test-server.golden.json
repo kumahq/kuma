@@ -1,5 +1,24 @@
 {
-  "diff": [],
+  "diff": [
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/inbound:IP_REDACTED:80/filterChains/0/filters/0/typedConfig/accessLog",
+      "value": [
+        {
+          "name": "envoy.access_loggers.file",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+            "logFormat": {
+              "textFormatSource": {
+                "inlineString": "[%START_TIME%]\n"
+              }
+            },
+            "path": "/dev/stdout"
+          }
+        }
+      ]
+    }
+  ],
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
@@ -216,6 +235,20 @@
                 "name": "envoy.filters.network.http_connection_manager",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "accessLog": [
+                    {
+                      "name": "envoy.access_loggers.file",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog",
+                        "logFormat": {
+                          "textFormatSource": {
+                            "inlineString": "[%START_TIME%]\n"
+                          }
+                        },
+                        "path": "/dev/stdout"
+                      }
+                    }
+                  ],
                   "commonHttpProtocolOptions": {
                     "idleTimeout": "7200s"
                   },

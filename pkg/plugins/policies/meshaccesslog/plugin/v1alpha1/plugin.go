@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -13,6 +14,7 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -76,6 +78,8 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	return nil
 }
 
+var log = core.Log.WithName("kuma-cp")
+
 func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules.InboundListener]*envoy_listener.Listener, dataplane *core_mesh.DataplaneResource, backends *plugin_xds.EndpointAccumulator, path string) error {
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
@@ -88,8 +92,9 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 		if !ok {
 			continue
 		}
-
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends, path); err != nil {
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
+		log.Info("SELECTING", "conf", conf, "rules", rules, "lk", listenerKey)
+		if err := configureInbound(&conf, dataplane, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -222,7 +227,8 @@ func applyToGateway(
 		}
 
 		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
-			if err := configureInbound(fromListenerRules, proxy.Dataplane, listener, backends, path); err != nil {
+			conf := core_rules.ComputeConf[api.Conf](fromListenerRules, subsetutils.MeshElement())
+			if err := configureInbound(conf, proxy.Dataplane, listener, backends, path); err != nil {
 				return err
 			}
 		}
@@ -232,16 +238,13 @@ func applyToGateway(
 }
 
 func configureInbound(
-	fromRules core_rules.Rules,
+	conf *api.Conf,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
 	accessLogSocketPath string,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
-
-	// `from` section of MeshAccessLog only allows Mesh targetRef
-	conf := core_rules.ComputeConf[api.Conf](fromRules, subsetutils.MeshElement())
 	if conf == nil {
 		return nil
 	}

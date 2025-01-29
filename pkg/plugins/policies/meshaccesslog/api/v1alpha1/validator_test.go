@@ -122,7 +122,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`,
+    message: at least one of 'from', 'to' or 'rules' has to be defined`,
 			}),
 			Entry("empty 'path'", testCase{
 				inputYaml: `
@@ -262,6 +262,32 @@ from:
 violations:
 - field: spec.from[0].default.backends
   message: 'must be defined'`,
+			}),
+			Entry("'default' not defined in from", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+rules:
+  - default:
+      backends:
+        - type: Tcp
+          tcp:
+            format:
+              type: Json
+              json:
+                - key: "start_time"
+                  value: "%START_TIME%"
+            address: google.com
+`,
+				expected: `
+violations:
+- field: spec
+  message: fields 'to' and 'from' must be empty when 'rules' is defined
+- field: spec.from[0].default.backends
+  message: must be defined`,
 			}),
 			Entry("'address' not valid", testCase{
 				inputYaml: `
