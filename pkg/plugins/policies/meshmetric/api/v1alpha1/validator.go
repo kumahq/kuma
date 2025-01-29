@@ -38,7 +38,6 @@ func (r *MeshMetricResource) validateTop(targetRef *common_api.TargetRef) valida
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
-			Descriptor:                 r.Descriptor(),
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -49,7 +48,6 @@ func (r *MeshMetricResource) validateTop(targetRef *common_api.TargetRef) valida
 				common_api.Dataplane,
 				common_api.MeshServiceSubset,
 			},
-			Descriptor: r.Descriptor(),
 		})
 	}
 }

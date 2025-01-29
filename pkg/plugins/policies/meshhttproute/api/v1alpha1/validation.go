@@ -41,7 +41,6 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
-			Descriptor:                 r.Descriptor(),
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -52,7 +51,6 @@ func (r *MeshHTTPRouteResource) validateTop(targetRef *common_api.TargetRef) val
 				common_api.MeshServiceSubset,
 				common_api.Dataplane,
 			},
-			Descriptor: r.Descriptor(),
 		})
 	}
 }

@@ -13,7 +13,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -65,7 +64,7 @@ type ValidateTargetRefOpts struct {
 	//   includes a forward slash, but it's allowed as an exception to
 	//   handle unresolved references.
 	AllowedInvalidNames []string
-	Descriptor          core_model.ResourceTypeDescriptor
+	IsInboundPolicy     bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -385,7 +384,7 @@ func ValidateTargetRef(
 		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
 		}
-		if !opts.Descriptor.HasFromTargetRef && !opts.Descriptor.HasRulesTargetRef && ref.SectionName != "" {
+		if !opts.IsInboundPolicy && ref.SectionName != "" {
 			err.AddViolation("sectionName", "can only be used with inbound policies")
 		}
 	case common_api.MeshSubset:

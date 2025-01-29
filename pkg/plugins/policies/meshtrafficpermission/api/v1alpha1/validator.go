@@ -9,7 +9,7 @@ import (
 func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, len(r.Spec.From) > 0))
 	if len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
@@ -17,7 +17,7 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -29,7 +29,7 @@ func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.Target
 			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
-		Descriptor: r.Descriptor(),
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
 }

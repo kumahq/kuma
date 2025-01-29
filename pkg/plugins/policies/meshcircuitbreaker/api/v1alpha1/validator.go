@@ -12,7 +12,7 @@ import (
 func (r *MeshCircuitBreakerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, len(r.Spec.From) > 0))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -21,7 +21,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -35,7 +35,7 @@ func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef
 			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
-		Descriptor:                 r.Descriptor(),
+		IsInboundPolicy:            isInboundPolicy,
 	})
 	return targetRefErr
 }

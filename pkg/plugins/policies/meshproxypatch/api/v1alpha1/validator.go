@@ -47,7 +47,6 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
-			Descriptor:                 r.Descriptor(),
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -58,7 +57,6 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
-			Descriptor: r.Descriptor(),
 		})
 	}
 }

@@ -13,13 +13,13 @@ import (
 func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, len(r.Spec.From) > 0))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
 	return verr.OrNil()
 }
 
-func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -29,7 +29,7 @@ func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef) validator
 			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
-		Descriptor: r.Descriptor(),
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
 }

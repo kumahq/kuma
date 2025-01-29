@@ -39,7 +39,6 @@ func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) v
 			common_api.MeshSubset,
 			common_api.Dataplane,
 		},
-		Descriptor: r.Descriptor(),
 	})
 	return targetRefErr
 }
