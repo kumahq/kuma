@@ -95,7 +95,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 		conf := getConf(fromRules.Rules[listenerKey], subsetutils.MeshElement())
 		if conf == nil {
-			continue
+			conf = &plugin_xds.DefaultTimeoutConf
 		}
 		configurer := plugin_xds.ListenerConfigurer{
 			Conf:     *conf,
