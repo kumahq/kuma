@@ -258,7 +258,7 @@ func (c *UniversalCluster) CreateNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) DeleteNamespace(namespace string) error {
+func (c *UniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc) error {
 	return nil
 }
 

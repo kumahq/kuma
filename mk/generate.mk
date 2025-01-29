@@ -1,5 +1,5 @@
 ENVOY_IMPORTS := ./pkg/xds/envoy/imports.go
-RESOURCE_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/resource-gen
+RESOURCE_GEN := ./build/tools-${GOOS}-${GOARCH}/resource-gen
 POLICY_GEN := $(KUMA_DIR)/build/tools-${GOOS}-${GOARCH}/policy-gen/generator
 
 PROTO_DIRS ?= ./pkg/config ./api ./pkg/plugins ./test/server/grpc/api
@@ -35,7 +35,7 @@ $(POLICY_GEN): $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
 	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/policy-gen/generator ./tools/policy-gen/generator/main.go
 
 $(RESOURCE_GEN): $(wildcard $(KUMA_DIR)/tools/resource-gen/**/*)  $(wildcard $(KUMA_DIR)/tools/policy-gen/**/*)
-	cd $(KUMA_DIR) && go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
+	go build -o ./build/tools-${GOOS}-${GOARCH}/resource-gen ./tools/resource-gen/main.go
 
 .PHONY: resources/type
 resources/type: $(RESOURCE_GEN)
@@ -109,7 +109,7 @@ generate/oas: $(GENERATE_OAS_PREREQUISITES) $(RESOURCE_GEN)
 		DEST=$${endpoint#"api/openapi/specs"}; \
 		PATH=$(CI_TOOLS_BIN_DIR):$$PATH oapi-codegen -config api/openapi/openapi.cfg.yaml -o api/openapi/types/$$(dirname $${DEST}})/zz_generated.$$(basename $${DEST}).go $${endpoint}.yaml; \
 	done
-	$(RESOURCE_GEN) -package mesh -generator openapi -rootDir $(KUMA_DIR)
+	$(RESOURCE_GEN) -package mesh -generator openapi -readDir $(KUMA_DIR) -writeDir .
 
 .PHONY: generate/oas-for-ts
 generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate OpenAPI spec from `/api/openapi/specs` ready for typescript type generation

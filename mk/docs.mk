@@ -1,6 +1,7 @@
 DOCS_PROTOS ?= api/mesh/v1alpha1/*.proto
 DOCS_CP_CONFIG ?= pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 DOCS_EXTRA_TARGETS ?=
+DOCS_OPENAPI_PREREQUISITES ?=
 
 .PHONY: clean/docs
 clean/docs:
@@ -32,7 +33,7 @@ OAPI_TMP_DIR ?= $(BUILD_DIR)/oapitmp
 API_DIRS="$(TOP)/api/openapi/specs:base"
 
 .PHONY: docs/generated/openapi.yaml
-docs/generated/openapi.yaml:
+docs/generated/openapi.yaml: $(DOCS_OPENAPI_PREREQUISITES)
 	rm -rf $(OAPI_TMP_DIR)
 	mkdir -p $(dir $@)
 	mkdir -p $(OAPI_TMP_DIR)/policies

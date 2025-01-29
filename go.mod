@@ -9,7 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20240527124623-de85860b7d21
-	github.com/cilium/ebpf v0.17.1
+	github.com/cilium/ebpf v0.17.2
 	github.com/containernetworking/cni v1.2.3
 	github.com/containernetworking/plugins v1.6.2
 	github.com/emicklei/go-restful/v3 v3.12.1
@@ -18,8 +18,8 @@ require (
 	github.com/envoyproxy/go-control-plane/envoy v1.32.3
 	github.com/envoyproxy/go-control-plane/ratelimit v0.1.0 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1
-	github.com/evanphx/json-patch/v5 v5.9.0
-	github.com/exaring/otelpgx v0.8.0
+	github.com/evanphx/json-patch/v5 v5.9.11
+	github.com/exaring/otelpgx v0.9.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
@@ -32,7 +32,7 @@ require (
 	github.com/gruntwork-io/terratest v0.48.1
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.7.2
-	github.com/josephburnett/jd/v2 v2.0.0-20230813234251-7b2e87c80934
+	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9 // indirect
@@ -248,6 +248,7 @@ require (
 	github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
+	github.com/yudai/golcs v0.0.0-20170316035057-ecda9a501e82 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.54.0 // indirect
@@ -256,7 +257,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	golang.org/x/crypto v0.32.0 // indirect
-	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
+	golang.org/x/exp v0.0.0-20250128182459-e0ece0dbea4c
 	golang.org/x/mod v0.22.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
