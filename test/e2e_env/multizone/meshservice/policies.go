@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshhealthcheck_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhealthcheck/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -96,6 +97,7 @@ spec:
 	E2EAfterEach(func() {
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshtcproute_api.MeshTCPRouteResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
 	})
 
@@ -299,5 +301,64 @@ spec:
 
 		// remove MeshRetry
 		Expect(DeleteMeshPolicyOrError(multizone.KubeZone1, meshretry_api.MeshRetryResourceTypeDescriptor, "mr-for-ms-in-zone-2")).To(Succeed())
+	})
+
+	It("should mark MeshService from another zone as unhealthy if it doesn't reply on health checks", func() {
+		// check that test-server is healthy
+		Eventually(func(g Gomega) {
+			_, err := client.CollectEchoResponse(
+				multizone.KubeZone1,
+				"test-client",
+				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
+				client.FromKubernetesPod(namespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		healthCheck := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshHealthCheck
+metadata:
+  name: mhc-for-ms-in-kuma-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+      default:
+        interval: 3s
+        timeout: 2s
+        unhealthyThreshold: 3
+        healthyThreshold: 1
+        failTrafficOnPanic: true
+        noTrafficInterval: 1s
+        healthyPanicThreshold: 0
+        reuseConnection: true
+        http:
+          path: /are-you-healthy
+          expectedStatuses:
+          - 500`, Config.KumaNamespace, meshName, Kuma2)
+		// update HealthCheck policy to check for another status code
+		Expect(framework.YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
+
+		// check that test-server is unhealthy
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				multizone.KubeZone1,
+				"test-client",
+				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
+				client.FromKubernetesPod(namespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }
