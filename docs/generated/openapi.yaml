@@ -3080,9 +3080,12 @@ components:
     Inbound:
       type: object
       required:
+        - name
         - tags
         - port
       properties:
+        name:
+          type: string
         tags:
           type: object
           additionalProperties:

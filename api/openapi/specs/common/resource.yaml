@@ -108,8 +108,10 @@ components:
            $ref: '#/components/schemas/Rule'
     Inbound:
       type: object
-      required: [tags, port]
+      required: [name, tags, port]
       properties:
+        name:
+          type: string
         tags:
           type: object
           additionalProperties: 
