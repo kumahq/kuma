@@ -270,7 +270,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	FIt("should apply MeshTimeout policy on MeshService from other zone", func() {
+	It("should apply MeshTimeout policy on MeshService from other zone", func() {
 		// given
 		// create a tunnel to test-client admin
 		Expect(multizone.KubeZone1.PortForwardService("test-client", k8sZoneNamespace, 9901)).To(Succeed())
@@ -309,10 +309,10 @@ spec:
 				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		// should close the connection shortly after
 		Eventually(func(g Gomega) {
 			g.Expect(idleTimeoutCxStat(tnl)).To(stats.BeGreaterThanZero())
-		}, "5s", "1s").Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
 	})
 }

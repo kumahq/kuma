@@ -6,9 +6,13 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -25,7 +29,8 @@ func MeshServiceTargeting() {
 
 	BeforeAll(func() {
 		Expect(NewClusterSetup().
-			Install(MeshWithMeshServicesUniversal(meshName, "Everywhere")).
+			Install(ResourceUniversal(samples.MeshMTLSBuilder().WithName(meshName).WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Everywhere).Build())).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
@@ -71,6 +76,16 @@ spec:
 `, Config.KumaNamespace, addressSuffix))).
 			Setup(multizone.KubeZone1)
 		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithName("test-server"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).Setup(multizone.KubeZone2)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {
@@ -79,13 +94,14 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, v1alpha1.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshhttproute_api.MeshHTTPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, meshtcproute_api.MeshTCPRouteResourceTypeDescriptor)).To(Succeed())
 		Expect(DeleteMeshResources(multizone.KubeZone1, meshName, core_mesh.ExternalServiceResourceTypeDescriptor)).To(Succeed())
 	})
 
 	E2EAfterAll(func() {
 		Expect(multizone.KubeZone1.TriggerDeleteNamespace(namespace)).To(Succeed())
+		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
@@ -224,5 +240,64 @@ spec:
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("second-test-server"))
 		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should configure MeshRetry for MeshService in another zone", func() {
+		// then
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
+				multizone.KubeZone1,
+				"test-client",
+				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
+				client.FromKubernetesPod(namespace, "test-client"),
+				client.WithHeader("x-succeed-after-n", "100"),
+				client.WithHeader("x-succeed-after-n-id", "1"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(503))
+		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		meshRetryPolicy := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshRetry
+metadata:
+  name: mr-for-ms-in-zone-2
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+    kuma.io/origin: zone
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        labels:
+          kuma.io/display-name: test-server
+          kuma.io/zone: %s
+      default:
+        http:
+          numRetries: 6
+          retryOn: ["503"]
+`, Config.KumaNamespace, meshName, Kuma2)
+		// and when a MeshRetry policy is applied
+		Expect(framework.YamlK8s(meshRetryPolicy)(multizone.KubeZone1)).To(Succeed())
+
+		// then
+		Eventually(func(g Gomega) {
+			response, err := client.CollectEchoResponse(
+				multizone.KubeZone1,
+				"test-client",
+				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
+				client.FromKubernetesPod(namespace, "test-client"),
+				client.WithHeader("x-succeed-after-n", "5"),
+				client.WithHeader("x-succeed-after-n-id", "2"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.Instance).To(HavePrefix("kube-test-server-2"))
+		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
+
+		// remove MeshRetry
+		Expect(DeleteMeshPolicyOrError(multizone.KubeZone1, meshretry_api.MeshRetryResourceTypeDescriptor, "mr-for-ms-in-zone-2")).To(Succeed())
 	})
 }
