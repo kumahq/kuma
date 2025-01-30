@@ -2,7 +2,6 @@ package envoyconfig
 
 import (
 	"encoding/json"
-
 	"os"
 	"regexp"
 	"slices"
