@@ -542,12 +542,6 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 
 	if create {
 		err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
-	} else {
-		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resource.GetMeta(), r.descriptor.Scope); verr.HasViolations() {
-			err.AddError("", verr)
-		} else if msg != "" {
-			log.Info(msg, "type", r.descriptor.Name, "mesh", resource.GetMeta().Mesh, "name", resource.GetMeta().Name)
-		}
 	}
 	return err.OrNil()
 }

@@ -15,7 +15,6 @@ var _ = Describe("Meta", func() {
 		meta           core_model.ResourceMeta
 		scope          core_model.ResourceScope
 		expected       string
-		printedWarning bool
 	}
 
 	Describe("ValidateMeta", func() {
@@ -96,65 +95,6 @@ violations:
 violations:
  - field: name
    message: value length must less or equal 253`,
-			}),
-		)
-	})
-
-	Describe("ValidateMetaBackwardsCompatible", func() {
-		DescribeTable("should pass validation",
-			func(given testCase) {
-				verr, msg := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
-				Expect(verr.Violations).To(BeEmpty())
-				if given.printedWarning {
-					Expect(msg).ToNot(BeEmpty())
-				}
-			},
-			Entry("mesh-scoped valid name and mesh", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "mesh-1", Name: "name-1"},
-				scope: core_model.ScopeMesh,
-			}),
-			Entry("global-scoped valid name", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "", Name: "name-1"},
-				scope: core_model.ScopeGlobal,
-			}),
-			Entry("global-scoped valid name with dot", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "", Name: "default.name-1"},
-				scope: core_model.ScopeGlobal,
-			}),
-			Entry("name with underscore", testCase{
-				meta:           &test_model.ResourceMeta{Mesh: "mesh-1", Name: "name-1_2"},
-				scope:          core_model.ScopeMesh,
-				printedWarning: true,
-			}),
-		)
-
-		DescribeTable("should validate fields",
-			func(given testCase) {
-				verr, warning := mesh.ValidateMetaBackwardsCompatible(given.meta, given.scope)
-				// and
-				actual, err := yaml.Marshal(verr)
-
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(actual).To(MatchYAML(given.expected))
-				Expect(warning).To(BeEmpty())
-			},
-			Entry("empty name", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "mesh-1", Name: ""},
-				scope: core_model.ScopeMesh,
-				expected: `
-violations:
- - field: name
-   message: cannot be empty`,
-			}),
-			Entry("empty mesh", testCase{
-				meta:  &test_model.ResourceMeta{Mesh: "", Name: "name-1"},
-				scope: core_model.ScopeMesh,
-				expected: `
-violations:
- - field: mesh
-   message: cannot be empty`,
 			}),
 		)
 	})

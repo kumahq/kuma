@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"io"
 	"os"
 
@@ -47,12 +46,8 @@ func readResource(cmd *cobra.Command, r *kuma_dp.DataplaneRuntime) (model.Resour
 		return nil, err
 	}
 
-	if err, msg := core_mesh.ValidateMetaBackwardsCompatible(res.GetMeta(), res.Descriptor().Scope); err.HasViolations() {
+	if err := core_mesh.ValidateMeta(res.GetMeta(), res.Descriptor().Scope); err.HasViolations() {
 		return nil, &err
-	} else if msg != "" {
-		if _, printErr := fmt.Fprintln(cmd.ErrOrStderr(), msg); printErr != nil {
-			return nil, printErr
-		}
 	}
 
 	return res, nil
