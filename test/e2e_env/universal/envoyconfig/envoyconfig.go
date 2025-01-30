@@ -13,6 +13,9 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -61,17 +64,8 @@ func EnvoyConfigTest() {
 
 	E2EAfterEach(func() {
 		// delete all meshtimeout policies
-		out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtimeouts", "--mesh", meshName, "-o", "json")
-		Expect(err).ToNot(HaveOccurred())
-		var output struct {
-			Items []struct {
-				Name string `json:"name"`
-			} `json:"items"`
-		}
-		Expect(json.Unmarshal([]byte(out), &output)).To(Succeed())
-		for _, item := range output.Items {
-			Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshtimeout", item.Name, "--mesh", meshName)).To(Succeed())
-		}
+		Expect(cleanAllPoliciesOfType(meshtimeout.MeshTimeoutResourceTypeDescriptor, meshName)).To(Succeed())
+		Expect(cleanAllPoliciesOfType(meshaccesslog.MeshAccessLogResourceTypeDescriptor, meshName)).To(Succeed())
 	})
 
 	getConfig := func(dpp string) string {
@@ -151,4 +145,27 @@ var ipRegex = regexp.MustCompile(ipv4Regex + "|" + ipv6Regex)
 
 func redactIPs(jsonStr string) string {
 	return ipRegex.ReplaceAllString(jsonStr, "IP_REDACTED")
+}
+
+func cleanAllPoliciesOfType(typeDescriptor model.ResourceTypeDescriptor, mesh string) error {
+	out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", typeDescriptor.KumactlListArg, "--mesh", mesh, "-o", "json")
+	if err != nil {
+		return err
+	}
+	var output struct {
+		Items []struct {
+			Name string `json:"name"`
+		} `json:"items"`
+	}
+	err = json.Unmarshal([]byte(out), &output)
+	if err != nil {
+		return err
+	}
+	for _, item := range output.Items {
+		err = universal.Cluster.GetKumactlOptions().RunKumactl("delete", typeDescriptor.KumactlArg, item.Name, "--mesh", mesh)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
