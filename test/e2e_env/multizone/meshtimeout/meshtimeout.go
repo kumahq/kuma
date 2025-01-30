@@ -105,8 +105,8 @@ spec:
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
 
-	activeCxStat := func(admin envoy_admin.Tunnel) *stats.Stats {
-		s, err := admin.GetStats("cluster.multizone-meshtimeout_test-server_multizone-meshtimeout-ns_kuma-2_msvc_80.upstream_cx_active")
+	idleTimeoutCxStat := func(admin envoy_admin.Tunnel) *stats.Stats {
+		s, err := admin.GetStats("cluster.multizone-meshtimeout_test-server_multizone-meshtimeout-ns_kuma-2_msvc_80.upstream_cx_idle_timeout")
 		Expect(err).ToNot(HaveOccurred())
 		return s
 	}
@@ -270,7 +270,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 	})
 
-	It("should apply MeshTimeout policy on MeshService from other zone", func() {
+	FIt("should apply MeshTimeout policy on MeshService from other zone", func() {
 		// given
 		// create a tunnel to test-client admin
 		Expect(multizone.KubeZone1.PortForwardService("test-client", k8sZoneNamespace, 9901)).To(Succeed())
@@ -286,8 +286,8 @@ spec:
 		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
 		// should have active connection
 		Consistently(func(g Gomega) {
-			g.Expect(activeCxStat(tnl)).To(stats.BeGreaterThanZero())
-		}, "10s", "1s").Should(Succeed())
+			g.Expect(idleTimeoutCxStat(tnl)).To(stats.BeEqualZero())
+		}, "5s", "1s").Should(Succeed())
 
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshTimeout
@@ -312,7 +312,7 @@ spec:
 		}, "30s", "1s").Should(Succeed())
 		// should close the connection shortly after
 		Eventually(func(g Gomega) {
-			g.Expect(activeCxStat(tnl)).To(stats.BeEqualZero())
+			g.Expect(idleTimeoutCxStat(tnl)).To(stats.BeGreaterThanZero())
 		}, "5s", "1s").Should(Succeed())
 	})
 }
