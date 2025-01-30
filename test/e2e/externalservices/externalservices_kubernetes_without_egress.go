@@ -69,11 +69,8 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		Expect(cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())
-		Expect(cluster.TriggerDeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(cluster.WaitNamespaceDelete(externalServicesNamespace)).To(Succeed())
-		Expect(cluster.WaitNamespaceDelete(TestNamespace)).To(Succeed())
-
+		Expect(cluster.DeleteNamespace(externalServicesNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

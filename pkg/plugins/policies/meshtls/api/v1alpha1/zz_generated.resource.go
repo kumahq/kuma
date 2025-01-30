@@ -154,4 +154,5 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mtls",
+	InterpretFromEntriesAsRules:  false,
 }

@@ -223,18 +223,6 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 	return util_proto.Duration(d.Duration)
 }
 
-var DefaultTimeoutConf = api.Conf{
-	ConnectionTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
-	IdleTimeout:       &kube_meta.Duration{Duration: policies_defaults.DefaultIdleTimeout},
-	Http: &api.Http{
-		RequestTimeout:        &kube_meta.Duration{Duration: policies_defaults.DefaultRequestTimeout},
-		StreamIdleTimeout:     &kube_meta.Duration{Duration: policies_defaults.DefaultGatewayStreamIdleTimeout},
-		MaxStreamDuration:     &kube_meta.Duration{Duration: policies_defaults.DefaultMaxStreamDuration},
-		MaxConnectionDuration: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
-		RequestHeadersTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultRequestHeadersTimeout},
-	},
-}
-
 type ListenerConfigurer struct {
 	Conf     api.Conf
 	Protocol core_mesh.Protocol

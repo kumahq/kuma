@@ -1,0 +1,8 @@
+Patches: null
+allowed: true
+status:
+  code: 200
+  metadata: {}
+uid: "12345"
+warnings:
+- MeshSubset value for 'targetRef.kind' is deprecated, use Dataplane with labels instead

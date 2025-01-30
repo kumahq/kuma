@@ -16,6 +16,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -44,7 +45,11 @@ func (i InboundListener) String() string {
 }
 
 type FromRules struct {
+	// Rules is a map of InboundListener to a list of rules built by using 'spec.from' field.
+	// Deprecated: use InboundRules instead
 	Rules map[InboundListener]Rules
+	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
+	InboundRules map[InboundListener][]*inbound.Rule
 }
 
 type ToRules struct {
@@ -182,7 +187,9 @@ func BuildFromRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 ) (FromRules, error) {
 	rulesByInbound := map[InboundListener]Rules{}
-	for inbound, policies := range matchedPoliciesByInbound {
+	rulesByInboundNew := map[InboundListener][]*inbound.Rule{}
+
+	for inb, policies := range matchedPoliciesByInbound {
 		fromList := []PolicyItemWithMeta{}
 		for _, p := range policies.GetItems() {
 			policyWithFrom, ok := p.GetSpec().(core_model.PolicyWithFromList)
@@ -195,10 +202,17 @@ func BuildFromRules(
 		if err != nil {
 			return FromRules{}, err
 		}
-		rulesByInbound[inbound] = rules
+		rulesByInbound[inb] = rules
+
+		rulesNew, err := inbound.BuildRules(policies)
+		if err != nil {
+			return FromRules{}, err
+		}
+		rulesByInboundNew[inb] = rulesNew
 	}
 	return FromRules{
-		Rules: rulesByInbound,
+		Rules:        rulesByInbound,
+		InboundRules: rulesByInboundNew,
 	}, nil
 }
 

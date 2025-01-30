@@ -1,0 +1,12 @@
+# it should return empty list when policies don't have neither 'rules' nor 'from'
+type: MeshTimeout
+name: matched-for-rules-mt-aaaaaa
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+         kind: Mesh
+      default:
+        idleTimeout: 10s
+        http:
+          requestTimeout: 12s

@@ -27,6 +27,8 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshAccessLogItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
       operationId: putMeshAccessLog
@@ -85,6 +87,10 @@ paths:
           description: name of the MeshAccessLog
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshAccessLogDeleteSuccessResponse'
           description: Successful response
         '404':
           $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
@@ -119,6 +125,9 @@ components:
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
+    MeshAccessLogDeleteSuccessResponse:
+      type: object
+      properties: {}
 
   responses:
     MeshAccessLogItem:

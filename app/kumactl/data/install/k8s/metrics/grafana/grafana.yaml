@@ -265,7 +265,7 @@ spec:
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:8.5.2"
+          image: "grafana/grafana:11.4.0"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -282,7 +282,6 @@ spec:
               readOnly: true
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins
-              readOnly: true
           ports:
             - name: service
               containerPort: 80

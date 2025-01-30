@@ -1,0 +1,30 @@
+type: MeshAccessLog
+name: mal-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        backends:
+          - type: File
+            file:
+              path: "/dev/stdout"
+              format:
+                type: Json
+                json:
+                  - key: Source
+                    value: '%%KUMA_SOURCE_SERVICE%%'
+                  - key: Destination
+                    value: '%%KUMA_DESTINATION_SERVICE%%'
+                  - key: Start
+                    value: '%%START_TIME(%%s)%%'
+                  - key: HeaderCamel
+                    value: '%%REQ(X-Test)%%'
+                  - key: HeaderLower
+                    value: '%%REQ(x-test)%%'
+                  - key: HeaderCrazy
+                    value: '%%REQ(X-TeSt)%%'

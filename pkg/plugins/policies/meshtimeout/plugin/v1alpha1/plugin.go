@@ -13,6 +13,7 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -93,12 +94,10 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 		}
 
 		protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
-		conf := getConf(fromRules.Rules[listenerKey], subsetutils.MeshElement())
-		if conf == nil {
-			continue
-		}
+
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
 		configurer := plugin_xds.ListenerConfigurer{
-			Conf:     *conf,
+			Conf:     conf,
 			Protocol: protocol,
 		}
 
@@ -111,7 +110,7 @@ func applyToInbounds(fromRules core_rules.FromRules, inboundListeners map[core_r
 			continue
 		}
 
-		clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(*conf, protocol)
+		clusterConfigurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
 		if err := clusterConfigurer.Configure(cluster); err != nil {
 			return err
 		}
@@ -286,7 +285,7 @@ func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules
 	for uri, resType := range rs.IndexByOrigin() {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {
-			conf = &outbound.ResourceRule{Conf: []interface{}{plugin_xds.DefaultTimeoutConf}}
+			conf = &outbound.ResourceRule{Conf: []interface{}{api.Conf{}}}
 		}
 
 		for typ, resources := range resType {

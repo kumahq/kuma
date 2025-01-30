@@ -8,6 +8,7 @@ import (
 )
 
 // MeshTimeout allows users to configure timeouts for communication between services in mesh
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshTimeout struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
