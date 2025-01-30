@@ -2,7 +2,6 @@ package retry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -36,24 +35,25 @@ func Policy() {
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on HTTP connection failure", func() {
-		echoServerDataplane := fmt.Sprintf(`
-type: Dataplane
+		fiPolicy := fmt.Sprintf(`
+type: FaultInjection
 mesh: "%s"
-name: fake-echo-server
-networking:
-  address:  241.0.0.1
-  inbound:
-  - port: 7777
-    servicePort: 7777
-    tags:
-      kuma.io/service: test-server
-      kuma.io/protocol: http
-`, meshName)
+name: fi-retry
+sources:
+   - match:
+       kuma.io/service: demo-client
+destinations:
+   - match:
+       kuma.io/service: test-server
+       kuma.io/protocol: http
+conf:
+   abort:
+     httpStatus: 500
+     percentage: 50`, meshName)
 		retryPolicy := fmt.Sprintf(`
 type: Retry
 mesh: "%s"
@@ -75,32 +75,22 @@ conf:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
-		Consistently(func(g Gomega) {
-			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
-			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}).Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 
-		By("Adding a faulty dataplane")
-		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		By("Adding a fault injection")
+		Expect(universal.Cluster.Install(YamlUniversal(fiPolicy))).To(Succeed())
 
 		By("Check some errors happen")
-		var errs []error
-		for i := 0; i < 50; i++ {
-			time.Sleep(time.Millisecond * 100)
-			_, err := client.CollectEchoResponse(
+		Eventually(func(g Gomega) {
+			response, err := client.CollectFailure(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
+				client.NoFail(),
+				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
 			)
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-		Expect(errs).ToNot(BeEmpty())
+
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(response.ResponseCode).To(Equal(500))
+		}, "30s", "100ms").Should(Succeed())
 
 		By("Apply a retry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
@@ -109,9 +99,8 @@ conf:
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(
 				universal.Cluster, "demo-client", "test-server.mesh",
-				client.WithMaxTime(8),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "1m", "1s", MustPassRepeatedly(3)).Should(Succeed())
+		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }
