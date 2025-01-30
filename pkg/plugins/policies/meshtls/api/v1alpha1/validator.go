@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -13,7 +14,7 @@ import (
 func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, len(r.Spec.From) > 0))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
 	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
 	return verr.OrNil()

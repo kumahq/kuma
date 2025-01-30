@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/shopspring/decimal"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -12,7 +13,7 @@ import (
 func (r *MeshCircuitBreakerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, len(r.Spec.From) > 0))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
