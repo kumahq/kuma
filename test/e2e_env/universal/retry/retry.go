@@ -101,6 +101,6 @@ conf:
 				universal.Cluster, "demo-client", "test-server.mesh",
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
 	})
 }

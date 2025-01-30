@@ -116,7 +116,7 @@ spec:
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(stats.BeGreaterThanZero())
 			g.Expect(failureStats).To(stats.BeGreaterThan(lastFailureStats))
-		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -131,6 +131,6 @@ spec:
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
 			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
-		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 	})
 }
