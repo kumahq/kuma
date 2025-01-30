@@ -2,13 +2,13 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 
 	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 )
 
 func (r *MeshAccessLogResource) validate() error {
