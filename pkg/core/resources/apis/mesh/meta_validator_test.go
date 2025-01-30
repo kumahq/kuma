@@ -12,9 +12,9 @@ import (
 
 var _ = Describe("Meta", func() {
 	type testCase struct {
-		meta           core_model.ResourceMeta
-		scope          core_model.ResourceScope
-		expected       string
+		meta     core_model.ResourceMeta
+		scope    core_model.ResourceScope
+		expected string
 	}
 
 	Describe("ValidateMeta", func() {
