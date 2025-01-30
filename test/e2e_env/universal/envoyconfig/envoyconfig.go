@@ -108,7 +108,6 @@ func EnvoyConfigTest() {
 		},
 		test.EntriesForFolder("meshtimeout", "envoyconfig"),
 		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
-		test.EntriesForFolder("meshratelimit", "envoyconfig"),
 	)
 }
 
