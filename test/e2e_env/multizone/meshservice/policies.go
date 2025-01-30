@@ -17,6 +17,9 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -87,6 +90,9 @@ spec:
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
 			)).Setup(multizone.KubeZone2)
 		Expect(err).ToNot(HaveOccurred())
+
+		// remove default retry policy
+		Expect(DeleteMeshResources(multizone.Global, meshName, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -106,6 +112,12 @@ spec:
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(namespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
+
+	retryStat := func(admin envoy_admin.Tunnel) *stats.Stats {
+		s, err := admin.GetStats("cluster.real-resource-mesh_test-server_real-resource-ns_kuma-2_msvc_80.upstream_rq_retry_success")
+		Expect(err).ToNot(HaveOccurred())
+		return s
+	}
 
 	It("should configure URLRewrite", func() {
 		// when
@@ -245,6 +257,12 @@ spec:
 	})
 
 	It("should configure MeshRetry for MeshService in another zone", func() {
+		// given
+		// create a tunnel to test-client admin
+		Expect(multizone.KubeZone1.PortForwardService("test-client", namespace, 9901)).To(Succeed())
+		portFwd := multizone.KubeZone1.GetPortForward("test-client")
+		tnl := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.ApiServerEndpoint)
+
 		// then
 		Eventually(func(g Gomega) {
 			response, err := client.CollectFailure(
@@ -257,7 +275,11 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(503))
-		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "1m", "1s").Should(Succeed())
+
+		Eventually(func(g Gomega) {
+			g.Expect(retryStat(tnl)).To(stats.BeEqualZero())
+		}, "5s", "1s").Should(Succeed())
 
 		meshRetryPolicy := fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -297,7 +319,12 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.Instance).To(HavePrefix("kube-test-server-2"))
-		}, "1m", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "1s").Should(Succeed())
+
+		// and
+		Eventually(func(g Gomega) {
+			g.Expect(retryStat(tnl)).To(stats.BeGreaterThanZero())
+		}, "5s", "1s").Should(Succeed())
 
 		// remove MeshRetry
 		Expect(DeleteMeshPolicyOrError(multizone.KubeZone1, meshretry_api.MeshRetryResourceTypeDescriptor, "mr-for-ms-in-zone-2")).To(Succeed())
