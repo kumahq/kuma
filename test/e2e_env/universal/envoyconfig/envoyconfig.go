@@ -13,6 +13,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -60,18 +62,12 @@ func EnvoyConfigTest() {
 	})
 
 	E2EAfterEach(func() {
-		// delete all meshtimeout policies
-		out, err := universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtimeouts", "--mesh", meshName, "-o", "json")
-		Expect(err).ToNot(HaveOccurred())
-		var output struct {
-			Items []struct {
-				Name string `json:"name"`
-			} `json:"items"`
-		}
-		Expect(json.Unmarshal([]byte(out), &output)).To(Succeed())
-		for _, item := range output.Items {
-			Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshtimeout", item.Name, "--mesh", meshName)).To(Succeed())
-		}
+		Expect(DeleteMeshResources(
+			universal.Cluster,
+			meshName,
+			meshtimeout.MeshTimeoutResourceTypeDescriptor,
+			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
+		)).To(Succeed())
 	})
 
 	getConfig := func(dpp string) string {
