@@ -27,10 +27,25 @@ type Inbound struct {
 	Tags map[string]string `json:"tags"`
 }
 
+// InboundRule defines model for InboundRule.
+type InboundRule struct {
+	// Conf The actual conf generated
+	Conf *[]interface{} `json:"conf,omitempty"`
+
+	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin *[]ResourceRuleOrigin `json:"origin,omitempty"`
+}
+
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
-	// FromRules a set of rules for each inbound of this proxy
+	// FromRules a set of rules for each inbound of this proxy. The field is not set when 'interpretFromEntriesAsRules' on PolicyDescriptor is set to true.
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
+
+	// InboundRules a set of rules for each inbound of the proxy. When policy descriptor has 'interpretFromEntriesAsRules' set to true, this field replaces 'fromRules'.
+	InboundRules *[]struct {
+		Inbound *Inbound       `json:"inbound,omitempty"`
+		Rules   *[]InboundRule `json:"rules,omitempty"`
+	} `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
 	ProxyRule *ProxyRule `json:"proxyRule,omitempty"`
@@ -70,6 +85,9 @@ type PolicyDescription struct {
 
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
+
+	// InterpretFromEntriesAsRules indicates that existing 'spec.from' entries are interpreted as 'spec.rules'
+	InterpretFromEntriesAsRules bool `json:"interpretFromEntriesAsRules"`
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`

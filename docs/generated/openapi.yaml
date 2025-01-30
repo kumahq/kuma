@@ -2905,6 +2905,7 @@ components:
         - hasToTargetRef
         - hasFromTargetRef
         - isTargetRef
+        - interpretFromEntriesAsRules
       description: information about a policy
       properties:
         isTargetRef:
@@ -2915,6 +2916,11 @@ components:
           type: boolean
         hasFromTargetRef:
           description: indicates that this policy can be used as an inbound policy
+          type: boolean
+        interpretFromEntriesAsRules:
+          description: >-
+            indicates that existing 'spec.from' entries are interpreted as
+            'spec.rules'
           type: boolean
     ResourceTypeDescription:
       description: >-
@@ -3102,6 +3108,24 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Rule'
+    InboundRule:
+      type: object
+      properties:
+        conf:
+          description: The actual conf generated
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: interface{}
+        origin:
+          type: array
+          description: >-
+            The list of policies that contributed to the 'conf'. The order is
+            important as it reflects in what order confs were merged to get the
+            resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
     InspectRule:
       type: object
       required:
@@ -3129,9 +3153,26 @@ components:
             $ref: '#/components/schemas/ResourceRule'
         fromRules:
           type: array
-          description: a set of rules for each inbound of this proxy
+          description: >-
+            a set of rules for each inbound of this proxy. The field is not set
+            when 'interpretFromEntriesAsRules' on PolicyDescriptor is set to
+            true.
           items:
             $ref: '#/components/schemas/FromRule'
+        inboundRules:
+          type: array
+          description: >-
+            a set of rules for each inbound of the proxy. When policy descriptor
+            has 'interpretFromEntriesAsRules' set to true, this field replaces
+            'fromRules'.
+          items:
+            properties:
+              inbound:
+                $ref: '#/components/schemas/Inbound'
+              rules:
+                type: array
+                items:
+                  $ref: '#/components/schemas/InboundRule'
         warnings:
           type: array
           description: a set of warnings to show in policy matching
