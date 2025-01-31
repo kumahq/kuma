@@ -148,6 +148,34 @@ from:
       - responseBandwidth:
           limit: 1000
 `),
+		ErrorCases("sectionName with outbound policy",
+			[]validators.Violation{
+				{
+					Field:   "spec.targetRef.sectionName",
+					Message: "can only be used with inbound policies",
+				},
+				{
+					Field:   "spec.to",
+					Message: "must not be defined",
+				},
+			}, `
+type: MeshFaultInjection
+mesh: mesh-1
+name: fi1
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      http:
+      - abort: {}
+      - delay: {}
+      - responseBandwidth:
+          limit: 1000
+`),
 		ErrorCases("incorrect value in percentage",
 			[]validators.Violation{
 				{

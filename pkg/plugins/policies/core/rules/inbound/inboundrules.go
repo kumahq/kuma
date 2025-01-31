@@ -116,3 +116,15 @@ func buildRules[T interface {
 		Origin: ruleOrigin,
 	}}, nil
 }
+
+func AffectsInbounds(p core_model.Policy) bool {
+	pr, ok := p.(PolicyWithRules)
+	if ok && len(pr.GetRules()) > 0 {
+		return true
+	}
+	pf, ok := p.(core_model.PolicyWithFromList)
+	if ok && len(pf.GetFromList()) > 0 {
+		return true
+	}
+	return false
+}
