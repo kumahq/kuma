@@ -133,6 +133,20 @@ violations:
   - field: spec.from
     message: needs at least one item`,
 			}),
+			Entry("sectionName without from or rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to: []
+`,
+				expected: `
+violations:
+- field: spec.targetRef.sectionName
+  message: can only be used with inbound policies
+- field: spec.from
+  message: needs at least one item`,
+			}),
 			Entry("not supported kinds in 'from' array", testCase{
 				inputYaml: `
 targetRef:

@@ -33,6 +33,7 @@ func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) vali
 				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
 		})
@@ -43,6 +44,7 @@ func (r *MeshTCPRouteResource) validateTop(targetRef *common_api.TargetRef) vali
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
 		})
 	}
