@@ -58,6 +58,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 type Configurer struct {
 	Element subsetutils.Element
 	Rules   core_rules.Rules
+	Conf    *api.Conf
 }
 
 func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
@@ -246,6 +247,9 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 }
 
 func (c *Configurer) getConf(element subsetutils.Element) *api.Conf {
+	if c.Conf != nil {
+		return c.Conf
+	}
 	if c.Rules == nil {
 		return &api.Conf{}
 	}

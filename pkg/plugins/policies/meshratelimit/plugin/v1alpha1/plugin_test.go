@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -173,6 +175,54 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(444)),
+											Headers: &api.HeaderModifier{
+												Add: []api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header",
+														Value: "test-value",
+													},
+													{
+														Name:  "x-kuma-rate-limit",
+														Value: "other-value",
+													},
+												},
+												Set: []api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header-set",
+														Value: "test-value",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}},
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+									TCP: &api.LocalTCP{
+										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+								},
+							},
+						},
+					}},
+				},
 			},
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
 			expectedListeners:    []string{"basic_listener_1.golden.yaml", "basic_listener_2.golden.yaml"},
@@ -255,6 +305,45 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{
+											Num:      100,
+											Interval: *test.ParseDuration("10s"),
+										},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(444)),
+											Headers: &api.HeaderModifier{
+												Add: []api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header",
+														Value: "test-value",
+													},
+												},
+												Set: []api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit",
+														Value: "other-value",
+													},
+												},
+											},
+										},
+									},
+									TCP: &api.LocalTCP{
+										ConnectionRate: &api.Rate{
+											Num:      100,
+											Interval: *test.ParseDuration("99s"),
+										},
+									},
+								},
+							},
+						},
+					}},
+				},
 			},
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{
 				mesh_proto.InboundInterface{
@@ -308,6 +397,20 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									TCP: &api.LocalTCP{
+										Disabled:       pointer.To(true),
+										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+								},
+							},
+						},
+					}},
+				},
 			},
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
 			expectedListeners:    []string{"tcp_disabled.golden.yaml"},
@@ -348,6 +451,20 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										Disabled:    pointer.To(true),
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+								},
+							},
+						},
+					}},
+				},
 			},
 			inboundRateLimitsMap: core_xds.InboundRateLimitsMap{},
 			expectedListeners:    []string{"http_disabled.golden.yaml"},
@@ -369,6 +486,19 @@ var _ = Describe("MeshRateLimit", func() {
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
 									ConnectionRate: nil,
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									TCP: &api.LocalTCP{
+										ConnectionRate: nil,
+									},
 								},
 							},
 						},
@@ -408,6 +538,19 @@ var _ = Describe("MeshRateLimit", func() {
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
 									RequestRate: nil,
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: nil,
+									},
 								},
 							},
 						},
