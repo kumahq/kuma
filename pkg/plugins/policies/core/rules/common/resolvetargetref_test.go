@@ -16,7 +16,6 @@ import (
 )
 
 var _ = Describe("ResolveTargetRef", func() {
-
 	var resources context.Resources
 	BeforeEach(func() {
 		resources = context.NewResources()
