@@ -263,7 +263,7 @@ violations:
 - field: spec.from[0].default.backends
   message: 'must be defined'`,
 			}),
-			Entry("'default' not defined in from", testCase{
+			Entry("don't mix from with rules", testCase{
 				inputYaml: `
 targetRef:
   kind: Mesh
