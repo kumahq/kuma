@@ -2,7 +2,6 @@ package meshretry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -123,7 +122,7 @@ spec:
 		By("Clean counters")
 		Expect(admin.ResetCounters()).To(Succeed())
 		lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
-		time.Sleep(1*time.Hour)
+
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
