@@ -14,7 +14,7 @@ import (
 func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef()), inbound.AffectsInbounds(r.Spec))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
 	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
