@@ -1,0 +1,24 @@
+type: MeshRateLimit
+name: mrl-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes: [Sidecar]
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        local:
+          http:
+            requestRate:
+              num: 5
+              interval: 10s
+            onRateLimit:
+              status: 423
+              headers:
+                set:
+                  - name: x-kuma-rate-limited
+                    value: 'true'
