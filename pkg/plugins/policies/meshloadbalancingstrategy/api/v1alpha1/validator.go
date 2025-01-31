@@ -13,7 +13,7 @@ import (
 func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	if len(r.Spec.To) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
@@ -22,7 +22,7 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -33,6 +33,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
 	})

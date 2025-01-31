@@ -4,12 +4,13 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 )
 
 func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
@@ -17,7 +18,7 @@ func (r *MeshTrafficPermissionResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTrafficPermissionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -29,7 +30,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 			common_api.MeshServiceSubset,
 			common_api.Dataplane,
 		},
-		IsInboundPolicy: true,
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
 }
