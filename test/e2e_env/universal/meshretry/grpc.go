@@ -2,6 +2,7 @@ package meshretry
 
 import (
 	"fmt"
+	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -28,8 +29,6 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
-			// remove default policies after https://github.com/kumahq/kuma/issues/3325
-			Install(TrafficRouteUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -64,7 +63,7 @@ spec:
       default:
         http:
           - abort:
-              httpStatus: 500
+              httpStatus: 503
               percentage: "50.0"
 `, meshName)
 		meshRetryPolicy := fmt.Sprintf(`
@@ -124,7 +123,7 @@ spec:
 		By("Clean counters")
 		Expect(admin.ResetCounters()).To(Succeed())
 		lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
-
+		time.Sleep(1*time.Hour)
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
