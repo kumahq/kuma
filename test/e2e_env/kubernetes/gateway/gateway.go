@@ -844,7 +844,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshFaultInjection
 metadata:
   namespace: %s
-  name: mesh-fault-injecton
+  name: mesh-fault-injecton-gw
   labels:
     kuma.io/mesh: %s
 spec:
