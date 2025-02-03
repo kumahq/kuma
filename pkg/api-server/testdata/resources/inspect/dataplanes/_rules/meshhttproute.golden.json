@@ -21,6 +21,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [],
    "toRules": [
     {
@@ -120,6 +121,7 @@
   },
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [],
    "toRules": [
     {

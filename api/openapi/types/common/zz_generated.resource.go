@@ -30,10 +30,16 @@ type Inbound struct {
 // InboundRule defines model for InboundRule.
 type InboundRule struct {
 	// Conf The actual conf generated
-	Conf *[]interface{} `json:"conf,omitempty"`
+	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
-	Origin *[]ResourceRuleOrigin `json:"origin,omitempty"`
+	Origin []ResourceRuleOrigin `json:"origin"`
+}
+
+// InboundRulesEntry defines model for InboundRulesEntry.
+type InboundRulesEntry struct {
+	Inbound Inbound       `json:"inbound"`
+	Rules   []InboundRule `json:"rules"`
 }
 
 // InspectRule defines model for InspectRule.
@@ -42,10 +48,7 @@ type InspectRule struct {
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
 
 	// InboundRules a set of rules for each inbound of the proxy. When policy descriptor has 'interpretFromEntriesAsRules' set to true, this field replaces 'fromRules'.
-	InboundRules *[]struct {
-		Inbound *Inbound       `json:"inbound,omitempty"`
-		Rules   *[]InboundRule `json:"rules,omitempty"`
-	} `json:"inboundRules,omitempty"`
+	InboundRules *[]InboundRulesEntry `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
 	ProxyRule *ProxyRule `json:"proxyRule,omitempty"`

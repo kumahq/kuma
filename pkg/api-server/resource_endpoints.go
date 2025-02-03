@@ -980,6 +980,32 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 			}
+			inboundRules := []api_common.InboundRulesEntry{}
+			for inbound, rulesForInbound := range res.FromRules.InboundRules {
+				if len(rulesForInbound) == 0 {
+					continue
+				}
+				rs := make([]api_common.InboundRule, len(rulesForInbound))
+				for i := range rulesForInbound {
+					rs[i] = api_common.InboundRule{
+						Conf:   rulesForInbound[i].Conf,
+						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, rulesForInbound[i].Origin),
+					}
+				}
+				var tags map[string]string
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					tags = dp.Spec.Networking.Gateway.Tags
+				} else {
+					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				}
+				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
+					Inbound: api_common.Inbound{
+						Port: int(inbound.Port),
+						Tags: tags,
+					},
+					Rules: rs,
+				})
+			}
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
@@ -993,7 +1019,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -1006,6 +1032,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
 				FromRules:       &fromRules,
+				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,
 			})
