@@ -6,13 +6,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
@@ -25,7 +26,7 @@ func (r *MeshTimeoutResource) validate() error {
 	return verr.OrNil()
 }
 
-func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -42,7 +43,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) valid
 				common_api.MeshHTTPRoute,
 			},
 			GatewayListenerTagsAllowed: true,
-			IsInboundPolicy:            true,
+			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -53,6 +54,7 @@ func (r *MeshTimeoutResource) validateTop(targetRef *common_api.TargetRef) valid
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
+			IsInboundPolicy: isInboundPolicy,
 		})
 	}
 }

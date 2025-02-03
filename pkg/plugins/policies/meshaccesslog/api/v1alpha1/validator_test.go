@@ -263,6 +263,22 @@ violations:
 - field: spec.from[0].default.backends
   message: 'must be defined'`,
 			}),
+			Entry("sectionName with outbound policies", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: Mesh
+`,
+				expected: `
+violations:
+- field: spec.targetRef.sectionName
+  message: can only be used with inbound policies
+- field: spec.to[0].default.backends
+  message: must be defined`,
+			}),
 			Entry("'address' not valid", testCase{
 				inputYaml: `
 targetRef:

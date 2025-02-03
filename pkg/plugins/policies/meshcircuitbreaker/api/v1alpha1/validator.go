@@ -6,13 +6,14 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshCircuitBreakerResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
@@ -21,7 +22,7 @@ func (r *MeshCircuitBreakerResource) validate() error {
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshCircuitBreakerResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -32,8 +33,10 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 			common_api.MeshService,
 			common_api.MeshGateway,
 			common_api.MeshServiceSubset,
+			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
+		IsInboundPolicy:            isInboundPolicy,
 	})
 	return targetRefErr
 }

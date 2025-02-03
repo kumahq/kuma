@@ -150,6 +150,7 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
+	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,

@@ -150,6 +150,7 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             true,
 	HasToTargetRef:               true,
 	HasFromTargetRef:             true,
+	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,

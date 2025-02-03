@@ -1,0 +1,23 @@
+type: MeshFaultInjection
+name: mfi-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes: [Sidecar]
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          - abort:
+              httpStatus: 500
+              percentage: '2.5'
+          - abort:
+              httpStatus: 500
+              percentage: 10
+          - delay:
+              value: 5s
+              percentage: 5
