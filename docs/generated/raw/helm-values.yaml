@@ -535,6 +535,9 @@ ingress:
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
 
+  # -- Priority Class Name of the ingress
+  priorityClassName: ""
+
   # -- Security context at the pod level for ingress
   podSecurityContext:
     runAsNonRoot: true
