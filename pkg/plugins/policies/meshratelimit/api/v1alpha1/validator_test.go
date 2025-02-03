@@ -294,6 +294,22 @@ violations:
   - field: spec.from[0].default.local
     message: must be defined`,
 			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+- targetRef:
+    kind: Mesh
+  default: {}`,
+				expected: `
+violations:
+  - field: spec.targetRef.sectionName
+    message: can only be used with inbound policies
+  - field: spec.to
+    message: must not be defined`,
+			}),
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
