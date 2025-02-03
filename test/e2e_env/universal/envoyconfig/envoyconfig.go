@@ -161,5 +161,5 @@ func redactIPs(jsonStr string) string {
 var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
 
 func redactStatPrefixes(jsonStr string) string {
-	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"\"")
+	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
 }
