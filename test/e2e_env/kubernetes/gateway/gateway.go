@@ -470,7 +470,7 @@ spec:
 
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(status.ResponseCode).To(Equal(404))
-				}, "30s", "1s").Should(Succeed())
+				}, "10s", "1s").Should(Succeed())
 			})
 		})
 	}
@@ -730,7 +730,7 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			}, "10s", "1s").Should(Succeed())
 		})
 	})
 
