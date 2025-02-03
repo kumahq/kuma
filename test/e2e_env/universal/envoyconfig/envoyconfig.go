@@ -36,9 +36,11 @@ func EnvoyConfigTest() {
 					builders.Mesh().
 						WithName(meshName).
 						WithoutInitialPolicies().
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true)),
 			).

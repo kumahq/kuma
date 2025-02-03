@@ -10,6 +10,46 @@
           }
         },
         "name": "envoyconfig_demo-client__kuma-3_msvc_3000",
+        "transportSocket": {
+          "name": "envoy.transport_sockets.tls",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
+            "commonTlsContext": {
+              "alpnProtocols": [
+                "kuma"
+              ],
+              "combinedValidationContext": {
+                "defaultValidationContext": {
+                  "matchTypedSubjectAltNames": [
+                    {
+                      "matcher": {
+                        "exact": "spiffe://envoyconfig/demo-client"
+                      },
+                      "sanType": "URI"
+                    }
+                  ]
+                },
+                "validationContextSdsSecretConfig": {
+                  "name": "mesh_ca:secret:envoyconfig",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              },
+              "tlsCertificateSdsSecretConfigs": [
+                {
+                  "name": "identity_cert:secret:envoyconfig",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              ]
+            },
+            "sni": "a65abe81bca1750d1.demo-client.3000.envoyconfig.ms"
+          }
+        },
         "type": "EDS",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
@@ -28,6 +68,46 @@
           }
         },
         "name": "envoyconfig_test-server__kuma-3_msvc_80",
+        "transportSocket": {
+          "name": "envoy.transport_sockets.tls",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
+            "commonTlsContext": {
+              "alpnProtocols": [
+                "kuma"
+              ],
+              "combinedValidationContext": {
+                "defaultValidationContext": {
+                  "matchTypedSubjectAltNames": [
+                    {
+                      "matcher": {
+                        "exact": "spiffe://envoyconfig/test-server"
+                      },
+                      "sanType": "URI"
+                    }
+                  ]
+                },
+                "validationContextSdsSecretConfig": {
+                  "name": "mesh_ca:secret:envoyconfig",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              },
+              "tlsCertificateSdsSecretConfigs": [
+                {
+                  "name": "identity_cert:secret:envoyconfig",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              ]
+            },
+            "sni": "a029781856823048e.test-server.80.envoyconfig.ms"
+          }
+        },
         "type": "EDS",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
@@ -222,6 +302,28 @@
                   "forwardClientCertDetails": "SANITIZE_SET",
                   "httpFilters": [
                     {
+                      "name": "envoy.filters.http.rbac",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.rbac.v3.RBAC",
+                        "rules": {
+                          "policies": {
+                            "MeshTrafficPermission": {
+                              "permissions": [
+                                {
+                                  "any": true
+                                }
+                              ],
+                              "principals": [
+                                {
+                                  "any": true
+                                }
+                              ]
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
                       "name": "envoy.filters.http.router",
                       "typedConfig": {
                         "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
@@ -261,7 +363,44 @@
                   "streamIdleTimeout": "3600s"
                 }
               }
-            ]
+            ],
+            "transportSocket": {
+              "name": "envoy.transport_sockets.tls",
+              "typedConfig": {
+                "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext",
+                "commonTlsContext": {
+                  "combinedValidationContext": {
+                    "defaultValidationContext": {
+                      "matchTypedSubjectAltNames": [
+                        {
+                          "matcher": {
+                            "prefix": "spiffe://envoyconfig/"
+                          },
+                          "sanType": "URI"
+                        }
+                      ]
+                    },
+                    "validationContextSdsSecretConfig": {
+                      "name": "mesh_ca:secret:envoyconfig",
+                      "sdsConfig": {
+                        "ads": {},
+                        "resourceApiVersion": "V3"
+                      }
+                    }
+                  },
+                  "tlsCertificateSdsSecretConfigs": [
+                    {
+                      "name": "identity_cert:secret:envoyconfig",
+                      "sdsConfig": {
+                        "ads": {},
+                        "resourceApiVersion": "V3"
+                      }
+                    }
+                  ]
+                },
+                "requireClientCertificate": true
+              }
+            }
           }
         ],
         "metadata": {
@@ -472,6 +611,27 @@
         "name": "outbound:passthrough:ipv6",
         "trafficDirection": "OUTBOUND",
         "useOriginalDst": true
+      }
+    },
+    "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {
+      "identity_cert:secret:envoyconfig": {
+        "name": "identity_cert:secret:envoyconfig",
+        "tlsCertificate": {
+          "certificateChain": {
+            "inlineBytes": "Q0VSVA=="
+          },
+          "privateKey": {
+            "inlineBytes": "S0VZ"
+          }
+        }
+      },
+      "mesh_ca:secret:envoyconfig": {
+        "name": "mesh_ca:secret:envoyconfig",
+        "validationContext": {
+          "trustedCa": {
+            "inlineBytes": "Q0E="
+          }
+        }
       }
     }
   }
