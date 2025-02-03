@@ -17,6 +17,7 @@ import (
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -73,6 +74,7 @@ func EnvoyConfigTest() {
 			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
+			meshtls.MeshTLSResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -116,6 +118,7 @@ func EnvoyConfigTest() {
 		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
 		test.EntriesForFolder("meshfaultinjection", "envoyconfig"),
 		test.EntriesForFolder("meshratelimit", "envoyconfig"),
+		test.EntriesForFolder("meshtls", "envoyconfig"),
 	)
 }
 
