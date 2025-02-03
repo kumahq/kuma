@@ -14,7 +14,7 @@ A successful DELETE and PUT request without any warnings will now set "content-t
 
 ### More strict validation rules for resource names
 
-In Kuma 2.7.x we deprecated usage of non [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) characters and since 2.10.x it's not more possible to create or update non RFC complient resource name. In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
+In Kuma 2.7.x we deprecated usage of non [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) characters and since 2.10.x it's no longer possible to create or update non RFC compliant resource name. In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
 
 > Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
 
