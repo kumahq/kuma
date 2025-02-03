@@ -3110,6 +3110,9 @@ components:
             $ref: '#/components/schemas/Rule'
     InboundRule:
       type: object
+      required:
+        - conf
+        - origin
       properties:
         conf:
           description: The actual conf generated
@@ -3126,6 +3129,18 @@ components:
             resulting 'conf'.
           items:
             $ref: '#/components/schemas/ResourceRuleOrigin'
+    InboundRulesEntry:
+      type: object
+      required:
+        - inbound
+        - rules
+      properties:
+        inbound:
+          $ref: '#/components/schemas/Inbound'
+        rules:
+          type: array
+          items:
+            $ref: '#/components/schemas/InboundRule'
     InspectRule:
       type: object
       required:
@@ -3166,13 +3181,7 @@ components:
             has 'interpretFromEntriesAsRules' set to true, this field replaces
             'fromRules'.
           items:
-            properties:
-              inbound:
-                $ref: '#/components/schemas/Inbound'
-              rules:
-                type: array
-                items:
-                  $ref: '#/components/schemas/InboundRule'
+            $ref: '#/components/schemas/InboundRulesEntry'
         warnings:
           type: array
           description: a set of warnings to show in policy matching
