@@ -392,7 +392,7 @@
                   "setCurrentClientCertDetails": {
                     "uri": true
                   },
-                  "statPrefix": "localhost_8080",
+                  "statPrefix": "",
                   "streamIdleTimeout": "3600s"
                 }
               }
@@ -467,7 +467,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "inbound:passthrough:ipv4",
-                  "statPrefix": "inbound_passthrough_ipv4"
+                  "statPrefix": ""
                 }
               }
             ]
@@ -493,7 +493,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "inbound:passthrough:ipv6",
-                  "statPrefix": "inbound_passthrough_ipv6"
+                  "statPrefix": ""
                 }
               }
             ]
@@ -519,7 +519,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "envoyconfig_demo-client__kuma-3_msvc_3000",
-                  "statPrefix": "envoyconfig_demo-client__kuma-3_msvc_3000"
+                  "statPrefix": ""
                 }
               }
             ]
@@ -581,7 +581,7 @@
                       }
                     ]
                   },
-                  "statPrefix": "envoyconfig_test-server__kuma-3_msvc_80"
+                  "statPrefix": ""
                 }
               }
             ]
@@ -610,7 +610,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "outbound:passthrough:ipv4",
-                  "statPrefix": "outbound_passthrough_ipv4"
+                  "statPrefix": ""
                 }
               }
             ]
@@ -635,7 +635,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "outbound:passthrough:ipv6",
-                  "statPrefix": "outbound_passthrough_ipv6"
+                  "statPrefix": ""
                 }
               }
             ]

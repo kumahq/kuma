@@ -80,7 +80,7 @@ func EnvoyConfigTest() {
 		output, err := universal.Cluster.GetKumactlOptions().
 			RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", meshName, "--shadow", "--include=diff")
 		Expect(err).ToNot(HaveOccurred())
-		redacted := redactIPs(output)
+		redacted := redactStatPrefixes(redactIPs(output))
 
 		response := types.InspectDataplanesConfig{}
 		Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
@@ -155,4 +155,11 @@ var ipRegex = regexp.MustCompile(ipv4Regex + "|" + ipv6Regex)
 
 func redactIPs(jsonStr string) string {
 	return ipRegex.ReplaceAllString(jsonStr, "IP_REDACTED")
+}
+
+// TODO this should be removed after fixing: https://github.com/kumahq/kuma/issues/12733
+var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
+
+func redactStatPrefixes(jsonStr string) string {
+	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"\"")
 }
