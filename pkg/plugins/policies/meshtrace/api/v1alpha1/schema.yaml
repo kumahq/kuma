@@ -251,12 +251,16 @@ properties:
         type: object
     type: object
   creationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was created'
     format: date-time
     example: '0001-01-01T00:00:00Z'
   modificationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was updated'
     format: date-time
     example: '0001-01-01T00:00:00Z'
+  status:
+    readOnly: true

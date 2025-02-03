@@ -33,6 +33,9 @@ spec:
       {{- with .Values.egress.topologySpreadConstraints }}
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
+      {{- with .Values.egress.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       securityContext:
       {{- toYaml .Values.egress.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-egress
