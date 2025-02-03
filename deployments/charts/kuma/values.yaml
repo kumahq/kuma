@@ -658,6 +658,9 @@ egress:
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
 
+  # -- Priority Class Name of the egress
+  priorityClassName: ""
+
   # -- Security context at the pod level for egress
   podSecurityContext:
     runAsNonRoot: true
