@@ -81,7 +81,7 @@
                   "matchTypedSubjectAltNames": [
                     {
                       "matcher": {
-                        "prefix": "spiffe://envoyconfig/"
+                        "exact": "spiffe://envoyconfig/test-server"
                       },
                       "sanType": "URI"
                     }
@@ -301,7 +301,7 @@
                       }
                     }
                   },
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               },
               {
@@ -310,7 +310,7 @@
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "localhost:3000",
                   "idleTimeout": "7200s",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ],
@@ -381,7 +381,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "inbound:passthrough:ipv4",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
@@ -407,7 +407,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "inbound:passthrough:ipv6",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
@@ -433,7 +433,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "envoyconfig_demo-client__kuma-3_msvc_3000",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
@@ -495,7 +495,7 @@
                       }
                     ]
                   },
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
@@ -524,7 +524,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "outbound:passthrough:ipv4",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
@@ -549,7 +549,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "outbound:passthrough:ipv6",
-                  "statPrefix": ""
+                  "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
             ]
