@@ -3826,6 +3826,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5053,6 +5054,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5574,6 +5576,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6068,6 +6071,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6881,6 +6885,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7651,6 +7656,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7989,6 +7995,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8180,6 +8187,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8903,6 +8911,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -9498,6 +9507,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10151,6 +10161,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10499,6 +10510,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11077,6 +11089,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11364,6 +11377,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11720,6 +11734,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11968,6 +11983,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12353,6 +12369,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12712,6 +12729,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12790,6 +12808,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13153,6 +13172,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13372,6 +13392,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13617,6 +13638,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
