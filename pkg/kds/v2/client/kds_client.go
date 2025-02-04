@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type UpstreamResponse struct {
@@ -112,7 +113,19 @@ func (s *kdsSyncClient) Receive() error {
 		}
 		err = s.callbacks.OnResourcesReceived(received)
 		if err != nil {
-			return errors.Wrapf(err, "failed to store %s resources", received.Type)
+			if store.IsResourceAlreadyExists(err) {
+				s.log.Info("received resource already exists, sending NACK", "err", err)
+				if err := s.kdsStream.NACK(received.Type, err); err != nil {
+					if err == io.EOF {
+						return nil
+					}
+					return errors.Wrap(err, "failed to NACK a discovery response")
+				}
+				s.log.V(1).Info("NACK", "response", received)
+				continue
+			} else {
+				return errors.Wrapf(err, "failed to store %s resources", received.Type)
+			}
 		}
 		if !received.IsInitialRequest {
 			// Execute backoff only on subsequent request.

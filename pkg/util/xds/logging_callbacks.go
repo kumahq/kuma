@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
 )
@@ -51,6 +52,9 @@ func (cb LoggingCallbacks) OnDeltaStreamClosed(streamID int64) {
 // OnStreamDeltaRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamDeltaRequest will still be called.
 func (cb LoggingCallbacks) OnStreamDeltaRequest(streamID int64, req DeltaDiscoveryRequest) error {
+	if req.ErrorMsg() != "" {
+		cb.Log.Error(errors.New(req.ErrorMsg()), "resource was rejected", "streamid", streamID, "req", req)
+	}
 	cb.Log.V(1).Info("OnStreamDeltaRequest", "streamid", streamID, "req", req)
 	return nil
 }

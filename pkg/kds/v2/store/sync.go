@@ -300,6 +300,11 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))
+
+			case upstream.Type == system.SecretType:
+				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
+				}))
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
