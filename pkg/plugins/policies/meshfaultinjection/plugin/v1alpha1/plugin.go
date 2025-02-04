@@ -181,7 +181,7 @@ func configure(
 	protocol core_mesh.Protocol,
 ) error {
 	switch protocol {
-	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
+	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2, core_mesh.ProtocolGRPC:
 		for _, rule := range fromRules {
 			conf := rule.Conf.(api.Conf)
 			from := rule.Subset

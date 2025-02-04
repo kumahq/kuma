@@ -169,7 +169,7 @@ type withResolvedResource[T any] struct {
 	rs    *common.ResourceSection
 }
 
-// isRelevant returns true if the resolvedWrapper's resource is relevant to the other resource or section of the resource
+// isRelevant returns true if the rs.resource is relevant to the other resource or section of the resource
 func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, sectionName string) bool {
 	switch itemDescriptorName := rw.rs.Resource.Descriptor().Name; itemDescriptorName {
 	case core_mesh.MeshType:
