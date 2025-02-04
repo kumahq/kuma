@@ -18,6 +18,7 @@ import (
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -29,6 +30,20 @@ import (
 
 func EnvoyConfigTest() {
 	meshName := "envoyconfig"
+
+	waitMeshServiceReady := func(name string) {
+		Eventually(func(g Gomega) {
+			spec, status, err := GetMeshServiceStatus(universal.Cluster, name, meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: name,
+				},
+			}))
+			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+		}, "30s", "1s").Should(Succeed())
+	}
 
 	BeforeAll(func() {
 		err := NewClusterSetup().
@@ -51,31 +66,8 @@ func EnvoyConfigTest() {
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// demo-client identity ready
-		Eventually(func(g Gomega) {
-			spec, status, err := GetMeshServiceStatus(universal.Cluster, "demo-client", meshName)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "demo-client",
-				},
-			}))
-			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
-		}, "30s", "1s").Should(Succeed())
-
-		// test-server identity ready
-		Eventually(func(g Gomega) {
-			spec, status, err := GetMeshServiceStatus(universal.Cluster, "test-server", meshName)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
-				{
-					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
-					Value: "test-server",
-				},
-			}))
-			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
-		}, "30s", "1s").Should(Succeed())
+		waitMeshServiceReady("demo-client")
+		waitMeshServiceReady("test-server")
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
@@ -100,6 +92,7 @@ func EnvoyConfigTest() {
 			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
+			meshtls.MeshTLSResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -143,6 +136,7 @@ func EnvoyConfigTest() {
 		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
 		test.EntriesForFolder("meshfaultinjection", "envoyconfig"),
 		test.EntriesForFolder("meshratelimit", "envoyconfig"),
+		test.EntriesForFolder("meshtls", "envoyconfig"),
 	)
 }
 
