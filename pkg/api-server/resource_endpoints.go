@@ -515,6 +515,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+		return
 	}
 
 	resp := api_server_types.DeleteSuccessResponse{}
