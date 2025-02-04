@@ -72,7 +72,7 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
         | del(.kind)
       ) * {"type": {"enum": [.spec.names.kind]}}
   )
-  | (.properties.status? ) |= . + {"readOnly": true}`, crdPath),
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
 				schemaOutPath,
 			)
 			yqExec.Stderr = cmd.ErrOrStderr()

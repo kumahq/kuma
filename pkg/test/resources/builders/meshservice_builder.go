@@ -76,6 +76,19 @@ func (m *MeshServiceBuilder) AddIntPort(port, target uint32, protocol core_mesh.
 	return m
 }
 
+func (m *MeshServiceBuilder) AddIntPortWithName(port, target uint32, protocol core_mesh.Protocol, name string) *MeshServiceBuilder {
+	m.res.Spec.Ports = append(m.res.Spec.Ports, v1alpha1.Port{
+		Port: port,
+		TargetPort: intstr.IntOrString{
+			Type:   intstr.Int,
+			IntVal: int32(target),
+		},
+		AppProtocol: protocol,
+		Name:        name,
+	})
+	return m
+}
+
 func (m *MeshServiceBuilder) AddServiceTagIdentity(identity string) *MeshServiceBuilder {
 	m.res.Spec.Identities = append(m.res.Spec.Identities, v1alpha1.MeshServiceIdentity{
 		Type:  v1alpha1.MeshServiceIdentityServiceTagType,

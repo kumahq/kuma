@@ -3821,13 +3821,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshAccessLogCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5050,13 +5049,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshCircuitBreakerCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5573,13 +5571,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshFaultInjectionCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6069,13 +6066,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshHealthCheckCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6884,13 +6880,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshHTTPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7656,13 +7651,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshLoadBalancingStrategyCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7996,13 +7990,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshMetricCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8189,13 +8182,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshPassthroughCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8914,13 +8906,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshProxyPatchCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -9511,13 +9502,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshRateLimitCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10166,13 +10156,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshRetryCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10516,13 +10505,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshTCPRouteCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11096,13 +11084,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshTimeoutCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11385,13 +11372,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshTLSCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11743,13 +11729,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshTraceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11993,13 +11978,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     MeshTrafficPermissionCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12385,6 +12369,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12744,6 +12729,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12817,13 +12803,12 @@ components:
           description: Time at which the resource was updated
           format: date-time
           example: '0001-01-01T00:00:00Z'
-        status:
-          readOnly: true
     HostnameGeneratorCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13187,6 +13172,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13406,6 +13392,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13651,6 +13638,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
