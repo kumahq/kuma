@@ -51,6 +51,20 @@ func EnvoyConfigTest() {
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
+		// demo-client identity ready
+		Eventually(func(g Gomega) {
+			spec, status, err := GetMeshServiceStatus(universal.Cluster, "demo-client", meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: "demo-client",
+				},
+			}))
+			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+		}, "30s", "1s").Should(Succeed())
+
+		// test-server identity ready
 		Eventually(func(g Gomega) {
 			spec, status, err := GetMeshServiceStatus(universal.Cluster, "test-server", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
