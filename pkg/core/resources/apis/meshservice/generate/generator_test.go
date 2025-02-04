@@ -110,7 +110,7 @@ var _ = Describe("MeshService generator", func() {
 		Consistently(func(g Gomega) {
 			mss := &meshservice_api.MeshServiceResourceList{}
 			g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
-			g.Expect(mss.GetItems()).To(HaveLen(0))
+			g.Expect(mss.GetItems()).To(BeEmpty())
 		}, "1s", "100ms").Should(Succeed())
 	})
 
