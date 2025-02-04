@@ -12,6 +12,18 @@ does not have any particular instructions.
 
 A successful DELETE and PUT request without any warnings will now set "content-type: application/json" header and return empty json.
 
+### More strict validation rules for resource names
+
+In Kuma 2.7.x we deprecated usage of non [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) characters and since 2.10.x it's no longer possible to create or update non RFC compliant resource name. In order to be compatible with Kubernetes naming policy we updated the validation rules. Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+
+Before the upgrade ensure that your resources don't use unsupported characters.
+
 ### MeshLoadBalancingStrategy
 
 #### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`

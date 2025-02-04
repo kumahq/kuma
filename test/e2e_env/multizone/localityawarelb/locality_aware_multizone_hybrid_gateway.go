@@ -123,9 +123,10 @@ conf:
 		NewClusterSetup().
 			Install(Parallel(
 				DemoClientUniversal(
-					"demo-client_locality-aware-lb-gateway_svc",
+					"demo-client-locality-aware-lb-gateway-svc",
 					mesh,
 					WithTransparentProxy(true),
+					WithServiceName("demo-client_locality-aware-lb_svc"),
 				),
 				TestServerUniversal("test-server-zone-5", mesh,
 					WithServiceName("test-server_locality-aware-lb-gateway_svc_80"),
