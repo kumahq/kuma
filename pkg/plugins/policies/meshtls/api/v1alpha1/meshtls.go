@@ -8,6 +8,7 @@ import (
 
 // MeshTLS
 // +kuma:policy:singular_display_name=Mesh TLS
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -15,6 +16,14 @@ type MeshTLS struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
+	// Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
+	// default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+	Rules []Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound timeouts
+	Default Conf `json:"default,omitempty"`
 }
 
 type From struct {

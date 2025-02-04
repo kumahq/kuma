@@ -17,9 +17,11 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -98,10 +100,7 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		conf := core_rules.ComputeConf[api.Conf](fromRules.Rules[listenerKey], subsetutils.MeshElement())
-		if conf == nil {
-			continue
-		}
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
 		l, err := configure(proxy, listener, iface, inbound, conf, ctx)
 		if err != nil {
 			return err
@@ -137,13 +136,10 @@ func applyToOutbounds(
 			continue
 		}
 		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf *api.Conf
-		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
+		var conf api.Conf
+		for _, r := range fromRules.InboundRules {
+			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
-		}
-		if conf == nil {
-			continue
 		}
 		if err := configureParams(conf, cluster); err != nil {
 			return err
@@ -173,7 +169,7 @@ func applyToGateways(
 		if conf == nil {
 			continue
 		}
-		if err := configureParams(conf, cluster); err != nil {
+		if err := configureParams(*conf, cluster); err != nil {
 			return err
 		}
 	}
@@ -186,19 +182,19 @@ func applyToRealResources(
 ) error {
 	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf *api.Conf
-		for _, r := range fromRules.Rules {
-			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
+		var conf api.Conf
+		for _, r := range fromRules.InboundRules {
+			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
-		}
-		if conf == nil {
-			continue
 		}
 
 		for typ, resources := range resType {
 			switch typ {
 			case envoy_resource.ClusterType:
 				for _, cluster := range resources {
+					if cluster.Origin == metadata.OriginGateway {
+						continue
+					}
 					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
 						return err
 					}
@@ -209,7 +205,7 @@ func applyToRealResources(
 	return nil
 }
 
-func configureParams(conf *api.Conf, cluster *envoy_cluster.Cluster) error {
+func configureParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	if cluster.TransportSocket.GetName() != wellknown.TransportSocketTLS {
 		// we only want to configure TLS Version on listeners protected by Kuma's TLS
 		return nil
@@ -270,14 +266,7 @@ func configureParams(conf *api.Conf, cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func configure(
-	proxy *core_xds.Proxy,
-	listener *envoy_listener.Listener,
-	iface mesh_proto.InboundInterface,
-	inbound *mesh_proto.Dataplane_Networking_Inbound,
-	conf *api.Conf,
-	xdsCtx xds_context.Context,
-) (envoy_common.NamedResource, error) {
+func configure(proxy *core_xds.Proxy, listener *envoy_listener.Listener, iface mesh_proto.InboundInterface, inbound *mesh_proto.Dataplane_Networking_Inbound, conf api.Conf, xdsCtx xds_context.Context) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
