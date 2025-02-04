@@ -180,5 +180,3 @@ properties:
     description: 'Time at which the resource was updated'
     format: date-time
     example: '0001-01-01T00:00:00Z'
-  status:
-    readOnly: true
