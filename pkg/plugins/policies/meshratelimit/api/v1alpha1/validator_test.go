@@ -378,7 +378,7 @@ from:
 				expected: `
 violations:
   - field: spec.from
-    message: 'must not be defined'`,
+    message: 'must not be defined when the scope includes a Gateway, exclude non-gateway resources or select only gateways and use spec.to'`,
 			}),
 			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
 				inputYaml: `
@@ -401,7 +401,7 @@ from:
 				expected: `
 violations:
   - field: spec.from
-    message: 'must not be defined'`,
+    message: 'must not be defined when the scope includes a Gateway, exclude non-gateway resources or select only gateways and use spec.to'`,
 			}),
 		)
 	})
