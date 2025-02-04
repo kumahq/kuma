@@ -11,7 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	inbound2 "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
@@ -119,7 +119,7 @@ func applyToInbounds(
 			continue
 		}
 
-		conf := inbound2.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
 		if err := configure(conf, listener, nil); err != nil {
 			return err
 		}
