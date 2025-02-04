@@ -111,7 +111,13 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 			}
 		}
 	case q.byIdentifier != nil:
-		resources = []core_model.Resource{reader.Get(rtype, *q.byIdentifier)}
+		if r := reader.Get(rtype, *q.byIdentifier); r != nil {
+			resources = []core_model.Resource{r}
+		}
+	}
+
+	if len(resources) == 0 {
+		return []*ResourceSection{}
 	}
 
 	if q.port == 0 && q.sectionName == "" {

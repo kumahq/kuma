@@ -61,6 +61,27 @@ var _ = Describe("ResolveTargetRef", func() {
 		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend"))
 	})
 
+	It("should not resolve MeshService targetRef when there is no MeshService", func() {
+		// given 'policy-1' with targetRef (somewhere in its spec) to 'backend'
+		policyMeta := &test_model.ResourceMeta{
+			Name: "policy-1",
+			Mesh: "mesh-1",
+		}
+		targetRef := common_api.TargetRef{
+			Kind:      common_api.MeshService,
+			Name:      "backend",
+			Namespace: "kuma-demo",
+		}
+
+		// given no MeshServices
+
+		// when
+		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+
+		// then
+		Expect(resolved).To(BeEmpty())
+	})
+
 	It("should resolve MeshService targetRef with section name", func() {
 		// given 'policy-1' with targetRef (somewhere in its spec) to 'backend'
 		policyMeta := &test_model.ResourceMeta{
