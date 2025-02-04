@@ -71,20 +71,6 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 	// targetRef to query
 	var q query
 	switch {
-	case targetRef.Kind == common_api.MeshService && targetRef.SectionName == "":
-		if name, namespace, port, err := parseService(targetRef.Name); err == nil {
-			q = query{
-				byLabels: map[string]string{
-					mesh_proto.KubeNamespaceTag: namespace,
-					mesh_proto.DisplayName:      name,
-				},
-				port: port,
-			}
-		} else {
-			q = query{
-				byIdentifier: pointer.To(core_model.TargetRefToResourceIdentifier(tMeta, targetRef)),
-			}
-		}
 	case len(targetRef.Labels) > 0:
 		q = query{
 			byLabels:    targetRef.Labels,
@@ -94,6 +80,20 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 		q = query{
 			byIdentifier: pointer.To(core_model.TargetRefToResourceIdentifier(tMeta, targetRef)),
 			sectionName:  targetRef.SectionName,
+		}
+	}
+
+	// backwards compatibility, we want old policies with targetRef{kind:MeshService,name:backend_kuma-demo_svc_8080}
+	// to resolve to new MeshService backend in the kuma-demo namespace on port 8080
+	if targetRef.Kind == common_api.MeshService && targetRef.SectionName == "" {
+		if name, namespace, port, err := parseService(targetRef.Name); err == nil {
+			q = query{
+				byLabels: map[string]string{
+					mesh_proto.KubeNamespaceTag: namespace,
+					mesh_proto.DisplayName:      name,
+				},
+				port: port,
+			}
 		}
 	}
 
