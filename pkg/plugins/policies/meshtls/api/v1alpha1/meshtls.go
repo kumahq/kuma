@@ -22,7 +22,7 @@ type MeshTLS struct {
 }
 
 type Rule struct {
-	// Default contains configuration of the inbound timeouts
+	// Default contains configuration of the inbound tls
 	Default Conf `json:"default,omitempty"`
 }
 

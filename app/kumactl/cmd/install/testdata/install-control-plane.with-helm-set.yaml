@@ -6868,7 +6868,7 @@ spec:
                 items:
                   properties:
                     default:
-                      description: Default contains configuration of the inbound timeouts
+                      description: Default contains configuration of the inbound tls
                       properties:
                         mode:
                           description: Mode defines the behavior of inbound listeners
