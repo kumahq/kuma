@@ -32,6 +32,7 @@ message Mesh {
     repeated CertificateAuthorityBackend backends = 2;
 
     // If enabled, skips CA validation.
+    // Default: false
     bool skipValidation = 3;
   }
 
@@ -180,6 +181,7 @@ message Networking {
   // Outbound describes the common mesh outbound settings
   message Outbound {
     // Control the passthrough cluster
+    // Default: false
     google.protobuf.BoolValue passthrough = 1;
   }
 
@@ -227,6 +229,7 @@ message DatadogTracingBackendConfig {
   // `backend` service that communicates with a couple of databases, you would
   // get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
   // `backend_OUTBOUND_db2` in Datadog. Default: false
+  // Default: false
   bool splitService = 3;
 }
 
@@ -235,6 +238,7 @@ message ZipkinTracingBackendConfig {
   string url = 1;
 
   // Generate 128bit traces. Default: false
+  // Default: false
   bool traceId128bit = 2;
 
   // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
@@ -245,6 +249,7 @@ message ZipkinTracingBackendConfig {
   // Determines whether client and server spans will share the same span
   // context. Default: true.
   // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+  // Default: false
   google.protobuf.BoolValue sharedSpanContext = 4;
 }
 
@@ -290,6 +295,7 @@ message TcpLoggingBackendConfig {
 // Routing defines configuration for the routing in the mesh
 message Routing {
   // Enable the Locality Aware Load Balancing
+  // Default: false
   bool localityAwareLoadBalancing = 1;
 
   // Enable routing traffic to services in other zone or external services

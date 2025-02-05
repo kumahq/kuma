@@ -13,9 +13,12 @@ components:
             Determines whether client and server spans will share the same span
             context. Default: true.
             https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+            Default: false
           type: boolean
         traceId128bit:
-          description: 'Generate 128bit traces. Default: false'
+          description: |-
+            Generate 128bit traces. Default: false
+            Default: false
           type: boolean
         url:
           description: Address of Zipkin collector.

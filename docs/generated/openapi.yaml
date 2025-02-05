@@ -12203,6 +12203,8 @@ components:
             and
 
             `backend_OUTBOUND_db2` in Datadog. Default: false
+
+            Default: false
           type: boolean
       type: object
     FileLoggingBackendConfig:
@@ -12448,7 +12450,9 @@ components:
               description: Name of the enabled backend
               type: string
             skipValidation:
-              description: If enabled, skips CA validation.
+              description: |-
+                If enabled, skips CA validation.
+                Default: false
               type: boolean
           type: object
         name:
@@ -12460,7 +12464,9 @@ components:
               description: Outbound settings
               properties:
                 passthrough:
-                  description: Control the passthrough cluster
+                  description: |-
+                    Control the passthrough cluster
+                    Default: false
                   type: boolean
               type: object
           type: object
@@ -12468,14 +12474,19 @@ components:
           description: Routing settings of the mesh
           properties:
             defaultForbidMeshExternalServiceAccess:
+              default: false
               description: |-
                 If true, blocks traffic to MeshExternalServices.
                 Default: false
               type: boolean
             localityAwareLoadBalancing:
-              description: Enable the Locality Aware Load Balancing
+              default: false
+              description: |-
+                Enable the Locality Aware Load Balancing
+                Default: false
               type: boolean
             zoneEgress:
+              default: false
               description: >-
                 Enable routing traffic to services in other zone or external
                 services
@@ -12706,9 +12717,13 @@ components:
             context. Default: true.
 
             https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+
+            Default: false
           type: boolean
         traceId128bit:
-          description: 'Generate 128bit traces. Default: false'
+          description: |-
+            Generate 128bit traces. Default: false
+            Default: false
           type: boolean
         url:
           description: Address of Zipkin collector.

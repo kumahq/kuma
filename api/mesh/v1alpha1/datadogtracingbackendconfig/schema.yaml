@@ -15,6 +15,7 @@ components:
             `backend` service that communicates with a couple of databases, you would
             get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
             `backend_OUTBOUND_db2` in Datadog. Default: false
+            Default: false
           type: boolean
       type: object
 info:

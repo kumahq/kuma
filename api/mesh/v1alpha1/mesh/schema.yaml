@@ -192,7 +192,9 @@ properties:
         description: Name of the enabled backend
         type: string
       skipValidation:
-        description: If enabled, skips CA validation.
+        description: |-
+          If enabled, skips CA validation.
+          Default: false
         type: boolean
     type: object
   name:
@@ -204,7 +206,9 @@ properties:
         description: Outbound settings
         properties:
           passthrough:
-            description: Control the passthrough cluster
+            description: |-
+              Control the passthrough cluster
+              Default: false
             type: boolean
         type: object
     type: object
@@ -212,14 +216,19 @@ properties:
     description: Routing settings of the mesh
     properties:
       defaultForbidMeshExternalServiceAccess:
+        default: false
         description: |-
           If true, blocks traffic to MeshExternalServices.
           Default: false
         type: boolean
       localityAwareLoadBalancing:
-        description: Enable the Locality Aware Load Balancing
+        default: false
+        description: |-
+          Enable the Locality Aware Load Balancing
+          Default: false
         type: boolean
       zoneEgress:
+        default: false
         description: |-
           Enable routing traffic to services in other zone or external services
           through ZoneEgress. Default: false

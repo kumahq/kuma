@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
@@ -460,7 +461,8 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
 	}
-	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
+	base := "github.com/kumahq/kuma/"
+	err := reflector.AddGoComments(base, path.Join(readDir, "api/"))
 	if err != nil {
 		return err
 	}
@@ -491,6 +493,14 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		if !r.Global {
 			schema.Required = append(schema.Required, "mesh")
 		}
+
+		modifySchema(&schema, "", func(path string, s *jsonschema.Schema) {
+			comment, ok := reflector.CommentMap[base + "api/mesh/v1alpha1." + path]
+
+			if ok && strings.Contains(comment, "Default:") {
+				s.Default = extractDefaultValue(comment)
+			}
+		})
 
 		out, err := yaml.Marshal(schema)
 		if err != nil {
@@ -690,4 +700,56 @@ func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, 
 		return schema, true
 	}
 	return nil, false
+}
+
+// extractDefaultValue extracts the value following "Default: " in a string
+func extractDefaultValue(input string) any {
+	re := regexp.MustCompile(`Default:\s*(\S+)`)
+	matches := re.FindStringSubmatch(input)
+
+	if len(matches) > 1 {
+		switch matches[1] {
+		case "true":
+			return true
+		case "false":
+			return false
+		default:
+			return matches[1]
+		}
+	}
+	return "" // Return empty string if no match is found
+}
+
+// capitalizeFirstLetter capitalizes the first letter of a string
+func capitalizeFirstLetter(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
+}
+
+// modifySchema recursively visits all properties and applies a modification function with capitalized path tracking
+func modifySchema(schema *jsonschema.Schema, path string, modifyFunc func(path string, s *jsonschema.Schema)) {
+	if schema == nil || schema.Properties == nil {
+		return
+	}
+
+	// Iterate over properties in insertion order
+	for pair := schema.Properties.Oldest(); pair != nil; pair = pair.Next() {
+		key := pair.Key
+		prop := pair.Value
+
+		// Capitalize the key before appending to path
+		capitalizedKey := capitalizeFirstLetter(key)
+		fullPath := path + "." + capitalizedKey
+		if path == "" {
+			fullPath = capitalizedKey // Avoid leading "."
+		}
+
+		// Apply the modification function
+		modifyFunc(fullPath, prop)
+
+		// Recursively visit nested properties
+		modifySchema(prop, fullPath, modifyFunc)
+	}
 }

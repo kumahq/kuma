@@ -559,6 +559,7 @@ type DatadogTracingBackendConfig struct {
 	// `backend` service that communicates with a couple of databases, you would
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
 	// `backend_OUTBOUND_db2` in Datadog. Default: false
+	// Default: false
 	SplitService bool `protobuf:"varint,3,opt,name=splitService,proto3" json:"splitService,omitempty"`
 }
 
@@ -623,6 +624,7 @@ type ZipkinTracingBackendConfig struct {
 	// Address of Zipkin collector.
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
 	// Generate 128bit traces. Default: false
+	// Default: false
 	TraceId128Bit bool `protobuf:"varint,2,opt,name=traceId128bit,proto3" json:"traceId128bit,omitempty"`
 	// Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
 	// httpJson see
@@ -631,6 +633,7 @@ type ZipkinTracingBackendConfig struct {
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+	// Default: false
 	SharedSpanContext *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=sharedSpanContext,proto3" json:"sharedSpanContext,omitempty"`
 }
 
@@ -935,6 +938,7 @@ type Routing struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Enable the Locality Aware Load Balancing
+	// Default: false
 	LocalityAwareLoadBalancing bool `protobuf:"varint,1,opt,name=localityAwareLoadBalancing,proto3" json:"localityAwareLoadBalancing,omitempty"`
 	// Enable routing traffic to services in other zone or external services
 	// through ZoneEgress. Default: false
@@ -1008,6 +1012,7 @@ type Mesh_Mtls struct {
 	// List of available Certificate Authority backends
 	Backends []*CertificateAuthorityBackend `protobuf:"bytes,2,rep,name=backends,proto3" json:"backends,omitempty"`
 	// If enabled, skips CA validation.
+	// Default: false
 	SkipValidation bool `protobuf:"varint,3,opt,name=skipValidation,proto3" json:"skipValidation,omitempty"`
 }
 
@@ -1439,6 +1444,7 @@ type Networking_Outbound struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Control the passthrough cluster
+	// Default: false
 	Passthrough *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=passthrough,proto3" json:"passthrough,omitempty"`
 }
 
