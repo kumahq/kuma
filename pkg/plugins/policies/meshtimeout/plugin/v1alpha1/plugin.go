@@ -42,9 +42,6 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if len(policies.ToRules.Rules) == 0 && len(policies.FromRules.Rules) == 0 && len(policies.GatewayRules.ToRules.ByListener) == 0 && len(policies.ToRules.ResourceRules) == 0 {
-		return nil
-	}
 
 	listeners := xds.GatherListeners(rs)
 	clusters := xds.GatherClusters(rs)
