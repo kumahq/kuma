@@ -13,9 +13,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -28,6 +31,20 @@ import (
 func EnvoyConfigTest() {
 	meshName := "envoyconfig"
 
+	waitMeshServiceReady := func(name string) {
+		Eventually(func(g Gomega) {
+			spec, status, err := GetMeshServiceStatus(universal.Cluster, name, meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(spec.Identities).To(Equal([]meshservice_api.MeshServiceIdentity{
+				{
+					Type:  meshservice_api.MeshServiceIdentityServiceTagType,
+					Value: name,
+				},
+			}))
+			g.Expect(status.TLS.Status).To(Equal(meshservice_api.TLSReady))
+		}, "30s", "1s").Should(Succeed())
+	}
+
 	BeforeAll(func() {
 		err := NewClusterSetup().
 			Install(
@@ -35,9 +52,11 @@ func EnvoyConfigTest() {
 					builders.Mesh().
 						WithName(meshName).
 						WithoutInitialPolicies().
-						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive),
+						WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+						WithBuiltinMTLSBackend("ca-1").WithEnabledMTLSBackend("ca-1"),
 				),
 			).
+			Install(MeshTrafficPermissionAllowAllUniversal(meshName)).
 			Install(DemoClientUniversal("demo-client", meshName,
 				WithTransparentProxy(true)),
 			).
@@ -46,6 +65,9 @@ func EnvoyConfigTest() {
 			).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		waitMeshServiceReady("demo-client")
+		waitMeshServiceReady("test-server")
 
 		Eventually(func(g Gomega) {
 			_, err := client.CollectEchoResponse(universal.Cluster, "demo-client", "test-server.svc.mesh.local")
@@ -68,7 +90,9 @@ func EnvoyConfigTest() {
 			meshName,
 			meshtimeout.MeshTimeoutResourceTypeDescriptor,
 			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
+			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
+			meshtls.MeshTLSResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -76,7 +100,7 @@ func EnvoyConfigTest() {
 		output, err := universal.Cluster.GetKumactlOptions().
 			RunKumactlAndGetOutput("inspect", "dataplane", dpp, "--type", "config", "--mesh", meshName, "--shadow", "--include=diff")
 		Expect(err).ToNot(HaveOccurred())
-		redacted := redactIPs(output)
+		redacted := redactStatPrefixes(redactIPs(output))
 
 		response := types.InspectDataplanesConfig{}
 		Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
@@ -110,7 +134,9 @@ func EnvoyConfigTest() {
 		},
 		test.EntriesForFolder("meshtimeout", "envoyconfig"),
 		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
+		test.EntriesForFolder("meshfaultinjection", "envoyconfig"),
 		test.EntriesForFolder("meshratelimit", "envoyconfig"),
+		test.EntriesForFolder("meshtls", "envoyconfig"),
 	)
 }
 
@@ -150,4 +176,11 @@ var ipRegex = regexp.MustCompile(ipv4Regex + "|" + ipv6Regex)
 
 func redactIPs(jsonStr string) string {
 	return ipRegex.ReplaceAllString(jsonStr, "IP_REDACTED")
+}
+
+// TODO this should be removed after fixing: https://github.com/kumahq/kuma/issues/12733
+var statsPrefixRegex = regexp.MustCompile("\"statPrefix\":\\s\".*\"")
+
+func redactStatPrefixes(jsonStr string) string {
+	return statsPrefixRegex.ReplaceAllString(jsonStr, "\"statPrefix\": \"STAT_PREFIX_REDACTED\"")
 }

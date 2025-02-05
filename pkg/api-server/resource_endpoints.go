@@ -362,7 +362,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest, create); err != nil {
+	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
@@ -515,6 +515,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+		return
 	}
 
 	resp := api_server_types.DeleteSuccessResponse{}
@@ -523,7 +524,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource, create bool) error {
+func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -539,16 +540,8 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	}
 
 	err.AddError("labels", r.validateLabels(resource))
+	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
-	if create {
-		err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
-	} else {
-		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resource.GetMeta(), r.descriptor.Scope); verr.HasViolations() {
-			err.AddError("", verr)
-		} else if msg != "" {
-			log.Info(msg, "type", r.descriptor.Name, "mesh", resource.GetMeta().Mesh, "name", resource.GetMeta().Name)
-		}
-	}
 	return err.OrNil()
 }
 

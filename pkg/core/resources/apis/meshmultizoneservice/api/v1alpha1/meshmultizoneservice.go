@@ -31,13 +31,6 @@ type Port struct {
 	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
 }
 
-func (p *Port) GetName() string {
-	if p.Name != "" {
-		return p.Name
-	}
-	return fmt.Sprintf("%d", p.Port)
-}
-
 type Selector struct {
 	// MeshService selects MeshServices
 	MeshService MeshServiceSelector `json:"meshService"`

@@ -3985,11 +3985,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -3999,6 +4001,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5210,11 +5213,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -5224,6 +5229,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5729,11 +5735,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -5743,6 +5751,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6221,11 +6230,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -6235,6 +6246,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7032,11 +7044,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -7046,6 +7060,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7800,11 +7815,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -7814,6 +7831,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8136,11 +8154,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -8150,6 +8170,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8325,11 +8346,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -8339,6 +8362,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -9046,11 +9070,13 @@ components:
             - default
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -9060,6 +9086,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -9639,11 +9666,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -9653,6 +9682,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10290,11 +10320,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -10304,6 +10336,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10636,11 +10669,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -10650,6 +10685,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11212,11 +11248,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11226,6 +11264,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11497,11 +11536,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11511,6 +11552,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11851,11 +11893,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11865,6 +11909,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12097,11 +12142,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -12111,6 +12158,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12496,6 +12544,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12855,6 +12904,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12917,11 +12967,13 @@ components:
               type: string
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -12931,6 +12983,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13174,11 +13227,13 @@ components:
             - match
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13286,11 +13341,13 @@ components:
                   type: string
               type: object
           type: object
+          readOnly: true
     MeshExternalServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13370,11 +13427,13 @@ components:
             - selector
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13502,11 +13561,13 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13612,11 +13673,13 @@ components:
               type: string
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13744,11 +13807,13 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
