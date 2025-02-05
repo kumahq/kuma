@@ -9190,11 +9190,7 @@ components:
               items:
                 properties:
                   default:
-                    description: >-
-                      Default is a configuration specific to the group of
-                      clients referenced in
-
-                      'targetRef'
+                    description: Default contains configuration of the inbound rate limits
                     properties:
                       local:
                         description: >-

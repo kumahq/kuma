@@ -24,8 +24,7 @@ type MeshRateLimit struct {
 }
 
 type Rule struct {
-	// Default is a configuration specific to the group of clients referenced in
-	// 'targetRef'
+	// Default contains configuration of the inbound rate limits
 	Default Conf `json:"default,omitempty"`
 }
 
