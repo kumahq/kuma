@@ -26,9 +26,10 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
+	"path/filepath"
 )
 
-func EnvoyConfigTest() {
+func Sidecars() {
 	meshName := "envoyconfig"
 
 	waitMeshServiceReady := func(name string) {
@@ -132,11 +133,11 @@ func EnvoyConfigTest() {
 			Expect(getConfig("demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
 			Expect(getConfig("test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
 		},
-		test.EntriesForFolder("meshtimeout", "envoyconfig"),
-		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
-		test.EntriesForFolder("meshfaultinjection", "envoyconfig"),
-		test.EntriesForFolder("meshratelimit", "envoyconfig"),
-		test.EntriesForFolder("meshtls", "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtimeout"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshaccesslog"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshfaultinjection"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
 	)
 }
 

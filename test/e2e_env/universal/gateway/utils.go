@@ -163,7 +163,7 @@ func GatewayClientAppUniversal(name string) InstallFunc {
 	}
 }
 
-func echoServerApp(mesh, name, service, instance string) InstallFunc {
+func EchoServerApp(mesh, name, service, instance string) InstallFunc {
 	return func(cluster Cluster) error {
 		return TestServerUniversal(
 			name,
