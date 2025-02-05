@@ -16,8 +16,8 @@ type MeshTLS struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
-	// Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
-	// default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
+	// Rules defines inbound tls configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
 	Rules []Rule `json:"rules,omitempty"`
 }
 

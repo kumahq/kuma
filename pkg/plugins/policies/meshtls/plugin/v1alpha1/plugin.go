@@ -266,7 +266,14 @@ func configureParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 	return nil
 }
 
-func configure(proxy *core_xds.Proxy, listener *envoy_listener.Listener, iface mesh_proto.InboundInterface, inbound *mesh_proto.Dataplane_Networking_Inbound, conf api.Conf, xdsCtx xds_context.Context) (envoy_common.NamedResource, error) {
+func configure(
+	proxy *core_xds.Proxy,
+	listener *envoy_listener.Listener,
+	iface mesh_proto.InboundInterface,
+	inbound *mesh_proto.Dataplane_Networking_Inbound,
+	conf api.Conf,
+	xdsCtx xds_context.Context,
+) (envoy_common.NamedResource, error) {
 	mesh := xdsCtx.Mesh.Resource
 	mode := pointer.DerefOr(conf.Mode, getMeshTLSMode(mesh))
 	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
