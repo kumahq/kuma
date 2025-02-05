@@ -3441,7 +3441,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -3529,7 +3531,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -3785,7 +3789,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -4389,7 +4395,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -4477,7 +4485,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -5018,7 +5028,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5271,7 +5283,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5359,7 +5373,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -5547,7 +5563,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5694,7 +5712,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -6049,7 +6069,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -6196,7 +6218,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -6319,7 +6343,9 @@ components:
                                     format: int32
                                     type: integer
                                   proxyTypes:
-                                    default: []
+                                    default:
+                                      - Sidecar
+                                      - Gateway
                                     description: >-
                                       ProxyTypes specifies the data plane types
                                       that are subject to the policy. When not
@@ -6478,7 +6504,9 @@ components:
                                             format: int32
                                             type: integer
                                           proxyTypes:
-                                            default: []
+                                            default:
+                                              - Sidecar
+                                              - Gateway
                                             description: >-
                                               ProxyTypes specifies the data plane
                                               types that are subject to the policy.
@@ -6882,7 +6910,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -7029,7 +7059,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -7659,7 +7691,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -8011,7 +8045,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -8205,7 +8241,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -8934,7 +8972,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -9221,7 +9261,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -9309,7 +9351,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -9535,7 +9579,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -9682,7 +9728,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -10199,7 +10247,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10346,7 +10396,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -10455,7 +10507,9 @@ components:
                                     format: int32
                                     type: integer
                                   proxyTypes:
-                                    default: []
+                                    default:
+                                      - Sidecar
+                                      - Gateway
                                     description: >-
                                       ProxyTypes specifies the data plane types
                                       that are subject to the policy. When not
@@ -10552,7 +10606,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10788,7 +10844,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10968,7 +11026,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -11138,7 +11198,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -11346,7 +11408,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -11434,7 +11498,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -11794,7 +11860,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -11957,7 +12025,9 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
-                        default: []
+                        default:
+                          - Sidecar
+                          - Gateway
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -12045,7 +12115,9 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
-                  default: []
+                  default:
+                    - Sidecar
+                    - Gateway
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
