@@ -377,6 +377,17 @@ violations:
   - field: spec
     message: fields 'to' and 'from' must be empty when 'rules' is defined`,
 			}),
+			Entry("rules with empty spec", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default: {}`,
+				expected: `
+violations:
+  - field: spec.rules[0].default.rules[0]
+    message: at least one timeout should be configured`,
+			}),
 		)
 	})
 })

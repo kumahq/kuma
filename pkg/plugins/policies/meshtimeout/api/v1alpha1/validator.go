@@ -23,6 +23,7 @@ func (r *MeshTimeoutResource) validate() error {
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
 	verr.AddErrorAt(path, validateFrom(r.Spec.From, topLevel.Kind))
 	verr.AddErrorAt(path, validateTo(r.Spec.To, topLevel.Kind))
+	verr.AddErrorAt(path, validateRules(r.Spec.Rules, topLevel.Kind))
 	return verr.OrNil()
 }
 
@@ -112,6 +113,15 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 
 		defaultField := path.Field("default")
 		verr.Add(validateDefault(defaultField, toItem.Default, topLevelKind))
+	}
+	return verr
+}
+
+func validateRules(rules []Rule, topLevelKind common_api.TargetRefKind) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path.Field("default"), validateDefault(path, rule.Default, topLevelKind))
 	}
 	return verr
 }
