@@ -20,6 +20,7 @@ type MeshProxyPatch struct {
 
 type Conf struct {
 	// AppendModifications is a list of modifications applied on the selected proxy.
+	// +kubebuilder:default={}
 	AppendModifications []Modification `json:"appendModifications"`
 }
 
@@ -75,6 +76,7 @@ type ClusterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster
 	// resource
+	// +kubebuilder:default={}
 	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
@@ -110,6 +112,7 @@ type ListenerMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Listener
 	// resource
+	// +kubebuilder:default={}
 	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
@@ -147,6 +150,7 @@ type NetworkFilterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy Listener's
 	// filter.
+	// +kubebuilder:default={}
 	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
@@ -187,6 +191,7 @@ type HTTPFilterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
 	// HTTP Filter available in HTTP Connection Manager in a Listener resource.
+	// +kubebuilder:default={}
 	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
@@ -227,6 +232,7 @@ type VirtualHostMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
 	// VirtualHost resource
+	// +kubebuilder:default={}
 	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 

@@ -100,6 +100,7 @@ type TargetRef struct {
 	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
 	// all data plane types are targeted by the policy.
 	// +kubebuilder:validation:MinItems=1
+	// +kubebuilder:default={}
 	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
 	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
 	// will be targeted.

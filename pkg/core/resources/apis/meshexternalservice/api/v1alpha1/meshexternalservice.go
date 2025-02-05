@@ -23,6 +23,7 @@ type MeshExternalService struct {
 	// Extension struct for a plugin configuration, in the presence of an extension `endpoints` and `tls` are not required anymore - it's up to the extension to validate them independently.
 	Extension *Extension `json:"extension,omitempty"`
 	// Endpoints defines a list of destinations to send traffic to.
+	// +kubebuilder:default={}
 	Endpoints []Endpoint `json:"endpoints,omitempty"`
 	// Tls provides a TLS configuration when proxy is resposible for a TLS origination
 	Tls *Tls `json:"tls,omitempty"`
@@ -99,6 +100,7 @@ type Verification struct {
 	// ServerName overrides the default Server Name Indicator set by Kuma.
 	ServerName *string `json:"serverName,omitempty"`
 	// SubjectAltNames list of names to verify in the certificate.
+	// +kubebuilder:default={}
 	SubjectAltNames *[]SANMatch `json:"subjectAltNames,omitempty"`
 	// CaCert defines a certificate of CA.
 	CaCert *v1alpha1.DataSource `json:"caCert,omitempty"`

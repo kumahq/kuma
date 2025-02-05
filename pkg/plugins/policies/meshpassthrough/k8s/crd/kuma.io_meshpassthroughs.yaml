@@ -53,6 +53,7 @@ spec:
                 description: MeshPassthrough configuration.
                 properties:
                   appendMatch:
+                    default: []
                     description: AppendMatch is a list of destinations that should
                       be allowed through the sidecar.
                     items:
@@ -138,6 +139,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.

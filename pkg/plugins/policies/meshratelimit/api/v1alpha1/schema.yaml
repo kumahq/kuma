@@ -22,6 +22,7 @@ properties:
     description: Spec is the specification of the Kuma MeshRateLimit resource.
     properties:
       from:
+        default: []
         description: From list makes a match between clients and corresponding configurations
         items:
           properties:
@@ -48,6 +49,7 @@ properties:
                               description: The Headers to be added to the HTTP response on a rate limit event
                               properties:
                                 add:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -67,6 +69,7 @@ properties:
                                     - name
                                   x-kubernetes-list-type: map
                                 set:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -176,6 +179,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.
@@ -243,6 +247,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.
@@ -267,6 +272,7 @@ properties:
             type: object
         type: object
       to:
+        default: []
         description: To list makes a match between clients and corresponding configurations
         items:
           properties:
@@ -293,6 +299,7 @@ properties:
                               description: The Headers to be added to the HTTP response on a rate limit event
                               properties:
                                 add:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -312,6 +319,7 @@ properties:
                                     - name
                                   x-kubernetes-list-type: map
                                 set:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -421,6 +429,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.

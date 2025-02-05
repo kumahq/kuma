@@ -16,6 +16,7 @@ type MeshLoadBalancingStrategy struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
+	// +kubebuilder:validation:MinItems=1
 	To []To `json:"to,omitempty"`
 }
 
@@ -48,6 +49,7 @@ type LocalityAwareness struct {
 
 type LocalZone struct {
 	// AffinityTags list of tags for local zone load balancing.
+	// +kubebuilder:default={}
 	AffinityTags *[]AffinityTag `json:"affinityTags,omitempty"`
 }
 
@@ -65,6 +67,7 @@ type AffinityTag struct {
 
 type CrossZone struct {
 	// Failover defines list of load balancing rules in order of priority
+	// +kubebuilder:default={}
 	Failover []Failover `json:"failover,omitempty"`
 	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
 	// next priority starts.
@@ -82,12 +85,14 @@ type Failover struct {
 }
 
 type FromZone struct {
+	// +kubebuilder:default={}
 	Zones []string `json:"zones"`
 }
 
 type ToZone struct {
 	// Type defines how target zones will be picked from available zones
 	Type  ToZoneType `json:"type"`
+	// +kubebuilder:default={}
 	Zones *[]string  `json:"zones,omitempty"`
 }
 
@@ -194,6 +199,7 @@ type RingHash struct {
 	// These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
 	// set to true, and there is already a hash generated, the hash is returned immediately,
 	// ignoring the rest of the hash policy list.
+	// +kubebuilder:default={}
 	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }
 
@@ -279,5 +285,6 @@ type Maglev struct {
 	// These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
 	// set to true, and there is already a hash generated, the hash is returned immediately,
 	// ignoring the rest of the hash policy list.
+	// +kubebuilder:default={}
 	HashPolicies *[]HashPolicy `json:"hashPolicies,omitempty"`
 }

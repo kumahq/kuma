@@ -27,6 +27,7 @@ properties:
           referenced in 'targetRef'.
         properties:
           appendModifications:
+            default: []
             description: AppendModifications is a list of modifications applied on the selected proxy.
             items:
               properties:
@@ -34,6 +35,7 @@ properties:
                   description: Cluster is a modification of Envoy's Cluster resource.
                   properties:
                     jsonPatches:
+                      default: []
                       description: |-
                         JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster
                         resource
@@ -106,6 +108,7 @@ properties:
                     available in HTTP Connection Manager in a Listener resource.
                   properties:
                     jsonPatches:
+                      default: []
                       description: |-
                         JsonPatches specifies list of jsonpatches to apply to on Envoy's
                         HTTP Filter available in HTTP Connection Manager in a Listener resource.
@@ -187,6 +190,7 @@ properties:
                   description: Listener is a modification of Envoy's Listener resource.
                   properties:
                     jsonPatches:
+                      default: []
                       description: |-
                         JsonPatches specifies list of jsonpatches to apply to on Envoy's Listener
                         resource
@@ -262,6 +266,7 @@ properties:
                   description: NetworkFilter is a modification of Envoy Listener's filter.
                   properties:
                     jsonPatches:
+                      default: []
                       description: |-
                         JsonPatches specifies list of jsonpatches to apply to on Envoy Listener's
                         filter.
@@ -345,6 +350,7 @@ properties:
                     referenced in HTTP Connection Manager in a Listener resource.
                   properties:
                     jsonPatches:
+                      default: []
                       description: |-
                         JsonPatches specifies list of jsonpatches to apply to on Envoy's
                         VirtualHost resource
@@ -460,6 +466,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.

@@ -3216,6 +3216,7 @@ components:
           description: Spec is the specification of the Kuma MeshAccessLog resource.
           properties:
             from:
+              default: []
               description: >-
                 From list makes a match between clients and corresponding
                 configurations
@@ -3229,6 +3230,7 @@ components:
                       'targetRef'
                     properties:
                       backends:
+                        default: []
                         items:
                           properties:
                             file:
@@ -3244,6 +3246,7 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      default: []
                                       example:
                                         - key: start_time
                                           value: '%START_TIME%'
@@ -3285,6 +3288,7 @@ components:
                               description: Defines an OpenTelemetry logging backend.
                               properties:
                                 attributes:
+                                  default: []
                                   description: >-
                                     Attributes can contain placeholders
                                     available on
@@ -3344,6 +3348,7 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      default: []
                                       example:
                                         - key: start_time
                                           value: '%START_TIME%'
@@ -3436,6 +3441,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -3523,6 +3529,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -3553,6 +3560,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between the consumed services and
                 corresponding configurations
@@ -3566,6 +3574,7 @@ components:
                       'targetRef'
                     properties:
                       backends:
+                        default: []
                         items:
                           properties:
                             file:
@@ -3581,6 +3590,7 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      default: []
                                       example:
                                         - key: start_time
                                           value: '%START_TIME%'
@@ -3622,6 +3632,7 @@ components:
                               description: Defines an OpenTelemetry logging backend.
                               properties:
                                 attributes:
+                                  default: []
                                   description: >-
                                     Attributes can contain placeholders
                                     available on
@@ -3681,6 +3692,7 @@ components:
                                     https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                                   properties:
                                     json:
+                                      default: []
                                       example:
                                         - key: start_time
                                           value: '%START_TIME%'
@@ -3773,6 +3785,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -3868,6 +3881,7 @@ components:
           description: Spec is the specification of the Kuma MeshCircuitBreaker resource.
           properties:
             from:
+              default: []
               description: >-
                 From list makes a match between clients and corresponding
                 configurations
@@ -4375,6 +4389,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -4462,6 +4477,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -4492,6 +4508,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between the consumed services and
                 corresponding
@@ -5001,6 +5018,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5096,6 +5114,7 @@ components:
           description: Spec is the specification of the Kuma MeshFaultInjection resource.
           properties:
             from:
+              default: []
               description: >-
                 From list makes a match between clients and corresponding
                 configurations
@@ -5109,6 +5128,7 @@ components:
                       'targetRef'
                     properties:
                       http:
+                        default: []
                         description: >-
                           Http allows to define list of Http faults between
                           dataplanes.
@@ -5251,6 +5271,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5338,6 +5359,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -5368,6 +5390,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between clients and corresponding
                 configurations
@@ -5381,6 +5404,7 @@ components:
                       'targetRef'
                     properties:
                       http:
+                        default: []
                         description: >-
                           Http allows to define list of Http faults between
                           dataplanes.
@@ -5523,6 +5547,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -5669,6 +5694,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -5699,6 +5725,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between the consumed services and
                 corresponding configurations
@@ -5795,6 +5822,7 @@ components:
                             description: If true the HttpHealthCheck is disabled
                             type: boolean
                           expectedStatuses:
+                            default: []
                             description: >-
                               List of HTTP response statuses which are
                               considered healthy
@@ -5818,6 +5846,7 @@ components:
                               request
                             properties:
                               add:
+                                default: []
                                 items:
                                   properties:
                                     name:
@@ -5837,6 +5866,7 @@ components:
                                   - name
                                 x-kubernetes-list-type: map
                               set:
+                                default: []
                                 items:
                                   properties:
                                     name:
@@ -5933,6 +5963,7 @@ components:
                             description: If true the TcpHealthCheck is disabled
                             type: boolean
                           receive:
+                            default: []
                             description: >-
                               List of Base64 encoded blocks of strings expected
                               as a response. When checking the response,
@@ -6018,6 +6049,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -6164,6 +6196,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -6194,12 +6227,14 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To matches destination services of requests and holds
                 configuration.
               items:
                 properties:
                   hostnames:
+                    default: []
                     description: >-
                       Hostnames is only valid when targeting MeshGateway and
                       limits the
@@ -6214,6 +6249,7 @@ components:
                       type: string
                     type: array
                   rules:
+                    default: []
                     description: >-
                       Rules contains the routing rules applies to a combination
                       of top-level
@@ -6229,6 +6265,7 @@ components:
                             policies.
                           properties:
                             backendRefs:
+                              default: []
                               items:
                                 description: BackendRef defines where to forward traffic.
                                 properties:
@@ -6282,6 +6319,7 @@ components:
                                     format: int32
                                     type: integer
                                   proxyTypes:
+                                    default: []
                                     description: >-
                                       ProxyTypes specifies the data plane types
                                       that are subject to the policy. When not
@@ -6321,6 +6359,7 @@ components:
                                 type: object
                               type: array
                             filters:
+                              default: []
                               items:
                                 properties:
                                   requestHeaderModifier:
@@ -6335,6 +6374,7 @@ components:
                                       value with a comma.
                                     properties:
                                       add:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -6354,11 +6394,13 @@ components:
                                           - name
                                         x-kubernetes-list-type: map
                                       remove:
+                                        default: []
                                         items:
                                           type: string
                                         maxItems: 16
                                         type: array
                                       set:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -6436,6 +6478,7 @@ components:
                                             format: int32
                                             type: integer
                                           proxyTypes:
+                                            default: []
                                             description: >-
                                               ProxyTypes specifies the data plane
                                               types that are subject to the policy.
@@ -6578,6 +6621,7 @@ components:
                                       value with a comma.
                                     properties:
                                       add:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -6597,11 +6641,13 @@ components:
                                           - name
                                         x-kubernetes-list-type: map
                                       remove:
+                                        default: []
                                         items:
                                           type: string
                                         maxItems: 16
                                         type: array
                                       set:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -6679,6 +6725,7 @@ components:
                           items:
                             properties:
                               headers:
+                                default: []
                                 items:
                                   description: >-
                                     HeaderMatch describes how to select an HTTP
@@ -6753,6 +6800,7 @@ components:
                                   - value
                                 type: object
                               queryParams:
+                                default: []
                                 description: >-
                                   QueryParams matches based on HTTP URL query
                                   parameters. Multiple matches
@@ -6834,6 +6882,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -6980,6 +7029,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -7078,6 +7128,7 @@ components:
                               consistent hashing is desired.
                             properties:
                               hashPolicies:
+                                default: []
                                 description: >-
                                   HashPolicies specify a list of
                                   request/connection properties that are used to
@@ -7251,6 +7302,7 @@ components:
                                   - MurmurHash2
                                 type: string
                               hashPolicies:
+                                default: []
                                 description: >-
                                   HashPolicies specify a list of
                                   request/connection properties that are used to
@@ -7424,6 +7476,7 @@ components:
                               are unavailable
                             properties:
                               failover:
+                                default: []
                                 description: >-
                                   Failover defines list of load balancing rules
                                   in order of priority
@@ -7435,6 +7488,7 @@ components:
                                         the rule applies
                                       properties:
                                         zones:
+                                          default: []
                                           items:
                                             type: string
                                           type: array
@@ -7457,6 +7511,7 @@ components:
                                             - AnyExcept
                                           type: string
                                         zones:
+                                          default: []
                                           items:
                                             type: string
                                           type: array
@@ -7508,6 +7563,7 @@ components:
                               priorities between dataplane proxies inside a zone
                             properties:
                               affinityTags:
+                                default: []
                                 description: >-
                                   AffinityTags list of tags for local zone load
                                   balancing.
@@ -7603,6 +7659,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -7637,6 +7694,7 @@ components:
                 required:
                   - targetRef
                 type: object
+              minItems: 1
               type: array
           type: object
         creationTime:
@@ -7701,6 +7759,7 @@ components:
               description: MeshMetric configuration.
               properties:
                 applications:
+                  default: []
                   description: >-
                     Applications is a list of application that Dataplane Proxy
                     will scrape
@@ -7729,6 +7788,7 @@ components:
                     type: object
                   type: array
                 backends:
+                  default: []
                   description: Backends list that will be used to collect metrics.
                   items:
                     properties:
@@ -7819,6 +7879,7 @@ components:
                         published.
                       properties:
                         appendProfiles:
+                          default: []
                           description: >-
                             AppendProfiles allows to combine the metrics from
                             multiple predefined profiles.
@@ -7838,6 +7899,7 @@ components:
                             type: object
                           type: array
                         exclude:
+                          default: []
                           description: >-
                             Exclude makes it possible to exclude groups of
                             metrics from a resulting profile.
@@ -7866,6 +7928,7 @@ components:
                             type: object
                           type: array
                         include:
+                          default: []
                           description: >-
                             Include makes it possible to include additional
                             metrics in a selected profiles.
@@ -7948,6 +8011,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -8040,6 +8104,7 @@ components:
               description: MeshPassthrough configuration.
               properties:
                 appendMatch:
+                  default: []
                   description: >-
                     AppendMatch is a list of destinations that should be allowed
                     through the sidecar.
@@ -8140,6 +8205,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -8234,6 +8300,7 @@ components:
                 referenced in 'targetRef'.
               properties:
                 appendModifications:
+                  default: []
                   description: >-
                     AppendModifications is a list of modifications applied on
                     the selected proxy.
@@ -8243,6 +8310,7 @@ components:
                         description: Cluster is a modification of Envoy's Cluster resource.
                         properties:
                           jsonPatches:
+                            default: []
                             description: >-
                               JsonPatches specifies list of jsonpatches to apply
                               to on Envoy's Cluster
@@ -8349,6 +8417,7 @@ components:
                           resource.
                         properties:
                           jsonPatches:
+                            default: []
                             description: >-
                               JsonPatches specifies list of jsonpatches to apply
                               to on Envoy's
@@ -8469,6 +8538,7 @@ components:
                           resource.
                         properties:
                           jsonPatches:
+                            default: []
                             description: >-
                               JsonPatches specifies list of jsonpatches to apply
                               to on Envoy's Listener
@@ -8580,6 +8650,7 @@ components:
                           filter.
                         properties:
                           jsonPatches:
+                            default: []
                             description: >-
                               JsonPatches specifies list of jsonpatches to apply
                               to on Envoy Listener's
@@ -8701,6 +8772,7 @@ components:
                           resource.
                         properties:
                           jsonPatches:
+                            default: []
                             description: >-
                               JsonPatches specifies list of jsonpatches to apply
                               to on Envoy's
@@ -8862,6 +8934,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -8953,6 +9026,7 @@ components:
           description: Spec is the specification of the Kuma MeshRateLimit resource.
           properties:
             from:
+              default: []
               description: >-
                 From list makes a match between clients and corresponding
                 configurations
@@ -8991,6 +9065,7 @@ components:
                                       response on a rate limit event
                                     properties:
                                       add:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -9010,6 +9085,7 @@ components:
                                           - name
                                         x-kubernetes-list-type: map
                                       set:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -9145,6 +9221,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -9232,6 +9309,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -9262,6 +9340,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between clients and corresponding
                 configurations
@@ -9300,6 +9379,7 @@ components:
                                       response on a rate limit event
                                     properties:
                                       add:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -9319,6 +9399,7 @@ components:
                                           - name
                                         x-kubernetes-list-type: map
                                       set:
+                                        default: []
                                         items:
                                           properties:
                                             name:
@@ -9454,6 +9535,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -9600,6 +9682,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -9630,6 +9713,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between the consumed services and
                 corresponding configurations
@@ -9706,6 +9790,7 @@ components:
                                   will be taken between retries.
                                 type: string
                               resetHeaders:
+                                default: []
                                 description: >-
                                   ResetHeaders specifies the list of headers
                                   (like Retry-After or X-RateLimit-Reset)
@@ -9739,6 +9824,7 @@ components:
                                 type: array
                             type: object
                           retryOn:
+                            default: []
                             description: >-
                               RetryOn is a list of conditions which will cause a
                               retry.
@@ -9788,6 +9874,7 @@ components:
                                 type: string
                             type: object
                           hostSelection:
+                            default: []
                             description: >-
                               HostSelection is a list of predicates that dictate
                               how hosts should be selected
@@ -9878,6 +9965,7 @@ components:
                                   will be taken between retries.
                                 type: string
                               resetHeaders:
+                                default: []
                                 description: >-
                                   ResetHeaders specifies the list of headers
                                   (like Retry-After or X-RateLimit-Reset)
@@ -9911,6 +9999,7 @@ components:
                                 type: array
                             type: object
                           retriableRequestHeaders:
+                            default: []
                             description: >-
                               RetriableRequestHeaders is an HTTP headers which
                               must be present in the request
@@ -9957,6 +10046,7 @@ components:
                               type: object
                             type: array
                           retriableResponseHeaders:
+                            default: []
                             description: >-
                               RetriableResponseHeaders is an HTTP response
                               headers that trigger a retry
@@ -10006,6 +10096,7 @@ components:
                               type: object
                             type: array
                           retryOn:
+                            default: []
                             description: >-
                               RetryOn is a list of conditions which will cause a
                               retry. Available values are:
@@ -10108,6 +10199,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10254,6 +10346,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -10292,6 +10385,7 @@ components:
               items:
                 properties:
                   rules:
+                    default: []
                     description: >-
                       Rules contains the routing rules applies to a combination
                       of top-level
@@ -10307,6 +10401,7 @@ components:
                             policies.
                           properties:
                             backendRefs:
+                              default: []
                               items:
                                 description: BackendRef defines where to forward traffic.
                                 properties:
@@ -10360,6 +10455,7 @@ components:
                                     format: int32
                                     type: integer
                                   proxyTypes:
+                                    default: []
                                     description: >-
                                       ProxyTypes specifies the data plane types
                                       that are subject to the policy. When not
@@ -10456,6 +10552,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10552,6 +10649,7 @@ components:
           description: Spec is the specification of the Kuma MeshTimeout resource.
           properties:
             from:
+              default: []
               description: >-
                 From list makes a match between clients and corresponding
                 configurations
@@ -10690,6 +10788,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -10726,6 +10825,7 @@ components:
                 type: object
               type: array
             rules:
+              default: []
               description: >-
                 Rules defines inbound timeout configurations. Currently limited
                 to exactly one rule containing
@@ -10868,6 +10968,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -10898,6 +10999,7 @@ components:
                   type: object
               type: object
             to:
+              default: []
               description: >-
                 To list makes a match between the consumed services and
                 corresponding configurations
@@ -11036,6 +11138,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -11243,6 +11346,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -11330,6 +11434,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -11422,6 +11527,7 @@ components:
               description: MeshTrace configuration.
               properties:
                 backends:
+                  default: []
                   description: >-
                     A one element array of backend definition.
 
@@ -11596,6 +11702,7 @@ components:
                       x-kubernetes-int-or-string: true
                   type: object
                 tags:
+                  default: []
                   description: >-
                     Custom tags configuration. You can add custom tags to traces
                     based on
@@ -11687,6 +11794,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -11849,6 +11957,7 @@ components:
                           will be targeted.
                         type: string
                       proxyTypes:
+                        default: []
                         description: >-
                           ProxyTypes specifies the data plane types that are
                           subject to the policy. When not specified,
@@ -11936,6 +12045,7 @@ components:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: >-
                     ProxyTypes specifies the data plane types that are subject
                     to the policy. When not specified,
@@ -12850,6 +12960,7 @@ components:
           description: Spec is the specification of the Kuma MeshExternalService resource.
           properties:
             endpoints:
+              default: []
               description: Endpoints defines a list of destinations to send traffic to.
               items:
                 properties:
@@ -12997,6 +13108,7 @@ components:
                         set by Kuma.
                       type: string
                     subjectAltNames:
+                      default: []
                       description: >-
                         SubjectAltNames list of names to verify in the
                         certificate.
@@ -13434,6 +13546,7 @@ components:
           description: Spec is the specification of the Kuma MeshService resource.
           properties:
             identities:
+              default: []
               items:
                 properties:
                   type:
@@ -13448,6 +13561,7 @@ components:
                 type: object
               type: array
             ports:
+              default: []
               items:
                 properties:
                   appProtocol:

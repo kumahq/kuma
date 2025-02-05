@@ -61,6 +61,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.
@@ -85,10 +86,12 @@ properties:
             type: object
         type: object
       to:
+        default: []
         description: To matches destination services of requests and holds configuration.
         items:
           properties:
             hostnames:
+              default: []
               description: |-
                 Hostnames is only valid when targeting MeshGateway and limits the
                 effects of the rules to requests to this hostname.
@@ -98,6 +101,7 @@ properties:
                 type: string
               type: array
             rules:
+              default: []
               description: |-
                 Rules contains the routing rules applies to a combination of top-level
                 targetRef and the targetRef in this entry.
@@ -109,6 +113,7 @@ properties:
                       policies.
                     properties:
                       backendRefs:
+                        default: []
                         items:
                           description: BackendRef defines where to forward traffic.
                           properties:
@@ -150,6 +155,7 @@ properties:
                               format: int32
                               type: integer
                             proxyTypes:
+                              default: []
                               description: |-
                                 ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                                 all data plane types are targeted by the policy.
@@ -179,6 +185,7 @@ properties:
                           type: object
                         type: array
                       filters:
+                        default: []
                         items:
                           properties:
                             requestHeaderModifier:
@@ -188,6 +195,7 @@ properties:
                                 header value formatting, separating each value with a comma.
                               properties:
                                 add:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -207,11 +215,13 @@ properties:
                                     - name
                                   x-kubernetes-list-type: map
                                 remove:
+                                  default: []
                                   items:
                                     type: string
                                   maxItems: 16
                                   type: array
                                 set:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -274,6 +284,7 @@ properties:
                                       format: int32
                                       type: integer
                                     proxyTypes:
+                                      default: []
                                       description: |-
                                         ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                                         all data plane types are targeted by the policy.
@@ -377,6 +388,7 @@ properties:
                                 header value formatting, separating each value with a comma.
                               properties:
                                 add:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -396,11 +408,13 @@ properties:
                                     - name
                                   x-kubernetes-list-type: map
                                 remove:
+                                  default: []
                                   items:
                                     type: string
                                   maxItems: 16
                                   type: array
                                 set:
+                                  default: []
                                   items:
                                     properties:
                                       name:
@@ -469,6 +483,7 @@ properties:
                     items:
                       properties:
                         headers:
+                          default: []
                           items:
                             description: |-
                               HeaderMatch describes how to select an HTTP route by matching HTTP request
@@ -530,6 +545,7 @@ properties:
                             - value
                           type: object
                         queryParams:
+                          default: []
                           description: |-
                             QueryParams matches based on HTTP URL query parameters. Multiple matches
                             are ANDed together such that all listed matches must succeed.
@@ -598,6 +614,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.

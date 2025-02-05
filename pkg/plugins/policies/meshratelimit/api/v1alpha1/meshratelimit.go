@@ -14,8 +14,10 @@ type MeshRateLimit struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
+	// +kubebuilder:default={}
 	From []From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 }
 
@@ -76,10 +78,12 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Set []HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Add []HeaderKeyValue `json:"add,omitempty"`
 }
 

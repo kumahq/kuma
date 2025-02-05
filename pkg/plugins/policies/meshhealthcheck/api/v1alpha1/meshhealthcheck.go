@@ -17,6 +17,7 @@ type MeshHealthCheck struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// To list makes a match between the consumed services and corresponding configurations
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 }
 
@@ -98,6 +99,7 @@ type TcpHealthCheck struct {
 	// "fuzzy" matching is performed such that each block must be found, and
 	// in the order specified, but not necessarily contiguous.
 	// If not provided or empty, checks will be performed as "connect only" and be marked as successful when TCP connection is successfully established.
+	// +kubebuilder:default={}
 	Receive *[]string `json:"receive,omitempty"`
 }
 
@@ -114,6 +116,7 @@ type HttpHealthCheck struct {
 	// request
 	RequestHeadersToAdd *HeaderModifier `json:"requestHeadersToAdd,omitempty"`
 	// List of HTTP response statuses which are considered healthy
+	// +kubebuilder:default={}
 	ExpectedStatuses *[]int32 `json:"expectedStatuses,omitempty"`
 }
 
@@ -140,9 +143,11 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Set []HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Add []HeaderKeyValue `json:"add,omitempty"`
 }

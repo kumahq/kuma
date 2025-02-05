@@ -26,6 +26,7 @@ type Conf struct {
 	// reasons explained in MADR 009-tracing-policy this has to be a one element
 	// array for now.
 	// +kubebuilder:validation:MaxItems=1
+	// +kubebuilder:default={}
 	Backends *[]Backend `json:"backends,omitempty"`
 	// Sampling configuration.
 	// Sampling is the process by which a decision is made on whether to
@@ -33,6 +34,7 @@ type Conf struct {
 	Sampling *Sampling `json:"sampling,omitempty"`
 	// Custom tags configuration. You can add custom tags to traces based on
 	// headers or literal values.
+	// +kubebuilder:default={}
 	Tags *[]Tag `json:"tags,omitempty"`
 }
 

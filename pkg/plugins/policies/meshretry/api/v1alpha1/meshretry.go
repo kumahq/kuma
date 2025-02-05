@@ -15,6 +15,7 @@ type MeshRetry struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 }
 
@@ -151,16 +152,20 @@ type HTTP struct {
 	// HttpMethodPost, HttpMethodPut, HttpMethodTrace].
 	// Also, any HTTP status code (500, 503, etc.).
 	// +kubebuilder:example={"5XX","GatewayError","Reset","Retriable4xx","ConnectFailure","EnvoyRatelimited","RefusedStream","Http3PostConnectFailure","HttpMethodConnect","HttpMethodDelete","HttpMethodGet","HttpMethodHead","HttpMethodOptions","HttpMethodPatch","HttpMethodPost","HttpMethodPut","HttpMethodTrace","500","503"}
+	// +kubebuilder:default={}
 	RetryOn *[]HTTPRetryOn `json:"retryOn,omitempty"`
 	// RetriableResponseHeaders is an HTTP response headers that trigger a retry
 	// if present in the response. A retry will be triggered if any of the header
 	// matches the upstream response headers.
+	// +kubebuilder:default={}
 	RetriableResponseHeaders *[]common_api.HeaderMatch `json:"retriableResponseHeaders,omitempty"`
 	// RetriableRequestHeaders is an HTTP headers which must be present in the request
 	// for retries to be attempted.
+	// +kubebuilder:default={}
 	RetriableRequestHeaders *[]common_api.HeaderMatch `json:"retriableRequestHeaders,omitempty"`
 	// HostSelection is a list of predicates that dictate how hosts should be selected
 	// when requests are retried.
+	// +kubebuilder:default={}
 	HostSelection *[]Predicate `json:"hostSelection,omitempty"`
 	// HostSelectionMaxAttempts is the maximum number of times host selection will be
 	// reattempted before giving up, at which point the host that was last selected will
@@ -217,6 +222,7 @@ type GRPC struct {
 	RateLimitedBackOff *RateLimitedBackOff `json:"rateLimitedBackOff,omitempty"`
 	// RetryOn is a list of conditions which will cause a retry.
 	// +kubebuilder:example={Canceled,DeadlineExceeded,Internal,ResourceExhausted,Unavailable}
+	// +kubebuilder:default={}
 	RetryOn *[]GRPCRetryOn `json:"retryOn,omitempty"`
 }
 
@@ -235,6 +241,7 @@ type RateLimitedBackOff struct {
 	// to match against the response. Headers are tried in order, and matched
 	// case-insensitive. The first header to be parsed successfully is used.
 	// If no headers match the default exponential BackOff is used instead.
+	// +kubebuilder:default={}
 	ResetHeaders *[]ResetHeader `json:"resetHeaders,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// +kubebuilder:default="300s"

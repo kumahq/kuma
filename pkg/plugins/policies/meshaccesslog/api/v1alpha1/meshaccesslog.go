@@ -15,8 +15,10 @@ type MeshAccessLog struct {
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
+	// +kubebuilder:default={}
 	From []From `json:"from,omitempty"`
 }
 
@@ -39,6 +41,7 @@ type From struct {
 }
 
 type Conf struct {
+	// +kubebuilder:default={}
 	Backends *[]Backend `json:"backends,omitempty"`
 }
 
@@ -74,6 +77,7 @@ type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
+	// +kubebuilder:default={}
 	Attributes []JsonValue `json:"attributes,omitempty"`
 	// Body is a raw string or an OTLP any value as described at
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
@@ -111,6 +115,7 @@ type Format struct {
 	// +kubebuilder:example="[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%"
 	Plain *string `json:"plain,omitempty"`
 	// +kubebuilder:example={{key: "start_time", value: "%START_TIME%"},{key: "bytes_received", value: "%BYTES_RECEIVED%"}}
+	// +kubebuilder:default={}
 	Json *[]JsonValue `json:"json,omitempty"`
 	// +kubebuilder:default=false
 	OmitEmptyValues *bool `json:"omitEmptyValues,omitempty"`

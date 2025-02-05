@@ -22,6 +22,7 @@ properties:
     description: Spec is the specification of the Kuma MeshAccessLog resource.
     properties:
       from:
+        default: []
         description: From list makes a match between clients and corresponding configurations
         items:
           properties:
@@ -31,6 +32,7 @@ properties:
                 'targetRef'
               properties:
                 backends:
+                  default: []
                   items:
                     properties:
                       file:
@@ -42,6 +44,7 @@ properties:
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
+                                default: []
                                 example:
                                   - key: start_time
                                     value: '%START_TIME%'
@@ -81,6 +84,7 @@ properties:
                         description: Defines an OpenTelemetry logging backend.
                         properties:
                           attributes:
+                            default: []
                             description: |-
                               Attributes can contain placeholders available on
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
@@ -130,6 +134,7 @@ properties:
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
+                                default: []
                                 example:
                                   - key: start_time
                                     value: '%START_TIME%'
@@ -210,6 +215,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.
@@ -277,6 +283,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.
@@ -301,6 +308,7 @@ properties:
             type: object
         type: object
       to:
+        default: []
         description: To list makes a match between the consumed services and corresponding configurations
         items:
           properties:
@@ -310,6 +318,7 @@ properties:
                 'targetRef'
               properties:
                 backends:
+                  default: []
                   items:
                     properties:
                       file:
@@ -321,6 +330,7 @@ properties:
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
+                                default: []
                                 example:
                                   - key: start_time
                                     value: '%START_TIME%'
@@ -360,6 +370,7 @@ properties:
                         description: Defines an OpenTelemetry logging backend.
                         properties:
                           attributes:
+                            default: []
                             description: |-
                               Attributes can contain placeholders available on
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
@@ -409,6 +420,7 @@ properties:
                               https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
                             properties:
                               json:
+                                default: []
                                 example:
                                   - key: start_time
                                     value: '%START_TIME%'
@@ -489,6 +501,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.

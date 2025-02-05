@@ -46,7 +46,9 @@ type MeshService struct {
 	// +listType=map
 	// +listMapKey=port
 	// +listMapKey=appProtocol
+	// +kubebuilder:default={}
 	Ports      []Port                `json:"ports,omitempty"`
+	// +kubebuilder:default={}
 	Identities []MeshServiceIdentity `json:"identities,omitempty"`
 }
 

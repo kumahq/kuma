@@ -50,6 +50,7 @@ spec:
             description: Spec is the specification of the Kuma MeshTimeout resource.
             properties:
               from:
+                default: []
                 description: From list makes a match between clients and corresponding
                   configurations
                 items:
@@ -146,6 +147,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.
@@ -174,6 +176,7 @@ spec:
                   type: object
                 type: array
               rules:
+                default: []
                 description: |-
                   Rules defines inbound timeout configurations. Currently limited to exactly one rule containing
                   default timeouts that apply to all inbound traffic, as L7 matching is not yet implemented.
@@ -272,6 +275,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.
@@ -296,6 +300,7 @@ spec:
                     type: object
                 type: object
               to:
+                default: []
                 description: To list makes a match between the consumed services and
                   corresponding configurations
                 items:
@@ -392,6 +397,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.

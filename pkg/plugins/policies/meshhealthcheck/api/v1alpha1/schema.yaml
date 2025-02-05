@@ -61,6 +61,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.
@@ -85,6 +86,7 @@ properties:
             type: object
         type: object
       to:
+        default: []
         description: To list makes a match between the consumed services and corresponding configurations
         items:
           properties:
@@ -151,6 +153,7 @@ properties:
                       description: If true the HttpHealthCheck is disabled
                       type: boolean
                     expectedStatuses:
+                      default: []
                       description: List of HTTP response statuses which are considered healthy
                       items:
                         format: int32
@@ -168,6 +171,7 @@ properties:
                         request
                       properties:
                         add:
+                          default: []
                           items:
                             properties:
                               name:
@@ -187,6 +191,7 @@ properties:
                             - name
                           x-kubernetes-list-type: map
                         set:
+                          default: []
                           items:
                             properties:
                               name:
@@ -253,6 +258,7 @@ properties:
                       description: If true the TcpHealthCheck is disabled
                       type: boolean
                     receive:
+                      default: []
                       description: |-
                         List of Base64 encoded blocks of strings expected as a response. When checking the response,
                         "fuzzy" matching is performed such that each block must be found, and
@@ -316,6 +322,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.

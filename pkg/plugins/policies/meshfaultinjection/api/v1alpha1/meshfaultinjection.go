@@ -16,9 +16,11 @@ type MeshFaultInjection struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// From list makes a match between clients and corresponding configurations
+	// +kubebuilder:default={}
 	From []From `json:"from,omitempty"`
 
 	// To list makes a match between clients and corresponding configurations
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 }
 
@@ -42,6 +44,7 @@ type To struct {
 
 type Conf struct {
 	// Http allows to define list of Http faults between dataplanes.
+	// +kubebuilder:default={}
 	Http *[]FaultInjectionConf `json:"http,omitempty"`
 }
 

@@ -91,6 +91,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.
@@ -160,6 +161,7 @@ spec:
                                 consistent hashing is desired.
                               properties:
                                 hashPolicies:
+                                  default: []
                                   description: |-
                                     HashPolicies specify a list of request/connection properties that are used to calculate a hash.
                                     These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
@@ -282,6 +284,7 @@ spec:
                                   - MurmurHash2
                                   type: string
                                 hashPolicies:
+                                  default: []
                                   description: |-
                                     HashPolicies specify a list of request/connection properties that are used to calculate a hash.
                                     These hash policies are executed in the specified order. If a hash policy has the “terminal” attribute
@@ -413,6 +416,7 @@ spec:
                                 are unavailable
                               properties:
                                 failover:
+                                  default: []
                                   description: Failover defines list of load balancing
                                     rules in order of priority
                                   items:
@@ -422,6 +426,7 @@ spec:
                                           to which the rule applies
                                         properties:
                                           zones:
+                                            default: []
                                             items:
                                               type: string
                                             type: array
@@ -442,6 +447,7 @@ spec:
                                             - AnyExcept
                                             type: string
                                           zones:
+                                            default: []
                                             items:
                                               type: string
                                             type: array
@@ -479,6 +485,7 @@ spec:
                                 priorities between dataplane proxies inside a zone
                               properties:
                                 affinityTags:
+                                  default: []
                                   description: AffinityTags list of tags for local
                                     zone load balancing.
                                   items:
@@ -544,6 +551,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.
@@ -570,6 +578,7 @@ spec:
                   required:
                   - targetRef
                   type: object
+                minItems: 1
                 type: array
             type: object
         type: object

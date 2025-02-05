@@ -22,6 +22,7 @@ properties:
     description: Spec is the specification of the Kuma MeshExternalService resource.
     properties:
       endpoints:
+        default: []
         description: Endpoints defines a list of destinations to send traffic to.
         items:
           properties:
@@ -150,6 +151,7 @@ properties:
                 description: ServerName overrides the default Server Name Indicator set by Kuma.
                 type: string
               subjectAltNames:
+                default: []
                 description: SubjectAltNames list of names to verify in the certificate.
                 items:
                   properties:

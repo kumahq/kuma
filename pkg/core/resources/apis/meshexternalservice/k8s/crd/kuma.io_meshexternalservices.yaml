@@ -48,6 +48,7 @@ spec:
               resource.
             properties:
               endpoints:
+                default: []
                 description: Endpoints defines a list of destinations to send traffic
                   to.
                 items:
@@ -191,6 +192,7 @@ spec:
                           Indicator set by Kuma.
                         type: string
                       subjectAltNames:
+                        default: []
                         description: SubjectAltNames list of names to verify in the
                           certificate.
                         items:

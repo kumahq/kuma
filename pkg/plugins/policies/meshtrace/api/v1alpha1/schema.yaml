@@ -25,6 +25,7 @@ properties:
         description: MeshTrace configuration.
         properties:
           backends:
+            default: []
             description: |-
               A one element array of backend definition.
               Envoy allows configuring only 1 backend, so the natural way of
@@ -152,6 +153,7 @@ properties:
                 x-kubernetes-int-or-string: true
             type: object
           tags:
+            default: []
             description: |-
               Custom tags configuration. You can add custom tags to traces based on
               headers or literal values.
@@ -226,6 +228,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.

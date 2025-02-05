@@ -50,6 +50,7 @@ spec:
             description: Spec is the specification of the Kuma MeshRateLimit resource.
             properties:
               from:
+                default: []
                 description: From list makes a match between clients and corresponding
                   configurations
                 items:
@@ -80,6 +81,7 @@ spec:
                                         HTTP response on a rate limit event
                                       properties:
                                         add:
+                                          default: []
                                           items:
                                             properties:
                                               name:
@@ -99,6 +101,7 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                         set:
+                                          default: []
                                           items:
                                             properties:
                                               name:
@@ -214,6 +217,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.
@@ -282,6 +286,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.
@@ -306,6 +311,7 @@ spec:
                     type: object
                 type: object
               to:
+                default: []
                 description: To list makes a match between clients and corresponding
                   configurations
                 items:
@@ -336,6 +342,7 @@ spec:
                                         HTTP response on a rate limit event
                                       properties:
                                         add:
+                                          default: []
                                           items:
                                             properties:
                                               name:
@@ -355,6 +362,7 @@ spec:
                                           - name
                                           x-kubernetes-list-type: map
                                         set:
+                                          default: []
                                           items:
                                             properties:
                                               name:
@@ -470,6 +478,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.

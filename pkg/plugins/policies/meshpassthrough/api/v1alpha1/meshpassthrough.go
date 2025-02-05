@@ -21,6 +21,7 @@ type Conf struct {
 	// +kubebuilder:default=None
 	PassthroughMode *PassthroughMode `json:"passthroughMode,omitempty"`
 	// AppendMatch is a list of destinations that should be allowed through the sidecar.
+	// +kubebuilder:default={}
 	AppendMatch []Match `json:"appendMatch,omitempty"`
 }
 

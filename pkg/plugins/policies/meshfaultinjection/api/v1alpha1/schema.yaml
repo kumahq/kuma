@@ -22,6 +22,7 @@ properties:
     description: Spec is the specification of the Kuma MeshFaultInjection resource.
     properties:
       from:
+        default: []
         description: From list makes a match between clients and corresponding configurations
         items:
           properties:
@@ -31,6 +32,7 @@ properties:
                 'targetRef'
               properties:
                 http:
+                  default: []
                   description: Http allows to define list of Http faults between dataplanes.
                   items:
                     description: FaultInjection defines the configuration of faults between dataplanes.
@@ -139,6 +141,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.
@@ -206,6 +209,7 @@ properties:
               will be targeted.
             type: string
           proxyTypes:
+            default: []
             description: |-
               ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
               all data plane types are targeted by the policy.
@@ -230,6 +234,7 @@ properties:
             type: object
         type: object
       to:
+        default: []
         description: To list makes a match between clients and corresponding configurations
         items:
           properties:
@@ -239,6 +244,7 @@ properties:
                 'targetRef'
               properties:
                 http:
+                  default: []
                   description: Http allows to define list of Http faults between dataplanes.
                   items:
                     description: FaultInjection defines the configuration of faults between dataplanes.
@@ -347,6 +353,7 @@ properties:
                     will be targeted.
                   type: string
                 proxyTypes:
+                  default: []
                   description: |-
                     ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                     all data plane types are targeted by the policy.

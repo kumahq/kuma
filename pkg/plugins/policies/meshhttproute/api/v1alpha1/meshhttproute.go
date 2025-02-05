@@ -25,6 +25,7 @@ type MeshHTTPRoute struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// To matches destination services of requests and holds configuration.
+	// +kubebuilder:default={}
 	To []To `json:"to,omitempty"`
 }
 
@@ -33,12 +34,14 @@ type To struct {
 	// effects of the rules to requests to this hostname.
 	// Given hostnames must intersect with the hostname of the listeners the
 	// route attaches to.
+	// +kubebuilder:default={}
 	Hostnames []string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
 	TargetRef common_api.TargetRef `json:"targetRef,omitempty"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
+	// +kubebuilder:default={}
 	Rules []Rule `json:"rules,omitempty"`
 }
 
@@ -63,7 +66,9 @@ type Match struct {
 	Method *Method    `json:"method,omitempty"`
 	// QueryParams matches based on HTTP URL query parameters. Multiple matches
 	// are ANDed together such that all listed matches must succeed.
+	// +kubebuilder:default={}
 	QueryParams []QueryParamsMatch       `json:"queryParams,omitempty"`
+	// +kubebuilder:default={}
 	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
 }
 
@@ -103,7 +108,9 @@ type QueryParamsMatch struct {
 }
 
 type RuleConf struct {
+	// +kubebuilder:default={}
 	Filters     *[]Filter                `json:"filters,omitempty"`
+	// +kubebuilder:default={}
 	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
 }
 
@@ -130,12 +137,15 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Set []HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Add []HeaderKeyValue `json:"add,omitempty"`
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:default={}
 	Remove []string `json:"remove,omitempty"`
 }
 

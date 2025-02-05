@@ -21,8 +21,10 @@ type Conf struct {
 	// Sidecar metrics collection configuration
 	Sidecar *Sidecar `json:"sidecar,omitempty"`
 	// Applications is a list of application that Dataplane Proxy will scrape
+	// +kubebuilder:default={}
 	Applications *[]Application `json:"applications,omitempty"`
 	// Backends list that will be used to collect metrics.
+	// +kubebuilder:default={}
 	Backends *[]Backend `json:"backends,omitempty"`
 }
 
@@ -38,12 +40,15 @@ type Sidecar struct {
 
 type Profiles struct {
 	// AppendProfiles allows to combine the metrics from multiple predefined profiles.
+	// +kubebuilder:default={}
 	AppendProfiles *[]Profile `json:"appendProfiles,omitempty"`
 	// Exclude makes it possible to exclude groups of metrics from a resulting profile.
 	// Exclude is subordinate to Include.
+	// +kubebuilder:default={}
 	Exclude *[]Selector `json:"exclude,omitempty"`
 	// Include makes it possible to include additional metrics in a selected profiles.
 	// Include takes precedence over Exclude.
+	// +kubebuilder:default={}
 	Include *[]Selector `json:"include,omitempty"`
 }
 
