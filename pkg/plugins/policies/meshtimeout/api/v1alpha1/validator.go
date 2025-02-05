@@ -121,7 +121,7 @@ func validateRules(rules []Rule, topLevelKind common_api.TargetRefKind) validato
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
-		verr.AddErrorAt(path.Field("default"), validateDefault(path, rule.Default, topLevelKind))
+		verr.Add(validateDefault(path.Field("default"), rule.Default, topLevelKind))
 	}
 	return verr
 }

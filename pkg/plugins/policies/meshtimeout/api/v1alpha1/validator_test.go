@@ -385,7 +385,7 @@ rules:
   - default: {}`,
 				expected: `
 violations:
-  - field: spec.rules[0].default.rules[0]
+  - field: spec.rules[0].default
     message: at least one timeout should be configured`,
 			}),
 		)
