@@ -3481,7 +3481,9 @@ components:
               items:
                 properties:
                   default:
-                    description: Default contains configuration of the inbound timeouts
+                    description: >-
+                      Default contains configuration of the inbound access
+                      logging
                     properties:
                       backends:
                         items:

@@ -25,7 +25,7 @@ type MeshAccessLog struct {
 }
 
 type Rule struct {
-	// Default contains configuration of the inbound timeouts
+	// Default contains configuration of the inbound access logging
 	Default Conf `json:"default,omitempty"`
 }
 
