@@ -673,6 +673,7 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/zone: zone-1
             - state: NotReady
               health: {}
+              name: metrics
               port: 6060
               tags:
                 app: sample
@@ -774,6 +775,7 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/zone: zone-1
             - state: NotReady
               health: {}
+              name: metrics
               port: 6060
               tags:
                 app: sample

@@ -32,7 +32,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			// ignore non-TCP ports
 			continue
 		}
-		containerPort, container, err := util_k8s.FindPort(pod, &svcPort)
+		containerPort, portName, container, err := util_k8s.FindPort(pod, &svcPort)
 		if err != nil {
 			converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", service.Name, "servicePortName", svcPort.Name)
 			// ignore those cases where a Pod doesn't have all the ports a Service has
@@ -77,7 +77,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
-			Name:   svcPort.Name,
+			Name:   portName,
 			Tags:   tags,
 			State:  state,
 			Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
@@ -158,7 +158,23 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 
 		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
 	}
-	return ifaces, nil
+
+	// Right now we will build multiple inbounds for each service selecting port, but later on
+	// we will only create one listener for last inbound. Ignoring other inbounds from dataplane.
+	// Because of this we can safely deduplicate them here. This needs to change when we get rid of kuma.io/service
+	return deduplicateInboundsByAddressAndPort(ifaces), nil
+}
+
+func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
+	inboundsPerName := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	for _, iface := range ifaces {
+		inboundsPerName[fmt.Sprintf("%s:%d", iface.Address, iface.Port)] = iface
+	}
+	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
+	for _, v := range inboundsPerName {
+		deduplicatedInbounds = append(deduplicatedInbounds, v)
+	}
+	return deduplicatedInbounds
 }
 
 func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {
