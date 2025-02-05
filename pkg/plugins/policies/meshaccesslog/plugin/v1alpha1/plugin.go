@@ -90,7 +90,7 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 			continue
 		}
 		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
-		if err := configureInbound(&conf, dataplane, listener, backends, path); err != nil {
+		if err := configureInbound(conf, dataplane, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -224,7 +224,10 @@ func applyToGateway(
 
 		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
 			conf := core_rules.ComputeConf[api.Conf](fromListenerRules, subsetutils.MeshElement())
-			if err := configureInbound(conf, proxy.Dataplane, listener, backends, path); err != nil {
+			if conf == nil {
+				continue
+			}
+			if err := configureInbound(*conf, proxy.Dataplane, listener, backends, path); err != nil {
 				return err
 			}
 		}
@@ -234,16 +237,13 @@ func applyToGateway(
 }
 
 func configureInbound(
-	conf *api.Conf,
+	conf api.Conf,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
 	accessLogSocketPath string,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
-	if conf == nil {
-		return nil
-	}
 
 	for _, backend := range pointer.Deref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
