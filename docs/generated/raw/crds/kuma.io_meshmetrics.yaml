@@ -53,6 +53,7 @@ spec:
                 description: MeshMetric configuration.
                 properties:
                   applications:
+                    default: []
                     description: Applications is a list of application that Dataplane
                       Proxy will scrape
                     items:
@@ -78,6 +79,7 @@ spec:
                       type: object
                     type: array
                   backends:
+                    default: []
                     description: Backends list that will be used to collect metrics.
                     items:
                       properties:
@@ -157,6 +159,7 @@ spec:
                           published.
                         properties:
                           appendProfiles:
+                            default: []
                             description: AppendProfiles allows to combine the metrics
                               from multiple predefined profiles.
                             items:
@@ -174,6 +177,7 @@ spec:
                               type: object
                             type: array
                           exclude:
+                            default: []
                             description: |-
                               Exclude makes it possible to exclude groups of metrics from a resulting profile.
                               Exclude is subordinate to Include.
@@ -198,6 +202,7 @@ spec:
                               type: object
                             type: array
                           include:
+                            default: []
                             description: |-
                               Include makes it possible to include additional metrics in a selected profiles.
                               Include takes precedence over Exclude.
@@ -265,6 +270,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.

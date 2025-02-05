@@ -67,9 +67,9 @@ type Match struct {
 	// QueryParams matches based on HTTP URL query parameters. Multiple matches
 	// are ANDed together such that all listed matches must succeed.
 	// +kubebuilder:default={}
-	QueryParams []QueryParamsMatch       `json:"queryParams,omitempty"`
+	QueryParams []QueryParamsMatch `json:"queryParams,omitempty"`
 	// +kubebuilder:default={}
-	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
+	Headers []common_api.HeaderMatch `json:"headers,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;PathPrefix;RegularExpression
@@ -109,7 +109,7 @@ type QueryParamsMatch struct {
 
 type RuleConf struct {
 	// +kubebuilder:default={}
-	Filters     *[]Filter                `json:"filters,omitempty"`
+	Filters *[]Filter `json:"filters,omitempty"`
 	// +kubebuilder:default={}
 	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
 }

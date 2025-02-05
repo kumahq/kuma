@@ -90,6 +90,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.
@@ -120,6 +121,7 @@ spec:
                 items:
                   properties:
                     rules:
+                      default: []
                       description: |-
                         Rules contains the routing rules applies to a combination of top-level
                         targetRef and the targetRef in this entry.
@@ -131,6 +133,7 @@ spec:
                               policies.
                             properties:
                               backendRefs:
+                                default: []
                                 items:
                                   description: BackendRef defines where to forward
                                     traffic.
@@ -175,6 +178,7 @@ spec:
                                       format: int32
                                       type: integer
                                     proxyTypes:
+                                      default: []
                                       description: |-
                                         ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                                         all data plane types are targeted by the policy.
@@ -252,6 +256,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.

@@ -90,6 +90,7 @@ spec:
                       will be targeted.
                     type: string
                   proxyTypes:
+                    default: []
                     description: |-
                       ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                       all data plane types are targeted by the policy.
@@ -114,6 +115,7 @@ spec:
                     type: object
                 type: object
               to:
+                default: []
                 description: To list makes a match between the consumed services and
                   corresponding configurations
                 items:
@@ -167,6 +169,7 @@ spec:
                                     time which will be taken between retries.
                                   type: string
                                 resetHeaders:
+                                  default: []
                                   description: |-
                                     ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset)
                                     to match against the response. Headers are tried in order, and matched
@@ -193,6 +196,7 @@ spec:
                                   type: array
                               type: object
                             retryOn:
+                              default: []
                               description: RetryOn is a list of conditions which will
                                 cause a retry.
                               example:
@@ -233,6 +237,7 @@ spec:
                                   type: string
                               type: object
                             hostSelection:
+                              default: []
                               description: |-
                                 HostSelection is a list of predicates that dictate how hosts should be selected
                                 when requests are retried.
@@ -295,6 +300,7 @@ spec:
                                     time which will be taken between retries.
                                   type: string
                                 resetHeaders:
+                                  default: []
                                   description: |-
                                     ResetHeaders specifies the list of headers (like Retry-After or X-RateLimit-Reset)
                                     to match against the response. Headers are tried in order, and matched
@@ -321,6 +327,7 @@ spec:
                                   type: array
                               type: object
                             retriableRequestHeaders:
+                              default: []
                               description: |-
                                 RetriableRequestHeaders is an HTTP headers which must be present in the request
                                 for retries to be attempted.
@@ -357,6 +364,7 @@ spec:
                                 type: object
                               type: array
                             retriableResponseHeaders:
+                              default: []
                               description: |-
                                 RetriableResponseHeaders is an HTTP response headers that trigger a retry
                                 if present in the response. A retry will be triggered if any of the header
@@ -394,6 +402,7 @@ spec:
                                 type: object
                               type: array
                             retryOn:
+                              default: []
                               description: |-
                                 RetryOn is a list of conditions which will cause a retry. Available values are:
                                 [5XX, GatewayError, Reset, Retriable4xx, ConnectFailure, EnvoyRatelimited,
@@ -477,6 +486,7 @@ spec:
                             will be targeted.
                           type: string
                         proxyTypes:
+                          default: []
                           description: |-
                             ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
                             all data plane types are targeted by the policy.

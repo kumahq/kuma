@@ -91,9 +91,9 @@ type FromZone struct {
 
 type ToZone struct {
 	// Type defines how target zones will be picked from available zones
-	Type  ToZoneType `json:"type"`
+	Type ToZoneType `json:"type"`
 	// +kubebuilder:default={}
-	Zones *[]string  `json:"zones,omitempty"`
+	Zones *[]string `json:"zones,omitempty"`
 }
 
 type FailoverThreshold struct {
