@@ -1,20 +1,6 @@
 {
   "diff": [
     {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
-      "value": "5s"
-    },
-    {
-      "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions",
-      "value": {
-        "idleTimeout": "3600s",
-        "maxConnectionDuration": "0s",
-        "maxStreamDuration": "0s"
-      }
-    },
-    {
       "op": "remove",
       "path": "/type.googleapis.com~1envoy.config.listener.v3.Listener/gateway-proxy:HTTP:8080/filterChains/0/filters/0/typedConfig/commonHttpProtocolOptions/idleTimeout",
       "value": "300s"

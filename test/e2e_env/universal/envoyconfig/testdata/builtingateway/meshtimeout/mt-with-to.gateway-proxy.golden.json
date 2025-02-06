@@ -1,18 +1,44 @@
 {
   "diff": [
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
+      "value": "5s"
+    },
+    {
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/connectTimeout",
       "value": "51s"
     },
     {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "3600s"
+    },
+    {
       "op": "add",
-      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions",
-      "value": {
-        "idleTimeout": "50s",
-        "maxConnectionDuration": "55s",
-        "maxStreamDuration": "54s"
-      }
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/idleTimeout",
+      "value": "50s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxConnectionDuration",
+      "value": "55s"
+    },
+    {
+      "op": "remove",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
+      "value": "0s"
+    },
+    {
+      "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2/typedExtensionProtocolOptions/envoy.extensions.upstreams.http.v3.HttpProtocolOptions/commonHttpProtocolOptions/maxStreamDuration",
+      "value": "54s"
     },
     {
       "op": "remove",
