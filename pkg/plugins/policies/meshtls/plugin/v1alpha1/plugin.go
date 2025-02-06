@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -180,7 +179,7 @@ func applyToRealResources(
 	fromRules core_rules.FromRules,
 	rs *core_xds.ResourceSet,
 ) error {
-	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
+	for _, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService, core_xds.NonGatewayResources) {
 		// there is only one rule always because we're in `Mesh/Mesh`
 		var conf api.Conf
 		for _, r := range fromRules.InboundRules {
@@ -192,9 +191,6 @@ func applyToRealResources(
 			switch typ {
 			case envoy_resource.ClusterType:
 				for _, cluster := range resources {
-					if cluster.Origin == metadata.OriginGateway {
-						continue
-					}
 					if err := configureParams(conf, cluster.Resource.(*envoy_cluster.Cluster)); err != nil {
 						return err
 					}
