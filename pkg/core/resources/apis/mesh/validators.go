@@ -21,10 +21,10 @@ const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
 	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
+	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
-	domainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 )
 
 type (
@@ -234,14 +234,14 @@ func ValidateHostname(path validators.PathBuilder, hostname string) validators.V
 	}
 
 	if strings.HasPrefix(hostname, "*.") {
-		if !domainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
+		if !DomainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
 			err.AddViolationAt(path, "invalid wildcard domain")
 		}
 
 		return err
 	}
 
-	if !domainRegexp.MatchString(hostname) {
+	if !DomainRegexp.MatchString(hostname) {
 		err.AddViolationAt(path, "invalid hostname")
 	}
 
