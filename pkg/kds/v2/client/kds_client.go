@@ -1,6 +1,7 @@
 package client
 
 import (
+	std_errors "errors"
 	"io"
 	"time"
 
@@ -9,13 +10,13 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type UpstreamResponse struct {
 	ControlPlaneId      string
 	Type                model.ResourceType
 	AddedResources      model.ResourceList
+	InvalidResourcesKey []model.ResourceKey
 	RemovedResourcesKey []model.ResourceKey
 	IsInitialRequest    bool
 }
@@ -24,16 +25,18 @@ func (u *UpstreamResponse) Validate() error {
 	if u.AddedResources == nil {
 		return nil
 	}
+	var err error
 	for _, res := range u.AddedResources.GetItems() {
-		if err := model.Validate(res); err != nil {
-			return err
+		if validationErr := model.Validate(res); validationErr != nil {
+			err = std_errors.Join(err, validationErr)
+			u.InvalidResourcesKey = append(u.InvalidResourcesKey, core_model.MetaToResourceKey(res.GetMeta()))
 		}
 	}
-	return nil
+	return err
 }
 
 type Callbacks struct {
-	OnResourcesReceived func(upstream UpstreamResponse) error
+	OnResourcesReceived func(upstream UpstreamResponse) (error, error)
 }
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
@@ -89,19 +92,19 @@ func (s *kdsSyncClient) Receive() error {
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
 		s.log.V(1).Info("DeltaDiscoveryResponse received", "response", received)
-
-		if err := received.Validate(); err != nil {
-			s.log.Info("received resource is invalid, sending NACK", "err", err)
-			if err := s.kdsStream.NACK(received.Type, err); err != nil {
-				if err == io.EOF {
-					return nil
-				}
-				return errors.Wrap(err, "failed to NACK a discovery response")
-			}
-			continue
-		}
+		validationErrors := received.Validate()
 
 		if s.callbacks == nil {
+			if validationErrors != nil {
+				s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
+				if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
+					if err == io.EOF {
+						return nil
+					}
+					return errors.Wrap(err, "failed to NACK a discovery response")
+				}
+				continue
+			}
 			s.log.Info("no callback set, sending ACK", "type", string(received.Type))
 			if err := s.kdsStream.ACK(received.Type); err != nil {
 				if err == io.EOF {
@@ -111,21 +114,20 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			continue
 		}
-		err = s.callbacks.OnResourcesReceived(received)
+		err, nackError := s.callbacks.OnResourcesReceived(received)
 		if err != nil {
-			if store.IsResourceAlreadyExists(err) {
-				s.log.Info("received resource already exists, sending NACK", "err", err)
-				if err := s.kdsStream.NACK(received.Type, err); err != nil {
-					if err == io.EOF {
-						return nil
-					}
-					return errors.Wrap(err, "failed to NACK a discovery response")
+			return errors.Wrapf(err, "failed to store %s resources", received.Type)
+		}
+		if nackError != nil || validationErrors != nil {
+			combinedErrors := std_errors.Join(nackError, validationErrors)
+			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
+			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
+				if err == io.EOF {
+					return nil
 				}
-				s.log.V(1).Info("NACK", "response", received)
-				continue
-			} else {
-				return errors.Wrapf(err, "failed to store %s resources", received.Type)
+				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
+			continue
 		}
 		if !received.IsInitialRequest {
 			// Execute backoff only on subsequent request.
