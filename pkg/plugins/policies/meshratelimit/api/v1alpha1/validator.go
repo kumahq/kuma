@@ -60,7 +60,7 @@ func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.Val
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
 		verr.AddViolationAt(validators.RootedAt("from"),
-			fmt.Sprintf("%s when the scope includes a Gateway, exclude non-gateway resources or select only gateways and use spec.to", validators.MustNotBeDefined))
+			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
 		return verr
 	}
 	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(from) != 0 {
