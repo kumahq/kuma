@@ -121,6 +121,18 @@ spec:
 		return s
 	}
 
+	countResponseCodes := func(statusCode int) func(responses []client.FailureResponse) int {
+		return func(responses []client.FailureResponse) int {
+			count := 0
+			for _, r := range responses {
+				if r.ResponseCode == statusCode {
+					count++
+				}
+			}
+			return count
+		}
+	}
+
 	It("should configure URLRewrite", func() {
 		// when
 		Expect(YamlK8s(fmt.Sprintf(`
@@ -288,16 +300,19 @@ spec:
 		tnl := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.ApiServerEndpoint)
 
 		// then
-		Eventually(func(g Gomega) {
-			response, err := client.CollectFailure(
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
 				multizone.KubeZone1,
 				"test-client",
 				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
 				client.FromKubernetesPod(namespace, "test-client"),
+				client.WithNumberOfRequests(100),
 			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(503))
-		}, "30s", "1s").Should(Succeed())
+		}, "30s", "5s").Should(And(
+			HaveLen(100),
+			WithTransform(countResponseCodes(503), BeNumerically("~", 50, 10)),
+			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 10)),
+		))
 
 		Eventually(func(g Gomega) {
 			g.Expect(retryStat(tnl)).To(stats.BeEqualZero())
@@ -330,21 +345,21 @@ spec:
 		Expect(framework.YamlK8s(meshRetryPolicy)(multizone.KubeZone1)).To(Succeed())
 
 		// then
-		Eventually(func(g Gomega) {
-			response, err := client.CollectEchoResponse(
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
 				multizone.KubeZone1,
 				"test-client",
 				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
 				client.FromKubernetesPod(namespace, "test-client"),
+				client.WithNumberOfRequests(100),
 			)
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.Instance).To(HavePrefix("kube-test-server-2"))
-		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(And(
+			HaveLen(100),
+			ContainElements(HaveField("ResponseCode", 200)),
+		))
 
 		// and
-		Eventually(func(g Gomega) {
-			g.Expect(retryStat(tnl)).To(stats.BeGreaterThanZero())
-		}, "5s", "1s").Should(Succeed())
+		Expect(retryStat(tnl)).To(stats.BeGreaterThanZero())
 
 		// remove Policies
 		Expect(DeleteMeshPolicyOrError(multizone.KubeZone1, meshretry_api.MeshRetryResourceTypeDescriptor, "mr-for-ms-in-zone-2")).To(Succeed())
