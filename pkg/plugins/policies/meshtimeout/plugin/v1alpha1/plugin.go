@@ -152,12 +152,8 @@ func applyToClusters(
 	protocol core_mesh.Protocol,
 	clusters ...*envoy_cluster.Cluster,
 ) error {
-	conf := getConf(rules, subsetutils.MeshServiceElement(serviceName))
-	if conf == nil {
-		return nil
-	}
-
-	configurer := plugin_xds.ClusterConfigurerFromConf(*conf, protocol)
+	conf, _ := getConf(rules, subsetutils.MeshServiceElement(serviceName))
+	configurer := plugin_xds.ClusterConfigurerFromConf(conf, protocol)
 	for _, cluster := range clusters {
 		if err := configurer.Configure(cluster); err != nil {
 			return err
@@ -194,16 +190,16 @@ func applyToGateway(
 			continue
 		}
 
-		conf := getConf(toRules.Rules, subsetutils.MeshElement())
+		conf, commonOk := getConf(toRules.Rules, subsetutils.MeshElement())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
 			if ok {
 				for _, vh := range route.VirtualHosts {
 					for _, r := range vh.Routes {
-						routeConf := getConf(toRules.Rules, subsetutils.MeshElement().WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
-						if routeConf == nil {
-							if conf == nil {
+						routeConf, routeOk := getConf(toRules.Rules, subsetutils.MeshElement().WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
+						if !routeOk {
+							if !commonOk {
 								continue
 							}
 							// use the common configuration for all routes
@@ -234,11 +230,7 @@ func applyToGateway(
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
 
-					conf := getConf(toRules.Rules, subsetutils.MeshServiceElement(serviceName))
-					if conf == nil {
-						continue
-					}
-
+					conf, _ = getConf(toRules.Rules, subsetutils.MeshServiceElement(serviceName))
 					if err := applyToClusters(
 						toRules.Rules,
 						serviceName,
@@ -258,16 +250,11 @@ func applyToGateway(
 func getConf(
 	rules core_rules.Rules,
 	element subsetutils.Element,
-) *api.Conf {
-	if rules == nil {
-		return &api.Conf{}
-	} else {
-		if computed := rules.Compute(element); computed != nil {
-			return pointer.To(computed.Conf.(api.Conf))
-		} else {
-			return nil
-		}
+) (api.Conf, bool) {
+	if computed := rules.Compute(element); computed != nil {
+		return computed.Conf.(api.Conf), true
 	}
+	return api.Conf{}, false
 }
 
 func createInboundClusterName(servicePort uint32, listenerPort uint32) string {
