@@ -3,6 +3,16 @@ package envoyconfig
 import (
 	"encoding/json"
 	"fmt"
+	"net"
+	"os"
+	"path/filepath"
+	"slices"
+	"strconv"
+	"strings"
+
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
@@ -14,14 +24,6 @@ import (
 	. "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	. "github.com/onsi/ginkgo/v2"
-	. "github.com/onsi/gomega"
-	"net"
-	"os"
-	"path/filepath"
-	"slices"
-	"strconv"
-	"strings"
 )
 
 func BuiltinGateway() {

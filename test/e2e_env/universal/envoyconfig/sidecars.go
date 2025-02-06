@@ -3,6 +3,7 @@ package envoyconfig
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -26,7 +27,6 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	"path/filepath"
 )
 
 func Sidecars() {
