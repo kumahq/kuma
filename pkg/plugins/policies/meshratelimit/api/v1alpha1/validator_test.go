@@ -407,7 +407,7 @@ violations:
 - field: spec.rules
   message: must not be defined
 - field: spec.from
-  message: must not be defined`,
+  message: must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to`,
 			}),
 			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
 				inputYaml: `
