@@ -10,7 +10,7 @@
                 },
                 "traceId128bit": {
                     "type": "boolean",
-                    "description": "Generate 128bit traces. Default: false"
+                    "description": "Generate 128bit traces. Default: false Default: false"
                 },
                 "apiVersion": {
                     "type": "string",
@@ -19,7 +19,7 @@
                 "sharedSpanContext": {
                     "additionalProperties": true,
                     "type": "boolean",
-                    "description": "Determines whether client and server spans will share the same span context. Default: true. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig"
+                    "description": "Determines whether client and server spans will share the same span context. Default: true. https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig Default: false"
                 }
             },
             "additionalProperties": true,

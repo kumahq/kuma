@@ -20,7 +20,7 @@
                 "passthrough": {
                     "additionalProperties": true,
                     "type": "boolean",
-                    "description": "Control the passthrough cluster"
+                    "description": "Control the passthrough cluster Default: false"
                 }
             },
             "additionalProperties": true,

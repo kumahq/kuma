@@ -6,7 +6,7 @@
             "properties": {
                 "localityAwareLoadBalancing": {
                     "type": "boolean",
-                    "description": "Enable the Locality Aware Load Balancing"
+                    "description": "Enable the Locality Aware Load Balancing Default: false"
                 },
                 "zoneEgress": {
                     "type": "boolean",

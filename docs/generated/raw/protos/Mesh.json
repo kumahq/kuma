@@ -283,7 +283,7 @@
                 },
                 "skipValidation": {
                     "type": "boolean",
-                    "description": "If enabled, skips CA validation."
+                    "description": "If enabled, skips CA validation. Default: false"
                 }
             },
             "additionalProperties": true,
@@ -349,7 +349,7 @@
                 "passthrough": {
                     "additionalProperties": true,
                     "type": "boolean",
-                    "description": "Control the passthrough cluster"
+                    "description": "Control the passthrough cluster Default: false"
                 }
             },
             "additionalProperties": true,
@@ -361,7 +361,7 @@
             "properties": {
                 "localityAwareLoadBalancing": {
                     "type": "boolean",
-                    "description": "Enable the Locality Aware Load Balancing"
+                    "description": "Enable the Locality Aware Load Balancing Default: false"
                 },
                 "zoneEgress": {
                     "type": "boolean",

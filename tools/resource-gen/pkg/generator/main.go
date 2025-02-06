@@ -495,7 +495,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 		}
 
 		modifySchema(&schema, "", func(path string, s *jsonschema.Schema) {
-			comment, ok := reflector.CommentMap[base + "api/mesh/v1alpha1." + path]
+			comment, ok := reflector.CommentMap[base+"api/mesh/v1alpha1."+path]
 
 			if ok && strings.Contains(comment, "Default:") {
 				s.Default = extractDefaultValue(comment)
