@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -166,14 +167,21 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 }
 
 func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
+	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
+		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
+	}
+
 	inboundsPerName := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, iface := range ifaces {
-		inboundsPerName[fmt.Sprintf("%s:%d", iface.Address, iface.Port)] = iface
+		inboundsPerName[inboundKey(iface)] = iface
 	}
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
 	for _, v := range inboundsPerName {
 		deduplicatedInbounds = append(deduplicatedInbounds, v)
 	}
+	sort.Slice(deduplicatedInbounds, func(i, j int) bool {
+		return inboundKey(deduplicatedInbounds[i]) < inboundKey(deduplicatedInbounds[j])
+	})
 	return deduplicatedInbounds
 }
 

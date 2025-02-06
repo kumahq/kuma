@@ -635,64 +635,64 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
-          name: pod-with-kuma-sidecar-and-ip
-          namespace: demo
-          ownerReferences:
-          - apiVersion: v1
-            blockOwnerDeletion: true
-            controller: true
-            kind: Pod
-            name: pod-with-kuma-sidecar-and-ip
-            uid: pod-with-kuma-sidecar-and-ip-demo
-          resourceVersion: "1"
-        spec:
-          networking:
-            address: 192.168.0.1
-            inbound:
-            - state: NotReady
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
+mesh: poc
+metadata:
+  creationTimestamp: null
+  labels:
+      app: sample
+      k8s.kuma.io/namespace: demo
+      kuma.io/env: kubernetes
+      kuma.io/mesh: poc
+      kuma.io/origin: zone
+      kuma.io/proxy-type: sidecar
+      kuma.io/zone: zone-1
+  name: pod-with-kuma-sidecar-and-ip
+  namespace: demo
+  ownerReferences:
+      - apiVersion: v1
+        blockOwnerDeletion: true
+        controller: true
+        kind: Pod
+        name: pod-with-kuma-sidecar-and-ip
+        uid: pod-with-kuma-sidecar-and-ip-demo
+  resourceVersion: "1"
+spec:
+    networking:
+        address: 192.168.0.1
+        inbound:
+            - health: {}
               name: metrics
               port: 6060
+              state: NotReady
               tags:
                 app: sample
-                kuma.io/service: example_demo_svc_6061
-                kuma.io/protocol: tcp
+                k8s.kuma.io/namespace: demo
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
-                k8s.kuma.io/namespace: demo
+                kuma.io/protocol: tcp
+                kuma.io/service: example_demo_svc_6061
                 kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 9090
+            - health: {}
+              port: 8080
+              state: NotReady
               tags:
                 app: sample
-                kuma.io/service: manual-example_demo_svc_90
+                k8s.kuma.io/namespace: demo
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
                 kuma.io/protocol: http
+                kuma.io/service: example_demo_svc_80
+                kuma.io/zone: zone-1
+            - health: {}
+              port: 9090
+              state: NotReady
+              tags:
+                app: sample
+                k8s.kuma.io/namespace: demo
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
-                k8s.kuma.io/namespace: demo
+                kuma.io/protocol: http
+                kuma.io/service: manual-example_demo_svc_90
                 kuma.io/zone: zone-1
 `))
 	})
@@ -737,64 +737,64 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
+mesh: poc
+metadata:
+    creationTimestamp: null
+    labels:
+        app: sample
+        k8s.kuma.io/namespace: demo
+        kuma.io/env: kubernetes
+        kuma.io/mesh: poc
+        kuma.io/origin: zone
+        kuma.io/proxy-type: sidecar
+        kuma.io/zone: zone-1
+    name: pod-with-kuma-sidecar-and-ip
+    namespace: demo
+    ownerReferences:
+        - apiVersion: v1
+          blockOwnerDeletion: true
+          controller: true
+          kind: Pod
           name: pod-with-kuma-sidecar-and-ip
-          namespace: demo
-          ownerReferences:
-          - apiVersion: v1
-            blockOwnerDeletion: true
-            controller: true
-            kind: Pod
-            name: pod-with-kuma-sidecar-and-ip
-            uid: "pod-with-kuma-sidecar-and-ip-demo"
-          resourceVersion: "2"
-        spec:
-          networking:
-            address: 192.168.0.1
-            inbound:
-            - state: NotReady 
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
+          uid: pod-with-kuma-sidecar-and-ip-demo
+    resourceVersion: "2"
+spec:
+    networking:
+        address: 192.168.0.1
+        inbound:
+            - health: {}
               name: metrics
               port: 6060
+              state: NotReady
               tags:
                 app: sample
-                kuma.io/service: example_demo_svc_6061
-                kuma.io/protocol: tcp
+                k8s.kuma.io/namespace: demo
                 k8s.kuma.io/service-name: example
                 k8s.kuma.io/service-port: "6061"
-                k8s.kuma.io/namespace: demo
+                kuma.io/protocol: tcp
+                kuma.io/service: example_demo_svc_6061
                 kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 9090
+            - health: {}
+              port: 8080
+              state: NotReady
               tags:
                 app: sample
-                kuma.io/service: manual-example_demo_svc_90
+                k8s.kuma.io/namespace: demo
+                k8s.kuma.io/service-name: example
+                k8s.kuma.io/service-port: "80"
                 kuma.io/protocol: http
+                kuma.io/service: example_demo_svc_80
+                kuma.io/zone: zone-1
+            - health: {}
+              port: 9090
+              state: NotReady
+              tags:
+                app: sample
+                k8s.kuma.io/namespace: demo
                 k8s.kuma.io/service-name: manual-example
                 k8s.kuma.io/service-port: "90"
-                k8s.kuma.io/namespace: demo
+                kuma.io/protocol: http
+                kuma.io/service: manual-example_demo_svc_90
                 kuma.io/zone: zone-1
 `))
 	})
