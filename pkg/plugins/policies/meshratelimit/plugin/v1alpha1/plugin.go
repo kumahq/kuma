@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
@@ -117,12 +118,9 @@ func applyToInbounds(
 		if !ok {
 			continue
 		}
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
 
-		if err := configure(rules, listener, nil); err != nil {
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		if err := configure(conf, listener, nil); err != nil {
 			return err
 		}
 	}
@@ -170,14 +168,9 @@ func applyToEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy) error {
 	return nil
 }
 
-func configure(
-	fromRules core_rules.Rules,
-	listener *envoy_listener.Listener,
-	route *envoy_route.RouteConfiguration,
-) error {
+func configure(conf api.Conf, listener *envoy_listener.Listener, route *envoy_route.RouteConfiguration) error {
 	configurer := plugin_xds.Configurer{
-		Rules: fromRules,
-		// Currently, `from` section of MeshRateLimit only allows Mesh targetRef
+		Conf:    &conf,
 		Element: subsetutils.MeshElement(),
 	}
 
