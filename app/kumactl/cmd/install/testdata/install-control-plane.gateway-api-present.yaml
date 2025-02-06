@@ -4890,6 +4890,133 @@ spec:
                   - targetRef
                   type: object
                 type: array
+              rules:
+                description: |-
+                  Rules defines inbound rate limiting configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound rate
+                        limits
+                      properties:
+                        local:
+                          description: LocalConf defines local http or/and tcp rate
+                            limit configuration
+                          properties:
+                            http:
+                              description: |-
+                                LocalHTTP defines configuration of local HTTP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                              properties:
+                                disabled:
+                                  description: Define if rate limiting should be disabled.
+                                  type: boolean
+                                onRateLimit:
+                                  description: Describes the actions to take on a
+                                    rate limit event
+                                  properties:
+                                    headers:
+                                      description: The Headers to be added to the
+                                        HTTP response on a rate limit event
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
+                                    status:
+                                      description: The HTTP status code to be set
+                                        on a rate limit event
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                requestRate:
+                                  description: Defines how many requests are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                              type: object
+                            tcp:
+                              description: |-
+                                LocalTCP defines confguration of local TCP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                              properties:
+                                connectionRate:
+                                  description: Defines how many connections are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                                disabled:
+                                  description: |-
+                                    Define if rate limiting should be disabled.
+                                    Default: false
+                                  type: boolean
+                              type: object
+                          type: object
+                      type: object
+                  type: object
+                type: array
               targetRef:
                 description: |-
                   TargetRef is a reference to the resource the policy takes an effect on.
@@ -10257,7 +10384,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 616b727bd1b67ceea8bc4899363416678c5146bc0cffb826466e084da4a2a808
+        checksum/tls-secrets: 27eaaaa811fc2eed212bbcd5e84e09074d6da6742b4c89a96a33cce0fefd7ecb
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -10672,31 +10799,6 @@ webhooks:
           - meshservices
     
       
-    sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

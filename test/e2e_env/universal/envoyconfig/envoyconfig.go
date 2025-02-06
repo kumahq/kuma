@@ -15,6 +15,7 @@ import (
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	meshcircuitbreaker "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	meshfaultinjection "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshratelimit "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
@@ -88,11 +89,12 @@ func EnvoyConfigTest() {
 		Expect(DeleteMeshResources(
 			universal.Cluster,
 			meshName,
-			meshtimeout.MeshTimeoutResourceTypeDescriptor,
 			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
+			meshcircuitbreaker.MeshCircuitBreakerResourceTypeDescriptor,
 			meshfaultinjection.MeshFaultInjectionResourceTypeDescriptor,
 			meshratelimit.MeshRateLimitResourceTypeDescriptor,
 			meshtls.MeshTLSResourceTypeDescriptor,
+			meshtimeout.MeshTimeoutResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -132,11 +134,12 @@ func EnvoyConfigTest() {
 			Expect(getConfig("demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
 			Expect(getConfig("test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
 		},
-		test.EntriesForFolder("meshtimeout", "envoyconfig"),
 		test.EntriesForFolder("meshaccesslog", "envoyconfig"),
+		test.EntriesForFolder("meshcircuitbreaker", "envoyconfig"),
 		test.EntriesForFolder("meshfaultinjection", "envoyconfig"),
 		test.EntriesForFolder("meshratelimit", "envoyconfig"),
 		test.EntriesForFolder("meshtls", "envoyconfig"),
+		test.EntriesForFolder("meshtimeout", "envoyconfig"),
 	)
 }
 

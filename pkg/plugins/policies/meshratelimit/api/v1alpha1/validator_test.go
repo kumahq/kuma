@@ -380,6 +380,35 @@ violations:
   - field: spec.from
     message: 'must not be defined'`,
 			}),
+			Entry("mixing from with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+rules:
+  - default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s`,
+				expected: `
+violations:
+- field: spec
+  message: fields 'to' and 'from' must be empty when 'rules' is defined
+- field: spec.rules
+  message: must not be defined
+- field: spec.from
+  message: must not be defined`,
+			}),
 			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
 				inputYaml: `
 targetRef:

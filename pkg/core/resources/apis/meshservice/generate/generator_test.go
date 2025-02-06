@@ -103,6 +103,17 @@ var _ = Describe("MeshService generator", func() {
 		}, "2s", "100ms").Should(Succeed())
 	})
 
+	It("should not generate MeshService from a Dataplane with not supported kuma.io/service", func() {
+		err := builders.Dataplane().WithAddress("192.168.0.1").WithServices("backend_svc").Create(resManager)
+		Expect(err).ToNot(HaveOccurred())
+
+		Consistently(func(g Gomega) {
+			mss := &meshservice_api.MeshServiceResourceList{}
+			g.Expect(resManager.List(context.Background(), mss)).To(Succeed())
+			g.Expect(mss.GetItems()).To(BeEmpty())
+		}, "1s", "100ms").Should(Succeed())
+	})
+
 	It("should generate MeshService from a single Dataplane with inbound name", func() {
 		err := samples.DataplaneBackendBuilder().WithoutInbounds().
 			AddInbound(
