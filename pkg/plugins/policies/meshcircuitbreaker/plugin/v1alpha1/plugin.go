@@ -13,6 +13,7 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	inbound2 "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
@@ -90,17 +91,14 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
-
 		cluster, ok := inboundClusters[envoy_names.GetLocalClusterName(iface.DataplanePort)]
 		if !ok {
 			continue
 		}
 
-		if err := configure(rules, subsetutils.MeshElement(), cluster); err != nil {
+		conf := inbound2.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		err := plugin_xds.NewConfigurer(conf).ConfigureCluster(cluster)
+		if err != nil {
 			return err
 		}
 	}
