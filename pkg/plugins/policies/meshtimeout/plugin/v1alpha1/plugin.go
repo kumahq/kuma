@@ -229,8 +229,6 @@ func applyToGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-
-					conf, _ = getConf(toRules.Rules, subsetutils.MeshServiceElement(serviceName))
 					if err := applyToClusters(
 						toRules.Rules,
 						serviceName,
