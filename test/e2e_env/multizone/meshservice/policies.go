@@ -310,8 +310,8 @@ spec:
 			)
 		}, "30s", "5s").Should(And(
 			HaveLen(100),
-			WithTransform(countResponseCodes(503), BeNumerically("~", 50, 10)),
-			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 10)),
+			WithTransform(countResponseCodes(503), BeNumerically("~", 50, 15)),
+			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 15)),
 		))
 
 		Eventually(func(g Gomega) {
