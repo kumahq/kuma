@@ -14,6 +14,30 @@ spec:
     inbound:
     - health:
         ready: true
+      port: 8080
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: http
+        kuma.io/service: example_demo_svc_80
+        kuma.io/zone: zone-1
+        version: "0.1"
+    - health:
+        ready: true
+      port: 8443
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "443"
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc_443
+        kuma.io/zone: zone-1
+        version: "0.1"
+    - health:
+        ready: true
       port: 7070
       tags:
         app: example
@@ -35,29 +59,5 @@ spec:
         k8s.kuma.io/service-port: "6061"
         kuma.io/protocol: tcp
         kuma.io/service: sample_playground_svc_6061
-        kuma.io/zone: zone-1
-        version: "0.1"
-    - health:
-        ready: true
-      port: 8080
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "80"
-        kuma.io/protocol: http
-        kuma.io/service: example_demo_svc_80
-        kuma.io/zone: zone-1
-        version: "0.1"
-    - health:
-        ready: true
-      port: 8443
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "443"
-        kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_443
         kuma.io/zone: zone-1
         version: "0.1"
