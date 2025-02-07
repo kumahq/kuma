@@ -150,10 +150,10 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             true,
-	HasRulesTargetRef:            false,
+	HasRulesTargetRef:            true,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mtls",
-	InterpretFromEntriesAsRules:  false,
+	InterpretFromEntriesAsRules:  true,
 }

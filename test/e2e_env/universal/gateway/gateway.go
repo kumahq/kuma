@@ -31,7 +31,7 @@ func Gateway() {
 		setup := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
 			Install(GatewayClientAppUniversal("gateway-client")).
-			Install(echoServerApp(mesh, "echo-server", "echo-service", "universal")).
+			Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
 			Install(YamlUniversal(MkGateway("gateway-proxy", mesh, "gateway-proxy", false, "example.kuma.io", "echo-service", gatewayPort))).
 			Install(GatewayProxyUniversal(mesh, "second-gateway-proxy")).

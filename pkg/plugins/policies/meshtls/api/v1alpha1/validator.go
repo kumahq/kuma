@@ -15,7 +15,11 @@ func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	if len(r.Spec.Rules) > 0 && len(r.Spec.From) > 0 {
+		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
+	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	verr.AddErrorAt(path.Field("rules"), validateRules(r.Spec.Rules, topLevel.Kind))
 	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
 	return verr.OrNil()
 }
@@ -33,6 +37,15 @@ func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInbound
 		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
+}
+
+func validateRules(rules []Rule, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rulesItem := range rules {
+		path := validators.Root().Index(idx)
+		verr.Add(validateDefault(path.Field("default"), rulesItem.Default, topLevelTargetRef))
+	}
+	return verr
 }
 
 func validateFrom(from []From, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {

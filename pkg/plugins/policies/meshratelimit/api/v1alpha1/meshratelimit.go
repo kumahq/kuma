@@ -8,6 +8,7 @@ import (
 )
 
 // MeshRateLimit
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshRateLimit struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -17,6 +18,14 @@ type MeshRateLimit struct {
 	From []From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
 	To []To `json:"to,omitempty"`
+	// Rules defines inbound rate limiting configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	Rules []Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound rate limits
+	Default Conf `json:"default,omitempty"`
 }
 
 type From struct {

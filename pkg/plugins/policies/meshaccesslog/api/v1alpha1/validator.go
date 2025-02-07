@@ -15,11 +15,15 @@ func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	}
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 && len(r.Spec.Rules) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, r.Spec.To))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateRules(r.Spec.Rules))
 	return verr.OrNil()
 }
 
@@ -51,6 +55,15 @@ func validateFrom(from []From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
+	}
+	return verr
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
 	}
 	return verr
 }
