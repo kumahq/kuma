@@ -47,7 +47,6 @@ type ResourceSyncer interface {
 
 type SyncOption struct {
 	Predicate            func(r core_model.Resource) bool
-	SkipInvalidResource  bool
 	SkipConflictResource bool
 	Zone                 string
 }
