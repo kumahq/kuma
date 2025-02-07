@@ -207,7 +207,7 @@ from:
 			[]validators.Violation{
 				{
 					Field:   "spec.from",
-					Message: "must not be defined",
+					Message: "must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to",
 				},
 				{
 					Field:   "spec.to[1].targetRef.kind",
