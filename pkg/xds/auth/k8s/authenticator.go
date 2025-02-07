@@ -2,7 +2,6 @@ package k8s
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core"
 	"strings"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_cache "github.com/kumahq/kuma/pkg/util/cache"
