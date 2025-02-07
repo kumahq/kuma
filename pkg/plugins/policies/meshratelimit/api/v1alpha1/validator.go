@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -79,11 +80,13 @@ func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.V
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
 		return verr
 	}
 	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when spec.kind is MeshHTTPRoute", validators.MustNotBeDefined))
 		return verr
 	}
 	for idx, fromItem := range from {
