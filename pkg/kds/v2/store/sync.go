@@ -142,44 +142,23 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
+	filterResources := func(resources core_model.ResourceList, predicate func(core_model.Resource) bool) (core_model.ResourceList, error) {
+		return filter(resources, func(r core_model.Resource) bool {
+			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
+			return !exists && predicate(r)
+		})
+	}
+
+	predicate := func(r core_model.Resource) bool { return true }
 	if opts.Predicate != nil {
-		if filtered, err := filter(downstream, func(r core_model.Resource) bool {
-			// ignore invalid resources, we don't want to remove the existing one
-			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
-			return opts.Predicate(r) && !exists
-		}); err != nil {
-			return err, nil
-		} else {
-			downstream = filtered
-		}
-		if filtered, err := filter(upstream, func(r core_model.Resource) bool {
-			// ignore invalid resources
-			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
-			return opts.Predicate(r) && !exists
-		}); err != nil {
-			return err, nil
-		} else {
-			upstream = filtered
-		}
-	} else {
-		if filtered, err := filter(downstream, func(r core_model.Resource) bool {
-			// ignore invalid resources, we don't want to remove the existing one
-			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
-			return !exists
-		}); err != nil {
-			return err, nil
-		} else {
-			downstream = filtered
-		}
-		if filtered, err := filter(upstream, func(r core_model.Resource) bool {
-			// ignore invalid resources
-			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
-			return !exists
-		}); err != nil {
-			return err, nil
-		} else {
-			upstream = filtered
-		}
+		predicate = opts.Predicate
+	}
+
+	if downstream, err = filterResources(downstream, predicate); err != nil {
+		return err, nil
+	}
+	if upstream, err = filterResources(upstream, predicate); err != nil {
+		return err, nil
 	}
 
 	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
