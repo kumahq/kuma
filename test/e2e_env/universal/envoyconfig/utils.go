@@ -2,16 +2,18 @@ package envoyconfig
 
 import (
 	"encoding/json"
+	"regexp"
+	"slices"
+	"strings"
+
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/api/openapi/types"
 	api_common "github.com/kumahq/kuma/api/openapi/types/common"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
-	. "github.com/onsi/gomega"
-	"regexp"
-	"slices"
-	"strings"
 )
 
 func waitMeshServiceReady(mesh, name string) {
