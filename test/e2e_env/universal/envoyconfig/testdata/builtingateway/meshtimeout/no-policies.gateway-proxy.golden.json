@@ -11,6 +11,46 @@
         },
         "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
         "perConnectionBufferLimitBytes": 32768,
+        "transportSocket": {
+          "name": "envoy.transport_sockets.tls",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
+            "commonTlsContext": {
+              "alpnProtocols": [
+                "kuma"
+              ],
+              "combinedValidationContext": {
+                "defaultValidationContext": {
+                  "matchTypedSubjectAltNames": [
+                    {
+                      "matcher": {
+                        "exact": "spiffe://envoyconfig-builtingateway/echo-service"
+                      },
+                      "sanType": "URI"
+                    }
+                  ]
+                },
+                "validationContextSdsSecretConfig": {
+                  "name": "mesh_ca:secret:envoyconfig-builtingateway",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              },
+              "tlsCertificateSdsSecretConfigs": [
+                {
+                  "name": "identity_cert:secret:envoyconfig-builtingateway",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              ]
+            },
+            "sni": "aecb4981e52fda985.echo-service.80.envoyconfig-builtingateway.ms"
+          }
+        },
         "type": "EDS",
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
@@ -224,6 +264,27 @@
             ]
           }
         ]
+      }
+    },
+    "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {
+      "identity_cert:secret:envoyconfig-builtingateway": {
+        "name": "identity_cert:secret:envoyconfig-builtingateway",
+        "tlsCertificate": {
+          "certificateChain": {
+            "inlineBytes": "Q0VSVA=="
+          },
+          "privateKey": {
+            "inlineBytes": "S0VZ"
+          }
+        }
+      },
+      "mesh_ca:secret:envoyconfig-builtingateway": {
+        "name": "mesh_ca:secret:envoyconfig-builtingateway",
+        "validationContext": {
+          "trustedCa": {
+            "inlineBytes": "Q0E="
+          }
+        }
       }
     },
     "type.googleapis.com/envoy.service.runtime.v3.Runtime": {
