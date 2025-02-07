@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core"
 	"strings"
 	"time"
 
@@ -19,6 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
+
+var log = core.Log.WithName("kube-tokens-validator")
 
 func New(client kube_client.Client, metrics *xds_metrics.Metrics) auth.Authenticator {
 	authCache := cache.New(
@@ -62,16 +65,20 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	return nil
 }
 
-func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Credential, proxyNamespace, serviceAccountName string) error {
+func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Credential, proxyNamespace, serviceAccountName, resourceName string) error {
 	tokenReview := &kube_auth.TokenReview{
 		Spec: kube_auth.TokenReviewSpec{
 			Token: credential,
 		},
 	}
+
+	log.V(1).Info("verifying token", "proxy", resourceName, "serviceAccountName", serviceAccountName)
 	if err := k.client.Create(ctx, tokenReview); err != nil {
-		return errors.Wrap(err, "call to TokenReview API failed")
+		log.Info("[WARNING] fail to call Kubernetes API Server to verify token", "error", err, "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return errors.New("call to TokenReview API failed")
 	}
 	if !tokenReview.Status.Authenticated {
+		log.V(1).Info("fail to verify token", "error", tokenReview.Status.Error, "credential", credential)
 		return errors.Errorf("token doesn't belong to a valid user")
 	}
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
@@ -103,7 +110,7 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 		return err
 	}
 
-	if err := k.verifyToken(ctx, credential, namespace, serviceAccountName); err != nil {
+	if err := k.verifyToken(ctx, credential, namespace, serviceAccountName, resource.GetMeta().GetName()); err != nil {
 		return errors.Wrap(err, "authentication failed")
 	}
 
