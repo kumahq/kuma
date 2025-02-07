@@ -177,6 +177,10 @@ func NonMeshExternalService(r *Resource) bool {
 	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.ResourceOrigin.ResourceType != meshexternalservice_api.MeshExternalServiceType)
 }
 
+func NonGatewayResources(r *Resource) bool {
+	return r.ResourceOrigin == nil || (r.ResourceOrigin != nil && r.Origin != "gateway")
+}
+
 type ResourcesByType map[string][]*Resource
 
 func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[core_model.TypedResourceIdentifier]ResourcesByType {

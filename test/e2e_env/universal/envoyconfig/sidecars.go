@@ -96,5 +96,6 @@ func Sidecars() {
 		test.EntriesForFolder(filepath.Join("sidecars", "meshfaultinjection"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshratelimit"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtls"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("sidecars", "meshcircuitbreaker"), "envoyconfig"),
 	)
 }
