@@ -45,7 +45,8 @@ type kubeAuthenticator struct {
 var _ auth.Authenticator = &kubeAuthenticator{}
 
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	if _, authenticated := k.authenticated.GetIfPresent(credential); authenticated {
+	cacheKey := resource.GetMeta().GetName() + credential
+	if _, authenticated := k.authenticated.GetIfPresent(cacheKey); authenticated {
 		return nil
 	}
 
@@ -61,7 +62,7 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 		return err
 	}
 
-	k.authenticated.Put(credential, struct{}{})
+	k.authenticated.Put(cacheKey, struct{}{})
 	return nil
 }
 
