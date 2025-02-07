@@ -118,6 +118,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
+	indexedInvalidResources := indexOfResourceKeys(upstreamResponse.InvalidResourcesKey)
 	if err != nil {
 		return err
 	}
@@ -133,18 +134,25 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
-	if opts.Predicate != nil {
-		if filtered, err := filter(downstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			downstream = filtered
-		}
-		if filtered, err := filter(upstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			upstream = filtered
-		}
+	filterResources := func(resources core_model.ResourceList, predicate func(core_model.Resource) bool) (core_model.ResourceList, error) {
+		return filter(resources, func(r core_model.Resource) bool {
+			_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
+			return !exists && predicate(r)
+		})
 	}
+
+	predicate := func(r core_model.Resource) bool { return true }
+	if opts.Predicate != nil {
+		predicate = opts.Predicate
+	}
+
+	if downstream, err = filterResources(downstream, predicate); err != nil {
+		return err
+	}
+	if upstream, err = filterResources(upstream, predicate); err != nil {
+		return err
+	}
+
 	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
 
 	indexedDownstream := newIndexed(downstream)
@@ -202,7 +210,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			return err
 		}
 	}
-
 	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
@@ -278,6 +285,14 @@ func newIndexed(rs core_model.ResourceList) *indexed {
 	return &indexed{indexByResourceKey: idxByRk}
 }
 
+func indexOfResourceKeys(rks []core_model.ResourceKey) map[core_model.ResourceKey]struct{} {
+	idxByRk := map[core_model.ResourceKey]struct{}{}
+	for _, rk := range rks {
+		idxByRk[rk] = struct{}{}
+	}
+	return idxByRk
+}
+
 func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
@@ -338,6 +353,7 @@ func GlobalSyncCallback(
 			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
+				upstream.InvalidResourcesKey = util.AddPrefixToResourceKeyNames(upstream.InvalidResourcesKey, upstream.ControlPlaneId)
 				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
 			}
 
@@ -390,6 +406,7 @@ func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v
 	if kubeObject.Scope() == k8s_model.ScopeNamespace {
 		util.AddSuffixToNames(upstream.AddedResources.GetItems(), ns)
 		upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, ns)
+		upstream.InvalidResourcesKey = util.AddSuffixToResourceKeyNames(upstream.InvalidResourcesKey, ns)
 	}
 	return nil
 }
