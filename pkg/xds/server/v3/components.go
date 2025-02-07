@@ -49,6 +49,7 @@ func RegisterXDS(
 	}
 
 	callbacks := util_xds_v3.CallbacksChain{
+		util_xds_v3.AdaptCallbacks(util_xds.LoggingCallbacks{Log: xdsServerLog.WithName("callbacks")}),
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		util_xds_v3.AdaptCallbacks(authCallbacks),

@@ -2,8 +2,9 @@ package xds
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc/metadata"
 )
 
 type LoggingCallbacks struct {
@@ -15,7 +16,20 @@ var _ Callbacks = LoggingCallbacks{}
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (cb LoggingCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
-	cb.Log.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ)
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return errors.Errorf("request has no metadata")
+	}
+	var authMD string
+	values, ok := md["authorization"]
+	if ok {
+		if len(values) != 1 {
+			return errors.Errorf("request must have exactly 1 authorization header, got %d", len(values))
+		}
+		authMD = values[0]
+	}
+
+	cb.Log.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "authorization", authMD)
 	return nil
 }
 

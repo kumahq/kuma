@@ -2,7 +2,6 @@ package components
 
 import (
 	"context"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
