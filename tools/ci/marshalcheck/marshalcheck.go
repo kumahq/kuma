@@ -31,23 +31,53 @@ func run(pass *analysis.Pass) (interface{}, error) {
                 return true
             }
 
-            for _, field := range structType.Fields.List {
-                if isPointer(field) {
-                    if !hasOmitEmptyTag(field) {
-                        reportFieldError(pass, field, "field must have 'omitempty' in JSON tag")
-                    }
-                } else if isArrayOrSlice(field, pass) {
-                    if hasOmitEmptyTag(field) {
-                        reportFieldError(pass, field, "field inside a slice/array should not have 'omitempty'")
-                    }
-                } else {
-                    pass.Reportf(field.Pos(), "field must be a pointer with 'omitempty' JSON tag or be inside a slice/array")
-                }
-            }
+            analyzeStructFields(pass, structType, typeSpec.Name.Name, "")
             return false
         })
     }
     return nil, nil
+}
+
+func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string) {
+    for _, field := range structType.Fields.List {
+        fieldPath := parentPath
+        if len(field.Names) > 0 {
+            fieldPath = parentPath + "." + field.Names[0].Name
+        }
+
+        if isPointer(field) {
+            if !hasOmitEmptyTag(field) {
+                reportFieldError(pass, field, fieldPath, "field must have 'omitempty' in JSON tag")
+            }
+        } else if isArrayOrSlice(field, pass) {
+            if hasOmitEmptyTag(field) {
+                reportFieldError(pass, field, fieldPath, "field inside a slice/array should not have 'omitempty'")
+            }
+            if elemType, ok := field.Type.(*ast.ArrayType); ok {
+                if structIdent, ok := elemType.Elt.(*ast.Ident); ok {
+                    analyzeNestedStruct(pass, structIdent, fieldPath+"[]")
+                }
+            }
+        } else {
+            pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
+        }
+    }
+}
+
+func analyzeNestedStruct(pass *analysis.Pass, structIdent *ast.Ident, parentPath string) {
+    if obj := pass.TypesInfo.ObjectOf(structIdent); obj != nil {
+        if named, ok := obj.Type().(*types.Named); ok {
+            if structType, ok := named.Underlying().(*types.Struct); ok {
+                for i := 0; i < structType.NumFields(); i++ {
+                    field := structType.Field(i)
+                    fieldPath := parentPath + "." + field.Name()
+                    if !field.Anonymous() {
+                        pass.Reportf(obj.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
+                    }
+                }
+            }
+        }
+    }
 }
 
 func isPointer(field *ast.Field) bool {
@@ -80,10 +110,6 @@ func hasOmitEmptyTag(field *ast.Field) bool {
     return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
 }
 
-func reportFieldError(pass *analysis.Pass, field *ast.Field, msg string) {
-    if len(field.Names) > 0 {
-        pass.Reportf(field.Pos(), "field '%s' %s", field.Names[0].Name, msg)
-    } else {
-        pass.Reportf(field.Pos(), "embedded field %s", msg)
-    }
+func reportFieldError(pass *analysis.Pass, field *ast.Field, fieldPath, msg string) {
+    pass.Reportf(field.Pos(), "field %s %s", fieldPath, msg)
 }
