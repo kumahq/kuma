@@ -1,6 +1,7 @@
 package samples
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -384,7 +385,7 @@ var (
 					Kind: "Mesh",
 				},
 				Default: meshtrafficpermissions.Conf{
-					Action: "Allow",
+					Action: pointer.To[meshtrafficpermissions.Action]("Allow"),
 				},
 			},
 		},

@@ -2,6 +2,7 @@ package marshalcheck
 
 import (
     "go/ast"
+    "go/types"
     "golang.org/x/tools/go/analysis"
     "strings"
 )
@@ -14,6 +15,10 @@ var Analyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
     for _, file := range pass.Files {
+        // Exclude testdata packages
+        if pass.Pkg.Path() != "" && strings.Contains(pass.Pkg.Path(), "testdata") {
+            continue
+        }
         ast.Inspect(file, func(n ast.Node) bool {
             // Look for struct type declarations
             typeSpec, ok := n.(*ast.TypeSpec)
@@ -27,27 +32,14 @@ func run(pass *analysis.Pass) (interface{}, error) {
             }
 
             for _, field := range structType.Fields.List {
-                // Check if field type is a pointer or a slice/array
-                switch field.Type.(type) {
-                case *ast.StarExpr:
-                    // Pointer type, ensure 'omitempty' is in JSON tag
+                if isPointer(field) {
                     if !hasOmitEmptyTag(field) {
-                        if len(field.Names) > 0 {
-                            pass.Reportf(field.Pos(), "field '%s' must have 'omitempty' in JSON tag", field.Names[0].Name)
-                        } else {
-                            pass.Reportf(field.Pos(), "embedded field must have 'omitempty' in JSON tag")
-                        }
+                        reportFieldError(pass, field, "field must have 'omitempty' in JSON tag")
                     }
-                case *ast.ArrayType:
-                    // Allowed, as it's an array/slice
+                } else if isArrayOrSlice(field, pass) {
                     continue
-                default:
-                    // If not a pointer or slice, report an error
-                    if len(field.Names) > 0 {
-                        pass.Reportf(field.Pos(), "field '%s' must be a pointer with 'omitempty' JSON tag or a slice/array", field.Names[0].Name)
-                    } else {
-                        pass.Reportf(field.Pos(), "embedded field must be a pointer with 'omitempty' JSON tag or a slice/array")
-                    }
+                } else {
+                    pass.Reportf(field.Pos(), "field must be a pointer with 'omitempty' JSON tag or be inside a slice/array")
                 }
             }
             return false
@@ -56,14 +48,40 @@ func run(pass *analysis.Pass) (interface{}, error) {
     return nil, nil
 }
 
+func isPointer(field *ast.Field) bool {
+    _, ok := field.Type.(*ast.StarExpr)
+    return ok
+}
+
+func isArrayOrSlice(field *ast.Field, pass *analysis.Pass) bool {
+    switch t := field.Type.(type) {
+    case *ast.ArrayType:
+        return true
+    case *ast.Ident:
+        if pass.TypesInfo != nil {
+            typeObj := pass.TypesInfo.ObjectOf(t)
+            if typeObj != nil {
+                _, ok := typeObj.Type().Underlying().(*types.Slice)
+                return ok
+            }
+        }
+    }
+    return false
+}
+
 func hasOmitEmptyTag(field *ast.Field) bool {
     if field.Tag == nil {
         return false
     }
     tag := field.Tag.Value
-    // Strip backticks
     tag = strings.Trim(tag, "`")
-
-    // Look for json:"...,omitempty"
     return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
+}
+
+func reportFieldError(pass *analysis.Pass, field *ast.Field, msg string) {
+    if len(field.Names) > 0 {
+        pass.Reportf(field.Pos(), "field '%s' %s", field.Names[0].Name, msg)
+    } else {
+        pass.Reportf(field.Pos(), "embedded field %s", msg)
+    }
 }
