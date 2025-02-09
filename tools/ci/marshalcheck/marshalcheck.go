@@ -37,7 +37,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
                         reportFieldError(pass, field, "field must have 'omitempty' in JSON tag")
                     }
                 } else if isArrayOrSlice(field, pass) {
-                    continue
+                    if hasOmitEmptyTag(field) {
+                        reportFieldError(pass, field, "field inside a slice/array should not have 'omitempty'")
+                    }
                 } else {
                     pass.Reportf(field.Pos(), "field must be a pointer with 'omitempty' JSON tag or be inside a slice/array")
                 }
