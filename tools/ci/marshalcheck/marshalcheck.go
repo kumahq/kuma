@@ -40,9 +40,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string) {
     for _, field := range structType.Fields.List {
-        fieldPath := parentPath
+        fieldPath := structName + parentPath
         if len(field.Names) > 0 {
-            fieldPath = parentPath + "." + field.Names[0].Name
+            fieldPath = structName + parentPath + "." + field.Names[0].Name
         }
 
         if isPointer(field) {
