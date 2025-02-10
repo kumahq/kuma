@@ -3,19 +3,15 @@ package k8s
 import (
 	"context"
 	"github.com/kumahq/kuma/pkg/core"
-	"strings"
-	"time"
-
-	"github.com/goburrow/cache"
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+	"strings"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	util_cache "github.com/kumahq/kuma/pkg/util/cache"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
@@ -24,32 +20,18 @@ import (
 var log = core.Log.WithName("kube-tokens-validator")
 
 func New(client kube_client.Client, metrics *xds_metrics.Metrics) auth.Authenticator {
-	authCache := cache.New(
-		cache.WithExpireAfterAccess(1*time.Hour),
-		cache.WithMaximumSize(100000),
-		cache.WithStatsCounter(&util_cache.PrometheusStatsCounter{Metric: metrics.KubeAuthCache}),
-	)
-
 	return &kubeAuthenticator{
-		client:        client,
-		authenticated: authCache,
+		client: client,
 	}
 }
 
 type kubeAuthenticator struct {
 	client kube_client.Client
-
-	authenticated cache.Cache
 }
 
 var _ auth.Authenticator = &kubeAuthenticator{}
 
 func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	cacheKey := resource.GetMeta().GetName() + credential
-	if _, authenticated := k.authenticated.GetIfPresent(cacheKey); authenticated {
-		return nil
-	}
-
 	var err error
 	switch resource := resource.(type) {
 	case *core_mesh.DataplaneResource, *core_mesh.ZoneIngressResource, *core_mesh.ZoneEgressResource:
@@ -61,8 +43,6 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	if err != nil {
 		return err
 	}
-
-	k.authenticated.Put(cacheKey, struct{}{})
 	return nil
 }
 
