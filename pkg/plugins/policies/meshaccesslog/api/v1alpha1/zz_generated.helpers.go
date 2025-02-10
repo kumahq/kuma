@@ -16,7 +16,10 @@ func (x *MeshAccessLog) GetTargetRef() common_api.TargetRef {
 }
 
 func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	if x.TargetRef == nil {
+		return common_api.TargetRef{}
+	}
+	return *x.TargetRef
 }
 
 func (x *From) GetDefault() interface{} {
@@ -25,15 +28,21 @@ func (x *From) GetDefault() interface{} {
 
 func (x *MeshAccessLog) GetFromList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.From {
-		item := x.From[i]
+	if x.From == nil {
+		return result
+	}
+	for _, itm := range *x.From {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	if x.TargetRef == nil {
+		return common_api.TargetRef{}
+	}
+	return *x.TargetRef
 }
 
 func (x *To) GetDefault() interface{} {
@@ -42,8 +51,11 @@ func (x *To) GetDefault() interface{} {
 
 func (x *MeshAccessLog) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.To {
-		item := x.To[i]
+	if x.To == nil {
+		return result
+	}
+	for _, itm := range *x.To {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
@@ -55,8 +67,11 @@ func (x *Rule) GetDefault() interface{} {
 
 func (x *MeshAccessLog) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
-	for i := range x.Rules {
-		item := x.Rules[i]
+	if x.Rules == nil {
+		return result
+	}
+	for _, itm := range *x.Rules {
+		item := itm
 		result = append(result, &item)
 	}
 	return result

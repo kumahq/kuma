@@ -16,35 +16,35 @@ type MeshAccessLog struct {
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound access log configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
 	// Default contains configuration of the inbound access logging
-	Default Conf `json:"default,omitempty"`
+	Default *Conf `json:"default,omitempty"`
 }
 
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
+	Default *Conf `json:"default,omitempty"`
 }
 
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
+	Default *Conf `json:"default,omitempty"`
 }
 
 type Conf struct {
@@ -83,7 +83,7 @@ type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
-	Attributes []JsonValue `json:"attributes,omitempty"`
+	Attributes *[]JsonValue `json:"attributes,omitempty"`
 	// Body is a raw string or an OTLP any value as described at
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
 	// It can contain placeholders available on

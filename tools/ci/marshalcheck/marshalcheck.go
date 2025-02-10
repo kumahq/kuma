@@ -81,31 +81,69 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             continue
         }
 
-        if isPointer(field) {
-            if !hasOmitEmptyTag(field) {
-                category := "mergeable"
-                if !isMergeable {
-                    category = "nonmergeable"
+        if !isMergeable {
+            nonMergeableCategory := determineNonMergeableCategory(field)
+
+            switch nonMergeableCategory {
+            case "optional_without_default":
+                if !isPointer(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must be a pointer", fieldPath)
                 }
-                reportFieldError(pass, field, fieldPath, category+" field must have 'omitempty' in JSON tag")
-            }
-        } else if isArrayOrSlice(field, pass) {
-            if hasOmitEmptyTag(field) {
-                reportFieldError(pass, field, fieldPath, "field inside a slice/array should not have 'omitempty'")
-            }
-            if elemType, ok := field.Type.(*ast.ArrayType); ok {
-                if structIdent, ok := elemType.Elt.(*ast.Ident); ok {
-                    analyzeNestedStruct(pass, structIdent, fieldPath+"[]")
+                if hasDefaultAnnotation(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must not have a 'default' annotation", fieldPath)
+                }
+                if !hasOmitEmptyTag(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must have 'omitempty' in JSON tag", fieldPath)
+                }
+
+            case "optional_with_default":
+                if isPointer(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must not be a pointer", fieldPath)
+                }
+                if !hasDefaultAnnotation(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must have a 'default' annotation", fieldPath)
+                }
+                if hasOmitEmptyTag(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must not have 'omitempty' in JSON tag", fieldPath)
+                }
+
+            case "required":
+                if isPointer(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not be a pointer", fieldPath)
+                }
+                if hasDefaultAnnotation(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not have a 'default' annotation", fieldPath)
+                }
+                if hasOmitEmptyTag(field) {
+                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not have 'omitempty' in JSON tag", fieldPath)
                 }
             }
-        } else {
-            category := "mergeable"
-            if !isMergeable {
-                category = "nonmergeable"
-            }
-            pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array (%s)", fieldPath, category)
+            continue
         }
+
+        pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
     }
+}
+
+func determineNonMergeableCategory(field *ast.Field) string {
+    hasDefault := hasDefaultAnnotation(field)
+    hasOmitEmpty := hasOmitEmptyTag(field)
+
+    if hasOmitEmpty && !hasDefault {
+        return "optional_without_default"
+    }
+    if hasDefault && !hasOmitEmpty {
+        return "optional_with_default"
+    }
+    return "required"
+}
+
+func hasDefaultAnnotation(field *ast.Field) bool {
+    if field.Tag == nil {
+        return false
+    }
+    tag := strings.Trim(field.Tag.Value, "`")
+    return strings.Contains(tag, "default:")
 }
 
 func analyzeNestedStruct(pass *analysis.Pass, structIdent *ast.Ident, parentPath string) {
@@ -149,8 +187,7 @@ func hasOmitEmptyTag(field *ast.Field) bool {
     if field.Tag == nil {
         return false
     }
-    tag := field.Tag.Value
-    tag = strings.Trim(tag, "`")
+    tag := strings.Trim(field.Tag.Value, "`")
     return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
 }
 
