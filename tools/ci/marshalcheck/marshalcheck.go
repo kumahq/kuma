@@ -146,22 +146,6 @@ func hasDefaultAnnotation(field *ast.Field) bool {
     return strings.Contains(tag, "default:")
 }
 
-func analyzeNestedStruct(pass *analysis.Pass, structIdent *ast.Ident, parentPath string) {
-    if obj := pass.TypesInfo.ObjectOf(structIdent); obj != nil {
-        if named, ok := obj.Type().(*types.Named); ok {
-            if structType, ok := named.Underlying().(*types.Struct); ok {
-                for i := 0; i < structType.NumFields(); i++ {
-                    field := structType.Field(i)
-                    fieldPath := parentPath + "." + field.Name()
-                    if !field.Anonymous() {
-                        pass.Reportf(obj.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
-                    }
-                }
-            }
-        }
-    }
-}
-
 func isPointer(field *ast.Field) bool {
     _, ok := field.Type.(*ast.StarExpr)
     return ok
@@ -171,6 +155,10 @@ func isArrayOrSlice(field *ast.Field, pass *analysis.Pass) bool {
     switch t := field.Type.(type) {
     case *ast.ArrayType:
         return true
+    case *ast.StarExpr: // Handle pointers to slices (e.g., *[]T)
+        if _, ok := t.X.(*ast.ArrayType); ok {
+            return true
+        }
     case *ast.Ident:
         if pass.TypesInfo != nil {
             typeObj := pass.TypesInfo.ObjectOf(t)
@@ -183,14 +171,11 @@ func isArrayOrSlice(field *ast.Field, pass *analysis.Pass) bool {
     return false
 }
 
+
 func hasOmitEmptyTag(field *ast.Field) bool {
     if field.Tag == nil {
         return false
     }
     tag := strings.Trim(field.Tag.Value, "`")
     return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
-}
-
-func reportFieldError(pass *analysis.Pass, field *ast.Field, fieldPath, msg string) {
-    pass.Reportf(field.Pos(), "field %s %s", fieldPath, msg)
 }
