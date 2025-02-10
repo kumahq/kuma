@@ -70,11 +70,19 @@ func shouldExcludeResource(name string, rules map[string] func(string, string) b
 
 func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string, isMergeable bool) {
     for _, field := range structType.Fields.List {
-        fieldPath := structName + parentPath
-        fieldName := field.Names[0].Name
+        fieldName := ""
         if len(field.Names) > 0 {
-            fieldPath = structName + parentPath + "." + fieldName
+            fieldName = field.Names[0].Name
         }
+
+        // Correctly append field names to the path
+        var fieldPath string
+        if parentPath == "" {
+            fieldPath = structName + "." + fieldName
+        } else {
+            fieldPath = parentPath + "." + fieldName
+        }
+
         fmt.Println("DEBUG: Analyzing field", fieldPath)
 
         // ✅ Handle pointers to structs (*Struct)
@@ -113,7 +121,6 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             // todo: doesn't have default annotation
         } else {
             _, isValid := determineNonMergeableCategory(pass, field)
-            //fmt.Println("DEBUG: ", fieldPath, " detected as ", category)  // Add this to check the extracted tag value
 
             if !isValid {
                 pass.Reportf(field.Pos(), "field %s does not match any allowed non-mergeable category", fieldPath)

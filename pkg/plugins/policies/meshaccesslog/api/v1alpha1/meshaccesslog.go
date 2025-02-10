@@ -122,7 +122,7 @@ type Format struct {
 	// +kubebuilder:example={{key: "start_time", value: "%START_TIME%"},{key: "bytes_received", value: "%BYTES_RECEIVED%"}}
 	Json *[]JsonValue `json:"json,omitempty"`
 	// +kubebuilder:default=false
-	OmitEmptyValues bool `json:"omitEmptyValues"`
+	OmitEmptyValues bool `json:"omitEmptyValues,omitempty"`
 }
 
 type JsonValue struct {
