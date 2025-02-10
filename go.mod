@@ -29,7 +29,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.48.1
+	github.com/gruntwork-io/terratest v0.48.2
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
