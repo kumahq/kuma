@@ -1,9 +1,11 @@
 package marshalcheck
 
 import (
+    "fmt"
     "go/ast"
     "go/types"
     "golang.org/x/tools/go/analysis"
+    "path/filepath"
     "strings"
 )
 
@@ -29,6 +31,7 @@ var Analyzer = &analysis.Analyzer{
 func run(pass *analysis.Pass) (interface{}, error) {
     for _, file := range pass.Files {
         fileName := pass.Fset.File(file.Pos()).Name()
+        fileNameWithoutExtension := stripExtension(fileName)
         if shouldExcludeResource(pass.Pkg.Path(), excludedPackages) || shouldExcludeResource(fileName, excludedFiles) {
             continue
         }
@@ -38,16 +41,17 @@ func run(pass *analysis.Pass) (interface{}, error) {
                 return true
             }
 
+            if strings.ToLower(typeSpec.Name.String()) != fileNameWithoutExtension {
+                fmt.Println("DEBUG: Skipping type", typeSpec.Name.String(), "in file", fileNameWithoutExtension)
+                return true
+            }
+
             structType, ok := typeSpec.Type.(*ast.StructType)
             if !ok {
                 return true
             }
 
-            if typeSpec.Name.Name == "Conf" {
-                analyzeStructFields(pass, structType, typeSpec.Name.Name, "", true)
-            } else {
-                analyzeStructFields(pass, structType, typeSpec.Name.Name, "", false)
-            }
+            analyzeStructFields(pass, structType, typeSpec.Name.Name, "", false)
 
             return false
         })
@@ -67,10 +71,36 @@ func shouldExcludeResource(name string, rules map[string] func(string, string) b
 func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string, isMergeable bool) {
     for _, field := range structType.Fields.List {
         fieldPath := structName + parentPath
+        fieldName := field.Names[0].Name
         if len(field.Names) > 0 {
-            fieldPath = structName + parentPath + "." + field.Names[0].Name
+            fieldPath = structName + parentPath + "." + fieldName
+        }
+        fmt.Println("DEBUG: Analyzing field", fieldPath)
+
+        // ✅ Recursively analyze named nested structs
+        if ident, ok := field.Type.(*ast.Ident); ok {
+            namedStruct := findStructByName(pass, ident.Name)
+            if namedStruct != nil {
+                if fieldName == "Conf" {
+                    analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, true)
+                } else {
+                    analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, isMergeable)
+                }
+                continue
+            }
         }
 
+        // ✅ Recursively analyze slices/arrays of structs
+        if arrayType, ok := field.Type.(*ast.ArrayType); ok {
+            if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
+                namedStruct := findStructByName(pass, elemIdent.Name)
+                if namedStruct != nil {
+                    analyzeStructFields(pass, namedStruct, elemIdent.Name, fieldPath+"[]", isMergeable)
+                }
+            }
+        }
+
+        // Process the field normally
         if isMergeable {
             if !isPointer(field) {
                 pass.Reportf(field.Pos(), "mergeable field %s must be a pointer", fieldPath)
@@ -88,6 +118,31 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             }
         }
     }
+}
+
+func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
+    var foundStruct *ast.StructType
+
+    for _, file := range pass.Files {
+        ast.Inspect(file, func(n ast.Node) bool {
+            typeSpec, ok := n.(*ast.TypeSpec)
+            if !ok {
+                return true
+            }
+            if typeSpec.Name.Name != structName {
+                return true
+            }
+            if structType, ok := typeSpec.Type.(*ast.StructType); ok {
+                foundStruct = structType // Save the struct in the variable
+                return false             // Stop further inspection
+            }
+            return true
+        })
+        if foundStruct != nil {
+            return foundStruct
+        }
+    }
+    return nil
 }
 
 func isPointerToSlice(field *ast.Field) bool {
@@ -169,4 +224,11 @@ func hasOmitEmptyTag(field *ast.Field) bool {
     }
     tag := strings.Trim(field.Tag.Value, "`")
     return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
+}
+
+// Extracts the struct name from the filename
+func stripExtension(filename string) string {
+    base := filepath.Base(filename)
+    name := strings.TrimSuffix(base, ".go")
+    return name
 }
