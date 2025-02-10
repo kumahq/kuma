@@ -88,7 +88,6 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds
 		return err
 	}
 
-	// If the gRPC stream is already authenticated, we don't need to authenticate it again.
 	if !s.authenticated {
 		credential, err := ExtractCredential(s.ctx)
 		if err != nil {
