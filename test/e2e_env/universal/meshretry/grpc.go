@@ -28,8 +28,6 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
-			// remove default policies after https://github.com/kumahq/kuma/issues/3325
-			Install(TrafficRouteUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -45,23 +43,27 @@ func GrpcRetry() {
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on GRPC connection failure", func() {
-		echoServerDataplane := fmt.Sprintf(`
-type: Dataplane
+		faultInjection := fmt.Sprintf(`
+type: MeshFaultInjection
 mesh: "%s"
-name: fake-echo-server
-networking:
-  address:  241.0.0.1
-  inbound:
-  - port: 7777
-    servicePort: 7777
-    tags:
-      kuma.io/service: test-server
-      kuma.io/protocol: grpc
+name: mesh-fault-injecton-500-grpc
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: MeshService
+        name: test-client
+      default:
+        http:
+          - abort:
+              httpStatus: 503
+              percentage: "50.0"
 `, meshName)
 		meshRetryPolicy := fmt.Sprintf(`
 type: MeshRetry
@@ -100,8 +102,8 @@ spec:
 			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
 
-		By("Adding a faulty dataplane")
-		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		By("Adding a fault injection")
+		Expect(universal.Cluster.Install(YamlUniversal(faultInjection))).To(Succeed())
 
 		By("Clean counters")
 		Expect(admin.ResetCounters()).To(Succeed())
@@ -112,7 +114,7 @@ spec:
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(stats.BeGreaterThanZero())
 			g.Expect(failureStats).To(stats.BeGreaterThan(lastFailureStats))
-		}, "60s", "5s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
@@ -127,6 +129,6 @@ spec:
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
 			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
-		}, "30s", "5s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 	})
 }

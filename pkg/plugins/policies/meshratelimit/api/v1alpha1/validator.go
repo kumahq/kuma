@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"fmt"
 	"time"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -8,20 +9,25 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	}
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
+	verr.AddErrorAt(path, validateRules(topLevel, r.Spec.Rules))
 	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
 	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
 	return verr.OrNil()
 }
 
-func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -35,8 +41,10 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef) val
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 				common_api.MeshHTTPRoute,
+				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
+			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -45,19 +53,40 @@ func (r *MeshRateLimitResource) validateTop(targetRef *common_api.TargetRef) val
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
+			IsInboundPolicy: isInboundPolicy,
 		})
 	}
+}
+
+func validateRules(topTargetRef common_api.TargetRef, rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	if common_api.IncludesGateways(topTargetRef) && len(rules) != 0 {
+		verr.AddViolationAt(validators.RootedAt("rules"), validators.MustNotBeDefined)
+		return verr
+	}
+	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(rules) != 0 {
+		verr.AddViolationAt(validators.RootedAt("rules"), validators.MustNotBeDefined)
+		return verr
+	}
+	for idx, ruleItem := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateDefault(path.Field("default"), ruleItem.Default))
+	}
+	return verr
 }
 
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
 		return verr
 	}
 	if topTargetRef.Kind == common_api.MeshHTTPRoute && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when spec.kind is MeshHTTPRoute", validators.MustNotBeDefined))
 		return verr
 	}
 	for idx, fromItem := range from {

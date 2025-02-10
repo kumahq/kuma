@@ -3474,6 +3474,181 @@ components:
                   - targetRef
                 type: object
               type: array
+            rules:
+              description: >-
+                Rules defines inbound access log configurations. Currently
+                limited to
+
+                selecting all inbound traffic, as L7 matching is not yet
+                implemented.
+              items:
+                properties:
+                  default:
+                    description: >-
+                      Default contains configuration of the inbound access
+                      logging
+                    properties:
+                      backends:
+                        items:
+                          properties:
+                            file:
+                              description: >-
+                                FileBackend defines configuration for file based
+                                access logs
+                              properties:
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                                path:
+                                  description: Path to a file that logs will be written to
+                                  example: /tmp/access.log
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - path
+                              type: object
+                            openTelemetry:
+                              description: Defines an OpenTelemetry logging backend.
+                              properties:
+                                attributes:
+                                  description: >-
+                                    Attributes can contain placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
+                                  items:
+                                    properties:
+                                      key:
+                                        type: string
+                                      value:
+                                        type: string
+                                    type: object
+                                  type: array
+                                body:
+                                  description: >-
+                                    Body is a raw string or an OTLP any value as
+                                    described at
+
+                                    https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+
+                                    It can contain placeholders available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  example:
+                                    kvlistValue:
+                                      values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
+                                  x-kubernetes-preserve-unknown-fields: true
+                                endpoint:
+                                  description: >-
+                                    Endpoint of OpenTelemetry collector. An
+                                    empty port defaults to 4317.
+                                  example: otel-collector:4317
+                                  minLength: 1
+                                  type: string
+                              required:
+                                - endpoint
+                              type: object
+                            tcp:
+                              description: TCPBackend defines a TCP logging backend.
+                              properties:
+                                address:
+                                  description: Address of the TCP logging backend
+                                  example: 127.0.0.1:5000
+                                  minLength: 1
+                                  type: string
+                                format:
+                                  description: >-
+                                    Format of access logs. Placeholders
+                                    available on
+
+                                    https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                  properties:
+                                    json:
+                                      example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                      items:
+                                        properties:
+                                          key:
+                                            type: string
+                                          value:
+                                            type: string
+                                        type: object
+                                      type: array
+                                    omitEmptyValues:
+                                      default: false
+                                      type: boolean
+                                    plain:
+                                      example: >-
+                                        [%START_TIME%] %KUMA_MESH%
+                                        %UPSTREAM_HOST%
+                                      type: string
+                                    type:
+                                      enum:
+                                        - Plain
+                                        - Json
+                                      type: string
+                                  required:
+                                    - type
+                                  type: object
+                              required:
+                                - address
+                              type: object
+                            type:
+                              enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                              type: string
+                          required:
+                            - type
+                          type: object
+                        type: array
+                    type: object
+                type: object
+              type: array
             targetRef:
               description: >-
                 TargetRef is a reference to the resource the policy takes an
@@ -3813,11 +3988,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -3827,6 +4004,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5038,11 +5216,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -5052,6 +5232,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -5557,11 +5738,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -5571,6 +5754,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6049,11 +6233,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -6063,6 +6249,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -6860,11 +7047,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -6874,6 +7063,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7628,11 +7818,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -7642,6 +7834,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -7964,11 +8157,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -7978,6 +8173,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8153,11 +8349,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -8167,6 +8365,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -8874,11 +9073,13 @@ components:
             - default
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -8888,6 +9089,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -9154,6 +9356,151 @@ components:
                     type: object
                 required:
                   - targetRef
+                type: object
+              type: array
+            rules:
+              description: >-
+                Rules defines inbound rate limiting configurations. Currently
+                limited to
+
+                selecting all inbound traffic, as L7 matching is not yet
+                implemented.
+              items:
+                properties:
+                  default:
+                    description: Default contains configuration of the inbound rate limits
+                    properties:
+                      local:
+                        description: >-
+                          LocalConf defines local http or/and tcp rate limit
+                          configuration
+                        properties:
+                          http:
+                            description: >-
+                              LocalHTTP defines configuration of local HTTP rate
+                              limiting
+
+                              https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                            properties:
+                              disabled:
+                                description: Define if rate limiting should be disabled.
+                                type: boolean
+                              onRateLimit:
+                                description: >-
+                                  Describes the actions to take on a rate limit
+                                  event
+                                properties:
+                                  headers:
+                                    description: >-
+                                      The Headers to be added to the HTTP
+                                      response on a rate limit event
+                                    properties:
+                                      add:
+                                        items:
+                                          properties:
+                                            name:
+                                              maxLength: 256
+                                              minLength: 1
+                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                            - name
+                                            - value
+                                          type: object
+                                        maxItems: 16
+                                        type: array
+                                        x-kubernetes-list-map-keys:
+                                          - name
+                                        x-kubernetes-list-type: map
+                                      set:
+                                        items:
+                                          properties:
+                                            name:
+                                              maxLength: 256
+                                              minLength: 1
+                                              pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                            - name
+                                            - value
+                                          type: object
+                                        maxItems: 16
+                                        type: array
+                                        x-kubernetes-list-map-keys:
+                                          - name
+                                        x-kubernetes-list-type: map
+                                    type: object
+                                  status:
+                                    description: >-
+                                      The HTTP status code to be set on a rate
+                                      limit event
+                                    format: int32
+                                    type: integer
+                                type: object
+                              requestRate:
+                                description: >-
+                                  Defines how many requests are allowed per
+                                  interval.
+                                properties:
+                                  interval:
+                                    description: >-
+                                      The interval the number of units is
+                                      accounted for.
+                                    type: string
+                                  num:
+                                    description: >-
+                                      Number of units per interval (depending on
+                                      usage it can be a number of requests,
+
+                                      or a number of connections).
+                                    format: int32
+                                    type: integer
+                                required:
+                                  - interval
+                                  - num
+                                type: object
+                            type: object
+                          tcp:
+                            description: >-
+                              LocalTCP defines confguration of local TCP rate
+                              limiting
+
+                              https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                            properties:
+                              connectionRate:
+                                description: >-
+                                  Defines how many connections are allowed per
+                                  interval.
+                                properties:
+                                  interval:
+                                    description: >-
+                                      The interval the number of units is
+                                      accounted for.
+                                    type: string
+                                  num:
+                                    description: >-
+                                      Number of units per interval (depending on
+                                      usage it can be a number of requests,
+
+                                      or a number of connections).
+                                    format: int32
+                                    type: integer
+                                required:
+                                  - interval
+                                  - num
+                                type: object
+                              disabled:
+                                description: |-
+                                  Define if rate limiting should be disabled.
+                                  Default: false
+                                type: boolean
+                            type: object
+                        type: object
+                    type: object
                 type: object
               type: array
             targetRef:
@@ -9467,11 +9814,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -9481,6 +9830,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10118,11 +10468,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -10132,6 +10484,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -10464,11 +10817,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -10478,6 +10833,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11040,11 +11396,13 @@ components:
               type: array
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11054,6 +11412,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11242,6 +11601,70 @@ components:
                   - targetRef
                 type: object
               type: array
+            rules:
+              description: >-
+                Rules defines inbound tls configurations. Currently limited to
+
+                selecting all inbound traffic, as L7 matching is not yet
+                implemented.
+              items:
+                properties:
+                  default:
+                    description: Default contains configuration of the inbound tls
+                    properties:
+                      mode:
+                        description: >-
+                          Mode defines the behavior of inbound listeners with
+                          regard to traffic encryption.
+                        enum:
+                          - Permissive
+                          - Strict
+                        type: string
+                      tlsCiphers:
+                        description: >-
+                          TlsCiphers section for providing ciphers
+                          specification.
+                        items:
+                          enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                          type: string
+                        type: array
+                      tlsVersion:
+                        description: Version section for providing version specification.
+                        properties:
+                          max:
+                            default: TLSAuto
+                            description: >-
+                              Max defines maximum supported version. One of
+                              `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                          min:
+                            default: TLSAuto
+                            description: >-
+                              Min defines minimum supported version. One of
+                              `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                            enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                            type: string
+                        type: object
+                    type: object
+                type: object
+              type: array
             targetRef:
               description: >-
                 TargetRef is a reference to the resource the policy takes an
@@ -11325,11 +11748,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11339,6 +11764,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11679,11 +12105,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11693,6 +12121,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -11925,11 +12354,13 @@ components:
               type: object
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -11939,6 +12370,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12324,6 +12756,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12683,6 +13116,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -12745,11 +13179,13 @@ components:
               type: string
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -12759,6 +13195,7 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13002,11 +13439,13 @@ components:
             - match
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13114,11 +13553,13 @@ components:
                   type: string
               type: object
           type: object
+          readOnly: true
     MeshExternalServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13198,11 +13639,13 @@ components:
             - selector
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13330,11 +13773,13 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshMultiZoneServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.
@@ -13440,11 +13885,13 @@ components:
               type: string
           type: object
         creationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was created
           format: date-time
           example: '0001-01-01T00:00:00Z'
         modificationTime:
+          readOnly: true
           type: string
           description: Time at which the resource was updated
           format: date-time
@@ -13572,11 +14019,13 @@ components:
                 type: object
               type: array
           type: object
+          readOnly: true
     MeshServiceCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: >
             warnings is a list of warning messages to return to the requesting
             Kuma API clients.

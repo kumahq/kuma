@@ -294,6 +294,22 @@ violations:
   - field: spec.from[0].default.local
     message: must be defined`,
 			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+- targetRef:
+    kind: Mesh
+  default: {}`,
+				expected: `
+violations:
+  - field: spec.targetRef.sectionName
+    message: can only be used with inbound policies
+  - field: spec.to
+    message: must not be defined`,
+			}),
 			Entry("neither tcp or http defined", testCase{
 				inputYaml: `
 targetRef:
@@ -362,7 +378,36 @@ from:
 				expected: `
 violations:
   - field: spec.from
-    message: 'must not be defined'`,
+    message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
+			}),
+			Entry("mixing from with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s
+rules:
+  - default:
+      local:
+        http:
+          requestRate:
+            num: 100
+            interval: 10s`,
+				expected: `
+violations:
+- field: spec
+  message: fields 'to' and 'from' must be empty when 'rules' is defined
+- field: spec.rules
+  message: must not be defined
+- field: spec.from
+  message: must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to`,
 			}),
 			Entry("invalid gateway example when targeting MeshHTTPRoute", testCase{
 				inputYaml: `
@@ -385,7 +430,7 @@ from:
 				expected: `
 violations:
   - field: spec.from
-    message: 'must not be defined'`,
+    message: 'must not be defined when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to'`,
 			}),
 		)
 	})

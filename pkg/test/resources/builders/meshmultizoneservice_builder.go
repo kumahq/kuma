@@ -70,6 +70,15 @@ func (m *MeshMultiZoneServiceBuilder) AddIntPort(port uint32, protocol core_mesh
 	return m
 }
 
+func (m *MeshMultiZoneServiceBuilder) AddIntPortWithName(port uint32, protocol core_mesh.Protocol, name string) *MeshMultiZoneServiceBuilder {
+	m.res.Spec.Ports = append(m.res.Spec.Ports, meshmzservice_api.Port{
+		Port:        port,
+		AppProtocol: protocol,
+		Name:        name,
+	})
+	return m
+}
+
 func (m *MeshMultiZoneServiceBuilder) Build() *meshmzservice_api.MeshMultiZoneServiceResource {
 	if err := m.res.Validate(); err != nil {
 		panic(err)

@@ -186,8 +186,10 @@ type ResourceTypeDescriptor struct {
 	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
-	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
+	// HasFromTargetRef indicates that the policy can be applied to inbound traffic
 	HasFromTargetRef bool
+	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
+	HasRulesTargetRef bool
 	// HasStatus indicates that the policy has a status field
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy

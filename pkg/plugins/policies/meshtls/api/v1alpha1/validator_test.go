@@ -64,6 +64,18 @@ var _ = Describe("MeshTLS", func() {
 				name: "meshtls-4",
 				file: "full-valid-no-top-target",
 			}),
+			Entry("sectionName without from or rules", testCase{
+				name: "meshtls-5",
+				file: "invalid-top-level-sectionName",
+			}),
+			Entry("mixed from and rules", testCase{
+				name: "meshtls-6",
+				file: "invalid-rules-and-from",
+			}),
+			Entry("invalid top level kind dataplane", testCase{
+				name: "meshtls-7",
+				file: "invalid-top-level-dataplane",
+			}),
 		)
 	})
 })

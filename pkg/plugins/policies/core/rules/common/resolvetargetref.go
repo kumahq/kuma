@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -28,6 +29,10 @@ func UniqueKey(r core_model.Resource, sectionName string) core_model.TypedResour
 		ResourceType:       r.Descriptor().Name,
 		SectionName:        sectionName,
 	}
+}
+
+type ResourceWithPorts interface {
+	GetPorts() []core.Port
 }
 
 func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader ResourceReader) []*ResourceSection {
@@ -80,14 +85,40 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 	}
 
 	ri := core_model.TargetRefToResourceIdentifier(tMeta, targetRef)
-	if resource := reader.Get(rtype, ri); resource != nil {
-		return []*ResourceSection{{
-			Resource:    resource,
-			SectionName: targetRef.SectionName,
-		}}
+	resolvedResource := reader.Get(rtype, ri)
+	if resolvedResource == nil {
+		return nil
 	}
 
-	return nil
+	if resourceWithPorts, ok := resolvedResource.(ResourceWithPorts); ok && targetRef.SectionName != "" {
+		for _, port := range resourceWithPorts.GetPorts() {
+			if port.GetName() == targetRef.SectionName {
+				return []*ResourceSection{{
+					Resource:    resolvedResource,
+					SectionName: port.GetName(),
+				}}
+			}
+			if targetRefPort, ok := tryParsePort(targetRef.SectionName); ok && port.GetName() == "" && port.GetValue() == targetRefPort {
+				return []*ResourceSection{{
+					Resource:    resolvedResource,
+					SectionName: targetRef.SectionName,
+				}}
+			}
+		}
+		return []*ResourceSection{}
+	}
+
+	return []*ResourceSection{{
+		Resource: resolvedResource,
+	}}
+}
+
+func tryParsePort(s string) (uint32, bool) {
+	u, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint32(u), true
 }
 
 func parseService(host string) (string, string, uint32, error) {

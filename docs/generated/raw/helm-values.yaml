@@ -119,6 +119,9 @@ controlPlane:
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
 
+  # -- Priority Class Name of the Kuma Control Plane
+  priorityClassName: ""
+
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Fail
 
@@ -532,6 +535,9 @@ ingress:
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
 
+  # -- Priority Class Name of the ingress
+  priorityClassName: ""
+
   # -- Security context at the pod level for ingress
   podSecurityContext:
     runAsNonRoot: true
@@ -654,6 +660,9 @@ egress:
   # -- Topology spread constraints rule for the Kuma Egress pods.
   # This is rendered as a template, so you can use variables to generate match labels.
   topologySpreadConstraints:
+
+  # -- Priority Class Name of the egress
+  priorityClassName: ""
 
   # -- Security context at the pod level for egress
   podSecurityContext:

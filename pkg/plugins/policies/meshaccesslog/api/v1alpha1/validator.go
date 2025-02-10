@@ -8,21 +8,26 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 )
 
 func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.GetTargetRef()))
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
+	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
+	}
+	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 && len(r.Spec.Rules) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, r.Spec.To))
 	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateRules(r.Spec.Rules))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
+func (r *MeshAccessLogResource) validateTop(targetRef common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	targetRefErr := mesh.ValidateTargetRef(targetRef, &mesh.ValidateTargetRefOpts{
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
@@ -30,8 +35,10 @@ func validateTop(targetRef common_api.TargetRef) validators.ValidationError {
 			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
+		IsInboundPolicy:            isInboundPolicy,
 	})
 	return targetRefErr
 }
@@ -48,6 +55,15 @@ func validateFrom(from []From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
+	}
+	return verr
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
 	}
 	return verr
 }

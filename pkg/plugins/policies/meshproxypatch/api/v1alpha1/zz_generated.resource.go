@@ -150,6 +150,7 @@ var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             true,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
+	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,

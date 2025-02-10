@@ -109,5 +109,6 @@ var (
 	_ = Describe("InterCP Server", intercp.InterCP, Ordered)
 	_ = Describe("Prometheus Metrics", observability.PrometheusMetrics, Ordered)
 	_ = Describe("MeshTLS", meshtls.Policy, Ordered)
-	_ = Describe("Envoy Config", envoyconfig.EnvoyConfigTest, Ordered)
+	_ = Describe("Envoy Config – Sidecars", envoyconfig.Sidecars, Ordered)
+	_ = Describe("Envoy Config – Builtin Gateway", envoyconfig.BuiltinGateway, Ordered)
 )

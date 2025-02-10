@@ -319,6 +319,23 @@ violations:
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
 			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+- field: spec.targetRef.sectionName
+  message: can only be used with inbound policies
+- field: spec.to[0].targetRef.kind
+  message: value is not supported`,
+			}),
 			Entry("missing configuration", testCase{
 				inputYaml: `
 targetRef:

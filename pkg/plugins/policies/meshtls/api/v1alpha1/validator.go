@@ -7,19 +7,24 @@ import (
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
+	if len(r.Spec.Rules) > 0 && len(r.Spec.From) > 0 {
+		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
+	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
+	verr.AddErrorAt(path.Field("rules"), validateRules(r.Spec.Rules, topLevel.Kind))
 	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshTLSResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -27,9 +32,20 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.Dataplane,
 		},
+		IsInboundPolicy: isInboundPolicy,
 	})
 	return targetRefErr
+}
+
+func validateRules(rules []Rule, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rulesItem := range rules {
+		path := validators.Root().Index(idx)
+		verr.Add(validateDefault(path.Field("default"), rulesItem.Default, topLevelTargetRef))
+	}
+	return verr
 }
 
 func validateFrom(from []From, topLevelTargetRef common_api.TargetRefKind) validators.ValidationError {

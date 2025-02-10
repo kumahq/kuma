@@ -174,6 +174,24 @@ violations:
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
 			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.targetRef.sectionName
+    message: can only be used with inbound policies
+  - field: spec.to[0].targetRef.kind
+    message: value is not supported`,
+			}),
 			Entry("missing timeout configuration", testCase{
 				inputYaml: `
 targetRef:
@@ -358,6 +376,17 @@ from:
 violations:
   - field: spec
     message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+			}),
+			Entry("rules with empty spec", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default: {}`,
+				expected: `
+violations:
+  - field: spec.rules[0].default
+    message: at least one timeout should be configured`,
 			}),
 		)
 	})
