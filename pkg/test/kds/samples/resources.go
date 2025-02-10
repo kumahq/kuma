@@ -393,12 +393,12 @@ var (
 		TargetRef: &common_api.TargetRef{
 			Kind: "Mesh",
 		},
-		From: []meshaccesslog.From{
+		From: &[]meshaccesslog.From{
 			{
-				TargetRef: common_api.TargetRef{
+				TargetRef: &common_api.TargetRef{
 					Kind: "Mesh",
 				},
-				Default: meshaccesslog.Conf{
+				Default: &meshaccesslog.Conf{
 					Backends: &[]meshaccesslog.Backend{
 						{
 							File: &meshaccesslog.FileBackend{

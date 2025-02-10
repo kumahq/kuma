@@ -44,7 +44,7 @@ type From struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *Conf `json:"default,omitempty"`
+	Default *Conf `json:"default,omitempty"` // TODO: make default required
 }
 
 type Conf struct {
