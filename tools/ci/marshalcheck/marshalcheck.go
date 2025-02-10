@@ -7,6 +7,13 @@ import (
     "strings"
 )
 
+var eql = func(a, b string) bool { return a == b }
+
+var excludedPackages = map[string]func(string, string) bool{
+    "testdata": eql,
+    "_test": strings.HasSuffix,
+}
+
 var Analyzer = &analysis.Analyzer{
     Name: "marshalcheck",
     Doc:  "checks that struct fields follow proper serialization rules",
@@ -15,14 +22,12 @@ var Analyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
     for _, file := range pass.Files {
-        // Exclude testdata packages
-        if pass.Pkg.Path() != "" && strings.Contains(pass.Pkg.Path(), "testdata") {
+        if shouldExcludePackage(pass.Pkg.Path()) {
             continue
         }
         ast.Inspect(file, func(n ast.Node) bool {
-            // Look for struct type declarations
             typeSpec, ok := n.(*ast.TypeSpec)
-            if !ok || typeSpec.Name.Name != "Conf" {
+            if !ok {
                 return true
             }
 
@@ -31,14 +36,28 @@ func run(pass *analysis.Pass) (interface{}, error) {
                 return true
             }
 
-            analyzeStructFields(pass, structType, typeSpec.Name.Name, "")
+            if typeSpec.Name.Name == "Conf" {
+                analyzeStructFields(pass, structType, typeSpec.Name.Name, "", true)
+            } else {
+                analyzeStructFields(pass, structType, typeSpec.Name.Name, "", false)
+            }
+
             return false
         })
     }
     return nil, nil
 }
 
-func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string) {
+func shouldExcludePackage(pkgPath string) bool {
+    for pattern, matchFunc := range excludedPackages {
+        if matchFunc(pkgPath, pattern) {
+            return true
+        }
+    }
+    return false
+}
+
+func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string, isMergeable bool) {
     for _, field := range structType.Fields.List {
         fieldPath := structName + parentPath
         if len(field.Names) > 0 {
@@ -47,7 +66,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 
         if isPointer(field) {
             if !hasOmitEmptyTag(field) {
-                reportFieldError(pass, field, fieldPath, "field must have 'omitempty' in JSON tag")
+                category := "mergeable"
+                if !isMergeable {
+                    category = "nonmergeable"
+                }
+                reportFieldError(pass, field, fieldPath, category+" field must have 'omitempty' in JSON tag")
             }
         } else if isArrayOrSlice(field, pass) {
             if hasOmitEmptyTag(field) {
@@ -59,7 +82,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
                 }
             }
         } else {
-            pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
+            category := "mergeable"
+            if !isMergeable {
+                category = "nonmergeable"
+            }
+            pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array (%s)", fieldPath, category)
         }
     }
 }
