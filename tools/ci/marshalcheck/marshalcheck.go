@@ -71,79 +71,70 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             fieldPath = structName + parentPath + "." + field.Names[0].Name
         }
 
-        if isMergeable && isArrayOrSlice(field, pass) {
+        if isMergeable {
             if !isPointer(field) {
-                pass.Reportf(field.Pos(), "field %s (mergeable list) must be a pointer to a slice (e.g., *[]T)", fieldPath)
+                pass.Reportf(field.Pos(), "mergeable field %s must be a pointer", fieldPath)
             }
             if !hasOmitEmptyTag(field) {
-                pass.Reportf(field.Pos(), "field %s (mergeable list) must have 'omitempty' in JSON tag", fieldPath)
+                pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
             }
-            continue
-        }
+        } else {
+            _, isValid := determineNonMergeableCategory(pass, field)
+            //fmt.Println("DEBUG: ", fieldPath, " detected as ", category)  // Add this to check the extracted tag value
 
-        if !isMergeable {
-            nonMergeableCategory := determineNonMergeableCategory(field)
-
-            switch nonMergeableCategory {
-            case "optional_without_default":
-                if !isPointer(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must be a pointer", fieldPath)
-                }
-                if hasDefaultAnnotation(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must not have a 'default' annotation", fieldPath)
-                }
-                if !hasOmitEmptyTag(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, without default) must have 'omitempty' in JSON tag", fieldPath)
-                }
-
-            case "optional_with_default":
-                if isPointer(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must not be a pointer", fieldPath)
-                }
-                if !hasDefaultAnnotation(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must have a 'default' annotation", fieldPath)
-                }
-                if hasOmitEmptyTag(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, optional, with default) must not have 'omitempty' in JSON tag", fieldPath)
-                }
-
-            case "required":
-                if isPointer(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not be a pointer", fieldPath)
-                }
-                if hasDefaultAnnotation(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not have a 'default' annotation", fieldPath)
-                }
-                if hasOmitEmptyTag(field) {
-                    pass.Reportf(field.Pos(), "field %s (non-mergeable, required) must not have 'omitempty' in JSON tag", fieldPath)
-                }
+            if !isValid {
+                pass.Reportf(field.Pos(), "field %s does not match any allowed non-mergeable category", fieldPath)
             }
-            continue
         }
-
-        pass.Reportf(field.Pos(), "field %s must be a pointer with 'omitempty' JSON tag or be inside a slice/array", fieldPath)
     }
 }
 
-func determineNonMergeableCategory(field *ast.Field) string {
-    hasDefault := hasDefaultAnnotation(field)
+func isPointerToSlice(field *ast.Field) bool {
+    if ptr, ok := field.Type.(*ast.StarExpr); ok {
+        _, isArray := ptr.X.(*ast.ArrayType)
+        return isArray
+    }
+    return false
+}
+
+func determineNonMergeableCategory(pass *analysis.Pass, field *ast.Field) (string, bool) {
+    hasDefault := hasDefaultAnnotation(pass, field)
     hasOmitEmpty := hasOmitEmptyTag(field)
+    isPtr := isPointer(field)
 
-    if hasOmitEmpty && !hasDefault {
-        return "optional_without_default"
+    if isPtr && hasOmitEmpty && !hasDefault {
+        return "optional_without_default", true
     }
-    if hasDefault && !hasOmitEmpty {
-        return "optional_with_default"
+    if !isPtr && hasDefault && !hasOmitEmpty {
+        return "optional_with_default", true
     }
-    return "required"
+    if !isPtr && !hasDefault && !hasOmitEmpty {
+        return "required", true
+    }
+    return "", false
 }
 
-func hasDefaultAnnotation(field *ast.Field) bool {
-    if field.Tag == nil {
+func hasDefaultAnnotation(pass *analysis.Pass, field *ast.Field) bool {
+    if pass.Files == nil {
         return false
     }
-    tag := strings.Trim(field.Tag.Value, "`")
-    return strings.Contains(tag, "default:")
+
+    fieldPos := field.Pos() // The position of the field in the source file
+    for _, commentGroup := range pass.Files {
+        for _, comment := range commentGroup.Comments {
+            if comment.Pos() < fieldPos { // Ensure comment appears before the field
+                for _, c := range comment.List {
+                    if strings.Contains(c.Text, "+kubebuilder:default") {
+                        return true
+                    }
+                }
+            } else {
+                // If we found a comment AFTER the field, stop checking (since we only want the last comment before it)
+                break
+            }
+        }
+    }
+    return false
 }
 
 func isPointer(field *ast.Field) bool {
@@ -170,7 +161,6 @@ func isArrayOrSlice(field *ast.Field, pass *analysis.Pass) bool {
     }
     return false
 }
-
 
 func hasOmitEmptyTag(field *ast.Field) bool {
     if field.Tag == nil {
