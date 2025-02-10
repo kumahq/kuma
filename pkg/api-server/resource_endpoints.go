@@ -964,9 +964,10 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					} else {
 						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
 					}
+					inboundName := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).GetName()
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
-							Name: dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).GetName(),
+							Name: &inboundName,
 							Tags: tags,
 							Port: int(inbound.Port),
 						},

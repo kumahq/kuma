@@ -23,7 +23,7 @@ type HttpMatch struct {
 
 // Inbound defines model for Inbound.
 type Inbound struct {
-	Name string            `json:"name"`
+	Name *string           `json:"name,omitempty"`
 	Port int               `json:"port"`
 	Tags map[string]string `json:"tags"`
 }
