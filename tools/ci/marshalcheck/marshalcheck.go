@@ -77,21 +77,23 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
         }
         fmt.Println("DEBUG: Analyzing field", fieldPath)
 
+        // ✅ Handle pointers to structs (*Struct)
+        baseType := field.Type
+        if ptrType, ok := field.Type.(*ast.StarExpr); ok {
+            baseType = ptrType.X // Unwrap pointer
+        }
+
         // ✅ Recursively analyze named nested structs
-        if ident, ok := field.Type.(*ast.Ident); ok {
+        if ident, ok := baseType.(*ast.Ident); ok {
             namedStruct := findStructByName(pass, ident.Name)
             if namedStruct != nil {
-                if fieldName == "Conf" {
-                    analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, true)
-                } else {
-                    analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, isMergeable)
-                }
+                analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, isMergeable)
                 continue
             }
         }
 
-        // ✅ Recursively analyze slices/arrays of structs
-        if arrayType, ok := field.Type.(*ast.ArrayType); ok {
+        // ✅ Handle pointers to slices (*[]T)
+        if arrayType, ok := baseType.(*ast.ArrayType); ok {
             if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
                 namedStruct := findStructByName(pass, elemIdent.Name)
                 if namedStruct != nil {
@@ -119,6 +121,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
         }
     }
 }
+
 
 func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
     var foundStruct *ast.StructType
