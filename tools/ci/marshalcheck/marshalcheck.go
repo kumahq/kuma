@@ -118,7 +118,9 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             if !hasOmitEmptyTag(field) {
                 pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
             }
-            // todo: doesn't have default annotation
+            if hasDefaultAnnotation(pass, field) {
+                pass.Reportf(field.Pos(), "mergeable field %s must not have '+kubebuilder:default' annotation", fieldPath)
+            }
         } else {
             _, isValid := determineNonMergeableCategory(pass, field)
 

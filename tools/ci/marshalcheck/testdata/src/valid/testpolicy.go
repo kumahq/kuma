@@ -4,9 +4,10 @@ type TargetRef string
 
 // TestPolicy
 type TestPolicy struct {
-    TargetRef *TargetRef `json:"targetRef,omitempty"` // OK
-    To        *[]To      `json:"to,omitempty"`        // OK
-    From      *[]From    `json:"from,omitempty"`      // OK
+    TargetRef   *TargetRef   `json:"targetRef,omitempty"`    // OK
+    To          *[]To        `json:"to,omitempty"`           // OK
+    From        *[]From      `json:"from,omitempty"`         // OK
+    OtherStruct *OtherStruct `json:"other_struct,omitempty"` // OK
 }
 
 type To struct {
