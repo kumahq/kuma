@@ -16,7 +16,7 @@ var excludedPackages = map[string]func(string, string) bool{
 
 var excludedFiles = map[string]func(string, string) bool{
     "zz_generated": strings.Contains,
-    "validtor": strings.Contains,
+    "validator": strings.Contains,
     "compare": strings.Contains,
 }
 
@@ -78,6 +78,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             if !hasOmitEmptyTag(field) {
                 pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
             }
+            // todo: doesn't have default annotation
         } else {
             _, isValid := determineNonMergeableCategory(pass, field)
             //fmt.Println("DEBUG: ", fieldPath, " detected as ", category)  // Add this to check the extracted tag value
