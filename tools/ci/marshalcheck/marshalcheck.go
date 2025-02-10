@@ -71,6 +71,16 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             fieldPath = structName + parentPath + "." + field.Names[0].Name
         }
 
+        if isMergeable && isArrayOrSlice(field, pass) {
+            if !isPointer(field) {
+                pass.Reportf(field.Pos(), "field %s (mergeable list) must be a pointer to a slice (e.g., *[]T)", fieldPath)
+            }
+            if !hasOmitEmptyTag(field) {
+                pass.Reportf(field.Pos(), "field %s (mergeable list) must have 'omitempty' in JSON tag", fieldPath)
+            }
+            continue
+        }
+
         if isPointer(field) {
             if !hasOmitEmptyTag(field) {
                 category := "mergeable"
@@ -84,11 +94,8 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
                 reportFieldError(pass, field, fieldPath, "field inside a slice/array should not have 'omitempty'")
             }
             if elemType, ok := field.Type.(*ast.ArrayType); ok {
-                switch elt := elemType.Elt.(type) {
-                case *ast.Ident: // Named type
-                    analyzeNestedStruct(pass, elt, fieldPath+"[]")
-                case *ast.StructType: // Anonymous struct
-                    analyzeStructFields(pass, elt, fieldPath+"[]", parentPath, isMergeable)
+                if structIdent, ok := elemType.Elt.(*ast.Ident); ok {
+                    analyzeNestedStruct(pass, structIdent, fieldPath+"[]")
                 }
             }
         } else {
