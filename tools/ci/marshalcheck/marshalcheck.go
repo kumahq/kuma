@@ -14,6 +14,12 @@ var excludedPackages = map[string]func(string, string) bool{
     "_test": strings.HasSuffix,
 }
 
+var excludedFiles = map[string]func(string, string) bool{
+    "zz_generated": strings.Contains,
+    "validtor": strings.Contains,
+    "compare": strings.Contains,
+}
+
 var Analyzer = &analysis.Analyzer{
     Name: "marshalcheck",
     Doc:  "checks that struct fields follow proper serialization rules",
@@ -22,7 +28,8 @@ var Analyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
     for _, file := range pass.Files {
-        if shouldExcludePackage(pass.Pkg.Path()) {
+        fileName := pass.Fset.File(file.Pos()).Name()
+        if shouldExcludeResource(pass.Pkg.Path(), excludedPackages) || shouldExcludeResource(fileName, excludedFiles) {
             continue
         }
         ast.Inspect(file, func(n ast.Node) bool {
@@ -48,9 +55,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
     return nil, nil
 }
 
-func shouldExcludePackage(pkgPath string) bool {
-    for pattern, matchFunc := range excludedPackages {
-        if matchFunc(pkgPath, pattern) {
+func shouldExcludeResource(name string, rules map[string] func(string, string) bool) bool {
+    for pattern, matchFunc := range rules {
+        if matchFunc(name, pattern) {
             return true
         }
     }
