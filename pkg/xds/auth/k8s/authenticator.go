@@ -2,14 +2,15 @@ package k8s
 
 import (
 	"context"
-	"github.com/kumahq/kuma/pkg/core"
+	"strings"
+
 	"github.com/pkg/errors"
 	kube_auth "k8s.io/api/authentication/v1"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"strings"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
