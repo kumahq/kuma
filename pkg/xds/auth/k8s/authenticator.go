@@ -55,7 +55,7 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 	}
 
 	if err := k.client.Create(ctx, tokenReview); err != nil {
-		log.Info("[WARNING] fail to call Kubernetes API Server to verify dataplane token", "error", err, "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		log.Error(err, "fail to call Kubernetes API Server to verify dataplane token", "proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return errors.New("call to TokenReview API failed")
 	}
 	if !tokenReview.Status.Authenticated {
