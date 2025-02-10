@@ -84,8 +84,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
                 reportFieldError(pass, field, fieldPath, "field inside a slice/array should not have 'omitempty'")
             }
             if elemType, ok := field.Type.(*ast.ArrayType); ok {
-                if structIdent, ok := elemType.Elt.(*ast.Ident); ok {
-                    analyzeNestedStruct(pass, structIdent, fieldPath+"[]")
+                switch elt := elemType.Elt.(type) {
+                case *ast.Ident: // Named type
+                    analyzeNestedStruct(pass, elt, fieldPath+"[]")
+                case *ast.StructType: // Anonymous struct
+                    analyzeStructFields(pass, elt, fieldPath+"[]", parentPath, isMergeable)
                 }
             }
         } else {
