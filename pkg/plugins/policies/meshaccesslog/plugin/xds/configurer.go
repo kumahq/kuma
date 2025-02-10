@@ -174,8 +174,11 @@ func (c *Configurer) sfsJSON(fields map[string]*structpb.Value, omitEmpty bool) 
 func (c *Configurer) jsonToFields(jsonValues []api.JsonValue) map[string]*structpb.Value {
 	fields := map[string]*structpb.Value{}
 	for _, kv := range jsonValues {
-		interpolated := c.interpolateKumaVariables(kv.Value)
-		fields[kv.Key] = structpb.NewStringValue(interpolated)
+		if kv.Key == nil || kv.Value == nil {
+			continue
+		}
+		interpolated := c.interpolateKumaVariables(*kv.Value)
+		fields[*kv.Key] = structpb.NewStringValue(interpolated)
 	}
 	return fields
 }
@@ -251,13 +254,18 @@ func (c *Configurer) otelAccessLog(
 	}
 
 	attributes := otlp.KeyValueList{}
-	for _, kv := range backend.Attributes {
-		attributes.Values = append(attributes.Values, &otlp.KeyValue{
-			Key: kv.Key,
-			Value: &otlp.AnyValue{
-				Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
-			},
-		})
+	if backend.Attributes != nil {
+		for _, kv := range *backend.Attributes {
+			if kv.Key == nil || kv.Value == nil {
+				continue
+			}
+			attributes.Values = append(attributes.Values, &otlp.KeyValue{
+				Key: *kv.Key,
+				Value: &otlp.AnyValue{
+					Value: &otlp.AnyValue_StringValue{StringValue: *kv.Value},
+				},
+			})
+		}
 	}
 
 	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{

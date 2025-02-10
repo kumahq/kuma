@@ -126,6 +126,6 @@ type Format struct {
 }
 
 type JsonValue struct {
-	Key   string `json:"key,omitempty"`
-	Value string `json:"value,omitempty"`
+	Key   *string `json:"key,omitempty"`
+	Value *string `json:"value,omitempty"`
 }

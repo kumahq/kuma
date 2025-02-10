@@ -197,10 +197,10 @@ func validateFormat(format Format) validators.ValidationError {
 		}
 		for idx, field := range *format.Json {
 			path := validators.RootedAt("json").Index(idx)
-			if field.Key == "" {
+			if field.Key == nil || *field.Key == "" {
 				verr.AddViolationAt(path.Field("key"), `key cannot be empty`)
 			}
-			if field.Value == "" {
+			if field.Value == nil || *field.Value == "" {
 				verr.AddViolationAt(path.Field("value"), `value cannot be empty`)
 			}
 			if !govalidator.IsJSON(fmt.Sprintf(`{"%s": "%s"}`, field.Key, field.Value)) {
