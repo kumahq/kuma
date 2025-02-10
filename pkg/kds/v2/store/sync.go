@@ -42,6 +42,13 @@ type ResourceSyncer interface {
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
+	// We return now 2 errors:
+	// The first error cancels the connection, forcing the client to re-establish it.
+	// This can happen due to a database error.  
+	//  
+	// The second error is related to non-critical issues, such as `ResourceAlreadyExists`,  
+	// which shouldn't prevent other resources from being stored.  
+	// Instead, we return a NACK message with information for the user.
 	Sync(ctx context.Context, upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) (error, error)
 }
 
