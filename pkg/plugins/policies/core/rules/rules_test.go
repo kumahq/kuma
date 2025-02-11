@@ -1,8 +1,8 @@
 package rules_test
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"strings"
+
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/file"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 

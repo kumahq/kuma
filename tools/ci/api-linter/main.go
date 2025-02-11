@@ -1,10 +1,11 @@
 package main
 
 import (
-    "github.com/kumahq/kuma/tools/ci/api-linter/linter"
-    "golang.org/x/tools/go/analysis/singlechecker"
+	"golang.org/x/tools/go/analysis/singlechecker"
+
+	"github.com/kumahq/kuma/tools/ci/api-linter/linter"
 )
 
 func main() {
-    singlechecker.Main(linter.Analyzer)
+	singlechecker.Main(linter.Analyzer)
 }

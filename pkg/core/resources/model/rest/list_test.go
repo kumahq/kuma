@@ -2,8 +2,8 @@ package rest_test
 
 import (
 	"encoding/json"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"time"
+
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 

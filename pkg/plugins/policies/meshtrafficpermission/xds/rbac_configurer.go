@@ -2,7 +2,7 @@ package xds
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
@@ -15,6 +15,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"

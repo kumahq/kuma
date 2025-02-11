@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+
 
 	"github.com/asaskevich/govalidator"
 
@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshAccessLogResource) validate() error {
