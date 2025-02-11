@@ -1,0 +1,19 @@
+type: MeshTimeout
+name: mt-1
+mesh: envoyconfig-builtingateway
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes:
+      - Gateway
+  rules:
+    - default:
+        idleTimeout: 50s
+        connectionTimeout: 51s
+        http:
+          requestTimeout: 52s
+          streamIdleTimeout: 53s
+          maxStreamDuration: 54s
+          maxConnectionDuration: 55s
