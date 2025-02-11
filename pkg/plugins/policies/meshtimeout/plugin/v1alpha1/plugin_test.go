@@ -739,7 +739,7 @@ var _ = Describe("MeshTimeout", func() {
 										}},
 										Default: meshhttproute_api.RuleConf{
 											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: pointer.To(builders.TargetRefService("backend")),
+												TargetRef: builders.TargetRefService("backend"),
 												Weight:    pointer.To(uint(100)),
 											}},
 										},
@@ -754,7 +754,7 @@ var _ = Describe("MeshTimeout", func() {
 										}},
 										Default: meshhttproute_api.RuleConf{
 											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: pointer.To(builders.TargetRefService("backend")),
+												TargetRef: builders.TargetRefService("backend"),
 												Weight:    pointer.To(uint(100)),
 											}},
 										},
