@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ import (
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
-var log = core.Log.WithName("kube-tokens-validator")
+var log = core.Log.WithName("kube-token-validator")
 
 func New(client kube_client.Client, metrics *xds_metrics.Metrics) auth.Authenticator {
 	return &kubeAuthenticator{
@@ -47,7 +48,18 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, resource model.Res
 	return nil
 }
 
-func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Credential, proxyNamespace, serviceAccountName, resourceName string) error {
+func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	resourceName := resource.GetMeta().GetName()
+	podName, podNamespace, err := util_k8s.CoreNameToK8sName(resourceName)
+	if err != nil {
+		return err
+	}
+
+	serviceAccountName, err := k.podServiceAccountName(ctx, podName, podNamespace)
+	if err != nil {
+		return err
+	}
+
 	tokenReview := &kube_auth.TokenReview{
 		Spec: kube_auth.TokenReviewSpec{
 			Token: credential,
@@ -55,44 +67,41 @@ func (k *kubeAuthenticator) verifyToken(ctx context.Context, credential auth.Cre
 	}
 
 	if err := k.client.Create(ctx, tokenReview); err != nil {
-		log.Error(err, "fail to call Kubernetes API Server to verify dataplane token", "proxy", resourceName, "serviceAccountName", serviceAccountName)
-		return errors.New("call to TokenReview API failed")
+		log.Error(err, "could not call Kubernetes API Server to verify dataplane token",
+			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return errors.New("could not call Kubernetes API Server to verify dataplane token")
 	}
 	if !tokenReview.Status.Authenticated {
 		log.Info("[WARNING] fail to verify dataplane token", "error", tokenReview.Status.Error)
-		return errors.Errorf("token verification failed")
+		return errors.Errorf("dataplane token verification failed with an error")
 	}
+
+	serviceAccountAuthErr := errors.Errorf("invalid service account token")
 	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
 	if len(userInfo) != 4 {
-		return errors.Errorf("username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
+		log.Info(fmt.Sprintf("[WARNING] invalid service account token: username inside TokenReview response has unexpected format: %q",
+			tokenReview.Status.User.Username), "proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return serviceAccountAuthErr
 	}
+
 	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
-		return errors.Errorf("user %q is not a service account", tokenReview.Status.User.Username)
-	}
-	namespace := userInfo[2]
-	if namespace != proxyNamespace {
-		return errors.Errorf("token belongs to a namespace %q different from proxyId %q", namespace, proxyNamespace)
-	}
-	name := userInfo[3]
-	if name != serviceAccountName {
-		return errors.Errorf("service account name of the pod %q is different than token that was provided %q", serviceAccountName, name)
-	}
-	return nil
-}
-
-func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Resource, credential auth.Credential) error {
-	name, namespace, err := util_k8s.CoreNameToK8sName(resource.GetMeta().GetName())
-	if err != nil {
-		return err
+		log.Info(fmt.Sprintf("[WARNING] invalid service account token: user %q is not a service account", tokenReview.Status.User.Username),
+			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return serviceAccountAuthErr
 	}
 
-	serviceAccountName, err := k.podServiceAccountName(ctx, name, namespace)
-	if err != nil {
-		return err
+	tokenSANamespace := userInfo[2]
+	if tokenSANamespace != podNamespace {
+		log.Info(fmt.Sprintf("[WARNING] invalid service account token: token belongs to a namespace %q different from proxyId %q", tokenSANamespace, podNamespace),
+			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return serviceAccountAuthErr
 	}
 
-	if err := k.verifyToken(ctx, credential, namespace, serviceAccountName, resource.GetMeta().GetName()); err != nil {
-		return errors.Wrap(err, "authentication failed")
+	tokenSAName := userInfo[3]
+	if tokenSAName != serviceAccountName {
+		log.Info(fmt.Sprintf("[WARNING] invalid service account token: service account name in token %q does not match pod service account", tokenSAName),
+			"proxy", resourceName, "serviceAccountName", serviceAccountName)
+		return serviceAccountAuthErr
 	}
 
 	return nil
