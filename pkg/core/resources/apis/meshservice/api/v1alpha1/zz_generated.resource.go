@@ -8,6 +8,8 @@ import (
 	_ "embed"
 	"fmt"
 
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"sigs.k8s.io/yaml"
 
@@ -18,14 +20,22 @@ import (
 var rawSchema []byte
 
 func init() {
-	var schema spec.Schema
+	var structuralSchema *schema.Structural
+	var schemaObject spec.Schema
+	var jsonSchemaProps *apiextensions.JSONSchemaProps
 	if rawSchema != nil {
-		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+		if err := yaml.Unmarshal(rawSchema, &jsonSchemaProps); err != nil {
+			panic(err)
+		}
+		var err error
+		structuralSchema, err = schema.NewStructural(jsonSchemaProps)
+		if err != nil {
 			panic(err)
 		}
 	}
 	rawSchema = nil
-	MeshServiceResourceTypeDescriptor.Schema = &schema
+	MeshServiceResourceTypeDescriptor.Schema = &schemaObject
+	MeshServiceResourceTypeDescriptor.StructuralSchema = structuralSchema
 }
 
 const (

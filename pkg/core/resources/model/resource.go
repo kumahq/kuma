@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"reflect"
 	"strings"
 	"time"
@@ -196,6 +197,8 @@ type ResourceTypeDescriptor struct {
 	IsProxy bool
 	// Schema contains an unmarshalled OpenAPI schema of the resource
 	Schema *spec.Schema
+	// StructuralSchema contains an unmarshalled OpenAPI schema of the resource
+	StructuralSchema *schema.Structural
 	// Insight contains the insight type attached to this resourceType
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType

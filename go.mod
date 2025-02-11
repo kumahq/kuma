@@ -273,6 +273,15 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 )
 
+require (
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/google/cel-go v0.22.0 // indirect
+	github.com/stoewer/go-strcase v1.3.0 // indirect
+	k8s.io/apiserver v0.32.1 // indirect
+	k8s.io/component-base v0.32.1 // indirect
+)
+
 replace github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.3-kong-1
 
 replace github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-control-plane/contrib v1.32.3-kong-1

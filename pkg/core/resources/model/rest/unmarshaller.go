@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
 	"net/url"
 	"strings"
 
@@ -72,6 +73,8 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		if err := u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 		}
+
+		defaulting.Default(rawObj, desc.StructuralSchema)
 		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
 		res := validator.Validate(rawObj)
 		if !res.IsValid() {
