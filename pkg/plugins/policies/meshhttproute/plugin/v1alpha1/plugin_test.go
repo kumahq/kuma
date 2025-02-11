@@ -441,11 +441,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
 					To: &[]api.To{
 						{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
 								Name: "example",
 							},
-							Rules: []api.Rule{
+							Rules: &[]api.Rule{
 								{
 									Matches: []api.Match{{
 										Path: &api.PathMatch{
