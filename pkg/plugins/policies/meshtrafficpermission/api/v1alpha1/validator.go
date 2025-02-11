@@ -57,7 +57,7 @@ func validateFrom(from []From) validators.ValidationError {
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	if len(conf.Action) == 0 {
+	if len(pointer.Deref(conf.Action)) == 0 {
 		verr.AddViolation("action", validators.MustBeDefined)
 	}
 	return verr

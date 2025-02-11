@@ -338,7 +338,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 					}
 				}
 				rv = append(rv, &artificialPolicyItem{
-					TargetRef: &targetRef,
+					targetRef: targetRef,
 					conf:      to.GetDefault(),
 				})
 			}

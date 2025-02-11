@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
@@ -116,7 +117,7 @@ type PrincipalMap map[policies_api.Action][]*rbac_config.Principal
 func (c *RBACConfigurer) principalsByAction() PrincipalMap {
 	pm := PrincipalMap{}
 	for _, rule := range c.Rules {
-		action := rule.Conf.(policies_api.Conf).Action
+		action := pointer.Deref(rule.Conf.(policies_api.Conf).Action)
 		pm[action] = append(pm[action], c.principalFromSubset(rule.Subset))
 	}
 	return pm
