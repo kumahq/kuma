@@ -3,7 +3,6 @@ package xds
 import (
 	"fmt"
 
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v3"
 	http_rbac "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/rbac/v3"

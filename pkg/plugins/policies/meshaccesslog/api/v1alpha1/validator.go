@@ -3,7 +3,6 @@ package v1alpha1
 import (
 	"fmt"
 
-
 	"github.com/asaskevich/govalidator"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
