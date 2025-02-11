@@ -12,7 +12,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	meshaccesslog "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
+	meshtls "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -112,6 +114,8 @@ spec:
 		Expect(DeleteMeshResources(
 			universal.Cluster,
 			mesh,
+			meshaccesslog.MeshAccessLogResourceTypeDescriptor,
+			meshtls.MeshTLSResourceTypeDescriptor,
 			meshtimeout.MeshTimeoutResourceTypeDescriptor,
 		)).To(Succeed())
 	})
@@ -128,8 +132,12 @@ spec:
 			}
 
 			// then
-			Expect(getConfig(mesh, "gateway-proxy")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "gateway-proxy.golden.json", 1)))
+			Eventually(func(g Gomega) {
+				g.Expect(getConfig(mesh, "gateway-proxy")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "gateway-proxy.golden.json", 1)))
+			}).Should(Succeed())
 		},
+		test.EntriesForFolder(filepath.Join("builtingateway", "meshaccesslog"), "envoyconfig"),
+		test.EntriesForFolder(filepath.Join("builtingateway", "meshtls"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("builtingateway", "meshtimeout"), "envoyconfig"),
 	)
 }
