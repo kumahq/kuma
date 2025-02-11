@@ -594,6 +594,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -608,6 +611,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -635,6 +639,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -684,6 +691,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -698,6 +708,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -778,7 +789,7 @@ spec:
                           type: object
                       type: object
                   required:
-                  - targetRef
+                  - default
                   type: object
                 type: array
               rules:
@@ -815,6 +826,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -829,6 +843,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -856,6 +871,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -905,6 +923,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -919,6 +940,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -935,6 +957,8 @@ spec:
                             type: object
                           type: array
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -1035,6 +1059,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -1049,6 +1076,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -1076,6 +1104,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -1125,6 +1156,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -1139,6 +1173,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -1219,7 +1254,7 @@ spec:
                           type: object
                       type: object
                   required:
-                  - targetRef
+                  - default
                   type: object
                 type: array
             type: object
@@ -1586,8 +1621,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -1962,8 +1995,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -2558,8 +2589,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -2774,8 +2803,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -3845,8 +3872,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -5147,8 +5172,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -6612,8 +6635,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               rules:
@@ -6995,8 +7016,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -7506,8 +7525,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -8012,8 +8029,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 minItems: 1
                 type: array
@@ -8193,8 +8208,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               rules:
@@ -8439,8 +8452,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
             type: object
@@ -8618,8 +8629,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               rules:
@@ -9168,8 +9177,6 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
-                  required:
-                  - targetRef
                   type: object
                 type: array
               targetRef:

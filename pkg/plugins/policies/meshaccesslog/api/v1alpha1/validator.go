@@ -23,13 +23,13 @@ func (r *MeshAccessLogResource) validate() error {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
-		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, *r.Spec.To))
+		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, pointer.Deref(r.Spec.To)))
 	}
 	if r.Spec.From != nil {
-		verr.AddErrorAt(path, validateFrom(*r.Spec.From))
+		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	}
 	if r.Spec.From != nil {
-		verr.AddErrorAt(path, validateRules(*r.Spec.Rules))
+		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
 	}
 	return verr.OrNil()
 }
