@@ -42,9 +42,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -64,9 +64,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefService("web")),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -104,7 +104,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 			{
 				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
-					Rules: []api.Rule{{
+					Rules: &[]api.Rule{{
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
@@ -163,9 +163,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -188,9 +188,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -215,7 +215,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 			{
 				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
-					Rules: []api.Rule{{
+					Rules: &[]api.Rule{{
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
@@ -259,9 +259,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -270,7 +270,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -336,9 +336,9 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
-							TargetRef: builders.TargetRefService("backend"),
-							Rules: []api.Rule{{
+						To: &[]api.To{{
+							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -347,7 +347,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -386,7 +386,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -402,7 +402,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 			{
 				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
-					Rules: []api.Rule{{
+					Rules: &[]api.Rule{{
 						Matches: []api.Match{{
 							Path: &api.PathMatch{
 								Type:  api.PathPrefix,
@@ -411,7 +411,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						}},
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
+								TargetRef: pointer.To(builders.TargetRefService("backend")),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
@@ -463,7 +463,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						}},
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
+								TargetRef: pointer.To(builders.TargetRefService("backend")),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},
@@ -476,7 +476,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						}},
 						Default: api.RuleConf{
 							BackendRefs: &[]common_api.BackendRef{{
-								TargetRef: builders.TargetRefService("backend"),
+								TargetRef: pointer.To(builders.TargetRefService("backend")),
 								Weight:    pointer.To(uint(100)),
 							}},
 						},

@@ -109,7 +109,7 @@ var _ = Describe("RBAC", func() {
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
-											Action: pointer.To("Allow"),
+											Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 										},
 									},
 								},

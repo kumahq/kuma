@@ -1,6 +1,7 @@
 package model_test
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -92,14 +93,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -108,7 +109,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 				},
 			}
@@ -120,14 +121,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -136,7 +137,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 				},
 			}
@@ -156,14 +157,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -172,7 +173,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v3",
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 				},
 			}
@@ -184,14 +185,14 @@ var _ = Describe("Resource Utils", func() {
 							Kind: "MeshService",
 							Name: "backend",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
 					{
 						TargetRef: &common_api.TargetRef{
@@ -200,7 +201,7 @@ var _ = Describe("Resource Utils", func() {
 								"version": "v5", // different from 'v3'
 							},
 						},
-						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
+						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 				},
 			}

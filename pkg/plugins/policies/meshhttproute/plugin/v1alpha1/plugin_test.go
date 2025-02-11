@@ -439,13 +439,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "http-route", Mesh: "default"},
 				Spec: &api.MeshHTTPRoute{
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
-					To: []api.To{
+					To: &[]api.To{
 						{
 							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
 								Name: "example",
 							},
-							Rules: []api.Rule{
+							Rules: &[]api.Rule{
 								{
 									Matches: []api.Match{{
 										Path: &api.PathMatch{
@@ -519,7 +519,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							},
 							Conf: []interface{}{
 								api.PolicyDefault{
-									Rules: []api.Rule{
+									Rules: &[]api.Rule{
 										{
 											Matches: []api.Match{{
 												Path: &api.PathMatch{
@@ -726,7 +726,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
 									},
 									Conf: api.PolicyDefault{
-										Rules: []api.Rule{{
+										Rules: &[]api.Rule{{
 											Matches: []api.Match{{
 												Path: &api.PathMatch{
 													Type:  api.PathPrefix,
@@ -735,7 +735,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -767,7 +767,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -861,7 +861,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										},
 										Conf: []interface{}{
 											api.PolicyDefault{
-												Rules: []api.Rule{{
+												Rules: &[]api.Rule{{
 													Matches: []api.Match{{
 														Path: &api.PathMatch{
 															Type:  api.PathPrefix,
@@ -870,7 +870,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													}},
 													Default: api.RuleConf{
 														BackendRefs: &[]common_api.BackendRef{{
-															TargetRef: builders.TargetRefService("backend"),
+															TargetRef: pointer.To(builders.TargetRefService("backend")),
 															Weight:    pointer.To(uint(100)),
 														}},
 													},
@@ -1044,7 +1044,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										Resource: meshSvc.Meta,
 										Conf: []interface{}{
 											api.PolicyDefault{
-												Rules: []api.Rule{
+												Rules: &[]api.Rule{
 													{
 														Matches: []api.Match{{
 															Path: &api.PathMatch{
@@ -1133,7 +1133,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
 									Conf: api.PolicyDefault{
-										Rules: []api.Rule{{
+										Rules: &[]api.Rule{{
 											Matches: []api.Match{{
 												Path: &api.PathMatch{
 													Type:  api.PathPrefix,
@@ -1142,7 +1142,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1157,7 +1157,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1211,7 +1211,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
 									Conf: api.PolicyDefault{
-										Rules: []api.Rule{{
+										Rules: &[]api.Rule{{
 											Matches: []api.Match{{
 												Path: &api.PathMatch{
 													Type:  api.PathPrefix,
@@ -1220,7 +1220,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											}},
 											Default: api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -1264,7 +1264,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1333,7 +1333,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1399,7 +1399,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1454,7 +1454,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								{
 									Subset: subsetutils.MeshService("backend"),
 									Conf: api.PolicyDefault{
-										Rules: []api.Rule{{
+										Rules: &[]api.Rule{{
 											Matches: []api.Match{{
 												Path: &api.PathMatch{
 													Type:  api.PathPrefix,
@@ -1513,7 +1513,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Headers: []common_api.HeaderMatch{{
 														Type:  pointer.To(common_api.HeaderMatchExact),
@@ -1576,7 +1576,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1585,7 +1585,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												}},
 												Default: api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
-														TargetRef: builders.TargetRefService("backend"),
+														TargetRef: pointer.To(builders.TargetRefService("backend")),
 														Weight:    pointer.To(uint(100)),
 													}},
 												},
@@ -1636,7 +1636,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									{
 										Subset: subsetutils.MeshService("backend"),
 										Conf: api.PolicyDefault{
-											Rules: []api.Rule{{
+											Rules: &[]api.Rule{{
 												Matches: []api.Match{{
 													Path: &api.PathMatch{
 														Type:  api.PathPrefix,
@@ -1740,7 +1740,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					{
 						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
-							Rules: []api.Rule{{
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -1749,7 +1749,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -1760,7 +1760,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"go.dev"},
-							Rules: []api.Rule{{
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -1769,7 +1769,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -1780,7 +1780,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"*.dev"},
-							Rules: []api.Rule{{
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -1789,7 +1789,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -1800,7 +1800,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						Subset: subsetutils.MeshSubset(),
 						Conf: api.PolicyDefault{
 							Hostnames: []string{"other.dev"},
-							Rules: []api.Rule{{
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -1809,7 +1809,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: builders.TargetRefService("backend"),
+										TargetRef: pointer.To(builders.TargetRefService("backend")),
 										Weight:    pointer.To(uint(100)),
 									}},
 								},
@@ -1912,7 +1912,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"}}}): 0,
 						},
 						Conf: api.PolicyDefault{
-							Rules: []api.Rule{{
+							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -2009,7 +2009,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2018,7 +2018,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2033,7 +2033,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"go.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2042,7 +2042,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2170,7 +2170,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2179,7 +2179,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2194,7 +2194,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2203,7 +2203,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2218,7 +2218,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2227,7 +2227,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2241,7 +2241,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2260,7 +2260,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"*.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2284,7 +2284,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"first-specific.secure.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2293,7 +2293,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2303,7 +2303,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"second-specific.secure.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2312,7 +2312,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2327,7 +2327,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"first-specific.super-secure.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2336,7 +2336,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},
@@ -2346,7 +2346,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
 														Hostnames: []string{"second-specific.super-secure.dev"},
-														Rules: []api.Rule{{
+														Rules: &[]api.Rule{{
 															Matches: []api.Match{{
 																Path: &api.PathMatch{
 																	Type:  api.PathPrefix,
@@ -2355,7 +2355,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															}},
 															Default: api.RuleConf{
 																BackendRefs: &[]common_api.BackendRef{{
-																	TargetRef: builders.TargetRefService("backend"),
+																	TargetRef: pointer.To(builders.TargetRefService("backend")),
 																	Weight:    pointer.To(uint(100)),
 																}},
 															},

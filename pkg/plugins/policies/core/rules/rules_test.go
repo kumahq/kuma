@@ -1,6 +1,7 @@
 package rules_test
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -724,7 +725,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -741,7 +742,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -757,7 +758,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -771,7 +772,7 @@ var _ = Describe("Rules", func() {
 					{
 						Subset: []subsetutils.Tag{}, // empty set
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -788,7 +789,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -802,7 +803,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -818,7 +819,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -834,7 +835,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -850,7 +851,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},
@@ -866,7 +867,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key1", Value: "val1"}, // not matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 					{
@@ -874,13 +875,13 @@ var _ = Describe("Rules", func() {
 							{Key: "key2", Value: "val2"}, // the first matched
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "Deny",
+							Action: pointer.To[meshtrafficpermission_api.Action]("Deny"),
 						},
 					},
 					{
 						Subset: subsetutils.Subset{}, // matched but not the first
 						Conf: meshtrafficpermission_api.Conf{
-							Action: "AllowWithShadowDeny",
+							Action: pointer.To[meshtrafficpermission_api.Action]("AllowWithShadowDeny"),
 						},
 					},
 				},
@@ -898,7 +899,7 @@ var _ = Describe("Rules", func() {
 							{Key: "key2", Value: "val1", Not: true},
 						},
 						Conf: meshtrafficpermission_api.Conf{
-							Action: pointer.To("Allow"),
+							Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
 						},
 					},
 				},

@@ -920,7 +920,7 @@ var _ = Describe("MeshRateLimit", func() {
 											}},
 											Default: meshhttproute_api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},
@@ -935,7 +935,7 @@ var _ = Describe("MeshRateLimit", func() {
 											}},
 											Default: meshhttproute_api.RuleConf{
 												BackendRefs: &[]common_api.BackendRef{{
-													TargetRef: builders.TargetRefService("backend"),
+													TargetRef: pointer.To(builders.TargetRefService("backend")),
 													Weight:    pointer.To(uint(100)),
 												}},
 											},

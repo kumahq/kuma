@@ -1710,7 +1710,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										}},
 										Default: meshhttproute_api.RuleConf{
 											BackendRefs: &[]common_api.BackendRef{{
-												TargetRef: builders.TargetRefService("backend"),
+												TargetRef: pointer.To(builders.TargetRefService("backend")),
 												Port:      pointer.To(uint32(80)),
 												Weight:    pointer.To(uint(100)),
 											}},
