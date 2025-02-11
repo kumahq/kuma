@@ -3,12 +3,12 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
-	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"

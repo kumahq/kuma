@@ -3,11 +3,11 @@ package rest
 import (
 	"encoding/json"
 	"fmt"
-	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
 	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
 	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
