@@ -1,6 +1,7 @@
 package v1alpha1_test
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"path"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -109,7 +110,7 @@ var _ = Describe("RBAC", func() {
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
-											Action: pointer.To[meshtrafficpermission_api.Action]("Allow"),
+											Action: pointer.To[policies_api.Action]("Allow"),
 										},
 									},
 								},
@@ -220,7 +221,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshService("frontend"),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -236,7 +237,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -273,7 +274,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},

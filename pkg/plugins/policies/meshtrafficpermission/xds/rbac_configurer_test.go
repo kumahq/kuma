@@ -232,7 +232,7 @@ filters:
 						{Key: "kuma.io/service", Value: "backend"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.AllowWithShadowDeny,
+						Action: pointer.To(v1alpha1.AllowWithShadowDeny),
 					},
 				},
 			},
