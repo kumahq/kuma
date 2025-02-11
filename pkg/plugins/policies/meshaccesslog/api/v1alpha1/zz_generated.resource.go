@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
-	_ "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"sigs.k8s.io/yaml"
@@ -25,16 +25,21 @@ var rawSchema []byte
 func init() {
 	var structuralSchema *schema.Structural
 	var schemaObject spec.Schema
-	var jsonSchemaProps *apiextensions.JSONSchemaProps
+	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
 	if rawSchema != nil {
 		rawJson, err := yaml.YAMLToJSON(rawSchema)
 		if err != nil {
 			panic(err)
 		}
-		if err := json.Unmarshal(rawJson, &jsonSchemaProps); err != nil {
+		if err := json.Unmarshal(rawJson, &v1JsonSchemaProps); err != nil {
 			panic(err)
 		}
-		structuralSchema, err = schema.NewStructural(jsonSchemaProps)
+		var jsonSchemaProps apiextensions.JSONSchemaProps
+		err = apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
+		if err != nil {
+			panic(err)
+		}
+		structuralSchema, err = schema.NewStructural(&jsonSchemaProps)
 		if err != nil {
 			panic(err)
 		}
