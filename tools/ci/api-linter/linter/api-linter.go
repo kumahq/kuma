@@ -1,6 +1,7 @@
 package linter
 
 import (
+    "flag"
     "fmt"
     "github.com/kumahq/kuma/pkg/util/pointer"
     "go/ast"
@@ -23,10 +24,19 @@ var excludedFiles = map[string]func(string, string) bool{
     "compare": strings.Contains,
 }
 
+var debugLog *bool
+
 var Analyzer = &analysis.Analyzer{
-    Name: "apilinter",
-    Doc:  "checks that struct fields follow proper serialization rules",
-    Run:  run,
+    Name:  "apilinter",
+    Doc:   "checks that struct fields follow proper serialization rules",
+    Run:   run,
+    Flags: flags(),
+}
+
+func flags() flag.FlagSet {
+    set := flag.NewFlagSet("", flag.ExitOnError)
+    debugLog = set.Bool("debugLog", false, "disable nolint checks")
+    return *set
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -43,7 +53,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
             }
 
             if strings.ToLower(typeSpec.Name.String()) != fileNameWithoutExtension {
-                fmt.Println("DEBUG: Skipping type", typeSpec.Name.String(), "in file", fileNameWithoutExtension)
+                if *debugLog {
+                    fmt.Println("DEBUG: Skipping type", typeSpec.Name.String(), "in file", fileNameWithoutExtension)
+                }
                 return true
             }
 
@@ -84,7 +96,9 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             fieldPath = parentPath + "." + fieldName
         }
 
-        fmt.Println("DEBUG: Analyzing field", fieldPath)
+        if *debugLog {
+            fmt.Println("DEBUG: Analyzing field", fieldPath)
+        }
 
         // Handle pointers to structs (*Struct)
         baseType := field.Type
