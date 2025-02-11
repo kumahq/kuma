@@ -2,7 +2,7 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/iterables"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	"github.com/asaskevich/govalidator"
 
@@ -16,10 +16,10 @@ func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
-	if iterables.IsNilOrEmpty(r.Spec.Rules) && iterables.IsNilOrEmpty(r.Spec.To) || iterables.IsNilOrEmpty(r.Spec.From) {
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
-	if iterables.IsNilOrEmpty(r.Spec.To) && iterables.IsNilOrEmpty(r.Spec.From) && iterables.IsNilOrEmpty(r.Spec.Rules) {
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	if r.Spec.To != nil {
@@ -61,11 +61,7 @@ func validateFrom(from []From) validators.ValidationError {
 		}))
 
 		defaultField := path.Field("default")
-		if fromItem.Default != nil {
-			verr.AddErrorAt(defaultField, validateDefault(*fromItem.Default))
-		} else {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined)
-		}
+		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
 	}
 	return verr
 }
@@ -74,11 +70,7 @@ func validateRules(rules []Rule) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, rule := range rules {
 		path := validators.RootedAt("rules").Index(idx)
-		if rule.Default == nil {
-			verr.AddViolationAt(path.Field("default"), validators.MustBeDefined)
-			continue
-		}
-		verr.AddErrorAt(path.Field("default"), validateDefault(*rule.Default))
+		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
 	}
 	return verr
 }
@@ -107,11 +99,7 @@ func validateTo(topLevelKind common_api.TargetRefKind, to []To) validators.Valid
 		}))
 
 		defaultField := path.Field("default")
-		if toItem.Default != nil {
-			verr.AddErrorAt(defaultField, validateDefault(*toItem.Default))
-		} else {
-			verr.AddViolationAt(defaultField, validators.MustBeDefined)
-		}
+		verr.AddErrorAt(defaultField, validateDefault(toItem.Default))
 	}
 	return verr
 }

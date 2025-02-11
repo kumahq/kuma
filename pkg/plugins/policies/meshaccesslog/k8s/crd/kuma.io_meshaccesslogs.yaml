@@ -83,6 +83,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -97,6 +100,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -124,6 +128,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -173,6 +180,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -187,6 +197,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -266,6 +277,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
               rules:
@@ -302,6 +315,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -316,6 +332,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -343,6 +360,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -392,6 +412,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -406,6 +429,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -422,6 +446,8 @@ spec:
                             type: object
                           type: array
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -522,6 +548,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -536,6 +565,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -563,6 +593,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -612,6 +645,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -626,6 +662,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -705,6 +742,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
             type: object

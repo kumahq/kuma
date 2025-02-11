@@ -26,7 +26,7 @@ type MeshAccessLog struct {
 
 type Rule struct {
 	// Default contains configuration of the inbound access logging
-	Default *Conf `json:"default,omitempty"`
+	Default Conf `json:"default"`
 }
 
 type To struct {
@@ -35,7 +35,7 @@ type To struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
-	Default *Conf `json:"default,omitempty"`
+	Default Conf `json:"default"`
 }
 
 type From struct {
@@ -44,7 +44,7 @@ type From struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default *Conf `json:"default,omitempty"` // TODO: make default required
+	Default Conf `json:"default"`
 }
 
 type Conf struct {

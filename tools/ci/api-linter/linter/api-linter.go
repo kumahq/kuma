@@ -1,11 +1,12 @@
-package marshalcheck
+package linter
 
 import (
     "fmt"
+    "github.com/kumahq/kuma/pkg/util/pointer"
     "go/ast"
-    "go/types"
     "golang.org/x/tools/go/analysis"
     "path/filepath"
+    "reflect"
     "strings"
 )
 
@@ -23,7 +24,7 @@ var excludedFiles = map[string]func(string, string) bool{
 }
 
 var Analyzer = &analysis.Analyzer{
-    Name: "marshalcheck",
+    Name: "apilinter",
     Doc:  "checks that struct fields follow proper serialization rules",
     Run:  run,
 }
@@ -85,13 +86,13 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 
         fmt.Println("DEBUG: Analyzing field", fieldPath)
 
-        // ✅ Handle pointers to structs (*Struct)
+        // Handle pointers to structs (*Struct)
         baseType := field.Type
         if ptrType, ok := field.Type.(*ast.StarExpr); ok {
             baseType = ptrType.X // Unwrap pointer
         }
 
-        // ✅ Recursively analyze named nested structs
+        // Recursively analyze named nested structs
         if ident, ok := baseType.(*ast.Ident); ok {
             namedStruct := findStructByName(pass, ident.Name)
             if namedStruct != nil {
@@ -100,7 +101,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             }
         }
 
-        // ✅ Handle pointers to slices (*[]T)
+        // Handle pointers to slices (*[]T)
         if arrayType, ok := baseType.(*ast.ArrayType); ok {
             if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
                 namedStruct := findStructByName(pass, elemIdent.Name)
@@ -118,11 +119,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
             if !hasOmitEmptyTag(field) {
                 pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
             }
-            if hasDefaultAnnotation(pass, field) {
+            if hasDefaultAnnotation(field) {
                 pass.Reportf(field.Pos(), "mergeable field %s must not have '+kubebuilder:default' annotation", fieldPath)
             }
         } else {
-            _, isValid := determineNonMergeableCategory(pass, field)
+            _, isValid := determineNonMergeableCategory(field)
 
             if !isValid {
                 pass.Reportf(field.Pos(), "field %s does not match any allowed non-mergeable category", fieldPath)
@@ -157,16 +158,8 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
     return nil
 }
 
-func isPointerToSlice(field *ast.Field) bool {
-    if ptr, ok := field.Type.(*ast.StarExpr); ok {
-        _, isArray := ptr.X.(*ast.ArrayType)
-        return isArray
-    }
-    return false
-}
-
-func determineNonMergeableCategory(pass *analysis.Pass, field *ast.Field) (string, bool) {
-    hasDefault := hasDefaultAnnotation(pass, field)
+func determineNonMergeableCategory(field *ast.Field) (string, bool) {
+    hasDefault := hasDefaultAnnotation(field)
     hasOmitEmpty := hasOmitEmptyTag(field)
     isPtr := isPointer(field)
 
@@ -182,24 +175,10 @@ func determineNonMergeableCategory(pass *analysis.Pass, field *ast.Field) (strin
     return "", false
 }
 
-func hasDefaultAnnotation(pass *analysis.Pass, field *ast.Field) bool {
-    if pass.Files == nil {
-        return false
-    }
-
-    fieldPos := field.Pos() // The position of the field in the source file
-    for _, commentGroup := range pass.Files {
-        for _, comment := range commentGroup.Comments {
-            if comment.Pos() < fieldPos { // Ensure comment appears before the field
-                for _, c := range comment.List {
-                    if strings.Contains(c.Text, "+kubebuilder:default") {
-                        return true
-                    }
-                }
-            } else {
-                // If we found a comment AFTER the field, stop checking (since we only want the last comment before it)
-                break
-            }
+func hasDefaultAnnotation(field *ast.Field) bool {
+    for _, comment := range pointer.Deref(field.Doc).List {
+        if strings.Contains(comment.Text, "+kubebuilder:default") {
+            return true
         }
     }
     return false
@@ -210,32 +189,29 @@ func isPointer(field *ast.Field) bool {
     return ok
 }
 
-func isArrayOrSlice(field *ast.Field, pass *analysis.Pass) bool {
-    switch t := field.Type.(type) {
-    case *ast.ArrayType:
-        return true
-    case *ast.StarExpr: // Handle pointers to slices (e.g., *[]T)
-        if _, ok := t.X.(*ast.ArrayType); ok {
-            return true
-        }
-    case *ast.Ident:
-        if pass.TypesInfo != nil {
-            typeObj := pass.TypesInfo.ObjectOf(t)
-            if typeObj != nil {
-                _, ok := typeObj.Type().Underlying().(*types.Slice)
-                return ok
-            }
-        }
-    }
-    return false
-}
-
 func hasOmitEmptyTag(field *ast.Field) bool {
     if field.Tag == nil {
         return false
     }
-    tag := strings.Trim(field.Tag.Value, "`")
-    return strings.Contains(tag, "json:") && strings.Contains(tag, "omitempty")
+
+    // Extract the struct tag (removes surrounding backticks)
+    tag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+
+    // Parse JSON tag
+    jsonTag, ok := tag.Lookup("json")
+    if !ok {
+        return false
+    }
+
+    // Check if "omitempty" is in the tag
+    tagParts := strings.Split(jsonTag, ",")
+    for _, part := range tagParts {
+        if part == "omitempty" {
+            return true
+        }
+    }
+
+    return false
 }
 
 // Extracts the struct name from the filename

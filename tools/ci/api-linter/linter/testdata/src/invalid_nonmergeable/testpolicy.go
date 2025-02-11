@@ -13,7 +13,7 @@ type OtherStruct struct {
 
     // Non-Mergeable, User Required
     // Must not have "omitempty", must not have "default", must not be a pointer
-    UserRequiredPointer *string `json:"user_required,omitempty"` // want "field TestPolicy.OtherStruct.UserRequiredPointer does not match any allowed non-mergeable category"
+    UserRequiredOmitEmpty string `json:"user_required,omitempty"` // want "field TestPolicy.OtherStruct.UserRequiredOmitEmpty does not match any allowed non-mergeable category"
 
     // Non-Mergeable, User Required
     // Must not have "omitempty", must not have "default", must not be a pointer
