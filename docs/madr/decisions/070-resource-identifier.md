@@ -185,11 +185,11 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 
 ##### Internal
 
-|                  | Name                                                                                                                                                    | Correlated Resources |
-|------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
-| Listener         | `kuma:dns`<br>`kuma:envoy:admin`<br>`kuma:metrics:prometheus`<br>`_kuma:metrics:opentelemetry:`                                                         | –                    |
-| VirtualHost      | listener's name                                                                                                                                         | –                    |
-| Internal Cluster | `kuma:readiness`<br>`kuma:envoy:admin`<br>`kuma:metrics:hijacker`<br>`_kuma:metrics:opentelemetry:`<br>`tracing:`<br>`access_log_sink`<br>`ads_cluster` | –                    |
+|                  | Name                                                                                                                                                                 | Correlated Resources |
+|------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------|
+| Listener         | `kuma:dns`<br>`kuma:envoy:admin`<br>`kuma:metrics:prometheus`<br>`_kuma:metrics:opentelemetry:<backendName>`                                                         | –                    |
+| VirtualHost      | listener's name                                                                                                                                                      | –                    |
+| Internal Cluster | `kuma:readiness`<br>`kuma:envoy:admin`<br>`kuma:metrics:hijacker`<br>`_kuma:metrics:opentelemetry:<backendName>`<br>`tracing:`<br>`access_log_sink`<br>`ads_cluster` | –                    |
 
 #### Envoy stats
 
