@@ -88,8 +88,10 @@ func Sidecars() {
 			}
 
 			// then
-			Expect(getConfig(meshName, "demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
-			Expect(getConfig(meshName, "test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
+			Eventually(func(g Gomega) {
+				g.Expect(getConfig(meshName, "demo-client")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "demo-client.golden.json", 1)))
+				g.Expect(getConfig(meshName, "test-server")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "test-server.golden.json", 1)))
+			}).Should(Succeed())
 		},
 		test.EntriesForFolder(filepath.Join("sidecars", "meshtimeout"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("sidecars", "meshaccesslog"), "envoyconfig"),

@@ -132,7 +132,9 @@ spec:
 			}
 
 			// then
-			Expect(getConfig(mesh, "gateway-proxy")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "gateway-proxy.golden.json", 1)))
+			Eventually(func(g Gomega) {
+				g.Expect(getConfig(mesh, "gateway-proxy")).To(matchers.MatchGoldenJSON(strings.Replace(inputFile, "input.yaml", "gateway-proxy.golden.json", 1)))
+			}).Should(Succeed())
 		},
 		test.EntriesForFolder(filepath.Join("builtingateway", "meshaccesslog"), "envoyconfig"),
 		test.EntriesForFolder(filepath.Join("builtingateway", "meshtls"), "envoyconfig"),
