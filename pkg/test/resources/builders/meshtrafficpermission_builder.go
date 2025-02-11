@@ -43,7 +43,7 @@ func (m *MeshTrafficPermissionBuilder) AddFrom(targetRef common_api.TargetRef, a
 	m.res.Spec.From = pointer.To(append(pointer.Deref(m.res.Spec.From), mtp_proto.From{
 		TargetRef: &targetRef,
 		Default: mtp_proto.Conf{
-			Action: action,
+			Action: &action,
 		},
 	}))
 	return m
