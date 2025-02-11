@@ -1,0 +1,21 @@
+type: MeshAccessLog
+name: mt-1
+mesh: envoyconfig-builtingateway
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes:
+      - Gateway
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: "/dev/stdout"
+              format:
+                type: Plain
+                plain: "[%START_TIME%]"
