@@ -12,7 +12,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -23,17 +22,18 @@ import (
 
 var gcLog logr.Logger
 
-type InsightToResource struct {
-	Insight  core_model.ResourceType
-	Resource core_model.ResourceType
-}
+type (
+	InsightType  core_model.ResourceType
+	ResourceType core_model.ResourceType
+	Age          time.Duration
+)
 
 type collector struct {
 	rm                 manager.ResourceManager
 	cleanupAge         time.Duration
 	newTicker          func() *time.Ticker
 	metric             prometheus.Summary
-	resourcesToCleanup []InsightToResource
+	resourcesToCleanup map[InsightType]ResourceType
 }
 
 func NewCollector(
@@ -42,7 +42,7 @@ func NewCollector(
 	cleanupAge time.Duration,
 	metrics core_metrics.Metrics,
 	metricsName string,
-	resourcesToCleanup []InsightToResource,
+	resourcesToCleanup map[InsightType]ResourceType,
 ) (component.Component, error) {
 	gcLog = core.Log.WithName(fmt.Sprintf("%s-gc", metricsName))
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
@@ -71,8 +71,8 @@ func (d *collector) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			start := core.Now()
-			for _, res := range d.resourcesToCleanup {
-				if err := d.cleanup(ctx, now, res); err != nil {
+			for insightType, resourceType := range d.resourcesToCleanup {
+				if err := d.cleanup(ctx, now, insightType, resourceType); err != nil {
 					gcLog.Error(err, "unable to cleanup")
 					continue
 				}
@@ -85,12 +85,12 @@ func (d *collector) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *collector) cleanup(ctx context.Context, now time.Time, res InsightToResource) error {
-	insights := registry.Global().MustNewList(res.Insight)
+func (d *collector) cleanup(ctx context.Context, now time.Time, insightType InsightType, resourceType ResourceType) error {
+	insights := registry.Global().MustNewList(core_model.ResourceType(insightType))
 	if err := d.rm.List(ctx, insights); err != nil {
 		return err
 	}
-	onDelete := []model.ResourceKey{}
+	onDelete := map[core_model.ResourceKey]Age{}
 	for _, item := range insights.GetItems() {
 		insight := item.GetSpec().(generic.Insight)
 		if insight.IsOnline() {
@@ -98,19 +98,20 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, res InsightToRes
 		}
 		if s := insight.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
 			if err := s.GetDisconnectTime().CheckValid(); err != nil {
-				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), res.Insight, item.GetMeta().GetName())
+				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), insightType, item.GetMeta().GetName())
 				continue
 			}
-			if now.Sub(s.GetDisconnectTime().AsTime()) > d.cleanupAge {
-				onDelete = append(onDelete, model.ResourceKey{Name: item.GetMeta().GetName(), Mesh: item.GetMeta().GetMesh()})
+			age := now.Sub(s.GetDisconnectTime().AsTime())
+			if age > d.cleanupAge {
+				onDelete[core_model.MetaToResourceKey(item.GetMeta())] = Age(age)
 			}
 		}
 	}
-	for _, rk := range onDelete {
-		gcLog.Info(fmt.Sprintf("deleting %s which is offline for %v", res.Resource, d.cleanupAge), "name", rk.Name, "mesh", rk.Mesh)
-		resource := registry.Global().MustNewObject(res.Resource)
+	for rk, age := range onDelete {
+		gcLog.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
+		resource := registry.Global().MustNewObject(core_model.ResourceType(resourceType))
 		if err := d.rm.Delete(ctx, resource, store.DeleteBy(rk)); err != nil {
-			gcLog.Error(err, "unable to delete", "resourceType", res.Resource, "name", rk.Name, "mesh", rk.Mesh)
+			gcLog.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)
 			continue
 		}
 	}

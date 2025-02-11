@@ -37,11 +37,8 @@ func setupDpCollector(rt runtime.Runtime) error {
 		rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration,
 		rt.Metrics(),
 		"dp",
-		[]InsightToResource{
-			{
-				Insight:  mesh.DataplaneInsightType,
-				Resource: mesh.DataplaneType,
-			},
+		map[InsightType]ResourceType{
+			InsightType(mesh.DataplaneInsightType): ResourceType(mesh.DataplaneType),
 		},
 	)
 	if err != nil {
@@ -62,15 +59,9 @@ func setupZoneResourceCollector(rt runtime.Runtime) error {
 		rt.Config().Runtime.Universal.ZoneResourceCleanupAge.Duration,
 		rt.Metrics(),
 		"zone",
-		[]InsightToResource{
-			{
-				Insight:  mesh.ZoneEgressInsightType,
-				Resource: mesh.ZoneEgressType,
-			},
-			{
-				Insight:  mesh.ZoneIngressInsightType,
-				Resource: mesh.ZoneIngressType,
-			},
+		map[InsightType]ResourceType{
+			InsightType(mesh.ZoneEgressInsightType):  ResourceType(mesh.ZoneEgressType),
+			InsightType(mesh.ZoneIngressInsightType): ResourceType(mesh.ZoneIngressType),
 		},
 	)
 	if err != nil {

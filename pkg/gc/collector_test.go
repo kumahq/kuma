@@ -70,11 +70,8 @@ var _ = Describe("Collector", func() {
 			Expect(err).ToNot(HaveOccurred())
 			collector, err := gc.NewCollector(rm, func() *time.Ticker {
 				return &time.Ticker{C: ticks}
-			}, 1*time.Hour, metrics, "dp", []gc.InsightToResource{
-				{
-					Insight:  mesh.DataplaneInsightType,
-					Resource: mesh.DataplaneType,
-				},
+			}, 1*time.Hour, metrics, "dp", map[gc.InsightType]gc.ResourceType{
+				gc.InsightType(mesh.DataplaneInsightType): gc.ResourceType(mesh.DataplaneType),
 			})
 			Expect(err).ToNot(HaveOccurred())
 
@@ -186,15 +183,9 @@ var _ = Describe("Collector", func() {
 			Expect(err).ToNot(HaveOccurred())
 			collector, err := gc.NewCollector(rm, func() *time.Ticker {
 				return &time.Ticker{C: ticks}
-			}, 1*time.Hour, metrics, "zone", []gc.InsightToResource{
-				{
-					Insight:  mesh.ZoneIngressInsightType,
-					Resource: mesh.ZoneIngressType,
-				},
-				{
-					Insight:  mesh.ZoneEgressInsightType,
-					Resource: mesh.ZoneEgressType,
-				},
+			}, 1*time.Hour, metrics, "zone", map[gc.InsightType]gc.ResourceType{
+				gc.InsightType(mesh.ZoneIngressInsightType): gc.ResourceType(mesh.ZoneIngressType),
+				gc.InsightType(mesh.ZoneEgressInsightType):  gc.ResourceType(mesh.ZoneEgressType),
 			})
 			Expect(err).ToNot(HaveOccurred())
 
