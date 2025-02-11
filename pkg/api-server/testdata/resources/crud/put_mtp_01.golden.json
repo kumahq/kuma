@@ -5,15 +5,15 @@
  "detail": "Resource is not valid",
  "invalid_parameters": [
   {
-   "field": "",
-   "reason": "type in body should be one of [MeshTrafficPermission]"
+   "field": "spec.from[0].default.action",
+   "reason": "must be defined"
   }
  ],
  "details": "Resource is not valid",
  "causes": [
   {
-   "field": "",
-   "message": "type in body should be one of [MeshTrafficPermission]"
+   "field": "spec.from[0].default.action",
+   "message": "must be defined"
   }
  ]
 }

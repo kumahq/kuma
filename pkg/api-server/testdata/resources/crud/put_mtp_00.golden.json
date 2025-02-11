@@ -1,19 +1,7 @@
 {
  "type": "/std-errors",
  "status": 400,
- "title": "Could not process a resource",
- "detail": "Resource is not valid",
- "invalid_parameters": [
-  {
-   "field": "spec.targetRef.name",
-   "reason": "in body must be of type string: \"number\""
-  }
- ],
- "details": "Resource is not valid",
- "causes": [
-  {
-   "field": "spec.targetRef.name",
-   "message": "in body must be of type string: \"number\""
-  }
- ]
+ "title": "Bad Request",
+ "detail": "invalid MeshTrafficPermission object: \"json: cannot unmarshal number into Go struct field TargetRef.spec.targetRef.name of type string\"",
+ "details": "invalid MeshTrafficPermission object: \"json: cannot unmarshal number into Go struct field TargetRef.spec.targetRef.name of type string\""
 }
