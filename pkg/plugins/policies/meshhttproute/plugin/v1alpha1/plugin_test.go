@@ -441,7 +441,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
 					To: []api.To{
 						{
-							TargetRef: common_api.TargetRef{
+							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
 								Name: "example",
 							},
@@ -455,7 +455,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									}},
 									Default: api.RuleConf{
 										BackendRefs: &[]common_api.BackendRef{{
-											TargetRef: common_api.TargetRef{
+											TargetRef: &common_api.TargetRef{
 												Kind: common_api.MeshExternalService,
 												Name: "external",
 											},
@@ -1054,7 +1054,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 														}},
 														Default: api.RuleConf{
 															BackendRefs: &[]common_api.BackendRef{{
-																TargetRef: common_api.TargetRef{
+																TargetRef: &common_api.TargetRef{
 																	Kind: common_api.MeshService,
 																	Labels: map[string]string{
 																		"app":     "backend",
@@ -1075,7 +1075,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 														}},
 														Default: api.RuleConf{
 															BackendRefs: &[]common_api.BackendRef{{
-																TargetRef: common_api.TargetRef{
+																TargetRef: &common_api.TargetRef{
 																	Kind: common_api.MeshService,
 																	Labels: map[string]string{
 																		"app":     "backend",
@@ -1650,7 +1650,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															RequestMirror: &api.RequestMirror{
 																Percentage: pointer.To(intstr.FromString("99.9")),
 																BackendRef: common_api.BackendRef{
-																	TargetRef: common_api.TargetRef{
+																	TargetRef: &common_api.TargetRef{
 																		Kind: common_api.MeshServiceSubset,
 																		Name: "payments",
 																		Tags: map[string]string{
@@ -1666,7 +1666,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															Type: api.RequestMirrorType,
 															RequestMirror: &api.RequestMirror{
 																BackendRef: common_api.BackendRef{
-																	TargetRef: common_api.TargetRef{
+																	TargetRef: &common_api.TargetRef{
 																		Kind: common_api.MeshService,
 																		Name: "backend",
 																	},
@@ -1921,7 +1921,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								}},
 								Default: api.RuleConf{
 									BackendRefs: &[]common_api.BackendRef{{
-										TargetRef: common_api.TargetRef{
+										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
 											Name: "backend",
 										},

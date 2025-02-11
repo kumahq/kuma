@@ -17,16 +17,16 @@ type MeshCircuitBreaker struct {
 
 	// To list makes a match between the consumed services and corresponding
 	// configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 }
 
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of destinations
 	// referenced in 'targetRef'
 	Default Conf `json:"default,omitempty"`
@@ -35,7 +35,7 @@ type To struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of destinations
 	// referenced in 'targetRef'
 	Default Conf `json:"default,omitempty"`

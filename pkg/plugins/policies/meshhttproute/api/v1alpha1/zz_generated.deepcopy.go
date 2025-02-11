@@ -141,9 +141,13 @@ func (in *MeshHTTPRoute) DeepCopyInto(out *MeshHTTPRoute) {
 	}
 	if in.To != nil {
 		in, out := &in.To, &out.To
-		*out = make([]To, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]To)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]To, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -342,12 +346,20 @@ func (in *To) DeepCopyInto(out *To) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	in.TargetRef.DeepCopyInto(&out.TargetRef)
+	if in.TargetRef != nil {
+		in, out := &in.TargetRef, &out.TargetRef
+		*out = new(commonv1alpha1.TargetRef)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = make([]Rule, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Rule)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Rule, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

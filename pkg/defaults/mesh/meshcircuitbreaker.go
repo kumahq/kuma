@@ -13,9 +13,9 @@ var defaultMeshCircuitBreakerResource = func() model.Resource {
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 			},
-			To: []v1alpha1.To{
+			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{

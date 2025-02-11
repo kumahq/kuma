@@ -21,7 +21,7 @@ type MeshTCPRoute struct {
 	// To list makes a match between the consumed services and corresponding
 	// configurations
 	// +kubebuilder:validation:MinItems=1
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 }
 
 // At this point there is no plan to introduce address matching
@@ -44,11 +44,11 @@ type MeshTCPRoute struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	// +kubebuilder:validation:MaxItems=1
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {

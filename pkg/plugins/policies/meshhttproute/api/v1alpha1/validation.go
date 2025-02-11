@@ -21,7 +21,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -79,8 +79,8 @@ func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.Validat
 
 	for i, to := range tos {
 		path := validators.Root().Index(i)
-		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
-		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
+		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, pointer.Deref(to.TargetRef)))
+		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, pointer.Deref(to.Rules)))
 		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
 	}
 

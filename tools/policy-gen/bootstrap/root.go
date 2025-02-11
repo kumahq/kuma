@@ -293,23 +293,23 @@ func (r *{{.name}}Resource) validate() error {
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
 	{{- end }}
 	{{- if and .generateTo .generateFrom }}
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
+	if len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
 	{{- else if .generateTo }}
-	if len(r.Spec.To) == 0 {
+	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	{{- else if .generateFrom }}
-	if len(r.Spec.From) == 0 {
+	if len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
 	{{- end }}
 	{{- if .generateTo }}
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
 	{{- end }}
 	{{- if .generateFrom }}
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	{{- end }}
 	return verr.OrNil()
 }
@@ -331,7 +331,7 @@ func validateFrom(from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, fromItem := range from {
 		path := validators.RootedAt("from").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(fromItem.TargetRef, &mesh.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(pointer.Deref(fromItem.TargetRef), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'from' item
 			},
@@ -348,7 +348,7 @@ func validateTo(to []To) validators.ValidationError {
 	var verr validators.ValidationError
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
-		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
+		verr.AddErrorAt(path.Field("targetRef"), mesh.ValidateTargetRef(pointer.Deref(toItem.TargetRef), &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				// TODO add supported TargetRef for 'to' item
 			},

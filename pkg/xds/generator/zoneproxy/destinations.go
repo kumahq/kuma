@@ -243,9 +243,9 @@ func addMeshHTTPRouteDestinations(
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
 	for _, policy := range policies {
-		for _, to := range policy.Spec.To {
-			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
-				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
+		for _, to := range pointer.Deref(policy.Spec.To) {
+			if toTags, ok := tags.FromLegacyTargetRef(pointer.Deref(to.TargetRef)); ok {
+				addMeshHTTPRouteToDestinations(pointer.Deref(to.Rules), toTags, destinations)
 			}
 		}
 	}
@@ -264,9 +264,9 @@ func addMeshTCPRouteDestinations(
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
 	for _, policy := range policies {
-		for _, to := range policy.Spec.To {
-			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
-				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
+		for _, to := range pointer.Deref(policy.Spec.To) {
+			if toTags, ok := tags.FromLegacyTargetRef(pointer.Deref(to.TargetRef)); ok {
+				addMeshTCPRouteToDestinations(pointer.Deref(to.Rules), toTags, destinations)
 			}
 		}
 	}

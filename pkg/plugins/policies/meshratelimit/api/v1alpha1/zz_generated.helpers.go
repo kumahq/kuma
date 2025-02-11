@@ -16,7 +16,7 @@ func (x *MeshRateLimit) GetTargetRef() common_api.TargetRef {
 }
 
 func (x *From) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	return pointer.Deref(x.TargetRef)
 }
 
 func (x *From) GetDefault() interface{} {
@@ -25,15 +25,15 @@ func (x *From) GetDefault() interface{} {
 
 func (x *MeshRateLimit) GetFromList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.From {
-		item := x.From[i]
+	for _, itm := range pointer.Deref(x.From) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return x.TargetRef
+	return pointer.Deref(x.TargetRef)
 }
 
 func (x *To) GetDefault() interface{} {
@@ -42,8 +42,8 @@ func (x *To) GetDefault() interface{} {
 
 func (x *MeshRateLimit) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.To {
-		item := x.To[i]
+	for _, itm := range pointer.Deref(x.To) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
@@ -55,8 +55,8 @@ func (x *Rule) GetDefault() interface{} {
 
 func (x *MeshRateLimit) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
-	for i := range x.Rules {
-		item := x.Rules[i]
+	for _, itm := range pointer.Deref(x.Rules) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result

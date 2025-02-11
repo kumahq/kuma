@@ -95,17 +95,17 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		)
 
 		tos = append(tos, v1alpha1.To{
-			TargetRef: common_api.TargetRef{
+			TargetRef: &common_api.TargetRef{
 				Kind: common_api.MeshService,
 				Name: serviceName,
 			},
-			Rules: rules,
+			Rules: &rules,
 		})
 	}
 
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
-		To:        tos,
+		To:        &tos,
 	}
 }
 

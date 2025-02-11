@@ -13,13 +13,13 @@ type MeshTrafficPermission struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 }
 
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`

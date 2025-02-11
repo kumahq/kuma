@@ -23,9 +23,9 @@ var defaultMeshTimeoutResource = func() model.Resource {
 			},
 
 			// bigger than outbound side timeouts or disabled.
-			From: []v1alpha1.From{
+			From: &[]v1alpha1.From{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
@@ -49,9 +49,9 @@ var defaultMeshTimeoutResource = func() model.Resource {
 					},
 				},
 			},
-			To: []v1alpha1.To{
+			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
@@ -85,9 +85,9 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 					common_api.Gateway,
 				},
 			},
-			From: []v1alpha1.From{
+			From: &[]v1alpha1.From{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{
@@ -105,9 +105,9 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 					},
 				},
 			},
-			To: []v1alpha1.To{
+			To: &[]v1alpha1.To{
 				{
-					TargetRef: common_api.TargetRef{
+					TargetRef: &common_api.TargetRef{
 						Kind: common_api.Mesh,
 					},
 					Default: v1alpha1.Conf{

@@ -6,16 +6,16 @@ import (
 )
 
 func (x *To) GetDefault() interface{} {
-	if len(x.Rules) == 0 {
+	if len(pointer.Deref(x.Rules)) == 0 {
 		return Rule{
 			Default: RuleConf{
 				BackendRefs: []common_api.BackendRef{{
-					TargetRef: x.TargetRef,
+					TargetRef: pointer.Deref(x.TargetRef),
 					Weight:    pointer.To(uint(1)),
 				}},
 			},
 		}
 	}
 
-	return x.Rules[0]
+	return pointer.Deref(x.Rules)[0]
 }

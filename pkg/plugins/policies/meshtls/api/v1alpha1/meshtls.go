@@ -15,10 +15,10 @@ type MeshTLS struct {
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound tls configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
@@ -29,7 +29,7 @@ type Rule struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef common_api.TargetRef `json:"targetRef"`
+	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`

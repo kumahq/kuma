@@ -88,21 +88,21 @@ var _ = Describe("Resource Utils", func() {
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: []meshtrafficpermissions_proto.From{
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshSubset",
 							Tags: map[string]string{
 								"version": "v3",
@@ -116,21 +116,21 @@ var _ = Describe("Resource Utils", func() {
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: []meshtrafficpermissions_proto.From{
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshSubset",
 							Tags: map[string]string{
 								"version": "v3",
@@ -152,21 +152,21 @@ var _ = Describe("Resource Utils", func() {
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: []meshtrafficpermissions_proto.From{
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshSubset",
 							Tags: map[string]string{
 								"version": "v3",
@@ -180,21 +180,21 @@ var _ = Describe("Resource Utils", func() {
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: []meshtrafficpermissions_proto.From{
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "backend",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Allow"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
 							Name: "web",
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: "Deny"},
 					},
 					{
-						TargetRef: common_api.TargetRef{
+						TargetRef: &common_api.TargetRef{
 							Kind: "MeshSubset",
 							Tags: map[string]string{
 								"version": "v5", // different from 'v3'

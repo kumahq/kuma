@@ -380,7 +380,7 @@ var (
 		},
 		From: []meshtrafficpermissions.From{
 			{
-				TargetRef: common_api.TargetRef{
+				TargetRef: &common_api.TargetRef{
 					Kind: "Mesh",
 				},
 				Default: meshtrafficpermissions.Conf{

@@ -15,7 +15,7 @@ func (r *MeshTCPRouteResource) validate() error {
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
+	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 
 	return verr.OrNil()
 }
@@ -75,8 +75,8 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 	for idx, toItem := range to {
 		path := validators.RootedAt("to").Index(idx)
 
-		verr.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, toItem.TargetRef))
-		verr.AddErrorAt(path.Field("rules"), validateRules(toItem.Rules))
+		verr.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, pointer.Deref(toItem.TargetRef)))
+		verr.AddErrorAt(path.Field("rules"), validateRules(pointer.Deref(toItem.Rules)))
 	}
 
 	return verr
