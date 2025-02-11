@@ -3274,7 +3274,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -3381,7 +3380,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
@@ -3542,7 +3540,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -3649,7 +3646,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
@@ -3810,7 +3806,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -3917,7 +3912,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
