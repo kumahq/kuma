@@ -86,7 +86,7 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []meshtrafficpermissions_proto.From{
+				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
@@ -114,7 +114,7 @@ var _ = Describe("Resource Utils", func() {
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []meshtrafficpermissions_proto.From{
+				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
@@ -150,7 +150,7 @@ var _ = Describe("Resource Utils", func() {
 			// given
 			var spec1 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []meshtrafficpermissions_proto.From{
+				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",
@@ -178,7 +178,7 @@ var _ = Describe("Resource Utils", func() {
 			}
 			var spec2 core_model.ResourceSpec = &meshtrafficpermissions_proto.MeshTrafficPermission{
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
-				From: []meshtrafficpermissions_proto.From{
+				From: &[]meshtrafficpermissions_proto.From{
 					{
 						TargetRef: &common_api.TargetRef{
 							Kind: "MeshService",

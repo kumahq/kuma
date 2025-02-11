@@ -6,6 +6,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type MeshTimeoutBuilder struct {
@@ -49,18 +50,18 @@ func (m *MeshTimeoutBuilder) WithNamespace(namespace string) *MeshTimeoutBuilder
 }
 
 func (m *MeshTimeoutBuilder) AddFrom(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
-	m.res.Spec.From = append(m.res.Spec.From, meshtimeout_api.From{
-		TargetRef: targetRef,
+	m.res.Spec.From = pointer.To(append(pointer.Deref(m.res.Spec.From), meshtimeout_api.From{
+		TargetRef: &targetRef,
 		Default:   conf,
-	})
+	}))
 	return m
 }
 
 func (m *MeshTimeoutBuilder) AddTo(targetRef common_api.TargetRef, conf meshtimeout_api.Conf) *MeshTimeoutBuilder {
-	m.res.Spec.To = append(m.res.Spec.To, meshtimeout_api.To{
-		TargetRef: targetRef,
+	m.res.Spec.To = pointer.To(append(pointer.Deref(m.res.Spec.To), meshtimeout_api.To{
+		TargetRef: &targetRef,
 		Default:   conf,
-	})
+	}))
 	return m
 }
 

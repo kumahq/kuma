@@ -4,6 +4,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *DoNothingPolicyResource) validate() error {

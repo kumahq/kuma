@@ -40,5 +40,5 @@ var AllowWithShadowDeny Action = "AllowWithShadowDeny"
 type Conf struct {
 	// Action defines a behavior for the specified group of clients:
 	// +kubebuilder:validation:Enum=Allow;Deny;AllowWithShadowDeny
-	Action Action `json:"action,omitempty"`
+	Action *Action `json:"action,omitempty"`
 }
