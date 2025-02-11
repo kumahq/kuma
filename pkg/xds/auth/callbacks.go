@@ -60,7 +60,8 @@ type stream struct {
 	// Dataplane / ZoneIngress / ZoneEgress associated with this XDS stream.
 	resource model.Resource
 	// nodeID of the stream. Has to be the same for the whole life of a stream.
-	nodeID string
+	nodeID        string
+	authenticated bool
 }
 
 var _ util_xds.Callbacks = &authCallbacks{}
@@ -88,12 +89,15 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds
 		return err
 	}
 
-	credential, err := ExtractCredential(s.ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
-	}
-	if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
-		return errors.Wrap(err, "authentication failed")
+	if !s.authenticated {
+		credential, err := ExtractCredential(s.ctx)
+		if err != nil {
+			return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
+		}
+		if err := a.authenticator.Authenticate(user.Ctx(s.ctx, user.ControlPlane), s.resource, credential); err != nil {
+			return errors.Wrap(err, "authentication failed")
+		}
+		s.authenticated = true
 	}
 	a.Lock()
 	a.streams[streamID] = s

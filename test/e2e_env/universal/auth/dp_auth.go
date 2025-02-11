@@ -1,11 +1,6 @@
 package auth
 
 import (
-	"encoding/base64"
-	"fmt"
-	"math/rand"
-
-	"github.com/golang-jwt/jwt/v4"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -65,6 +60,7 @@ func DpAuth() {
 			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
 		}, "30s", "1s").ShouldNot(ContainSubstring("192.168.0.2"))
 	})
+<<<<<<< HEAD
 
 	It("should revoke token and kick out dataplane proxy out of the mesh", func() {
 		// given
@@ -126,4 +122,6 @@ spec:
 			g.Expect(online).To(BeFalse()) // either online or not found
 		}).Should(Succeed())
 	})
+=======
+>>>>>>> 0323e80f4 (fix(xds): only auth once per xds gRPC stream in kuma-cp (#12788))
 }
