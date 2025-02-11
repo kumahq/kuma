@@ -135,7 +135,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 			if !hasOmitEmptyTag(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
-			if hasDefaultAnnotation(field) {
+			if hasDefaultAndOptionalAnnotations(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must not have '+kubebuilder:default' annotation", fieldPath)
 			}
 		} else {
@@ -174,7 +174,7 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 }
 
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
-	hasDefault := hasDefaultAnnotation(field)
+	hasDefault := hasDefaultAndOptionalAnnotations(field)
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 
@@ -190,9 +190,17 @@ func determineNonMergeableCategory(field *ast.Field) (string, bool) {
 	return "", false
 }
 
-func hasDefaultAnnotation(field *ast.Field) bool {
+func hasDefaultAndOptionalAnnotations(field *ast.Field) bool {
+	hasDefault := false
+	hasOptional := false
 	for _, comment := range pointer.Deref(field.Doc).List {
 		if strings.Contains(comment.Text, "+kubebuilder:default") {
+			hasDefault = true
+		}
+		if strings.Contains(comment.Text, "+kubebuilder:validation:Optional") {
+			hasOptional = true
+		}
+		if hasDefault && hasOptional {
 			return true
 		}
 	}

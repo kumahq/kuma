@@ -7,7 +7,7 @@ type TestPolicy struct {
 
 type OtherStruct struct {
     // Non-Mergeable, User Optional, With Default
-    // Must not be a pointer, must have "default", must not have "omitempty"
+    // Must not be a pointer, must have "default", must have "optional", must not have "omitempty"
     // +kubebuilder:default="some-value"
     UserOptionalWithDefault *string `json:"user_optional_with_default"` // want "field TestPolicy.OtherStruct.UserOptionalWithDefault does not match any allowed non-mergeable category"
 
