@@ -1,0 +1,297 @@
+{
+  "diff": [],
+  "xds": {
+    "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
+      "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2": {
+        "edsClusterConfig": {
+          "edsConfig": {
+            "ads": {},
+            "resourceApiVersion": "V3"
+          }
+        },
+        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
+        "perConnectionBufferLimitBytes": 32768,
+        "transportSocket": {
+          "name": "envoy.transport_sockets.tls",
+          "typedConfig": {
+            "@type": "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext",
+            "commonTlsContext": {
+              "alpnProtocols": [
+                "kuma"
+              ],
+              "combinedValidationContext": {
+                "defaultValidationContext": {
+                  "matchTypedSubjectAltNames": [
+                    {
+                      "matcher": {
+                        "exact": "spiffe://envoyconfig-builtingateway/echo-service"
+                      },
+                      "sanType": "URI"
+                    }
+                  ]
+                },
+                "validationContextSdsSecretConfig": {
+                  "name": "mesh_ca:secret:envoyconfig-builtingateway",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              },
+              "tlsCertificateSdsSecretConfigs": [
+                {
+                  "name": "identity_cert:secret:envoyconfig-builtingateway",
+                  "sdsConfig": {
+                    "ads": {},
+                    "resourceApiVersion": "V3"
+                  }
+                }
+              ]
+            },
+            "sni": "aecb4981e52fda985.echo-service.80.envoyconfig-builtingateway.ms"
+          }
+        },
+        "type": "EDS",
+        "typedExtensionProtocolOptions": {
+          "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
+            "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "explicitHttpConfig": {
+              "httpProtocolOptions": {}
+            }
+          }
+        }
+      }
+    },
+    "type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment": {
+      "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2": {
+        "clusterName": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
+        "endpoints": [
+          {
+            "lbEndpoints": [
+              {
+                "endpoint": {
+                  "address": {
+                    "socketAddress": {
+                      "address": "IP_REDACTED",
+                      "portValue": 80
+                    }
+                  }
+                },
+                "loadBalancingWeight": 1,
+                "metadata": {
+                  "filterMetadata": {
+                    "envoy.lb": {
+                      "instance": "1",
+                      "kuma.io/protocol": "http",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "server-owners",
+                      "version": "v1"
+                    },
+                    "envoy.transport_socket_match": {
+                      "instance": "1",
+                      "kuma.io/protocol": "http",
+                      "kuma.io/zone": "kuma-3",
+                      "team": "server-owners",
+                      "version": "v1"
+                    }
+                  }
+                }
+              }
+            ],
+            "locality": {
+              "zone": "kuma-3"
+            }
+          }
+        ]
+      }
+    },
+    "type.googleapis.com/envoy.config.listener.v3.Listener": {
+      "gateway-proxy:HTTP:8080": {
+        "address": {
+          "socketAddress": {
+            "address": "IP_REDACTED",
+            "portValue": 8080
+          }
+        },
+        "enableReusePort": true,
+        "filterChains": [
+          {
+            "filters": [
+              {
+                "name": "envoy.filters.network.http_connection_manager",
+                "typedConfig": {
+                  "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "commonHttpProtocolOptions": {
+                    "headersWithUnderscoresAction": "REJECT_REQUEST",
+                    "idleTimeout": "300s"
+                  },
+                  "http2ProtocolOptions": {
+                    "allowConnect": true,
+                    "initialConnectionWindowSize": 1048576,
+                    "initialStreamWindowSize": 65536,
+                    "maxConcurrentStreams": 100
+                  },
+                  "httpFilters": [
+                    {
+                      "name": "envoy.filters.http.local_ratelimit",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit",
+                        "statPrefix": "STAT_PREFIX_REDACTED"
+                      }
+                    },
+                    {
+                      "name": "gzip-compress",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.compressor.v3.Compressor",
+                        "compressorLibrary": {
+                          "name": "gzip",
+                          "typedConfig": {
+                            "@type": "type.googleapis.com/envoy.extensions.compression.gzip.compressor.v3.Gzip"
+                          }
+                        },
+                        "responseDirectionConfig": {
+                          "disableOnEtagHeader": true
+                        }
+                      }
+                    },
+                    {
+                      "name": "envoy.filters.http.router",
+                      "typedConfig": {
+                        "@type": "type.googleapis.com/envoy.extensions.filters.http.router.v3.Router"
+                      }
+                    }
+                  ],
+                  "mergeSlashes": true,
+                  "normalizePath": true,
+                  "pathWithEscapedSlashesAction": "UNESCAPE_AND_REDIRECT",
+                  "rds": {
+                    "configSource": {
+                      "ads": {},
+                      "resourceApiVersion": "V3"
+                    },
+                    "routeConfigName": "gateway-proxy:HTTP:8080:*"
+                  },
+                  "requestHeadersTimeout": "0.500s",
+                  "serverName": "Kuma Gateway",
+                  "statPrefix": "STAT_PREFIX_REDACTED",
+                  "streamIdleTimeout": "5s",
+                  "useRemoteAddress": true
+                }
+              }
+            ]
+          }
+        ],
+        "listenerFilters": [
+          {
+            "name": "envoy.filters.listener.tls_inspector",
+            "typedConfig": {
+              "@type": "type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector"
+            }
+          }
+        ],
+        "name": "gateway-proxy:HTTP:8080",
+        "perConnectionBufferLimitBytes": 32768,
+        "trafficDirection": "INBOUND"
+      }
+    },
+    "type.googleapis.com/envoy.config.route.v3.RouteConfiguration": {
+      "gateway-proxy:HTTP:8080:*": {
+        "ignorePortInHostMatching": true,
+        "name": "gateway-proxy:HTTP:8080:*",
+        "requestHeadersToRemove": [
+          "x-kuma-tags"
+        ],
+        "validateClusters": false,
+        "virtualHosts": [
+          {
+            "domains": [
+              "example.kuma.io"
+            ],
+            "name": "example.kuma.io",
+            "routes": [
+              {
+                "match": {
+                  "path": "/"
+                },
+                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
+                "route": {
+                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
+                  "idleTimeout": "5s",
+                  "weightedClusters": {
+                    "clusters": [
+                      {
+                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
+                        "requestHeadersToAdd": [
+                          {
+                            "header": {
+                              "key": "x-kuma-tags",
+                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                            }
+                          }
+                        ],
+                        "weight": 1
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "prefix": "/"
+                },
+                "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
+                "route": {
+                  "clusterNotFoundResponseCode": "INTERNAL_SERVER_ERROR",
+                  "idleTimeout": "5s",
+                  "weightedClusters": {
+                    "clusters": [
+                      {
+                        "name": "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2",
+                        "requestHeadersToAdd": [
+                          {
+                            "header": {
+                              "key": "x-kuma-tags",
+                              "value": "\u0026kuma.io/service=gateway-proxy\u0026\u0026kuma.io/zone=kuma-3\u0026"
+                            }
+                          }
+                        ],
+                        "weight": 1
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.Secret": {
+      "identity_cert:secret:envoyconfig-builtingateway": {
+        "name": "identity_cert:secret:envoyconfig-builtingateway",
+        "tlsCertificate": {
+          "certificateChain": {
+            "inlineBytes": "Q0VSVA=="
+          },
+          "privateKey": {
+            "inlineBytes": "S0VZ"
+          }
+        }
+      },
+      "mesh_ca:secret:envoyconfig-builtingateway": {
+        "name": "mesh_ca:secret:envoyconfig-builtingateway",
+        "validationContext": {
+          "trustedCa": {
+            "inlineBytes": "Q0E="
+          }
+        }
+      }
+    },
+    "type.googleapis.com/envoy.service.runtime.v3.Runtime": {
+      "gateway.listeners": {
+        "layer": {},
+        "name": "gateway.listeners"
+      }
+    }
+  }
+}

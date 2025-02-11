@@ -9,6 +9,7 @@ import (
 
 // MeshAccessLog defines access log policies between different data plane
 // proxies entities.
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -18,6 +19,14 @@ type MeshAccessLog struct {
 	To []To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
 	From []From `json:"from,omitempty"`
+	// Rules defines inbound access log configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	Rules []Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound access logging
+	Default Conf `json:"default,omitempty"`
 }
 
 type To struct {

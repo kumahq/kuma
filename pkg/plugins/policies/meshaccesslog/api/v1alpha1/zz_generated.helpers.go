@@ -7,6 +7,7 @@ package v1alpha1
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -43,6 +44,19 @@ func (x *MeshAccessLog) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
 	for i := range x.To {
 		item := x.To[i]
+		result = append(result, &item)
+	}
+	return result
+}
+
+func (x *Rule) GetDefault() interface{} {
+	return x.Default
+}
+
+func (x *MeshAccessLog) GetRules() []inbound.RuleEntry {
+	var result []inbound.RuleEntry
+	for i := range x.Rules {
+		item := x.Rules[i]
 		result = append(result, &item)
 	}
 	return result
