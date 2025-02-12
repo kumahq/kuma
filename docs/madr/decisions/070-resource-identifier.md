@@ -23,7 +23,7 @@ type ResourceIdentifier struct {
     Name      string
     Mesh      string
     Namespace string
-    Zone      string
+    Zone      string // when resource is created on Global zone is empty
 }
 ```
 
