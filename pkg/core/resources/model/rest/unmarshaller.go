@@ -1,9 +1,12 @@
 package rest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/google/go-cmp/cmp"
 	"net/url"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -63,6 +66,29 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 	return coreRes, nil
 }
 
+func deepCopyMap(original map[string]interface{}) (map[string]interface{}, error) {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(original); err != nil {
+		return nil, fmt.Errorf("failed to encode original map: %w", err)
+	}
+
+	var copy map[string]interface{}
+	if err := json.NewDecoder(&buf).Decode(&copy); err != nil {
+		return nil, fmt.Errorf("failed to decode into copy map: %w", err)
+	}
+
+	return copy, nil
+}
+
+func printDifferences(original, modified map[string]interface{}) {
+	if !reflect.DeepEqual(original, modified) {
+		diff := cmp.Diff(original, modified)
+		fmt.Printf("Differences between original and modified:\n%s\n", diff)
+	} else {
+		fmt.Println("No differences found between original and modified.")
+	}
+}
+
 func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
@@ -74,7 +100,18 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 		}
 
+		// Deep copy rawObj
+		originalRawObj, err := deepCopyMap(rawObj)
+		if err != nil {
+			return nil, &InvalidResourceError{Reason: fmt.Sprintf("failed to deep copy rawObj: %q", err.Error())}
+		}
+
+		// Apply defaulting
 		defaulting.Default(rawObj, desc.StructuralSchema)
+
+		// Print differences
+		printDifferences(originalRawObj, rawObj)
+
 		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
 		res := validator.Validate(rawObj)
 		if !res.IsValid() {
