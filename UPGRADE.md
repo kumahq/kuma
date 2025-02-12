@@ -45,6 +45,10 @@ New rule:
 The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
 is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
 
+#### Changes on revoking dataplane tokens
+
+Revoking a dataplane token on Unversal mesh clusters now requires restarting the mesh control plane, otherwise connected dataplanes will still be able to communicate until they restart/reconnect to the control plane.  
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog
