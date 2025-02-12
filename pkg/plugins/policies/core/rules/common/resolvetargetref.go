@@ -154,6 +154,10 @@ func tryParsePort(s string) (uint32, bool) {
 	return uint32(u), true
 }
 
+// parseService is copied from pkg/plugins/runtime/k8s/controllers/outbound_converter.go
+// but when port is not specified it returns 0 instead of IANA Reserved port 49151.
+// We don't need reserved port in the original 'parseService',
+// there is an issue to fix it https://github.com/kumahq/kuma/issues/12834
 func parseService(host string) (string, string, uint32, error) {
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
