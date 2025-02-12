@@ -78,8 +78,8 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	portsByService := map[string][]meshservice_api.Port{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
-		if !core_mesh.NameCharacterSet.MatchString(serviceTagValue) {
-			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "regex", core_mesh.NameCharacterSet)
+		if !core_mesh.DomainRegexp.MatchString(serviceTagValue) {
+			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "regex", core_mesh.DomainRegexp)
 			continue
 		}
 		appProtocol, hasProtocol := inbound.GetTags()[mesh_proto.ProtocolTag]

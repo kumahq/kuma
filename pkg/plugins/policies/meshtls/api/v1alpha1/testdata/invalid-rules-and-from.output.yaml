@@ -1,0 +1,11 @@
+violations:
+- field: spec
+  message: field 'from' must be empty when 'rules' is defined
+- field: spec.rules[0].default.tlsCiphers
+  message: 'tlsCiphers can only be defined with top level targetRef kind: Mesh'
+- field: spec.rules[0].default.tlsVersion
+  message: 'tlsVersion can only be defined with top level targetRef kind: Mesh'
+- field: spec.from[0].default.tlsCiphers
+  message: 'tlsCiphers can only be defined with top level targetRef kind: Mesh'
+- field: spec.from[0].default.tlsVersion
+  message: 'tlsVersion can only be defined with top level targetRef kind: Mesh'

@@ -222,12 +222,9 @@ func applyToGateway(
 			}
 		}
 
-		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
-			conf := core_rules.ComputeConf[api.Conf](fromListenerRules, subsetutils.MeshElement())
-			if conf == nil {
-				continue
-			}
-			if err := configureInbound(*conf, proxy.Dataplane, listener, backends, path); err != nil {
+		if fromListenerRules, ok := rules.InboundRules[listenerKey]; ok {
+			conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromListenerRules)
+			if err := configureInbound(conf, proxy.Dataplane, listener, backends, path); err != nil {
 				return err
 			}
 		}

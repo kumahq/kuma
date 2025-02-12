@@ -56,7 +56,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -106,7 +106,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -220,7 +220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -272,7 +272,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -607,7 +607,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -1032,7 +1032,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1259,7 +1259,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1615,7 +1615,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1665,7 +1665,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1717,7 +1717,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2103,7 +2103,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2777,7 +2777,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -2827,7 +2827,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -2877,7 +2877,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3455,7 +3455,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -3750,7 +3750,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -3951,7 +3951,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4119,7 +4119,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -4672,7 +4672,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -4908,6 +4908,133 @@ spec:
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound rate limiting configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound rate
+                        limits
+                      properties:
+                        local:
+                          description: LocalConf defines local http or/and tcp rate
+                            limit configuration
+                          properties:
+                            http:
+                              description: |-
+                                LocalHTTP defines configuration of local HTTP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                              properties:
+                                disabled:
+                                  description: Define if rate limiting should be disabled.
+                                  type: boolean
+                                onRateLimit:
+                                  description: Describes the actions to take on a
+                                    rate limit event
+                                  properties:
+                                    headers:
+                                      description: The Headers to be added to the
+                                        HTTP response on a rate limit event
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
+                                    status:
+                                      description: The HTTP status code to be set
+                                        on a rate limit event
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                requestRate:
+                                  description: Defines how many requests are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                              type: object
+                            tcp:
+                              description: |-
+                                LocalTCP defines confguration of local TCP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                              properties:
+                                connectionRate:
+                                  description: Defines how many connections are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                                disabled:
+                                  description: |-
+                                    Define if rate limiting should be disabled.
+                                    Default: false
+                                  type: boolean
+                              type: object
+                          type: object
+                      type: object
                   type: object
                 type: array
               targetRef:
@@ -5176,7 +5303,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -5687,7 +5814,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -5907,7 +6034,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6194,7 +6321,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -6620,7 +6747,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6692,7 +6819,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -6861,6 +6988,63 @@ spec:
                   - targetRef
                   type: object
                 type: array
+              rules:
+                description: |-
+                  Rules defines inbound tls configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound tls
+                      properties:
+                        mode:
+                          description: Mode defines the behavior of inbound listeners
+                            with regard to traffic encryption.
+                          enum:
+                          - Permissive
+                          - Strict
+                          type: string
+                        tlsCiphers:
+                          description: TlsCiphers section for providing ciphers specification.
+                          items:
+                            enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                            type: string
+                          type: array
+                        tlsVersion:
+                          description: Version section for providing version specification.
+                          properties:
+                            max:
+                              default: TLSAuto
+                              description: Max defines maximum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                            min:
+                              default: TLSAuto
+                              description: Min defines minimum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                          type: object
+                      type: object
+                  type: object
+                type: array
               targetRef:
                 description: |-
                   TargetRef is a reference to the resource the policy takes an effect on.
@@ -6935,7 +7119,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7221,7 +7405,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7428,7 +7612,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -7478,7 +7662,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -7528,7 +7712,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -7578,7 +7762,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -7628,7 +7812,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -7678,7 +7862,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -7728,7 +7912,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7778,7 +7962,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -7828,7 +8012,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -7878,7 +8062,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -7928,7 +8112,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -7978,7 +8162,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -8036,7 +8220,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8086,7 +8270,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -8144,7 +8328,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8195,7 +8379,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -8245,7 +8429,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -8295,7 +8479,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -8345,7 +8529,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -8395,7 +8579,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -8469,7 +8653,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -9187,7 +9371,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -10319,7 +10503,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 616b727bd1b67ceea8bc4899363416678c5146bc0cffb826466e084da4a2a808
+        checksum/tls-secrets: 27eaaaa811fc2eed212bbcd5e84e09074d6da6742b4c89a96a33cce0fefd7ecb
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -10993,31 +11177,6 @@ webhooks:
           - meshservices
     
       
-    sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

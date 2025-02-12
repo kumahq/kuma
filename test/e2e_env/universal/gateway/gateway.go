@@ -31,7 +31,7 @@ func Gateway() {
 		setup := NewClusterSetup().
 			Install(MeshUniversal(mesh)).
 			Install(GatewayClientAppUniversal("gateway-client")).
-			Install(echoServerApp(mesh, "echo-server", "echo-service", "universal")).
+			Install(EchoServerApp(mesh, "echo-server", "echo-service", "universal")).
 			Install(GatewayProxyUniversal(mesh, "gateway-proxy")).
 			Install(YamlUniversal(MkGateway("gateway-proxy", mesh, "gateway-proxy", false, "example.kuma.io", "echo-service", gatewayPort))).
 			Install(GatewayProxyUniversal(mesh, "second-gateway-proxy")).
@@ -97,22 +97,26 @@ networking:
 			Expect(universal.Cluster.Install(TrafficPermissionUniversal(mesh))).To(Succeed())
 			Expect(
 				universal.Cluster.Install(YamlUniversal(fmt.Sprintf(`
-type: MeshGatewayRoute
-mesh: %s
+type: MeshHTTPRoute
 name: external-routes
-selectors:
-- match:
-    kuma.io/service: gateway-proxy
-conf:
-  http:
+mesh: %s
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: gateway-proxy
+  to:
+  - targetRef:
+      kind: Mesh
     rules:
     - matches:
       - path:
-          match: PREFIX
-          value: /external
-      backends:
-      - destination:
-          kuma.io/service: external-echo
+          type: PathPrefix
+          value: "/external"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: external-echo
+          weight: 100
 `, mesh))),
 			).To(Succeed())
 		})

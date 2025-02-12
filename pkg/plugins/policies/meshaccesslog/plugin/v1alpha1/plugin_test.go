@@ -750,6 +750,19 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 8080}: {
+						{Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/from-log",
+									},
+								}},
+							},
+						}},
+					},
+				},
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "127.0.0.1", Port: 8080}: {
