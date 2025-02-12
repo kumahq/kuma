@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -91,8 +92,8 @@ func (n *networkFilterModificator) patch(chain *envoy_listener.FilterChain, filt
 			var merged *anypb.Any
 			var err error
 
-			if len(n.JsonPatches) > 0 {
-				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), n.JsonPatches)
+			if len(pointer.Deref(n.JsonPatches)) > 0 {
+				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(n.JsonPatches))
 			} else {
 				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
 			}
@@ -129,10 +130,10 @@ func (n *networkFilterModificator) listenerMatches(resource *core_xds.Resource) 
 	if n.Match.Origin != nil && *n.Match.Origin != resource.Origin {
 		return false
 	}
-	if len(n.Match.ListenerTags) > 0 {
+	if len(pointer.Deref(n.Match.ListenerTags)) > 0 {
 		if listenerProto, ok := resource.Resource.(*envoy_listener.Listener); ok {
 			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
-			if !mesh_proto.TagSelector(n.Match.ListenerTags).Matches(listenerTags) {
+			if !mesh_proto.TagSelector(pointer.Deref(n.Match.ListenerTags)).Matches(listenerTags) {
 				return false
 			}
 		}

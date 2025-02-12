@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -38,8 +39,8 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) error {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
-			if len(l.JsonPatches) > 0 {
-				if err := jsonpatch.MergeJsonPatch(listener.Resource, l.JsonPatches); err != nil {
+			if len(pointer.Deref(l.JsonPatches)) > 0 {
+				if err := jsonpatch.MergeJsonPatch(listener.Resource, pointer.Deref(l.JsonPatches)); err != nil {
 					return err
 				}
 
@@ -79,10 +80,10 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	if l.Match.Origin != nil && *l.Match.Origin != listener.Origin {
 		return false
 	}
-	if len(l.Match.Tags) > 0 {
+	if len(pointer.Deref(l.Match.Tags)) > 0 {
 		if listenerProto, ok := listener.Resource.(*envoy_listener.Listener); ok {
 			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
-			if !mesh_proto.TagSelector(l.Match.Tags).Matches(listenerTags) {
+			if !mesh_proto.TagSelector(pointer.Deref(l.Match.Tags)).Matches(listenerTags) {
 				return false
 			}
 		}

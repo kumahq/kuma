@@ -81,7 +81,7 @@ func applyToOutboundPassthrough(
 
 	if conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
 		removeDefaultPassthroughCluster(rs)
-		if len(conf.AppendMatch) > 0 {
+		if len(pointer.Deref(conf.AppendMatch)) > 0 {
 			configurer := xds.Configurer{
 				APIVersion: proxy.APIVersion,
 				Conf:       conf,

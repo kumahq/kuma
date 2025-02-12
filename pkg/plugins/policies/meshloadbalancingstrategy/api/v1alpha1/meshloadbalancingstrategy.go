@@ -65,7 +65,7 @@ type AffinityTag struct {
 
 type CrossZone struct {
 	// Failover defines list of load balancing rules in order of priority
-	Failover []Failover `json:"failover,omitempty"`
+	Failover *[]Failover `json:"failover,omitempty"`
 	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
 	// next priority starts.
 	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.

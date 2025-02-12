@@ -105,7 +105,7 @@ type LocalTCP struct {
 type Rate struct {
 	// Number of units per interval (depending on usage it can be a number of requests,
 	// or a number of connections).
-	Num uint32 `json:"num"`
+	Num *uint32 `json:"num,omitempty"`
 	// The interval the number of units is accounted for.
 	Interval k8s.Duration `json:"interval"`
 }

@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -37,8 +38,8 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) error {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
-			if len(c.JsonPatches) > 0 {
-				if err := jsonpatch.MergeJsonPatch(cluster.Resource, c.JsonPatches); err != nil {
+			if len(pointer.Deref(c.JsonPatches)) > 0 {
+				if err := jsonpatch.MergeJsonPatch(cluster.Resource, pointer.Deref(c.JsonPatches)); err != nil {
 					return err
 				}
 

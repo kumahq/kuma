@@ -20,7 +20,8 @@ type MeshProxyPatch struct {
 
 type Conf struct {
 	// AppendModifications is a list of modifications applied on the selected proxy.
-	AppendModifications []Modification `json:"appendModifications"`
+	// todo: this had validation len > 0
+	AppendModifications *[]Modification `json:"appendModifications"`
 }
 
 type Modification struct {
@@ -75,7 +76,7 @@ type ClusterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Cluster
 	// resource
-	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
+	JsonPatches *[]common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // ClusterMatch is a set of conditions on cluster resource.
@@ -110,7 +111,7 @@ type ListenerMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's Listener
 	// resource
-	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
+	JsonPatches *[]common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // ListenerMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -133,7 +134,7 @@ type ListenerMatch struct {
 	// Name of the listener to match.
 	Name *string `json:"name,omitempty"`
 	// Tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags *map[string]string `json:"tags,omitempty"`
 }
 
 // NetworkFilterMod is a modification of Envoy Listener's filter.
@@ -147,7 +148,7 @@ type NetworkFilterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy Listener's
 	// filter.
-	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
+	JsonPatches *[]common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // NetworkFilterMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -172,7 +173,7 @@ type NetworkFilterMatch struct {
 	// Name of the listener to match.
 	ListenerName *string `json:"listenerName,omitempty"`
 	// Listener tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
-	ListenerTags map[string]string `json:"listenerTags,omitempty"`
+	ListenerTags *map[string]string `json:"listenerTags,omitempty"`
 }
 
 // HTTPFilterMod is a modification of Envoy HTTP Filter
@@ -187,7 +188,7 @@ type HTTPFilterMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
 	// HTTP Filter available in HTTP Connection Manager in a Listener resource.
-	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
+	JsonPatches *[]common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // HTTPFilterMatch is a set of conditions that have to be matched for modification operation to happen.
@@ -212,7 +213,7 @@ type HTTPFilterMatch struct {
 	// Name of the listener to match.
 	ListenerName *string `json:"listenerName,omitempty"`
 	// Listener tags available in Listener#Metadata#FilterMetadata[io.kuma.tags]
-	ListenerTags map[string]string `json:"listenerTags,omitempty"`
+	ListenerTags *map[string]string `json:"listenerTags,omitempty"`
 }
 
 // VirtualHostMod is a modification of Envoy's VirtualHost
@@ -227,7 +228,7 @@ type VirtualHostMod struct {
 	Value *string `json:"value,omitempty"`
 	// JsonPatches specifies list of jsonpatches to apply to on Envoy's
 	// VirtualHost resource
-	JsonPatches []common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
+	JsonPatches *[]common_api.JsonPatchBlock `json:"jsonPatches,omitempty"`
 }
 
 // VirtualHostMatch is a set of conditions that have to be matched for modification operation to happen.

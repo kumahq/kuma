@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 )
 
@@ -14,7 +15,7 @@ func (x *To) GetDefault() interface{} {
 	slices.Reverse(reversed)
 	return PolicyDefault{
 		Rules:     reversed,
-		Hostnames: x.Hostnames,
+		Hostnames: pointer.Deref(x.Hostnames),
 	}
 }
 

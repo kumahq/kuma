@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -40,7 +41,7 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, _ xds_context.Context, proxy *co
 	}
 	rule := policies.SingleItemRules.Rules.Compute(subsetutils.MeshElement())
 	conf := rule.Conf.(api.Conf)
-	if err := ApplyMods(rs, conf.AppendModifications); err != nil {
+	if err := ApplyMods(rs, pointer.Deref(conf.AppendModifications)); err != nil {
 		return err
 	}
 	return nil

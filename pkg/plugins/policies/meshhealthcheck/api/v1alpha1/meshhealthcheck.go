@@ -140,9 +140,9 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Set []HeaderKeyValue `json:"set,omitempty"`
+	Set *[]HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Add []HeaderKeyValue `json:"add,omitempty"`
+	Add *[]HeaderKeyValue `json:"add,omitempty"`
 }

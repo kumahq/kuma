@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -79,8 +80,8 @@ func (c *virtualHostModificator) applyHCMModification(hcm *envoy_hcm.HttpConnect
 func (c *virtualHostModificator) patch(routeCfg *envoy_route.RouteConfiguration, vHostPatch *envoy_route.VirtualHost) error {
 	for _, vHost := range routeCfg.VirtualHosts {
 		if c.virtualHostMatches(vHost) {
-			if len(c.JsonPatches) > 0 {
-				if err := jsonpatch.MergeJsonPatch(vHost, c.JsonPatches); err != nil {
+			if len(pointer.Deref(c.JsonPatches)) > 0 {
+				if err := jsonpatch.MergeJsonPatch(vHost, pointer.Deref(c.JsonPatches)); err != nil {
 					return err
 				}
 
