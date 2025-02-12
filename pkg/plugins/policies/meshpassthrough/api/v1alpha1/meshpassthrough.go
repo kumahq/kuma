@@ -30,7 +30,7 @@ type PassthroughMode string
 // +kubebuilder:validation:Enum=Domain;IP;CIDR
 type MatchType string
 
-// +kubebuilder:validation:Enum=tcp;tls;grpc;http;http2
+// +kubebuilder:validation:Enum=tcp;tls;grpc;http;http2;mysql
 type ProtocolType string
 
 const (
@@ -39,6 +39,7 @@ const (
 	GrpcProtocol  ProtocolType = "grpc"
 	HttpProtocol  ProtocolType = "http"
 	Http2Protocol ProtocolType = "http2"
+	MysqlProtocol ProtocolType = "mysql"
 )
 
 type Match struct {
@@ -48,7 +49,7 @@ type Match struct {
 	Value string `json:"value,omitempty"`
 	// Port defines the port to which a user makes a request.
 	Port *uint32 `json:"port,omitempty"`
-	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
+	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`, `mysql`.
 	// +kubebuilder:default=tcp
 	Protocol ProtocolType `json:"protocol,omitempty"`
 }

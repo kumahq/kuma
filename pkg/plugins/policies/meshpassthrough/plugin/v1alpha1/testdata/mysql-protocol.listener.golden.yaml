@@ -8,26 +8,55 @@ resources:
         portValue: 15001
     filterChains:
     - filterChainMatch:
-        destinationPort: 80
+        destinationPort: 3306
         prefixRanges:
-        - addressPrefix: 192.168.0.0
+        - addressPrefix: 172.12.2.2
           prefixLen: 32
-        transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_tcp_192.168.0.0_80
-          statPrefix: meshpassthrough_tcp_192_168_0_0_80
-      name: meshpassthrough_tcp_192.168.0.0_80
+          cluster: meshpassthrough_tcp_172.12.2.2_3306
+          statPrefix: meshpassthrough_tcp_172_12_2_2_3306
+      name: meshpassthrough_tcp_172.12.2.2_3306
+    - filterChainMatch:
+        destinationPort: 3307
+        prefixRanges:
+        - addressPrefix: 172.12.2.0
+          prefixLen: 24
+      filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: meshpassthrough_tcp_172.12.2.2/24_3307
+          statPrefix: meshpassthrough_tcp_172_12_2_2_24_3307
+      name: meshpassthrough_tcp_172.12.2.2/24_3307
     listenerFilters:
     - name: envoy.filters.listener.original_dst
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst
-    - name: envoy.filters.listener.tls_inspector
+    - filterDisabled:
+        orMatch:
+          rules:
+          - destinationPortRange:
+              end: 3307
+              start: 3306
+          - destinationPortRange:
+              end: 3308
+              start: 3307
+      name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    - name: envoy.filters.listener.http_inspector
+    - filterDisabled:
+        orMatch:
+          rules:
+          - destinationPortRange:
+              end: 3307
+              start: 3306
+          - destinationPortRange:
+              end: 3308
+              start: 3307
+      name: envoy.filters.listener.http_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
     name: outbound:passthrough:ipv4

@@ -38,7 +38,7 @@ func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clus
 
 func (c FilterChainConfigurer) addFilterChainConfiguration(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
 	switch c.Protocol {
-	case core_mesh.ProtocolTCP:
+	case core_mesh.ProtocolTCP, core_mesh.ProtocolMysql:
 		if err := c.configureTcpFilterChain(listener, clustersAccumulator); err != nil {
 			return err
 		}
@@ -155,8 +155,10 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
-		Configure(xds_listeners.TCPProxy(clusterName, split)).
-		Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
+		Configure(xds_listeners.TCPProxy(clusterName, split))
+	if c.Protocol != core_mesh.ProtocolMysql {
+		filterChainBuilder.Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
+	}
 	c.configureAddressMatch(filterChainBuilder)
 	if c.Port != 0 {
 		filterChainBuilder.

@@ -74,12 +74,12 @@ func applyToOutboundPassthrough(
 		// add clusters because they were not added in TransparentProxyGenerator
 		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
 	}
-	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("All") {
+	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == api.PassthroughMode("All") {
 		// clusters were added in TransparentProxyGenerator, do nothing
 		return nil
 	}
 
-	if conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
+	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
 		removeDefaultPassthroughCluster(rs)
 		if len(conf.AppendMatch) > 0 {
 			configurer := xds.Configurer{
