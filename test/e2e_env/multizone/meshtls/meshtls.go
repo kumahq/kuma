@@ -74,10 +74,8 @@ name: mesh-tls-policy
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         tlsVersion:
           min: TLS13
           max: TLS13`, meshName)

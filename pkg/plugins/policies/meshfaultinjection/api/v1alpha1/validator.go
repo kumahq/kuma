@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -55,7 +57,8 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
 		return verr
 	}
 	for idx, fromItem := range from {

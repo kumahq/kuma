@@ -1,0 +1,33 @@
+type: MeshAccessLog
+name: mt-1
+mesh: envoyconfig-builtingateway
+labels:
+  kuma.io/effect: shadow
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes:
+      - Gateway
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        backends:
+          - type: File
+            file:
+              path: "/dev/stdout"
+              format:
+                type: Json
+                json:
+                  - key: Source
+                    value: '%%KUMA_SOURCE_SERVICE%%'
+                  - key: Destination
+                    value: '%%KUMA_DESTINATION_SERVICE%%'
+                  - key: Start
+                    value: '%%START_TIME(%%s)%%'
+                  - key: HeaderCamel
+                    value: '%%REQ(X-Test)%%'
+                  - key: HeaderLower
+                    value: '%%REQ(x-test)%%'
+                  - key: HeaderCrazy
+                    value: '%%REQ(X-TeSt)%%'

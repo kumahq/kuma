@@ -164,12 +164,8 @@ func ConfigureRouteAction(
 	}
 }
 
-func ConfigureGatewayListener(
-	conf *api.Conf,
-	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	listener *envoy_listener.Listener,
-) error {
-	if listener == nil || conf == nil {
+func ConfigureGatewayListener(conf api.Conf, protocol mesh_proto.MeshGateway_Listener_Protocol, listener *envoy_listener.Listener) error {
+	if listener == nil {
 		return nil
 	}
 
@@ -178,7 +174,7 @@ func ConfigureGatewayListener(
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 		}
 		hcm.CommonHttpProtocolOptions.IdleTimeout = toProtoDurationOrDefault(
-			pointer.Deref(conf).IdleTimeout,
+			conf.IdleTimeout,
 			policies_defaults.DefaultGatewayIdleTimeout,
 		)
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
@@ -195,9 +191,7 @@ func ConfigureGatewayListener(
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf != nil {
-			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
-		}
+		proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
 		return nil
 	}
 	for _, filterChain := range listener.FilterChains {

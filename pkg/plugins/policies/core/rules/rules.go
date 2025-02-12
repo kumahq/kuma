@@ -97,6 +97,8 @@ type GatewayToRules struct {
 type GatewayRules struct {
 	ToRules   GatewayToRules
 	FromRules map[InboundListener]Rules
+	// InboundRules is a map of InboundListener to a list of inbound rules built by using 'spec.rules' field.
+	InboundRules map[InboundListener][]*inbound.Rule
 }
 
 type SingleItemRules struct {
@@ -287,7 +289,8 @@ func BuildGatewayRules(
 			ByListenerAndHostname: toRulesByListenerHostname,
 			ByListener:            toRulesByInbound,
 		},
-		FromRules: fromRules.Rules,
+		FromRules:    fromRules.Rules,
+		InboundRules: fromRules.InboundRules,
 	}, nil
 }
 

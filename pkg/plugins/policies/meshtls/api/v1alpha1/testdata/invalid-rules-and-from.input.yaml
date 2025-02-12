@@ -1,0 +1,22 @@
+targetRef:
+  kind: Dataplane
+  labels:
+    app: demo
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      tlsVersion:
+        min: TLS15
+        max: TLS16
+      tlsCiphers:
+        - "NotExistingCipher"
+      mode: Strict
+rules:
+  - default:
+      tlsVersion:
+        min: TLS15
+        max: TLS16
+      tlsCiphers:
+        - "NotExistingCipher"
+      mode: Strict

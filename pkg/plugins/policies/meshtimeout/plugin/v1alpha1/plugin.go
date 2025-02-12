@@ -183,9 +183,9 @@ func applyToGateway(
 			Port:    listenerInfo.Listener.Port,
 		}
 
-		conf := getConf(gatewayRules.FromRules[key], subsetutils.MeshElement())
+		inboundConf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](gatewayRules.InboundRules[key])
 		if err := plugin_xds.ConfigureGatewayListener(
-			conf,
+			inboundConf,
 			listenerInfo.Listener.Protocol,
 			gatewayListeners[key],
 		); err != nil {
@@ -197,7 +197,7 @@ func applyToGateway(
 			continue
 		}
 
-		conf = getConf(toRules.Rules, subsetutils.MeshElement())
+		conf := getConf(toRules.Rules, subsetutils.MeshElement())
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
 			route, ok := gatewayRoutes[listenerHostname.EnvoyRouteName(listenerInfo.Listener.EnvoyListenerName)]
 
