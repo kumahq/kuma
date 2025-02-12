@@ -782,6 +782,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -996,6 +998,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -2065,6 +2069,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -2739,6 +2745,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -3415,6 +3423,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -4878,6 +4888,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               rules:
@@ -5768,6 +5780,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -6272,6 +6286,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 minItems: 1
                 type: array
@@ -6451,6 +6467,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               rules:
@@ -6695,6 +6713,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -6944,6 +6964,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               rules:
@@ -7492,6 +7514,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               targetRef:
@@ -8696,6 +8720,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -8792,6 +8818,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -8883,6 +8911,7 @@ spec:
                       type: object
                   required:
                   - default
+                  - targetRef
                   type: object
                 type: array
               rules:
@@ -8926,6 +8955,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9022,6 +9053,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9157,6 +9190,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9253,6 +9288,8 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
+                                        description: the below optional is a temporary
+                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9344,6 +9381,7 @@ spec:
                       type: object
                   required:
                   - default
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -9710,6 +9748,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
               rules:
@@ -10330,6 +10370,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
