@@ -24,14 +24,15 @@ var YAML = &unmarshaler{
 	},
 	marshalFn: yaml.Marshal,
 }
+
 var JSON = &unmarshaler{
 	unmarshalFn: json.Unmarshal,
-	marshalFn: json.Marshal,
+	marshalFn:   json.Marshal,
 }
 
 type unmarshaler struct {
 	unmarshalFn func([]byte, interface{}) error
-	marshalFn func(v any) ([] byte, error)
+	marshalFn   func(v any) ([]byte, error)
 }
 
 type InvalidResourceError struct {
