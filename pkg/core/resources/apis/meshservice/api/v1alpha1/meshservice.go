@@ -39,6 +39,7 @@ const maxNameLength = 63
 type MeshService struct {
 	// State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
 	// It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
+	// +kubebuilder:default=Unavailable
 	State    State    `json:"state,omitempty"`
 	Selector Selector `json:"selector,omitempty"`
 	// +patchMergeKey=port

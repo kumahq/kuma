@@ -75,7 +75,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
 	defaultedBytes := bytes
-	if desc.IsPluginOriginated {
+	if desc.Schema != nil && desc.StructuralSchema != nil {
 		var err error
 		// desc.Schema is set only for new plugin originated policies
 		rawObj := map[string]interface{}{}
