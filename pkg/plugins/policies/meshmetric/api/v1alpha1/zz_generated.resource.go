@@ -27,6 +27,9 @@ func init() {
 	var schemaObject spec.Schema
 	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
 	if rawSchema != nil {
+		if err := yaml.Unmarshal(rawSchema, &schemaObject); err != nil {
+			panic(err)
+		}
 		rawJson, err := yaml.YAMLToJSON(rawSchema)
 		if err != nil {
 			panic(err)
