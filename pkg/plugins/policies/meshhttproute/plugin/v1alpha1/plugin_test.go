@@ -439,7 +439,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "http-route", Mesh: "default"},
 				Spec: &api.MeshHTTPRoute{
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
-					To: []api.To{
+					To: &[]api.To{
 						{
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.MeshExternalService,

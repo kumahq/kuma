@@ -105,7 +105,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
-		To:        tos,
+		To:        &tos,
 	}
 }
 

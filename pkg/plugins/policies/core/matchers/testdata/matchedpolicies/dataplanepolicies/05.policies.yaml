@@ -24,3 +24,9 @@ spec:
     - targetRef:
         kind: MeshService
         name: test-server
+      rules:
+        - matches:
+            - path:
+                type: Exact
+                value: /
+          default: { }

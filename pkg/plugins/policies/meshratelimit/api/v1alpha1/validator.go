@@ -16,14 +16,14 @@ import (
 func (r *MeshRateLimitResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateRules(topLevel, r.Spec.Rules))
-	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
-	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
+	verr.AddErrorAt(path, validateRules(topLevel, pointer.Deref(r.Spec.Rules)))
+	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
+	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 

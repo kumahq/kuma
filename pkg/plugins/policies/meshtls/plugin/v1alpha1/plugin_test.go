@@ -109,7 +109,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(policy.Spec.From))).
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From)))).
 				Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -209,7 +209,7 @@ var _ = Describe("MeshTLS", func() {
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithSecretsTracker(secretsTracker).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(policy.Spec.From)).
+					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(pointer.Deref(policy.Spec.From))).
 					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, core_rules.GatewayRules{
 						ToRules: core_rules.GatewayToRules{
 							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
@@ -415,24 +415,24 @@ func getFromRules(froms []api.From) core_rules.FromRules {
 
 func getGatewayRules(froms []api.From) core_rules.GatewayRules {
 	var rules []*core_rules.Rule
+	var confs []interface{}
 
 	for _, from := range froms {
 		rules = append(rules, &core_rules.Rule{
 			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
+		confs = append(confs, from.Default)
 	}
 
 	return core_rules.GatewayRules{
 		FromRules: map[core_rules.InboundListener]core_rules.Rules{
-			{
-				Address: "127.0.0.1",
-				Port:    17777,
-			}: rules,
-			{
-				Address: "127.0.0.1",
-				Port:    17778,
-			}: rules,
+			{Address: "127.0.0.1", Port: 17777}: rules,
+			{Address: "127.0.0.1", Port: 17778}: rules,
+		},
+		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+			{Address: "127.0.0.1", Port: 17777}: {{Conf: confs}},
+			{Address: "127.0.0.1", Port: 17778}: {{Conf: confs}},
 		},
 	}
 }

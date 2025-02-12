@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -160,15 +159,12 @@ func applyToGateways(
 			continue
 		}
 		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf *api.Conf
-		for _, r := range gatewayRules.FromRules {
-			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
+		var conf api.Conf
+		for _, r := range gatewayRules.InboundRules {
+			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
 		}
-		if conf == nil {
-			continue
-		}
-		if err := configureParams(*conf, cluster); err != nil {
+		if err := configureParams(conf, cluster); err != nil {
 			return err
 		}
 	}

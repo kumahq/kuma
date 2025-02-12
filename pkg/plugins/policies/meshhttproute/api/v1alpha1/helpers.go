@@ -1,6 +1,8 @@
 package v1alpha1
 
-import "slices"
+import (
+	"slices"
+)
 
 type PolicyDefault struct {
 	Rules     []Rule   `json:"rules,omitempty" policyMerge:"mergeValuesByKey"`
