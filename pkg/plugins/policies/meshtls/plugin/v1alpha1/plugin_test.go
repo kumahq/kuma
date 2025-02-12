@@ -415,24 +415,24 @@ func getFromRules(froms []api.From) core_rules.FromRules {
 
 func getGatewayRules(froms []api.From) core_rules.GatewayRules {
 	var rules []*core_rules.Rule
+	var confs []interface{}
 
 	for _, from := range froms {
 		rules = append(rules, &core_rules.Rule{
 			Subset: subsetutils.Subset{},
 			Conf:   from.Default,
 		})
+		confs = append(confs, from.Default)
 	}
 
 	return core_rules.GatewayRules{
 		FromRules: map[core_rules.InboundListener]core_rules.Rules{
-			{
-				Address: "127.0.0.1",
-				Port:    17777,
-			}: rules,
-			{
-				Address: "127.0.0.1",
-				Port:    17778,
-			}: rules,
+			{Address: "127.0.0.1", Port: 17777}: rules,
+			{Address: "127.0.0.1", Port: 17778}: rules,
+		},
+		InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+			{Address: "127.0.0.1", Port: 17777}: {{Conf: confs}},
+			{Address: "127.0.0.1", Port: 17778}: {{Conf: confs}},
 		},
 	}
 }
