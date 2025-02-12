@@ -287,7 +287,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`,
+    message: at least one of 'from', 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
@@ -303,6 +303,44 @@ from:
 violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
+			}),
+			Entry("from mixed with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionLimits: { }
+rules:
+  - default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+  - field: spec
+    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+			}),
+			Entry("to mixed with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      connectionLimits: { }
+rules:
+  - default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+- field: spec
+  message: fields 'to' and 'from' must be empty when 'rules' is defined
+- field: spec.to[0].targetRef.kind
+  message: value is not supported`,
 			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `

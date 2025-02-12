@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -15,18 +16,16 @@ func Policy() {
 	meshName := "retry"
 	BeforeAll(func() {
 		err := NewClusterSetup().
-			Install(MeshUniversal(meshName)).
-			Install(DemoClientUniversal("demo-client", meshName, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "universal"}))).
+			Install(ResourceUniversal(samples.MeshDefaultBuilder().WithName(meshName).WithSkipCreatingInitialPolicies([]string{"*"}).Build())).
+			Install(DemoClientUniversal(
+				"demo-client-retry", meshName, WithTransparentProxy(true), WithServiceName("demo-client-retry"))).
+			Install(TestServerUniversal(
+				"test-server-retry", meshName, WithArgs([]string{"echo", "--instance", "universal"}), WithServiceName("test-server-retry")),
+			).
 			Install(TrafficRouteUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
-
-		// Delete the default meshretry policy
-		Eventually(func() error {
-			return universal.Cluster.GetKumactlOptions().RunKumactl("delete", "meshretry", "--mesh", meshName, "mesh-retry-all-"+meshName)
-		}).Should(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -38,6 +37,18 @@ func Policy() {
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
+	countResponseCodes := func(statusCode int) func(responses []client.FailureResponse) int {
+		return func(responses []client.FailureResponse) int {
+			count := 0
+			for _, r := range responses {
+				if r.ResponseCode == statusCode {
+					count++
+				}
+			}
+			return count
+		}
+	}
+
 	It("should retry on HTTP connection failure", func() {
 		fiPolicy := fmt.Sprintf(`
 type: FaultInjection
@@ -45,10 +56,10 @@ mesh: "%s"
 name: fi-retry
 sources:
    - match:
-       kuma.io/service: demo-client
+       kuma.io/service: demo-client-retry
 destinations:
    - match:
-       kuma.io/service: test-server
+       kuma.io/service: test-server-retry
        kuma.io/protocol: http
 conf:
    abort:
@@ -60,47 +71,61 @@ mesh: "%s"
 name: fake-retry-policy
 sources:
 - match:
-    kuma.io/service: demo-client
+    kuma.io/service: demo-client-retry
 destinations:
 - match:
-    kuma.io/service: test-server
+    kuma.io/service: test-server-retry
 conf:
   http:
     numRetries: 5
 `, meshName)
 
 		By("Checking requests succeed")
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+		// then
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				universal.Cluster,
+				"demo-client-retry",
+				"test-server-retry.mesh",
+				client.WithNumberOfRequests(100),
 			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "30s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(And(
+			HaveLen(100),
+			WithTransform(countResponseCodes(200), BeNumerically("==", 100)),
+		))
 
 		By("Adding a fault injection")
 		Expect(universal.Cluster.Install(YamlUniversal(fiPolicy))).To(Succeed())
 
 		By("Check some errors happen")
-		Eventually(func(g Gomega) {
-			response, err := client.CollectFailure(
-				universal.Cluster, "demo-client", "test-server.mesh",
-				client.NoFail(),
-				client.OutputFormat(`{ "received": { "status": %{response_code} } }`),
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				universal.Cluster,
+				"demo-client-retry",
+				"test-server-retry.mesh",
+				client.WithNumberOfRequests(100),
 			)
-
-			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(response.ResponseCode).To(Equal(500))
-		}, "30s", "100ms").Should(Succeed())
+		}, "30s", "5s").Should(And(
+			HaveLen(100),
+			WithTransform(countResponseCodes(500), BeNumerically("~", 50, 15)),
+			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 15)),
+		))
 
 		By("Apply a retry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(retryPolicy))).To(Succeed())
 
 		By("Eventually all requests succeed consistently")
-		Eventually(func(g Gomega) {
-			_, err := client.CollectEchoResponse(
-				universal.Cluster, "demo-client", "test-server.mesh",
+		// then
+		Eventually(func() ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				universal.Cluster,
+				"demo-client-retry",
+				"test-server-retry.mesh",
+				client.WithNumberOfRequests(100),
 			)
-			g.Expect(err).ToNot(HaveOccurred())
-		}, "60s", "1s").MustPassRepeatedly(3).Should(Succeed())
+		}, "30s", "5s").Should(And(
+			HaveLen(100),
+			ContainElements(HaveField("ResponseCode", 200)),
+		))
 	})
 }

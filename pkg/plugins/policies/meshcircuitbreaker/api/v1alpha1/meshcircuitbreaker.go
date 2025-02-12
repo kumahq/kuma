@@ -9,6 +9,7 @@ import (
 )
 
 // MeshCircuitBreaker
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshCircuitBreaker struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
@@ -21,6 +22,15 @@ type MeshCircuitBreaker struct {
 
 	// From list makes a match between clients and corresponding configurations
 	From *[]From `json:"from,omitempty"`
+
+	// Rules defines inbound circuit breaker configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	Rules *[]Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound circuit breaker
+	Default Conf `json:"default,omitempty"`
 }
 
 type To struct {

@@ -41,6 +41,49 @@ FromRules:
       name: gateway
       type: MeshAccessLog
     Subset: []
+InboundRules:
+  127.0.0.1:8080:
+  - conf:
+    - backends:
+      - file:
+          path: /from-gateway
+        type: File
+    origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: gateway
+        type: MeshAccessLog
+      RuleIndex: 0
+  127.0.0.1:8081:
+  - conf:
+    - backends:
+      - file:
+          path: /from-gateway
+        type: File
+    origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: gateway
+        type: MeshAccessLog
+      RuleIndex: 0
+  127.0.0.1:8082:
+  - conf:
+    - backends:
+      - file:
+          path: /from-gateway
+        type: File
+    origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: gateway
+        type: MeshAccessLog
+      RuleIndex: 0
 ToRules:
   ByListener:
     127.0.0.1:8080:
