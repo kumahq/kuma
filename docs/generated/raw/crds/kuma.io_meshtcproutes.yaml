@@ -276,6 +276,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1

@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (t *MeshLoadBalancingStrategyResource) Deprecations() []string {
-	deprecations := validateHashPoliciesType(t.Spec.To)
+	deprecations := validateHashPoliciesType(pointer.Deref(t.Spec.To))
 	deprecations = append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
 	return deprecations
 }

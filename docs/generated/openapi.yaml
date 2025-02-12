@@ -3255,6 +3255,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3299,6 +3302,9 @@ components:
                                         type: string
                                       value:
                                         type: string
+                                    required:
+                                      - key
+                                      - value
                                     type: object
                                   type: array
                                 body:
@@ -3355,6 +3361,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3468,6 +3477,7 @@ components:
                         type: object
                     type: object
                 required:
+                  - default
                   - targetRef
                 type: object
               type: array
@@ -3512,6 +3522,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3556,6 +3569,9 @@ components:
                                         type: string
                                       value:
                                         type: string
+                                    required:
+                                      - key
+                                      - value
                                     type: object
                                   type: array
                                 body:
@@ -3612,6 +3628,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3644,6 +3663,8 @@ components:
                           type: object
                         type: array
                     type: object
+                required:
+                  - default
                 type: object
               type: array
             targetRef:
@@ -3767,6 +3788,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3811,6 +3835,9 @@ components:
                                         type: string
                                       value:
                                         type: string
+                                    required:
+                                      - key
+                                      - value
                                     type: object
                                   type: array
                                 body:
@@ -3867,6 +3894,9 @@ components:
                                             type: string
                                           value:
                                             type: string
+                                        required:
+                                          - key
+                                          - value
                                         type: object
                                       type: array
                                     omitEmptyValues:
@@ -3980,6 +4010,7 @@ components:
                         type: object
                     type: object
                 required:
+                  - default
                   - targetRef
                 type: object
               type: array
@@ -7502,6 +7533,9 @@ components:
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
                     type: object
+                required:
+                  - rules
+                  - targetRef
                 type: object
               type: array
           type: object
@@ -11270,6 +11304,7 @@ components:
                         type: object
                     type: object
                 required:
+                  - rules
                   - targetRef
                 type: object
               minItems: 1

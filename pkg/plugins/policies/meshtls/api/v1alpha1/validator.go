@@ -15,12 +15,12 @@ func (r *MeshTLSResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(r.Spec.Rules) > 0 && len(r.Spec.From) > 0 {
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && len(pointer.Deref(r.Spec.From)) > 0 {
 		verr.AddViolationAt(path, "field 'from' must be empty when 'rules' is defined")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh, UsesSyntacticSugar: true})
-	verr.AddErrorAt(path.Field("rules"), validateRules(r.Spec.Rules, topLevel.Kind))
-	verr.AddErrorAt(path.Field("from"), validateFrom(r.Spec.From, topLevel.Kind))
+	verr.AddErrorAt(path.Field("rules"), validateRules(pointer.Deref(r.Spec.Rules), topLevel.Kind))
+	verr.AddErrorAt(path.Field("from"), validateFrom(pointer.Deref(r.Spec.From), topLevel.Kind))
 	return verr.OrNil()
 }
 

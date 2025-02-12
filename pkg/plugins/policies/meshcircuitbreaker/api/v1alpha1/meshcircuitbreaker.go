@@ -18,14 +18,14 @@ type MeshCircuitBreaker struct {
 
 	// To list makes a match between the consumed services and corresponding
 	// configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 
 	// Rules defines inbound circuit breaker configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
