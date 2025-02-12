@@ -2746,6 +2746,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 type: array
@@ -5271,6 +5272,8 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -6287,6 +6290,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1
@@ -8720,8 +8724,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -8818,8 +8820,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -8955,8 +8955,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9053,8 +9051,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9190,8 +9186,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -9288,8 +9282,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
