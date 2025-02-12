@@ -13,7 +13,8 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
-	"k8s.io/kube-openapi/pkg/validation/spec"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -23,12 +24,9 @@ var rawSchema []byte
 
 func init() {
 	var structuralSchema *schema.Structural
-	var schemaObject spec.Schema
 	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
+	var validator *validate.SchemaValidator
 	if rawSchema != nil {
-		if err := yaml.Unmarshal(rawSchema, &schemaObject); err != nil {
-			panic(err)
-		}
 		rawJson, err := yaml.YAMLToJSON(rawSchema)
 		if err != nil {
 			panic(err)
@@ -45,9 +43,11 @@ func init() {
 		if err != nil {
 			panic(err)
 		}
+		schemaObject := structuralSchema.ToKubeOpenAPI()
+		validator = validate.NewSchemaValidator(schemaObject, nil, "", strfmt.Default)
 	}
 	rawSchema = nil
-	DoNothingPolicyResourceTypeDescriptor.Schema = &schemaObject
+	DoNothingPolicyResourceTypeDescriptor.Validator = validator
 	DoNothingPolicyResourceTypeDescriptor.StructuralSchema = structuralSchema
 }
 

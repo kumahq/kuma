@@ -3,19 +3,18 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 	"reflect"
 	"strings"
 	"time"
-
-	"github.com/pkg/errors"
-	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
-	"k8s.io/kube-openapi/pkg/validation/spec"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 )
 
 const (
@@ -195,8 +194,8 @@ type ResourceTypeDescriptor struct {
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
-	// Schema contains an unmarshalled OpenAPI schema of the resource
-	Schema *spec.Schema
+	// Validator contains an OpenAPI validator for this resource
+	Validator *validate.SchemaValidator
 	// StructuralSchema contains an unmarshalled OpenAPI schema of the resource
 	StructuralSchema *schema.Structural
 	// Insight contains the insight type attached to this resourceType

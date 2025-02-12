@@ -8,7 +8,6 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
-	"k8s.io/kube-openapi/pkg/validation/strfmt"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
@@ -75,7 +74,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
 	defaultedBytes := bytes
-	if desc.Schema != nil && desc.StructuralSchema != nil {
+	if desc.Validator != nil && desc.StructuralSchema != nil {
 		var err error
 		// desc.Schema is set only for new plugin originated policies
 		rawObj := map[string]interface{}{}
@@ -87,8 +86,7 @@ func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescri
 		// Apply defaulting
 		defaulting.Default(rawObj, desc.StructuralSchema)
 
-		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
-		res := validator.Validate(rawObj)
+		res := desc.Validator.Validate(rawObj)
 		if !res.IsValid() {
 			return nil, toValidationError(res)
 		}
