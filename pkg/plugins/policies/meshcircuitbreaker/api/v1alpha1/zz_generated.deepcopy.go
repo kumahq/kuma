@@ -284,9 +284,13 @@ func (in *MeshCircuitBreaker) DeepCopyInto(out *MeshCircuitBreaker) {
 	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = make([]Rule, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Rule)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Rule, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

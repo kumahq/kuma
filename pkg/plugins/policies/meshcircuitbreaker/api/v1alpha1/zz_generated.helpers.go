@@ -55,8 +55,8 @@ func (x *Rule) GetDefault() interface{} {
 
 func (x *MeshCircuitBreaker) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
-	for i := range x.Rules {
-		item := x.Rules[i]
+	for _, itm := range pointer.Deref(x.Rules) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
