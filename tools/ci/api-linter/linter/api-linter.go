@@ -91,7 +91,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			continue
 		}
 		fieldName = field.Names[0].Name
-		if fieldName == "Conf" {
+		if fieldName == "Default" {
 			isMergeable = true
 		}
 		fieldPath := parentPath + "." + fieldName
@@ -120,7 +120,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
 				namedStruct := findStructByName(pass, elemIdent.Name)
 				if namedStruct != nil {
-					analyzeStructFields(pass, namedStruct, fieldPath+"[]", isMergeable)
+					analyzeStructFields(pass, namedStruct, fieldPath+"[]", false)
 				}
 			}
 		}
