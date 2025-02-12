@@ -43,7 +43,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
@@ -65,7 +65,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefService("web")),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
@@ -164,7 +164,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
@@ -189,7 +189,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
@@ -260,7 +260,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
@@ -337,7 +337,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
-							TargetRef: pointer.To(builders.TargetRefService("backend")),
+							TargetRef: builders.TargetRefService("backend"),
 							Rules: &[]api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{

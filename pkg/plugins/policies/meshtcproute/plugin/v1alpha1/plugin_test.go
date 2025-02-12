@@ -114,7 +114,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									TargetRef: pointer.To(builders.TargetRefMesh()),
 									To: &[]api.To{
 										{
-											TargetRef: pointer.To(builders.TargetRefService("backend")),
+											TargetRef: builders.TargetRefService("backend"),
 										},
 									},
 								},
@@ -128,7 +128,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									TargetRef: pointer.To(builders.TargetRefService("web")),
 									To: &[]api.To{
 										{
-											TargetRef: pointer.To(builders.TargetRefService("backend")),
+											TargetRef: builders.TargetRefService("backend"),
 											Rules: &[]api.Rule{
 												{
 													Default: api.RuleConf{
