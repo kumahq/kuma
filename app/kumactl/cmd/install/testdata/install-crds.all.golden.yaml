@@ -5965,13 +5965,15 @@ spec:
                         protocol:
                           default: tcp
                           description: 'Protocol defines the communication protocol.
-                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`,
+                            `mysql`.'
                           enum:
                           - tcp
                           - tls
                           - grpc
                           - http
                           - http2
+                          - mysql
                           type: string
                         type:
                           description: Type of the match, one of `Domain`, `IP` or
