@@ -132,6 +132,40 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	}
 }
 
+// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway to not change order of inbounds
+// generated for gateway, as we pick first to take tags from. Delegated gateway identity relies on this.
+// TODO: We should revisit this when we rework identity
+func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+	for _, svc := range services {
+		// Services of ExternalName type should not have any selectors.
+		// Kubernetes does not validate this, so in rare cases, a service of
+		// ExternalName type could point to a workload inside the mesh. If this
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
+		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
+			ifaces = append(ifaces, inboundForService(zone, pod, svc, nodeLabels)...)
+		}
+	}
+
+	if len(ifaces) == 0 {
+		name, _, err := i.NameExtractor.Name(ctx, pod)
+		if err != nil {
+			return nil, err
+		}
+
+		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
+	}
+
+	return ifaces, nil
+}
+
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 	if err != nil {

@@ -11,3 +11,4 @@ spec:
     - protocol: TCP
       appProtocol: http
       port: 80
+      targetPort: 8000
