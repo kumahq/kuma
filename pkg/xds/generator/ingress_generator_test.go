@@ -880,7 +880,7 @@ var _ = Describe("IngressGenerator", func() {
 											Name: "frontend",
 										},
 										To: &[]meshtcproute_api.To{{
-											TargetRef: &common_api.TargetRef{
+											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},

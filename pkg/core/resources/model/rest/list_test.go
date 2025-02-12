@@ -324,25 +324,25 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: "backend"},
 				From: &[]policies_api.From{
 					{
-						TargetRef: &common_api.TargetRef{Kind: "Mesh"},
+						TargetRef: common_api.TargetRef{Kind: "Mesh"},
 						Default: policies_api.Conf{
 							Action: pointer.To[policies_api.Action]("Allow"),
 						},
 					},
 					{
-						TargetRef: &common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
+						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
 						Default: policies_api.Conf{
 							Action: pointer.To[policies_api.Action]("Deny"),
 						},
 					},
 					{
-						TargetRef: &common_api.TargetRef{Kind: "MeshService", Name: "backend"},
+						TargetRef: common_api.TargetRef{Kind: "MeshService", Name: "backend"},
 						Default: policies_api.Conf{
 							Action: pointer.To[policies_api.Action]("AllowWithShadowDeny"),
 						},
 					},
 					{
-						TargetRef: &common_api.TargetRef{Kind: "MeshServiceSubset", Name: "backend", Tags: map[string]string{"version": "v1"}},
+						TargetRef: common_api.TargetRef{Kind: "MeshServiceSubset", Name: "backend", Tags: map[string]string{"version": "v1"}},
 						Default: policies_api.Conf{
 							Action: pointer.To[policies_api.Action]("Deny"),
 						},
@@ -358,7 +358,7 @@ var _ = Describe("Unmarshal ResourceList", func() {
 				TargetRef: &common_api.TargetRef{Kind: "Mesh"},
 				From: &[]policies_api.From{
 					{
-						TargetRef: &common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
+						TargetRef: common_api.TargetRef{Kind: "MeshSubset", Tags: map[string]string{"kuma.io/zone": "us-east"}},
 						Default: policies_api.Conf{
 							Action: pointer.To[policies_api.Action]("Deny"),
 						},

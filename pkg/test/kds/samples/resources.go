@@ -381,7 +381,7 @@ var (
 		},
 		From: &[]meshtrafficpermissions.From{
 			{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: common_api.TargetRef{
 					Kind: "Mesh",
 				},
 				Default: meshtrafficpermissions.Conf{
@@ -396,7 +396,7 @@ var (
 		},
 		From: &[]meshaccesslog.From{
 			{
-				TargetRef: &common_api.TargetRef{
+				TargetRef: common_api.TargetRef{
 					Kind: "Mesh",
 				},
 				Default: meshaccesslog.Conf{

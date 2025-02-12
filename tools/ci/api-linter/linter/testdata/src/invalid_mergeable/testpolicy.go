@@ -6,11 +6,11 @@ type TestPolicy struct {
 }
 
 type Conf struct {
-    MissingOmitEmpty *string `json:"missing_omit"` // want "field TestPolicy.Conf.MissingOmitEmpty does not match any allowed non-mergeable category"
+    MissingOmitEmpty *string `json:"missing_omit"` // want "mergeable field TestPolicy.Conf.MissingOmitEmpty must have 'omitempty' in JSON tag"
 
-    InvalidList []string `json:"invalid_list,omitempty"` // want "field TestPolicy.Conf.InvalidList does not match any allowed non-mergeable category"
+    InvalidList []string `json:"invalid_list,omitempty"` // want "mergeable field TestPolicy.Conf.InvalidList must be a pointer"
 
-    InvalidListNoOmitEmpty *[]string `json:"invalid_list_no_omit"` // want "field TestPolicy.Conf.InvalidListNoOmitEmpty does not match any allowed non-mergeable category"
+    InvalidListNoOmitEmpty *[]string `json:"invalid_list_no_omit"` // want "mergeable field TestPolicy.Conf.InvalidListNoOmitEmpty must have 'omitempty' in JSON tag"
 
     A, B int // want "field must have exactly one name"
     NestedType // want "field must have exactly one name"

@@ -66,7 +66,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return true
 			}
 
-			analyzeStructFields(pass, structType, typeSpec.Name.Name, "", false)
+			analyzeStructFields(pass, structType, typeSpec.Name.Name, false)
 
 			return false
 		})
@@ -83,7 +83,7 @@ func shouldExcludeResource(name string, rules map[string]func(string, string) bo
 	return false
 }
 
-func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string, isMergeable bool) {
+func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parentPath string, isMergeable bool) {
 	for _, field := range structType.Fields.List {
 		fieldName := ""
 		if len(field.Names) != 1 {
@@ -91,14 +91,10 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 			continue
 		}
 		fieldName = field.Names[0].Name
-
-		// Correctly append field names to the path
-		var fieldPath string
-		if parentPath == "" {
-			fieldPath = structName + "." + fieldName
-		} else {
-			fieldPath = parentPath + "." + fieldName
+		if fieldName == "Conf" {
+			isMergeable = true
 		}
+		fieldPath := parentPath + "." + fieldName
 
 		if *debugLog {
 			fmt.Println("DEBUG: Analyzing field", fieldPath)
@@ -114,7 +110,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 		if ident, ok := baseType.(*ast.Ident); ok {
 			namedStruct := findStructByName(pass, ident.Name)
 			if namedStruct != nil {
-				analyzeStructFields(pass, namedStruct, ident.Name, fieldPath, isMergeable)
+				analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
 				continue
 			}
 		}
@@ -124,7 +120,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, struct
 			if elemIdent, ok := arrayType.Elt.(*ast.Ident); ok {
 				namedStruct := findStructByName(pass, elemIdent.Name)
 				if namedStruct != nil {
-					analyzeStructFields(pass, namedStruct, elemIdent.Name, fieldPath+"[]", isMergeable)
+					analyzeStructFields(pass, namedStruct, fieldPath+"[]", isMergeable)
 				}
 			}
 		}
