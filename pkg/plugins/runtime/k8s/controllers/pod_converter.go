@@ -313,10 +313,23 @@ func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName stri
 	if err != nil {
 		return nil, err
 	}
+	iface, err := pickNonEmptyPort(interfaces)
+	if err != nil {
+		return nil, err
+	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
+		Tags: iface.Tags,
 	}, nil
+}
+
+func pickNonEmptyPort(interfaces []*mesh_proto.Dataplane_Networking_Inbound) (*mesh_proto.Dataplane_Networking_Inbound, error) {
+	for _, i := range interfaces {
+		if i.Port != 0 {
+			return i, nil
+		}
+	}
+	return nil, errors.New("failed to find non empty port for gateway inbound interfaces")
 }
 
 func (p *PodConverter) GatewayByDeploymentFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {

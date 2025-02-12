@@ -8,3 +8,6 @@ spec:
       appProtocol: http
       port: 443
       targetPort: 8443
+    - protocol: TCP
+      appProtocol: http
+      port: 80
