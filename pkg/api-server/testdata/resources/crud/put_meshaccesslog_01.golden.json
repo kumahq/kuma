@@ -1,0 +1,37 @@
+{
+ "type": "MeshAccessLog",
+ "mesh": "default",
+ "name": "my-access-log",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "labels": {
+  "kuma.io/env": "universal",
+  "kuma.io/mesh": "default",
+  "kuma.io/origin": "zone",
+  "kuma.io/zone": "default"
+ },
+ "spec": {
+  "to": [
+   {
+    "targetRef": {
+     "kind": "Mesh"
+    },
+    "default": {
+     "backends": [
+      {
+       "type": "File",
+       "file": {
+        "format": {
+         "type": "Plain",
+         "plain": "[%START_TIME%] %KUMA_SOURCE_SERVICE% -> %KUMA_DESTINATION_SERVICE%",
+         "omitEmptyValues": false
+        },
+        "path": "/var/log/mesh_access.log"
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}
