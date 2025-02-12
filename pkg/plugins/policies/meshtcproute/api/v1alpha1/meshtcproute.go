@@ -44,7 +44,7 @@ type MeshTCPRoute struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
 	// +kubebuilder:validation:MaxItems=1

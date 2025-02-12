@@ -55,7 +55,7 @@ func validateFrom(from []From, topLevelTargetRef common_api.TargetRefKind) valid
 	for idx, fromItem := range from {
 		path := fromPath.Index(idx)
 
-		targetRefErr := mesh.ValidateTargetRef(pointer.Deref(fromItem.TargetRef), &mesh.ValidateTargetRefOpts{
+		targetRefErr := mesh.ValidateTargetRef(fromItem.TargetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 			},

@@ -32,7 +32,7 @@ type Rule struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
 	Default Conf `json:"default"`
@@ -41,7 +41,7 @@ type To struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// clients.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
 	Default Conf `json:"default"`
@@ -121,6 +121,7 @@ type Format struct {
 	Plain *string `json:"plain,omitempty"`
 	// +kubebuilder:example={{key: "start_time", value: "%START_TIME%"},{key: "bytes_received", value: "%BYTES_RECEIVED%"}}
 	Json *[]JsonValue `json:"json,omitempty"`
+	// the below optional is a temporary workaround
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
 	OmitEmptyValues bool `json:"omitEmptyValues"`

@@ -20,6 +20,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -250,15 +251,13 @@ func (c *Configurer) otelAccessLog(
 	}
 
 	attributes := otlp.KeyValueList{}
-	if backend.Attributes != nil {
-		for _, kv := range *backend.Attributes {
-			attributes.Values = append(attributes.Values, &otlp.KeyValue{
-				Key: kv.Key,
-				Value: &otlp.AnyValue{
-					Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
-				},
-			})
-		}
+	for _, kv := range pointer.Deref(backend.Attributes) {
+		attributes.Values = append(attributes.Values, &otlp.KeyValue{
+			Key: kv.Key,
+			Value: &otlp.AnyValue{
+				Value: &otlp.AnyValue_StringValue{StringValue: kv.Value},
+			},
+		})
 	}
 
 	log := &access_loggers_otel.OpenTelemetryAccessLogConfig{

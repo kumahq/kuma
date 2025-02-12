@@ -60,6 +60,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -154,6 +155,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -244,6 +246,7 @@ properties:
               type: object
           required:
             - default
+            - targetRef
           type: object
         type: array
       rules:
@@ -285,6 +288,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -379,6 +383,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -511,6 +516,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -605,6 +611,7 @@ properties:
                                 type: array
                               omitEmptyValues:
                                 default: false
+                                description: the below optional is a temporary workaround
                                 type: boolean
                               plain:
                                 example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -695,6 +702,7 @@ properties:
               type: object
           required:
             - default
+            - targetRef
           type: object
         type: array
     type: object

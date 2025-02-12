@@ -15,7 +15,7 @@ func (x *MeshHealthCheck) GetTargetRef() common_api.TargetRef {
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 
 func (x *To) GetDefault() interface{} {

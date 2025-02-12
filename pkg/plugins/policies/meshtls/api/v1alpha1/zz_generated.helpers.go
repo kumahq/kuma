@@ -16,7 +16,7 @@ func (x *MeshTLS) GetTargetRef() common_api.TargetRef {
 }
 
 func (x *From) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 
 func (x *From) GetDefault() interface{} {

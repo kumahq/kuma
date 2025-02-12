@@ -79,7 +79,7 @@ func validateTo(to []To, topLevelKind common_api.TargetRef) validators.Validatio
 		verr.AddErrorAt(
 			path.Field("targetRef"),
 			mesh.ValidateTargetRef(
-				pointer.Deref(toItem.TargetRef),
+				toItem.TargetRef,
 				&mesh.ValidateTargetRefOpts{SupportedKinds: supportedKinds},
 			),
 		)

@@ -25,7 +25,7 @@ type MeshFaultInjection struct {
 type From struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`
@@ -34,7 +34,7 @@ type From struct {
 type To struct {
 	// TargetRef is a reference to the resource that represents a group of
 	// destinations.
-	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
+	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
 	Default Conf `json:"default,omitempty"`

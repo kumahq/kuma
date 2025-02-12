@@ -15,7 +15,7 @@ func (x *MeshFaultInjection) GetTargetRef() common_api.TargetRef {
 }
 
 func (x *From) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 
 func (x *From) GetDefault() interface{} {
@@ -32,7 +32,7 @@ func (x *MeshFaultInjection) GetFromList() []core_model.PolicyItem {
 }
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 
 func (x *To) GetDefault() interface{} {

@@ -346,11 +346,7 @@ func (in *To) DeepCopyInto(out *To) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.TargetRef != nil {
-		in, out := &in.TargetRef, &out.TargetRef
-		*out = new(commonv1alpha1.TargetRef)
-		(*in).DeepCopyInto(*out)
-	}
+	in.TargetRef.DeepCopyInto(&out.TargetRef)
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
 		*out = new([]Rule)

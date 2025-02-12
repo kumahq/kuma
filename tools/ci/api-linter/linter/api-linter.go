@@ -54,15 +54,15 @@ func run(pass *analysis.Pass) (interface{}, error) {
 				return true
 			}
 
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				return true
+			}
+
 			if strings.ToLower(typeSpec.Name.String()) != fileNameWithoutExtension {
 				if *debugLog {
 					fmt.Println("DEBUG: Skipping type", typeSpec.Name.String(), "in file", fileNameWithoutExtension)
 				}
-				return true
-			}
-
-			structType, ok := typeSpec.Type.(*ast.StructType)
-			if !ok {
 				return true
 			}
 
@@ -86,9 +86,11 @@ func shouldExcludeResource(name string, rules map[string]func(string, string) bo
 func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, structName string, parentPath string, isMergeable bool) {
 	for _, field := range structType.Fields.List {
 		fieldName := ""
-		if len(field.Names) > 0 {
-			fieldName = field.Names[0].Name
+		if len(field.Names) != 1 {
+			pass.Reportf(field.Pos(), "field must have exactly one name")
+			continue
 		}
+		fieldName = field.Names[0].Name
 
 		// Correctly append field names to the path
 		var fieldPath string

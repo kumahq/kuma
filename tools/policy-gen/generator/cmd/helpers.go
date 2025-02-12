@@ -70,7 +70,7 @@ func (x *{{.name}}) GetTargetRef() common_api.TargetRef {
 {{ if .generateFrom }}
 
 func (x *From) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 {{ if not .skipGetDefault }}
 
@@ -91,7 +91,7 @@ func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
 {{ if .generateTo }}
 
 func (x *To) GetTargetRef() common_api.TargetRef {
-	return pointer.Deref(x.TargetRef)
+	return x.TargetRef
 }
 {{ if not .skipGetDefault }}
 

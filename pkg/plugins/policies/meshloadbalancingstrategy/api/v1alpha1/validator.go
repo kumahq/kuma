@@ -67,7 +67,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 				common_api.MeshMultiZoneService,
 			}
 		}
-		errs := mesh.ValidateTargetRef(pointer.Deref(toItem.TargetRef), &mesh.ValidateTargetRefOpts{
+		errs := mesh.ValidateTargetRef(toItem.TargetRef, &mesh.ValidateTargetRefOpts{
 			SupportedKinds:      supportedKinds,
 			SupportedKindsError: supportedKindsError,
 		})
