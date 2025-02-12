@@ -3,6 +3,7 @@ Rules:
   Conf:
     backends:
     - datadog:
+        splitService: false
         url: http://ingest.datadoghq.eu:8126
       type: Datadog
     tags:
