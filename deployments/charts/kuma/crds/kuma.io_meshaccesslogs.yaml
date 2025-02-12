@@ -90,8 +90,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -188,8 +186,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -325,8 +321,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -423,8 +417,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -560,8 +552,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
@@ -658,8 +648,6 @@ spec:
                                         type: array
                                       omitEmptyValues:
                                         default: false
-                                        description: the below optional is a temporary
-                                          workaround
                                         type: boolean
                                       plain:
                                         example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'

@@ -44,7 +44,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -66,7 +66,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefService("web")),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -165,7 +165,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -190,7 +190,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -261,7 +261,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,
@@ -338,7 +338,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 						TargetRef: pointer.To(builders.TargetRefMesh()),
 						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
-							Rules: &[]api.Rule{{
+							Rules: []api.Rule{{
 								Matches: []api.Match{{
 									Path: &api.PathMatch{
 										Type:  api.PathPrefix,

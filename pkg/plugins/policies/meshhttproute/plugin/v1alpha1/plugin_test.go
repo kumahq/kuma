@@ -445,7 +445,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Kind: common_api.MeshExternalService,
 								Name: "example",
 							},
-							Rules: &[]api.Rule{
+							Rules: []api.Rule{
 								{
 									Matches: []api.Match{{
 										Path: &api.PathMatch{

@@ -695,7 +695,7 @@ var _ = Describe("IngressGenerator", func() {
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},
-											Rules: &[]meshhttproute_api.Rule{{
+											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
 													Path: &meshhttproute_api.PathMatch{
 														Type:  meshhttproute_api.PathPrefix,
@@ -789,7 +789,7 @@ var _ = Describe("IngressGenerator", func() {
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},
-											Rules: &[]meshhttproute_api.Rule{{
+											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
 													Path: &meshhttproute_api.PathMatch{
 														Type:  meshhttproute_api.PathPrefix,
@@ -884,7 +884,7 @@ var _ = Describe("IngressGenerator", func() {
 												Kind: common_api.MeshService,
 												Name: "backend",
 											},
-											Rules: &[]meshtcproute_api.Rule{{
+											Rules: []meshtcproute_api.Rule{{
 												Default: meshtcproute_api.RuleConf{
 													BackendRefs: []common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{

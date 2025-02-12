@@ -349,13 +349,9 @@ func (in *To) DeepCopyInto(out *To) {
 	in.TargetRef.DeepCopyInto(&out.TargetRef)
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = new([]Rule)
-		if **in != nil {
-			in, out := *in, *out
-			*out = make([]Rule, len(*in))
-			for i := range *in {
-				(*in)[i].DeepCopyInto(&(*out)[i])
-			}
+		*out = make([]Rule, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }

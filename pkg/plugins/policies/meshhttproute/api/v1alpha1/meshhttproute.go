@@ -39,7 +39,7 @@ type To struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Rules contains the routing rules applies to a combination of top-level
 	// targetRef and the targetRef in this entry.
-	Rules *[]Rule `json:"rules,omitempty"`
+	Rules []Rule `json:"rules"`
 }
 
 type Rule struct {

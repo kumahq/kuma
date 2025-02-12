@@ -2,8 +2,6 @@ package v1alpha1
 
 import (
 	"slices"
-
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type PolicyDefault struct {
@@ -12,7 +10,7 @@ type PolicyDefault struct {
 }
 
 func (x *To) GetDefault() interface{} {
-	reversed := slices.Clone(pointer.Deref(x.Rules))
+	reversed := slices.Clone(x.Rules)
 	slices.Reverse(reversed)
 	return PolicyDefault{
 		Rules:     reversed,

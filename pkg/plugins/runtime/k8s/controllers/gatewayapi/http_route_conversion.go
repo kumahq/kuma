@@ -99,7 +99,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 				Kind: common_api.MeshService,
 				Name: serviceName,
 			},
-			Rules: &rules,
+			Rules: rules,
 		})
 	}
 

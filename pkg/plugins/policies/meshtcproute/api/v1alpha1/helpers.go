@@ -6,7 +6,7 @@ import (
 )
 
 func (x *To) GetDefault() interface{} {
-	if len(pointer.Deref(x.Rules)) == 0 {
+	if len(x.Rules) == 0 {
 		return Rule{
 			Default: RuleConf{
 				BackendRefs: []common_api.BackendRef{{
@@ -17,5 +17,5 @@ func (x *To) GetDefault() interface{} {
 		}
 	}
 
-	return pointer.Deref(x.Rules)[0]
+	return x.Rules[0]
 }

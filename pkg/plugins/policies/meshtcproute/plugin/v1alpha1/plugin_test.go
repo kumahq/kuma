@@ -129,7 +129,7 @@ var _ = Describe("MeshTCPRoute", func() {
 									To: &[]api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
-											Rules: &[]api.Rule{
+											Rules: []api.Rule{
 												{
 													Default: api.RuleConf{
 														BackendRefs: []common_api.BackendRef{

@@ -3262,9 +3262,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -3371,9 +3368,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -3535,9 +3529,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -3644,9 +3635,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -3807,9 +3795,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -3916,9 +3901,6 @@ components:
                                       type: array
                                     omitEmptyValues:
                                       default: false
-                                      description: >-
-                                        the below optional is a temporary
-                                        workaround
                                       type: boolean
                                     plain:
                                       example: >-
@@ -7552,6 +7534,7 @@ components:
                         type: object
                     type: object
                 required:
+                  - rules
                   - targetRef
                 type: object
               type: array
@@ -10318,6 +10301,8 @@ components:
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
                     type: object
+                required:
+                  - targetRef
                 type: object
               type: array
           type: object
@@ -11319,6 +11304,7 @@ components:
                         type: object
                     type: object
                 required:
+                  - rules
                   - targetRef
                 type: object
               minItems: 1

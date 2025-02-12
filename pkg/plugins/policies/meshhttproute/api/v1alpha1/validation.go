@@ -80,7 +80,7 @@ func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.Validat
 	for i, to := range tos {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
-		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, pointer.Deref(to.Rules)))
+		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
 		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
 	}
 

@@ -76,7 +76,7 @@ func validateTo(topTargetRef common_api.TargetRef, to []To) validators.Validatio
 		path := validators.RootedAt("to").Index(idx)
 
 		verr.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, toItem.TargetRef))
-		verr.AddErrorAt(path.Field("rules"), validateRules(pointer.Deref(toItem.Rules)))
+		verr.AddErrorAt(path.Field("rules"), validateRules(toItem.Rules))
 	}
 
 	return verr

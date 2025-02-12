@@ -319,7 +319,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
-		for _, mhrRule := range pointer.Deref(mhrRules.Rules) {
+		for _, mhrRule := range mhrRules.Rules {
 			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
 				var targetRef common_api.TargetRef
