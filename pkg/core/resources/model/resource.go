@@ -3,18 +3,19 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
-	"k8s.io/kube-openapi/pkg/validation/validate"
 	"reflect"
 	"strings"
 	"time"
+
+	"github.com/pkg/errors"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/pkg/errors"
-	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
 )
 
 const (
