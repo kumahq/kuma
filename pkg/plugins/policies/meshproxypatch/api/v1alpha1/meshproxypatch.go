@@ -20,7 +20,6 @@ type MeshProxyPatch struct {
 
 type Conf struct {
 	// AppendModifications is a list of modifications applied on the selected proxy.
-	// todo: this had validation len > 0
 	AppendModifications *[]Modification `json:"appendModifications,omitempty"`
 }
 

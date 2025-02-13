@@ -52,6 +52,8 @@ func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) err
 	}
 
 	switch redirect.StatusCode {
+	case 0: // code default, should be handled by "base policy"
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_FOUND
 	case 301:
 		envoyRedirect.ResponseCode = envoy_route.RedirectAction_MOVED_PERMANENTLY
 	case 302:

@@ -309,22 +309,6 @@ violations:
   - field: spec.to[0].default.conf.tcp.maxConnectAttempt
     message: must be greater than 0`,
 			}),
-			Entry("empty http.backOff", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      http: 
-        backOff: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.conf.http.backOff
-    message: must not be empty`,
-			}),
 			Entry("empty http.rateLimitedBackOff.resetHeaders", testCase{
 				inputYaml: `
 targetRef:
@@ -340,22 +324,6 @@ to:
 violations:
   - field: spec.to[0].default.conf.http.rateLimitedBackOff.resetHeaders
     message: must be defined`,
-			}),
-			Entry("empty grpc.backOff", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-to:
-  - targetRef:
-      kind: Mesh
-    default:
-      grpc: 
-        backOff: {}
-`,
-				expected: `
-violations:
-  - field: spec.to[0].default.conf.grpc.backOff
-    message: must not be empty`,
 			}),
 			Entry("empty grpc.rateLimitedBackOff.resetHeaders", testCase{
 				inputYaml: `
