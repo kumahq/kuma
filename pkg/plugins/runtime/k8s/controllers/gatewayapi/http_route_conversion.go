@@ -329,7 +329,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				Hostname:   (*v1alpha1.PreciseHostname)(redirect.Hostname),
 				Path:       path,
 				Port:       port,
-				StatusCode: redirect.StatusCode,
+				StatusCode: pointer.Deref(redirect.StatusCode),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterURLRewrite:

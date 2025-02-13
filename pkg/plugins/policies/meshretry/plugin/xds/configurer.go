@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	"math"
 	"net/http"
 	"strconv"
@@ -18,6 +17,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
