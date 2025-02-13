@@ -32,6 +32,7 @@ type Sidecar struct {
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
 	// least once). If true will scrape all metrics (even the ones with zeros).
+	// If not specified then the default value is false.
 	IncludeUnused *bool `json:"includeUnused,omitempty"`
 }
 

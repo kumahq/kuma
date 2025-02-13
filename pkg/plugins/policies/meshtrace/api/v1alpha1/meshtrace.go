@@ -114,17 +114,20 @@ type Sampling struct {
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 	// Either int or decimal represented as string.
+	// If not specified then the default value is 100.
 	Overall *intstr.IntOrString `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 	// Either int or decimal represented as string.
+	// If not specified then the default value is 100.
 	Client *intstr.IntOrString `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced.
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 	// Either int or decimal represented as string.
+	// If not specified then the default value is 100.
 	Random *intstr.IntOrString `json:"random,omitempty"`
 }
 

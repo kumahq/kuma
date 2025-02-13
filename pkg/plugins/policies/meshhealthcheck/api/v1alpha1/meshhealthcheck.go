@@ -31,13 +31,17 @@ type To struct {
 
 type Conf struct {
 	// Interval between consecutive health checks.
+	// If not specified then the default value is 1m
 	Interval *k8s.Duration `json:"interval,omitempty"`
 	// Maximum time to wait for a health check response.
+	// If not specified then the default value is 15s
 	Timeout *k8s.Duration `json:"timeout,omitempty"`
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
+	// If not specified then the default value is 5
 	UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
+	// If not specified then the default value is 1
 	HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
 	// If specified, Envoy will start health checking after a random time in
 	// ms between 0 and initialJitter. This only applies to the first health
@@ -104,6 +108,7 @@ type HttpHealthCheck struct {
 	Disabled *bool `json:"disabled,omitempty"`
 	// The HTTP path which will be requested during the health check
 	// (ie. /health)
+	// If not specified then the default value is "/"
 	Path *string `json:"path,omitempty"`
 	// The list of HTTP headers which should be added to each health check
 	// request
