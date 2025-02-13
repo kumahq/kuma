@@ -611,6 +611,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -707,6 +708,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -842,6 +844,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -938,6 +941,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -1073,6 +1077,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -1169,6 +1174,7 @@ spec:
                                         - Json
                                         type: string
                                     required:
+                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -3916,8 +3922,9 @@ spec:
                             Either int or decimal represented as string.
                           x-kubernetes-int-or-string: true
                         healthyThreshold:
-                          description: Number of consecutive healthy checks before
-                            considering a host healthy.
+                          description: |-
+                            Number of consecutive healthy checks before considering a host healthy.
+                            If not specified then the default value is 1
                           format: int32
                           type: integer
                         http:
@@ -3939,6 +3946,7 @@ spec:
                               description: |-
                                 The HTTP path which will be requested during the health check
                                 (ie. /health)
+                                If not specified then the default value is "/"
                               type: string
                             requestHeadersToAdd:
                               description: |-
@@ -3992,7 +4000,9 @@ spec:
                             check.
                           type: string
                         interval:
-                          description: Interval between consecutive health checks.
+                          description: |-
+                            Interval between consecutive health checks.
+                            If not specified then the default value is 1m
                           type: string
                         intervalJitter:
                           description: |-
@@ -4045,12 +4055,15 @@ spec:
                               type: string
                           type: object
                         timeout:
-                          description: Maximum time to wait for a health check response.
+                          description: |-
+                            Maximum time to wait for a health check response.
+                            If not specified then the default value is 15s
                           type: string
                         unhealthyThreshold:
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
                             unhealthy.
+                            If not specified then the default value is 5
                           format: int32
                           type: integer
                       type: object
@@ -4536,6 +4549,8 @@ spec:
                                           - 307
                                           - 308
                                           type: integer
+                                      required:
+                                      - statusCode
                                       type: object
                                     responseHeaderModifier:
                                       description: |-
@@ -5507,6 +5522,7 @@ spec:
                           format: int32
                           type: integer
                       required:
+                      - path
                       - port
                       type: object
                     type: array
@@ -5557,7 +5573,12 @@ spec:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                   type: string
+                              required:
+                              - mode
                               type: object
+                          required:
+                          - path
+                          - port
                           type: object
                         type:
                           description: Type of the backend that will be used to collect
@@ -5578,6 +5599,7 @@ spec:
                           IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                           at least once, gauges changed at least once, and histograms added to at
                           least once). If true will scrape all metrics (even the ones with zeros).
+                          If not specified then the default value is false.
                         type: boolean
                       profiles:
                         description: Profiles allows to customize which metrics are
@@ -6008,6 +6030,7 @@ spec:
                           description: Value for the specified Type.
                           type: string
                       required:
+                      - protocol
                       - type
                       - value
                       type: object
@@ -6016,6 +6039,7 @@ spec:
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
+                      If not specified then the default value is "Matched".
                     enum:
                     - All
                     - Matched
@@ -7411,6 +7435,7 @@ spec:
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                                    If not specified then the default value is "25ms".
                                   type: string
                                 maxInterval:
                                   description: |-
@@ -7436,8 +7461,9 @@ spec:
                                 the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries.
+                                  description: |-
+                                    MaxInterval is a maximal amount of time which will be taken between retries.
+                                    If not specified then the default value is "300s".
                                   type: string
                                 resetHeaders:
                                   description: |-
@@ -7497,6 +7523,7 @@ spec:
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                                    If not specified then the default value is "25ms".
                                   type: string
                                 maxInterval:
                                   description: |-
@@ -7533,7 +7560,7 @@ spec:
                                     type: integer
                                 required:
                                 - predicate
-                                - tags
+                                - updateFrequency
                                 type: object
                               type: array
                             hostSelectionMaxAttempts:
@@ -7563,8 +7590,9 @@ spec:
                                 when the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries.
+                                  description: |-
+                                    MaxInterval is a maximal amount of time which will be taken between retries.
+                                    If not specified then the default value is "300s".
                                   type: string
                                 resetHeaders:
                                   description: |-
@@ -8206,10 +8234,7 @@ spec:
                                       minimum: 0
                                       type: integer
                                   type: object
-                                minItems: 1
                                 type: array
-                            required:
-                            - backendRefs
                             type: object
                         required:
                         - default
@@ -9099,6 +9124,7 @@ spec:
                                 fragments etc.)
                               type: string
                           required:
+                          - splitService
                           - url
                           type: object
                         openTelemetry:
@@ -9145,6 +9171,9 @@ spec:
                               description: Address of Zipkin collector.
                               type: string
                           required:
+                          - apiVersion
+                          - sharedSpanContext
+                          - traceId128bit
                           - url
                           type: object
                       required:
@@ -9167,6 +9196,7 @@ spec:
                           'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                       overall:
                         anyOf:
@@ -9182,6 +9212,7 @@ spec:
                           overall_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                       random:
                         anyOf:
@@ -9193,6 +9224,7 @@ spec:
                           Mirror of random_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                     type: object
                   tags:
