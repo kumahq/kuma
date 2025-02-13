@@ -207,7 +207,9 @@ func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networki
 
 	inboundsPerName := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
 	for _, iface := range ifaces {
-		inboundsPerName[inboundKey(iface)] = iface
+		if inboundsPerName[inboundKey(iface)] == nil {
+			inboundsPerName[inboundKey(iface)] = iface
+		}
 	}
 	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
 	for _, v := range inboundsPerName {
