@@ -51,6 +51,8 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
       - uses: golangci/golangci-lint-action@051d91933864810ecd5e2ea2cfd98f6a5bca5347 # v6.3.2
         with:
           args: --fix=false --verbose
