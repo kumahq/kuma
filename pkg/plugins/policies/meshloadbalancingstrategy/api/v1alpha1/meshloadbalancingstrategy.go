@@ -123,6 +123,7 @@ const (
 )
 
 type LoadBalancer struct {
+	// +kuma:discriminator
 	Type LoadBalancerType `json:"type"`
 
 	// RoundRobin is a load balancing algorithm that distributes requests

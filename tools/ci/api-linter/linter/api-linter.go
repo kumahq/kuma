@@ -15,6 +15,7 @@ const (
 	defaultAnnotation = "+kubebuilder:default"
 	optionalAnnotation = "+kubebuilder:validation:Optional"
 	nonMergableAnotation = "+kuma:non-mergeable-struct"
+	discriminatorAnnotation = "+kuma:discriminator"
 )
 
 var eql = func(a, b string) bool { return a == b }
@@ -135,6 +136,9 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 
 		// Process the field normally
 		if isMergeable {
+			if isKumaDiscriminator(field) {
+				continue
+			}
 			if !isPointer(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must be a pointer", fieldPath)
 			}
@@ -179,18 +183,26 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 	return nil
 }
 
+func isKumaDiscriminator(field *ast.Field) bool {
+	hasKumaDiscriminator := hasRequiredAnnotations(field, discriminatorAnnotation)
+	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
+	hasOmitEmpty := hasOmitEmptyTag(field)
+	isPtr := isPointer(field)
+	return hasKumaDiscriminator && !isPtr && !hasDefaultAndOptional && !hasOmitEmpty
+}
+
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
-	hasDefault := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
+	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 
-	if isPtr && hasOmitEmpty && !hasDefault {
+	if isPtr && hasOmitEmpty && !hasDefaultAndOptional {
 		return "optional_without_default", true
 	}
-	if !isPtr && hasDefault && !hasOmitEmpty {
+	if !isPtr && hasDefaultAndOptional && !hasOmitEmpty {
 		return "optional_with_default", true
 	}
-	if !isPtr && !hasDefault && !hasOmitEmpty {
+	if !isPtr && !hasDefaultAndOptional && !hasOmitEmpty {
 		return "required", true
 	}
 	return "", false

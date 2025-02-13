@@ -92,7 +92,7 @@ func validateDefault(path validators.PathBuilder, conf Conf, topLevelTargetRef c
 	return verr
 }
 
-func containsAll(main []string, sub common_tls.TlsCiphers) bool {
+func containsAll(main []string, sub []common_tls.TlsCipher) bool {
 	elementMap := make(map[string]bool)
 
 	for _, element := range main {
