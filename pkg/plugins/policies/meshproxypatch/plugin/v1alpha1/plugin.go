@@ -1,7 +1,6 @@
 package v1alpha1
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -10,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 

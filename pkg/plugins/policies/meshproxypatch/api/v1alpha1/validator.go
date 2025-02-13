@@ -2,8 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"strings"
+
 
 	envoy_cluster_v3 "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -17,6 +17,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (

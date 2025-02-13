@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	defaultAnnotation = "+kubebuilder:default"
-	optionalAnnotation = "+kubebuilder:validation:Optional"
-	nonMergableAnotation = "+kuma:non-mergeable-struct"
+	defaultAnnotation       = "+kubebuilder:default"
+	optionalAnnotation      = "+kubebuilder:validation:Optional"
+	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
 )
 
@@ -208,7 +208,7 @@ func determineNonMergeableCategory(field *ast.Field) (string, bool) {
 	return "", false
 }
 
-func hasRequiredAnnotations(field *ast.Field, requiredAnnotations... string) bool {
+func hasRequiredAnnotations(field *ast.Field, requiredAnnotations ...string) bool {
 	if field.Doc == nil {
 		return false
 	}

@@ -3,9 +3,9 @@ package filters
 import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type RequestHeaderModifierConfigurer struct {

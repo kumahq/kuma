@@ -1,8 +1,8 @@
 package xds
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"strings"
+
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
@@ -10,6 +10,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
