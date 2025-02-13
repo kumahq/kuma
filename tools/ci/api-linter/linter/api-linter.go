@@ -13,6 +13,7 @@ import (
 
 const (
 	defaultAnnotation       = "+kubebuilder:default"
+	optionalAnnotation      = "+kubebuilder:validation:Optional"
 	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
 )
@@ -144,8 +145,8 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if !hasOmitEmptyTag(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
-			if hasRequiredAnnotations(field, defaultAnnotation) {
-				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation", fieldPath, defaultAnnotation)
+			if hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation) {
+				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
 			}
 		} else {
 			_, isValid := determineNonMergeableCategory(field)
@@ -184,17 +185,22 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 
 func isKumaDiscriminator(field *ast.Field) bool {
 	hasKumaDiscriminator := hasRequiredAnnotations(field, discriminatorAnnotation)
-	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation)
+	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 	return hasKumaDiscriminator && !isPtr && !hasDefaultAndOptional && !hasOmitEmpty
 }
 
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
-	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation)
+	hasDefault := hasRequiredAnnotations(field, defaultAnnotation)
+	hasOptional := hasRequiredAnnotations(field, optionalAnnotation)
+	hasDefaultAndOptional := hasDefault && hasOptional
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 
+	if hasDefault && !hasOptional {
+		return "missing_optional_annotation", false
+	}
 	if isPtr && hasOmitEmpty && !hasDefaultAndOptional {
 		return "optional_without_default", true
 	}
@@ -212,15 +218,13 @@ func hasRequiredAnnotations(field *ast.Field, requiredAnnotations ...string) boo
 		return false
 	}
 
-	for _, annotation := range requiredAnnotations {
-		found := false
-		for _, comment := range field.Doc.List {
-			if strings.Contains(comment.Text, annotation) {
-				found = true
-				break
-			}
-		}
-		if !found {
+	comments := ""
+	for _, line := range field.Doc.List {
+		comments += line.Text + "\n"
+	}
+
+	for _, requiredAnnotation := range requiredAnnotations {
+		if !strings.Contains(comments, requiredAnnotation) {
 			return false
 		}
 	}
