@@ -6737,6 +6737,8 @@ components:
                         description: >-
                           Number of consecutive healthy checks before
                           considering a host healthy.
+
+                          If not specified then the default value is 1
                         format: int32
                         type: integer
                       http:
@@ -6763,6 +6765,8 @@ components:
                               health check
 
                               (ie. /health)
+
+                              If not specified then the default value is "/"
                             type: string
                           requestHeadersToAdd:
                             description: >-
@@ -6822,7 +6826,9 @@ components:
                           check.
                         type: string
                       interval:
-                        description: Interval between consecutive health checks.
+                        description: |-
+                          Interval between consecutive health checks.
+                          If not specified then the default value is 1m
                         type: string
                       intervalJitter:
                         description: >-
@@ -6909,7 +6915,9 @@ components:
                             type: string
                         type: object
                       timeout:
-                        description: Maximum time to wait for a health check response.
+                        description: |-
+                          Maximum time to wait for a health check response.
+                          If not specified then the default value is 15s
                         type: string
                       unhealthyThreshold:
                         description: >-
@@ -6917,6 +6925,8 @@ components:
                           considering a host
 
                           unhealthy.
+
+                          If not specified then the default value is 5
                         format: int32
                         type: integer
                     type: object
@@ -8760,6 +8770,8 @@ components:
 
                         least once). If true will scrape all metrics (even the
                         ones with zeros).
+
+                        If not specified then the default value is false.
                       type: boolean
                     profiles:
                       description: >-
@@ -9032,6 +9044,8 @@ components:
                     `None`, `Matched`
 
                     When `All` or `None` `appendMatch` has no effect.
+
+                    If not specified then the default value is "Matched".
                   enum:
                     - All
                     - Matched
@@ -10754,6 +10768,9 @@ components:
 
                                   Must be greater than zero. Values less than 1
                                   ms are rounded up to 1 ms.
+
+                                  If not specified then the default value is
+                                  "25ms".
                                 type: string
                               maxInterval:
                                 description: >-
@@ -10795,6 +10812,9 @@ components:
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
+
+                                  If not specified then the default value is
+                                  "300s".
                                 type: string
                               resetHeaders:
                                 description: >-
@@ -10868,6 +10888,9 @@ components:
 
                                   Must be greater than zero. Values less than 1
                                   ms are rounded up to 1 ms.
+
+                                  If not specified then the default value is
+                                  "25ms".
                                 type: string
                               maxInterval:
                                 description: >-
@@ -10966,6 +10989,9 @@ components:
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
+
+                                  If not specified then the default value is
+                                  "300s".
                                 type: string
                               resetHeaders:
                                 description: >-
@@ -11487,10 +11513,7 @@ components:
                                     minimum: 0
                                     type: integer
                                 type: object
-                              minItems: 1
                               type: array
-                          required:
-                            - backendRefs
                           type: object
                       required:
                         - default
@@ -12701,6 +12724,8 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                     overall:
                       anyOf:
@@ -12728,6 +12753,8 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                     random:
                       anyOf:
@@ -12745,6 +12772,8 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                   type: object
                 tags:
