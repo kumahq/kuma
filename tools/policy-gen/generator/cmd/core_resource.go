@@ -46,7 +46,6 @@ package {{.Package}}
 
 import (
 	_ "embed"
-	"encoding/json"
 {{- if not .HasStatus }}
 	"errors"
 {{- end }}
@@ -70,17 +69,13 @@ var rawSchema []byte
 func init() {
 	var structuralSchema *schema.Structural
 	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
-	var validator *validate. SchemaValidator
+	var validator *validate.SchemaValidator
 	if rawSchema != nil {
-		rawJson, err := yaml.YAMLToJSON(rawSchema)
-		if err != nil {
-			panic(err)
-		}
-		if err := json.Unmarshal(rawJson, &v1JsonSchemaProps); err != nil {
+		if err := yaml.Unmarshal(rawSchema, &v1JsonSchemaProps); err != nil {
 			panic(err)
 		}
 		var jsonSchemaProps apiextensions.JSONSchemaProps
-		err = apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
+		err := apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
 		if err != nil {
 			panic(err)
 		}
