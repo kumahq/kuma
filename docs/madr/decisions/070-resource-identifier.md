@@ -81,7 +81,7 @@ $ curl http://localhost:9901/listeners\?format\=json
 
 #### [Issue #3249](https://github.com/kumahq/kuma/issues/3249): local envoy clusters should have a better name than localhost_<port> 
 
-Today local clusters have name `localhost:<port>` and in stats they're visible as `localhost_<port>`.
+Today inbound clusters have name `localhost:<port>` and in stats they're visible as `localhost_<port>`.
 That's not very informative.
 
 #### [Issue #12733](https://github.com/kumahq/kuma/issues/12733): Envoy statPrefix should not use ip addresses
