@@ -195,13 +195,13 @@ var _ = Describe("MeshHealthCheck", func() {
 								Disabled: pointer.To(false),
 								Path:     pointer.To("/health"),
 								RequestHeadersToAdd: &api.HeaderModifier{
-									Add: []api.HeaderKeyValue{
+									Add: &[]api.HeaderKeyValue{
 										{
 											Name:  "x-some-header",
 											Value: "value",
 										},
 									},
-									Set: []api.HeaderKeyValue{
+									Set: &[]api.HeaderKeyValue{
 										{
 											Name:  "x-some-other-header",
 											Value: "value",
@@ -530,13 +530,13 @@ var _ = Describe("MeshHealthCheck", func() {
 										Disabled: pointer.To(false),
 										Path:     pointer.To("/health"),
 										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-header",
 													Value: "value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-other-header",
 													Value: "value",
@@ -640,13 +640,13 @@ var _ = Describe("MeshHealthCheck", func() {
 										Disabled: pointer.To(false),
 										Path:     pointer.To("/health"),
 										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-header",
 													Value: "value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-other-header",
 													Value: "value",
@@ -751,13 +751,13 @@ var _ = Describe("MeshHealthCheck", func() {
 												Disabled: pointer.To(false),
 												Path:     pointer.To("/health"),
 												RequestHeadersToAdd: &api.HeaderModifier{
-													Add: []api.HeaderKeyValue{
+													Add: &[]api.HeaderKeyValue{
 														{
 															Name:  "x-some-header",
 															Value: "value",
 														},
 													},
-													Set: []api.HeaderKeyValue{
+													Set: &[]api.HeaderKeyValue{
 														{
 															Name:  "x-some-other-header",
 															Value: "value",
@@ -847,13 +847,13 @@ var _ = Describe("MeshHealthCheck", func() {
 										Disabled: pointer.To(false),
 										Path:     pointer.To("/health"),
 										RequestHeadersToAdd: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-header",
 													Value: "value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-some-other-header",
 													Value: "value",

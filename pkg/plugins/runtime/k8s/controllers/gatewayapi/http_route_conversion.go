@@ -210,7 +210,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 			Name:  common_api.HeaderName(strings.ToLower(string(gapiHeader.Name))),
 			Value: common_api.HeaderValue(gapiHeader.Value),
 		}
-		match.Headers = append(match.Headers, header)
+		match.Headers = pointer.To(append(pointer.Deref(match.Headers), header))
 	}
 
 	for _, gapiParam := range gapiMatch.QueryParams {
@@ -231,7 +231,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		default:
 			return v1alpha1.Match{}, false
 		}
-		match.QueryParams = append(match.QueryParams, param)
+		match.QueryParams = pointer.To(append(pointer.Deref(match.QueryParams), param))
 	}
 
 	if gapiMatch.Method != nil {
@@ -282,9 +282,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestHeaderModifierType,
 			RequestHeaderModifier: &v1alpha1.HeaderModifier{
-				Add:    fromGAPIHeaders(modifier.Add),
-				Set:    fromGAPIHeaders(modifier.Set),
-				Remove: modifier.Remove,
+				Add:    pointer.To(fromGAPIHeaders(modifier.Add)),
+				Set:    pointer.To(fromGAPIHeaders(modifier.Set)),
+				Remove: pointer.To(modifier.Remove),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier:
@@ -292,9 +292,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.ResponseHeaderModifierType,
 			ResponseHeaderModifier: &v1alpha1.HeaderModifier{
-				Add:    fromGAPIHeaders(modifier.Add),
-				Set:    fromGAPIHeaders(modifier.Set),
-				Remove: modifier.Remove,
+				Add:    pointer.To(fromGAPIHeaders(modifier.Add)),
+				Set:    pointer.To(fromGAPIHeaders(modifier.Set)),
+				Remove: pointer.To(modifier.Remove),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterRequestRedirect:

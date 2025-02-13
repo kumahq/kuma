@@ -8744,6 +8744,10 @@ components:
                       value:
                         description: Value for the specified Type.
                         type: string
+                    required:
+                      - protocol
+                      - type
+                      - value
                     type: object
                   type: array
                 passthroughMode:
@@ -8908,6 +8912,8 @@ components:
                   description: >-
                     AppendModifications is a list of modifications applied on
                     the selected proxy.
+
+                    todo: this had validation len > 0
                   items:
                     properties:
                       cluster:
@@ -9478,8 +9484,6 @@ components:
                         type: object
                     type: object
                   type: array
-              required:
-                - appendModifications
               type: object
             targetRef:
               description: >-
@@ -10640,6 +10644,8 @@ components:
                                   type: integer
                               required:
                                 - predicate
+                                - tags
+                                - updateFrequency
                               type: object
                             type: array
                           hostSelectionMaxAttempts:

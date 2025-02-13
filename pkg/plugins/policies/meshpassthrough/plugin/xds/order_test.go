@@ -31,7 +31,7 @@ var _ = Describe("Match order", func() {
 		},
 		Entry("many different protocols", validTestCase{
 			conf: api.Conf{
-				AppendMatch: []api.Match{
+				AppendMatch: &[]api.Match{
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
@@ -163,7 +163,7 @@ var _ = Describe("Match order", func() {
 		}),
 		Entry("different protocols on the same port but only one L7", validTestCase{
 			conf: api.Conf{
-				AppendMatch: []api.Match{
+				AppendMatch: &[]api.Match{
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "api.example.com",
@@ -257,7 +257,7 @@ var _ = Describe("Match order", func() {
 		},
 		Entry("many different protocols", invalidTestCase{
 			conf: api.Conf{
-				AppendMatch: []api.Match{
+				AppendMatch: &[]api.Match{
 					{
 						Type:     api.MatchType("Domain"),
 						Value:    "example.com",
