@@ -18,7 +18,6 @@ type MeshPassthrough struct {
 type Conf struct {
 	// Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
 	// When `All` or `None` `appendMatch` has no effect.
-	// +kubebuilder:default=None
 	PassthroughMode *PassthroughMode `json:"passthroughMode,omitempty"`
 	// AppendMatch is a list of destinations that should be allowed through the sidecar.
 	AppendMatch *[]Match `json:"appendMatch,omitempty"`

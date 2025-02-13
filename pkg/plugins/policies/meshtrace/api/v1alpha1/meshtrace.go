@@ -71,17 +71,17 @@ type ZipkinBackend struct {
 	Url string `json:"url"`
 	// Generate 128bit traces.
 	// +kubebuilder:default=false
-	TraceId128Bit *bool `json:"traceId128bit,omitempty"`
+	TraceId128Bit bool `json:"traceId128bit"`
 	// Version of the API.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
 	// +kubebuilder:default="httpJson"
 	// +kubebuilder:validation:Enum=httpJson;httpProto
-	ApiVersion *string `json:"apiVersion,omitempty"`
+	ApiVersion string `json:"apiVersion"`
 	// Determines whether client and server spans will share the same span
 	// context.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
 	// +kubebuilder:default=true
-	SharedSpanContext *bool `json:"sharedSpanContext,omitempty"`
+	SharedSpanContext bool `json:"sharedSpanContext"`
 }
 
 // Datadog tracing backend configuration.
@@ -96,7 +96,7 @@ type DatadogBackend struct {
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
 	// `backend_OUTBOUND_db2` in Datadog.
 	// +kubebuilder:default=false
-	SplitService *bool `json:"splitService,omitempty"`
+	SplitService bool `json:"splitService"`
 }
 
 // Sampling configuration.
@@ -110,20 +110,17 @@ type Sampling struct {
 	// overall_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 	// Either int or decimal represented as string.
-	// +kubebuilder:default=100
 	Overall *intstr.IntOrString `json:"overall,omitempty"`
 	// Target percentage of requests that will be force traced if the
 	// 'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 	// Either int or decimal represented as string.
-	// +kubebuilder:default=100
 	Client *intstr.IntOrString `json:"client,omitempty"`
 	// Target percentage of requests that will be randomly selected for trace
 	// generation, if not requested by the client or not forced.
 	// Mirror of random_sampling in Envoy
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 	// Either int or decimal represented as string.
-	// +kubebuilder:default=100
 	Random *intstr.IntOrString `json:"random,omitempty"`
 }
 

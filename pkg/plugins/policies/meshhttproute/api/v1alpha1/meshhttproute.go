@@ -174,7 +174,7 @@ type RequestRedirect struct {
 	//
 	// +kubebuilder:default=302
 	// +kubebuilder:validation:Enum=301;302;303;307;308
-	StatusCode *int `json:"statusCode,omitempty"`
+	StatusCode int `json:"statusCode"`
 }
 
 // +kubebuilder:validation:Enum=ReplaceFullPath;ReplacePrefixMatch

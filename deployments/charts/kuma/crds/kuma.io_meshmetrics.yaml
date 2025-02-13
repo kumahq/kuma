@@ -146,7 +146,6 @@ spec:
                     description: Sidecar metrics collection configuration
                     properties:
                       includeUnused:
-                        default: false
                         description: |-
                           IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                           at least once, gauges changed at least once, and histograms added to at

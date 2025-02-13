@@ -223,7 +223,6 @@ type GRPC struct {
 type BackOff struct {
 	// BaseInterval is an amount of time which should be taken between retries.
 	// Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
-	// +kubebuilder:default="25ms"
 	BaseInterval *k8s.Duration `json:"baseInterval,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 10 times the "BaseInterval".
@@ -237,7 +236,6 @@ type RateLimitedBackOff struct {
 	// If no headers match the default exponential BackOff is used instead.
 	ResetHeaders *[]ResetHeader `json:"resetHeaders,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
-	// +kubebuilder:default="300s"
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 

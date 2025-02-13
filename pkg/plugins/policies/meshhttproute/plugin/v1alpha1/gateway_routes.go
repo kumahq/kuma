@@ -278,7 +278,7 @@ func makeHttpRouteEntry(
 	for _, f := range pointer.Deref(rule.Default.Filters) {
 		if r := f.RequestRedirect; r != nil {
 			redirection := &route.Redirection{
-				Status:     uint32(pointer.DerefOr(r.StatusCode, 302)),
+				Status:     uint32(r.StatusCode),
 				Scheme:     pointer.Deref(r.Scheme),
 				Host:       string(pointer.Deref(r.Hostname)),
 				Port:       uint32(pointer.Deref(r.Port)),

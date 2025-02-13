@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	"math"
 	"net/http"
 	"strconv"
@@ -153,6 +154,9 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 
 		if conf.BackOff.BaseInterval != nil {
 			policy.RetryBackOff.BaseInterval = util_proto.Duration(conf.BackOff.BaseInterval.Duration)
+		} else {
+			// TODO: this should be handled by "base policy"
+			policy.RetryBackOff.BaseInterval = util_proto.Duration(mesh.DefaultBaseInterval.Duration)
 		}
 		if conf.BackOff.MaxInterval != nil {
 			policy.RetryBackOff.MaxInterval = util_proto.Duration(conf.BackOff.MaxInterval.Duration)

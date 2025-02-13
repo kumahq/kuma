@@ -102,7 +102,6 @@ properties:
                         backoff strategy between retries.
                       properties:
                         baseInterval:
-                          default: 25ms
                           description: |-
                             BaseInterval is an amount of time which should be taken between retries.
                             Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
@@ -112,6 +111,8 @@ properties:
                             MaxInterval is a maximal amount of time which will be taken between retries.
                             Default is 10 times the "BaseInterval".
                           type: string
+                      required:
+                        - baseInterval
                       type: object
                     numRetries:
                       description: |-
@@ -187,7 +188,6 @@ properties:
                         backoff strategy between retries.
                       properties:
                         baseInterval:
-                          default: 25ms
                           description: |-
                             BaseInterval is an amount of time which should be taken between retries.
                             Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
@@ -197,6 +197,8 @@ properties:
                             MaxInterval is a maximal amount of time which will be taken between retries.
                             Default is 10 times the "BaseInterval".
                           type: string
+                      required:
+                        - baseInterval
                       type: object
                     hostSelection:
                       description: |-

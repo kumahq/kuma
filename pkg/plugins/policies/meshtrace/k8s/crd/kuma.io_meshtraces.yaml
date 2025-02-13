@@ -81,6 +81,7 @@ spec:
                                 fragments etc.)
                               type: string
                           required:
+                          - splitService
                           - url
                           type: object
                         openTelemetry:
@@ -127,6 +128,9 @@ spec:
                               description: Address of Zipkin collector.
                               type: string
                           required:
+                          - apiVersion
+                          - sharedSpanContext
+                          - traceId128bit
                           - url
                           type: object
                       required:
@@ -144,7 +148,6 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests that will be force traced if the
                           'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
@@ -155,7 +158,6 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests will be traced
                           after all other sampling checks have been applied (client, force tracing,
@@ -171,7 +173,6 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests that will be randomly selected for trace
                           generation, if not requested by the client or not forced.

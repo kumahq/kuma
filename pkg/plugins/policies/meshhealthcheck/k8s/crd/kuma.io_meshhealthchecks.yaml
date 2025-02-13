@@ -169,7 +169,6 @@ spec:
                             Either int or decimal represented as string.
                           x-kubernetes-int-or-string: true
                         healthyThreshold:
-                          default: 1
                           description: Number of consecutive healthy checks before
                             considering a host healthy.
                           format: int32
@@ -190,7 +189,6 @@ spec:
                                 type: integer
                               type: array
                             path:
-                              default: /
                               description: |-
                                 The HTTP path which will be requested during the health check
                                 (ie. /health)
@@ -247,7 +245,6 @@ spec:
                             check.
                           type: string
                         interval:
-                          default: 1m
                           description: Interval between consecutive health checks.
                           type: string
                         intervalJitter:
@@ -301,11 +298,9 @@ spec:
                               type: string
                           type: object
                         timeout:
-                          default: 15s
                           description: Maximum time to wait for a health check response.
                           type: string
                         unhealthyThreshold:
-                          default: 5
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
                             unhealthy.

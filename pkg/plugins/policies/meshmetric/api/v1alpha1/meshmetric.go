@@ -32,7 +32,6 @@ type Sidecar struct {
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
 	// least once). If true will scrape all metrics (even the ones with zeros).
-	// +kubebuilder:default=false
 	IncludeUnused *bool `json:"includeUnused,omitempty"`
 }
 
@@ -83,7 +82,7 @@ type Application struct {
 	Name *string `json:"name,omitempty"`
 	// Path on which an application expose HTTP endpoint with metrics.
 	// +kubebuilder:default="/metrics/prometheus"
-	Path *string `json:"path,omitempty"`
+	Path string `json:"path"`
 	// Address on which an application listens.
 	Address *string `json:"address,omitempty"`
 	// Port on which an application expose HTTP endpoint with metrics.

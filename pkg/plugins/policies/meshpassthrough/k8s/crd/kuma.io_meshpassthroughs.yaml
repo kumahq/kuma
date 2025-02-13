@@ -91,7 +91,6 @@ spec:
                       type: object
                     type: array
                   passthroughMode:
-                    default: None
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
