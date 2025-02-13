@@ -6734,7 +6734,6 @@ components:
                           Either int or decimal represented as string.
                         x-kubernetes-int-or-string: true
                       healthyThreshold:
-                        default: 1
                         description: >-
                           Number of consecutive healthy checks before
                           considering a host healthy.
@@ -6759,7 +6758,6 @@ components:
                               type: integer
                             type: array
                           path:
-                            default: /
                             description: >-
                               The HTTP path which will be requested during the
                               health check
@@ -6824,7 +6822,6 @@ components:
                           check.
                         type: string
                       interval:
-                        default: 1m
                         description: Interval between consecutive health checks.
                         type: string
                       intervalJitter:
@@ -6912,11 +6909,9 @@ components:
                             type: string
                         type: object
                       timeout:
-                        default: 15s
                         description: Maximum time to wait for a health check response.
                         type: string
                       unhealthyThreshold:
-                        default: 5
                         description: >-
                           Number of consecutive unhealthy checks before
                           considering a host
@@ -8737,12 +8732,7 @@ components:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                 type: string
-                            required:
-                              - mode
                             type: object
-                        required:
-                          - path
-                          - port
                         type: object
                       type:
                         description: >-
@@ -8761,7 +8751,6 @@ components:
                   description: Sidecar metrics collection configuration
                   properties:
                     includeUnused:
-                      default: false
                       description: >-
                         IncludeUnused if false will scrape only metrics that has
                         been by sidecar (counters incremented
@@ -9033,13 +9022,11 @@ components:
                         description: Value for the specified Type.
                         type: string
                     required:
-                      - protocol
                       - type
                       - value
                     type: object
                   type: array
                 passthroughMode:
-                  default: None
                   description: >-
                     Defines the passthrough behavior. Possible values: `All`,
                     `None`, `Matched`
@@ -10763,7 +10750,6 @@ components:
                               backoff strategy between retries.
                             properties:
                               baseInterval:
-                                default: 25ms
                                 description: >-
                                   BaseInterval is an amount of time which should
                                   be taken between retries.
@@ -10808,7 +10794,6 @@ components:
                               configured.
                             properties:
                               maxInterval:
-                                default: 300s
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
@@ -10879,7 +10864,6 @@ components:
                               backoff strategy between retries.
                             properties:
                               baseInterval:
-                                default: 25ms
                                 description: >-
                                   BaseInterval is an amount of time which should
                                   be taken between retries.
@@ -10933,7 +10917,6 @@ components:
                               required:
                                 - predicate
                                 - tags
-                                - updateFrequency
                               type: object
                             type: array
                           hostSelectionMaxAttempts:
@@ -10982,7 +10965,6 @@ components:
                               configured.
                             properties:
                               maxInterval:
-                                default: 300s
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
@@ -12711,7 +12693,6 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests that will be force traced
                         if the
@@ -12727,7 +12708,6 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests will be traced
 
@@ -12755,7 +12735,6 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests that will be randomly
                         selected for trace
