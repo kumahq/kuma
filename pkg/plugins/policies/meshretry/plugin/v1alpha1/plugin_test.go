@@ -95,19 +95,19 @@ var _ = Describe("MeshRetry", func() {
 			WithOutbounds(xds_types.Outbounds{
 				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Port: builders.FirstOutboundPort,
-					Tags: map[string]string{
+					Tags: &map[string]string{
 						mesh_proto.ServiceTag: "http-service",
 					},
 				}},
 				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Port: builders.FirstOutboundPort + 1,
-					Tags: map[string]string{
+					Tags: &map[string]string{
 						mesh_proto.ServiceTag: "grpc-service",
 					},
 				}},
 				{LegacyOutbound: &mesh_proto.Dataplane_Networking_Outbound{
 					Port: builders.FirstOutboundPort + 2,
-					Tags: map[string]string{
+					Tags: &map[string]string{
 						mesh_proto.ServiceTag: "tcp-service",
 					},
 				}},
@@ -211,7 +211,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"test": "test",
 										},
 									},
@@ -428,7 +428,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"test": "test",
 										},
 									},
@@ -492,7 +492,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"another-test": "another-test",
 										},
 									},
@@ -587,7 +587,7 @@ var _ = Describe("MeshRetry", func() {
 										},
 										{
 											PredicateType: "OmitHostsWithTags",
-											Tags: map[string]string{
+											Tags: &map[string]string{
 												"test": "test",
 											},
 										},
@@ -683,7 +683,7 @@ var _ = Describe("MeshRetry", func() {
 										},
 										{
 											PredicateType: "OmitHostsWithTags",
-											Tags: map[string]string{
+											Tags: &map[string]string{
 												"test": "test",
 											},
 										},
@@ -865,7 +865,7 @@ var _ = Describe("MeshRetry", func() {
 												},
 												{
 													PredicateType: "OmitHostsWithTags",
-													Tags: map[string]string{
+													Tags: &map[string]string{
 														"test": "test",
 													},
 												},
@@ -987,7 +987,7 @@ var _ = Describe("MeshRetry", func() {
 												},
 												{
 													PredicateType: "OmitHostsWithTags",
-													Tags: map[string]string{
+													Tags: &map[string]string{
 														"test": "test",
 													},
 												},

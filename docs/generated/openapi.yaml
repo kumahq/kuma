@@ -10937,7 +10937,6 @@ components:
                                   type: integer
                               required:
                                 - predicate
-                                - tags
                               type: object
                             type: array
                           hostSelectionMaxAttempts:

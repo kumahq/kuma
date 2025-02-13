@@ -298,7 +298,7 @@ func configureHostSelectionPredicates(hostSelection *[]api.Predicate, policy *en
 		case api.OmitHostsWithTags:
 			taggedHosts, err := util_proto.MarshalAnyDeterministic(
 				&envoy_host_meta.OmitHostMetadataConfig{
-					MetadataMatch: envoy_meta.LbMetadata(hostSelect.Tags),
+					MetadataMatch: envoy_meta.LbMetadata(pointer.Deref(hostSelect.Tags)),
 				},
 			)
 			if err != nil {
