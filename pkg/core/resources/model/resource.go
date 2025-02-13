@@ -773,7 +773,8 @@ func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
 	return indexedResources
 }
 
-// Resource can implement defaulter to provide static default fields.
+// Defaulter can be implemented by Resource that need to have "computed" defaults, for example a field that defaults to a value based on other fields (.e.g port name).
+// If the default is static and can be set in the ResourceSpec, it should be set there using `+kubebuilder:default` comment.
 // Kubernetes Webhook and Resource Manager will make sure that Default() is called before Create/Update
 type Defaulter interface {
 	Resource

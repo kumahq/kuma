@@ -1,0 +1,19 @@
+{
+  "type": "MeshMultiZoneService",
+  "name": "redis",
+  "mesh": "default",
+  "spec": {
+    "selector": {
+      "meshService": {
+        "matchLabels": {
+          "app": "redis"
+        }
+      }
+    },
+    "ports": [
+      {
+        "port": 6379
+      }
+    ]
+  }
+}

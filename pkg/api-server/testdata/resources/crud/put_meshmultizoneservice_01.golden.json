@@ -1,5 +1,5 @@
 {
- "type": "MeshService",
+ "type": "MeshMultiZoneService",
  "mesh": "default",
  "name": "redis",
  "creationTime": "0001-01-01T00:00:00Z",
@@ -11,28 +11,20 @@
   "kuma.io/zone": "default"
  },
  "spec": {
-  "state": "Unavailable",
   "selector": {
-   "dataplaneTags": {
-    "app": "redis"
+   "meshService": {
+    "matchLabels": {
+     "app": "redis"
+    }
    }
   },
   "ports": [
    {
     "name": "6379",
     "port": 6379,
-    "targetPort": 6379,
     "appProtocol": "tcp"
    }
   ]
  },
- "status": {
-  "vips": [
-   {
-    "ip": "10.0.0.1"
-   }
-  ],
-  "tls": {},
-  "dataplaneProxies": {}
- }
+ "status": {}
 }

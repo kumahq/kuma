@@ -93,7 +93,7 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 		port := meshservice_api.Port{
 			Name:        portName,
 			Port:        inbound.Port,
-			TargetPort:  intstr.FromInt(int(inbound.Port)),
+			TargetPort:  intstr.FromInt32(int32(inbound.Port)),
 			AppProtocol: core_mesh.Protocol(appProtocol),
 		}
 		portsByService[serviceTagValue] = append(portsByService[serviceTagValue], port)

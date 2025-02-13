@@ -71,7 +71,8 @@ func (t *MeshServiceResource) AllocateVIP(vip string) {
 	})
 }
 
-// todo(jakubdyszkiewicz) strongly consider putting this in MeshService object to avoid problems with computation
+// SNIName returns SNI name for the MeshService. It's used for mTLS traffic routing in multizone.
+// TODO: strongly consider putting this in MeshService object to avoid problems with computation see https://github.com/kumahq/kuma/issues/10469
 func (t *MeshServiceResource) SNIName(systemNamespace string) string {
 	displayName := t.GetMeta().GetLabels()[mesh_proto.DisplayName]
 	namespace := t.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag]
@@ -130,6 +131,9 @@ func (t *MeshServiceResource) GetPorts() []core.Port {
 	return ports
 }
 
+// GetNameOrStringifyPort returns the name of the port if it's set or the stringified value of the port.
+// This method shouldn't exist as we should be setting this port in the defaulter.
+// However, we need to keep it for backward compatibility as the defaulter wasn't implemented in the first version.
 func (p Port) GetNameOrStringifyPort() string {
 	if p.Name != "" {
 		return p.Name
