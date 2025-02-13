@@ -234,6 +234,9 @@ In Envoy resource names we can use any character except `:` if we want to solve 
 
 In Envoy stats fields we can use any character except `:` to avoid on the fly conversion of `:` to `_` for Cluster names in Prometheus labels.
 
+OpenTelemetry defines "Attribute", it's a key-value pair similar to Prometheus labels.
+There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common/?utm_source=chatgpt.com#attribute).
+
 This leaves us with the following charset:
 
 ```
@@ -298,6 +301,10 @@ There is an identifier format from Amazon called [ARN](https://docs.aws.amazon.c
 ```
 kri_<mesh>_<zone>_<namespace>_<resource-type>_<resource-name>_<section-name>
 ```
+
+`resource-type` is a lowercased singular resource type, i.e. `meshservice`, `meshtimeout`, etc. 
+We use this name in [kumactl](https://github.com/kumahq/kuma/blob/d7ec0a2b1ac19208fb7dd9726309e3cf8cdc5848/pkg/core/resources/apis/meshservice/api/v1alpha1/zz_generated.resource.go#L153).
+
 For example:
 ```
 kri_mesh-1_us-east-2_kuma-demo_meshservice_backend
@@ -308,6 +315,7 @@ kri_mesh-1___meshtimeout_global-timeouts
 Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
 * It visually clarifies the format for users, who can then search for the format description in the documentation.
 * It acts as an implicit version. If we need to update the format, we can use a different prefix (e.g., `uri` or `ri`).
+* It's also ensure no overlap between internal entities (prefixed by `_kuma`) and the rest
 
 **Pros:**
 - Shorter
