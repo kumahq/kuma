@@ -37,7 +37,7 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
 		"--repo", "https://charts.konghq.com",
-		"--set", "controller.ingressController.watchNamespaces="+t.ingressNamespace,
+		"--set", "controller.ingressController.watchNamespaces={"+t.ingressNamespace+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
