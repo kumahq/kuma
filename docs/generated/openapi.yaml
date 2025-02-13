@@ -9187,8 +9187,6 @@ components:
                   description: >-
                     AppendModifications is a list of modifications applied on
                     the selected proxy.
-
-                    todo: this had validation len > 0
                   items:
                     properties:
                       cluster:

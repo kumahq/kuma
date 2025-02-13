@@ -133,7 +133,6 @@ spec:
                                 backoff strategy between retries.
                               properties:
                                 baseInterval:
-                                  default: 25ms
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
@@ -162,7 +161,6 @@ spec:
                                 the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
                                   description: MaxInterval is a maximal amount of
                                     time which will be taken between retries.
                                   type: string
@@ -221,7 +219,6 @@ spec:
                                 backoff strategy between retries.
                               properties:
                                 baseInterval:
-                                  default: 25ms
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
@@ -262,7 +259,6 @@ spec:
                                 required:
                                 - predicate
                                 - tags
-                                - updateFrequency
                                 type: object
                               type: array
                             hostSelectionMaxAttempts:
@@ -292,7 +288,6 @@ spec:
                                 when the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
                                   description: MaxInterval is a maximal amount of
                                     time which will be taken between retries.
                                   type: string
