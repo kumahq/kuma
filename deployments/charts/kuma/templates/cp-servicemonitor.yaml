@@ -1,0 +1,24 @@
+{{ if and (.Values.controlPlane.serviceMonitor.enabled) (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/ServiceMonitor") }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "kuma.controlPlane.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.controlPlane.serviceMonitor.annotations }}
+    {{- if $value }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+spec:
+  endpoints:
+  - scheme: http
+    targetPort: diagnostics
+  jobLabel: {{ include "kuma.name" . }}
+  namespaceSelector:
+    matchNames:
+    - {{ .Release.Namespace }}
+  selector:
+    matchLabels: {{ include "kuma.cpLabels" . | nindent 6 }}
+{{ end }}
