@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema/defaulting"
 	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
@@ -17,13 +17,21 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-var YAML = &unmarshaler{unmarshalFn: func(bytes []byte, i interface{}) error {
-	return yaml.Unmarshal(bytes, i)
-}}
-var JSON = &unmarshaler{unmarshalFn: json.Unmarshal}
+var YAML = &unmarshaler{
+	unmarshalFn: func(bytes []byte, i interface{}) error {
+		return yaml.Unmarshal(bytes, i)
+	},
+	marshalFn: yaml.Marshal,
+}
+
+var JSON = &unmarshaler{
+	unmarshalFn: json.Unmarshal,
+	marshalFn:   json.Marshal,
+}
 
 type unmarshaler struct {
 	unmarshalFn func([]byte, interface{}) error
+	marshalFn   func(v any) ([]byte, error)
 }
 
 type InvalidResourceError struct {
@@ -65,21 +73,30 @@ func (u *unmarshaler) UnmarshalCore(bytes []byte) (core_model.Resource, error) {
 func (u *unmarshaler) Unmarshal(bytes []byte, desc core_model.ResourceTypeDescriptor) (Resource, error) {
 	resource := desc.NewObject()
 	restResource := From.Resource(resource)
-	if desc.IsPluginOriginated {
+	defaultedBytes := bytes
+	if desc.Validator != nil && desc.StructuralSchema != nil {
+		var err error
 		// desc.Schema is set only for new plugin originated policies
 		rawObj := map[string]interface{}{}
 		// Unfortunately to validate new policies we must first unmarshal into a rawObj
-		if err := u.unmarshalFn(bytes, &rawObj); err != nil {
+		if err = u.unmarshalFn(bytes, &rawObj); err != nil {
 			return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 		}
-		validator := validate.NewSchemaValidator(desc.Schema, nil, "", strfmt.Default)
-		res := validator.Validate(rawObj)
+
+		// Apply defaulting
+		defaulting.Default(rawObj, desc.StructuralSchema)
+
+		res := desc.Validator.Validate(rawObj)
 		if !res.IsValid() {
 			return nil, toValidationError(res)
 		}
+		defaultedBytes, err = u.marshalFn(rawObj)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err := u.unmarshalFn(bytes, restResource); err != nil {
+	if err := u.unmarshalFn(defaultedBytes, restResource); err != nil {
 		return nil, &InvalidResourceError{Reason: fmt.Sprintf("invalid %s object: %q", desc.Name, err.Error())}
 	}
 
