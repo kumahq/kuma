@@ -257,6 +257,7 @@ type Predicate struct {
 	// UpdateFrequency is how often the priority load should be updated based on previously attempted priorities.
 	// Used for OmitPreviousPriorities.
 	// +kubebuilder:default=2
+	// +kubebuilder:validation:Optional
 	UpdateFrequency int32 `json:"updateFrequency"`
 }
 

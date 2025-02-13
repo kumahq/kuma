@@ -49,5 +49,6 @@ type Match struct {
 	Port *uint32 `json:"port,omitempty"`
 	// Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.
 	// +kubebuilder:default=tcp
+	// +kubebuilder:validation:Optional
 	Protocol ProtocolType `json:"protocol"`
 }
