@@ -14,9 +14,20 @@ To enable policy you need to adjust configuration of two places:
 * Remove `+kuma:policy:skip_registration=true` from your policy schema.
 * `pkg/plugins/policies/core/ordered/ordered.go`. Plugins name is equals to `KumactlArg` in file `zz_generated.resource.go`. It's important to place the plugin in the correct place because the order of executions is important.
 
+## Linter
+
+There is a [liner](https://github.com/kumahq/kuma/blob/61f28e4bcca0b5e6aa1044a0e536abb6a6a53642/tools/ci/api-linter/linter/api-linter.go#L49-L48)
+to check if the fields are correctly defined.
+
 ## How to map API to a Go struct
 
 Field is _mergeable_ if it is directly in `default` struct or any sub-struct.
+
+The exception is where the struct has only required properties (like [Rate](https://github.com/kumahq/kuma/blob/9f07f444e076433bfdff4ce5d26958006234dd3b/pkg/plugins/policies/meshratelimit/api/v1alpha1/meshratelimit.go#L107-L113)).
+In that case the struct is mergable as a whole (needs to be annotated with `+kuma:non-mergeable-struct`) and properties are _not mergeable_.
+
+To allow kubernetes "union types" we created a `+kuma:discriminator` annotation to mark a [discriminator field](https://github.com/kubernetes/enhancements/blob/master/keps/sig-api-machinery/1027-api-unions/README.md?utm_source=chatgpt.com#discriminator-field) to allow "required" fields on mergeable structs.
+
 Field is _not mergeable_ if it is inside the struct which is inside the list.
 
 ```yaml
@@ -24,68 +35,91 @@ default:
   a: value_a
   b: 
     c: value_c
-  d:
-    - e: value_e
-    - f: 
-        g: value_g
-    - h: []
+    d:
+      e: required
+      f: required
+  g:
+    - h: value_e
+    - i: 
+        j: value_g
+    - k: []
 ```
 
 * Mergeable: a, b, c, d
-* Not mergeable: e, f, g, h
+* Not mergeable: e, f, g, h, i, j, k
 
 **All mergeable fields are optional.**
 
-### List
-
-#### Required
-
-```go
-type SomeStruct struct {
-	MyListField []ItemType `json:"myListField"`
-}
-```
+### Mergeable
 
 #### Optional
 
-```go
-type SomeStruct struct {
-	MyListField *[]ItemType `json:"myListField,omitempty"`
-}
+Need to be defined with "omitempty", have **no default kubernetes annotation** ("+kubebuilder:default") and be a pointer.
+
+Example:
+```yaml
+ValidPtr  *string   `json:"valid_ptr,omitempty"`
 ```
 
-### Struct
-
-#### Required
+#### Discriminator (Required)
 
 ```go
 type Conf struct {
-	MyStructField StructType `json:"myStructField"`
+    Discriminator Discriminator `json:"discriminator"`
 }
+
+type Discriminator struct {
+    // +kuma:discriminator
+    Type string `json:"type"`
+
+    OptionOne *OptionOne `json:"option_one,omitempty"`
+    OptionTwo *OptionTwo `json:"option_two,omitempty"`
+}
+
 ```
 
-#### Optional
+#### Mergeable struct with required fields (+kuma:non-mergeable-struct)
+
+This can be though of as "mergable as a whole".
 
 ```go
 type Conf struct {
-	MyStructField *StructType `json:"myStructField,omitempty"`
+    // +kuma:non-mergeable-struct
+    SomeStruct SomeStruct `json:"non_mergeable_struct"`
+}
+
+type NonMergeableStruct struct {
+    RequiredIntField int `json:"required_int_field"`
+    RequiredStrField string `json:"required_str_field"`
 }
 ```
 
-### Basic types (string, int, bool, etc.)
+### Not mergeable
 
-#### Required
+Three types of fields are allowed:
+
+
+#### User optional with default
 
 ```go
-type SomeStruct struct {
-	MyField ItemType `json"myField"`
+type OtherStruct struct {
+    // +kubebuilder:default=false
+    NonMergeableOptional string   `json:"non_mergeable_optional"`
 }
 ```
 
-#### Optional
+#### User optional without default
 
 ```go
-type SomeStruct struct {
-	MyField *ItemType `json"myField,omitempty"`
+type OtherStruct struct {
+    NonMergeablePtr      *string  `json:"non_mergeable,omitempty"`
+}
+```
+
+#### User required
+
+```go
+type OtherStruct struct {
+    NonMergeableRequired string   `json:"non_mergeable"`
 }
 ```

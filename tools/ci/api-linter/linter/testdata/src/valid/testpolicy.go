@@ -52,7 +52,6 @@ type NonMergeableStruct struct {
 
 type OtherStruct struct {
     NonMergeableRequired string   `json:"non_mergeable"`           // OK
-    // +kubebuilder:validation:Optional
     // +kubebuilder:default=false
     NonMergeableOptional string   `json:"non_mergeable_optional"`  // OK
     NonMergeablePtr      *string  `json:"non_mergeable,omitempty"` // OK
