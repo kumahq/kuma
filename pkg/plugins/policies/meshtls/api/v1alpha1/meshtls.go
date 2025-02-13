@@ -50,7 +50,7 @@ type Conf struct {
 	TlsVersion *common_tls.Version `json:"tlsVersion,omitempty"`
 
 	// TlsCiphers section for providing ciphers specification.
-	TlsCiphers *common_tls.TlsCiphers `json:"tlsCiphers,omitempty"`
+	TlsCiphers *[]common_tls.TlsCipher `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
 	Mode *Mode `json:"mode,omitempty"`
