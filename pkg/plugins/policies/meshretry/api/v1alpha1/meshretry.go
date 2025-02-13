@@ -255,11 +255,11 @@ type Predicate struct {
 	PredicateType PredicateType `json:"predicate"`
 	// Tags is a map of metadata to match against for selecting the omitted hosts. Required if Type is
 	// OmitHostsWithTags
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags map[string]string `json:"tags"`
 	// UpdateFrequency is how often the priority load should be updated based on previously attempted priorities.
 	// Used for OmitPreviousPriorities.
 	// +kubebuilder:default=2
-	UpdateFrequency int32 `json:"updateFrequency,omitempty"`
+	UpdateFrequency int32 `json:"updateFrequency"`
 }
 
 // +kubebuilder:validation:Enum=Seconds;UnixTimestamp

@@ -69,18 +69,30 @@ func (in *HeaderModifier) DeepCopyInto(out *HeaderModifier) {
 	*out = *in
 	if in.Set != nil {
 		in, out := &in.Set, &out.Set
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Add != nil {
 		in, out := &in.Add, &out.Add
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Remove != nil {
 		in, out := &in.Remove, &out.Remove
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 
@@ -109,14 +121,22 @@ func (in *Match) DeepCopyInto(out *Match) {
 	}
 	if in.QueryParams != nil {
 		in, out := &in.QueryParams, &out.QueryParams
-		*out = make([]QueryParamsMatch, len(*in))
-		copy(*out, *in)
+		*out = new([]QueryParamsMatch)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]QueryParamsMatch, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Headers != nil {
 		in, out := &in.Headers, &out.Headers
-		*out = make([]commonv1alpha1.HeaderMatch, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.HeaderMatch)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.HeaderMatch, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -343,8 +363,12 @@ func (in *To) DeepCopyInto(out *To) {
 	*out = *in
 	if in.Hostnames != nil {
 		in, out := &in.Hostnames, &out.Hostnames
-		*out = make([]string, len(*in))
-		copy(*out, *in)
+		*out = new([]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]string, len(*in))
+			copy(*out, *in)
+		}
 	}
 	in.TargetRef.DeepCopyInto(&out.TargetRef)
 	if in.Rules != nil {
@@ -378,6 +402,11 @@ func (in *URLRewrite) DeepCopyInto(out *URLRewrite) {
 		in, out := &in.Path, &out.Path
 		*out = new(PathRewrite)
 		(*in).DeepCopyInto(*out)
+	}
+	if in.HostToBackendHostname != nil {
+		in, out := &in.HostToBackendHostname, &out.HostToBackendHostname
+		*out = new(bool)
+		**out = **in
 	}
 }
 

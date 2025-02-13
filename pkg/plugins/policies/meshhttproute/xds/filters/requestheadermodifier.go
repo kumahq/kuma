@@ -3,6 +3,7 @@ package filters
 import (
 	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
@@ -29,7 +30,7 @@ func (f *RequestHeaderModifierConfigurer) Configure(envoyRoute *envoy_route.Rout
 func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOption, []string) {
 	var options []*envoy_config_core.HeaderValueOption
 
-	for _, set := range mod.Set {
+	for _, set := range pointer.Deref(mod.Set) {
 		replace := &envoy_config_core.HeaderValueOption{
 			AppendAction: envoy_config_core.HeaderValueOption_OVERWRITE_IF_EXISTS_OR_ADD,
 			Header: &envoy_config_core.HeaderValue{
@@ -39,7 +40,7 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 		}
 		options = append(options, replace)
 	}
-	for _, add := range mod.Add {
+	for _, add := range pointer.Deref(mod.Add) {
 		appendOption := &envoy_config_core.HeaderValueOption{
 			AppendAction: envoy_config_core.HeaderValueOption_APPEND_IF_EXISTS_OR_ADD,
 			Header: &envoy_config_core.HeaderValue{
@@ -50,5 +51,5 @@ func headerModifiers(mod api.HeaderModifier) ([]*envoy_config_core.HeaderValueOp
 		options = append(options, appendOption)
 	}
 
-	return options, mod.Remove
+	return options, pointer.Deref(mod.Remove)
 }

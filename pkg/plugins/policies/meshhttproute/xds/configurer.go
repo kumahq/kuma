@@ -1,6 +1,7 @@
 package xds
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"strings"
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -88,9 +89,9 @@ func (c RoutesConfigurer) routeMatch(match api.Match) []routeMatch {
 			c.routeMethodMatch(envoyMatch, *match.Method)
 		}
 		if match.QueryParams != nil {
-			routeQueryParamsMatch(envoyMatch, match.QueryParams)
+			routeQueryParamsMatch(envoyMatch, pointer.Deref(match.QueryParams))
 		}
-		routeHeadersMatch(envoyMatch, match.Headers)
+		routeHeadersMatch(envoyMatch, pointer.Deref(match.Headers))
 		if match.Path != nil && match.Path.Type == api.PathPrefix {
 			allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 		} else {

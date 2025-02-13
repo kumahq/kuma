@@ -227,6 +227,8 @@ properties:
                             type: integer
                         required:
                           - predicate
+                          - tags
+                          - updateFrequency
                         type: object
                       type: array
                     hostSelectionMaxAttempts:

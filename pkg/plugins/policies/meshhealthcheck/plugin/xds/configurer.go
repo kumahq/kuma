@@ -134,7 +134,7 @@ func mapHttpHeaders(headers *api.HeaderModifier, srcTags v1alpha1.MultiValueTagS
 			})
 		}
 	}
-	for _, header := range pointer.Deref(headers).Set {
+	for _, header := range pointer.Deref(pointer.Deref(headers).Set) {
 		for _, val := range strings.Split(string(header.Value), ",") {
 			envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
 				Header: &envoy_core.HeaderValue{

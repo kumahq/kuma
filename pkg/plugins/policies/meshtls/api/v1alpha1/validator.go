@@ -75,9 +75,9 @@ func validateDefault(path validators.PathBuilder, conf Conf, topLevelTargetRef c
 		}
 	}
 
-	if len(conf.TlsCiphers) > 0 && topLevelTargetRef != common_api.Mesh {
+	if len(pointer.Deref(conf.TlsCiphers)) > 0 && topLevelTargetRef != common_api.Mesh {
 		verr.AddViolationAt(path.Field("tlsCiphers"), "tlsCiphers can only be defined with top level targetRef kind: Mesh")
-	} else if !containsAll(common_tls.AllCiphers, conf.TlsCiphers) {
+	} else if !containsAll(common_tls.AllCiphers, pointer.Deref(conf.TlsCiphers)) {
 		verr.AddErrorAt(path.Field("tlsCiphers"), validators.MakeFieldMustBeOneOfErr("tlsCiphers", common_tls.AllCiphers...))
 	}
 

@@ -32,6 +32,7 @@ type Conf struct {
 	// LocalityAwareness contains configuration for locality aware load balancing.
 	LocalityAwareness *LocalityAwareness `json:"localityAwareness,omitempty"`
 	// LoadBalancer allows to specify load balancing algorithm.
+	// +kuma:non-mergeable-struct
 	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
@@ -71,6 +72,7 @@ type CrossZone struct {
 	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
 	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
 	// Default 50
+	// +kuma:non-mergeable-struct
 	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
