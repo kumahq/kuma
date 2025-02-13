@@ -24,7 +24,6 @@ type HostnameGenerator struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma HostnameGenerator resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.HostnameGenerator `json:"spec,omitempty"`
 }
 

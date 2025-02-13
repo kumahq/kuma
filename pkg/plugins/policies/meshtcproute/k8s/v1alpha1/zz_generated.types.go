@@ -26,7 +26,6 @@ type MeshTCPRoute struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshTCPRoute resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTCPRoute `json:"spec,omitempty"`
 }
 

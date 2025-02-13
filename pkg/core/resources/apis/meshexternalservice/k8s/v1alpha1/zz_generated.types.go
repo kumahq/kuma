@@ -24,10 +24,8 @@ type MeshExternalService struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshExternalService resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshExternalService `json:"spec,omitempty"`
 	// Status is the current status of the Kuma MeshExternalService resource.
-	// +kubebuilder:validation:Optional
 	Status *policy.MeshExternalServiceStatus `json:"status,omitempty"`
 }
 

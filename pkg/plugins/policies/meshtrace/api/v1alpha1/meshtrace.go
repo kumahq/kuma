@@ -71,18 +71,15 @@ type ZipkinBackend struct {
 	Url string `json:"url"`
 	// Generate 128bit traces.
 	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
 	TraceId128Bit bool `json:"traceId128bit"`
 	// Version of the API.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L66
 	// +kubebuilder:default="httpJson"
 	// +kubebuilder:validation:Enum=httpJson;httpProto
-	// +kubebuilder:validation:Optional
 	ApiVersion string `json:"apiVersion"`
 	// Determines whether client and server spans will share the same span
 	// context.
 	// https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/trace/v3/zipkin.proto#L63
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=true
 	SharedSpanContext bool `json:"sharedSpanContext"`
 }
@@ -99,7 +96,6 @@ type DatadogBackend struct {
 	// get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
 	// `backend_OUTBOUND_db2` in Datadog.
 	// +kubebuilder:default=false
-	// +kubebuilder:validation:Optional
 	SplitService bool `json:"splitService"`
 }
 

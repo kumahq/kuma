@@ -52,6 +52,7 @@ properties:
                         fragments etc.)
                       type: string
                   required:
+                    - splitService
                     - url
                   type: object
                 openTelemetry:
@@ -98,6 +99,9 @@ properties:
                       description: Address of Zipkin collector.
                       type: string
                   required:
+                    - apiVersion
+                    - sharedSpanContext
+                    - traceId128bit
                     - url
                   type: object
               required:

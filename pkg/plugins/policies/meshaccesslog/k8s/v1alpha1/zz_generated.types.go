@@ -26,7 +26,6 @@ type MeshAccessLog struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshAccessLog resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshAccessLog `json:"spec,omitempty"`
 }
 

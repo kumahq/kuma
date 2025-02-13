@@ -27,10 +27,8 @@ type Zone struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
-	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma Zone resource.
-	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -132,10 +130,8 @@ type ZoneInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
-	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ZoneInsight resource.
-	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 

@@ -26,7 +26,6 @@ type MeshLoadBalancingStrategy struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshLoadBalancingStrategy resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshLoadBalancingStrategy `json:"spec,omitempty"`
 }
 

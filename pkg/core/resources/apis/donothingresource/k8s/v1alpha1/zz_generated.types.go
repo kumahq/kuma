@@ -23,7 +23,6 @@ type DoNothingResource struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma DoNothingResource resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.DoNothingResource `json:"spec,omitempty"`
 }
 

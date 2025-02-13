@@ -26,7 +26,6 @@ type MeshCircuitBreaker struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshCircuitBreaker resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshCircuitBreaker `json:"spec,omitempty"`
 }
 

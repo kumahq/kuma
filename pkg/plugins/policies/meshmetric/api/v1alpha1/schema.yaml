@@ -43,6 +43,7 @@ properties:
                   format: int32
                   type: integer
               required:
+                - path
                 - port
               type: object
             type: array
@@ -88,7 +89,12 @@ properties:
                             - ProvidedTLS
                             - ActiveMTLSBackend
                           type: string
+                      required:
+                        - mode
                       type: object
+                  required:
+                    - path
+                    - port
                   type: object
                 type:
                   description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.

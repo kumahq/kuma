@@ -85,6 +85,7 @@ spec:
                           description: Value for the specified Type.
                           type: string
                       required:
+                      - protocol
                       - type
                       - value
                       type: object

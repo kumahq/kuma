@@ -13,7 +13,6 @@ import (
 
 const (
 	defaultAnnotation       = "+kubebuilder:default"
-	optionalAnnotation      = "+kubebuilder:validation:Optional"
 	nonMergableAnotation    = "+kuma:non-mergeable-struct"
 	discriminatorAnnotation = "+kuma:discriminator"
 )
@@ -145,8 +144,8 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if !hasOmitEmptyTag(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
-			if hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation) {
-				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
+			if hasRequiredAnnotations(field, defaultAnnotation) {
+				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation}, ", "))
 			}
 		} else {
 			_, isValid := determineNonMergeableCategory(field)
@@ -185,7 +184,7 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 
 func isKumaDiscriminator(field *ast.Field) bool {
 	hasKumaDiscriminator := hasRequiredAnnotations(field, discriminatorAnnotation)
-	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
+	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation)
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 	return hasKumaDiscriminator && !isPtr && !hasDefaultAndOptional && !hasOmitEmpty
@@ -193,21 +192,16 @@ func isKumaDiscriminator(field *ast.Field) bool {
 
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
 	hasDefault := hasRequiredAnnotations(field, defaultAnnotation)
-	hasOptional := hasRequiredAnnotations(field, optionalAnnotation)
-	hasDefaultAndOptional := hasDefault && hasOptional
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 
-	if hasDefault && !hasOptional {
-		return "missing_optional_annotation", false
-	}
-	if isPtr && hasOmitEmpty && !hasDefaultAndOptional {
+	if isPtr && hasOmitEmpty && !hasDefault {
 		return "optional_without_default", true
 	}
-	if !isPtr && hasDefaultAndOptional && !hasOmitEmpty {
+	if !isPtr && hasDefault && !hasOmitEmpty {
 		return "optional_with_default", true
 	}
-	if !isPtr && !hasDefaultAndOptional && !hasOmitEmpty {
+	if !isPtr && !hasDefault && !hasOmitEmpty {
 		return "required", true
 	}
 	return "", false

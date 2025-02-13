@@ -128,12 +128,10 @@ type {{.Name}} struct {
 	metav1.ObjectMeta {{ $tk }}json:"metadata,omitempty"{{ $tk }}
 
 	// Spec is the specification of the Kuma {{ .Name }} resource.
-    // +kubebuilder:validation:Optional
 	Spec   *policy.{{.Name}} {{ $tk }}json:"spec,omitempty"{{ $tk }}
 
 {{- if .HasStatus }}
 	// Status is the current status of the Kuma {{ .Name }} resource.
-    // +kubebuilder:validation:Optional
 	Status *policy.{{.Name}}Status {{ $tk }}json:"status,omitempty"{{ $tk }}
 {{- end }}
 }

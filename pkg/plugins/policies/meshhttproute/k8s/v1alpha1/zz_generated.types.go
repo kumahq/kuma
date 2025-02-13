@@ -26,7 +26,6 @@ type MeshHTTPRoute struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshHTTPRoute resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshHTTPRoute `json:"spec,omitempty"`
 }
 

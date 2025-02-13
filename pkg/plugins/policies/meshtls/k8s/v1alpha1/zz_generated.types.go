@@ -26,7 +26,6 @@ type MeshTLS struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshTLS resource.
-	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTLS `json:"spec,omitempty"`
 }
 
