@@ -169,8 +169,9 @@ spec:
                             Either int or decimal represented as string.
                           x-kubernetes-int-or-string: true
                         healthyThreshold:
-                          description: Number of consecutive healthy checks before
-                            considering a host healthy.
+                          description: |-
+                            Number of consecutive healthy checks before considering a host healthy.
+                            If not specified then the default value is 1
                           format: int32
                           type: integer
                         http:
@@ -192,6 +193,7 @@ spec:
                               description: |-
                                 The HTTP path which will be requested during the health check
                                 (ie. /health)
+                                If not specified then the default value is "/"
                               type: string
                             requestHeadersToAdd:
                               description: |-
@@ -245,7 +247,9 @@ spec:
                             check.
                           type: string
                         interval:
-                          description: Interval between consecutive health checks.
+                          description: |-
+                            Interval between consecutive health checks.
+                            If not specified then the default value is 1m
                           type: string
                         intervalJitter:
                           description: |-
@@ -298,12 +302,15 @@ spec:
                               type: string
                           type: object
                         timeout:
-                          description: Maximum time to wait for a health check response.
+                          description: |-
+                            Maximum time to wait for a health check response.
+                            If not specified then the default value is 15s
                           type: string
                         unhealthyThreshold:
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
                             unhealthy.
+                            If not specified then the default value is 5
                           format: int32
                           type: integer
                       type: object

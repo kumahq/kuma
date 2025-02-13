@@ -93,6 +93,7 @@ spec:
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
+                      If not specified then the default value is "Matched".
                     enum:
                     - All
                     - Matched
