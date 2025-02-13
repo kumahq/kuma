@@ -3,8 +3,6 @@ package v1alpha1
 import (
 	"slices"
 
-	"slices"
-
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
