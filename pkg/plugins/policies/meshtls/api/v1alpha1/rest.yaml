@@ -101,6 +101,19 @@ paths:
       summary: Returns a list of MeshTLS in the mesh.
       tags: [ "MeshTLS" ]
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:

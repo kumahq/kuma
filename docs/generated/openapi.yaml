@@ -331,6 +331,19 @@ paths:
       tags:
         - MeshAccessLog
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -438,6 +451,19 @@ paths:
       tags:
         - MeshCircuitBreaker
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -545,6 +571,19 @@ paths:
       tags:
         - MeshFaultInjection
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -652,6 +691,19 @@ paths:
       tags:
         - MeshHealthCheck
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -759,6 +811,19 @@ paths:
       tags:
         - MeshHTTPRoute
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -867,6 +932,19 @@ paths:
       tags:
         - MeshLoadBalancingStrategy
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -972,6 +1050,19 @@ paths:
       tags:
         - MeshMetric
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1079,6 +1170,19 @@ paths:
       tags:
         - MeshPassthrough
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1186,6 +1290,19 @@ paths:
       tags:
         - MeshProxyPatch
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1293,6 +1410,19 @@ paths:
       tags:
         - MeshRateLimit
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1398,6 +1528,19 @@ paths:
       tags:
         - MeshRetry
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1503,6 +1646,19 @@ paths:
       tags:
         - MeshTCPRoute
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1608,6 +1764,19 @@ paths:
       tags:
         - MeshTimeout
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1713,6 +1882,19 @@ paths:
       tags:
         - MeshTLS
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1818,6 +2000,19 @@ paths:
       tags:
         - MeshTrace
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -1926,6 +2121,19 @@ paths:
       tags:
         - MeshTrafficPermission
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -2012,6 +2220,20 @@ paths:
       summary: Returns a list of Mesh in the mesh.
       tags:
         - Mesh
+      parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/MeshList'
@@ -2111,6 +2333,19 @@ paths:
       tags:
         - MeshGateway
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -2199,6 +2434,20 @@ paths:
       summary: Returns a list of HostnameGenerator in the mesh.
       tags:
         - HostnameGenerator
+      parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorList'
@@ -2300,6 +2549,19 @@ paths:
       tags:
         - MeshExternalService
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -2407,6 +2669,19 @@ paths:
       tags:
         - MeshMultiZoneService
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -2512,6 +2787,19 @@ paths:
       tags:
         - MeshService
       parameters:
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -14372,6 +14660,7 @@ components:
                   type: object
               type: object
             state:
+              default: Unavailable
               description: >-
                 State of MeshService. Available if there is at least one healthy
                 endpoint. Otherwise, Unavailable.
