@@ -65,6 +65,9 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("appendModifications")
+	if len(pointer.Deref(conf.AppendModifications)) == 0 {
+		verr.AddViolationAt(path, validators.MustNotBeEmpty)
+	}
 
 	for i, modification := range pointer.Deref(conf.AppendModifications) {
 		path := path.Index(i)
