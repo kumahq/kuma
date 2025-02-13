@@ -142,8 +142,6 @@ spec:
                                     MaxInterval is a maximal amount of time which will be taken between retries.
                                     Default is 10 times the "BaseInterval".
                                   type: string
-                              required:
-                              - baseInterval
                               type: object
                             numRetries:
                               description: |-
@@ -163,7 +161,6 @@ spec:
                                 the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
                                   description: MaxInterval is a maximal amount of
                                     time which will be taken between retries.
                                   type: string
@@ -231,8 +228,6 @@ spec:
                                     MaxInterval is a maximal amount of time which will be taken between retries.
                                     Default is 10 times the "BaseInterval".
                                   type: string
-                              required:
-                              - baseInterval
                               type: object
                             hostSelection:
                               description: |-
@@ -264,7 +259,6 @@ spec:
                                 required:
                                 - predicate
                                 - tags
-                                - updateFrequency
                                 type: object
                               type: array
                             hostSelectionMaxAttempts:
@@ -294,7 +288,6 @@ spec:
                                 when the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
                                   description: MaxInterval is a maximal amount of
                                     time which will be taken between retries.
                                   type: string
