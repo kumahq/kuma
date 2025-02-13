@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 	"strings"
 
@@ -113,7 +114,7 @@ func makeTcpRouteEntry(
 		Route: name,
 	}
 
-	for _, b := range rule.Default.BackendRefs {
+	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
 		var ref *model.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[rules_common.EmptyMatches]; ok {

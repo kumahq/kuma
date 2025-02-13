@@ -886,7 +886,7 @@ var _ = Describe("IngressGenerator", func() {
 											},
 											Rules: []meshtcproute_api.Rule{{
 												Default: meshtcproute_api.RuleConf{
-													BackendRefs: []common_api.BackendRef{{
+													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
 															Name: "backend",

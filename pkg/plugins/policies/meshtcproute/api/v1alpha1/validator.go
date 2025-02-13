@@ -89,7 +89,7 @@ func validateRules(rules []Rule) validators.ValidationError {
 		path := validators.Root().Index(i)
 
 		verr.AddErrorAt(path.Field("default").Field("backendRefs"),
-			validateBackendRefs(rule.Default.BackendRefs),
+			validateBackendRefs(pointer.Deref(rule.Default.BackendRefs)),
 		)
 	}
 

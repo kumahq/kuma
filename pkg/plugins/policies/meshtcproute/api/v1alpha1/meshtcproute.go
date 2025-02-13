@@ -54,11 +54,9 @@ type To struct {
 type Rule struct {
 	// Default holds routing rules that can be merged with rules from other
 	// policies.
-	// +kuma:non-mergeable-struct
 	Default RuleConf `json:"default"`
 }
 
 type RuleConf struct {
-	// +kubebuilder:validation:MinItems=1
-	BackendRefs []common_api.BackendRef `json:"backendRefs"`
+	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
 }

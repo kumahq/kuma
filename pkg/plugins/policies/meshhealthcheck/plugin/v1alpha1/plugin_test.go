@@ -813,7 +813,7 @@ var _ = Describe("MeshHealthCheck", func() {
 								Subset: subsetutils.MeshSubset(),
 								Conf: meshtcproute_api.Rule{
 									Default: meshtcproute_api.RuleConf{
-										BackendRefs: []common_api.BackendRef{{
+										BackendRefs: &[]common_api.BackendRef{{
 											TargetRef: builders.TargetRefService("backend"),
 											Weight:    pointer.To(uint(100)),
 										}},
