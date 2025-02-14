@@ -2490,8 +2490,6 @@ spec:
                                           - 307
                                           - 308
                                           type: integer
-                                      required:
-                                      - statusCode
                                       type: object
                                     responseHeaderModifier:
                                       description: |-
@@ -3513,7 +3511,6 @@ spec:
                           format: int32
                           type: integer
                       required:
-                      - path
                       - port
                       type: object
                     type: array
@@ -3564,12 +3561,7 @@ spec:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                   type: string
-                              required:
-                              - mode
                               type: object
-                          required:
-                          - path
-                          - port
                           type: object
                         type:
                           description: Type of the backend that will be used to collect
@@ -4021,7 +4013,6 @@ spec:
                           description: Value for the specified Type.
                           type: string
                       required:
-                      - protocol
                       - type
                       - value
                       type: object
@@ -5551,7 +5542,6 @@ spec:
                                     type: integer
                                 required:
                                 - predicate
-                                - updateFrequency
                                 type: object
                               type: array
                             hostSelectionMaxAttempts:
@@ -7187,7 +7177,6 @@ spec:
                                 fragments etc.)
                               type: string
                           required:
-                          - splitService
                           - url
                           type: object
                         openTelemetry:
@@ -7234,9 +7223,6 @@ spec:
                               description: Address of Zipkin collector.
                               type: string
                           required:
-                          - apiVersion
-                          - sharedSpanContext
-                          - traceId128bit
                           - url
                           type: object
                       required:
@@ -8744,7 +8730,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -8841,7 +8826,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -8977,7 +8961,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -9074,7 +9057,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
@@ -9210,7 +9192,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                   path:
@@ -9307,7 +9288,6 @@ spec:
                                         - Json
                                         type: string
                                     required:
-                                    - omitEmptyValues
                                     - type
                                     type: object
                                 required:
