@@ -12,11 +12,17 @@ var _ = Describe("Confs", func() {
 		Ints       []int
 		AppendInts []int
 	}
+
+	type ExampleStruct struct {
+		Value string `json:"value"`
+	}
+
 	type policy struct {
 		FieldString            string `json:"fieldString,omitempty"`
 		Strings                []string
 		AppendStrings          []string
 		AppendPointerToStrings *[]string
+		AppendPointerToStructs *[]ExampleStruct
 		Sub                    subPolicy
 		SubPtr                 *subPolicy `json:"subPtr,omitempty"`
 	}
@@ -62,6 +68,11 @@ var _ = Describe("Confs", func() {
 					Strings:                []string{"p2"},
 					AppendStrings:          []string{"p2"},
 					AppendPointerToStrings: &[]string{"p2"},
+					AppendPointerToStructs: &[]ExampleStruct{
+						{
+							Value:    "s1",
+						},
+					},
 					Sub: subPolicy{
 						Ints:       []int{2},
 						AppendInts: []int{2},
@@ -75,6 +86,11 @@ var _ = Describe("Confs", func() {
 					Strings:                []string{"p3"},
 					AppendStrings:          []string{"p3"},
 					AppendPointerToStrings: &[]string{"p3"},
+					AppendPointerToStructs: &[]ExampleStruct{
+						{
+							Value:    "s2",
+						},
+					},
 					Sub: subPolicy{
 						Ints:       []int{3},
 						AppendInts: []int{3},
@@ -90,6 +106,14 @@ var _ = Describe("Confs", func() {
 				Strings:                []string{"p3"},
 				AppendStrings:          []string{"p1", "p2", "p3"},
 				AppendPointerToStrings: &[]string{"p1", "p2", "p3"},
+				AppendPointerToStructs: &[]ExampleStruct{
+					{
+						Value:    "s1",
+					},
+					{
+						Value:    "s2",
+					},
+				},
 				Sub: subPolicy{
 					Ints:       []int{3},
 					AppendInts: []int{1, 2, 3},
