@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma
 
-go 1.23.5
+go 1.23.6
 
 require (
 	cirello.io/pglock v1.16.0
@@ -29,7 +29,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.48.1
+	github.com/gruntwork-io/terratest v0.48.2
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
@@ -69,14 +69,14 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/net v0.34.0
-	golang.org/x/sync v0.10.0
-	golang.org/x/sys v0.29.0
-	golang.org/x/text v0.21.0
+	golang.org/x/sync v0.11.0
+	golang.org/x/sys v0.30.0
+	golang.org/x/text v0.22.0
 	gonum.org/v1/gonum v0.15.1
 	google.golang.org/genproto/googleapis/api v0.0.0-20250127172529-29210b9bc287
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250127172529-29210b9bc287
 	google.golang.org/grpc v1.70.0
-	google.golang.org/protobuf v1.36.4
+	google.golang.org/protobuf v1.36.5
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	helm.sh/helm/v3 v3.17.0
 	k8s.io/api v0.32.1
@@ -88,7 +88,7 @@ require (
 	k8s.io/kubectl v0.32.1
 	k8s.io/utils v0.0.0-20241210054802-24370beab758
 	sigs.k8s.io/controller-runtime v0.20.1
-	sigs.k8s.io/controller-tools v0.17.1
+	sigs.k8s.io/controller-tools v0.17.2
 	// When updating this also update version in: test/framework/k8s.go
 	sigs.k8s.io/gateway-api v1.2.1
 	sigs.k8s.io/yaml v1.4.0
@@ -262,7 +262,7 @@ require (
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
-	golang.org/x/tools v0.29.0 // indirect
+	golang.org/x/tools v0.29.0
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
@@ -271,6 +271,15 @@ require (
 	gotest.tools/v3 v3.5.1 // indirect
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
+)
+
+require (
+	github.com/antlr4-go/antlr/v4 v4.13.0 // indirect
+	github.com/blang/semver/v4 v4.0.0 // indirect
+	github.com/google/cel-go v0.22.0 // indirect
+	github.com/stoewer/go-strcase v1.3.0 // indirect
+	k8s.io/apiserver v0.32.1 // indirect
+	k8s.io/component-base v0.32.1 // indirect
 )
 
 replace github.com/envoyproxy/go-control-plane/envoy => github.com/kumahq/go-control-plane/envoy v1.32.3-kong-1

@@ -13,7 +13,10 @@ import (
 )
 
 func Setup(rt runtime.Runtime) error {
-	if err := setupCollector(rt); err != nil {
+	if err := setupDpCollector(rt); err != nil {
+		return err
+	}
+	if err := setupZoneResourceCollector(rt); err != nil {
 		return err
 	}
 	if err := setupFinalizer(rt); err != nil {
@@ -22,7 +25,7 @@ func Setup(rt runtime.Runtime) error {
 	return nil
 }
 
-func setupCollector(rt runtime.Runtime) error {
+func setupDpCollector(rt runtime.Runtime) error {
 	if rt.Config().Environment != config_core.UniversalEnvironment || rt.Config().Mode == config_core.Global {
 		// Dataplane GC is run only on Universal because on Kubernetes Dataplanes are bounded by ownership to Pods.
 		// Therefore, on K8S offline dataplanes are cleaned up quickly enough to not run this.
@@ -33,6 +36,33 @@ func setupCollector(rt runtime.Runtime) error {
 		func() *time.Ticker { return time.NewTicker(1 * time.Minute) },
 		rt.Config().Runtime.Universal.DataplaneCleanupAge.Duration,
 		rt.Metrics(),
+		"dp",
+		map[InsightType]ResourceType{
+			InsightType(mesh.DataplaneInsightType): ResourceType(mesh.DataplaneType),
+		},
+	)
+	if err != nil {
+		return err
+	}
+	return rt.Add(collector)
+}
+
+func setupZoneResourceCollector(rt runtime.Runtime) error {
+	if rt.Config().Environment != config_core.UniversalEnvironment || rt.Config().Mode == config_core.Global {
+		// ZoneIngress/ZoneEgress GC is run only on Universal because on Kubernetes ZoneIngress/ZoneEgress are bounded by ownership to Pods.
+		// Therefore, on K8S offline dataplanes are cleaned up quickly enough to not run this.
+		return nil
+	}
+	collector, err := NewCollector(
+		rt.ResourceManager(),
+		func() *time.Ticker { return time.NewTicker(1 * time.Minute) },
+		rt.Config().Runtime.Universal.ZoneResourceCleanupAge.Duration,
+		rt.Metrics(),
+		"zone",
+		map[InsightType]ResourceType{
+			InsightType(mesh.ZoneEgressInsightType):  ResourceType(mesh.ZoneEgressType),
+			InsightType(mesh.ZoneIngressInsightType): ResourceType(mesh.ZoneIngressType),
+		},
 	)
 	if err != nil {
 		return err

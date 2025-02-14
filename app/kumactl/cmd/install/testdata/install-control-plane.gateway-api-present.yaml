@@ -36,7 +36,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: circuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -86,7 +86,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: containerpatches.kuma.io
 spec:
   group: kuma.io
@@ -200,7 +200,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshes.kuma.io
 spec:
   group: kuma.io
@@ -252,7 +252,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshexternalservices.kuma.io
 spec:
   group: kuma.io
@@ -587,7 +587,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshfaultinjections.kuma.io
 spec:
   group: kuma.io
@@ -1012,7 +1012,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayconfigs.kuma.io
 spec:
   group: kuma.io
@@ -1239,7 +1239,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayinstances.kuma.io
 spec:
   group: kuma.io
@@ -1595,7 +1595,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgatewayroutes.kuma.io
 spec:
   group: kuma.io
@@ -1645,7 +1645,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshgateways.kuma.io
 spec:
   group: kuma.io
@@ -1697,7 +1697,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -2083,7 +2083,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshhttproutes.kuma.io
 spec:
   group: kuma.io
@@ -2745,6 +2745,9 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - rules
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -2757,7 +2760,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshinsights.kuma.io
 spec:
   group: kuma.io
@@ -2807,7 +2810,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -2857,7 +2860,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshloadbalancingstrategies.kuma.io
 spec:
   group: kuma.io
@@ -3435,7 +3438,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshmetrics.kuma.io
 spec:
   group: kuma.io
@@ -3730,7 +3733,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshmultizoneservices.kuma.io
 spec:
   group: kuma.io
@@ -3931,7 +3934,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshpassthroughs.kuma.io
 spec:
   group: kuma.io
@@ -4099,7 +4102,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -4652,7 +4655,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshratelimits.kuma.io
 spec:
   group: kuma.io
@@ -4888,6 +4891,133 @@ spec:
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound rate limiting configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound rate
+                        limits
+                      properties:
+                        local:
+                          description: LocalConf defines local http or/and tcp rate
+                            limit configuration
+                          properties:
+                            http:
+                              description: |-
+                                LocalHTTP defines configuration of local HTTP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/local_rate_limit_filter
+                              properties:
+                                disabled:
+                                  description: Define if rate limiting should be disabled.
+                                  type: boolean
+                                onRateLimit:
+                                  description: Describes the actions to take on a
+                                    rate limit event
+                                  properties:
+                                    headers:
+                                      description: The Headers to be added to the
+                                        HTTP response on a rate limit event
+                                      properties:
+                                        add:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                        set:
+                                          items:
+                                            properties:
+                                              name:
+                                                maxLength: 256
+                                                minLength: 1
+                                                pattern: ^[a-z0-9!#$%&'*+\-.^_\x60|~]+$
+                                                type: string
+                                              value:
+                                                type: string
+                                            required:
+                                            - name
+                                            - value
+                                            type: object
+                                          maxItems: 16
+                                          type: array
+                                          x-kubernetes-list-map-keys:
+                                          - name
+                                          x-kubernetes-list-type: map
+                                      type: object
+                                    status:
+                                      description: The HTTP status code to be set
+                                        on a rate limit event
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                requestRate:
+                                  description: Defines how many requests are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                              type: object
+                            tcp:
+                              description: |-
+                                LocalTCP defines confguration of local TCP rate limiting
+                                https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/network_filters/local_rate_limit_filter
+                              properties:
+                                connectionRate:
+                                  description: Defines how many connections are allowed
+                                    per interval.
+                                  properties:
+                                    interval:
+                                      description: The interval the number of units
+                                        is accounted for.
+                                      type: string
+                                    num:
+                                      description: |-
+                                        Number of units per interval (depending on usage it can be a number of requests,
+                                        or a number of connections).
+                                      format: int32
+                                      type: integer
+                                  required:
+                                  - interval
+                                  - num
+                                  type: object
+                                disabled:
+                                  description: |-
+                                    Define if rate limiting should be disabled.
+                                    Default: false
+                                  type: boolean
+                              type: object
+                          type: object
+                      type: object
                   type: object
                 type: array
               targetRef:
@@ -5156,7 +5286,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshretries.kuma.io
 spec:
   group: kuma.io
@@ -5667,7 +5797,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshservices.kuma.io
 spec:
   group: kuma.io
@@ -5762,6 +5892,7 @@ spec:
                     type: object
                 type: object
               state:
+                default: Unavailable
                 description: |-
                   State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
                   It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
@@ -5887,7 +6018,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -6160,6 +6291,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1
@@ -6174,7 +6306,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtimeouts.kuma.io
 spec:
   group: kuma.io
@@ -6600,7 +6732,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: dataplanes.kuma.io
 spec:
   group: kuma.io
@@ -6672,7 +6804,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtlses.kuma.io
 spec:
   group: kuma.io
@@ -6841,6 +6973,63 @@ spec:
                   - targetRef
                   type: object
                 type: array
+              rules:
+                description: |-
+                  Rules defines inbound tls configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound tls
+                      properties:
+                        mode:
+                          description: Mode defines the behavior of inbound listeners
+                            with regard to traffic encryption.
+                          enum:
+                          - Permissive
+                          - Strict
+                          type: string
+                        tlsCiphers:
+                          description: TlsCiphers section for providing ciphers specification.
+                          items:
+                            enum:
+                            - ECDHE-ECDSA-AES128-GCM-SHA256
+                            - ECDHE-ECDSA-AES256-GCM-SHA384
+                            - ECDHE-ECDSA-CHACHA20-POLY1305
+                            - ECDHE-RSA-AES128-GCM-SHA256
+                            - ECDHE-RSA-AES256-GCM-SHA384
+                            - ECDHE-RSA-CHACHA20-POLY1305
+                            type: string
+                          type: array
+                        tlsVersion:
+                          description: Version section for providing version specification.
+                          properties:
+                            max:
+                              default: TLSAuto
+                              description: Max defines maximum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                            min:
+                              default: TLSAuto
+                              description: Min defines minimum supported version.
+                                One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                              enum:
+                              - TLSAuto
+                              - TLS10
+                              - TLS11
+                              - TLS12
+                              - TLS13
+                              type: string
+                          type: object
+                      type: object
+                  type: object
+                type: array
               targetRef:
                 description: |-
                   TargetRef is a reference to the resource the policy takes an effect on.
@@ -6915,7 +7104,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtraces.kuma.io
 spec:
   group: kuma.io
@@ -7201,7 +7390,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtrafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7408,7 +7597,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: proxytemplates.kuma.io
 spec:
   group: kuma.io
@@ -7458,7 +7647,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: ratelimits.kuma.io
 spec:
   group: kuma.io
@@ -7508,7 +7697,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: retries.kuma.io
 spec:
   group: kuma.io
@@ -7558,7 +7747,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -7608,7 +7797,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: timeouts.kuma.io
 spec:
   group: kuma.io
@@ -7658,7 +7847,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficlogs.kuma.io
 spec:
   group: kuma.io
@@ -7708,7 +7897,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficpermissions.kuma.io
 spec:
   group: kuma.io
@@ -7758,7 +7947,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: externalservices.kuma.io
 spec:
   group: kuma.io
@@ -7808,7 +7997,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: trafficroutes.kuma.io
 spec:
   group: kuma.io
@@ -7858,7 +8047,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: traffictraces.kuma.io
 spec:
   group: kuma.io
@@ -7908,7 +8097,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: virtualoutbounds.kuma.io
 spec:
   group: kuma.io
@@ -7958,7 +8147,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneegresses.kuma.io
 spec:
   group: kuma.io
@@ -8016,7 +8205,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneegressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8066,7 +8255,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneingresses.kuma.io
 spec:
   group: kuma.io
@@ -8124,7 +8313,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneingressinsights.kuma.io
 spec:
   group: kuma.io
@@ -8175,7 +8364,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zoneinsights.kuma.io
 spec:
   group: kuma.io
@@ -8225,7 +8414,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: zones.kuma.io
 spec:
   group: kuma.io
@@ -8275,7 +8464,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: faultinjections.kuma.io
 spec:
   group: kuma.io
@@ -8325,7 +8514,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: healthchecks.kuma.io
 spec:
   group: kuma.io
@@ -8375,7 +8564,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: hostnamegenerators.kuma.io
 spec:
   group: kuma.io
@@ -8449,7 +8638,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshaccesslogs.kuma.io
 spec:
   group: kuma.io
@@ -8529,6 +8718,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8570,6 +8762,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -8619,6 +8814,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8713,7 +8911,175 @@ spec:
                           type: object
                       type: object
                   required:
+                  - default
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound access log configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound access
+                        logging
+                      properties:
+                        backends:
+                          items:
+                            properties:
+                              file:
+                                description: FileBackend defines configuration for
+                                  file based access logs
+                                properties:
+                                  format:
+                                    description: |-
+                                      Format of access logs. Placeholders available on
+                                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    properties:
+                                      json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                          - key
+                                          - value
+                                          type: object
+                                        type: array
+                                      omitEmptyValues:
+                                        default: false
+                                        type: boolean
+                                      plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                        type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
+                                    type: object
+                                  path:
+                                    description: Path to a file that logs will be
+                                      written to
+                                    example: /tmp/access.log
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - path
+                                type: object
+                              openTelemetry:
+                                description: Defines an OpenTelemetry logging backend.
+                                properties:
+                                  attributes:
+                                    description: |-
+                                      Attributes can contain placeholders available on
+                                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                    - key: mesh
+                                      value: '%KUMA_MESH%'
+                                    items:
+                                      properties:
+                                        key:
+                                          type: string
+                                        value:
+                                          type: string
+                                      required:
+                                      - key
+                                      - value
+                                      type: object
+                                    type: array
+                                  body:
+                                    description: |-
+                                      Body is a raw string or an OTLP any value as described at
+                                      https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
+                                      It can contain placeholders available on
+                                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    example:
+                                      kvlistValue:
+                                        values:
+                                        - key: mesh
+                                          value:
+                                            stringValue: '%KUMA_MESH%'
+                                    x-kubernetes-preserve-unknown-fields: true
+                                  endpoint:
+                                    description: Endpoint of OpenTelemetry collector.
+                                      An empty port defaults to 4317.
+                                    example: otel-collector:4317
+                                    minLength: 1
+                                    type: string
+                                required:
+                                - endpoint
+                                type: object
+                              tcp:
+                                description: TCPBackend defines a TCP logging backend.
+                                properties:
+                                  address:
+                                    description: Address of the TCP logging backend
+                                    example: 127.0.0.1:5000
+                                    minLength: 1
+                                    type: string
+                                  format:
+                                    description: |-
+                                      Format of access logs. Placeholders available on
+                                      https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
+                                    properties:
+                                      json:
+                                        example:
+                                        - key: start_time
+                                          value: '%START_TIME%'
+                                        - key: bytes_received
+                                          value: '%BYTES_RECEIVED%'
+                                        items:
+                                          properties:
+                                            key:
+                                              type: string
+                                            value:
+                                              type: string
+                                          required:
+                                          - key
+                                          - value
+                                          type: object
+                                        type: array
+                                      omitEmptyValues:
+                                        default: false
+                                        type: boolean
+                                      plain:
+                                        example: '[%START_TIME%] %KUMA_MESH% %UPSTREAM_HOST%'
+                                        type: string
+                                      type:
+                                        enum:
+                                        - Plain
+                                        - Json
+                                        type: string
+                                    required:
+                                    - type
+                                    type: object
+                                required:
+                                - address
+                                type: object
+                              type:
+                                enum:
+                                - Tcp
+                                - File
+                                - OpenTelemetry
+                                type: string
+                            required:
+                            - type
+                            type: object
+                          type: array
+                      type: object
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -8814,6 +9180,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8855,6 +9224,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -8904,6 +9276,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8998,6 +9373,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - default
                   - targetRef
                   type: object
                 type: array
@@ -9011,7 +9387,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.1
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshcircuitbreakers.kuma.io
 spec:
   group: kuma.io
@@ -9367,6 +9743,252 @@ spec:
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound circuit breaker configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound circuit
+                        breaker
+                      properties:
+                        connectionLimits:
+                          description: |-
+                            ConnectionLimits contains configuration of each circuit breaking limit,
+                            which when exceeded makes the circuit breaker to become open (no traffic
+                            is allowed like no current is allowed in the circuits when physical
+                            circuit breaker ir open)
+                          properties:
+                            maxConnectionPools:
+                              description: |-
+                                The maximum number of connection pools per cluster that are concurrently
+                                supported at once. Set this for clusters which create a large number of
+                                connection pools.
+                              format: int32
+                              type: integer
+                            maxConnections:
+                              description: |-
+                                The maximum number of connections allowed to be made to the upstream
+                                cluster.
+                              format: int32
+                              type: integer
+                            maxPendingRequests:
+                              description: |-
+                                The maximum number of pending requests that are allowed to the upstream
+                                cluster. This limit is applied as a connection limit for non-HTTP
+                                traffic.
+                              format: int32
+                              type: integer
+                            maxRequests:
+                              description: |-
+                                The maximum number of parallel requests that are allowed to be made
+                                to the upstream cluster. This limit does not apply to non-HTTP traffic.
+                              format: int32
+                              type: integer
+                            maxRetries:
+                              description: |-
+                                The maximum number of parallel retries that will be allowed to
+                                the upstream cluster.
+                              format: int32
+                              type: integer
+                          type: object
+                        outlierDetection:
+                          description: |-
+                            OutlierDetection contains the configuration of the process of dynamically
+                            determining whether some number of hosts in an upstream cluster are
+                            performing unlike the others and removing them from the healthy load
+                            balancing set. Performance might be along different axes such as
+                            consecutive failures, temporal success rate, temporal latency, etc.
+                            Outlier detection is a form of passive health checking.
+                          properties:
+                            baseEjectionTime:
+                              description: |-
+                                The base time that a host is ejected for. The real time is equal to
+                                the base time multiplied by the number of times the host has been
+                                ejected.
+                              type: string
+                            detectors:
+                              description: Contains configuration for supported outlier
+                                detectors
+                              properties:
+                                failurePercentage:
+                                  description: |-
+                                    Failure Percentage based outlier detection functions similarly to success
+                                    rate detection, in that it relies on success rate data from each host in
+                                    a cluster. However, rather than compare those values to the mean success
+                                    rate of the cluster as a whole, they are compared to a flat
+                                    user-configured threshold. This threshold is configured via the
+                                    outlierDetection.failurePercentageThreshold field.
+                                    The other configuration fields for failure percentage based detection are
+                                    similar to the fields for success rate detection. As with success rate
+                                    detection, detection will not be performed for a host if its request
+                                    volume over the aggregation interval is less than the
+                                    outlierDetection.detectors.failurePercentage.requestVolume value.
+                                    Detection also will not be performed for a cluster if the number of hosts
+                                    with the minimum required request volume in an interval is less than the
+                                    outlierDetection.detectors.failurePercentage.minimumHosts value.
+                                  properties:
+                                    minimumHosts:
+                                      description: |-
+                                        The minimum number of hosts in a cluster in order to perform failure
+                                        percentage-based ejection. If the total number of hosts in the cluster is
+                                        less than this value, failure percentage-based ejection will not be
+                                        performed.
+                                      format: int32
+                                      type: integer
+                                    requestVolume:
+                                      description: |-
+                                        The minimum number of total requests that must be collected in one
+                                        interval (as defined by the interval duration above) to perform failure
+                                        percentage-based ejection for this host. If the volume is lower than this
+                                        setting, failure percentage-based ejection will not be performed for this
+                                        host.
+                                      format: int32
+                                      type: integer
+                                    threshold:
+                                      description: |-
+                                        The failure percentage to use when determining failure percentage-based
+                                        outlier detection. If the failure percentage of a given host is greater
+                                        than or equal to this value, it will be ejected.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                gatewayFailures:
+                                  description: |-
+                                    In the default mode (outlierDetection.splitExternalLocalOriginErrors is
+                                    false) this detection type takes into account a subset of 5xx errors,
+                                    called "gateway errors" (502, 503 or 504 status code) and local origin
+                                    failures, such as timeout, TCP reset etc.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true)
+                                    this detection type takes into account a subset of 5xx errors, called
+                                    "gateway errors" (502, 503 or 504 status code) and is supported only by
+                                    the http router.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive gateway failures (502, 503, 504 status codes)
+                                        before a consecutive gateway failure ejection occurs.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                localOriginFailures:
+                                  description: |-
+                                    This detection type is enabled only when
+                                    outlierDetection.splitExternalLocalOriginErrors is true and takes into
+                                    account only locally originated errors (timeout, reset, etc).
+                                    If Envoy repeatedly cannot connect to an upstream host or communication
+                                    with the upstream host is repeatedly interrupted, it will be ejected.
+                                    Various locally originated problems are detected: timeout, TCP reset,
+                                    ICMP errors, etc. This detection type is supported by http router and
+                                    tcp proxy.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive locally originated failures before ejection
+                                        occurs. Parameter takes effect only when splitExternalAndLocalErrors
+                                        is set to true.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                successRate:
+                                  description: |-
+                                    Success Rate based outlier detection aggregates success rate data from
+                                    every host in a cluster. Then at given intervals ejects hosts based on
+                                    statistical outlier detection. Success Rate outlier detection will not be
+                                    calculated for a host if its request volume over the aggregation interval
+                                    is less than the outlierDetection.detectors.successRate.requestVolume
+                                    value.
+                                    Moreover, detection will not be performed for a cluster if the number of
+                                    hosts with the minimum required request volume in an interval is less
+                                    than the outlierDetection.detectors.successRate.minimumHosts value.
+                                    In the default configuration mode
+                                    (outlierDetection.splitExternalLocalOriginErrors is false) this detection
+                                    type takes into account all types of errors: locally and externally
+                                    originated.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true),
+                                    locally originated errors and externally originated (transaction) errors
+                                    are counted and treated separately.
+                                  properties:
+                                    minimumHosts:
+                                      description: |-
+                                        The number of hosts in a cluster that must have enough request volume to
+                                        detect success rate outliers. If the number of hosts is less than this
+                                        setting, outlier detection via success rate statistics is not performed
+                                        for any host in the cluster.
+                                      format: int32
+                                      type: integer
+                                    requestVolume:
+                                      description: |-
+                                        The minimum number of total requests that must be collected in one
+                                        interval (as defined by the interval duration configured in
+                                        outlierDetection section) to include this host in success rate based
+                                        outlier detection. If the volume is lower than this setting, outlier
+                                        detection via success rate statistics is not performed for that host.
+                                      format: int32
+                                      type: integer
+                                    standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: |-
+                                        This factor is used to determine the ejection threshold for success rate
+                                        outlier ejection. The ejection threshold is the difference between
+                                        the mean success rate, and the product of this factor and the standard
+                                        deviation of the mean success rate: mean - (standard_deviation *
+                                        success_rate_standard_deviation_factor).
+                                        Either int or decimal represented as string.
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                                totalFailures:
+                                  description: |-
+                                    In the default mode (outlierDetection.splitExternalAndLocalErrors is
+                                    false) this detection type takes into account all generated errors:
+                                    locally originated and externally originated (transaction) errors.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true)
+                                    this detection type takes into account only externally originated
+                                    (transaction) errors, ignoring locally originated errors.
+                                    If an upstream host is an HTTP-server, only 5xx types of error are taken
+                                    into account (see Consecutive Gateway Failure for exceptions).
+                                    Properly formatted responses, even when they carry an operational error
+                                    (like index not found, access denied) are not taken into account.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive server-side error responses (for HTTP traffic,
+                                        5xx responses; for TCP traffic, connection failures; for Redis, failure
+                                        to respond PONG; etc.) before a consecutive total failure ejection
+                                        occurs.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                              type: object
+                            disabled:
+                              description: When set to true, outlierDetection configuration
+                                won't take any effect
+                              type: boolean
+                            interval:
+                              description: |-
+                                The time interval between ejection analysis sweeps. This can result in
+                                both new ejections and hosts being returned to service.
+                              type: string
+                            maxEjectionPercent:
+                              description: |-
+                                The maximum % of an upstream cluster that can be ejected due to outlier
+                                detection. Defaults to 10% but will eject at least one host regardless of
+                                the value.
+                              format: int32
+                              type: integer
+                            splitExternalAndLocalErrors:
+                              description: |-
+                                Determines whether to distinguish local origin failures from external
+                                errors. If set to true the following configuration parameters are taken
+                                into account: detectors.localOriginFailures.consecutive
+                              type: boolean
+                          type: object
+                      type: object
                   type: object
                 type: array
               targetRef:
@@ -10101,7 +10723,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 616b727bd1b67ceea8bc4899363416678c5146bc0cffb826466e084da4a2a808
+        checksum/tls-secrets: 27eaaaa811fc2eed212bbcd5e84e09074d6da6742b4c89a96a33cce0fefd7ecb
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -10516,31 +11138,6 @@ webhooks:
           - meshservices
     
       
-    sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

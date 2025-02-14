@@ -54,8 +54,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
-		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
+	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
 endif
 
 ifdef CI
@@ -138,19 +137,12 @@ k3d/setup-docker-credentials:
 k3d/cleanup-docker-credentials:
 	@rm -f /tmp/.kuma-dev/k3d-registry.yaml
 
-$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml:
-	@mkdir -p $(TOP)/$(KUMA_DIR)/test/k3d
-	curl --location --fail --silent --retry 5 \
-		-o $(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml \
-		https://k3d.io/v$(K3D_VERSION)/usage/advanced/calico.yaml
-
 .PHONY: k3d/start
-k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials \
-	$(if $(findstring calico,$(K3D_NETWORK_CNI)),$(TOP)/$(KUMA_DIR)/test/k3d/calico.$(K3D_VERSION).yaml)
-
+k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credentials
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
+	$(MAKE) k3d/configure/calico
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -161,6 +153,14 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	@echo
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
+
+.PHONY: k3d/configure/calico
+k3d/configure/calico:
+ifeq ($(K3D_NETWORK_CNI),calico)
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/tigera-operator.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) create -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.0/manifests/custom-resources.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) patch installation default --type=merge --patch='{"spec":{"calicoNetwork":{"containerIPForwarding":"Enabled"}}}'
+endif
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:

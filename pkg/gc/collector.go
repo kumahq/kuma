@@ -5,26 +5,35 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/api/generic"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-var gcLog = core.Log.WithName("dataplane-gc")
+var gcLog logr.Logger
+
+type (
+	InsightType  core_model.ResourceType
+	ResourceType core_model.ResourceType
+	Age          time.Duration
+)
 
 type collector struct {
-	rm         manager.ResourceManager
-	cleanupAge time.Duration
-	newTicker  func() *time.Ticker
-	metric     prometheus.Summary
+	rm                 manager.ResourceManager
+	cleanupAge         time.Duration
+	newTicker          func() *time.Ticker
+	metric             prometheus.Summary
+	resourcesToCleanup map[InsightType]ResourceType
 }
 
 func NewCollector(
@@ -32,9 +41,12 @@ func NewCollector(
 	newTicker func() *time.Ticker,
 	cleanupAge time.Duration,
 	metrics core_metrics.Metrics,
+	metricsName string,
+	resourcesToCleanup map[InsightType]ResourceType,
 ) (component.Component, error) {
+	gcLog = core.Log.WithName(fmt.Sprintf("%s-gc", metricsName))
 	metric := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "component_dp_gc",
+		Name:       fmt.Sprintf("component_%s_gc", metricsName),
 		Help:       "Summary of Dataplane GC component interval",
 		Objectives: core_metrics.DefaultObjectives,
 	})
@@ -42,10 +54,11 @@ func NewCollector(
 		return nil, err
 	}
 	return &collector{
-		cleanupAge: cleanupAge,
-		rm:         rm,
-		newTicker:  newTicker,
-		metric:     metric,
+		cleanupAge:         cleanupAge,
+		rm:                 rm,
+		newTicker:          newTicker,
+		metric:             metric,
+		resourcesToCleanup: resourcesToCleanup,
 	}, nil
 }
 
@@ -58,9 +71,11 @@ func (d *collector) Start(stop <-chan struct{}) error {
 		select {
 		case now := <-ticker.C:
 			start := core.Now()
-			if err := d.cleanup(ctx, now); err != nil {
-				gcLog.Error(err, "unable to cleanup")
-				continue
+			for insightType, resourceType := range d.resourcesToCleanup {
+				if err := d.cleanup(ctx, now, insightType, resourceType); err != nil {
+					gcLog.Error(err, "unable to cleanup")
+					continue
+				}
 			}
 			d.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
@@ -70,30 +85,33 @@ func (d *collector) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *collector) cleanup(ctx context.Context, now time.Time) error {
-	dataplaneInsights := &core_mesh.DataplaneInsightResourceList{}
-	if err := d.rm.List(ctx, dataplaneInsights); err != nil {
+func (d *collector) cleanup(ctx context.Context, now time.Time, insightType InsightType, resourceType ResourceType) error {
+	insights := registry.Global().MustNewList(core_model.ResourceType(insightType))
+	if err := d.rm.List(ctx, insights); err != nil {
 		return err
 	}
-	onDelete := []model.ResourceKey{}
-	for _, di := range dataplaneInsights.Items {
-		if di.Spec.IsOnline() {
+	onDelete := map[core_model.ResourceKey]Age{}
+	for _, item := range insights.GetItems() {
+		insight := item.GetSpec().(generic.Insight)
+		if insight.IsOnline() {
 			continue
 		}
-		if s := di.Spec.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
+		if s := insight.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
 			if err := s.GetDisconnectTime().CheckValid(); err != nil {
-				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", di.GetMeta().GetMesh(), "dataplane", di.GetMeta().GetName())
+				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), insightType, item.GetMeta().GetName())
 				continue
 			}
-			if now.Sub(s.GetDisconnectTime().AsTime()) > d.cleanupAge {
-				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})
+			age := now.Sub(s.GetDisconnectTime().AsTime())
+			if age > d.cleanupAge {
+				onDelete[core_model.MetaToResourceKey(item.GetMeta())] = Age(age)
 			}
 		}
 	}
-	for _, rk := range onDelete {
-		gcLog.Info(fmt.Sprintf("deleting dataplane which is offline for %v", d.cleanupAge), "name", rk.Name, "mesh", rk.Mesh)
-		if err := d.rm.Delete(ctx, core_mesh.NewDataplaneResource(), store.DeleteBy(rk)); err != nil {
-			gcLog.Error(err, "unable to delete dataplane", "name", rk.Name, "mesh", rk.Mesh)
+	for rk, age := range onDelete {
+		gcLog.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
+		resource := registry.Global().MustNewObject(core_model.ResourceType(resourceType))
+		if err := d.rm.Delete(ctx, resource, store.DeleteBy(rk)); err != nil {
+			gcLog.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)
 			continue
 		}
 	}

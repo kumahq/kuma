@@ -5,5 +5,9 @@ import (
 )
 
 func (t *MeshTimeoutResource) Deprecations() []string {
-	return validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
+	var deprecations []string
+	if len(t.Spec.From) > 0 {
+		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")
+	}
+	return append(deprecations, validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)...)
 }

@@ -357,9 +357,10 @@ var _ = Describe("Util", func() {
 	Describe("FindPort()", func() {
 		Describe("should return a correct port number", func() {
 			type testCase struct {
-				pod      string
-				svcPort  string
-				expected int
+				pod              string
+				svcPort          string
+				expectedPort     int
+				expectedPortName string
 			}
 
 			DescribeTable("should correctly find a matching port in a given Pod",
@@ -379,11 +380,12 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := util.FindPort(&pod, &svcPort)
+					actualPort, actualPortName, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
-					Expect(actual).To(Equal(given.expected))
+					Expect(actualPort).To(Equal(given.expectedPort))
+					Expect(actualPortName).To(Equal(given.expectedPortName))
 				},
 				Entry("Service with `targetPort` as a number (TCP)", testCase{
 					pod: `
@@ -398,7 +400,7 @@ var _ = Describe("Util", func() {
                     protocol: TCP
                     targetPort: 8080
 `,
-					expected: 8080,
+					expectedPort: 8080,
 				}),
 				Entry("Service with `targetPort` as a number (UDP)", testCase{
 					pod: `
@@ -413,7 +415,7 @@ var _ = Describe("Util", func() {
                     protocol: UDP
                     targetPort: 53
 `,
-					expected: 53,
+					expectedPort: 53,
 				}),
 				Entry("Service with `targetPort` as a name (container port protocol is omitted)", testCase{
 					pod: `
@@ -437,7 +439,8 @@ var _ = Describe("Util", func() {
                     protocol: TCP
                     targetPort: http-api
 `,
-					expected: 7070,
+					expectedPort:     7070,
+					expectedPortName: "http-api",
 				}),
 				Entry("Service with `targetPort` as a name (container port protocol is set to TCP)", testCase{
 					pod: `
@@ -461,7 +464,8 @@ var _ = Describe("Util", func() {
                     protocol: TCP
                     targetPort: http-api
 `,
-					expected: 7070,
+					expectedPort:     7070,
+					expectedPortName: "http-api",
 				}),
 				Entry("Service with `targetPort` as a name (container port protocol is set to UDP)", testCase{
 					pod: `
@@ -485,7 +489,8 @@ var _ = Describe("Util", func() {
                     protocol: UDP
                     targetPort: dns-port
 `,
-					expected: 1053,
+					expectedPort:     1053,
+					expectedPortName: "dns-port",
 				}),
 				Entry("Service with `targetPort` as a name (service port protocol is omitted and container port protocol is omitted)", testCase{
 					pod: `
@@ -508,7 +513,8 @@ var _ = Describe("Util", func() {
                     port: 8080
                     targetPort: http-api
 `,
-					expected: 7070,
+					expectedPort:     7070,
+					expectedPortName: "http-api",
 				}),
 				Entry("Service with `targetPort` as a name (service port protocol is omitted while container port protocol set to TCP)", testCase{
 					pod: `
@@ -531,7 +537,8 @@ var _ = Describe("Util", func() {
                     port: 8080
                     targetPort: http-api
 `,
-					expected: 7070,
+					expectedPort:     7070,
+					expectedPortName: "http-api",
 				}),
 			)
 		})
@@ -560,7 +567,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, _, err := util.FindPort(&pod, &svcPort)
+					actual, _, _, err := util.FindPort(&pod, &svcPort)
 					// then
 					Expect(err).To(HaveOccurred())
 					// and

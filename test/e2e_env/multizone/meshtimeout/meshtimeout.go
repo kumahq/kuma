@@ -16,6 +16,9 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/envoy_admin"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/stats"
+	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
@@ -83,6 +86,7 @@ spec:
 		Expect(group.Wait()).To(Succeed())
 
 		Expect(DeleteMeshResources(multizone.Global, mesh, meshretry_api.MeshRetryResourceTypeDescriptor)).To(Succeed())
+		Expect(DeleteMeshResources(multizone.Global, mesh, meshtimeout_api.MeshTimeoutResourceTypeDescriptor)).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -100,6 +104,12 @@ spec:
 		Expect(multizone.KubeZone2.TriggerDeleteNamespace(k8sZoneNamespace)).To(Succeed())
 		Expect(multizone.Global.DeleteMesh(mesh)).To(Succeed())
 	})
+
+	activeCxStat := func(admin envoy_admin.Tunnel) *stats.Stats {
+		s, err := admin.GetStats("cluster.multizone-meshtimeout_test-server_multizone-meshtimeout-ns_kuma-2_msvc_80.upstream_cx_active")
+		Expect(err).ToNot(HaveOccurred())
+		return s
+	}
 
 	It("should apply MeshTimeout policy to MeshHTTPRoute", func() {
 		// when
@@ -257,6 +267,52 @@ spec:
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response.ResponseCode).To(Equal(504))
+		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should apply MeshTimeout policy on MeshService from other zone", func() {
+		// given
+		// create a tunnel to test-client admin
+		Expect(multizone.KubeZone1.PortForwardService("test-client", k8sZoneNamespace, 9901)).To(Succeed())
+		portFwd := multizone.KubeZone1.GetPortForward("test-client")
+		tnl := tunnel.NewK8sEnvoyAdminTunnel(multizone.Global.GetTesting(), portFwd.ApiServerEndpoint)
+
+		Eventually(func(g Gomega) {
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		// should have active connection
+		Consistently(func(g Gomega) {
+			g.Expect(activeCxStat(tnl)).To(stats.BeGreaterThanZero())
+		}, "5s", "1s").Should(Succeed())
+
+		Expect(YamlUniversal(fmt.Sprintf(`
+type: MeshTimeout
+name: mesh-timeout-ms-kuma-2
+mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        idleTimeout: 2s
+`, mesh))(multizone.Global)).To(Succeed())
+
+		Eventually(func(g Gomega) {
+			_, err := framework_client.CollectEchoResponse(
+				multizone.KubeZone1, "test-client", "http://test-server.multizone-meshtimeout-ns.svc.kuma-2.mesh.local:80",
+				framework_client.FromKubernetesPod(k8sZoneNamespace, "test-client"),
+			)
+			g.Expect(err).ToNot(HaveOccurred())
+		}, "30s", "1s").MustPassRepeatedly(5).Should(Succeed())
+		// should close the connection shortly after
+		Eventually(func(g Gomega) {
+			g.Expect(activeCxStat(tnl)).To(stats.BeEqualZero())
 		}, "30s", "1s").Should(Succeed())
 	})
 }

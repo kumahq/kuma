@@ -1,0 +1,14 @@
+type: MeshCircuitBreaker
+name: mcb-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  rules:
+    - default:
+        connectionLimits:
+          maxConnectionPools: 5
+          maxConnections: 10
+          maxPendingRequests: 2
+          maxRetries: 1
+          maxRequests: 32

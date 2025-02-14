@@ -32,7 +32,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 			// ignore non-TCP ports
 			continue
 		}
-		containerPort, container, err := util_k8s.FindPort(pod, &svcPort)
+		containerPort, portName, container, err := util_k8s.FindPort(pod, &svcPort)
 		if err != nil {
 			converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", service.Name, "servicePortName", svcPort.Name)
 			// ignore those cases where a Pod doesn't have all the ports a Service has
@@ -77,7 +77,7 @@ func inboundForService(zone string, pod *kube_core.Pod, service *kube_core.Servi
 
 		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
 			Port:   uint32(containerPort),
-			Name:   svcPort.Name,
+			Name:   portName,
 			Tags:   tags,
 			State:  state,
 			Health: &health, // write health for backwards compatibility with Kuma 2.5 and older
