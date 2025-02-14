@@ -750,6 +750,14 @@ func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
 	return indexedResources
 }
 
+func IndexKeys(keys []ResourceKey) map[ResourceKey]struct{} {
+	indexedKeys := make(map[ResourceKey]struct{})
+	for _, key := range keys {
+		indexedKeys[key] = struct{}{}
+	}
+	return indexedKeys
+}
+
 // Resource can implement defaulter to provide static default fields.
 // Kubernetes Webhook and Resource Manager will make sure that Default() is called before Create/Update
 type Defaulter interface {
