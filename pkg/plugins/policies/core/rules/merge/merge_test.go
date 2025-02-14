@@ -70,7 +70,7 @@ var _ = Describe("Confs", func() {
 					AppendPointerToStrings: &[]string{"p2"},
 					AppendPointerToStructs: &[]ExampleStruct{
 						{
-							Value:    "s1",
+							Value: "s1",
 						},
 					},
 					Sub: subPolicy{
@@ -88,7 +88,7 @@ var _ = Describe("Confs", func() {
 					AppendPointerToStrings: &[]string{"p3"},
 					AppendPointerToStructs: &[]ExampleStruct{
 						{
-							Value:    "s2",
+							Value: "s2",
 						},
 					},
 					Sub: subPolicy{
@@ -108,10 +108,10 @@ var _ = Describe("Confs", func() {
 				AppendPointerToStrings: &[]string{"p1", "p2", "p3"},
 				AppendPointerToStructs: &[]ExampleStruct{
 					{
-						Value:    "s1",
+						Value: "s1",
 					},
 					{
-						Value:    "s2",
+						Value: "s2",
 					},
 				},
 				Sub: subPolicy{
