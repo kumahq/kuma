@@ -13,9 +13,11 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -41,6 +43,7 @@ type GatewayReconciler struct {
 	SystemNamespace string
 	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 // Reconcile handles transforming a gateway-api MeshGateway into a Kuma MeshGateway and
@@ -217,7 +220,7 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 
 		gateways := &gatewayapi.GatewayList{}
 		if err := client.List(
-			ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
+			ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name}
 		); err != nil {
 			l.Error(err, "unexpected error listing Gateways")
 			return nil
@@ -406,12 +409,13 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-controller").
-		For(&gatewayapi.Gateway{}).
+		For(&gatewayapi.Gateway{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		Owns(&mesh_k8s.MeshGateway{}).
-		Owns(&mesh_k8s.MeshGatewayInstance{}).
+		Owns(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		Watches(
 			&gatewayapi.HTTPRoute{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log)),
+			builder.WithPredicates(r.OnlyFromWatchedNamespaces),
 		).
 		Watches(
 			&gatewayapi.GatewayClass{},

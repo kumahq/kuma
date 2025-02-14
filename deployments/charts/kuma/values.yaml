@@ -23,6 +23,9 @@ noHelmHooks: false
 # -- Whether to restart control-plane by calculating a new checksum for the secret
 restartOnSecretChange: true
 
+# -- List of namespaces that the control-plane should watch and have permissions for
+watchNamespaces: ["kuma-demo", "kuma-test"]
+
 controlPlane:
   # -- Environment that control plane is run in, useful when running universal global control plane on k8s
   environment: "kubernetes"

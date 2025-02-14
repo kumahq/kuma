@@ -12,8 +12,10 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -37,6 +39,8 @@ type ConfigMapReconciler struct {
 	VIPsAllocator       *dns.VIPsAllocator
 	SystemNamespace     string
 	KubeOutboundsAsVIPs bool
+
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 func (r *ConfigMapReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -87,11 +91,12 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-configmap-controller").
 		For(&kube_core.ConfigMap{}).
-		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace))).
-		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter))).
-		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace))).
-		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToConfigMapsMapper(mgr.GetClient(), r.Log, r.SystemNamespace)), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&mesh_k8s.Dataplane{}, kube_handler.EnqueueRequestsFromMapFunc(DataplaneToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter)), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&mesh_k8s.ZoneIngress{}, kube_handler.EnqueueRequestsFromMapFunc(ZoneIngressToMeshMapper(r.Log, r.SystemNamespace, r.ResourceConverter)), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&mesh_k8s.VirtualOutbound{}, kube_handler.EnqueueRequestsFromMapFunc(VirtualOutboundToConfigMapsMapper(r.Log, r.SystemNamespace)), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&mesh_k8s.ExternalService{}, kube_handler.EnqueueRequestsFromMapFunc(ExternalServiceToConfigMapsMapper(r.Log, r.SystemNamespace)), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		// don't need predicate sicne they are cluster scope
 		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Watches(&mesh_k8s.MeshGatewayRoute{}, kube_handler.EnqueueRequestsFromMapFunc(MeshGatewayRouteToMeshMapper(mgr.GetClient(), r.Log, r.SystemNamespace, r.ResourceConverter))).
 		Complete(r)

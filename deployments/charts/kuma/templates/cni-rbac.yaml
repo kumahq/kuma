@@ -11,6 +11,7 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if eq (len .Values.watchNamespaces) 0 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -48,4 +49,72 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
     namespace: {{ .Values.cni.namespace }}
-  {{- end }}
+{{- end }}
+{{- if gt (len .Values.watchNamespaces) 0 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}-cni
+  labels:
+  {{ include "kuma.cniLabels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-cni
+  labels:
+  {{ include "kuma.cniLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}-cni
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" . }}-cni
+    namespace: {{ .Values.cni.namespace }}
+{{- $global := . }}
+{{- range $namespace := .Values.watchNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kuma.name" $global }}-cni
+  namespace: {{ $namespace }}
+  labels:
+  {{ include "kuma.cniLabels" $global | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      {{- if $global.Values.experimental.ebpf.enabled }}
+      - list
+      - watch
+      {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $global }}-cni
+  namespace: {{ $namespace }}
+  labels:
+  {{ include "kuma.cniLabels" $global | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" $global }}-cni
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $global }}-cni
+    namespace: {{ $global.Values.cni.namespace }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -8,6 +8,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
@@ -76,34 +78,55 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 }
 
 func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if err := addNamespaceReconciler(mgr, rt); err != nil {
+	watchNamespaces := make(map[string]struct{}, len(rt.Config().Runtime.Kubernetes.WatchNamespaces) + 1)
+	watchNamespaces[rt.Config().Store.Kubernetes.SystemNamespace] = struct{}{}
+	for _, namespace := range rt.Config().Runtime.Kubernetes.WatchNamespaces {
+		watchNamespaces[namespace] = struct{}{}
+	}
+	onlyFromWatchedNamespaces := predicate.NewPredicateFuncs(
+		func(obj client.Object) bool {
+			if len(watchNamespaces) == 1 {
+				return true
+			}
+			ns := obj.GetNamespace()
+			core.Log.Info("test only from watched", "ns", ns)
+			if ns == "" {
+				return true
+			} 
+			if _, exist := watchNamespaces[obj.GetNamespace()]; exist {
+				return true
+			}
+			return false
+		},
+	)
+	if err := addNamespaceReconciler(mgr, rt, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
-	if err := addServiceReconciler(mgr, rt); err != nil {
+	if err := addServiceReconciler(mgr, rt, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
-	if err := addMeshServiceReconciler(mgr, rt, converter); err != nil {
+	if err := addMeshServiceReconciler(mgr, rt, converter, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
 	if err := addMeshReconciler(mgr, rt); err != nil {
 		return err
 	}
-	if err := addGatewayReconcilers(mgr, rt, converter); err != nil {
+	if err := addGatewayReconcilers(mgr, rt, converter, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
-	if err := addPodReconciler(mgr, rt, converter); err != nil {
+	if err := addPodReconciler(mgr, rt, converter, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
-	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
+	if err := addPodStatusReconciler(mgr, rt, converter, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
-	if err := addDNS(mgr, rt, converter); err != nil {
+	if err := addDNS(mgr, rt, converter, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
 
 	nodeTaintController := rt.Config().Runtime.Kubernetes.NodeTaintController
 	if nodeTaintController.Enabled {
-		if err := addCniNodeTaintReconciler(mgr, rt, nodeTaintController.CniApp, nodeTaintController.CniNamespace); err != nil {
+		if err := addCniNodeTaintReconciler(mgr, rt, nodeTaintController.CniApp, nodeTaintController.CniNamespace, onlyFromWatchedNamespaces); err != nil {
 			return err
 		}
 	}
@@ -111,7 +134,7 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	return nil
 }
 
-func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, cniApp string, cniNamespace string) error {
+func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, cniApp string, cniNamespace string, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -120,12 +143,13 @@ func addCniNodeTaintReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, c
 		Log:          core.Log.WithName("controllers").WithName("NodeTaint"),
 		CniApp:       cniApp,
 		CniNamespace: cniNamespace,
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -133,22 +157,24 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		Client:     mgr.GetClient(),
 		Log:        core.Log.WithName("controllers").WithName("Namespace"),
 		CNIEnabled: rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
+		OnlyFromWatchedNamespaces: onlyFromWatchedNamespaces,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
 	reconciler := &k8s_controllers.ServiceReconciler{
 		Client: mgr.GetClient(),
 		Log:    core.Log.WithName("controllers").WithName("Service"),
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -158,6 +184,7 @@ func addMeshServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, co
 		Scheme:            mgr.GetScheme(),
 		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/mesh-service-generator"),
 		ResourceConverter: converter,
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -181,7 +208,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -210,11 +237,12 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		ResourceConverter:            converter,
 		SystemNamespace:              rt.Config().Store.Kubernetes.SystemNamespace,
 		IgnoredServiceSelectorLabels: rt.Config().Runtime.Kubernetes.Injector.IgnoredServiceSelectorLabels,
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 	return reconciler.SetupWithManager(mgr, rt.Config().Runtime.Kubernetes.ControllersConcurrency.PodController)
 }
 
-func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -225,11 +253,12 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 		Log:               core.Log.WithName("controllers").WithName("Pod"),
 		ResourceConverter: converter,
 		EnvoyAdminClient:  rt.EnvoyAdminClient(),
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}
@@ -258,6 +287,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common
 		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceConverter:   converter,
 		KubeOutboundsAsVIPs: rt.Config().Experimental.KubeOutboundsAsVIPs,
+		OnlyFromWatchedNamespaces:     onlyFromWatchedNamespaces,
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {
 		return err

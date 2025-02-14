@@ -12,9 +12,11 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -27,6 +29,7 @@ import (
 type GatewayClassReconciler struct {
 	kube_client.Client
 	Log logr.Logger
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 // gatewayClassField is needed for both GatewayClassReconciler and
@@ -256,6 +259,7 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
+			builder.WithPredicates(r.OnlyFromWatchedNamespaces),
 		).
 		Watches(
 			&mesh_k8s.MeshGatewayConfig{},

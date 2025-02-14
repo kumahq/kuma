@@ -22,6 +22,8 @@ import (
 type ServiceReconciler struct {
 	kube_client.Client
 	Log logr.Logger
+
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 // Reconcile is in charge of injecting "ingress.kubernetes.io/service-upstream" annotation to the Services
@@ -93,7 +95,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 func (r *ServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-service-controller").
-		For(&kube_core.Service{}, builder.WithPredicates(serviceEvents)).
+		For(&kube_core.Service{}, builder.WithPredicates(serviceEvents, r.OnlyFromWatchedNamespaces)).
 		Complete(r)
 }
 

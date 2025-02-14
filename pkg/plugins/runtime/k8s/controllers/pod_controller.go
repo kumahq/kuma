@@ -13,10 +13,12 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -51,6 +53,8 @@ type PodReconciler struct {
 	ResourceConverter            k8s_common.Converter
 	SystemNamespace              string
 	IgnoredServiceSelectorLabels []string
+
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -424,10 +428,10 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-pod-controller").
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
-		For(&kube_core.Pod{}).
+		For(&kube_core.Pod{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
-		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient()))).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient()))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		Complete(r)
 }
 

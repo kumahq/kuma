@@ -157,6 +157,9 @@ type KubernetesRuntimeConfig struct {
 	// If true, then control plane can support TLS secrets for builtin gateway outside of mesh system namespace.
 	// The downside is that control plane requires permission to read Secrets in all namespaces.
 	SupportGatewaySecretsInAllNamespaces bool `json:"supportGatewaySecretsInAllNamespaces" envconfig:"kuma_runtime_kubernetes_support_gateway_secrets_in_all_namespaces"`
+	// WatchNamespaces defines the list of namespaces that controllers monitor for changes.
+	// By default, the control plane monitors all namespaces.
+	WatchNamespaces []string `json:"watchNamespaces,omitempty" envconfig:"kuma_runtime_kubernetes_watch_namespaces"`
 }
 
 type ControllersConcurrency struct {

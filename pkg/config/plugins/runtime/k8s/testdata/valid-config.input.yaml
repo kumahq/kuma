@@ -44,3 +44,4 @@ injector:
     port: 1253
 marshalingCacheExpirationTime: 1s
 controlPlaneServiceName: custom-control-plane
+watchNamespaces: ["kuma-demo"]

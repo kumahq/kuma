@@ -58,6 +58,7 @@ type MeshServiceReconciler struct {
 	Log               logr.Logger
 	Scheme            *kube_runtime.Scheme
 	ResourceConverter k8s_common.Converter
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -435,10 +436,10 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-service-controller").
-		For(&kube_core.Service{}).
-		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
-		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient()))).
+		For(&kube_core.Service{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{}, r.OnlyFromWatchedNamespaces)).
+		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{}, r.OnlyFromWatchedNamespaces)).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		Complete(r)
 }
 

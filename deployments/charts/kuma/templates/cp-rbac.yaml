@@ -14,7 +14,7 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
-{{- if (eq .Values.controlPlane.environment "kubernetes") }}
+{{- if and (eq .Values.controlPlane.environment "kubernetes") (eq (len .Values.watchNamespaces) 0)}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -317,4 +317,417 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane
     namespace: {{ .Release.Namespace }}
+{{- end }}
+{{- if and (eq .Values.controlPlane.environment "kubernetes") (gt (len .Values.watchNamespaces) 0)}}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
+      - secrets
+{{- end }}
+    verbs:
+      - get
+      - list
+      - watch
+  # it's cluster scope resource
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses/status
+    verbs:
+      - get
+      - patch
+      - update
+  # resources are cluster scope  
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes
+      - zones
+      - zoneinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayconfigs
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  # mesh is a cluster scope resource
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  {{- if .Values.cni.enabled }}
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - update
+  {{- end }}
+  # validate k8s token before issuing mTLS cert, it's cluster scope
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" . }}-control-plane
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+rules:
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+    - list
+    - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - services
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
+      - configmaps
+{{- end }}
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - kuma.io
+    resources:
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+  {{- range $policy, $v := .Values.plugins.policies }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+  {{- range $policy, $v := .Values.plugins.resources }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  # leader-for-life election deletes Pods in some circumstances
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kuma.name" . }}-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" . }}-control-plane
+    namespace: {{ .Release.Namespace }}
+{{- $global := . }}
+{{- range $namespace := .Values.watchNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kuma.name" $global}}-control-plane
+  namespace: {{ $namespace }}
+  labels: {{ include "kuma.cpLabels" $global | nindent 4 }}
+rules:
+  - apiGroups:
+    - ""
+    resources:
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances
+  {{- range $policy, $v := $global.Values.plugins.policies }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+  {{- range $policy, $v := $global.Values.plugins.resources }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - services
+{{- if and $global.Values.transparentProxy.configMap.enabled $global.Values.transparentProxy.configMap.config }}
+      - configmaps
+{{- end }}
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  {{- if $global.Values.cni.enabled }}
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $global }}-control-plane
+  namespace: {{ $namespace }}
+  labels: {{ include "kuma.cpLabels" $global | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kuma.name" $global }}-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $global }}-control-plane
+    namespace: {{ $global.Release.Namespace }}
+{{- end }}
 {{- end }}

@@ -8,6 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -74,7 +75,7 @@ func meshGatewayCRDsPresent() bool {
 	return true
 }
 
-func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 
 	if rt.Config().Mode == config_core.Global {
@@ -122,14 +123,14 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if err := addGatewayAPIReconcilers(mgr, rt, proxyFactory); err != nil {
+	if err := addGatewayAPIReconcilers(mgr, rt, proxyFactory, onlyFromWatchedNamespaces); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory) error {
+func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory, onlyFromWatchedNamespaces predicate.Funcs) error {
 	if ok, missingGatewayCRDs := gatewayAPICRDsPresent(mgr); !ok {
 		if len(requiredGatewayCRDs) != len(missingGatewayCRDs) {
 			// Logging this as error as in such case there is possibility that user is expecting

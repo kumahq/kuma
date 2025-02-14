@@ -21,8 +21,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_version "k8s.io/apimachinery/pkg/version"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -49,6 +51,8 @@ type GatewayInstanceReconciler struct {
 	Converter       k8s_common.Converter
 	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
+
+	OnlyFromWatchedNamespaces predicate.Funcs
 }
 
 // Reconcile handles ensuring both a Service and a Deployment exist for an
@@ -471,13 +475,13 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-instance-controller").
-		For(&mesh_k8s.MeshGatewayInstance{}).
-		Owns(&kube_core.Service{}).
-		Owns(&kube_apps.Deployment{}).
+		For(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Owns(&kube_core.Service{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Owns(&kube_apps.Deployment{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		// On Update events our mapper function is called with the object both
 		// before the event as well as the object after. In the case of
 		// unbinding a Gateway from one Instance to another, we end up
 		// reconciling both Instances.
-		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
+		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
 		Complete(r)
 }
