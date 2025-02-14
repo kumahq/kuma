@@ -280,6 +280,9 @@ delimiter = "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";
 - Kuma API GET endpoints shouldn't require core name to read the resource 
 - Human-readable: users should be able to type the identifier manually if needed, so it's not hashed
 - Envoy resources that have direct correlation with Kuma resources should be named by using resource identifier, i.e. outbound cluster can be named after MeshService
+- Ability to use resource identifier in Prometheus queries, i.e
+  - `my_metric{envoy_cluster_name~="kri.*_meshservice_.*"} // Get only actual outbounds from meshservice`
+  - `my_metric{envoy_cluster_name~="kri_default_.*.*"} // Get only stuff on the default mesh`
 
 ## Considered Options
 
