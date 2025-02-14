@@ -65,6 +65,11 @@ func applyToOutboundPassthrough(
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
+	// todo: this should be handled by "base policy"
+	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "" {
+		conf.PassthroughMode = pointer.To[api.PassthroughMode]("None")
+	}
+
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// remove clusters because they were added in TransparentProxyGenerator
 		removeDefaultPassthroughCluster(rs)
