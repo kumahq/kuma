@@ -188,6 +188,32 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		Expect(actual.GetItems()).To(BeEmpty())
 	})
 
+	It("should ignore invalid resource from upstream and add only valid", func() {
+		// given
+		upstream := &mesh.MeshResourceList{}
+		mesh1 := meshBuilder(1)
+		mesh2 := meshBuilder(2)
+		mesh3 := meshBuilder(3)
+		Expect(upstream.AddItem(mesh1)).To(Succeed())
+		Expect(upstream.AddItem(mesh2)).To(Succeed())
+		Expect(upstream.AddItem(mesh3)).To(Succeed())
+		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.AddedResources = upstream
+		upstreamResponse.InvalidResourcesKey = []model.ResourceKey{model.MetaToResourceKey(mesh2.GetMeta())}
+
+		// when
+		err := syncer.Sync(context.Background(), upstreamResponse)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		actual := &mesh.MeshResourceList{}
+		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
+		Expect(actual.GetItems()).To(HaveLen(2))
+		Expect(actual.GetItems()[0].GetSpec()).To(MatchProto(mesh1.GetSpec()))
+		Expect(actual.GetItems()[1].GetSpec()).To(MatchProto(mesh3.GetSpec()))
+	})
+
 	It("should not update resource with the equal spec", func() {
 		// given resource in the store
 		res := meshBuilder(1)
