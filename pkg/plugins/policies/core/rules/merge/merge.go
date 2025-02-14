@@ -367,7 +367,6 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 						s := reflect.AppendSlice(dstField.Elem(), srcField.Elem())
 						dstField.Elem().Set(s)
 					}
-					dstField.Elem().Set(s)
 				}
 			}
 		}
