@@ -3562,7 +3562,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -3669,7 +3668,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
@@ -3831,7 +3829,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -3938,7 +3935,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
@@ -4099,7 +4095,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                                 path:
@@ -4206,7 +4201,6 @@ components:
                                         - Json
                                       type: string
                                   required:
-                                    - omitEmptyValues
                                     - type
                                   type: object
                               required:
@@ -7532,8 +7526,6 @@ components:
                                           - 307
                                           - 308
                                         type: integer
-                                    required:
-                                      - statusCode
                                     type: object
                                   responseHeaderModifier:
                                     description: >-
@@ -8697,7 +8689,6 @@ components:
                         format: int32
                         type: integer
                     required:
-                      - path
                       - port
                     type: object
                   type: array
@@ -8751,12 +8742,7 @@ components:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                 type: string
-                            required:
-                              - mode
                             type: object
-                        required:
-                          - path
-                          - port
                         type: object
                       type:
                         description: >-
@@ -9048,7 +9034,6 @@ components:
                         description: Value for the specified Type.
                         type: string
                     required:
-                      - protocol
                       - type
                       - value
                     type: object
@@ -10952,7 +10937,6 @@ components:
                                   type: integer
                               required:
                                 - predicate
-                                - updateFrequency
                               type: object
                             type: array
                           hostSelectionMaxAttempts:
@@ -12659,7 +12643,6 @@ components:
                               fragments etc.)
                             type: string
                         required:
-                          - splitService
                           - url
                         type: object
                       openTelemetry:
@@ -12710,9 +12693,6 @@ components:
                             description: Address of Zipkin collector.
                             type: string
                         required:
-                          - apiVersion
-                          - sharedSpanContext
-                          - traceId128bit
                           - url
                         type: object
                     required:
