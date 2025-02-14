@@ -51,6 +51,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: false
+      - name: Calculate and set GOMEMLIMIT
+        id: set-gomemlimit
+        shell: bash
+        run: |
+          # Get total memory in kB
+          total_mem_kb=$(grep MemTotal /proc/meminfo | awk '{print $2}')
+          # Calculate 90% of total memory in MiB
+          gomemlimit_mb=$((total_mem_kb * 90 / 100 / 1024))
+          # Export GOMEMLIMIT
+          echo "GOMEMLIMIT=${gomemlimit_mb}MiB" >> $GITHUB_ENV
       - uses: golangci/golangci-lint-action@051d91933864810ecd5e2ea2cfd98f6a5bca5347 # v6.3.2
         with:
           args: --fix=false --verbose
