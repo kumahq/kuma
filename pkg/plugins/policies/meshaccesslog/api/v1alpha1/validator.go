@@ -9,17 +9,28 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshAccessLogResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.GetTargetRef(), inbound.AffectsInbounds(r.Spec)))
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
-		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
+		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, r.Spec.To))
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
+		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
+	}
+	if r.Spec.To != nil {
+		verr.AddErrorAt(path, validateTo(r.Spec.GetTargetRef().Kind, pointer.Deref(r.Spec.To)))
+	}
+	if r.Spec.From != nil {
+		verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
+	}
+	if r.Spec.From != nil {
+		verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules)))
+	}
 	return verr.OrNil()
 }
 
@@ -51,6 +62,15 @@ func validateFrom(from []From) validators.ValidationError {
 
 		defaultField := path.Field("default")
 		verr.AddErrorAt(defaultField, validateDefault(fromItem.Default))
+	}
+	return verr
+}
+
+func validateRules(rules []Rule) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.AddErrorAt(path.Field("default"), validateDefault(rule.Default))
 	}
 	return verr
 }

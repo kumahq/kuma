@@ -4,17 +4,18 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *DoNothingPolicyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 {
+	if len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' has to be defined")
 	}
-	verr.AddErrorAt(path, validateTo(r.Spec.To))
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To)))
+	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	return verr.OrNil()
 }
 

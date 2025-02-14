@@ -404,7 +404,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: cbecd5f80d1568e52c4222a8d3f5599b0e96da2e67bc0cd998a9de92331a448f
+        checksum/tls-secrets: 657976d1d15be570530803f20447e8f2958e1ce203d615f98c74be75c89636e1
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -821,31 +821,6 @@ webhooks:
           - meshservices
     
       
-    sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

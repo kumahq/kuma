@@ -48,9 +48,9 @@ func CrossMeshGatewayOnUniversal() {
 	)
 	crossMeshGatewayDataplane := mkGatewayDataplane(crossMeshGatewayName, gatewayMesh, crossMeshGatewayName)
 	edgeGatewayYaml := MkGateway(
-		edgeGatewayName, gatewayOtherMesh, crossMeshGatewayName, false, "", echoServerName(gatewayOtherMesh), edgeGatewayPort,
+		edgeGatewayName, gatewayOtherMesh, edgeGatewayName, false, "", echoServerName(gatewayOtherMesh), edgeGatewayPort,
 	)
-	edgeGatewayDataplane := mkGatewayDataplane(edgeGatewayName, gatewayOtherMesh, crossMeshGatewayName)
+	edgeGatewayDataplane := mkGatewayDataplane(edgeGatewayName, gatewayOtherMesh, edgeGatewayName)
 
 	BeforeAll(func() {
 		By("installing one cross-mesh gateway and one non-cross-mesh gateway")

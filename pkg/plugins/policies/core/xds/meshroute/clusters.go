@@ -102,6 +102,9 @@ func GenerateClusters(
 								// we only check TLS status for local service
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
+								if port, found := ms.FindPortByName(realResourceRef.Resource.SectionName); found {
+									protocol = port.AppProtocol
+								}
 							}
 						}
 						edsClusterBuilder.Configure(envoy_clusters.ClientSideMultiIdentitiesMTLS(

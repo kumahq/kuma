@@ -14,15 +14,16 @@ func (r *MeshTimeoutResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(r.Spec.Rules) > 0 && (len(r.Spec.To) > 0 || len(r.Spec.From) > 0) {
+	if len(pointer.Deref(r.Spec.Rules)) > 0 && (len(pointer.Deref(r.Spec.To)) > 0 || len(pointer.Deref(r.Spec.From)) > 0) {
 		verr.AddViolationAt(path, "fields 'to' and 'from' must be empty when 'rules' is defined")
 	}
-	if len(r.Spec.To) == 0 && len(r.Spec.From) == 0 && len(r.Spec.Rules) == 0 {
+	if len(pointer.Deref(r.Spec.Rules)) == 0 && len(pointer.Deref(r.Spec.To)) == 0 && len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path, "at least one of 'from', 'to' or 'rules' has to be defined")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateFrom(r.Spec.From, topLevel.Kind))
-	verr.AddErrorAt(path, validateTo(r.Spec.To, topLevel.Kind))
+	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From), topLevel.Kind))
+	verr.AddErrorAt(path, validateTo(pointer.Deref(r.Spec.To), topLevel.Kind))
+	verr.AddErrorAt(path, validateRules(pointer.Deref(r.Spec.Rules), topLevel.Kind))
 	return verr.OrNil()
 }
 
@@ -112,6 +113,15 @@ func validateTo(to []To, topLevelKind common_api.TargetRefKind) validators.Valid
 
 		defaultField := path.Field("default")
 		verr.Add(validateDefault(defaultField, toItem.Default, topLevelKind))
+	}
+	return verr
+}
+
+func validateRules(rules []Rule, topLevelKind common_api.TargetRefKind) validators.ValidationError {
+	var verr validators.ValidationError
+	for idx, rule := range rules {
+		path := validators.RootedAt("rules").Index(idx)
+		verr.Add(validateDefault(path.Field("default"), rule.Default, topLevelKind))
 	}
 	return verr
 }

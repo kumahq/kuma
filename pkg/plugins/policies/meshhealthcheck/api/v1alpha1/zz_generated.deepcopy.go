@@ -224,9 +224,13 @@ func (in *MeshHealthCheck) DeepCopyInto(out *MeshHealthCheck) {
 	}
 	if in.To != nil {
 		in, out := &in.To, &out.To
-		*out = make([]To, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]To)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]To, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

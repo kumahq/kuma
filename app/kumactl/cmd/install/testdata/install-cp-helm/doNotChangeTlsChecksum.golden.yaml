@@ -790,31 +790,6 @@ webhooks:
     
       
     sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
-    sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     namespaceSelector:

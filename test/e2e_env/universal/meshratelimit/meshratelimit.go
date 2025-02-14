@@ -23,10 +23,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         local:
           http:
             requestRate:
@@ -46,10 +44,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server-tcp
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         local:
           tcp:
             connectionRate: 

@@ -190,6 +190,7 @@ var _ = Describe("SimpleWatchdog", func() {
 	}))
 
 	It("should wait for the first tick to happen on WaitForFirstTick", func() {
+		onTickBlockCh := make(chan struct{})
 		watchdog := &SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return &time.Ticker{
@@ -197,6 +198,7 @@ var _ = Describe("SimpleWatchdog", func() {
 				}
 			},
 			OnTick: func(ctx context.Context) error {
+				<-onTickBlockCh
 				return nil
 			},
 			OnError: func(err error) {
@@ -215,8 +217,17 @@ var _ = Describe("SimpleWatchdog", func() {
 			watchdog.Start(ctx)
 			close(doneCh)
 		}()
+		// before the first OnTick returns false
 		Expect(watchdog.HasTicked(false)).Should(BeFalse())
-		Consistently(hasTicked).ShouldNot(Receive())
+		// unblock OnTick
+		close(onTickBlockCh)
+		// after the first tick returns true
+		Eventually(func(g Gomega) {
+			g.Expect(watchdog.HasTicked(false)).To(BeTrue())
+		}, "100ms", "10ms").Should(Succeed())
+		Eventually(func(g Gomega) {
+			g.Expect(hasTicked).Should(BeClosed())
+		}, "50ms", "10ms").Should(Succeed())
 
 		By("simulating 1st tick")
 		// when

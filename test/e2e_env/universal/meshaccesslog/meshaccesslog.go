@@ -355,10 +355,8 @@ spec:
  targetRef:
    kind: MeshService
    name: test-server
- from:
-   - targetRef:
-       kind: Mesh
-     default:
+ rules:
+   - default:
        backends:
        - type: Tcp
          tcp:
