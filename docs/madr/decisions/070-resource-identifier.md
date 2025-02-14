@@ -125,6 +125,13 @@ sub-delims    = "!" / "$" / "&" / "'" / "(" / ")"
                  / "*" / "+" / "," / ";" / "="
 ```
 
+#### URL query
+
+There are no immediate plans to put resource identifier in URL query, but if we want in the future then we have to limit the charset to:
+```
+query       = *( pchar / "/" / "?" )
+```
+
 #### Envoy resource names
 
 For the context, there is already [MADR](036-internal-listeners.md) that regulated the name of internal listeners.
@@ -243,6 +250,12 @@ This leaves us with the following charset:
 resource-identifier = *(ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / "@")
 ```
 
+_Note: if we'd like to use resource identifier in URL query the charset is significantly smaller:_
+
+```
+resource-identifier = *(ALPHA / DIGIT / "-" / "." / "_" / "~" )
+```
+
 #### What characters we can use as a delimiter?
 
 As a delimiter we can use only characters that can't be present in resource identifier components – `name`, `mesh`, `namespace`, `zone`, `resourceType` and `sectionName`:
@@ -272,6 +285,12 @@ This leaves us with the following charset:
 
 ```
 delimiter = "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / "@"
+```
+
+_Note: if we'd like to use resource identifier in URL query the delimiter charset is significantly smaller:_
+
+```
+delimiter = "_" / "~" 
 ```
 
 ## Decision Drivers
@@ -323,6 +342,7 @@ Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
 **Pros:**
 - Shorter
 - Resembles existing formats from Amazon
+- Still possible to use in URL query
 
 **Cons:**
 - Hard to read when names are poorly chosen, e.g., `kri_default_default_default_meshservice_backend`
