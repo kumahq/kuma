@@ -83,6 +83,7 @@ type Application struct {
 	Name *string `json:"name,omitempty"`
 	// Path on which an application expose HTTP endpoint with metrics.
 	// +kubebuilder:default="/metrics/prometheus"
+	// +kubebuilder:validation:Optional
 	Path string `json:"path"`
 	// Address on which an application listens.
 	Address *string `json:"address,omitempty"`
@@ -112,8 +113,10 @@ type PrometheusBackend struct {
 	ClientId *string `json:"clientId,omitempty"`
 	// Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
 	// +kubebuilder:default=5670
+	// +kubebuilder:validation:Optional
 	Port uint32 `json:"port"`
 	// Path on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="/metrics"
 	Path string `json:"path"`
 	// Configuration of TLS for prometheus listener.
@@ -123,6 +126,7 @@ type PrometheusBackend struct {
 type PrometheusTls struct {
 	// Configuration of TLS for Prometheus listener.
 	// +kubebuilder:default="Disabled"
+	// +kubebuilder:validation:Optional
 	Mode TlsMode `json:"mode"`
 }
 

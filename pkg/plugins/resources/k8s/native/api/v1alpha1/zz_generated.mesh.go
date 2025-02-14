@@ -27,8 +27,10 @@ type CircuitBreaker struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma CircuitBreaker resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -134,8 +136,10 @@ type Dataplane struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma Dataplane resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -237,8 +241,10 @@ type DataplaneInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Status is the status the Kuma resource.
+	// +kubebuilder:validation:Optional
 	Status *apiextensionsv1.JSON `json:"status,omitempty"`
 }
 
@@ -340,8 +346,10 @@ type ExternalService struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ExternalService resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -443,8 +451,10 @@ type FaultInjection struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma FaultInjection resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -546,8 +556,10 @@ type HealthCheck struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma HealthCheck resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -649,8 +661,10 @@ type Mesh struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma Mesh resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -752,8 +766,10 @@ type MeshGateway struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma MeshGateway resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -855,8 +871,10 @@ type MeshGatewayRoute struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma MeshGatewayRoute resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -958,8 +976,10 @@ type MeshInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma MeshInsight resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1061,8 +1081,10 @@ type ProxyTemplate struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ProxyTemplate resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1164,8 +1186,10 @@ type RateLimit struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma RateLimit resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1267,8 +1291,10 @@ type Retry struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma Retry resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1370,8 +1396,10 @@ type ServiceInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ServiceInsight resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1473,8 +1501,10 @@ type Timeout struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma Timeout resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1576,8 +1606,10 @@ type TrafficLog struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma TrafficLog resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1679,8 +1711,10 @@ type TrafficPermission struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma TrafficPermission resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1782,8 +1816,10 @@ type TrafficRoute struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma TrafficRoute resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1885,8 +1921,10 @@ type TrafficTrace struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma TrafficTrace resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -1988,8 +2026,10 @@ type VirtualOutbound struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma VirtualOutbound resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -2092,8 +2132,10 @@ type ZoneEgress struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ZoneEgress resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -2195,8 +2237,10 @@ type ZoneEgressInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ZoneEgressInsight resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -2299,8 +2343,10 @@ type ZoneIngress struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ZoneIngress resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 
@@ -2402,8 +2448,10 @@ type ZoneIngressInsight struct {
 	// Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+	// +kubebuilder:validation:Optional
 	Mesh string `json:"mesh,omitempty"`
 	// Spec is the specification of the Kuma ZoneIngressInsight resource.
+	// +kubebuilder:validation:Optional
 	Spec *apiextensionsv1.JSON `json:"spec,omitempty"`
 }
 

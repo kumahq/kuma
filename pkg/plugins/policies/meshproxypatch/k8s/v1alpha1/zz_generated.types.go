@@ -26,6 +26,7 @@ type MeshProxyPatch struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshProxyPatch resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshProxyPatch `json:"spec,omitempty"`
 }
 

@@ -26,6 +26,7 @@ type MeshHealthCheck struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshHealthCheck resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshHealthCheck `json:"spec,omitempty"`
 }
 

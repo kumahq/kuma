@@ -26,6 +26,7 @@ type MeshFaultInjection struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshFaultInjection resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshFaultInjection `json:"spec,omitempty"`
 }
 

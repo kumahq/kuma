@@ -26,6 +26,7 @@ type MeshRetry struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshRetry resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshRetry `json:"spec,omitempty"`
 }
 

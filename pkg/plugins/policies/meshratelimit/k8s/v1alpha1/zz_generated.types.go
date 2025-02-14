@@ -26,6 +26,7 @@ type MeshRateLimit struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshRateLimit resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshRateLimit `json:"spec,omitempty"`
 }
 

@@ -72,13 +72,16 @@ type {{.ResourceType}} struct {
     // Mesh is the name of the Kuma mesh this resource belongs to.
 	// It may be omitted for cluster-scoped resources.
 	//
+    // +kubebuilder:validation:Optional
 	Mesh string {{ $tk }}json:"mesh,omitempty"{{ $tk }}
 
 {{- if eq .ResourceType "DataplaneInsight" }}
 	// Status is the status the Kuma resource.
+    // +kubebuilder:validation:Optional
 	Status   *apiextensionsv1.JSON {{ $tk }}json:"status,omitempty"{{ $tk }}
 {{- else}}
 	// Spec is the specification of the Kuma {{ .ProtoType }} resource.
+    // +kubebuilder:validation:Optional
 	Spec   *apiextensionsv1.JSON {{ $tk }}json:"spec,omitempty"{{ $tk }}
 {{- end}}
 }

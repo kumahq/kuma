@@ -369,8 +369,6 @@ properties:
                                     - 307
                                     - 308
                                   type: integer
-                              required:
-                                - statusCode
                               type: object
                             responseHeaderModifier:
                               description: |-

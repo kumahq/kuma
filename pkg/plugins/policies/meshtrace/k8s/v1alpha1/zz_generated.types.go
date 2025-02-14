@@ -26,6 +26,7 @@ type MeshTrace struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshTrace resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTrace `json:"spec,omitempty"`
 }
 

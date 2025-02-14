@@ -24,8 +24,10 @@ type MeshService struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshService resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshService `json:"spec,omitempty"`
 	// Status is the current status of the Kuma MeshService resource.
+	// +kubebuilder:validation:Optional
 	Status *policy.MeshServiceStatus `json:"status,omitempty"`
 }
 

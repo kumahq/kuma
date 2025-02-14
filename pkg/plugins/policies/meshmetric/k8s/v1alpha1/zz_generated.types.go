@@ -26,6 +26,7 @@ type MeshMetric struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshMetric resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshMetric `json:"spec,omitempty"`
 }
 

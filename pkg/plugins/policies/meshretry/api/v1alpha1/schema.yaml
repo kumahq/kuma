@@ -228,7 +228,6 @@ properties:
                             type: integer
                         required:
                           - predicate
-                          - updateFrequency
                         type: object
                       type: array
                     hostSelectionMaxAttempts:

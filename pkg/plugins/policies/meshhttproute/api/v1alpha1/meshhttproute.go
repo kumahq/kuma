@@ -172,6 +172,7 @@ type RequestRedirect struct {
 	Port *PortNumber `json:"port,omitempty"`
 	// StatusCode is the HTTP status code to be used in response.
 	//
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=302
 	// +kubebuilder:validation:Enum=301;302;303;307;308
 	StatusCode int `json:"statusCode"`

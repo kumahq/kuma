@@ -70,7 +70,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                           path:
@@ -165,7 +164,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                         required:
@@ -298,7 +296,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                           path:
@@ -393,7 +390,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                         required:
@@ -526,7 +522,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                           path:
@@ -621,7 +616,6 @@ properties:
                                   - Json
                                 type: string
                             required:
-                              - omitEmptyValues
                               - type
                             type: object
                         required:

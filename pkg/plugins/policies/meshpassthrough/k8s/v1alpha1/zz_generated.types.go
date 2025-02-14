@@ -26,6 +26,7 @@ type MeshPassthrough struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshPassthrough resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshPassthrough `json:"spec,omitempty"`
 }
 

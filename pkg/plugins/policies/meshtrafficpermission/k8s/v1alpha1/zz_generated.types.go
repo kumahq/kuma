@@ -26,6 +26,7 @@ type MeshTrafficPermission struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	// Spec is the specification of the Kuma MeshTrafficPermission resource.
+	// +kubebuilder:validation:Optional
 	Spec *policy.MeshTrafficPermission `json:"spec,omitempty"`
 }
 
