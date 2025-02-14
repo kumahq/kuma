@@ -93,6 +93,9 @@ jobs:
           dir: .
           config: .syft.yaml
           upload-sbom-release-assets: true
+      - name: Setup tmate session on failure
+        if: failure()
+        uses: mxschmitt/action-tmate@v3
   test:
     needs: ["check"]
     uses: ./.github/workflows/_test.yaml
