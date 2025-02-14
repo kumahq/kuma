@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	defaultAnnotation       = "+kubebuilder:default"
+	defaultAnnotation = "+kubebuilder:default"
 	// we need both annotations otherwise kubebuilder creates OAPI schema with both "required" and "default" which
 	// according to the spec https://swagger.io/docs/specification/v3_0/describing-parameters/#default-parameter-values
 	// is invalid: "There are two common mistakes when using the default keyword: Using default with required parameters or properties"
