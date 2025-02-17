@@ -125,6 +125,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Threshold:     pointer.To(uint32(80)),
 				},
 			},
+			HealthyPanicThreshold: pointer.To(intstr.FromString("30.2")),
 		}
 	}
 
