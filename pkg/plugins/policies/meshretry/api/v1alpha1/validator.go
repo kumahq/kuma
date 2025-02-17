@@ -125,6 +125,9 @@ func validateHTTP(http *HTTP) validators.ValidationError {
 		http.RateLimitedBackOff == nil && http.HostSelection == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
+	if http.BackOff != nil {
+		verr.AddErrorAt(path, validateBackOff(http.BackOff))
+	}
 	if http.RateLimitedBackOff != nil {
 		verr.AddErrorAt(path, validateRateLimitedBackOff(http.RateLimitedBackOff))
 	}
@@ -176,11 +179,23 @@ func validateGRPC(grpc *GRPC) validators.ValidationError {
 	if grpc.NumRetries == nil && grpc.PerTryTimeout == nil && grpc.BackOff == nil && grpc.RetryOn == nil && grpc.RateLimitedBackOff == nil {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
+	if grpc.BackOff != nil {
+		verr.AddErrorAt(path, validateBackOff(grpc.BackOff))
+	}
 	if grpc.RateLimitedBackOff != nil {
 		verr.AddErrorAt(path, validateRateLimitedBackOff(grpc.RateLimitedBackOff))
 	}
 	if grpc.RetryOn != nil {
 		verr.AddErrorAt(path, validateGRPCRetryOn(*grpc.RetryOn))
+	}
+	return verr
+}
+
+func validateBackOff(b *BackOff) validators.ValidationError {
+	var verr validators.ValidationError
+	path := validators.RootedAt("backOff")
+	if b.BaseInterval == nil && b.MaxInterval == nil {
+		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 	return verr
 }
