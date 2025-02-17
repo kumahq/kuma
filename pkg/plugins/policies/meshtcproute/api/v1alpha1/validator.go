@@ -88,9 +88,13 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 
-		verr.AddErrorAt(path.Field("default").Field("backendRefs"),
-			validateBackendRefs(pointer.Deref(rule.Default.BackendRefs)),
-		)
+		if len(pointer.Deref(rule.Default.BackendRefs)) == 0 {
+			verr.AddViolationAt(path.Field("default").Field("backendRefs"), validators.MustBeDefined)
+		} else {
+			verr.AddErrorAt(path.Field("default").Field("backendRefs"),
+				validateBackendRefs(pointer.Deref(rule.Default.BackendRefs)),
+			)
+		}
 	}
 
 	return verr
