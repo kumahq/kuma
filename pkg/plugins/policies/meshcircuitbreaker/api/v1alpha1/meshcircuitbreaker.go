@@ -106,6 +106,10 @@ type OutlierDetection struct {
 	SplitExternalAndLocalErrors *bool `json:"splitExternalAndLocalErrors,omitempty"`
 	// Contains configuration for supported outlier detectors
 	Detectors *Detectors `json:"detectors,omitempty"`
+	// Allows to configure panic threshold for Envoy cluster. If not specified,
+	// the default is 50%. To disable panic mode, set to 0%.
+	// Either int or decimal represented as string.
+	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`
 }
 
 type Detectors struct {
