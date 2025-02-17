@@ -345,7 +345,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 
 // routesForService returns a function that calculates which HTTPRoutes might
 // be affected by changes in a Service.
-func routesForService(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
+func routesForService(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("service-to-routes-mapper")
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
@@ -355,37 +355,19 @@ func routesForService(l logr.Logger, client kube_client.Client, watchedNamespace
 			return nil
 		}
 
-		allRoutes := []*gatewayapi.HTTPRouteList{}
-		// only in namespaces
-		if len(watchedNamespaces) > 0 {
-			for ns := range watchedNamespaces {
-				routes := &gatewayapi.HTTPRouteList{}
-				if err := client.List(ctx, routes, kube_client.MatchingFields{
-					servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
-				}, kube_client.InNamespace(ns)); err != nil {
-					l.Error(err, "unexpected error listing HTTPRoutes")
-					return nil
-				}
-				allRoutes = append(allRoutes, routes)
-			}
-		} else {
-			routes := &gatewayapi.HTTPRouteList{}
-			if err := client.List(ctx, routes, kube_client.MatchingFields{
-				servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
-			}); err != nil {
-				l.Error(err, "unexpected error listing HTTPRoutes")
-				return nil
-			}
-			allRoutes = append(allRoutes, routes)
+		routes := &gatewayapi.HTTPRouteList{}
+		if err := client.List(ctx, routes, kube_client.MatchingFields{
+			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
+		}); err != nil {
+			l.Error(err, "unexpected error listing HTTPRoutes")
+			return nil
 		}
 
 		var requests []kube_reconcile.Request
-		for _, nsRoutes := range allRoutes {
-			for i := range nsRoutes.Items {
-				requests = append(requests, kube_reconcile.Request{
-					NamespacedName: kube_client.ObjectKeyFromObject(&nsRoutes.Items[i]),
-				})
-			}
+		for i := range routes.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&routes.Items[i]),
+			})
 		}
 
 		return requests
@@ -447,7 +429,7 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		).
 		Watches(
 			&kube_core.Service{},
-			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client, r.WatchedNamespaces)),
+			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client)),
 			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Complete(r)

@@ -37,11 +37,11 @@ type GatewayReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	Scheme          *kube_runtime.Scheme
-	TypeRegistry    k8s_registry.TypeRegistry
-	SystemNamespace string
-	ProxyFactory    *containers.DataplaneProxyFactory
-	ResourceManager manager.ResourceManager
+	Scheme            *kube_runtime.Scheme
+	TypeRegistry      k8s_registry.TypeRegistry
+	SystemNamespace   string
+	ProxyFactory      *containers.DataplaneProxyFactory
+	ResourceManager   manager.ResourceManager
 	WatchedNamespaces map[string]struct{}
 }
 
@@ -376,38 +376,19 @@ func gatewaysForSecret(l logr.Logger, client kube_client.Client, watchedNamespac
 			return nil
 		}
 
-		gateways := []*gatewayapi.GatewayList{}
-		// only in namespaces
-		if len(watchedNamespaces) > 0 {
-			for ns := range watchedNamespaces {
-				namespaceGw := &gatewayapi.GatewayList{}
-				if err := client.List(ctx, namespaceGw, kube_client.MatchingFields{
-					secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
-				}, kube_client.InNamespace(ns)); err != nil {
-					l.Error(err, "unexpected error listing Gateways")
-				return nil
-				}
-				gateways = append(gateways, namespaceGw)
-			}
-		} else {
-			allGw := &gatewayapi.GatewayList{}
-			if err := client.List(ctx, allGw, kube_client.MatchingFields{
-				secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
-			}); err != nil {
-				l.Error(err, "unexpected error listing Gateways")
-				return nil
-			}
-			gateways = append(gateways, allGw)
+		gateways := &gatewayapi.GatewayList{}
+		if err := client.List(ctx, gateways, kube_client.MatchingFields{
+			secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
+		}); err != nil {
+			l.Error(err, "unexpected error listing Gateways")
+			return nil
 		}
 
 		var requests []kube_reconcile.Request
-
-		for _, namespaceGw := range gateways {
-			for i := range namespaceGw.Items {
-				requests = append(requests, kube_reconcile.Request{
-					NamespacedName: kube_client.ObjectKeyFromObject(&namespaceGw.Items[i]),
-				})
-			}
+		for i := range gateways.Items {
+			requests = append(requests, kube_reconcile.Request{
+				NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
+			})
 		}
 
 		return requests

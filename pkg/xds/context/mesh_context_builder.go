@@ -25,7 +25,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	util_protocol "github.com/kumahq/kuma/pkg/util/protocol"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -307,7 +306,7 @@ type filterFn = func(rs core_model.Resource) bool
 
 // fetch all resources of a type with potential filters etc
 func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core_model.ResourceType, mesh *core_mesh.MeshResource, filterFn filterFn) (core_model.ResourceList, error) {
-	l := log.AddFieldsFromCtx(logger, ctx, context.Background())
+	// l := log.AddFieldsFromCtx(logger, ctx, context.Background())
 	var listOptsFunc []core_store.ListOptionsFunc
 	desc, err := registry.Global().DescriptorFor(resType)
 	if err != nil {
@@ -337,51 +336,51 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
-	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
-		return nil, err
-	}
-	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
-		// No post processing stuff so return the list as is
-		return list, nil
-	}
-	list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
-		// Because we're not using the pagination store we need to do the filtering ourselves outside of the store
-		// I believe this is to maximize cachability of the store
-		if filterFn != nil && !filterFn(resource) {
-			return nil, nil
-		}
-		switch resType {
-		case core_mesh.ZoneIngressType:
-			zi, ok := resource.(*core_mesh.ZoneIngressResource)
-			if !ok {
-				return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
-			}
+	// if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
+	// 	return nil, err
+	// }
+	// if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
+	// 	// No post processing stuff so return the list as is
+	// 	return list, nil
+	// }
+	// list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
+	// 	// Because we're not using the pagination store we need to do the filtering ourselves outside of the store
+	// 	// I believe this is to maximize cachability of the store
+	// 	if filterFn != nil && !filterFn(resource) {
+	// 		return nil, nil
+	// 	}
+	// 	switch resType {
+	// 	case core_mesh.ZoneIngressType:
+	// 		zi, ok := resource.(*core_mesh.ZoneIngressResource)
+	// 		if !ok {
+	// 			return nil, errors.New("entry is not a zoneIngress this shouldn't happen")
+	// 		}
 
-			resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
-			if err != nil {
-				l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
-				return nil, nil
-			}
-			return resolvedZoneIngress, nil
-		case core_mesh.DataplaneType:
-			list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
-				dp, ok := resource.(*core_mesh.DataplaneResource)
-				if !ok {
-					return nil, errors.New("entry is not a dataplane this shouldn't happen")
-				}
-				zi, err := xds_topology.ResolveDataplaneAddress(m.ipFunc, dp)
-				if err != nil {
-					l.Error(err, "failed to resolve dataplane's domain name, ignoring dataplane", "mesh", dp.GetMeta().GetMesh(), "name", dp.GetMeta().GetName())
-					return nil, nil
-				}
-				return zi, nil
-			})
-		}
-		return resource, nil
-	})
-	if err != nil {
-		return nil, err
-	}
+	// 		resolvedZoneIngress, err := xds_topology.ResolveZoneIngressPublicAddress(m.ipFunc, zi)
+	// 		if err != nil {
+	// 			l.Error(err, "failed to resolve zoneIngress's domain name, ignoring zoneIngress", "name", zi.GetMeta().GetName())
+	// 			return nil, nil
+	// 		}
+	// 		return resolvedZoneIngress, nil
+	// 	case core_mesh.DataplaneType:
+	// 		list, err = modifyAllEntries(list, func(resource core_model.Resource) (core_model.Resource, error) {
+	// 			dp, ok := resource.(*core_mesh.DataplaneResource)
+	// 			if !ok {
+	// 				return nil, errors.New("entry is not a dataplane this shouldn't happen")
+	// 			}
+	// 			zi, err := xds_topology.ResolveDataplaneAddress(m.ipFunc, dp)
+	// 			if err != nil {
+	// 				l.Error(err, "failed to resolve dataplane's domain name, ignoring dataplane", "mesh", dp.GetMeta().GetMesh(), "name", dp.GetMeta().GetName())
+	// 				return nil, nil
+	// 			}
+	// 			return zi, nil
+	// 		})
+	// 	}
+	// 	return resource, nil
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
 	return list, nil
 }
 

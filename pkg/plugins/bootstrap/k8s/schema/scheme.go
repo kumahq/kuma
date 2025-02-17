@@ -1,4 +1,4 @@
-package k8s
+package schema
 
 import (
 	"github.com/pkg/errors"

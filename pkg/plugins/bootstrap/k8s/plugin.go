@@ -16,11 +16,12 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 	kube_metrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-	kube_metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
-	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/manager"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/schema"
+
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -45,7 +46,8 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	if b.Config().Environment != config_core.KubernetesEnvironment {
 		return nil
 	}
-	scheme, err := NewScheme()
+	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+	scheme, err := schema.NewScheme()
 	if err != nil {
 		return err
 	}
@@ -53,40 +55,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	restClientConfig.QPS = float32(b.Config().Runtime.Kubernetes.ClientConfig.Qps)
 	restClientConfig.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
 
-	cacheConfig := cache.Options{}
-
-	if len(b.Config().Runtime.Kubernetes.WatchNamespaces) > 0 {
-		cacheConfig.DefaultNamespaces = map[string]cache.Config{
-			b.Config().Store.Kubernetes.SystemNamespace: {},
-		}
-		for _, ns := range b.Config().Runtime.Kubernetes.WatchNamespaces {
-			cacheConfig.DefaultNamespaces[ns] = cache.Config{}
-		}
-	}
-	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
-	mgr, err := kube_ctrl.NewManager(
-		restClientConfig,
-		kube_ctrl.Options{
-			Scheme: scheme,
-			// Admission WebHook Server
-			WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
-				Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-				Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-				CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
-			}),
-			LeaderElection:          true,
-			LeaderElectionID:        "cp-leader-lease",
-			LeaderElectionNamespace: systemNamespace,
-			Logger:                  core.Log.WithName("kube-manager"),
-			LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
-			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
-			// Disable metrics bind address as we use kube metrics registry directly.
-			Metrics: kube_metricsserver.Options{
-				BindAddress: "0",
-			},
-			Cache: cacheConfig,
-		},
-	)
+	mgr, err := manager.NewScopedManager(b, cfg, restClientConfig, scheme)
 	if err != nil {
 		return err
 	}
