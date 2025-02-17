@@ -45,8 +45,8 @@ default:
     - k: []
 ```
 
-* Mergeable: a, b, c, d
-* Not mergeable: e, f, g, h, i, j, k
+* Mergeable: a, b, c, d, g
+* Not mergeable: e, f, h, i, j, k
 
 **All mergeable fields are optional.**
 
@@ -72,25 +72,25 @@ type Discriminator struct {
     // +kuma:discriminator
     Type string `json:"type"`
 
-    OptionOne *OptionOne `json:"option_one,omitempty"`
-    OptionTwo *OptionTwo `json:"option_two,omitempty"`
+    OptionOne *OptionOne `json:"optionOne,omitempty"`
+    OptionTwo *OptionTwo `json:"optionTwo,omitempty"`
 }
 
 ```
 
 #### Mergeable struct with required fields (+kuma:non-mergeable-struct)
 
-This can be though of as "mergable as a whole".
+This can be thought of as "mergable as a whole".
 
 ```go
 type Conf struct {
     // +kuma:non-mergeable-struct
-    SomeStruct SomeStruct `json:"non_mergeable_struct"`
+    NonMergeableStruct NonMergeableStruct `json:"nonMergeableStruct"`
 }
 
 type NonMergeableStruct struct {
-    RequiredIntField int `json:"required_int_field"`
-    RequiredStrField string `json:"required_str_field"`
+    RequiredIntField int `json:"requiredIntField"`
+    RequiredStrField string `json:"requiredStrField"`
 }
 ```
 
@@ -103,8 +103,9 @@ Three types of fields are allowed:
 
 ```go
 type OtherStruct struct {
+    // +kubebuilder:validation:Optional
     // +kubebuilder:default=false
-    NonMergeableOptional string   `json:"non_mergeable_optional"`
+    NonMergeableOptional string   `json:"nonNergeableOptional"`
 }
 ```
 
@@ -112,7 +113,7 @@ type OtherStruct struct {
 
 ```go
 type OtherStruct struct {
-    NonMergeablePtr      *string  `json:"non_mergeable,omitempty"`
+    NonMergeablePtr      *string  `json:"nonMergeable,omitempty"`
 }
 ```
 
@@ -120,6 +121,6 @@ type OtherStruct struct {
 
 ```go
 type OtherStruct struct {
-    NonMergeableRequired string   `json:"non_mergeable"`
+    NonMergeableRequired string   `json:"nonNergeable"`
 }
 ```
