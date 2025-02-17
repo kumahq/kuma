@@ -8677,7 +8677,7 @@ components:
                         description: Name of the application to scrape
                         type: string
                       path:
-                        default: /metrics/prometheus
+                        default: /metrics
                         description: >-
                           Path on which an application expose HTTP endpoint with
                           metrics.

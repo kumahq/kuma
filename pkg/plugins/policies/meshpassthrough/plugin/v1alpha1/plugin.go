@@ -66,7 +66,7 @@ func applyToOutboundPassthrough(
 	conf := rawConf.(api.Conf)
 
 	// todo: this should be handled by "base policy"
-	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == "" {
+	if pointer.Deref(conf.PassthroughMode) == "" {
 		conf.PassthroughMode = pointer.To[api.PassthroughMode]("None")
 	}
 
