@@ -40,6 +40,11 @@ New rule:
 
 ### MeshMetric
 
+#### Unifying defaults for `sharedSpanContext`
+
+Due to misconfiguration a default `sharedSpanContext` for metrics on Universal ("false") was different from on Kubernetes ("true").
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.sharedSpanContext` value in your `MeshTrace` resource, you have to explicitly set it to "false" to continue using that value.
+
 #### Unifying defaults for `path`
 
 Due to misconfiguration a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
