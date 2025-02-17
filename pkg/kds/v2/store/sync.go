@@ -118,6 +118,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
+	indexedInvalidResources := model.IndexKeys(upstreamResponse.InvalidResourcesKey)
 	if err != nil {
 		return err
 	}
@@ -131,24 +132,40 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			return err
 		}
 	}
+
+	filterResources := func(resources core_model.ResourceList, predicates []func(core_model.Resource) bool) (core_model.ResourceList, error) {
+		return filter(resources, func(r core_model.Resource) bool {
+			includeResource := true
+			for _, predicate := range predicates {
+				includeResource = includeResource && predicate(r)
+			}
+			return includeResource
+		})
+	}
+
+	isValidResource := func(r core_model.Resource) bool {
+		_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
+		return !exists
+	}
+
+	predicate := []func(r core_model.Resource) bool{isValidResource}
+	if opts.Predicate != nil {
+		predicate = append(predicate, opts.Predicate)
+	}
+
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
-	if opts.Predicate != nil {
-		if filtered, err := filter(downstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			downstream = filtered
-		}
-		if filtered, err := filter(upstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			upstream = filtered
-		}
+	if downstream, err = filterResources(downstream, predicate); err != nil {
+		return err
 	}
+	if upstream, err = filterResources(upstream, predicate); err != nil {
+		return err
+	}
+
 	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
 
-	indexedDownstream := newIndexed(downstream)
-	indexedUpstream := newIndexed(upstream)
+	indexedDownstream := model.IndexByKey(downstream.GetItems())
+	indexedUpstream := model.IndexByKey(upstream.GetItems())
 
 	onDelete := []core_model.Resource{}
 	// 1. delete resources which were removed from the upstream
@@ -159,18 +176,18 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	// so we don't want to remove resources haven't changed.
 	if upstreamResponse.IsInitialRequest {
 		for _, r := range downstream.GetItems() {
-			if indexedUpstream.get(core_model.MetaToResourceKey(r.GetMeta())) == nil {
+			if indexedUpstream[core_model.MetaToResourceKey(r.GetMeta())] == nil {
 				onDelete = append(onDelete, r)
 			}
 		}
 	} else {
 		for _, rk := range upstreamResponse.RemovedResourcesKey {
 			// check if we are adding and removing the resource at the same time
-			if r := indexedUpstream.get(rk); r != nil {
+			if r := indexedUpstream[rk]; r != nil {
 				// it isn't remove but update
 				continue
 			}
-			if r := indexedDownstream.get(rk); r != nil {
+			if r := indexedDownstream[rk]; r != nil {
 				onDelete = append(onDelete, r)
 			}
 		}
@@ -180,7 +197,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	onCreate := []core_model.Resource{}
 	onUpdate := []OnUpdate{}
 	for _, r := range upstream.GetItems() {
-		existing := indexedDownstream.get(core_model.MetaToResourceKey(r.GetMeta()))
+		existing := indexedDownstream[core_model.MetaToResourceKey(r.GetMeta())]
 		if existing == nil {
 			onCreate = append(onCreate, r)
 			continue
@@ -200,7 +217,6 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			return err
 		}
 	}
-
 	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onDelete {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
@@ -258,22 +274,6 @@ func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bo
 		}
 	}
 	return rv, nil
-}
-
-type indexed struct {
-	indexByResourceKey map[core_model.ResourceKey]core_model.Resource
-}
-
-func (i *indexed) get(rk core_model.ResourceKey) core_model.Resource {
-	return i.indexByResourceKey[rk]
-}
-
-func newIndexed(rs core_model.ResourceList) *indexed {
-	idxByRk := map[core_model.ResourceKey]core_model.Resource{}
-	for _, r := range rs.GetItems() {
-		idxByRk[core_model.MetaToResourceKey(r.GetMeta())] = r
-	}
-	return &indexed{indexByResourceKey: idxByRk}
 }
 
 func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
@@ -336,6 +336,7 @@ func GlobalSyncCallback(
 			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
+				upstream.InvalidResourcesKey = util.AddPrefixToResourceKeyNames(upstream.InvalidResourcesKey, upstream.ControlPlaneId)
 				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
 			}
 
@@ -388,6 +389,7 @@ func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v
 	if kubeObject.Scope() == k8s_model.ScopeNamespace {
 		util.AddSuffixToNames(upstream.AddedResources.GetItems(), ns)
 		upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, ns)
+		upstream.InvalidResourcesKey = util.AddSuffixToResourceKeyNames(upstream.InvalidResourcesKey, ns)
 	}
 	return nil
 }
