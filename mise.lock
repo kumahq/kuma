@@ -1,0 +1,140 @@
+[tools]
+findutils = []
+
+[tools.clang-tools-static-binaries]
+version = "master-208096c1"
+backend = "ubi:muttleyxd/clang-tools-static-binaries"
+
+[tools.container-structure-test]
+version = "1.19.3"
+backend = "aqua:GoogleContainerTools/container-structure-test"
+
+[tools.container-structure-test.checksums]
+container-structure-test-darwin-arm64 = "sha256:231098768217c3594667c521e991574bfd4370b3b3de959208d54059657fd956"
+
+[tools.etcd]
+version = "3.5.17"
+backend = "aqua:etcd-io/etcd"
+
+[tools.etcd.checksums]
+"etcd-v3.5.17-darwin-amd64.zip" = "sha256:38845d650e63dc4bdc85c05b31d1c02cdcfd33ccb2ce103ebe5aa7abcf00513f"
+
+[tools.ginkgo]
+version = "2.22.2"
+backend = "asdf:ginkgo"
+
+[tools.go]
+version = "1.23.4"
+backend = "core:go"
+
+[tools.golangci-lint]
+version = "1.61.0"
+backend = "aqua:golangci/golangci-lint"
+
+[tools.gum]
+version = "0.14.5"
+backend = "aqua:charmbracelet/gum"
+
+[tools.hadolint]
+version = "2.12.1-beta"
+backend = "ubi:hadolint/hadolint"
+
+[tools.helm]
+version = "3.16.4"
+backend = "aqua:helm/helm"
+
+[tools.helm-docs]
+version = "1.11.0"
+backend = "aqua:norwoodj/helm-docs"
+
+[tools.jq]
+version = "1.7.1"
+backend = "aqua:jqlang/jq"
+
+[tools.k3d]
+version = "5.7.5"
+backend = "ubi:k3d-io/k3d"
+
+[tools.kind]
+version = "0.26.0"
+backend = "ubi:kubernetes-sigs/kind"
+
+[tools.kind.checksums]
+kind-macos-aarch64 = "sha256:e5bf92d8d46017e23482bfe266929d4d82e6f8c754e216c105cb7fbea937bea2"
+
+[tools.kube-controller-tools]
+version = "0.17.0"
+backend = "asdf:kube-controller-tools"
+
+[tools.kube-linter]
+version = "0.6.5"
+backend = "aqua:stackrox/kube-linter"
+
+[tools.kube-linter.checksums]
+kube-linter-darwin = "sha256:095ca8bd26a1d536dce07e56becf8837a6aabde1c02a268ecb69b44573d35b6e"
+
+[tools.kubebuilder]
+version = "4.3.1"
+backend = "aqua:kubernetes-sigs/kubebuilder"
+
+[tools.kubebuilder.checksums]
+kubebuilder_darwin_amd64 = "sha256:2af6f781fbef8a39262b8d7f5ffb3775e5715930dbb7bc77f2866934e8762e27"
+
+[tools.kubectl]
+version = "1.32.0"
+backend = "aqua:kubernetes/kubectl"
+
+[tools.kubectl.checksums]
+kubectl = "sha256:5bfd5de53a054b4ef614c60748e28bf47441c7ed4db47ec3c19a3e2fa0eb5555"
+
+[tools.oapi-codegen]
+version = "2.4.1"
+backend = "asdf:oapi-codegen"
+
+[tools.osv-scanner]
+version = "1.9.1"
+backend = "go:github.com/google/osv-scanner/cmd/osv-scanner"
+
+[tools.protoc]
+version = "3.20.0"
+backend = "aqua:protocolbuffers/protobuf/protoc"
+
+[tools.protoc.checksums]
+"protoc-3.20.0-osx-aarch_64.zip" = "sha256:dc5ad98c7b1d7ad90475ed333f023946e8fe5bef748cb54dc463069adb3fb5aa"
+
+[tools.protoc-gen-go]
+version = "1.28.1"
+backend = "aqua:protocolbuffers/protobuf-go/protoc-gen-go"
+
+[tools.protoc-gen-go-grpc]
+version = "1.1.0"
+backend = "go:google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+
+[tools.protoc-gen-jsonschema]
+version = "1.4.1"
+backend = "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema"
+
+[tools.protoc-gen-validate]
+version = "1.1.0"
+backend = "go:github.com/envoyproxy/protoc-gen-validate"
+
+[tools.shellcheck]
+version = "0.10.0"
+backend = "aqua:koalaman/shellcheck"
+
+[tools.shellcheck.checksums]
+"shellcheck-v0.10.0.darwin.x86_64.tar.xz" = "sha256:ef27684f23279d112d8ad84e0823642e43f838993bbb8c0963db9b58a90464c2"
+
+[tools."ubi:BurntSushi/ripgrep"]
+version = "14.1.1"
+backend = "ubi:BurntSushi/ripgrep"
+
+[tools."ubi:BurntSushi/ripgrep".checksums]
+rg-rg-macos-aarch64 = "sha256:0e0cb83f5195f1f51bb8feef1fff5b0b171e82bd1db6bd35deee701a3e7102f8"
+
+[tools.yq]
+version = "4.30.8"
+backend = "ubi:mikefarah/yq"
+
+[tools.yq.checksums]
+yq-macos-aarch64 = "sha256:8495389a5c31dfd78314e680169cd2c277f2f47442d3fc08e5101ee2c07c6b13"

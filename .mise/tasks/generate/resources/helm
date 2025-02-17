@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/common.sh"
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Manage Helm values and CRDs for the provided resources"
+#MISE wait_for=["generate:resources:base"]
+#USAGE flag "--resources-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Base directory for resources (e.g., pkg/plugins/policies)"
+#USAGE }
+#USAGE flag "--crds-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Path to the directory where CRDs are stored"
+#USAGE }
+#USAGE flag "--values-file" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the Helm values file to be updated"
+#USAGE }
+#USAGE flag "--values-path" {
+#USAGE   arg "<yaml-path>"
+#USAGE   choices ".plugins.policies" ".plugins.resources"
+#USAGE   help "Path to a nested configuration in Helm's values.yaml file"
+#USAGE }
+
+___task_crds_dir="${usage_crds_dir:-${CRDS_DIR:-$__GENERATE_HELM_CRDS_DIR}}"
+___task_values_file="${usage_values_file:-${VALUES_FILE:-$__GENERATE_HELM_VALUES_FILE}}"
+___task_r_values_path="${usage_values_path:-${VALUES_PATH:-}}"
+___task_r_resources_dir="${usage_resources_dir:-${RESOURCES_DIR:-}}"
+read -r -a ___task_resources <<< "$(common::get_resources "$___task_r_resources_dir")"
+
+variables::verify
+
+crds=()
+
+for c in "${___task_resources[@]}"; do
+  if [ ! -f "$___task_r_resources_dir/$c/zz_generated.plugin.go" ]; then
+    echo "Resource $c has skip registration, not updating Helm"
+    continue
+  fi
+
+  mapfile -t crd_files < <(find "$___task_r_resources_dir/$c/k8s/crd" -type f)
+
+  if [ ${#crd_files[@]} -ne 1 ]; then
+    echo "Expected 1 file in CRD directory, found: ${#crd_files[@]}" >&2
+    exit 1
+  fi
+
+  cp -f "${crd_files[0]}" "$___task_crds_dir"
+
+  crds+=("${crd_files[@]}")
+done
+
+if [ ${#crds[@]} -eq 0 ]; then
+  exit 0
+fi
+
+# Update Helm values file with resources configuration
+# shellcheck disable=SC2016
+vfile="$___task_values_file" vpath="$___task_r_values_path" yq eval-all '
+  (.spec.names.plural as $p ireduce ({}; . * {($p): true})) as $resources |
+  select(filename == strenv(vfile)) |
+  eval(strenv(vpath)) |= $resources
+' "${crds[@]}" "$___task_values_file" | \
+diff --ignore-all-space --ignore-blank-lines "$___task_values_file" - | \
+patch --force --no-backup-if-mismatch "$___task_values_file" -

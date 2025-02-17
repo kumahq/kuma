@@ -1,0 +1,81 @@
+["lint:shellcheck"]
+description = "Run shellcheck on shell script files excluding the .git directory"
+
+run = """
+find . \
+  -not -path '*/.git/*' \
+  -type f -regex '.*\\.\\(ba\\)?sh' \
+  -exec shellcheck -P SCRIPTDIR -x {} +
+"""
+
+###########################
+
+["lint:ginkgo"]
+description = "Check test files for ginkgo-specific linting rules"
+
+run = """
+go run tools/ci/check_test_files.go"
+"""
+
+###########################
+
+["lint:helm"]
+description = "Run helm lint with strict mode on all charts in the deployments/charts directory"
+
+run = """
+find ./deployments/charts \
+  -maxdepth 1 \
+  -mindepth 1 \
+  -type d \
+  -exec helm lint --strict {} \\;
+"""
+
+###########################
+
+["lint:kube-lint"]
+description = "Run kube-linter on specific Kubernetes YAML files and Helm charts"
+
+run = """
+find . \
+  -type d -path './deployments/charts' -or \
+  -type f -path "./app/kumactl/cmd/install/testdata/install-control-plane*.golden.yaml" -or \
+  -type f -path "./app/kumactl/cmd/install/testdata/install-cp-helm/*.golden.yaml" \
+  -exec kube-linter lint {} +
+"""
+
+###########################
+
+["lint:hadolint"]
+description = "Run hadolint on Dockerfiles in the tools/releases/dockerfiles directory"
+
+run = """
+find ./tools/releases/dockerfiles/ \
+  -type f -iname "*Dockerfile" \
+  -exec hadolint {} +
+"""
+
+###########################
+
+["lint:golangci-lint"]
+description = "Run golangci-lint on Go files or skip if running in GitHub Actions"
+
+sources = ["**/*.go"]
+outputs = { auto = true }
+
+env.GOMEMLIMIT = "7GiB"
+env.CGO_ENABLED = 0
+
+run = """
+{% if env.CI is defined %}
+  golangci-lint run --timeout=10m -v
+{% else %}
+  echo "skipping golangci-lint as it's done as a github action"
+{% endif %}
+"""
+
+###########################
+
+[lint]
+description = "Run all linting tasks"
+
+depends = ["lint:*"]

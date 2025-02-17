@@ -38,31 +38,54 @@ endef
 # so this is location should not be changed by developers.
 KUBECONFIG_DIR := $(HOME)/.kube
 
-PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
+CLANG_FORMAT=$(shell mise which clang-format-13)
+CONTAINER_STRUCTURE_TEST=$(shell mise which container-structure-test)
+CONTROLLER_GEN=$(shell mise which controller-gen)
+GINKGO=$(shell mise which ginkgo)
+GOLANGCI_LINT=$(shell mise which golangci-lint)
+HADOLINT=$(shell mise which hadolint)
+HELM=$(shell mise which helm)
+HELM_DOCS=$(shell mise which helm-docs)
+K3D_BIN=$(shell mise which k3d)
+KIND=$(shell mise which kind)
+KUBE_LINTER=$(shell mise which kube-linter)
+KUBEBUILDER=$(shell mise which kubebuilder)
+KUBECTL=$(shell mise which kubectl)
+OAPI_CODEBEN=$(shell mise which oapi-codegen)
+PROTOC_BIN=$(shell mise which protoc)
+PROTOC_GEN_GO=$(shell mise which protoc-gen-go)
+PROTOC_GEN_GO_GRPC=$(shell mise which protoc-gen-go-grpc)
+PROTOC_GEN_JSONSCHEMA=$(shell mise which protoc-gen-jsonschema)
+PROTOC_GEN_VALIDATE=$(shell mise which protoc-gen-validate)
+SHELLCHECK=$(shell mise which shellcheck)
+YQ=$(shell mise which yq)
 
-CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
-YQ=$(CI_TOOLS_BIN_DIR)/yq
-HELM=$(CI_TOOLS_BIN_DIR)/helm
-K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
-KIND=$(CI_TOOLS_BIN_DIR)/kind
-KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
+PROTOS_DEPS_PATH=$(CI_TOOLS_DIR)/protos
 KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
-CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
-KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
-PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
-SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
-CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
-# from go-deps
-PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
-PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
-PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
-PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
-PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
-GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
-GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
-HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
-KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
-HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
+
+#CLANG_FORMAT=$(CI_TOOLS_BIN_DIR)/clang-format
+#YQ=$(CI_TOOLS_BIN_DIR)/yq
+#HELM=$(CI_TOOLS_BIN_DIR)/helm
+#K3D_BIN=$(CI_TOOLS_BIN_DIR)/k3d
+#KIND=$(CI_TOOLS_BIN_DIR)/kind
+#KUBEBUILDER=$(CI_TOOLS_BIN_DIR)/kubebuilder
+#KUBEBUILDER_ASSETS=$(CI_TOOLS_BIN_DIR)
+#CONTROLLER_GEN=$(CI_TOOLS_BIN_DIR)/controller-gen
+#KUBECTL=$(CI_TOOLS_BIN_DIR)/kubectl
+#PROTOC_BIN=$(CI_TOOLS_BIN_DIR)/protoc
+#SHELLCHECK=$(CI_TOOLS_BIN_DIR)/shellcheck
+#CONTAINER_STRUCTURE_TEST=$(CI_TOOLS_BIN_DIR)/container-structure-test
+## from go-deps
+#PROTOC_GEN_GO=$(CI_TOOLS_BIN_DIR)/protoc-gen-go
+#PROTOC_GEN_GO_GRPC=$(CI_TOOLS_BIN_DIR)/protoc-gen-go-grpc
+#PROTOC_GEN_VALIDATE=$(CI_TOOLS_BIN_DIR)/protoc-gen-validate
+#PROTOC_GEN_KUMADOC=$(CI_TOOLS_BIN_DIR)/protoc-gen-kumadoc
+#PROTOC_GEN_JSONSCHEMA=$(CI_TOOLS_BIN_DIR)/protoc-gen-jsonschema
+#GINKGO=$(CI_TOOLS_BIN_DIR)/ginkgo
+#GOLANGCI_LINT=$(CI_TOOLS_BIN_DIR)/golangci-lint
+#HELM_DOCS=$(CI_TOOLS_BIN_DIR)/helm-docs
+#KUBE_LINTER=$(CI_TOOLS_BIN_DIR)/kube-linter
+#HADOLINT=$(CI_TOOLS_BIN_DIR)/hadolint
 
 TOOLS_DEPS_DIRS=$(KUMA_DIR)/mk/dependencies
 TOOLS_DEPS_LOCK_FILE=mk/dependencies/deps.lock
@@ -76,7 +99,7 @@ LATEST_RELEASE_BRANCH := $(shell $(YQ) e '.[] | .branch' versions.yml | grep -v 
 # it's important that everything lands in $(CI_TOOLS_DIR) to be able to cache this folder in CI and speed up the build.
 .PHONY: dev/tools
 dev/tools: ## Bootstrap: Install all development tools
-	$(TOOLS_DIR)/dev/install-dev-tools.sh $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(GOOS) $(GOARCH) $(TOOLS_MAKEFILE)
+	$(TOOLS_DIR)/dev/install-dev-tools.sh  $(GOOS) $(GOARCH) $(CI_TOOLS_BIN_DIR) $(CI_TOOLS_DIR) "$(TOOLS_DEPS_DIRS)" $(TOOLS_DEPS_LOCK_FILE) $(TOOLS_MAKEFILE)
 
 .PHONY: dev/tools/clean
 dev/tools/clean: ## Bootstrap: Remove all development tools
@@ -140,7 +163,7 @@ dev/sync-demo:
 
 .PHONY: dev/set-kuma-helm-repo
 dev/set-kuma-helm-repo:
-	${CI_TOOLS_BIN_DIR}/helm repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
+	$(HELM) repo add ${CHART_REPO_NAME} ${KUMA_CHARTS_URL}
 
 .PHONY: clean
 clean: clean/build clean/generated clean/docs ## Dev: Clean

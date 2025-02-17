@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Debug"
+#USAGE flag "--type" {
+#USAGE   arg "<type>"
+#USAGE   choices "all" "mise:diff" "mise:session"
+#USAGE   default "all"
+#USAGE   help "Type of what to debug"
+#USAGE }
+
+___task_debug_type="${usage_type:-all}"
+
+variables::verify
+
+# Function to process input using rq and jq
+process_mise_variables() {
+    local var_name="$1"
+    echo "Debugging variable: $var_name"
+    rq --input-message-pack --output-json < <(
+        zcat --quiet < <(
+            printf '\x1f\x8b\x08\x00\x00\x00\x00\x00'
+            base64 -d <<< "${!var_name}"
+        )
+    ) | jq --color-output
+}
+
+case "$___task_debug_type" in
+    all)
+        process_mise_variables "__MISE_DIFF"
+        process_mise_variables "__MISE_SESSION"
+        ;;
+    mise:diff)
+        process_mise_variables "__MISE_DIFF"
+        ;;
+    mise:session)
+        process_mise_variables "__MISE_SESSION"
+        ;;
+esac

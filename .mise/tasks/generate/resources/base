@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/common.sh"
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Generates various policy-related resources and files"
+#MISE depends=["generate:tools:policy-gen"]
+#USAGE flag "--resources-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Base directory for resources (e.g., pkg/plugins/policies)"
+#USAGE }
+#USAGE flag "--go-module" {
+#USAGE   arg "<name>"
+#USAGE   help "Go module name (e.g., github.com/kumahq/kuma)"
+#USAGE }
+
+___task_go_module="${usage_go_module:-${GO_MODULE:-github.com/kumahq/kuma}}"
+___task_r_resources_dir="${usage_resources_dir:-${RESOURCES_DIR:-}}"
+read -r -a ___task_resources <<< "$(common::get_resources "$___task_r_resources_dir")"
+
+___task_bin_yq=$(mise which yq)
+___task_bin_controller_gen=$(mise which controller-gen)
+___task_imports_file="$___task_r_resources_dir/zz_generated.modules.go"
+___task_templates_path="$__KUMA_DIR/tools/openapi/templates"
+
+variables::verify
+
+for r in "${___task_resources[@]}"; do
+  root_flags=(
+    "--plugin-dir" "$___task_r_resources_dir/$r"
+    "--gomodule" "$___task_go_module"
+  )
+
+  policy-gen core-resource "${root_flags[@]}"
+  policy-gen k8s-resource "${root_flags[@]}" --controller-gen-bin "$___task_bin_controller_gen"
+  policy-gen plugin-file "${root_flags[@]}"
+  policy-gen helpers "${root_flags[@]}"
+  policy-gen openapi "${root_flags[@]}" \
+    --yq-bin "$___task_bin_yq" \
+    --openapi-template-path "$___task_templates_path/endpoints.yaml" \
+    --jsonschema-template-path "$___task_templates_path/schema.yaml"
+done

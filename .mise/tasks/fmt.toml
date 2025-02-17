@@ -1,0 +1,45 @@
+["fmt:tidy"]
+description = "Run go mod tidy in directories containing go.mod files"
+
+run = "find . -name go.mod -execdir go mod tidy \\;"
+
+["fmt:proto"]
+description = "Format .proto files using clang-format"
+
+run = "find . -name *.proto -exec clang-format -i {} +"
+
+["fmt:ci:k8s"]
+description = "Sync Kubernetes version range in CI workflows with environment variables"
+
+run = """
+yq -i \
+  '.env.K8S_MIN_VERSION = "{{ env.__K8S_MIN_VERSION }}" | \
+   .env.K8S_MAX_VERSION = "{{ env.__K8S_MAX_VERSION }}"' \
+  .github/workflows/{{ env.__ACTION_PREFIX }}_test.yaml
+"""
+
+["fmt:ci:golangci-lint"]
+description = "Sync golangci-lint version in workflows with the version installed by mise"
+
+run = """
+{% set version = exec(command='mise tool --active golangci-lint') %}
+
+grep -rl "golangci/golangci-lint-action" .github/workflows \
+  --include "*.yaml" \
+  --include "*.yml" \
+  | xargs -n 1 yq -i '(.jobs.* \
+    | select(. | has("steps")) \
+    | .steps[] \
+    | select(.uses == "golangci/golangci-lint-action*") \
+    | .with.version) |= "v{{ version }}"'
+"""
+
+["fmt:ci"]
+description = "Run all CI-related formatting tasks"
+
+depends = ["fmt:ci:**:*"]
+
+["fmt"]
+description = "Run all formatting tasks"
+
+depends = ["fmt:*"]

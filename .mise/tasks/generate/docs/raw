@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Generates raw documentation for Kuma, including configuration, Helm values, CRDs, and Proto files"
+#USAGE flag "--cp-config" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the configuration file for Kuma CP"
+#USAGE }
+#USAGE flag "--helm-values" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the Helm values file"
+#USAGE }
+#USAGE flag "--output-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Directory where output will be saved"
+#USAGE }
+#USAGE flag "--charts-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Directory containing the Helm charts"
+#USAGE }
+#USAGE flag "--protos" {
+#USAGE   arg "<file>"
+#USAGE   var true
+#USAGE   help "Path or glob pattern for Proto files to process"
+#USAGE }
+
+# Variables
+___task_cp_config="${usage_cp_config:-${CP_CONFIG:-pkg/config/app/kuma-cp/kuma-cp.defaults.yaml}}"
+___task_helm_values="${usage_helm_values:-${HELM_VALUES:-deployments/charts/kuma/values.yaml}}"
+___task_output_dir="${usage_output_dir:-${OUTPUT_DIR:-docs/generated/raw}}"
+___task_charts_dir="${usage_charts_dir:-${CHARTS_DIR:-deployments/charts}}"
+read -r -a ___task_protos <<< "${usage_protos:-${PROTOS:-api/mesh/v1alpha1/*.proto}}"
+
+variables::verify
+
+shopt -s nullglob # Allow glob patterns to expand to an empty list instead of returning the pattern itself
+# shellcheck disable=SC2206
+___task_protos_expanded=(${___task_protos[@]}) # Expand globs for protos
+shopt -u nullglob # Revert nullglob setting to avoid unintended behavior in subsequent commands
+
+if [ ${#___task_protos_expanded[@]} -eq 0 ]; then
+  echo "No proto files found matching: ${___task_protos[*]}" >&2
+  exit 1
+fi
+
+# Prepare directories
+mkdir -p "$___task_output_dir/crds" "$___task_output_dir/protos"
+
+# Copy files
+cp "$___task_cp_config" "$___task_output_dir/kuma-cp.yaml"
+cp "$___task_helm_values" "$___task_output_dir/helm-values.yaml"
+
+find "$___task_charts_dir" -name '*.yaml' -path '*/crds/*' -exec cp {} "$___task_output_dir/crds/" \;
+
+protoc \
+  --proto_path="$__TOOLS_DIR_PROTOS" \
+  --proto_path="$KUMA_DIR" \
+  --proto_path=. \
+  --jsonschema_out="$___task_output_dir/protos" \
+  --plugin=protoc-gen-jsonschema="$(mise which protoc-gen-jsonschema)" \
+  "${___task_protos_expanded[@]}"
