@@ -38,17 +38,21 @@ New rule:
 
 > A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
 
-### MeshMetric
+### MeshTrace
 
 #### Unifying defaults for `sharedSpanContext`
 
 Due to misconfiguration a default `sharedSpanContext` for metrics on Universal ("false") was different from on Kubernetes ("true").
 If you're using Universal mode, and you did not specify `tracing.backends[].conf.sharedSpanContext` value in your `MeshTrace` resource, you have to explicitly set it to "false" to continue using that value.
 
+### MeshMetric
+
 #### Unifying defaults for `path`
 
 Due to misconfiguration a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
 If you're using Universal mode, and you did not specify `default.applications[].path` value in your `MeshMetric` resource, you have to explicitly set it to "/metrics" to continue using that value.
+
+### MeshPassthrough
 
 #### Unifying defaults for `passthroughMode`
 
