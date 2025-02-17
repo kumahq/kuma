@@ -36,7 +36,7 @@ func (u *UpstreamResponse) Validate() error {
 }
 
 type Callbacks struct {
-	OnResourcesReceived func(upstream UpstreamResponse) error
+	OnResourcesReceived func(upstream UpstreamResponse) (error, error)
 }
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
@@ -114,13 +114,14 @@ func (s *kdsSyncClient) Receive() error {
 			}
 			continue
 		}
-		err = s.callbacks.OnResourcesReceived(received)
+		err, nackError := s.callbacks.OnResourcesReceived(received)
 		if err != nil {
 			return errors.Wrapf(err, "failed to store %s resources", received.Type)
 		}
-		if validationErrors != nil {
-			s.log.Info("received resource is invalid, sending NACK", "err", validationErrors)
-			if err := s.kdsStream.NACK(received.Type, validationErrors); err != nil {
+		if nackError != nil || validationErrors != nil {
+			combinedErrors := std_errors.Join(nackError, validationErrors)
+			s.log.Info("received resource is invalid, sending NACK", "err", combinedErrors)
+			if err := s.kdsStream.NACK(received.Type, combinedErrors); err != nil {
 				if err == io.EOF {
 					return nil
 				}
