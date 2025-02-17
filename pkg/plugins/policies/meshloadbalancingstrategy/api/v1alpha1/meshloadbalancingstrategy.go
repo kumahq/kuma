@@ -32,7 +32,6 @@ type Conf struct {
 	// LocalityAwareness contains configuration for locality aware load balancing.
 	LocalityAwareness *LocalityAwareness `json:"localityAwareness,omitempty"`
 	// LoadBalancer allows to specify load balancing algorithm.
-	// +kuma:non-mergeable-struct
 	LoadBalancer *LoadBalancer `json:"loadBalancer,omitempty"`
 }
 
