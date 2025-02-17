@@ -53,6 +53,7 @@ If you're using Universal mode, and you did not specify `default.applications[].
 #### Unifying defaults for `passthroughMode`
 
 Due to misconfiguration a default `passthroughMode` for `MeshPasstrhough` on Universal ("Matched") was different from on Kubernetes ("None").
+If you're using Kubernetes mode, and you did not specify `default.passthroughMode` value in your `MeshPasstrhough` resource, you have to explicitly set it to "None" to continue using that value.
 
 ### MeshLoadBalancingStrategy
 
