@@ -170,10 +170,7 @@ properties:
                               minimum: 0
                               type: integer
                           type: object
-                        minItems: 1
                         type: array
-                    required:
-                      - backendRefs
                     type: object
                 required:
                   - default

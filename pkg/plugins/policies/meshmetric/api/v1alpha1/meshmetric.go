@@ -32,7 +32,7 @@ type Sidecar struct {
 	// IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
 	// at least once, gauges changed at least once, and histograms added to at
 	// least once). If true will scrape all metrics (even the ones with zeros).
-	// +kubebuilder:default=false
+	// If not specified then the default value is false.
 	IncludeUnused *bool `json:"includeUnused,omitempty"`
 }
 
@@ -82,8 +82,9 @@ type Application struct {
 	// Name of the application to scrape
 	Name *string `json:"name,omitempty"`
 	// Path on which an application expose HTTP endpoint with metrics.
-	// +kubebuilder:default="/metrics/prometheus"
-	Path *string `json:"path,omitempty"`
+	// +kubebuilder:default="/metrics"
+	// +kubebuilder:validation:Optional
+	Path string `json:"path"`
 	// Address on which an application listens.
 	Address *string `json:"address,omitempty"`
 	// Port on which an application expose HTTP endpoint with metrics.
@@ -112,8 +113,10 @@ type PrometheusBackend struct {
 	ClientId *string `json:"clientId,omitempty"`
 	// Port on which a dataplane should expose HTTP endpoint with Prometheus metrics.
 	// +kubebuilder:default=5670
+	// +kubebuilder:validation:Optional
 	Port uint32 `json:"port"`
 	// Path on which a dataplane should expose HTTP endpoint with Prometheus metrics.
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default="/metrics"
 	Path string `json:"path"`
 	// Configuration of TLS for prometheus listener.
@@ -123,6 +126,7 @@ type PrometheusBackend struct {
 type PrometheusTls struct {
 	// Configuration of TLS for Prometheus listener.
 	// +kubebuilder:default="Disabled"
+	// +kubebuilder:validation:Optional
 	Mode TlsMode `json:"mode"`
 }
 

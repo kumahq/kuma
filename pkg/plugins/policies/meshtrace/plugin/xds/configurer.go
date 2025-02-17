@@ -170,14 +170,11 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 		return nil, errors.Wrap(err, "invalid URL of Zipkin")
 	}
 
-	var ssc *wrapperspb.BoolValue
-	if zipkin.SharedSpanContext != nil {
-		ssc = wrapperspb.Bool(*zipkin.SharedSpanContext)
-	}
+	ssc := wrapperspb.Bool(zipkin.SharedSpanContext)
 	zipkinConfig := envoy_trace.ZipkinConfig{
 		CollectorCluster:         clusterName,
 		CollectorEndpoint:        url.Path,
-		TraceId_128Bit:           pointer.Deref(zipkin.TraceId128Bit),
+		TraceId_128Bit:           zipkin.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(zipkin),
 		SharedSpanContext:        ssc,
 		CollectorHostname:        url.Host,
@@ -199,7 +196,7 @@ func (c *Configurer) zipkinConfig(clusterName string) (*envoy_trace.Tracing_Http
 func (c *Configurer) createDatadogServiceName() string {
 	datadog := pointer.Deref(c.Conf.Backends)[0].Datadog
 
-	if pointer.Deref(datadog.SplitService) {
+	if datadog.SplitService {
 		var datadogServiceName []string
 		switch c.TrafficDirection {
 		case envoy_core.TrafficDirection_INBOUND:
@@ -216,7 +213,7 @@ func (c *Configurer) createDatadogServiceName() string {
 }
 
 func apiVersion(zipkin *api.ZipkinBackend) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
-	switch pointer.Deref(zipkin.ApiVersion) {
+	switch zipkin.ApiVersion {
 	case "httpJson":
 		return envoy_trace.ZipkinConfig_HTTP_JSON
 	case "httpProto":

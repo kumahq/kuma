@@ -63,6 +63,7 @@ type AbortConf struct {
 	HttpStatus int32 `json:"httpStatus"`
 	// Percentage of requests on which abort will be injected, has to be
 	// either int or decimal represented as string.
+	// +kuma:non-mergeable-struct
 	Percentage intstr.IntOrString `json:"percentage"`
 }
 
@@ -71,6 +72,7 @@ type DelayConf struct {
 	Value k8s.Duration `json:"value"`
 	// Percentage of requests on which delay will be injected, has to be
 	// either int or decimal represented as string.
+	// +kuma:non-mergeable-struct
 	Percentage intstr.IntOrString `json:"percentage"`
 }
 

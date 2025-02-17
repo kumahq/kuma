@@ -64,7 +64,7 @@ spec:
                           description: Name of the application to scrape
                           type: string
                         path:
-                          default: /metrics/prometheus
+                          default: /metrics
                           description: Path on which an application expose HTTP endpoint
                             with metrics.
                           type: string
@@ -124,12 +124,7 @@ spec:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                   type: string
-                              required:
-                              - mode
                               type: object
-                          required:
-                          - path
-                          - port
                           type: object
                         type:
                           description: Type of the backend that will be used to collect
@@ -146,11 +141,11 @@ spec:
                     description: Sidecar metrics collection configuration
                     properties:
                       includeUnused:
-                        default: false
                         description: |-
                           IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                           at least once, gauges changed at least once, and histograms added to at
                           least once). If true will scrape all metrics (even the ones with zeros).
+                          If not specified then the default value is false.
                         type: boolean
                       profiles:
                         description: Profiles allows to customize which metrics are
