@@ -39,5 +39,5 @@ type From struct {
 type Conf struct {
 	// User defined fields
 	// Set true in case of doing nothing
-	EnableDoNothing bool `json:"enableDoNothing,omitempty"`
+	EnableDoNothing *bool `json:"enableDoNothing,omitempty"`
 }

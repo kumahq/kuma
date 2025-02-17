@@ -221,7 +221,7 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_con
 			Name:    app.Name,
 			Address: pointer.Deref(app.Address),
 			Port:    app.Port,
-			Path:    pointer.DerefOr(app.Path, "/metrics"),
+			Path:    app.Path,
 		})
 	}
 

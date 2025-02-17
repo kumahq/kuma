@@ -155,13 +155,21 @@ func (in *HeaderModifier) DeepCopyInto(out *HeaderModifier) {
 	*out = *in
 	if in.Set != nil {
 		in, out := &in.Set, &out.Set
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Add != nil {
 		in, out := &in.Add, &out.Add
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 

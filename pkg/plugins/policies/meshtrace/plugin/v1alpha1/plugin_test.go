@@ -163,9 +163,9 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									ApiVersion:        pointer.To("httpProto"),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -202,9 +202,9 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									ApiVersion:        pointer.To("httpProto"),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -270,7 +270,7 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Datadog: &api.DatadogBackend{
 									Url:          "http://ingest.datadog.eu:8126",
-									SplitService: pointer.To(true),
+									SplitService: true,
 								},
 							}},
 						},
@@ -297,8 +297,8 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -375,8 +375,8 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									TraceId128Bit:     true,
 								},
 							}},
 						},

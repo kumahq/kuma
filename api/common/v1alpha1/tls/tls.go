@@ -102,5 +102,3 @@ var AllCiphers = []string{
 	string(EcdheRsaAes256GcmSha384),
 	string(EcdheRsaChacha20Poly1305),
 }
-
-type TlsCiphers []TlsCipher

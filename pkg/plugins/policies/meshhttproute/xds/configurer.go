@@ -9,6 +9,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
@@ -88,9 +89,9 @@ func (c RoutesConfigurer) routeMatch(match api.Match) []routeMatch {
 			c.routeMethodMatch(envoyMatch, *match.Method)
 		}
 		if match.QueryParams != nil {
-			routeQueryParamsMatch(envoyMatch, match.QueryParams)
+			routeQueryParamsMatch(envoyMatch, pointer.Deref(match.QueryParams))
 		}
-		routeHeadersMatch(envoyMatch, match.Headers)
+		routeHeadersMatch(envoyMatch, pointer.Deref(match.Headers))
 		if match.Path != nil && match.Path.Type == api.PathPrefix {
 			allEnvoyMatches = append(allEnvoyMatches, routeMatch{envoyMatch, true})
 		} else {

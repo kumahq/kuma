@@ -13,6 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
@@ -81,8 +82,8 @@ func (h *httpFilterModificator) patch(hcm *envoy_hcm.HttpConnectionManager, filt
 			var merged *anypb.Any
 			var err error
 
-			if len(h.JsonPatches) > 0 {
-				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), h.JsonPatches)
+			if len(pointer.Deref(h.JsonPatches)) > 0 {
+				merged, err = jsonpatch.MergeJsonPatchAny(filter.GetTypedConfig(), pointer.Deref(h.JsonPatches))
 			} else {
 				merged, err = util_proto.MergeAnys(filter.GetTypedConfig(), filterPatch.GetTypedConfig())
 			}
@@ -151,10 +152,10 @@ func (h *httpFilterModificator) listenerMatches(resource *core_xds.Resource) boo
 	if h.Match.Origin != nil && *h.Match.Origin != resource.Origin {
 		return false
 	}
-	if len(h.Match.ListenerTags) > 0 {
+	if len(pointer.Deref(h.Match.ListenerTags)) > 0 {
 		if listenerProto, ok := resource.Resource.(*envoy_listener.Listener); ok {
 			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
-			if !mesh_proto.TagSelector(h.Match.ListenerTags).Matches(listenerTags) {
+			if !mesh_proto.TagSelector(pointer.Deref(h.Match.ListenerTags)).Matches(listenerTags) {
 				return false
 			}
 		}
