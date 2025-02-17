@@ -82,7 +82,7 @@ type Application struct {
 	// Name of the application to scrape
 	Name *string `json:"name,omitempty"`
 	// Path on which an application expose HTTP endpoint with metrics.
-	// +kubebuilder:default="/metrics/prometheus"
+	// +kubebuilder:default="/metrics"
 	// +kubebuilder:validation:Optional
 	Path string `json:"path"`
 	// Address on which an application listens.
