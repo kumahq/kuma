@@ -363,8 +363,10 @@ func appendSlices(dst reflect.Value, src reflect.Value) {
 			if dstField.Elem().Kind() == reflect.Slice {
 				mergeByKey := strings.Contains(field.Tag.Get(policyMergeTag), mergeValuesByKey)
 				if strings.HasPrefix(field.Name, appendSlicesPrefix) || mergeByKey {
-					s := reflect.AppendSlice(dstField.Elem(), srcField.Elem())
-					dstField.Elem().Set(s)
+					if !srcField.IsNil() {
+						s := reflect.AppendSlice(dstField.Elem(), srcField.Elem())
+						dstField.Elem().Set(s)
+					}
 				}
 			}
 		}

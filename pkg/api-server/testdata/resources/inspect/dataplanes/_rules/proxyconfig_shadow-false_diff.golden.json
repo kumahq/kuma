@@ -6,7 +6,7 @@
     "name": "localhost:8080",
     "altStatName": "localhost_8080",
     "type": "STATIC",
-    "connectTimeout": "10s",
+    "connectTimeout": "5s",
     "loadAssignment": {
      "clusterName": "localhost:8080",
      "endpoints": [
@@ -46,7 +46,7 @@
          "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
          "statPrefix": "localhost_8080",
          "cluster": "localhost:8080",
-         "idleTimeout": "7200s"
+         "idleTimeout": "3600s"
         }
        }
       ]
