@@ -5,11 +5,13 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -104,6 +106,6 @@ func (r *SecretController) deleteCopiedSecret(ctx context.Context, key types.Nam
 func (r *SecretController) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-secret-controller").
-		For(&kube_core.Secret{}).
+		For(&kube_core.Secret{}, builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
 		Complete(r)
 }

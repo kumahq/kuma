@@ -24,7 +24,7 @@ func (r *GatewayReconciler) updateStatus(
 ) error {
 	updated := gateway.DeepCopy()
 
-	attachedListeners, err := attachedRoutesForListeners(ctx, gateway, r.Client)
+	attachedListeners, err := attachedRoutesForListeners(ctx, gateway, r.Client, r.WatchedNamespaces)
 	if err != nil {
 		return err
 	}
@@ -88,35 +88,56 @@ func attachedRoutesForListeners(
 	ctx context.Context,
 	gateway *gatewayapi.Gateway,
 	client kube_client.Client,
+	watchedNamespaces map[string]struct{},
 ) (AttachedRoutesForListeners, error) {
-	var routes gatewayapi.HTTPRouteList
+
 	// only watched namespaces
-	if err := client.List(ctx, &routes, kube_client.MatchingFields{
-		gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
-	}); err != nil {
-		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
+	var routes []*gatewayapi.HTTPRouteList
+	// only in namespaces
+	if len(watchedNamespaces) > 0 {
+		for ns := range watchedNamespaces {
+			nsRoutes := &gatewayapi.HTTPRouteList{}
+			if err := client.List(ctx, nsRoutes, kube_client.MatchingFields{
+				gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+			}, kube_client.InNamespace(ns)); err != nil {
+				return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
+			}
+
+			routes = append(routes, nsRoutes)
+		}
+	} else {
+		nsRoutes := &gatewayapi.HTTPRouteList{}
+		if err := client.List(ctx, nsRoutes, kube_client.MatchingFields{
+			gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
+		}); err != nil {
+			return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
+		}
+
+		routes = append(routes, nsRoutes)
 	}
 
 	attachedRoutes := AttachedRoutesForListeners{}
 
-	for i := range routes.Items {
-		route := routes.Items[i]
-		for _, parentRef := range route.Spec.ParentRefs {
-			sectionName := everyListener
-			if parentRef.SectionName != nil {
-				sectionName = *parentRef.SectionName
-			}
-
-			for i := range route.Status.Parents {
-				refStatus := route.Status.Parents[i]
-				if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
-					attached := attachedRoutes[sectionName]
-
-					if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
-						attached.num++
+	for _, nsRoutes := range routes {
+		for i := range nsRoutes.Items {
+			route := nsRoutes.Items[i]
+			for _, parentRef := range route.Spec.ParentRefs {
+				sectionName := everyListener
+				if parentRef.SectionName != nil {
+					sectionName = *parentRef.SectionName
+				}
+	
+				for i := range route.Status.Parents {
+					refStatus := route.Status.Parents[i]
+					if reflect.DeepEqual(refStatus.ParentRef, parentRef) {
+						attached := attachedRoutes[sectionName]
+	
+						if kube_apimeta.IsStatusConditionTrue(refStatus.Conditions, string(gatewayapi.RouteConditionAccepted)) {
+							attached.num++
+						}
+	
+						attachedRoutes[sectionName] = attached
 					}
-
-					attachedRoutes[sectionName] = attached
 				}
 			}
 		}

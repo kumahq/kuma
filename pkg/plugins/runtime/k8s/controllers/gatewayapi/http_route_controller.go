@@ -17,6 +17,7 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -31,6 +32,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -40,11 +42,11 @@ type HTTPRouteReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	Scheme          *kube_runtime.Scheme
-	TypeRegistry    k8s_registry.TypeRegistry
-	SystemNamespace string
-	ResourceManager manager.ResourceManager
-	Zone            string
+	Scheme            *kube_runtime.Scheme
+	TypeRegistry      k8s_registry.TypeRegistry
+	SystemNamespace   string
+	ResourceManager   manager.ResourceManager
+	Zone              string
 	WatchedNamespaces map[string]struct{}
 }
 
@@ -343,7 +345,7 @@ func routesForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFu
 
 // routesForService returns a function that calculates which HTTPRoutes might
 // be affected by changes in a Service.
-func routesForService(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func routesForService(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
 	l = l.WithName("service-to-routes-mapper")
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
@@ -353,21 +355,39 @@ func routesForService(l logr.Logger, client kube_client.Client) kube_handler.Map
 			return nil
 		}
 
-		var routes gatewayapi.HTTPRouteList
-		// only watched namespaces
-		if err := client.List(ctx, &routes, kube_client.MatchingFields{
-			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
-		}); err != nil {
-			l.Error(err, "unexpected error listing HTTPRoutes")
-			return nil
+		allRoutes := []*gatewayapi.HTTPRouteList{}
+		// only in namespaces
+		if len(watchedNamespaces) > 0 {
+			for ns := range watchedNamespaces {
+				routes := &gatewayapi.HTTPRouteList{}
+				if err := client.List(ctx, routes, kube_client.MatchingFields{
+					servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
+				}, kube_client.InNamespace(ns)); err != nil {
+					l.Error(err, "unexpected error listing HTTPRoutes")
+					return nil
+				}
+				allRoutes = append(allRoutes, routes)
+			}
+		} else {
+			routes := &gatewayapi.HTTPRouteList{}
+			if err := client.List(ctx, routes, kube_client.MatchingFields{
+				servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
+			}); err != nil {
+				l.Error(err, "unexpected error listing HTTPRoutes")
+				return nil
+			}
+			allRoutes = append(allRoutes, routes)
 		}
 
 		var requests []kube_reconcile.Request
-		for i := range routes.Items {
-			requests = append(requests, kube_reconcile.Request{
-				NamespacedName: kube_client.ObjectKeyFromObject(&routes.Items[i]),
-			})
+		for _, nsRoutes := range allRoutes {
+			for i := range nsRoutes.Items {
+				requests = append(requests, kube_reconcile.Request{
+					NamespacedName: kube_client.ObjectKeyFromObject(&nsRoutes.Items[i]),
+				})
+			}
 		}
+
 		return requests
 	}
 }
@@ -414,18 +434,21 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-http-route-controller").
-		For(&gatewayapi.HTTPRoute{}).
+		For(&gatewayapi.HTTPRoute{}, builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
+			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Watches(
 			&gatewayapi.ReferenceGrant{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
+			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Watches(
 			&kube_core.Service{},
-			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client)),
+			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client, r.WatchedNamespaces)),
+			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Complete(r)
 }
