@@ -9045,7 +9045,7 @@ components:
 
                     When `All` or `None` `appendMatch` has no effect.
 
-                    If not specified then the default value is "Matched".
+                    If not specified then the default value is "None".
                   enum:
                     - All
                     - Matched
