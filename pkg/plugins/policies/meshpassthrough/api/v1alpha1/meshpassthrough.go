@@ -18,7 +18,7 @@ type MeshPassthrough struct {
 type Conf struct {
 	// Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
 	// When `All` or `None` `appendMatch` has no effect.
-	// If not specified then the default value is "None".
+	// If not specified then the default value is "Matched".
 	PassthroughMode *PassthroughMode `json:"passthroughMode,omitempty"`
 	// AppendMatch is a list of destinations that should be allowed through the sidecar.
 	AppendMatch *[]Match `json:"appendMatch,omitempty"`

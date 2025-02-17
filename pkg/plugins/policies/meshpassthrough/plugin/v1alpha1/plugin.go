@@ -67,7 +67,7 @@ func applyToOutboundPassthrough(
 
 	// todo: this should be handled by "base policy"
 	if pointer.Deref(conf.PassthroughMode) == "" {
-		conf.PassthroughMode = pointer.To[api.PassthroughMode]("None")
+		conf.PassthroughMode = pointer.To[api.PassthroughMode]("Matched")
 	}
 
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {

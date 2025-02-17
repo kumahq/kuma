@@ -50,6 +50,10 @@ If you're using Universal mode, and you did not specify `tracing.backends[].conf
 Due to misconfiguration a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
 If you're using Universal mode, and you did not specify `default.applications[].path` value in your `MeshMetric` resource, you have to explicitly set it to "/metrics" to continue using that value.
 
+#### Unifying defaults for `passthroughMode`
+
+Due to misconfiguration a default `passthroughMode` for `MeshPasstrhough` on Universal ("Matched") was different from on Kubernetes ("None").
+
 ### MeshLoadBalancingStrategy
 
 #### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
