@@ -118,7 +118,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 		if ident, ok := baseType.(*ast.Ident); ok {
 			namedStruct := findStructByName(pass, ident.Name)
 			if namedStruct != nil {
-				if hasRequiredAnnotations(field, nonMergableAnotation) {
+				if hasAnnotations(field, nonMergableAnotation) {
 					analyzeStructFields(pass, namedStruct, fieldPath, false)
 				} else {
 					analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
@@ -148,7 +148,7 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 			if !hasOmitEmptyTag(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
-			if hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation) {
+			if hasAnnotations(field, defaultAnnotation, optionalAnnotation) {
 				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
 			}
 		} else {
@@ -187,16 +187,16 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 }
 
 func isKumaDiscriminator(field *ast.Field) bool {
-	hasKumaDiscriminator := hasRequiredAnnotations(field, discriminatorAnnotation)
-	hasDefaultAndOptional := hasRequiredAnnotations(field, defaultAnnotation, optionalAnnotation)
+	hasKumaDiscriminator := hasAnnotations(field, discriminatorAnnotation)
+	hasDefaultAndOptional := hasAnnotations(field, defaultAnnotation, optionalAnnotation)
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 	return hasKumaDiscriminator && !isPtr && !hasDefaultAndOptional && !hasOmitEmpty
 }
 
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
-	hasDefault := hasRequiredAnnotations(field, defaultAnnotation)
-	hasOptional := hasRequiredAnnotations(field, optionalAnnotation)
+	hasDefault := hasAnnotations(field, defaultAnnotation)
+	hasOptional := hasAnnotations(field, optionalAnnotation)
 	hasDefaultAndOptional := hasDefault && hasOptional
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
@@ -216,7 +216,7 @@ func determineNonMergeableCategory(field *ast.Field) (string, bool) {
 	return "", false
 }
 
-func hasRequiredAnnotations(field *ast.Field, requiredAnnotations ...string) bool {
+func hasAnnotations(field *ast.Field, requiredAnnotations ...string) bool {
 	if field.Doc == nil {
 		return false
 	}
