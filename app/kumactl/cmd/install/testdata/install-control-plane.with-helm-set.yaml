@@ -3521,7 +3521,7 @@ spec:
                           description: Name of the application to scrape
                           type: string
                         path:
-                          default: /metrics/prometheus
+                          default: /metrics
                           description: Path on which an application expose HTTP endpoint
                             with metrics.
                           type: string
@@ -4041,7 +4041,7 @@ spec:
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
-                      If not specified then the default value is "Matched".
+                      If not specified then the default value is "None".
                     enum:
                     - All
                     - Matched

@@ -7,26 +7,12 @@ resources:
         address: 0.0.0.0
         portValue: 15001
     filterChains:
-    - filterChainMatch:
-        destinationPort: 80
-        prefixRanges:
-        - addressPrefix: 192.168.0.0
-          prefixLen: 32
-        transportProtocol: raw_buffer
-      filters:
+    - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_tcp_192.168.0.0_80
-          statPrefix: meshpassthrough_tcp_192_168_0_0_80
-      name: meshpassthrough_tcp_192.168.0.0_80
-    listenerFilters:
-    - name: envoy.filters.listener.tls_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector
-    - name: envoy.filters.listener.http_inspector
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.listener.http_inspector.v3.HttpInspector
+          cluster: outbound:passthrough:ipv4
+          statPrefix: outbound_passthrough_ipv4
     name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
 - name: outbound:passthrough:ipv6
