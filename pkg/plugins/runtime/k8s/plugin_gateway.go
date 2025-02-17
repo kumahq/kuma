@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -75,7 +74,7 @@ func meshGatewayCRDsPresent() bool {
 	return true
 }
 
-func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, onlyFromWatchedNamespaces predicate.Funcs) error {
+func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter, watchNamespaces map[string]struct{}) error {
 	cpURL := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 
 	if rt.Config().Mode == config_core.Global {
@@ -123,14 +122,14 @@ func addGatewayReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conve
 		return errors.Wrap(err, "could not setup MeshGatewayInstance reconciler")
 	}
 
-	if err := addGatewayAPIReconcilers(mgr, rt, proxyFactory, onlyFromWatchedNamespaces); err != nil {
+	if err := addGatewayAPIReconcilers(mgr, rt, proxyFactory, watchNamespaces); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory, onlyFromWatchedNamespaces predicate.Funcs) error {
+func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, proxyFactory *containers.DataplaneProxyFactory, watchNamespaces map[string]struct{}) error {
 	if ok, missingGatewayCRDs := gatewayAPICRDsPresent(mgr); !ok {
 		if len(requiredGatewayCRDs) != len(missingGatewayCRDs) {
 			// Logging this as error as in such case there is possibility that user is expecting
@@ -189,6 +188,7 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, pr
 		Client:                               mgr.GetClient(),
 		SystemNamespace:                      rt.Config().Store.Kubernetes.SystemNamespace,
 		SupportGatewaySecretsInAllNamespaces: rt.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces,
+		WatchedNamespaces:                     watchNamespaces,
 	}
 	if err := secretController.SetupWithManager(mgr); err != nil {
 		return errors.Wrap(err, "could not setup Secret reconciler")

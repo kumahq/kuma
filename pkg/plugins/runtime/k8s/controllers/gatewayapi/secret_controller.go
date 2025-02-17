@@ -21,6 +21,7 @@ type SecretController struct {
 	Client                               kube_client.Client
 	SystemNamespace                      string
 	SupportGatewaySecretsInAllNamespaces bool
+	WatchedNamespaces map[string]struct{}
 }
 
 func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {

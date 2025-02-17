@@ -1,18 +1,4 @@
 ---
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-cni
-  namespace: kube-system
-  labels: 
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
----
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: v1
 kind: ServiceAccount
@@ -21,6 +7,34 @@ metadata:
   namespace: default
   labels: 
     app: kuma-control-plane
+    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: kuma/templates/egress-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-egress
+  namespace: default
+  labels: 
+    app: kuma-egress
+    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+    app.kubernetes.io/managed-by: Helm
+---
+# Source: kuma/templates/ingress-rbac.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-ingress
+  namespace: default
+  labels: 
+    app: kuma-ingress
     helm.sh/chart: kuma-0.0.0-preview.vlocal-build
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: release-name
@@ -42,37 +56,9 @@ metadata:
     app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
     app.kubernetes.io/managed-by: Helm
 data:
-  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURZakNDQWtxZ0F3SUJBZ0lRTGhpR2s0SlNyK1l0WElKcTdSbDVOREFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TXpFNU5ESTFNVm9YRFRNMU1ESXhNVEU1TkRJMQpNVm93SFRFYk1Ca0dBMVVFQXhNU2EzVnRZUzFqYjI1MGNtOXNMWEJzWVc1bE1JSUJJakFOQmdrcWhraUc5dzBCCkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXE2OWtIZk15OC9YR2VwdVBtdUwzS3o0YjJ0enFOYnF6djhpKzNtREkKTmo0YU1tWU9JYVpCbzZXL0s5QnBFbVppNmhMYk9LTWMvU3V4Y1NoL0E5bm9TUW9QQUwzeWk1ZFdrTXlIYjhsZQovZlVBMlBlbTVEdE9aT3RCREZTNjZVdGdlejd5Tkd4bUVnNi9zbUtEeTE0ak9ML0FVMldvNFd2Z0FsWnkzZFd4ClViOE45dFdhZDkwMFo1dFlBSkZGbmV3VmlOYUVtQVlCRmZ0WkdyTktpdDUrT3RybVZ4VUQ4V0swalQwejJzaGcKcTFPS2dtVVNGRTk3UzZxUFlySndXZWEyL3pmcTNlT241Mkh5VEJKRkJUQWpyajRWakdmc25vL3ZwTjg4cTFvZwpjcXZIMStZaWUwUnA2NXc2NU5ZMGx0elcrOHovY3V5MnV3WWxITVc5R2EyeU5RSURBUUFCbzRHb01JR2xNQTRHCkExVWREd0VCL3dRRUF3SUZvREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0RBWUQKVlIwVEFRSC9CQUl3QURBZkJnTlZIU01FR0RBV2dCUlVjN0RmamVMbXJTZkF3L0U4eTRzUjdkbFI2akJGQmdOVgpIUkVFUGpBOGdocHJkVzFoTFdOdmJuUnliMnd0Y0d4aGJtVXVaR1ZtWVhWc2RJSWVhM1Z0WVMxamIyNTBjbTlzCkxYQnNZVzVsTG1SbFptRjFiSFF1YzNaak1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRRFN6eE5QT2JzMXdoc1kKL2NOZ1FDVHVFdCtwSkk2TDZ4N20xZytCTzloTFl4b1ZCNWFFaHJtcUw4RVdsYjRUTlN0UzZ2RUhSOTJYVFM0ZgpSUDVZMkJDdkdPRlFCQWdGZzlCcnFjNVZPVE45M2NwQXE3c2ZpN1I5V1hmUU1hYWsrUFhFT2RmRHRjMld1eXAxCjIzSVFjL1ZtYVc3Q3Y2UTlEOFRCYU02QVZEeU9lNThJL3grYXBuc2dSSkNVejR5YzJ3YzBKWUtLd2NsOXZjYUgKZk9NZWg2TjVDejU5WktEbTd1eFl0K29TbVJBVFhUUG5ZN09nSFVWTENmYm9DNHBmR3BxV1VzbVVPU0JtbVZscQpScW9PTzhpYnd1di9BdUZWWjArSEhuWXlBR0JucmJUa3IybjJrVk1yNm1uWnZVdnlxU0xQK2hQa2hzNUtuNHNCCnM2WjRMZTArCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
-  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBcTY5a0hmTXk4L1hHZXB1UG11TDNLejRiMnR6cU5icXp2OGkrM21ESU5qNGFNbVlPCklhWkJvNlcvSzlCcEVtWmk2aExiT0tNYy9TdXhjU2gvQTlub1NRb1BBTDN5aTVkV2tNeUhiOGxlL2ZVQTJQZW0KNUR0T1pPdEJERlM2NlV0Z2V6N3lOR3htRWc2L3NtS0R5MTRqT0wvQVUyV280V3ZnQWxaeTNkV3hVYjhOOXRXYQpkOTAwWjV0WUFKRkZuZXdWaU5hRW1BWUJGZnRaR3JOS2l0NStPdHJtVnhVRDhXSzBqVDB6MnNoZ3ExT0tnbVVTCkZFOTdTNnFQWXJKd1dlYTIvemZxM2VPbjUySHlUQkpGQlRBanJqNFZqR2Zzbm8vdnBOODhxMW9nY3F2SDErWWkKZTBScDY1dzY1TlkwbHR6Vys4ei9jdXkydXdZbEhNVzlHYTJ5TlFJREFRQUJBb0lCQUIvNXhKM0hZK0FJRUhWWgpiNytiTWdtOXdaWmJ1c3RUQUpOaG9ocnN6NTA2cDhwbk00NlUxbmpTTCs3TEhDYXZKeEVOZmdMb2JrZkEwWVdQCjAwZzJWNHJ5OHFSaXZEKy9hZ0lCOWQrZUU3RWM1cEdDWG5UM2pyeEJESlp0V1hxRjdXeEc1dmxZanhJaDZSWWkKUHdXcmZNZmUvc1VKbEJDWDlOcTZteDR4NUpxaXVxcUlraCtzemw3MC9NK3E5TzlmajJ0bDhQNlNPTzBPbTdoSwphelRVUWdnanl4KytEdHpNZ05MQ3VwUFlPUWE1cG5Ka0NhNE14UDN6ZjUyZ0FOVGM5bTV3NnhtZnh3ajBGaHBnCnFZVDIra3NZbGtYRXRGdnNMZXlOdkh4QUxVb3JUd1hDdHpOTE5NMHhHd2RKdDBYTkpVZVppS2svMVNzRGhQaUQKMkkvTjl3RUNnWUVBekRyOUtZUU4rQUtMMmw2Q01vRWhLblZKWGRvZVdoaHVQWTd2djBCU2pVU3p1UzQxN1o4aApYd0VtOGlhV2kxOVFXeG8wVy9LejhDY1FwK1dZRVpBTGVuOU1PcE5nb1YzTEx4cmZCSHc5bElJZEk5VHN3ZG9oCnhHTktxWkoyR1J3bjk4cHBDblJoeXlNZjJKakNERG5DcTYwSW9Mc3JRQ1BHTnpzclpxeTZmQlVDZ1lFQTF6UjEKT1VpN1dpNkxITGtDTHpXeTB3VllTbGY5dWd5ZXFydVVmWmNtLysyWmZ3eVRHL2RVRE42RmVJN1liVC9nTFZuSwozUmtLZ3loek1sYjdSejBCQzRUQ0ZsWHg0R1NHelBTOU4zQzc0R0VoZGZlRFdBNTBiQmNZZVkxU0VHN2ZrUnhDClkvTTBLWk4zbzY4RDN1SWw1RHdLdFgwbFh3cUJLQTk1cmpva1JhRUNnWUF4ZHVRVUp4Qy9EZGJUbCtwTzB5bTIKUDl2NktEY0x1VGtTSGNtQmQ5SEd0Mm9VSXRZYTdGekh4dDZvN2FHdXRmSWZicFJaNU1taUU4UWI5aWJEc2pDbApoYWx2MG53bitUQ2FBeGNhM2dDSU5JOWNPMWp3aHFXQkRFOXNETFlmMU1yMVlBZmE2Vjg2TlJLa2dqTVZoUFBhCllybGhQSlA0SC9JRk5JYUpnckpVRlFLQmdRQ1FrTXZDZklwbTdXZEVGMEJSYUhoRmE0ekEvRlVVdTArSEQ5V1QKZkl1VlZ3NUxHNjVqRmdXZlU0aEQwV213RWozTkdVbSt0d2lwek8xOXZwSzBhMVdkWUVSbGJyeTZhYTFvVjJ3WQpweUYrZktGV3RydkQxb244NXBMcGJMYlpGVElZTCt5bGFnWDdlL1hkdmo4U1pjYmdpRGtGYkJsRHZESEJNSXdrCkx5aVlvUUtCZ0MrTS9VdkdZSW45TVVHUXFHNU5jZzlsb0JJY1JnYTFLbWo3RDFNNEZMQndhUmJYMjk4TlVpNmkKYnZZQllqaFNYdE1SVC9Veml3NmdoL2I5cE9IK3pBTUgwZmVWWVhPVjJvKzZyYXZ4SlU5aUlFTVVRKzZBcEJQRwpBVThmMEJUd2FxQkYxbWtzRDlFVTBQY3RzTnFpTzBVMjgvMlkwcDJzSkpXSndrWVd0REUzCi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
-  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
----
-# Source: kuma/templates/cni-configmap.yaml
-kind: ConfigMap
-apiVersion: v1
-metadata:
-  name: kuma-cni-config
-  namespace: kube-system
-  labels: 
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-data:
-  # The CNI network configuration to add to the plugin chain on each node.
-  cni_network_config: |-
-    {
-      "cniVersion": "0.3.1",
-      "name": "kuma-cni",
-      "type": "kuma-cni",
-      "log_level": "info",
-      "kubernetes": {
-          "kubeconfig": "__KUBECONFIG_FILEPATH__",
-          "cni_bin_dir": "/var/lib/cni/bin",
-          "exclude_namespaces": [ "kube-system" ]
-      }
-    }
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURZakNDQWtxZ0F3SUJBZ0lRWUV1V20vVW5pOEphZlUrVTZ2alg0VEFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93SFRFYk1Ca0dBMVVFQXhNU2EzVnRZUzFqYjI1MGNtOXNMWEJzWVc1bE1JSUJJakFOQmdrcWhraUc5dzBCCkFRRUZBQU9DQVE4QU1JSUJDZ0tDQVFFQXNvWkJQWUR1Qm02cnVNdW84eHJQclJKRy9icGhtUUNrUU5HWmhmSFMKMk01MEVjbDVZaElPMTdweGV0RGJKNXpsbXlsOWZrdFpleUpUZFBCOG16dkllbEVhcFkzQTk2MTRlSzllcE5HRAo1VmJHNkZpby9YVGFpYTU4RWtKeEg2bEV4eWJHbzVzTk1TdWZ3QUdzQ3Bua1djV0pJcm83bW5iQ3lKMmNWVmZ2CldHdE1KMThYQTA4WFViTmtjTGRBeXBpbHNCcEMzdVJxYnRRRW5xY1VrdFBndU5aSC9zMjV3Wng1Uk1JM1YwZTEKRm5mN3ZORlU1WStucFFaK1owclRFTmVEak4vVUJicDgxU3Z4b0pXYWJESHlVYmRFTlRMQUZBdkltSVdqQUhkTQozazlwYjlIcS9UZjcvc1dwNDl0UDVZSEd0MTJQek5ZSnlIdE1xcG4yMWkrTHp3SURBUUFCbzRHb01JR2xNQTRHCkExVWREd0VCL3dRRUF3SUZvREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNEQVFZSUt3WUJCUVVIQXdJd0RBWUQKVlIwVEFRSC9CQUl3QURBZkJnTlZIU01FR0RBV2dCUWVNNXMyVW9GVmlPUHBIeklscTNWMUV6TkVOakJGQmdOVgpIUkVFUGpBOGdocHJkVzFoTFdOdmJuUnliMnd0Y0d4aGJtVXVaR1ZtWVhWc2RJSWVhM1Z0WVMxamIyNTBjbTlzCkxYQnNZVzVsTG1SbFptRjFiSFF1YzNaak1BMEdDU3FHU0liM0RRRUJDd1VBQTRJQkFRQjk3L3RRYXkyUEExTlgKZzQ3SUs5UmZtNmV1OXdZaDgxUDZBdHNkeEJ4UUN5YWd0QVJwd0FrUzI5ZHgrVmpRQTBaRmRzNUZyYTVJUXFkTgpwSS9DZUVJUzBSUnR3ajhNU0JrK0ZneVZmUkFQTmdPMHE4eEhqaU4vWGVTaU81TzYwUWpjcjlEWXNmd2U3ajc2CmVnelVXQXJpU3VjUmF3QjJIdTVVNTdQeDBKTWhEQmprUXhKVFRHZ29ZMHlIOVA5NFJsdlZ1NlBHL1hqU3FUUFAKODBKdm50c05UcEZwWTRrM3dHeUZvRGtFbFd2OXpTWVlmaXI2RU15YlNrSVdNSXhDNDRjdVNQZXRjc0krS2xSUApRTlpleUpVL09PWU5ERUdFbmg4Y1UyMGNpR3F4KzZmV2pBZyswamNKRG84MGw0OXR1c3o4VG1LR1pidEhlMktqCjhQVktNQm5GCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBc29aQlBZRHVCbTZydU11bzh4clByUkpHL2JwaG1RQ2tRTkdaaGZIUzJNNTBFY2w1ClloSU8xN3B4ZXREYko1emxteWw5Zmt0WmV5SlRkUEI4bXp2SWVsRWFwWTNBOTYxNGVLOWVwTkdENVZiRzZGaW8KL1hUYWlhNThFa0p4SDZsRXh5YkdvNXNOTVN1ZndBR3NDcG5rV2NXSklybzdtbmJDeUoyY1ZWZnZXR3RNSjE4WApBMDhYVWJOa2NMZEF5cGlsc0JwQzN1UnFidFFFbnFjVWt0UGd1TlpIL3MyNXdaeDVSTUkzVjBlMUZuZjd2TkZVCjVZK25wUVorWjByVEVOZURqTi9VQmJwODFTdnhvSldhYkRIeVViZEVOVExBRkF2SW1JV2pBSGRNM2s5cGI5SHEKL1RmNy9zV3A0OXRQNVlIR3QxMlB6TllKeUh0TXFwbjIxaStMendJREFRQUJBb0lCQVFDRzVqQVNPNFNoVTZ0cgpIbW55R1lab2IzRTVkVWNlaUgrVmcweVJER1NZODVoOWdGSzZxbzZRc1EvakVFTXFNY0xHZHBtZmYyeUVRVEh6CklXM25GMHVzTWZFQ3ZKVGVFelQvYlBVRmNsUktUa0pMZkFObVVwQjRqV0t2b1lrOXRYaUZUR1c1WndhVzZ6SHgKc3RHL3lQM21YLy82UCtPZUdyT2hTSWZEYllrc3M5UmxTeVNaMVNJUUVNNG5PQkJya1NRNi9hNUU4ZnEvdFppSgpVaDBNeDVBU3FmUzg0c2poS04xYmQzZm1janc5eU83UVk5aGJHb2M4TDRySXNmT3VpUXZNbk9lVVVNcUZzMEhTCjNkeU5SYlMwczhham5ZZU5iTm0zRjUwaXFDcng4bm0xQmtHMTNiU3g5UHgrN0xNSVpPdWZDWGx0QkYvOG1WM2kKUCswVmRqVkJBb0dCQU5RU2tmazF0WDVKUVMvaXN4TitES1l4ZG4xSnBNVmFsVExGN2pvdHFxdWlwSzJZNkdrSQpEdzRxdTNsQk9LVi9EZDF0Vm56WlhYODVUSXBTTG1xVzM4a3NmUkRnMVhRenhDdmVIL2hxY2g5T0FvVGFZaUlrCmttazI5bmllbDJNdW83U0xDTisxUW5aZjVFZmhpVVBZMnQxY0g1OUZJc2xxa2JuTy8yZjRmSHYvQW9HQkFOZUEKd0Y2Q1JjZ0c4K3p5cEtNNXlMMWdpemlNTTJwakdSSkRYU1ZMb1phaDZhWGNCUHdDTnhEU09xcmQ0SHNhM2VaawpKTStEWUtPNmU4L2Y1MHVvMmI1aElHVnlmdjdRL3dXWFNVQlBMUERFZmV5TWlKU0lVa2t2RkFJVWcwSWFkcTQxCkFTdDV3UUlTSzZKUkxkSHJOMmcyMVU3aE9hbFhwb0RNUUdXQTVEQXhBb0dBVEw4UHJwVStRaDUyaGNMUHRaMG4KTExtM3ZLMTdBS1RBVzZoL2h2UmgwRTFDdFVRaHoyaklNZ05LNXgyd1Iwd01rM1p2RnkxK2hYMFI4dmk4clh3KwpMa3A0VkRSWmF2MFU0Qjg1aUtmVTl2ay9OaDdsNXA4L2tPNEFFalNxYW8xRlZ4LzlyUittbHJvckhjeEQ1WmJECjFkbng0NnljWXpHNjNQaEpPN0lVTXJjQ2dZQSs4YVkrZElKNVNENmE2TXhadUpqL1oyR0NwTUNueEVZZ1pYaWgKV2hQYWNYUlRNNDVwSlNSOFQwcy9lUXNHS2ZUQ1JHSFVFcVY1YlJDWXlPYy8zQk90WGFVZXZIQ0hjUGZyNUNKTApIRlVlQmVaWjN6cE5WL3ZnMEZWaHZpZ1FlTFpOYjhIbHR1dys5SnUyRDB2NDBtRWVtVlY0Y3FScTUrVUVIYVI1CmdVb2xJUUtCZ0YvRUhTcXVNTk9lZmNTQ1pEWXFyeXd0VUZOckhkOW5WZDlBbkpFamZyYUVTbEtYR3pjVkhQSGoKVFhUcXgvOGpaN0RNTnNIakJoNzFFNDlXMzJyY0VNejhoUFpCTHd1RTdOcjVQaHk4c0FaWHZianB3RmVZUkxSNgp0QWFlQkJuNHNoSTNXTFBFVG5qMkxqTDY5ai90WFhBYmlZNEZjd2xqU2VTSU0wVnFFa0tiCi0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
 ---
 # Source: kuma/templates/cp-configmap.yaml
 apiVersion: v1
@@ -92,26 +78,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: kuma-cni
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-rules:
-  - apiGroups: [""]
-    resources:
-      - nodes
-    verbs:
-      - get
 ---
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -198,20 +164,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - apiextensions.k8s.io
-    resources:
-      - customresourcedefinitions
-    verbs:
-      - get
-      - list
-      - watch
-  - apiGroups:
-      - ""
-    resources:
-      - nodes
-    verbs:
-      - update
   # validate k8s token before issuing mTLS cert, it's cluster scope
   - apiGroups:
       - authentication.k8s.io
@@ -219,28 +171,6 @@ rules:
       - tokenreviews
     verbs:
       - create
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kuma-cni
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-cni
-subjects:
-  - kind: ServiceAccount
-    name: kuma-cni
-    namespace: kube-system
 ---
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -262,48 +192,6 @@ subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
     namespace: default
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: kuma-cni
-  namespace: kuma-demo
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-rules:
-  - apiGroups: [""]
-    resources:
-      - pods
-    verbs:
-      - get
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: kuma-cni
-  namespace: kuma-test
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-rules:
-  - apiGroups: [""]
-    resources:
-      - pods
-    verbs:
-      - get
 ---
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -332,6 +220,14 @@ rules:
       - gateways
       - referencegrants
       - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -473,6 +369,14 @@ rules:
       - gateways
       - referencegrants
       - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -573,22 +477,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  - apiGroups:
-      - "pods"
-    resources:
-      - pods
-    verbs:
-      - list
 ---
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -624,6 +512,14 @@ rules:
       - gateways
       - referencegrants
       - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -724,68 +620,6 @@ rules:
       - get
       - patch
       - update
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  - apiGroups:
-      - "pods"
-    resources:
-      - pods
-    verbs:
-      - list
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: kuma-cni
-  namespace: kuma-demo
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-cni
-subjects:
-  - kind: ServiceAccount
-    name: kuma-cni
-    namespace: kube-system
----
-# Source: kuma/templates/cni-rbac.yaml
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: kuma-cni
-  namespace: kuma-test
-  labels:
-  
-    app: kuma-cni
-    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: release-name
-    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
-    app.kubernetes.io/managed-by: Helm
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-cni
-subjects:
-  - kind: ServiceAccount
-    name: kuma-cni
-    namespace: kube-system
 ---
 # Source: kuma/templates/cp-rbac.yaml
 apiVersion: rbac.authorization.k8s.io/v1
@@ -896,120 +730,55 @@ spec:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: release-name
 ---
-# Source: kuma/templates/cni-daemonset.yaml
-kind: DaemonSet
-apiVersion: apps/v1
+# Source: kuma/templates/egress-service.yaml
+apiVersion: v1
+kind: Service
 metadata:
-  name: kuma-cni-node
-  namespace: kube-system
-  annotations:
-    ignore-check.kube-linter.io/run-as-non-root: "The container installs a CNI plugin"
-  labels:
-    app: kuma-cni
+  name: kuma-egress
+  namespace: default
+  labels: 
+    app: kuma-egress
     helm.sh/chart: kuma-0.0.0-preview.vlocal-build
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: release-name
     app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
     app.kubernetes.io/managed-by: Helm
+  annotations:
 spec:
+  type: ClusterIP
+  ports:
+    - port: 10002
+      protocol: TCP
+      targetPort: 10002
   selector:
-    matchLabels:
-      app: kuma-cni
-      app.kubernetes.io/name: kuma
-      app.kubernetes.io/instance: release-name
-  updateStrategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxUnavailable: 1
-  template:
-    metadata:
-      labels:
-        app: kuma-cni
-        app.kubernetes.io/name: kuma
-        app.kubernetes.io/instance: release-name
-      annotations:
-        checksum/config: ccdcdef1b36061fa642859b898161f9f7f41eba7bb321383f72f7b267039dd6c
-    spec:
-      # This, along with the CriticalAddonsOnly toleration below,
-      # marks the pod as a critical add-on, ensuring it gets
-      # priority scheduling and that its resources are reserved
-      # if it ever gets evicted.
-      priorityClassName: system-node-critical
-      nodeSelector:
-      
-        kubernetes.io/os: linux
-      tolerations:
-        # Make sure kuma-cni-node gets scheduled on all nodes.
-        - effect: NoSchedule
-          operator: Exists
-        # Mark the pod as a critical add-on for rescheduling.
-        - key: CriticalAddonsOnly
-          operator: Exists
-        - effect: NoExecute
-          operator: Exists
-      serviceAccountName: kuma-cni
-      # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
-      # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
-      terminationGracePeriodSeconds: 5
-      securityContext:
-        {}
-      containers:
-        - name: install-cni
-          imagePullPolicy: IfNotPresent
-          image: "docker.io/kumahq/kuma-cni:0.0.0-preview.vlocal-build"
-          readinessProbe:
-            initialDelaySeconds: 0
-            exec:
-              command:
-                - cat
-                - /tmp/ready
-          command: [ "sh", "-c", "--" ]
-          args: [ "sleep 0 && exec /install-cni" ]
-          securityContext:
-            readOnlyRootFilesystem: true
-            runAsGroup: 0
-            runAsNonRoot: false
-            runAsUser: 0
-          env:
-            # Name of the CNI config file to create.
-            - name: CNI_CONF_NAME
-              value: "kuma-cni.conf"
-            # The CNI network config to install on each node.
-            - name: CNI_NETWORK_CONFIG
-              valueFrom:
-                configMapKeyRef:
-                  name: kuma-cni-config
-                  key: cni_network_config
-            - name: CNI_NET_DIR
-              value: "/etc/cni/multus/net.d"
-            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
-            - name: CHAINED_CNI_PLUGIN
-              value: "false"
-            - name: CNI_LOG_LEVEL
-              value: "info"
-          resources:
-            limits:
-              memory: 100Mi
-            requests:
-              cpu: 100m
-              memory: 100Mi
-          volumeMounts:
-            - mountPath: /host/opt/cni/bin
-              name: cni-bin-dir
-            - mountPath: /host/etc/cni/net.d
-              name: cni-net-dir
-            - name: tmp
-              mountPath: /tmp
-      volumes:
-        # Used to install CNI.
-        - name: cni-bin-dir
-          hostPath:
-            path: /var/lib/cni/bin
-        - name: cni-net-dir
-          hostPath:
-            path: /etc/cni/multus/net.d
-        - name: tmp
-          emptyDir: {}
+    app: kuma-egress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+---
+# Source: kuma/templates/ingress-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: kuma-ingress
+  namespace: default
+  labels: 
+    app: kuma-ingress
+    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+    app.kubernetes.io/managed-by: Helm
+  annotations:
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 10001
+      protocol: TCP
+      targetPort: 10001
+  selector:
+    app: kuma-ingress
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
 ---
 # Source: kuma/templates/cp-deployment.yaml
 apiVersion: apps/v1
@@ -1042,7 +811,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd749e732870fe6b453ba0ad044167d9a4613fbc3de621a0d4487d09b01baf4a
-        checksum/tls-secrets: f98149adcb4a8df6ea7f6714b2c0ec7f83c129dca456e7bf4745d8410b442cde
+        checksum/tls-secrets: c84e08ce3652b505c86cf6881c960145548b0006d6a354656349552229b6c083
       labels: 
         app: kuma-control-plane
         helm.sh/chart: kuma-0.0.0-preview.vlocal-build
@@ -1119,15 +888,11 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-              value: "true"
+              value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP
-              value: "kuma-cni"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_NAMESPACE
-              value: "kube-system"
-            - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
-              value: "true"
+            - name: KUMA_RUNTIME_KUBERNETES_WATCH_NAMESPACES
+              value: "kuma-demo,kuma-test"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "default"
             - name: KUMA_STORE_TYPE
@@ -1204,6 +969,282 @@ spec:
         - name: tmp
           emptyDir: {}
 ---
+# Source: kuma/templates/egress-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-egress
+  namespace: default
+  labels: 
+    app: kuma-egress
+    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: release-name
+      app: kuma-egress
+  template:
+    metadata:
+      annotations:
+        kuma.io/egress: enabled
+      labels:
+        app: kuma-egress
+        helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'release-name'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-egress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
+      serviceAccountName: kuma-egress
+      automountServiceAccountToken: true
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      
+      containers:
+        - name: egress
+          image: "docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.default:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "egress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10002
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources: 
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: control-plane-ca
+          secret:
+            secretName: "kuma-tls-cert"
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir: {}
+---
+# Source: kuma/templates/ingress-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kuma-ingress
+  namespace: default
+  labels: 
+    app: kuma-ingress
+    helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: release-name
+    app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+    app.kubernetes.io/managed-by: Helm
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kuma
+      app.kubernetes.io/instance: release-name
+      app: kuma-ingress
+  template:
+    metadata:
+      annotations:
+        kuma.io/ingress: enabled
+      labels:
+        app: kuma-ingress
+        helm.sh/chart: kuma-0.0.0-preview.vlocal-build
+        app.kubernetes.io/name: kuma
+        app.kubernetes.io/instance: release-name
+        app.kubernetes.io/version: "0.0.0-preview.vlocal-build"
+        app.kubernetes.io/managed-by: Helm
+    spec:
+      affinity: 
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - 'kuma'
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - 'release-name'
+                - key: app
+                  operator: In
+                  values:
+                  - kuma-ingress
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+      securityContext:
+        runAsGroup: 5678
+        runAsNonRoot: true
+        runAsUser: 5678
+      serviceAccountName: kuma-ingress
+      automountServiceAccountToken: true
+      nodeSelector:
+      
+        kubernetes.io/os: linux
+      terminationGracePeriodSeconds: 40
+      
+      containers:
+        - name: ingress
+          image: "docker.io/kumahq/kuma-dp:0.0.0-preview.vlocal-build"
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            readOnlyRootFilesystem: true
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.default:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/cp-ca/ca.crt
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: 30s
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "ingress"
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10001
+          livenessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            httpGet:
+              path: "/ready"
+              port: 9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources: 
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          
+          volumeMounts:
+            - name: control-plane-ca
+              mountPath: /var/run/secrets/kuma.io/cp-ca
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: control-plane-ca
+          secret:
+            secretName: "kuma-tls-cert"
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - name: tmp
+          emptyDir: {}
+---
 # Source: kuma/templates/cp-webhooks-and-secrets.yaml
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
@@ -1224,10 +1265,13 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
+          operator: In
+          values:
+            - "kuma-demo"
+            - "kuma-test"
+            - "default"
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane
@@ -1279,10 +1323,13 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
+          operator: In
+          values:
+            - "kuma-demo"
+            - "kuma-test"
+            - "default"
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane
@@ -1339,13 +1386,16 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
+          operator: In
+          values:
+            - "kuma-demo"
+            - "kuma-test"
+            - "default"
         - key: kuma.io/sidecar-injection
           operator: In
           values: ["enabled", "true"]
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane
@@ -1366,13 +1416,16 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
+          operator: In
+          values:
+            - "kuma-demo"
+            - "kuma-test"
+            - "default"
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane
@@ -1408,10 +1461,13 @@ webhooks:
     namespaceSelector:
       matchExpressions:
         - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
+          operator: In
+          values:
+            - "kuma-demo"
+            - "kuma-test"
+            - "default"
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane
@@ -1475,7 +1531,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFRENDQWZpZ0F3SUJBZ0lSQUtJY1JGZlR4cVJIREFjTXVGTGdaV1F3RFFZSktvWklodmNOQVFFTEJRQXcKRWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRBZUZ3MHlOVEF5TVRNeE9UUXlOVEZhRncwek5UQXlNVEV4T1RReQpOVEZhTUJJeEVEQU9CZ05WQkFNVEIydDFiV0V0WTJFd2dnRWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUJEd0F3CmdnRUtBb0lCQVFEcXhqM05YQ0pUQjhNSWhUVU1PV2VBRnFnVnh6V0hYc3V1ekRpYkd0aStSUmxlOVVENDgyYzYKRXd6d2lPejBqYm9UdTRlRHBPTjF0YlMxSnlGR0xBcXdxc0hZaEIyc3dreUZPMFVBanFWSTJ5VVRnZFA2c1RDRgpPL0piVnc4RWtZTHcwWFljUVVCNVRoeWJ3bTFWU21wVmdCcEw5SWFBMjBPSnlibVVnVWNVeE5LKzZOb3RlT1NzCk43bFBHcm4xVEZqWDc4UGlGV1lYeUdXUGozRDg4VU1tamdveEIyMGxwanZMaFJLaUlMZ3BaeE5iQVRvMzFhWHMKYlZGaHFsNXFsU3NzYUhHalZxZUhDS055aHdzZ3NsWkJ0TXdrSi9mV1FjTjQ0cDlwc01Ca3JhTFNBU1BIcW1kaApJclFMOThLQmdIMUYyZTA4c21mWjJONTIwaGxTc21xakFnTUJBQUdqWVRCZk1BNEdBMVVkRHdFQi93UUVBd0lDCnBEQWRCZ05WSFNVRUZqQVVCZ2dyQmdFRkJRY0RBUVlJS3dZQkJRVUhBd0l3RHdZRFZSMFRBUUgvQkFVd0F3RUIKL3pBZEJnTlZIUTRFRmdRVVZIT3czNDNpNXEwbndNUHhQTXVMRWUzWlVlb3dEUVlKS29aSWh2Y05BUUVMQlFBRApnZ0VCQUVhU2ppcWRLcWVHalE0ZUFENDhTM1R5QTZnYnU3SStTaUtmeUMzRm5EZkIyVGcyT3RUdktwWCtKaHhzCnVGMzJ0RWVmUWQ1Sit3WW42Vk55UDVwSnpsWVVmcWUxSm0vODBHSXMxUkhhbDBNUER4VjVzVVIxbE1CMFREWWUKeS9LUHBheGoyMkU5NU1Wa3E4UWIzR1NPZnU5VlY0Qm5LeGFNUE9Pa2xPVVNmRTM0eFQ3NExsY1lHMGVSbGU2dwp3dkRFVGtzT3NGbGF3SmtQQUI3TXNzajVkUXZTN25wK2NTakFWbWZqWHFJM0FmdlYxVzdCN3NuUDQ0MGE4Q2N0CnRwamIzSUY1bURhL2pIdHVXcFp2QWFCa09McUo2VmhWcHFSZmxwV3ZIMDY5S2NndGRwTWdCS3BuODJ3dncxY0kKaXRTaldsSVhVMFh3NzFHVlI3WE9UbHRtTjljPQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
+      caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUREekNDQWZlZ0F3SUJBZ0lRRXpVN2t2aEZtVDF1dDVWY2dqZWFrakFOQmdrcWhraUc5dzBCQVFzRkFEQVMKTVJBd0RnWURWUVFERXdkcmRXMWhMV05oTUI0WERUSTFNREl4TkRFMk1qWTFOMW9YRFRNMU1ESXhNakUyTWpZMQpOMW93RWpFUU1BNEdBMVVFQXhNSGEzVnRZUzFqWVRDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDCkFRb0NnZ0VCQU1IUTEzNjd3aThRbmVWbVkvQ1RtY3UxNno5R3Nla2ttWEw2OXBPSXNTUlJ1Y3lLQzJhNHRtT0wKTzZiU3BSWFRVWWFwQjV5OWJ0bHA1RGVmYzZ3SktyQ0VjUzY3VFZxQWJ0RlNlZ3MxTmVrT3JnOHpCWFJETmZvVApoLzVwbXVWZEhBSFMxdmpOc1RIeFVtV1U5T2JtM0k2amU5R1U5cGJNZi9ZMDM5bEtZVGpkTjB2Q3B6SzRLV2FlCmdjRkEvL2xvbEd6a0FGWHZRYjN3d2s0L1RLOW5Ld3NWMTVYVDRRa1pYT210dmpwTVdBYndGcmsza01hcUZ2SngKbWh1UmRoRGdpUUl3cndQNnZvRTZnbTBqWTkwOXB1OEdjWWNEbnVpZ3p4RTVSOGdCZEwrVTFCVnVQVGZSYTE4VQpyVzE0VVlyR2FkVG5HME1LVUY0T2xQRk5oQ3dVa0o4Q0F3RUFBYU5oTUY4d0RnWURWUjBQQVFIL0JBUURBZ0trCk1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFQQmdOVkhSTUJBZjhFQlRBREFRSC8KTUIwR0ExVWREZ1FXQkJRZU01czJVb0ZWaU9QcEh6SWxxM1YxRXpORU5qQU5CZ2txaGtpRzl3MEJBUXNGQUFPQwpBUUVBdXZYazJoRmJscjJEYzNJalg5V1hpYzQ0eXJhNURMQ3lvNFI0RTVaYzFCRWRDMXZDTU9mMFFQQUM1SHlRCmlVM2toTzFiYTZ5cXpPbVNJeEJNa1VDWWtiek1IQW84QVRtWnhkb2tXZW4vTmJMVWxiL2pBNEhBZFMzQjl0ZTgKWklJa0U4VEtYcWRIcU8vUlZrb05zQlRDVDZVOFljNE9pVGk4UFErSEMxYlpjWnFlK2w4RWx5Z2NLYVQ4YnJxWQoyTWlmRjd4SjFPRjg4RGJ0Y3VxT2hlcVF6UDFkSlJEdmhPRFFkU25PN2xMRUxWdUNseUJkbDdIdk53NyswYVpiClNiaTNubEtzOVhJczkyM0gyRmNkMnAyOTBTdkFJU3VyeWg0TUJHLzhFTHlyb2dyYnVWSkZQTDdaNXBia2owTzAKajg3WFV2cWRFSDdwMW8rTzhMbGRveExsVHc9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==
       service:
         namespace: default
         name: kuma-control-plane

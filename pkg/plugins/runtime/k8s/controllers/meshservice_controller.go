@@ -58,7 +58,7 @@ type MeshServiceReconciler struct {
 	Log               logr.Logger
 	Scheme            *kube_runtime.Scheme
 	ResourceConverter k8s_common.Converter
-	OnlyFromWatchedNamespaces predicate.Funcs
+	WatchedNamespaces map[string]struct{}
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -162,25 +162,39 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	trackedPodEndpoints := map[kube_types.NamespacedName]struct{}{}
-	meshServices := &meshservice_k8s.MeshServiceList{}
-	if err := r.List(
-		ctx,
-		meshServices,
-		kube_client.MatchingLabels(map[string]string{
+	meshServices := []*meshservice_k8s.MeshServiceList{}
+	if len(r.WatchedNamespaces) > 0 {
+		// only watched namespaces
+		for ns := range r.WatchedNamespaces {
+			namespaceMs := &meshservice_k8s.MeshServiceList{}
+			if err := r.List(ctx, namespaceMs, kube_client.MatchingLabels(map[string]string{
+				metadata.KumaServiceName: svc.Name,
+			}), kube_client.InNamespace(ns)); err != nil {
+				return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+			}
+			meshServices = append(meshServices, namespaceMs)
+		}
+	} else {
+		allMs := &meshservice_k8s.MeshServiceList{}
+		if err := r.List(ctx, allMs, kube_client.MatchingLabels(map[string]string{
 			metadata.KumaServiceName: svc.Name,
-		}),
-	); err != nil {
-		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+		})); err != nil {
+			return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+		}
+		meshServices = append(meshServices, allMs)
 	}
-	for _, svc := range meshServices.Items {
-		if len(svc.GetOwnerReferences()) == 0 {
-			continue
+
+	for _, namespaceMs := range meshServices {
+		for _, svc := range namespaceMs.Items {
+			if len(svc.GetOwnerReferences()) == 0 {
+				continue
+			}
+			owner := svc.GetOwnerReferences()[0]
+			if owner.Kind != "Pod" || owner.APIVersion != kube_core.SchemeGroupVersion.String() {
+				continue
+			}
+			trackedPodEndpoints[kube_types.NamespacedName{Namespace: svc.Namespace, Name: owner.Name}] = struct{}{}
 		}
-		owner := svc.GetOwnerReferences()[0]
-		if owner.Kind != "Pod" || owner.APIVersion != kube_core.SchemeGroupVersion.String() {
-			continue
-		}
-		trackedPodEndpoints[kube_types.NamespacedName{Namespace: svc.Namespace, Name: owner.Name}] = struct{}{}
 	}
 
 	endpointSlices := &kube_discovery.EndpointSliceList{}
@@ -436,10 +450,10 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-service-controller").
-		For(&kube_core.Service{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
-		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{}, r.OnlyFromWatchedNamespaces)).
-		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{}, r.OnlyFromWatchedNamespaces)).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		For(&kube_core.Service{}, builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
+		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{}, util.IsWatchedNamespace(r.WatchedNamespaces))).
+		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient(), r.WatchedNamespaces)), builder.WithPredicates(CreateOrDeletePredicate{}, util.IsWatchedNamespace(r.WatchedNamespaces))).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
 		Complete(r)
 }
 
@@ -476,19 +490,36 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 	}
 }
 
-func MeshToAllMeshServices(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func MeshToAllMeshServices(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
 	l = l.WithName("mesh-to-service-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
-		services := &kube_core.ServiceList{}
-		if err := client.List(ctx, services); err != nil {
-			l.WithValues("namespace", obj.GetName()).Error(err, "failed to fetch Services")
-			return nil
+		services := []*kube_core.ServiceList{}
+		// only watched namespaces
+		if len(watchedNamespaces) > 0 {
+			// only watched namespaces
+			for ns := range watchedNamespaces {
+				namespaceServices := &kube_core.ServiceList{}
+				if err := client.List(ctx, namespaceServices, kube_client.InNamespace(ns)); err != nil {
+					l.WithValues("namespace", obj.GetName()).Error(err, "failed to fetch Services")
+					return nil
+				}
+				services = append(services, namespaceServices)
+			}
+		} else {
+			allNsServices := &kube_core.ServiceList{}
+			if err := client.List(ctx, allNsServices); err != nil {
+			
+			}
+			services = append(services, allNsServices)
 		}
+		
 		var req []kube_reconcile.Request
-		for _, svc := range services.Items {
-			req = append(req, kube_reconcile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
-			})
+		for _, namespaceServices := range services {
+			for _, svc := range namespaceServices.Items {
+				req = append(req, kube_reconcile.Request{
+					NamespacedName: kube_types.NamespacedName{Namespace: svc.Namespace, Name: svc.Name},
+				})
+			}
 		}
 		return req
 	}

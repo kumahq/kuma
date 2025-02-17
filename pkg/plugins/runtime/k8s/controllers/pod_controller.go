@@ -18,7 +18,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -54,7 +53,7 @@ type PodReconciler struct {
 	SystemNamespace              string
 	IgnoredServiceSelectorLabels []string
 
-	OnlyFromWatchedNamespaces predicate.Funcs
+	WatchedNamespaces map[string]struct{}
 }
 
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -289,25 +288,42 @@ func (r *PodReconciler) findMatchingServices(ctx context.Context, pod *kube_core
 
 func (r *PodReconciler) findOtherDataplanes(ctx context.Context, pod *kube_core.Pod, ns *kube_core.Namespace) ([]*mesh_k8s.Dataplane, error) {
 	// List all Dataplanes
-	allDataplanes := &mesh_k8s.DataplaneList{}
-	if err := r.List(ctx, allDataplanes); err != nil {
-		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
-		log.Error(err, "unable to list Dataplanes")
-		return nil, err
+	allDataplanes := []*mesh_k8s.DataplaneList{}
+	// only in namespaces
+	if len(r.WatchedNamespaces) > 0 {
+		for ns := range r.WatchedNamespaces {
+			dataplanes := &mesh_k8s.DataplaneList{}
+			if err := r.List(ctx, dataplanes, kube_client.InNamespace(ns)); err != nil {
+				log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+				log.Error(err, "unable to list Dataplanes")
+				return nil, err
+			}
+			allDataplanes = append(allDataplanes, dataplanes)
+		}
+	} else {
+		dataplanes := &mesh_k8s.DataplaneList{}
+		if err := r.List(ctx, dataplanes); err != nil {
+			log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+			log.Error(err, "unable to list Dataplanes")
+			return nil, err
+		}
+		allDataplanes = append(allDataplanes, dataplanes)
 	}
-
+	
 	// only consider Dataplanes in the same Mesh as Pod
 	mesh := util_k8s.MeshOfByLabelOrAnnotation(converterLog, pod, ns)
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
-	for i := range allDataplanes.Items {
-		dataplane := allDataplanes.Items[i]
-		dp := core_mesh.NewDataplaneResource()
-		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
-			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-		if dataplane.Mesh == mesh {
-			otherDataplanes = append(otherDataplanes, &dataplane)
+	for _, namespaceDpps := range allDataplanes {
+		for i := range namespaceDpps.Items {
+			dataplane := namespaceDpps.Items[i]
+			dp := core_mesh.NewDataplaneResource()
+			if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
+				converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+				continue // one invalid Dataplane definition should not break the entire mesh
+			}
+			if dataplane.Mesh == mesh {
+				otherDataplanes = append(otherDataplanes, &dataplane)
+			}
 		}
 	}
 
@@ -428,10 +444,10 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-pod-controller").
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
-		For(&kube_core.Pod{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		For(&kube_core.Pod{}, builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
-		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
 		Complete(r)
 }
 

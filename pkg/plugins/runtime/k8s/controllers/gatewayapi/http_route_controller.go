@@ -45,6 +45,7 @@ type HTTPRouteReconciler struct {
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
 	Zone            string
+	WatchedNamespaces map[string]struct{}
 }
 
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
@@ -279,6 +280,7 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var routes gatewayapi.HTTPRouteList
+		// only watched namespaces
 		if err := client.List(ctx, &routes); err != nil {
 			l.Error(err, "unexpected error listing HTTPRoutes in cluster")
 			return nil
@@ -352,6 +354,7 @@ func routesForService(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var routes gatewayapi.HTTPRouteList
+		// only watched namespaces
 		if err := client.List(ctx, &routes, kube_client.MatchingFields{
 			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
 		}); err != nil {

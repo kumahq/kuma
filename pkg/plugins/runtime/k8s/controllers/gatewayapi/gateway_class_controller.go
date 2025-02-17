@@ -16,20 +16,20 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // GatewayClassReconciler reconciles a GatewayAPI GatewayClass object.
 type GatewayClassReconciler struct {
 	kube_client.Client
 	Log logr.Logger
-	OnlyFromWatchedNamespaces predicate.Funcs
+	WatchedNamespaces map[string]struct{}
 }
 
 // gatewayClassField is needed for both GatewayClassReconciler and
@@ -56,6 +56,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	gateways := &gatewayapi.GatewayList{}
+	// only in watched namespaces
 	if err := r.Client.List(
 		ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 	); err != nil {
@@ -153,6 +154,7 @@ func gatewayToClassMapper(l logr.Logger, client kube_client.Client) kube_handler
 		// If we don't have an object, we need to reconcile all GatewayClasses
 		if obj == nil {
 			classes := &gatewayapi.GatewayClassList{}
+			// cluster object
 			if err := client.List(ctx, classes); err != nil {
 				l.Error(err, "failed to list GatewayClasses")
 			}
@@ -196,6 +198,7 @@ func gatewayClassesForConfig(l logr.Logger, client kube_client.Client) kube_hand
 		}
 
 		classes := &gatewayapi.GatewayClassList{}
+		// cluster object
 		if err := client.List(
 			ctx, classes, kube_client.MatchingFields{parametersRefField: config.Name},
 		); err != nil {
@@ -259,7 +262,7 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
-			builder.WithPredicates(r.OnlyFromWatchedNamespaces),
+			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Watches(
 			&mesh_k8s.MeshGatewayConfig{},

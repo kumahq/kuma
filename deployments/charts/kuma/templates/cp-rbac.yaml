@@ -330,6 +330,7 @@ rules:
       - ""
     resources:
       - nodes
+      - namespaces
 {{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
 {{- end }}
@@ -359,12 +360,51 @@ rules:
       - patch
       - update
   # resources are cluster scope  
+  # - apiGroups:
+  #     - kuma.io
+  #   resources:
+  #     - meshes
+  #     - zones
+  #     - zoneinsights
+  #     - meshinsights
+  #     - serviceinsights
+  #     - proxytemplates
+  #     - ratelimits
+  #     - trafficpermissions
+  #     - trafficroutes
+  #     - timeouts
+  #     - retries
+  #     - circuitbreakers
+  #     - virtualoutbounds
+  #     - containerpatches
+  #     - externalservices
+  #     - faultinjections
+  #     - healthchecks
+  #     - trafficlogs
+  #     - traffictraces
+  #     - meshgateways
+  #     - meshgatewayroutes
+  #     - meshgatewayconfigs
+    # verbs:
+    #   - get
+    #   - list
+    #   - watch
+    #   - create
+    #   - update
+    #   - patch
+    #   - delete
   - apiGroups:
       - kuma.io
     resources:
+      - dataplanes
+      - dataplaneinsights
       - meshes
       - zones
       - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
       - meshinsights
       - serviceinsights
       - proxytemplates
@@ -383,7 +423,18 @@ rules:
       - traffictraces
       - meshgateways
       - meshgatewayroutes
+      - meshgatewayinstances
       - meshgatewayconfigs
+  {{- range $policy, $v := .Values.plugins.policies }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+  {{- range $policy, $v := .Values.plugins.resources }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
     verbs:
       - get
       - list
@@ -447,6 +498,41 @@ metadata:
   labels: {{ include "kuma.cpLabels" . | nindent 4 }}
 rules:
   - apiGroups:
+    - "discovery.k8s.io"
+    resources:
+      - endpointslices
+    verbs:
+    - get
+    - list
+    - watch
+  - apiGroups:
+      - "pods"
+    resources:
+      - pods
+    verbs:
+      - list
+  - apiGroups:
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
     - ""
     resources:
       - secrets
@@ -459,6 +545,14 @@ rules:
       - gateways
       - referencegrants
       - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -505,10 +599,35 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
       - zoneingresses
       - zoneingressinsights
       - zoneegresses
       - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
+      - meshgatewayconfigs
   {{- range $policy, $v := .Values.plugins.policies }}
   {{- if $v }}
       - {{ $policy }}
@@ -558,6 +677,8 @@ rules:
       - pods
     verbs:
       - delete
+      - watch
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -603,6 +724,14 @@ rules:
       - gateways
       - referencegrants
       - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -644,7 +773,35 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
       - meshgatewayinstances
+      - meshgatewayconfigs
   {{- range $policy, $v := $global.Values.plugins.policies }}
   {{- if $v }}
       - {{ $policy }}
@@ -667,9 +824,7 @@ rules:
       - ""
     resources:
       - services
-{{- if and $global.Values.transparentProxy.configMap.enabled $global.Values.transparentProxy.configMap.config }}
       - configmaps
-{{- end }}
     verbs:
       - get
       - delete
@@ -707,13 +862,20 @@ rules:
       - watch
       - create
       - delete
+  {{- end }}
   - apiGroups:
       - "pods"
     resources:
       - pods
     verbs:
       - list
-  {{- end }}
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

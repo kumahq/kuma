@@ -429,7 +429,7 @@ dataPlane:
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
-  enabled: false
+  enabled: true
 
   # -- Labels to add to resources, in addition to default labels
   extraLabels: {}
@@ -569,7 +569,7 @@ ingress:
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
-  enabled: false
+  enabled: true
   # -- Labels to add to resources, in addition to the default labels.
   extraLabels: {}
   # -- Time for which old listener will still be active as draining

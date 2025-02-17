@@ -251,6 +251,10 @@ env:
   value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
+{{- if gt (len .Values.watchNamespaces ) 0 }}  
+- name: KUMA_RUNTIME_KUBERNETES_WATCH_NAMESPACES
+  value: "{{ join "," .Values.watchNamespaces }}"
+{{- end }}
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
   value: {{ .Values.controlPlane.admissionServerPort | default "5443" | quote }}
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR

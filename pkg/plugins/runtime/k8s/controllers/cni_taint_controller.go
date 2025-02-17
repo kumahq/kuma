@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	"github.com/go-logr/logr"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
@@ -31,7 +32,7 @@ type CniNodeTaintReconciler struct {
 	CniApp       string
 	CniNamespace string
 
-	OnlyFromWatchedNamespaces predicate.Funcs
+	WatchedNamespaces map[string]struct{}
 }
 
 func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -137,7 +138,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_core.Pod{},
 			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp, r.CniNamespace)),
-			builder.WithPredicates(podEvents(), r.OnlyFromWatchedNamespaces),
+			builder.WithPredicates(podEvents(), util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Complete(r)
 }

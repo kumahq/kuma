@@ -90,6 +90,7 @@ func attachedRoutesForListeners(
 	client kube_client.Client,
 ) (AttachedRoutesForListeners, error) {
 	var routes gatewayapi.HTTPRouteList
+	// only watched namespaces
 	if err := client.List(ctx, &routes, kube_client.MatchingFields{
 		gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
 	}); err != nil {

@@ -17,7 +17,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -43,7 +42,7 @@ type GatewayReconciler struct {
 	SystemNamespace string
 	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
-	OnlyFromWatchedNamespaces predicate.Funcs
+	WatchedNamespaces map[string]struct{}
 }
 
 // Reconcile handles transforming a gateway-api MeshGateway into a Kuma MeshGateway and
@@ -219,8 +218,9 @@ func gatewaysForClass(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		gateways := &gatewayapi.GatewayList{}
+		// only in watched namespaces
 		if err := client.List(
-			ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name}
+			ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 		); err != nil {
 			l.Error(err, "unexpected error listing Gateways")
 			return nil
@@ -250,6 +250,7 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 		}
 
 		classes := &gatewayapi.GatewayClassList{}
+		// cluster object
 		if err := client.List(
 			ctx, classes, kube_client.MatchingFields{parametersRefField: config.Name},
 		); err != nil {
@@ -261,6 +262,7 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 
 		for _, class := range classes.Items {
 			gateways := &gatewayapi.GatewayList{}
+			// only watched namespaces
 			if err := client.List(
 				ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 			); err != nil {
@@ -280,7 +282,7 @@ func gatewaysForConfig(l logr.Logger, client kube_client.Client) kube_handler.Ma
 
 // gatewaysForGrant returns a function that calculates which Gateways might
 // be affected by changes in a ReferenceGrant so they can be reconciled.
-func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func gatewaysForGrant(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
 	l = l.WithName("gatewaysForGrant")
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
@@ -300,7 +302,12 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 		var requests []kube_reconcile.Request
 
 		for _, namespace := range namespaces {
+			if _, exist := watchedNamespaces[string(namespace)]; !exist && len(watchedNamespaces) > 0 {
+				l.V(1).Info("namespace is not watched, skip", "namespace", namespace)
+				continue
+			}
 			gateways := &gatewayapi.GatewayList{}
+			// only watched namespaces
 			if err := client.List(ctx, gateways, kube_client.InNamespace(namespace)); err != nil {
 				l.Error(err, "unexpected error listing Gateways")
 				return nil
@@ -319,7 +326,7 @@ func gatewaysForGrant(l logr.Logger, client kube_client.Client) kube_handler.Map
 
 // gatewaysForSecret returns a function that calculates which Gateways might
 // be affected by changes in a Secret so they can be reconciled.
-func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
+func gatewaysForSecret(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
 	l = l.WithName("gatewaysForSecret")
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
@@ -329,20 +336,38 @@ func gatewaysForSecret(l logr.Logger, client kube_client.Client) kube_handler.Ma
 			return nil
 		}
 
-		var gateways gatewayapi.GatewayList
-		if err := client.List(ctx, &gateways, kube_client.MatchingFields{
-			secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
-		}); err != nil {
-			l.Error(err, "unexpected error listing Gateways")
-			return nil
+		gateways := []*gatewayapi.GatewayList{}
+		// only in namespaces
+		if len(watchedNamespaces) > 0 {
+			for ns := range watchedNamespaces {
+				namespaceGw := &gatewayapi.GatewayList{}
+				if err := client.List(ctx, namespaceGw, kube_client.MatchingFields{
+					secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
+				}, kube_client.InNamespace(ns)); err != nil {
+					l.Error(err, "unexpected error listing Gateways")
+				return nil
+				}
+				gateways = append(gateways, namespaceGw)
+			}
+		} else {
+			allGw := &gatewayapi.GatewayList{}
+			if err := client.List(ctx, allGw, kube_client.MatchingFields{
+				secretsOfGatewayIndexField: kube_client.ObjectKeyFromObject(secret).String(),
+			}); err != nil {
+				l.Error(err, "unexpected error listing Gateways")
+				return nil
+			}
+			gateways = append(gateways, allGw)
 		}
 
 		var requests []kube_reconcile.Request
 
-		for i := range gateways.Items {
-			requests = append(requests, kube_reconcile.Request{
-				NamespacedName: kube_client.ObjectKeyFromObject(&gateways.Items[i]),
-			})
+		for _, namespaceGw := range gateways {
+			for i := range namespaceGw.Items {
+				requests = append(requests, kube_reconcile.Request{
+					NamespacedName: kube_client.ObjectKeyFromObject(&namespaceGw.Items[i]),
+				})
+			}
 		}
 
 		return requests
@@ -409,13 +434,13 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-controller").
-		For(&gatewayapi.Gateway{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		For(&gatewayapi.Gateway{}, builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces))).
 		Owns(&mesh_k8s.MeshGateway{}).
-		Owns(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(r.OnlyFromWatchedNamespaces)).
+		Owns(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces))).
 		Watches(
 			&gatewayapi.HTTPRoute{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForRoute(r.Log)),
-			builder.WithPredicates(r.OnlyFromWatchedNamespaces),
+			builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Watches(
 			&gatewayapi.GatewayClass{},
@@ -427,11 +452,13 @@ func (r *GatewayReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		).
 		Watches(
 			&gatewayapi.ReferenceGrant{},
-			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForGrant(r.Log, r.Client)),
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForGrant(r.Log, r.Client, r.WatchedNamespaces)),
+			builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Watches(
 			&kube_core.Secret{},
-			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForSecret(r.Log, r.Client)),
+			kube_handler.EnqueueRequestsFromMapFunc(gatewaysForSecret(r.Log, r.Client, r.WatchedNamespaces)),
+			builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces)),
 		).
 		Complete(r)
 }

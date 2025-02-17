@@ -53,6 +53,16 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	restClientConfig.QPS = float32(b.Config().Runtime.Kubernetes.ClientConfig.Qps)
 	restClientConfig.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
 
+	cacheConfig := cache.Options{}
+
+	if len(b.Config().Runtime.Kubernetes.WatchNamespaces) > 0 {
+		cacheConfig.DefaultNamespaces = map[string]cache.Config{
+			b.Config().Store.Kubernetes.SystemNamespace: {},
+		}
+		for _, ns := range b.Config().Runtime.Kubernetes.WatchNamespaces {
+			cacheConfig.DefaultNamespaces[ns] = cache.Config{}
+		}
+	}
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
 	mgr, err := kube_ctrl.NewManager(
 		restClientConfig,
@@ -70,11 +80,11 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			Logger:                  core.Log.WithName("kube-manager"),
 			LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
 			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
-
 			// Disable metrics bind address as we use kube metrics registry directly.
 			Metrics: kube_metricsserver.Options{
 				BindAddress: "0",
 			},
+			Cache: cacheConfig,
 		},
 	)
 	if err != nil {
