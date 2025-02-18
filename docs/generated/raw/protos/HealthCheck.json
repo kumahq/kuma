@@ -70,7 +70,7 @@
                 "healthy_panic_threshold": {
                     "additionalProperties": true,
                     "type": "number",
-                    "description": "Allows to configure panic threshold for Envoy cluster. If not specified, the default is 50%. To disable panic mode, set to 0%."
+                    "description": "Allows to configure panic threshold for Envoy cluster. If not specified, the default is 50%. To disable panic mode, set to 0%. Deprecated: use MeshCircuitBreaker instead."
                 },
                 "fail_traffic_on_panic": {
                     "additionalProperties": true,
