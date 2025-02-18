@@ -16,10 +16,12 @@ Rules:
         weight: 20
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
     modificationTime: "0001-01-01T00:00:00Z"
     name: split-90-10
     type: MeshTCPRoute
   - creationTime: "0001-01-01T00:00:00Z"
+    mesh: default
     modificationTime: "0001-01-01T00:00:00Z"
     name: split-40-40-20
     type: MeshTCPRoute

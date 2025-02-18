@@ -5,7 +5,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-func (t *MeshTimeoutResource) Deprecations() []string {
+func (t *MeshTLSResource) Deprecations() []string {
 	var deprecations []string
 	if len(pointer.Deref(t.Spec.From)) > 0 {
 		deprecations = append(deprecations, "'from' field is deprecated, use 'rules' instead")

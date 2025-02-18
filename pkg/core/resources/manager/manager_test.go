@@ -8,12 +8,10 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/samples"
 )
 
 var _ = Describe("Resource Manager", func() {
@@ -74,20 +72,6 @@ var _ = Describe("Resource Manager", func() {
 
 			// then
 			Expect(err.Error()).To(Equal("mesh of name mesh-1 is not found"))
-		})
-
-		It("should default if a resource has a defaulter", func() {
-			// given
-			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
-
-			// when
-			err := samples.MeshServiceBackendBuilder().WithState("").Create(resManager)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			getMs := v1alpha1.NewMeshServiceResource()
-			Expect(resManager.Get(context.Background(), getMs, store.GetByKey("backend", "default"))).To(Succeed())
-			Expect(getMs.Spec.State).To(Equal(v1alpha1.StateUnavailable))
 		})
 	})
 

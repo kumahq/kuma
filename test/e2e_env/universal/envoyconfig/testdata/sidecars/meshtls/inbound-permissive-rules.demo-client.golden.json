@@ -114,7 +114,7 @@
             "typedConfig": {
               "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
               "cluster": "localhost:3000",
-              "idleTimeout": "7200s",
+              "idleTimeout": "3600s",
               "statPrefix": "STAT_PREFIX_REDACTED"
             }
           }
@@ -171,7 +171,7 @@
             "typedConfig": {
               "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
               "cluster": "localhost:3000",
-              "idleTimeout": "7200s",
+              "idleTimeout": "3600s",
               "statPrefix": "STAT_PREFIX_REDACTED"
             }
           }
@@ -194,6 +194,7 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig_demo-client__kuma-3_msvc_3000": {
+        "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
             "ads": {},
@@ -252,6 +253,7 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
             "ads": {},
@@ -303,6 +305,11 @@
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "commonHttpProtocolOptions": {
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
+            },
             "explicitHttpConfig": {
               "http2ProtocolOptions": {}
             }
@@ -337,7 +344,7 @@
       },
       "localhost:3000": {
         "altStatName": "localhost_3000",
-        "connectTimeout": "10s",
+        "connectTimeout": "5s",
         "loadAssignment": {
           "clusterName": "localhost:3000",
           "endpoints": [
@@ -480,7 +487,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "localhost:3000",
-                  "idleTimeout": "7200s",
+                  "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -496,7 +503,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "localhost:3000",
-                  "idleTimeout": "7200s",
+                  "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -538,7 +545,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "localhost:3000",
-                  "idleTimeout": "7200s",
+                  "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -670,6 +677,7 @@
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy",
                   "cluster": "envoyconfig_demo-client__kuma-3_msvc_3000",
+                  "idleTimeout": "3600s",
                   "statPrefix": "STAT_PREFIX_REDACTED"
                 }
               }
@@ -699,6 +707,9 @@
                 "name": "envoy.filters.network.http_connection_manager",
                 "typedConfig": {
                   "@type": "type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager",
+                  "commonHttpProtocolOptions": {
+                    "idleTimeout": "0s"
+                  },
                   "httpFilters": [
                     {
                       "name": "envoy.filters.http.router",
@@ -708,6 +719,7 @@
                     }
                   ],
                   "normalizePath": true,
+                  "requestHeadersTimeout": "0s",
                   "routeConfig": {
                     "name": "outbound:envoyconfig_test-server__kuma-3_msvc_80",
                     "validateClusters": false,
@@ -725,7 +737,8 @@
                             "name": "9Zuf5Tg79OuZcQITwBbQykxAk2u4fRKrwYn3//AL4Yo=",
                             "route": {
                               "cluster": "envoyconfig_test-server__kuma-3_msvc_80",
-                              "timeout": "0s"
+                              "idleTimeout": "1800s",
+                              "timeout": "15s"
                             }
                           }
                         ]
