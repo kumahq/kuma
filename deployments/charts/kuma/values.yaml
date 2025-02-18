@@ -169,6 +169,12 @@ controlPlane:
     # -- Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port
     servicePort: 5681
 
+  serviceMonitor:
+    # -- Install CoreOS ServiceMonitor custom resource that configures metrics scraping.
+    enabled: false
+    # -- Map of serviceMonitor annotations.
+    annotations: {}
+
   globalZoneSyncService:
     # -- Whether to create a k8s service for the global zone sync
     # service. It will only be created when enabled and deploying the global

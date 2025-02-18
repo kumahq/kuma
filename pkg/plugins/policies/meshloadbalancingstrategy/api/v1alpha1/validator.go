@@ -130,7 +130,7 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
 	}
 
-	for idx, failover := range crossZone.Failover {
+	for idx, failover := range pointer.Deref(crossZone.Failover) {
 		path := validators.RootedAt("failover").Index(idx)
 		if failover.From != nil {
 			if len(failover.From.Zones) == 0 {

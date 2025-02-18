@@ -23,6 +23,31 @@ type From struct {
 type Conf struct {
     ValidPtr  *string   `json:"valid_ptr,omitempty"`  // OK
     ValidList *[]string `json:"valid_list,omitempty"` // OK
+    // +kuma:non-mergeable-struct
+    NonMergeableStruct NonMergeableStruct `json:"non_mergeable_struct"` // OK
+
+    Discriminator Discriminator `json:"discriminator"` // OK
+}
+
+type Discriminator struct {
+    // +kuma:discriminator
+    Type string `json:"type"` // OK
+
+    OptionOne *OptionOne `json:"option_one,omitempty"` // OK
+    OptionTwo *OptionTwo `json:"option_two,omitempty"` // OK
+}
+
+type OptionOne struct {
+    OptionOneField *string `json:"option_one_field,omitempty"` // OK
+}
+
+type OptionTwo struct {
+    OptionTwoField *string `json:"option_two_field,omitempty"` // OK
+}
+
+type NonMergeableStruct struct {
+    RequiredIntField int `json:"required_int_field"` // OK
+    RequiredStrField string `json:"required_str_field"` // OK
 }
 
 type OtherStruct struct {

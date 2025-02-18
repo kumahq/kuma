@@ -58,7 +58,7 @@ type FilterChainMatch struct {
 func GetOrderedMatchers(conf api.Conf) ([]FilterChainMatch, error) {
 	matcherWithRoutes := map[Matcher]map[Route]bool{}
 	portProtocols := map[uint32]map[core_mesh.Protocol]bool{}
-	for _, match := range conf.AppendMatch {
+	for _, match := range pointer.Deref(conf.AppendMatch) {
 		port := pointer.DerefOr[uint32](match.Port, 0)
 		protocol := core_mesh.ParseProtocol(string(match.Protocol))
 		matchType, isWildcardDomain := getMatchType(match, protocol)

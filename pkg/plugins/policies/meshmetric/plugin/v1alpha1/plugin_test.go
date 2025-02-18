@@ -64,7 +64,7 @@ var _ = Describe("MeshMetric", func() {
 									Applications: &[]api.Application{
 										{
 											Name: pointer.To("test-app"),
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -100,7 +100,7 @@ var _ = Describe("MeshMetric", func() {
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -136,7 +136,7 @@ var _ = Describe("MeshMetric", func() {
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -178,7 +178,7 @@ var _ = Describe("MeshMetric", func() {
 								Conf: api.Conf{
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -248,7 +248,7 @@ var _ = Describe("MeshMetric", func() {
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -289,7 +289,7 @@ var _ = Describe("MeshMetric", func() {
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},

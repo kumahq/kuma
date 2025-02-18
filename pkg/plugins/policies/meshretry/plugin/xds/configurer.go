@@ -17,6 +17,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -153,6 +154,9 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 
 		if conf.BackOff.BaseInterval != nil {
 			policy.RetryBackOff.BaseInterval = util_proto.Duration(conf.BackOff.BaseInterval.Duration)
+		} else {
+			// TODO: this should be handled by "base policy"
+			policy.RetryBackOff.BaseInterval = util_proto.Duration(mesh.DefaultBaseInterval.Duration)
 		}
 		if conf.BackOff.MaxInterval != nil {
 			policy.RetryBackOff.MaxInterval = util_proto.Duration(conf.BackOff.MaxInterval.Duration)
@@ -294,7 +298,7 @@ func configureHostSelectionPredicates(hostSelection *[]api.Predicate, policy *en
 		case api.OmitHostsWithTags:
 			taggedHosts, err := util_proto.MarshalAnyDeterministic(
 				&envoy_host_meta.OmitHostMetadataConfig{
-					MetadataMatch: envoy_meta.LbMetadata(hostSelect.Tags),
+					MetadataMatch: envoy_meta.LbMetadata(pointer.Deref(hostSelect.Tags)),
 				},
 			)
 			if err != nil {

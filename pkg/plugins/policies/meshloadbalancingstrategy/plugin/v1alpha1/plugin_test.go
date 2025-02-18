@@ -307,7 +307,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
 																	To: v1alpha1.ToZone{
@@ -343,7 +343,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	To: v1alpha1.ToZone{
 																		Type: v1alpha1.Any,
@@ -690,7 +690,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											CrossZone: &v1alpha1.CrossZone{
 												FailoverThreshold: &v1alpha1.FailoverThreshold{Percentage: intstr.FromString("99")},
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -762,7 +762,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -871,7 +871,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -943,7 +943,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -1169,7 +1169,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 										LocalityAwareness: &v1alpha1.LocalityAwareness{
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -1363,7 +1363,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1582,7 +1582,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1637,7 +1637,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type: v1alpha1.None,
@@ -1754,7 +1754,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 												CrossZone: &v1alpha1.CrossZone{
-													Failover: []v1alpha1.Failover{
+													Failover: &[]v1alpha1.Failover{
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,

@@ -149,6 +149,10 @@ func IsResourceNotFound(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Resource not found")
 }
 
+func IsResourceAlreadyExists(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "resource already exists")
+}
+
 // AssertionError
 type AssertionError struct {
 	msg string

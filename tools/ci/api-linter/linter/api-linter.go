@@ -9,8 +9,16 @@ import (
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
+)
 
-	"github.com/kumahq/kuma/pkg/util/pointer"
+const (
+	defaultAnnotation = "+kubebuilder:default"
+	// we need both annotations otherwise kubebuilder creates OAPI schema with both "required" and "default" which
+	// according to the spec https://swagger.io/docs/specification/v3_0/describing-parameters/#default-parameter-values
+	// is invalid: "There are two common mistakes when using the default keyword: Using default with required parameters or properties"
+	optionalAnnotation      = "+kubebuilder:validation:Optional"
+	nonMergableAnotation    = "+kuma:non-mergeable-struct"
+	discriminatorAnnotation = "+kuma:discriminator"
 )
 
 var eql = func(a, b string) bool { return a == b }
@@ -110,7 +118,11 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 		if ident, ok := baseType.(*ast.Ident); ok {
 			namedStruct := findStructByName(pass, ident.Name)
 			if namedStruct != nil {
-				analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
+				if hasAnnotations(field, nonMergableAnotation) {
+					analyzeStructFields(pass, namedStruct, fieldPath, false)
+				} else {
+					analyzeStructFields(pass, namedStruct, fieldPath, isMergeable)
+				}
 				continue
 			}
 		}
@@ -127,14 +139,17 @@ func analyzeStructFields(pass *analysis.Pass, structType *ast.StructType, parent
 
 		// Process the field normally
 		if isMergeable {
+			if isKumaDiscriminator(field) {
+				continue
+			}
 			if !isPointer(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must be a pointer", fieldPath)
 			}
 			if !hasOmitEmptyTag(field) {
 				pass.Reportf(field.Pos(), "mergeable field %s must have 'omitempty' in JSON tag", fieldPath)
 			}
-			if hasDefaultAndOptionalAnnotations(field) {
-				pass.Reportf(field.Pos(), "mergeable field %s must not have '+kubebuilder:default' annotation", fieldPath)
+			if hasAnnotations(field, defaultAnnotation, optionalAnnotation) {
+				pass.Reportf(field.Pos(), "mergeable field %s must not have '%s' annotation(s)", fieldPath, strings.Join([]string{defaultAnnotation, optionalAnnotation}, ", "))
 			}
 		} else {
 			_, isValid := determineNonMergeableCategory(field)
@@ -171,38 +186,52 @@ func findStructByName(pass *analysis.Pass, structName string) *ast.StructType {
 	return nil
 }
 
+func isKumaDiscriminator(field *ast.Field) bool {
+	hasKumaDiscriminator := hasAnnotations(field, discriminatorAnnotation)
+	hasDefaultAndOptional := hasAnnotations(field, defaultAnnotation, optionalAnnotation)
+	hasOmitEmpty := hasOmitEmptyTag(field)
+	isPtr := isPointer(field)
+	return hasKumaDiscriminator && !isPtr && !hasDefaultAndOptional && !hasOmitEmpty
+}
+
 func determineNonMergeableCategory(field *ast.Field) (string, bool) {
-	hasDefault := hasDefaultAndOptionalAnnotations(field)
+	hasDefault := hasAnnotations(field, defaultAnnotation)
+	hasOptional := hasAnnotations(field, optionalAnnotation)
+	hasDefaultAndOptional := hasDefault && hasOptional
 	hasOmitEmpty := hasOmitEmptyTag(field)
 	isPtr := isPointer(field)
 
-	if isPtr && hasOmitEmpty && !hasDefault {
+	if hasDefault && !hasOptional {
+		return "missing_optional_annotation", false
+	}
+	if isPtr && hasOmitEmpty && !hasDefaultAndOptional {
 		return "optional_without_default", true
 	}
-	if !isPtr && hasDefault && !hasOmitEmpty {
+	if !isPtr && hasDefaultAndOptional && !hasOmitEmpty {
 		return "optional_with_default", true
 	}
-	if !isPtr && !hasDefault && !hasOmitEmpty {
+	if !isPtr && !hasDefaultAndOptional && !hasOmitEmpty {
 		return "required", true
 	}
 	return "", false
 }
 
-func hasDefaultAndOptionalAnnotations(field *ast.Field) bool {
-	hasDefault := false
-	hasOptional := false
-	for _, comment := range pointer.Deref(field.Doc).List {
-		if strings.Contains(comment.Text, "+kubebuilder:default") {
-			hasDefault = true
-		}
-		if strings.Contains(comment.Text, "+kubebuilder:validation:Optional") {
-			hasOptional = true
-		}
-		if hasDefault && hasOptional {
-			return true
+func hasAnnotations(field *ast.Field, requiredAnnotations ...string) bool {
+	if field.Doc == nil {
+		return false
+	}
+
+	comments := ""
+	for _, line := range field.Doc.List {
+		comments += line.Text + "\n"
+	}
+
+	for _, requiredAnnotation := range requiredAnnotations {
+		if !strings.Contains(comments, requiredAnnotation) {
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func isPointer(field *ast.Field) bool {

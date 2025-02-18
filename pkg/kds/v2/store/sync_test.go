@@ -65,8 +65,9 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.Type = upstream.GetItemType()
 		upstreamResponse.AddedResources = upstream
 
-		err := syncer.Sync(context.Background(), upstreamResponse)
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
@@ -88,8 +89,9 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.RemovedResourcesKey = removedResources
 
-		err := syncer.Sync(context.Background(), upstreamResponse)
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
@@ -125,8 +127,9 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 			model.WithoutMesh("mesh-10"),
 		}
 
-		err := syncer.Sync(context.Background(), upstreamResponse)
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
@@ -156,8 +159,9 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 		upstreamResponse.IsInitialRequest = true
 
-		err := syncer.Sync(context.Background(), upstreamResponse)
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 
 		actual := &mesh.MeshResourceList{}
 		err = resourceStore.List(context.Background(), actual)
@@ -177,15 +181,60 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.AddedResources = upstream
 
 		// when
-		err := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
 			return r.GetMeta().GetName() != "mesh-1"
 		}))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 		actual := &mesh.MeshResourceList{}
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.GetItems()).To(BeEmpty())
+	})
+
+	It("should add all resources and skip the conflict one", func() {
+		mesh1 := meshBuilder(1)
+		mesh2 := meshBuilder(2)
+		mesh3 := meshBuilder(3)
+		Expect(resourceStore.Create(
+			context.Background(),
+			mesh2,
+			store.CreateBy(model.MetaToResourceKey(mesh2.GetMeta())),
+			store.CreateWithLabels(map[string]string{mesh_proto.ResourceOriginLabel: "zone"}),
+		)).ToNot(HaveOccurred())
+
+		// given
+		upstream := &mesh.MeshResourceList{}
+
+		// try to add resource without the label
+		mesh2 = meshBuilder(2)
+		mesh2.Spec.MeshServices = &mesh_proto.Mesh_MeshServices{
+			Mode: mesh_proto.Mesh_MeshServices_Exclusive,
+		}
+		Expect(upstream.AddItem(mesh1)).To(Succeed())
+		Expect(upstream.AddItem(mesh2)).To(Succeed())
+		Expect(upstream.AddItem(mesh3)).To(Succeed())
+		upstreamResponse := client_v2.UpstreamResponse{}
+		upstreamResponse.Type = upstream.GetItemType()
+		upstreamResponse.AddedResources = upstream
+
+		// when
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse, sync_store.PrefilterBy(func(r model.Resource) bool {
+			return r.GetMeta().GetLabels()[mesh_proto.ResourceOriginLabel] != "zone"
+		}), sync_store.SkipConflictResource())
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).To(HaveOccurred())
+
+		actual := &mesh.MeshResourceList{}
+		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
+		Expect(actual.GetItems()).To(HaveLen(3))
+		Expect(actual.GetItems()[0].GetSpec()).To(MatchProto(meshBuilder(2).GetSpec()))
+		Expect(actual.GetItems()[1].GetSpec()).To(MatchProto(mesh1.GetSpec()))
+		// should not update resource since mesh-2 already exists
+		Expect(actual.GetItems()[2].GetSpec()).To(MatchProto(mesh3.GetSpec()))
 	})
 
 	It("should ignore invalid resource from upstream and add only valid", func() {
@@ -203,10 +252,11 @@ var _ = Describe("SyncResourceStoreDelta", func() {
 		upstreamResponse.InvalidResourcesKey = []model.ResourceKey{model.MetaToResourceKey(mesh2.GetMeta())}
 
 		// when
-		err := syncer.Sync(context.Background(), upstreamResponse)
+		err, nackError := syncer.Sync(context.Background(), upstreamResponse)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(nackError).ToNot(HaveOccurred())
 		actual := &mesh.MeshResourceList{}
 		Expect(resourceStore.List(context.Background(), actual)).To(Succeed())
 		Expect(actual.GetItems()).To(HaveLen(2))
