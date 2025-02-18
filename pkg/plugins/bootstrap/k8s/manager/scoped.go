@@ -188,17 +188,17 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 	for _, o := range opts {
 		o.ApplyToList(lo)
 	}
-	core.Log.Info("CALLING MY CUSTOM LIST", "watchedNamespaces", s.watchedNamespaces, "lo", lo, "list.GetObjectKind().GroupVersionKind().Kind", list.GetObjectKind().GroupVersionKind().Kind)
+	// core.Log.Info("CALLING MY CUSTOM LIST", "watchedNamespaces", s.watchedNamespaces, "lo", lo, "list.GetObjectKind().GroupVersionKind().Kind", list.GetObjectKind().GroupVersionKind().Kind)
 	if len(s.watchedNamespaces) == 0 || schema.IsClusterScopeResource(list.GetObjectKind().GroupVersionKind().Kind) {
 		return s.Client.List(ctx, list, opts...)
 	}
-	core.Log.Info("CALLING MY CUSTOM LIST if watchedNamespaces is more than 0")
+	// core.Log.Info("CALLING MY CUSTOM LIST if watchedNamespaces is more than 0")
 
 	if lo.Namespace != "" {
 		if _, allowed := s.watchedNamespaces[lo.Namespace]; !allowed {
 			return fmt.Errorf("namespace %q is not a part of the mesh", lo.Namespace)
 		}
-		core.Log.Info("CALLING MY CUSTOM LIST namespace is in the request", "lo", lo.Namespace)
+		// core.Log.Info("CALLING MY CUSTOM LIST namespace is in the request", "lo", lo.Namespace)
 		return s.Client.List(ctx, list, opts...)
 	}
 
@@ -215,14 +215,14 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 		if err := s.Client.List(ctx, tempList, optsForNS...); err != nil {
 			return err
 		}
-		core.Log.Info("CALLING MY CUSTOM LIST tempList", "tempList", tempList)
+		// core.Log.Info("CALLING MY CUSTOM LIST tempList", "tempList", tempList)
 
 		// Extract the items from the temporary list.
 		items, err := meta.ExtractList(tempList)
 		if err != nil {
 			return err
 		}
-		core.Log.Info("CALLING MY CUSTOM LIST items", "items", items)
+		// core.Log.Info("CALLING MY CUSTOM LIST items", "items", items)
 		allItems = append(allItems, items...)
 	}
 
@@ -230,7 +230,7 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 	if err := meta.SetList(list, allItems); err != nil {
 		return err
 	}
-	core.Log.Info("CALLING MY CUSTOM LIST list", "list", list)
+	// core.Log.Info("CALLING MY CUSTOM LIST list", "list", list)
 	return nil
 }
 

@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
@@ -35,7 +34,7 @@ type PodStatusReconciler struct {
 	ResourceConverter k8s_common.Converter
 	EnvoyAdminClient  admin.EnvoyAdminClient
 
-	WatchedNamespaces map[string]struct{}
+	Predicates          []predicate.Predicate
 }
 
 func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -78,9 +77,7 @@ func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-pod-status-controller").
 		For(&kube_core.Pod{}, builder.WithPredicates(
-			onlyUpdates,
-			util.IsWatchedNamespace(r.WatchedNamespaces),
-			onlySidecarContainerRunning,
+			append([]predicate.Predicate{onlyUpdates, onlySidecarContainerRunning}, r.Predicates...)...,
 		)).
 		Complete(r)
 }

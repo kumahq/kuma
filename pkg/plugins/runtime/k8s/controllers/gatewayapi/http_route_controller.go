@@ -20,6 +20,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -32,7 +33,6 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/attachment"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	k8s_util "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -47,7 +47,7 @@ type HTTPRouteReconciler struct {
 	SystemNamespace   string
 	ResourceManager   manager.ResourceManager
 	Zone              string
-	WatchedNamespaces map[string]struct{}
+	Predicates          []predicate.Predicate
 }
 
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
@@ -416,21 +416,21 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-http-route-controller").
-		For(&gatewayapi.HTTPRoute{}, builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
+		For(&gatewayapi.HTTPRoute{}, builder.WithPredicates(r.Predicates...)).
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
-			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
+			builder.WithPredicates(r.Predicates...),
 		).
 		Watches(
 			&gatewayapi.ReferenceGrant{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
-			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
+			builder.WithPredicates(r.Predicates...),
 		).
 		Watches(
 			&kube_core.Service{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client)),
-			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
+			builder.WithPredicates(r.Predicates...),
 		).
 		Complete(r)
 }

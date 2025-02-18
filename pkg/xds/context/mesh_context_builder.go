@@ -11,7 +11,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -338,11 +337,9 @@ func (m *meshContextBuilder) fetchResourceList(ctx context.Context, resType core
 	}
 	listOptsFunc = append(listOptsFunc, core_store.ListOrdered())
 	list := desc.NewList()
-	core.Log.Info("fetchResourcelist before", "list", list.GetItemType())
 	if err := m.rm.List(ctx, list, listOptsFunc...); err != nil {
 		return nil, err
 	}
-	core.Log.Info("fetchResourcelist after", "list", list.GetItems())
 	if resType != core_mesh.ZoneIngressType && resType != core_mesh.DataplaneType && filterFn == nil {
 		// No post processing stuff so return the list as is
 		return list, nil

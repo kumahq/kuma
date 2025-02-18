@@ -18,6 +18,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -53,7 +54,7 @@ type PodReconciler struct {
 	SystemNamespace              string
 	IgnoredServiceSelectorLabels []string
 
-	WatchedNamespaces map[string]struct{}
+	Predicates                   []predicate.Predicate
 }
 
 func (r *PodReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -427,10 +428,10 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager, maxConcurrentRec
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-pod-controller").
 		WithOptions(controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}).
-		For(&kube_core.Pod{}, builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
+		For(&kube_core.Pod{}, builder.WithPredicates(r.Predicates...)).
 		// on Service update reconcile affected Pods (all Pods selected by this service)
-		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util_k8s.IsWatchedNamespace(r.WatchedNamespaces))).
+		Watches(&kube_core.Service{}, kube_handler.EnqueueRequestsFromMapFunc(ServiceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.Predicates...)).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToPodsMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.Predicates...)).
 		Complete(r)
 }
 

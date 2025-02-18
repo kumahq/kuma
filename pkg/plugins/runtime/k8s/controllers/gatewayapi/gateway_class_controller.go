@@ -16,20 +16,20 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi/common"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // GatewayClassReconciler reconciles a GatewayAPI GatewayClass object.
 type GatewayClassReconciler struct {
 	kube_client.Client
 	Log logr.Logger
-	WatchedNamespaces map[string]struct{}
+	Predicates          []predicate.Predicate
 }
 
 // gatewayClassField is needed for both GatewayClassReconciler and
@@ -262,7 +262,7 @@ func (r *GatewayClassReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(gatewayToClassMapper(r.Log, r.Client)),
-			builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces)),
+			builder.WithPredicates(r.Predicates...),
 		).
 		Watches(
 			&mesh_k8s.MeshGatewayConfig{},

@@ -19,7 +19,6 @@ import (
 
 	network_v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 // NamespaceReconciler reconciles a Namespace object
@@ -28,7 +27,7 @@ type NamespaceReconciler struct {
 	Log logr.Logger
 
 	CNIEnabled bool
-	WatchedNamespaces map[string]struct{}
+	Predicates          []predicate.Predicate
 }
 
 // Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
@@ -126,8 +125,8 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-namespace-controller").
 		For(&kube_core.Namespace{}, builder.WithPredicates(
-			namespaceEvents,
-			util.IsWatchedNamespace(r.WatchedNamespaces))).
+			append([]predicate.Predicate{namespaceEvents},
+			r.Predicates...)...)).
 		Complete(r)
 }
 

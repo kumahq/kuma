@@ -24,6 +24,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -51,7 +52,7 @@ type GatewayInstanceReconciler struct {
 	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
 
-	WatchedNamespaces map[string]struct{}
+	Predicates          []predicate.Predicate
 }
 
 // Reconcile handles ensuring both a Service and a Deployment exist for an
@@ -423,7 +424,7 @@ func updateStatus(
 // using the service tag to list GatewayInstances with a matching index.
 // The index is set up on MeshGatewayInstance in SetupWithManager and holds the service
 // tag from the MeshGatewayInstance tags.
-func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
+func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("gateway-to-gateway-instance-mapper")
 
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
@@ -448,11 +449,6 @@ func GatewayToInstanceMapper(l logr.Logger, client kube_client.Client, watchedNa
 			name, err := k8s_util.NamespacesNameFromServiceTag(serviceName)
 			if err != nil {
 				l.Error(err, "failed to fetch GatewayInstances")
-				continue
-			}
-			// skip not watched namespace
-			if _, exist := watchedNamespaces[name.Namespace]; !exist && len(watchedNamespaces) > 0 {
-				l.Info("namespace is not watched, skip")
 				continue
 			}
 			req = append(req, kube_reconcile.Request{
@@ -480,13 +476,13 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-instance-controller").
-		For(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces))).
-		Owns(&kube_core.Service{}, builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces))).
-		Owns(&kube_apps.Deployment{}, builder.WithPredicates(k8s_util.IsWatchedNamespace(r.WatchedNamespaces))).
+		For(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(r.Predicates...)).
+		Owns(&kube_core.Service{}, builder.WithPredicates(r.Predicates...)).
+		Owns(&kube_apps.Deployment{}, builder.WithPredicates(r.Predicates...)).
 		// On Update events our mapper function is called with the object both
 		// before the event as well as the object after. In the case of
 		// unbinding a Gateway from one Instance to another, we end up
 		// reconciling both Instances.
-		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient(), r.WatchedNamespaces))).
+		Watches(&mesh_k8s.MeshGateway{}, kube_handler.EnqueueRequestsFromMapFunc(GatewayToInstanceMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }

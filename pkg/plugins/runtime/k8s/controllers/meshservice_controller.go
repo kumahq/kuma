@@ -58,7 +58,7 @@ type MeshServiceReconciler struct {
 	Log               logr.Logger
 	Scheme            *kube_runtime.Scheme
 	ResourceConverter k8s_common.Converter
-	WatchedNamespaces map[string]struct{}
+	Predicates        []predicate.Predicate
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -422,10 +422,10 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-service-controller").
-		For(&kube_core.Service{}, builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
-		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{}, util.IsWatchedNamespace(r.WatchedNamespaces))).
-		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient(), r.WatchedNamespaces)), builder.WithPredicates(CreateOrDeletePredicate{}, util.IsWatchedNamespace(r.WatchedNamespaces))).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(util.IsWatchedNamespace(r.WatchedNamespaces))).
+		For(&kube_core.Service{}, builder.WithPredicates(r.Predicates...)).
+		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(append([]predicate.Predicate{predicate.LabelChangedPredicate{}}, r.Predicates...)...)).
+		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(append([]predicate.Predicate{predicate.LabelChangedPredicate{}}, r.Predicates...)...)).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.Predicates...)).
 		Complete(r)
 }
 
@@ -462,7 +462,7 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 	}
 }
 
-func MeshToAllMeshServices(l logr.Logger, client kube_client.Client, watchedNamespaces map[string]struct{}) kube_handler.MapFunc {
+func MeshToAllMeshServices(l logr.Logger, client kube_client.Client) kube_handler.MapFunc {
 	l = l.WithName("mesh-to-service-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		services := &kube_core.ServiceList{}
