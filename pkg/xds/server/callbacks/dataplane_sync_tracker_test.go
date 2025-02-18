@@ -11,9 +11,11 @@ import (
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/test"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
+	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
 var _ = Describe("Sync", func() {
@@ -76,13 +78,13 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
+			tracker := NewDataplaneSyncTracker(sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, fetchMeta func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					watchdogCh <- key
 					<-ctx.Done()
 					close(watchdogCh)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -130,13 +132,13 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
+			tracker := NewDataplaneSyncTracker(sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, _ func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
 				})
-			})
+			}))
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent

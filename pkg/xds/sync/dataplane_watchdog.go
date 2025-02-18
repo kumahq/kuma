@@ -27,7 +27,6 @@ type DataplaneWatchdogDependencies struct {
 	EgressReconciler      SnapshotReconciler
 	EnvoyCpCtx            *xds_context.ControlPlaneContext
 	MeshCache             *mesh.Cache
-	MetadataTracker       DataplaneMetadataTracker
 	ResManager            core_manager.ReadOnlyResourceManager
 }
 
@@ -66,12 +65,7 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.R
 	}
 }
 
-func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
-	metadata := d.MetadataTracker.Metadata(d.key)
-	if metadata == nil {
-		return SyncResult{}, errors.New("metadata cannot be nil")
-	}
-
+func (d *DataplaneWatchdog) Sync(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	if d.dpType == "" {
 		d.dpType = metadata.GetProxyType()
 	}

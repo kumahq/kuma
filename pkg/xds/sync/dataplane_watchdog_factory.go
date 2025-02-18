@@ -2,11 +2,13 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
@@ -31,7 +33,7 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
+func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, fetchMeta func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
 	return &util_watchdog.SimpleWatchdog{
@@ -41,7 +43,11 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watc
 		OnTick: func(ctx context.Context) error {
 			ctx = user.Ctx(ctx, user.ControlPlane)
 			start := core.Now()
-			result, err := dataplaneWatchdog.Sync(ctx)
+			meta := fetchMeta()
+			if meta == nil {
+				return errors.New("metadata cannot be nil")
+			}
+			result, err := dataplaneWatchdog.Sync(ctx, meta)
 			if err != nil {
 				return err
 			}
