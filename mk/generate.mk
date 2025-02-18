@@ -119,7 +119,6 @@ generate/oas-for-ts: generate/oas docs/generated/openapi.yaml ## Regenerate Open
 generate/builtin-crds: $(RESOURCE_GEN)
 	$(RESOURCE_GEN) -package mesh -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.mesh.go
 	$(RESOURCE_GEN) -package system -generator crd > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.system.go
-	$(RESOURCE_GEN) -generator scope > ./pkg/plugins/resources/k8s/native/api/v1alpha1/zz_generated.scope.go
 	$(CONTROLLER_GEN) "crd:crdVersions=v1" paths=./pkg/plugins/resources/k8s/native/api/... output:crd:artifacts:config=$(HELM_CRD_DIR)
 	$(CONTROLLER_GEN) object paths=./pkg/plugins/resources/k8s/native/api/...
 

@@ -23,16 +23,6 @@ mappings=$(for i in "${@:3}"; do
   fi
 done)
 
-scopes=$(for i in "${@:3}"; do
-  if [[ -f ${POLICIES_DIR}/${i}/zz_generated.plugin.go ]]; then
-    policy_dir="${POLICIES_DIR}/${i}"
-    policy_crd_dir="${policy_dir}/k8s/crd"
-    policy_crd_file="$(find "${policy_crd_dir}" -type f)"
-    singular=$(yq e '.spec.names.singular' "$policy_crd_file")
-    echo "\"$singular\": false,"
-  fi
-done)
-
 IFS="/" read -ra policies_dir_components <<< "${POLICIES_DIR}"
 len=${#policies_dir_components[@]}
 package_name=${policies_dir_components[len-1]}
@@ -48,10 +38,6 @@ import (
 
 var NameToModule = map[string]*plugins.PluginInitializer{
   $mappings
-}
-
-var ResourceToScope = map[string]bool{
-  $scopes
 }
 
 " > "${IMPORTS_FILE}"

@@ -18,7 +18,7 @@ A Helm chart for the Kuma Control Plane
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
 | noHelmHooks | bool | `false` | Whether to disable all helm hooks |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
-| watchNamespaces | list | `["kuma-demo","kuma-test"]` | List of namespaces that the control-plane should watch and have permissions for |
+| watchNamespaces | list | `[]` | List of namespaces that the control-plane should watch and have permissions for |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
 | controlPlane.extraLabels | object | `{}` | Labels to add to resources in addition to default labels |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
@@ -134,7 +134,7 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.image.tag | string | `nil` | Kuma DP Image Tag. When not specified, the value is copied from global.tag |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | dataPlane.initImage.tag | string | `nil` | Kuma DP init image tag When not specified, the value is copied from global.tag |
-| ingress.enabled | bool | `true` | If true, it deploys Ingress for cross cluster communication |
+| ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
 | ingress.extraLabels | object | `{}` | Labels to add to resources, in addition to default labels |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress. Ignored when autoscaling is enabled. |
@@ -171,7 +171,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | ingress.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
 | ingress.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
-| egress.enabled | bool | `true` | If true, it deploys Egress for cross cluster communication |
+| egress.enabled | bool | `false` | If true, it deploys Egress for cross cluster communication |
 | egress.extraLabels | object | `{}` | Labels to add to resources, in addition to the default labels. |
 | egress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | egress.replicas | int | `1` | Number of replicas of the Egress. Ignored when autoscaling is enabled. |

@@ -23,7 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/scheme"
 	"github.com/kumahq/kuma/pkg/tls"
 )
 
@@ -32,7 +32,7 @@ type InstallFunc func(cluster Cluster) error
 var Serializer *k8sjson.Serializer
 
 func init() {
-	K8sScheme, err := bootstrap_k8s.NewScheme()
+	K8sScheme, err := scheme.NewScheme()
 	if err != nil {
 		panic(err)
 	}

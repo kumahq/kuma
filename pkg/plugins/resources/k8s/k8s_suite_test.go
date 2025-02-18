@@ -30,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/scheme"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 )
@@ -58,7 +58,7 @@ var _ = BeforeSuite(test.Within(time.Minute, func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	k8sClientScheme, err = k8s.NewScheme()
+	k8sClientScheme, err = scheme.NewScheme()
 	Expect(err).ToNot(HaveOccurred())
 
 	Expect(mesh_k8s.AddToScheme(k8sClientScheme)).To(Succeed())

@@ -28,8 +28,8 @@ import (
 var log = core.Log.WithName("k8s-event-listener")
 
 type listener struct {
-	mgr manager.Manager
-	out events.Emitter
+	mgr               manager.Manager
+	out               events.Emitter
 	watchedNamespaces []string
 }
 
@@ -39,8 +39,8 @@ func NewListener(mgr manager.Manager, out events.Emitter, watchedNamespaces []st
 		namespaces = append([]string{systemNamespace}, watchedNamespaces...)
 	}
 	return &listener{
-		mgr: mgr,
-		out: out,
+		mgr:               mgr,
+		out:               out,
 		watchedNamespaces: namespaces,
 	}
 }
@@ -66,12 +66,12 @@ func (k *listener) Start(stop <-chan struct{}) error {
 				return err
 			}
 			go func(typ core_model.ResourceType) {
-				log.Info("start watching  cluster scope resource", "type", typ)
+				log.Info("start watching cluster scope resource", "type", typ)
 				informer.Run(stop)
 			}(t)
 		} else {
 			// if resource is cluster scope create just a one informer
-			for _, ns := range k.watchedNamespaces{
+			for _, ns := range k.watchedNamespaces {
 				informer, err := k.getInformer(ns, t, obj, true)
 				if err != nil {
 					return err
@@ -82,12 +82,11 @@ func (k *listener) Start(stop <-chan struct{}) error {
 				}(t)
 			}
 		}
-		
 	}
 	return nil
 }
 
-func (k *listener) getInformer(namespace string, typ core_model.ResourceType, obj model.KubernetesObject, isNamespaced bool) (cache.SharedInformer, error){
+func (k *listener) getInformer(namespace string, typ core_model.ResourceType, obj model.KubernetesObject, isNamespaced bool) (cache.SharedInformer, error) {
 	gvk := kuma_v1alpha1.GroupVersion.WithKind(string(typ))
 	lw, err := k.createListerWatcher(gvk, namespace, isNamespaced)
 	if err != nil {

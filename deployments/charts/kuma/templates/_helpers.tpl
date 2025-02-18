@@ -251,7 +251,7 @@ env:
   value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
-{{- if gt (len .Values.watchNamespaces ) 0 }}  
+{{- if gt (len .Values.watchNamespaces ) 0 }}
 - name: KUMA_RUNTIME_KUBERNETES_WATCH_NAMESPACES
   value: "{{ join "," .Values.watchNamespaces }}"
 {{- end }}

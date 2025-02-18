@@ -40,22 +40,3 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshtraces":                  {InitFn: meshtrace.InitPlugin, Initialized: false},
 	"meshtrafficpermissions":      {InitFn: meshtrafficpermission.InitPlugin, Initialized: false},
 }
-
-var ResourceToScope = map[string]bool{
-	"meshaccesslog":             false,
-	"meshcircuitbreaker":        false,
-	"meshfaultinjection":        false,
-	"meshhealthcheck":           false,
-	"meshhttproute":             false,
-	"meshloadbalancingstrategy": false,
-	"meshmetric":                false,
-	"meshpassthrough":           false,
-	"meshproxypatch":            false,
-	"meshratelimit":             false,
-	"meshretry":                 false,
-	"meshtcproute":              false,
-	"meshtimeout":               false,
-	"meshtls":                   false,
-	"meshtrace":                 false,
-	"meshtrafficpermission":     false,
-}

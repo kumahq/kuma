@@ -20,7 +20,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/yaml"
 
-	bootstrap_k8s "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/scheme"
 )
 
 func PodNameOfApp(cluster Cluster, name string, namespace string) (string, error) {
@@ -80,7 +80,7 @@ func UpdateKubeObject(
 	objectName string,
 	update func(object runtime.Object) runtime.Object,
 ) error {
-	scheme, err := bootstrap_k8s.NewScheme()
+	scheme, err := scheme.NewScheme()
 	if err != nil {
 		return err
 	}

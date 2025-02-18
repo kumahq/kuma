@@ -19,13 +19,12 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/manager"
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/schema"
-
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/manager"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/scheme"
 	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
@@ -47,7 +46,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 		return nil
 	}
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
-	scheme, err := schema.NewScheme()
+	scheme, err := scheme.NewScheme()
 	if err != nil {
 		return err
 	}

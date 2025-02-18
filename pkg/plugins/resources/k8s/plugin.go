@@ -27,11 +27,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, _ core_plugins.
 	if !ok {
 		return nil, nil, errors.Errorf("k8s resource converter hasn't been configured")
 	}
-	namespaces := []string{}
-	if len(pc.Config().Runtime.Kubernetes.WatchNamespaces) > 0 {
-		namespaces = append(pc.Config().Runtime.Kubernetes.WatchNamespaces, pc.Config().Store.Kubernetes.SystemNamespace)
-	}
-	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter, namespaces)
+	store, err := NewStore(mgr.GetClient(), mgr.GetScheme(), converter)
 	return store, core_store.NoTransactions{}, err
 }
 

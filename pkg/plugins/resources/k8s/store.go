@@ -34,15 +34,13 @@ type KubernetesStore struct {
 	Client    kube_client.Client
 	Converter k8s_common.Converter
 	Scheme    *kube_runtime.Scheme
-	WatchNamespaces []string
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter, watchNamespaces []string) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: converter,
 		Scheme:    scheme,
-		WatchNamespaces: watchNamespaces,
 	}, nil
 }
 

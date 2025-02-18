@@ -13,7 +13,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s"
+	bootstrap_scheme "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/scheme"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test"
 )
@@ -52,7 +52,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
 
-	scheme, err = k8s.NewScheme()
+	scheme, err = bootstrap_scheme.NewScheme()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
 

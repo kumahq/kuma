@@ -331,9 +331,6 @@ rules:
     resources:
       - nodes
       - namespaces
-{{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
-      - secrets
-{{- end }}
     verbs:
       - get
       - list
@@ -359,40 +356,6 @@ rules:
       - get
       - patch
       - update
-  # resources are cluster scope  
-  # - apiGroups:
-  #     - kuma.io
-  #   resources:
-  #     - meshes
-  #     - zones
-  #     - zoneinsights
-  #     - meshinsights
-  #     - serviceinsights
-  #     - proxytemplates
-  #     - ratelimits
-  #     - trafficpermissions
-  #     - trafficroutes
-  #     - timeouts
-  #     - retries
-  #     - circuitbreakers
-  #     - virtualoutbounds
-  #     - containerpatches
-  #     - externalservices
-  #     - faultinjections
-  #     - healthchecks
-  #     - trafficlogs
-  #     - traffictraces
-  #     - meshgateways
-  #     - meshgatewayroutes
-  #     - meshgatewayconfigs
-    # verbs:
-    #   - get
-    #   - list
-    #   - watch
-    #   - create
-    #   - update
-    #   - patch
-    #   - delete
   - apiGroups:
       - kuma.io
     resources:
@@ -425,16 +388,6 @@ rules:
       - meshgatewayroutes
       - meshgatewayinstances
       - meshgatewayconfigs
-  {{- range $policy, $v := .Values.plugins.policies }}
-  {{- if $v }}
-      - {{ $policy }}
-  {{- end}}
-  {{- end}}
-  {{- range $policy, $v := .Values.plugins.resources }}
-  {{- if $v }}
-      - {{ $policy }}
-  {{- end}}
-  {{- end}}
     verbs:
       - get
       - list
@@ -532,6 +485,7 @@ rules:
       - get
       - list
       - watch
+  # it's cluster scope resource
   - apiGroups:
     - ""
     resources:
@@ -709,6 +663,7 @@ rules:
     resources:
       - secrets
     verbs:
+      - get
       - list
       - watch
   - apiGroups:
@@ -746,9 +701,9 @@ rules:
     resources:
       - endpointslices
     verbs:
-    - get
-    - list
-    - watch
+      - get
+      - list
+      - watch
   - apiGroups:
       - "apps"
     resources:

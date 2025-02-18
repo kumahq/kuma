@@ -1,4 +1,4 @@
-package schema
+package scheme
 
 import (
 	"github.com/pkg/errors"
