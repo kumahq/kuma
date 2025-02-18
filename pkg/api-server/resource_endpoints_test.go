@@ -28,7 +28,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var _ = Describe("Resource Endpoints", func() {
@@ -318,11 +317,11 @@ var _ = Describe("Resource Endpoints on Zone, label origin", func() {
 			},
 			Spec: &meshexternalservice_api.MeshExternalService{
 				Match: meshexternalservice_api.Match{
-					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+					Type:     meshexternalservice_api.HostnameGeneratorType,
 					Port:     9000,
 					Protocol: core_mesh.ProtocolHTTP,
 				},
-				Endpoints: []meshexternalservice_api.Endpoint{
+				Endpoints: &[]meshexternalservice_api.Endpoint{
 					{
 						Address: "192.168.0.1",
 						Port:    meshexternalservice_api.Port(27017),
