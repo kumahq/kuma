@@ -29,14 +29,14 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 
 	onRateLimit := &envoy_routes_v3.OnRateLimit{}
 	if rl.OnRateLimit != nil {
-		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
+		for _, h := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Add) {
 			onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 				Key:    string(h.Name),
 				Value:  string(h.Value),
 				Append: true,
 			})
 		}
-		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+		for _, header := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Set) {
 			for _, val := range strings.Split(string(header.Value), ",") {
 				onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 					Key:    string(header.Name),

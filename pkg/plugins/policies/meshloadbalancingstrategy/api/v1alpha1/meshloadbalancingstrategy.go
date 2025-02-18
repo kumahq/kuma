@@ -16,7 +16,7 @@ type MeshLoadBalancingStrategy struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 }
 
 type To struct {
@@ -65,12 +65,13 @@ type AffinityTag struct {
 
 type CrossZone struct {
 	// Failover defines list of load balancing rules in order of priority
-	Failover []Failover `json:"failover,omitempty"`
+	Failover *[]Failover `json:"failover,omitempty"`
 	// FailoverThreshold defines the percentage of live destination dataplane proxies below which load balancing to the
 	// next priority starts.
 	// Example: If you configure failoverThreshold to 70, and you have deployed 10 destination dataplane proxies.
 	// Load balancing to next priority will start when number of live destination dataplane proxies drops below 7.
 	// Default 50
+	// +kuma:non-mergeable-struct
 	FailoverThreshold *FailoverThreshold `json:"failoverThreshold,omitempty"`
 }
 
@@ -121,6 +122,7 @@ const (
 )
 
 type LoadBalancer struct {
+	// +kuma:discriminator
 	Type LoadBalancerType `json:"type"`
 
 	// RoundRobin is a load balancing algorithm that distributes requests

@@ -21,7 +21,7 @@ func (r *MeshHTTPRouteResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
+	verr.AddErrorAt(path.Field("to"), validateTos(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -81,7 +81,7 @@ func validateTos(topTargetRef common_api.TargetRef, tos []To) validators.Validat
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("targetRef"), validateToRef(topTargetRef, to.TargetRef))
 		errs.AddErrorAt(path.Field("rules"), validateRules(topTargetRef, to.Rules))
-		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, to.Hostnames))
+		errs.AddErrorAt(path.Field("hostnames"), validateHostnames(topTargetRef, pointer.Deref(to.Hostnames)))
 	}
 
 	return errs
@@ -124,8 +124,8 @@ func validateMatches(matches []Match) validators.ValidationError {
 	for i, match := range matches {
 		path := validators.Root().Index(i)
 		errs.AddErrorAt(path.Field("path"), validatePath(match.Path))
-		errs.AddErrorAt(path.Field("queryParams"), validateQueryParams(match.QueryParams))
-		errs.AddErrorAt(path.Field("headers"), validateHeaders(match.Headers))
+		errs.AddErrorAt(path.Field("queryParams"), validateQueryParams(pointer.Deref(match.QueryParams)))
+		errs.AddErrorAt(path.Field("headers"), validateHeaders(pointer.Deref(match.Headers)))
 	}
 
 	return errs
@@ -260,7 +260,7 @@ func validateFilters(topTargetRef common_api.TargetRef, filters *[]Filter, match
 				errs.AddViolationAt(path.Field("urlRewrite").Field("path").Field("replacePrefixMatch"), "can only appear if all matches match a path prefix")
 			}
 			errs.AddErrorAt(path.Field("urlRewrite").Field("hostname"), validatePreciseHostname(filter.URLRewrite.Hostname))
-			if filter.URLRewrite.HostToBackendHostname {
+			if pointer.Deref(filter.URLRewrite.HostToBackendHostname) {
 				if topTargetRef.Kind != common_api.MeshGateway {
 					errs.AddViolationAt(path.Field("urlRewrite").Field("hostToBackendHostname"), "can only be set with MeshGateway")
 				}
@@ -334,15 +334,15 @@ func validateHeaderModifier(modifier *HeaderModifier) validators.ValidationError
 		return verrs
 	}
 
-	for i, hm := range modifier.Set {
+	for i, hm := range pointer.Deref(modifier.Set) {
 		errs.AddErrorAt(validators.Root().Field("set").Index(i), add(hm.Name))
 	}
 
-	for i, hm := range modifier.Add {
+	for i, hm := range pointer.Deref(modifier.Add) {
 		errs.AddErrorAt(validators.Root().Field("add").Index(i), add(hm.Name))
 	}
 
-	for i, name := range modifier.Remove {
+	for i, name := range pointer.Deref(modifier.Remove) {
 		errs.AddErrorAt(validators.Root().Field("remove").Index(i), add(common_api.HeaderName(name)))
 	}
 

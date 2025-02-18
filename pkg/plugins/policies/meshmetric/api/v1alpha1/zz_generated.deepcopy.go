@@ -17,11 +17,6 @@ func (in *Application) DeepCopyInto(out *Application) {
 		*out = new(string)
 		**out = **in
 	}
-	if in.Path != nil {
-		in, out := &in.Path, &out.Path
-		*out = new(string)
-		**out = **in
-	}
 	if in.Address != nil {
 		in, out := &in.Address, &out.Address
 		*out = new(string)

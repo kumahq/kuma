@@ -101,7 +101,7 @@ func (p plugin) denyRules() core_rules.Rules {
 		&core_rules.Rule{
 			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
-				Action: api.Deny,
+				Action: &api.Deny,
 			},
 		},
 	}
@@ -112,7 +112,7 @@ func (p plugin) allowRules() core_rules.Rules {
 		&core_rules.Rule{
 			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
-				Action: api.Allow,
+				Action: &api.Allow,
 			},
 		},
 	}

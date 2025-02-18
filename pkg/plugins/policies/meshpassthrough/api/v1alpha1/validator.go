@@ -51,7 +51,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 		protocol ProtocolType
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
-	for i, match := range conf.AppendMatch {
+	for i, match := range pointer.Deref(conf.AppendMatch) {
 		if match.Protocol == MysqlProtocol && match.Port == nil {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be defined for Mysql protocol")
 		}

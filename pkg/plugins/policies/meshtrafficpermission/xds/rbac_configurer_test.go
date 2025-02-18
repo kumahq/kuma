@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -49,7 +50,7 @@ var _ = Describe("RBACConfigurer", func() {
 				{
 					Subset: []subsetutils.Tag{},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Allow,
+						Action: pointer.To(v1alpha1.Allow),
 					},
 				},
 			},
@@ -74,7 +75,7 @@ filters:
 				{
 					Subset: []subsetutils.Tag{},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Deny,
+						Action: pointer.To(v1alpha1.Deny),
 					},
 				},
 			},
@@ -96,7 +97,7 @@ filters:
 						{Key: "version", Value: "v1"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Allow,
+						Action: pointer.To(v1alpha1.Allow),
 					},
 				},
 				{
@@ -105,7 +106,7 @@ filters:
 						{Key: "kuma.io/zone", Value: "us-east"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Allow,
+						Action: pointer.To(v1alpha1.Allow),
 					},
 				},
 			},
@@ -148,7 +149,7 @@ filters:
 						{Key: "version", Value: "v2", Not: true},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Allow,
+						Action: pointer.To(v1alpha1.Allow),
 					},
 				},
 			},
@@ -184,7 +185,7 @@ filters:
 						{Key: "version", Value: "v2"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.Allow,
+						Action: pointer.To(v1alpha1.Allow),
 					},
 				},
 			},
@@ -231,7 +232,7 @@ filters:
 						{Key: "kuma.io/service", Value: "backend"},
 					},
 					Conf: v1alpha1.Conf{
-						Action: v1alpha1.AllowWithShadowDeny,
+						Action: pointer.To(v1alpha1.AllowWithShadowDeny),
 					},
 				},
 			},

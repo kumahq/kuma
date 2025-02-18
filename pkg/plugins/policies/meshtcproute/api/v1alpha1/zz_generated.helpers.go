@@ -20,8 +20,8 @@ func (x *To) GetTargetRef() common_api.TargetRef {
 
 func (x *MeshTCPRoute) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.To {
-		item := x.To[i]
+	for _, itm := range pointer.Deref(x.To) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result

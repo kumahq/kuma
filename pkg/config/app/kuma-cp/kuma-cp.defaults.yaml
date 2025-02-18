@@ -407,6 +407,8 @@ runtime:
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
+    # ZoneResourceCleanupAge defines how long ZoneIngress and ZoneEgress should be offline to be cleaned up by GC
+    zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
 # Default Kuma entities configuration

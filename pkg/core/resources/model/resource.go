@@ -8,7 +8,8 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/kube-openapi/pkg/validation/spec"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -194,8 +195,10 @@ type ResourceTypeDescriptor struct {
 	HasStatus bool
 	// IsProxy indicates if this resource is a proxy
 	IsProxy bool
-	// Schema contains an unmarshalled OpenAPI schema of the resource
-	Schema *spec.Schema
+	// Validator contains an OpenAPI validator for this resource
+	Validator *validate.SchemaValidator
+	// StructuralSchema contains an unmarshalled OpenAPI schema of the resource
+	StructuralSchema *schema.Structural
 	// Insight contains the insight type attached to this resourceType
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
@@ -768,6 +771,14 @@ func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
 		indexedResources[key] = resource
 	}
 	return indexedResources
+}
+
+func IndexKeys(keys []ResourceKey) map[ResourceKey]struct{} {
+	indexedKeys := make(map[ResourceKey]struct{})
+	for _, key := range keys {
+		indexedKeys[key] = struct{}{}
+	}
+	return indexedKeys
 }
 
 // Resource can implement defaulter to provide static default fields.

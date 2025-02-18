@@ -120,7 +120,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -223,7 +223,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.0",
@@ -268,7 +268,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -319,7 +319,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("CIDR"),
 									Value:    "10.10.0.0/16",
@@ -375,7 +375,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "example1.com",
@@ -436,7 +436,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "www.example.com",
@@ -486,7 +486,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "www.gmail.com",
@@ -609,7 +609,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -650,7 +650,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
