@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/schema"
 	"k8s.io/apimachinery/pkg/api/meta"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -188,7 +189,7 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 		o.ApplyToList(lo)
 	}
 	core.Log.Info("CALLING MY CUSTOM LIST", "watchedNamespaces", s.watchedNamespaces, "lo", lo, "list.GetObjectKind().GroupVersionKind().Kind", list.GetObjectKind().GroupVersionKind().Kind)
-	if len(s.watchedNamespaces) == 0 || list.GetObjectKind().GroupVersionKind().Kind == "MeshList" ||list.GetObjectKind().GroupVersionKind().Kind == "Mesh" {
+	if len(s.watchedNamespaces) == 0 || schema.IsClusterScopeResource(list.GetObjectKind().GroupVersionKind().Kind) {
 		return s.Client.List(ctx, list, opts...)
 	}
 	core.Log.Info("CALLING MY CUSTOM LIST if watchedNamespaces is more than 0")

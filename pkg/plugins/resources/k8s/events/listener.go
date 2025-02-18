@@ -34,7 +34,10 @@ type listener struct {
 }
 
 func NewListener(mgr manager.Manager, out events.Emitter, watchedNamespaces []string, systemNamespace string) component.Component {
-	namespaces := append([]string{systemNamespace}, watchedNamespaces...)
+	namespaces := []string{}
+	if len(watchedNamespaces) > 0 {
+		namespaces = append([]string{systemNamespace}, watchedNamespaces...)
+	}
 	return &listener{
 		mgr: mgr,
 		out: out,
@@ -57,7 +60,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
-		if obj.Scope() == model.ScopeCluster {
+		if obj.Scope() == model.ScopeCluster || len(k.watchedNamespaces) == 0 {
 			informer, err := k.getInformer("", t, obj, false)
 			if err != nil {
 				return err

@@ -15,7 +15,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -29,6 +32,19 @@ func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) Serv
 		}
 		return kube_labels.SelectorFromSet(selector).Matches(kube_labels.Set(pod.Labels))
 	}
+}
+
+func IsClusterScopeResource(resourceType string) bool {
+	if isClusterScope, exist := v1alpha1.ResourceScope[resourceType]; exist{
+		return isClusterScope
+	}
+	if isClusterScope, exist := policies.ResourceToScope[resourceType]; exist{
+		return isClusterScope
+	}
+	if isClusterScope, exist := apis.ResourceToScope[resourceType]; exist{
+		return isClusterScope
+	}
+	return false
 }
 
 func IsWatchedNamespace(watchNamespaces map[string]struct{}) predicate.Funcs {
