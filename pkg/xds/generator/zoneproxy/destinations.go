@@ -302,7 +302,7 @@ func addMeshTCPRouteToDestinations(
 			continue
 		}
 
-		for _, backendRef := range rule.Default.BackendRefs {
+		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
 			if tags, ok := tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}

@@ -18,9 +18,13 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.AppendMatch != nil {
 		in, out := &in.AppendMatch, &out.AppendMatch
-		*out = make([]Match, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Match)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Match, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

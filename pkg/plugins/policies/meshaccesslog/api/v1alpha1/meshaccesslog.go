@@ -123,7 +123,7 @@ type Format struct {
 	Json *[]JsonValue `json:"json,omitempty"`
 	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	OmitEmptyValues bool `json:"omitEmptyValues"` // optional annotation is a temporary workaround
+	OmitEmptyValues bool `json:"omitEmptyValues"`
 }
 
 type JsonValue struct {

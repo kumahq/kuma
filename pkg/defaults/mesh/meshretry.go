@@ -11,6 +11,10 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
+var DefaultBaseInterval = kube_meta.Duration{
+	Duration: 25 * time.Millisecond,
+}
+
 var defaultMeshRetryResource = func() model.Resource {
 	return &v1alpha1.MeshRetryResource{
 		Spec: &v1alpha1.MeshRetry{
@@ -32,9 +36,7 @@ var defaultMeshRetryResource = func() model.Resource {
 								Duration: 16 * time.Second,
 							},
 							BackOff: &v1alpha1.BackOff{
-								BaseInterval: &kube_meta.Duration{
-									Duration: 25 * time.Millisecond,
-								},
+								BaseInterval: &DefaultBaseInterval,
 								MaxInterval: &kube_meta.Duration{
 									Duration: 250 * time.Millisecond,
 								},
@@ -46,9 +48,7 @@ var defaultMeshRetryResource = func() model.Resource {
 								Duration: 16 * time.Second,
 							},
 							BackOff: &v1alpha1.BackOff{
-								BaseInterval: &kube_meta.Duration{
-									Duration: 25 * time.Millisecond,
-								},
+								BaseInterval: &DefaultBaseInterval,
 								MaxInterval: &kube_meta.Duration{
 									Duration: 250 * time.Millisecond,
 								},

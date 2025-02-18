@@ -138,7 +138,7 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
@@ -148,7 +148,7 @@ var _ = Describe("MeshRateLimit", func() {
 													Value: "other-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header-set",
 													Value: "test-value",
@@ -184,7 +184,7 @@ var _ = Describe("MeshRateLimit", func() {
 										OnRateLimit: &api.OnRateLimit{
 											Status: pointer.To(uint32(444)),
 											Headers: &api.HeaderModifier{
-												Add: []api.HeaderKeyValue{
+												Add: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header",
 														Value: "test-value",
@@ -194,7 +194,7 @@ var _ = Describe("MeshRateLimit", func() {
 														Value: "other-value",
 													},
 												},
-												Set: []api.HeaderKeyValue{
+												Set: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header-set",
 														Value: "test-value",
@@ -279,13 +279,13 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit",
 													Value: "other-value",
@@ -317,13 +317,13 @@ var _ = Describe("MeshRateLimit", func() {
 										OnRateLimit: &api.OnRateLimit{
 											Status: pointer.To(uint32(444)),
 											Headers: &api.HeaderModifier{
-												Add: []api.HeaderKeyValue{
+												Add: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header",
 														Value: "test-value",
 													},
 												},
-												Set: []api.HeaderKeyValue{
+												Set: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit",
 														Value: "other-value",
@@ -878,7 +878,7 @@ var _ = Describe("MeshRateLimit", func() {
 												OnRateLimit: &api.OnRateLimit{
 													Status: pointer.To(uint32(444)),
 													Headers: &api.HeaderModifier{
-														Add: []api.HeaderKeyValue{
+														Add: &[]api.HeaderKeyValue{
 															{
 																Name:  "x-kuma-rate-limit-header",
 																Value: "test-value",
@@ -968,7 +968,7 @@ var _ = Describe("MeshRateLimit", func() {
 											OnRateLimit: &api.OnRateLimit{
 												Status: pointer.To(uint32(444)),
 												Headers: &api.HeaderModifier{
-													Add: []api.HeaderKeyValue{
+													Add: &[]api.HeaderKeyValue{
 														{
 															Name:  "x-kuma-rate-limit-header",
 															Value: "test-value",

@@ -85,7 +85,7 @@ var _ = Describe("SortRules", func() {
 		Method: pointer.To(api.Method("GET")),
 	}
 	singleHeaderMatch := api.Match{
-		Headers: []common_api.HeaderMatch{{
+		Headers: &[]common_api.HeaderMatch{{
 			Type:  pointer.To(common_api.HeaderMatchExact),
 			Name:  "header",
 			Value: "value",
@@ -96,7 +96,7 @@ var _ = Describe("SortRules", func() {
 			Type:  api.Exact,
 			Value: "/exact",
 		},
-		Headers: []common_api.HeaderMatch{{
+		Headers: &[]common_api.HeaderMatch{{
 			Type:  pointer.To(common_api.HeaderMatchExact),
 			Name:  "header",
 			Value: "value",
@@ -107,7 +107,7 @@ var _ = Describe("SortRules", func() {
 			Type:  api.Exact,
 			Value: "/other-exact",
 		},
-		Headers: []common_api.HeaderMatch{{
+		Headers: &[]common_api.HeaderMatch{{
 			Type:  pointer.To(common_api.HeaderMatchExact),
 			Name:  "header",
 			Value: "value",
