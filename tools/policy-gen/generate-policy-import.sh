@@ -39,7 +39,6 @@ import (
 var NameToModule = map[string]*plugins.PluginInitializer{
   $mappings
 }
-
 " > "${IMPORTS_FILE}"
 
 gofmt -w "${IMPORTS_FILE}"

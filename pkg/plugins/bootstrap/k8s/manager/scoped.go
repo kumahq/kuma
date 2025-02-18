@@ -6,13 +6,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	"k8s.io/apimachinery/pkg/api/meta"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/rest"
@@ -22,6 +15,14 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	"github.com/kumahq/kuma/pkg/core"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 // scopedManager wraps a manager.Manager and overrides GetClient.
@@ -64,7 +65,7 @@ func NewScopedManager(b *core_runtime.Builder, cfg core_plugins.PluginConfig, re
 			watchNamespaces[b.Config().Runtime.Kubernetes.NodeTaintController.CniNamespace] = struct{}{}
 		}
 	}
-	
+
 	if len(watchNamespaces) > 0 {
 		managerOpts.Cache = getCacheConfig(watchNamespaces)
 	}
@@ -126,7 +127,7 @@ func getCacheConfig(
 	}
 	cacheConfig.DefaultNamespaces = map[string]cache.Config{}
 	// cache only watched namespaces
-	for ns, _ := range watchNamespaces {
+	for ns := range watchNamespaces {
 		cacheConfig.DefaultNamespaces[ns] = cache.Config{}
 	}
 	return cacheConfig
@@ -142,9 +143,11 @@ type ScopedClient interface {
 	client.Client
 }
 
-type ResourceType string
-type IsClusterScope bool
-type ResourceTypeToScope map[ResourceType]IsClusterScope
+type (
+	ResourceType        string
+	IsClusterScope      bool
+	ResourceTypeToScope map[ResourceType]IsClusterScope
+)
 
 // scopedClient wraps a controller-runtime client and restricts operations to allowed namespaces.
 type scopedClient struct {
