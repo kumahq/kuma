@@ -536,7 +536,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "172.12.2.2",
