@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"time"
 
 	runtime_config "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
@@ -30,28 +31,31 @@ type scopedManager struct {
 // NewScopedManager creates a new manager wrapper that returns a scoped client.
 func NewScopedManager(b *core_runtime.Builder, cfg core_plugins.PluginConfig, restClientConfig *rest.Config, scheme *kube_runtime.Scheme) (kube_ctrl.Manager, error) {
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+	managerOpts := kube_ctrl.Options{
+		Scheme: scheme,
+		// Admission WebHook Server
+		WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
+			Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
+			Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
+			CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
+		}),
+		LeaderElection:          true,
+		LeaderElectionID:        "cp-leader-lease",
+		LeaderElectionNamespace: systemNamespace,
+		Logger:                  core.Log.WithName("kube-manager"),
+		LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
+		RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
+		// Disable metrics bind address as we use kube metrics registry directly.
+		Metrics: kube_metricsserver.Options{
+			BindAddress: "0",
+		},
+	}
+	if len(b.Config().Runtime.Kubernetes.WatchNamespaces) > 0 {
+		managerOpts.Cache = getCacheConfig(b.Config().Runtime.Kubernetes, systemNamespace)
+	}
 	mgr, err := kube_ctrl.NewManager(
 		restClientConfig,
-		kube_ctrl.Options{
-			Scheme: scheme,
-			// Admission WebHook Server
-			WebhookServer: kube_webhook.NewServer(kube_webhook.Options{
-				Host:    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
-				Port:    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),
-				CertDir: b.Config().Runtime.Kubernetes.AdmissionServer.CertDir,
-			}),
-			LeaderElection:          true,
-			LeaderElectionID:        "cp-leader-lease",
-			LeaderElectionNamespace: systemNamespace,
-			Logger:                  core.Log.WithName("kube-manager"),
-			LeaseDuration:           &b.Config().Runtime.Kubernetes.LeaderElection.LeaseDuration.Duration,
-			RenewDeadline:           &b.Config().Runtime.Kubernetes.LeaderElection.RenewDeadline.Duration,
-			// Disable metrics bind address as we use kube metrics registry directly.
-			Metrics: kube_metricsserver.Options{
-				BindAddress: "0",
-			},
-			Cache: getCacheConfig(b.Config().Runtime.Kubernetes, systemNamespace),
-		},
+		managerOpts,
 	)
 	if err != nil {
 		return nil, err
@@ -63,12 +67,13 @@ func NewScopedManager(b *core_runtime.Builder, cfg core_plugins.PluginConfig, re
 	}, nil
 }
 
-func getCacheConfig(cfg *runtime_config.KubernetesRuntimeConfig, systemNamespace string) cache.Options {
+func getCacheConfig(
+	cfg *runtime_config.KubernetesRuntimeConfig,
+	systemNamespace string,
+) cache.Options {
+	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
 	cacheConfig := cache.Options{
-
-	}
-	if len(cfg.WatchNamespaces) == 0 {
-		return cacheConfig
+		SyncPeriod:        &resyncPeriod,
 	}
 	cacheConfig.DefaultNamespaces = map[string]cache.Config{}
 	// cache only watched namespaces

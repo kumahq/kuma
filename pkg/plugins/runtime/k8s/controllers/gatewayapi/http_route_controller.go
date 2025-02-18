@@ -17,10 +17,8 @@ import (
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	gatewayapi_v1 "sigs.k8s.io/gateway-api/apis/v1"
 	gatewayapi "sigs.k8s.io/gateway-api/apis/v1beta1"
@@ -42,12 +40,11 @@ type HTTPRouteReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	Scheme            *kube_runtime.Scheme
-	TypeRegistry      k8s_registry.TypeRegistry
-	SystemNamespace   string
-	ResourceManager   manager.ResourceManager
-	Zone              string
-	Predicates          []predicate.Predicate
+	Scheme          *kube_runtime.Scheme
+	TypeRegistry    k8s_registry.TypeRegistry
+	SystemNamespace string
+	ResourceManager manager.ResourceManager
+	Zone            string
 }
 
 // Reconcile handles transforming a gateway-api HTTPRoute into a Kuma
@@ -282,7 +279,6 @@ func routesForGateway(l logr.Logger, client kube_client.Client) kube_handler.Map
 		}
 
 		var routes gatewayapi.HTTPRouteList
-		// only watched namespaces
 		if err := client.List(ctx, &routes); err != nil {
 			l.Error(err, "unexpected error listing HTTPRoutes in cluster")
 			return nil
@@ -355,8 +351,8 @@ func routesForService(l logr.Logger, client kube_client.Client) kube_handler.Map
 			return nil
 		}
 
-		routes := &gatewayapi.HTTPRouteList{}
-		if err := client.List(ctx, routes, kube_client.MatchingFields{
+		var routes gatewayapi.HTTPRouteList
+		if err := client.List(ctx, &routes, kube_client.MatchingFields{
 			servicesOfRouteField: kube_client.ObjectKeyFromObject(svc).String(),
 		}); err != nil {
 			l.Error(err, "unexpected error listing HTTPRoutes")
@@ -369,7 +365,6 @@ func routesForService(l logr.Logger, client kube_client.Client) kube_handler.Map
 				NamespacedName: kube_client.ObjectKeyFromObject(&routes.Items[i]),
 			})
 		}
-
 		return requests
 	}
 }
@@ -416,21 +411,18 @@ func (r *HTTPRouteReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-http-route-controller").
-		For(&gatewayapi.HTTPRoute{}, builder.WithPredicates(r.Predicates...)).
+		For(&gatewayapi.HTTPRoute{}).
 		Watches(
 			&gatewayapi.Gateway{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGateway(r.Log, r.Client)),
-			builder.WithPredicates(r.Predicates...),
 		).
 		Watches(
 			&gatewayapi.ReferenceGrant{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForGrant(r.Log, r.Client)),
-			builder.WithPredicates(r.Predicates...),
 		).
 		Watches(
 			&kube_core.Service{},
 			kube_handler.EnqueueRequestsFromMapFunc(routesForService(r.Log, r.Client)),
-			builder.WithPredicates(r.Predicates...),
 		).
 		Complete(r)
 }

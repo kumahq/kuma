@@ -58,7 +58,6 @@ type MeshServiceReconciler struct {
 	Log               logr.Logger
 	Scheme            *kube_runtime.Scheme
 	ResourceConverter k8s_common.Converter
-	Predicates        []predicate.Predicate
 }
 
 func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -163,10 +162,24 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 
 	trackedPodEndpoints := map[kube_types.NamespacedName]struct{}{}
 	meshServices := &meshservice_k8s.MeshServiceList{}
-	if err := r.List(ctx, meshServices, kube_client.MatchingLabels(map[string]string{
-		metadata.KumaServiceName: svc.Name,
-	})); err != nil {
+	if err := r.List(
+		ctx,
+		meshServices,
+		kube_client.MatchingLabels(map[string]string{
+			metadata.KumaServiceName: svc.Name,
+		}),
+	); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to list MeshServices for headless Service")
+	}
+	for _, svc := range meshServices.Items {
+		if len(svc.GetOwnerReferences()) == 0 {
+			continue
+		}
+		owner := svc.GetOwnerReferences()[0]
+		if owner.Kind != "Pod" || owner.APIVersion != kube_core.SchemeGroupVersion.String() {
+			continue
+		}
+		trackedPodEndpoints[kube_types.NamespacedName{Namespace: svc.Namespace, Name: owner.Name}] = struct{}{}
 	}
 
 	endpointSlices := &kube_discovery.EndpointSliceList{}
@@ -422,10 +435,10 @@ func (r *MeshServiceReconciler) deleteIfExist(ctx context.Context, key kube_type
 func (r *MeshServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-mesh-service-controller").
-		For(&kube_core.Service{}, builder.WithPredicates(r.Predicates...)).
-		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(append([]predicate.Predicate{predicate.LabelChangedPredicate{}}, r.Predicates...)...)).
-		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(append([]predicate.Predicate{predicate.LabelChangedPredicate{}}, r.Predicates...)...)).
-		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient())), builder.WithPredicates(r.Predicates...)).
+		For(&kube_core.Service{}).
+		Watches(&kube_core.Namespace{}, kube_handler.EnqueueRequestsFromMapFunc(NamespaceToServiceMapper(r.Log, mgr.GetClient())), builder.WithPredicates(predicate.LabelChangedPredicate{})).
+		Watches(&v1alpha1.Mesh{}, kube_handler.EnqueueRequestsFromMapFunc(MeshToAllMeshServices(r.Log, mgr.GetClient())), builder.WithPredicates(CreateOrDeletePredicate{})).
+		Watches(&kube_discovery.EndpointSlice{}, kube_handler.EnqueueRequestsFromMapFunc(EndpointSliceToServicesMapper(r.Log, mgr.GetClient()))).
 		Complete(r)
 }
 

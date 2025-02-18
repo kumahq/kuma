@@ -10,9 +10,7 @@ import (
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
 
 // SecretController tracks a Kuma Secret copy of Gateway API Secret
@@ -23,7 +21,6 @@ type SecretController struct {
 	Client                               kube_client.Client
 	SystemNamespace                      string
 	SupportGatewaySecretsInAllNamespaces bool
-	Predicates                           []predicate.Predicate
 }
 
 func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -106,6 +103,6 @@ func (r *SecretController) deleteCopiedSecret(ctx context.Context, key types.Nam
 func (r *SecretController) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-secret-controller").
-		For(&kube_core.Secret{}, builder.WithPredicates(r.Predicates...)).
+		For(&kube_core.Secret{}).
 		Complete(r)
 }

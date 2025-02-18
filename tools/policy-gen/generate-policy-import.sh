@@ -54,7 +54,6 @@ var ResourceToScope = map[string]bool{
   $scopes
 }
 
-
 " > "${IMPORTS_FILE}"
 
 gofmt -w "${IMPORTS_FILE}"

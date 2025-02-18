@@ -30,8 +30,6 @@ type CniNodeTaintReconciler struct {
 
 	CniApp       string
 	CniNamespace string
-
-	Predicates   []predicate.Predicate
 }
 
 func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -137,7 +135,7 @@ func (r *CniNodeTaintReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(
 			&kube_core.Pod{},
 			kube_handler.EnqueueRequestsFromMapFunc(podToNodeMapper(r.Log, r.CniApp, r.CniNamespace)),
-			builder.WithPredicates(append([]predicate.Predicate{podEvents()}, r.Predicates...)...),
+			builder.WithPredicates(podEvents()),
 		).
 		Complete(r)
 }

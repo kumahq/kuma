@@ -10,11 +10,8 @@ import (
 	kube_labels "k8s.io/apimachinery/pkg/labels"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
@@ -29,25 +26,6 @@ func MatchServiceThatSelectsPod(pod *kube_core.Pod, ignoredLabels []string) Serv
 		}
 		return kube_labels.SelectorFromSet(selector).Matches(kube_labels.Set(pod.Labels))
 	}
-}
-
-func IsWatchedNamespace(watchNamespaces map[string]struct{}) predicate.Funcs {
-	return predicate.NewPredicateFuncs(
-		func(obj client.Object) bool {
-			if len(watchNamespaces) == 0 {
-				return true
-			}
-			ns := obj.GetNamespace()
-			core.Log.Info("test only from watched", "ns", ns, "name", obj.GetName())
-			if ns == "" {
-				return true
-			}
-			if _, exist := watchNamespaces[obj.GetNamespace()]; exist {
-				return true
-			}
-			return false
-		},
-	)
 }
 
 // According to K8S docs about Service#selector:

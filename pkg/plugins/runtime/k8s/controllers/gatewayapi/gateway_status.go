@@ -89,14 +89,13 @@ func attachedRoutesForListeners(
 	gateway *gatewayapi.Gateway,
 	client kube_client.Client,
 ) (AttachedRoutesForListeners, error) {
-
-	// only watched namespaces
 	var routes gatewayapi.HTTPRouteList
 	if err := client.List(ctx, &routes, kube_client.MatchingFields{
 		gatewayOfRouteIndexField: kube_client.ObjectKeyFromObject(gateway).String(),
 	}); err != nil {
 		return nil, errors.Wrap(err, "unexpected error listing HTTPRoutes")
 	}
+
 	attachedRoutes := AttachedRoutesForListeners{}
 
 	for i := range routes.Items {

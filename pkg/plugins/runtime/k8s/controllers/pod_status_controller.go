@@ -33,8 +33,6 @@ type PodStatusReconciler struct {
 	Log               logr.Logger
 	ResourceConverter k8s_common.Converter
 	EnvoyAdminClient  admin.EnvoyAdminClient
-
-	Predicates          []predicate.Predicate
 }
 
 func (r *PodStatusReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -77,7 +75,8 @@ func (r *PodStatusReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-pod-status-controller").
 		For(&kube_core.Pod{}, builder.WithPredicates(
-			append([]predicate.Predicate{onlyUpdates, onlySidecarContainerRunning}, r.Predicates...)...,
+			onlyUpdates,
+			onlySidecarContainerRunning,
 		)).
 		Complete(r)
 }

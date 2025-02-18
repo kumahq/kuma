@@ -21,10 +21,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	kube_version "k8s.io/apimachinery/pkg/version"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -51,8 +49,6 @@ type GatewayInstanceReconciler struct {
 	Converter       k8s_common.Converter
 	ProxyFactory    *containers.DataplaneProxyFactory
 	ResourceManager manager.ResourceManager
-
-	Predicates          []predicate.Predicate
 }
 
 // Reconcile handles ensuring both a Service and a Deployment exist for an
@@ -124,7 +120,6 @@ func (r *GatewayInstanceReconciler) createOrUpdateService(
 	gatewayInstance *mesh_k8s.MeshGatewayInstance,
 ) (*kube_core.Service, *core_mesh.MeshGatewayResource, error) {
 	gatewayList := &core_mesh.MeshGatewayResourceList{}
-	// cluster object
 	if err := r.ResourceManager.List(ctx, gatewayList, store.ListByMesh(mesh)); err != nil {
 		return nil, nil, err
 	}
@@ -476,9 +471,9 @@ func (r *GatewayInstanceReconciler) SetupWithManager(mgr kube_ctrl.Manager) erro
 
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-gateway-instance-controller").
-		For(&mesh_k8s.MeshGatewayInstance{}, builder.WithPredicates(r.Predicates...)).
-		Owns(&kube_core.Service{}, builder.WithPredicates(r.Predicates...)).
-		Owns(&kube_apps.Deployment{}, builder.WithPredicates(r.Predicates...)).
+		For(&mesh_k8s.MeshGatewayInstance{}).
+		Owns(&kube_core.Service{}).
+		Owns(&kube_apps.Deployment{}).
 		// On Update events our mapper function is called with the object both
 		// before the event as well as the object after. In the case of
 		// unbinding a Gateway from one Instance to another, we end up

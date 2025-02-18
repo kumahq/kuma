@@ -27,7 +27,6 @@ type NamespaceReconciler struct {
 	Log logr.Logger
 
 	CNIEnabled bool
-	Predicates          []predicate.Predicate
 }
 
 // Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
@@ -124,9 +123,7 @@ func (r *NamespaceReconciler) deleteNetworkAttachmentDefinition(ctx context.Cont
 func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		Named("kuma-namespace-controller").
-		For(&kube_core.Namespace{}, builder.WithPredicates(
-			append([]predicate.Predicate{namespaceEvents},
-			r.Predicates...)...)).
+		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
 		Complete(r)
 }
 
