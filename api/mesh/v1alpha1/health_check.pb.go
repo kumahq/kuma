@@ -121,7 +121,6 @@ type HealthCheck_Conf struct {
 	IntervalJitterPercent uint32 `protobuf:"varint,9,opt,name=interval_jitter_percent,json=intervalJitterPercent,proto3" json:"interval_jitter_percent,omitempty"`
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
-	// Deprecated: use MeshCircuitBreaker instead.
 	HealthyPanicThreshold *wrapperspb.FloatValue `protobuf:"bytes,10,opt,name=healthy_panic_threshold,json=healthyPanicThreshold,proto3" json:"healthy_panic_threshold,omitempty"`
 	// If set to true, Envoy will not consider any hosts when the cluster is in
 	// 'panic mode'. Instead, the cluster will fail all requests as if all hosts
