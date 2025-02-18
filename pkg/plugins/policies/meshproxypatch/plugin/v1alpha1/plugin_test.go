@@ -60,7 +60,7 @@ var _ = Describe("MeshProxyPatch", func() {
 					{
 						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
-							AppendModifications: []api.Modification{
+							AppendModifications: &[]api.Modification{
 								{
 									Cluster: &api.ClusterMod{
 										Operation: api.ModOpAdd,

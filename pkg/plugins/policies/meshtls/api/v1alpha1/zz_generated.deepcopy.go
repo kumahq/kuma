@@ -19,8 +19,12 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.TlsCiphers != nil {
 		in, out := &in.TlsCiphers, &out.TlsCiphers
-		*out = make(tls.TlsCiphers, len(*in))
-		copy(*out, *in)
+		*out = new([]tls.TlsCipher)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]tls.TlsCipher, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Mode != nil {
 		in, out := &in.Mode, &out.Mode

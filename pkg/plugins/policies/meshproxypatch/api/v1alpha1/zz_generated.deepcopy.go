@@ -48,9 +48,13 @@ func (in *ClusterMod) DeepCopyInto(out *ClusterMod) {
 	}
 	if in.JsonPatches != nil {
 		in, out := &in.JsonPatches, &out.JsonPatches
-		*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.JsonPatchBlock)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -70,9 +74,13 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	*out = *in
 	if in.AppendModifications != nil {
 		in, out := &in.AppendModifications, &out.AppendModifications
-		*out = make([]Modification, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Modification)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Modification, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -107,9 +115,13 @@ func (in *HTTPFilterMatch) DeepCopyInto(out *HTTPFilterMatch) {
 	}
 	if in.ListenerTags != nil {
 		in, out := &in.ListenerTags, &out.ListenerTags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 }
@@ -139,9 +151,13 @@ func (in *HTTPFilterMod) DeepCopyInto(out *HTTPFilterMod) {
 	}
 	if in.JsonPatches != nil {
 		in, out := &in.JsonPatches, &out.JsonPatches
-		*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.JsonPatchBlock)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -171,9 +187,13 @@ func (in *ListenerMatch) DeepCopyInto(out *ListenerMatch) {
 	}
 	if in.Tags != nil {
 		in, out := &in.Tags, &out.Tags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 }
@@ -203,9 +223,13 @@ func (in *ListenerMod) DeepCopyInto(out *ListenerMod) {
 	}
 	if in.JsonPatches != nil {
 		in, out := &in.JsonPatches, &out.JsonPatches
-		*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.JsonPatchBlock)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -301,9 +325,13 @@ func (in *NetworkFilterMatch) DeepCopyInto(out *NetworkFilterMatch) {
 	}
 	if in.ListenerTags != nil {
 		in, out := &in.ListenerTags, &out.ListenerTags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 }
@@ -333,9 +361,13 @@ func (in *NetworkFilterMod) DeepCopyInto(out *NetworkFilterMod) {
 	}
 	if in.JsonPatches != nil {
 		in, out := &in.JsonPatches, &out.JsonPatches
-		*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.JsonPatchBlock)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -395,9 +427,13 @@ func (in *VirtualHostMod) DeepCopyInto(out *VirtualHostMod) {
 	}
 	if in.JsonPatches != nil {
 		in, out := &in.JsonPatches, &out.JsonPatches
-		*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.JsonPatchBlock)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.JsonPatchBlock, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

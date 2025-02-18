@@ -7086,10 +7086,11 @@ components:
                           Either int or decimal represented as string.
                         x-kubernetes-int-or-string: true
                       healthyThreshold:
-                        default: 1
                         description: >-
                           Number of consecutive healthy checks before
                           considering a host healthy.
+
+                          If not specified then the default value is 1
                         format: int32
                         type: integer
                       http:
@@ -7111,12 +7112,13 @@ components:
                               type: integer
                             type: array
                           path:
-                            default: /
                             description: >-
                               The HTTP path which will be requested during the
                               health check
 
                               (ie. /health)
+
+                              If not specified then the default value is "/"
                             type: string
                           requestHeadersToAdd:
                             description: >-
@@ -7176,8 +7178,9 @@ components:
                           check.
                         type: string
                       interval:
-                        default: 1m
-                        description: Interval between consecutive health checks.
+                        description: |-
+                          Interval between consecutive health checks.
+                          If not specified then the default value is 1m
                         type: string
                       intervalJitter:
                         description: >-
@@ -7264,16 +7267,18 @@ components:
                             type: string
                         type: object
                       timeout:
-                        default: 15s
-                        description: Maximum time to wait for a health check response.
+                        description: |-
+                          Maximum time to wait for a health check response.
+                          If not specified then the default value is 15s
                         type: string
                       unhealthyThreshold:
-                        default: 5
                         description: >-
                           Number of consecutive unhealthy checks before
                           considering a host
 
                           unhealthy.
+
+                          If not specified then the default value is 5
                         format: int32
                         type: integer
                     type: object
@@ -9024,7 +9029,7 @@ components:
                         description: Name of the application to scrape
                         type: string
                       path:
-                        default: /metrics/prometheus
+                        default: /metrics
                         description: >-
                           Path on which an application expose HTTP endpoint with
                           metrics.
@@ -9089,12 +9094,7 @@ components:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                 type: string
-                            required:
-                              - mode
                             type: object
-                        required:
-                          - path
-                          - port
                         type: object
                       type:
                         description: >-
@@ -9113,7 +9113,6 @@ components:
                   description: Sidecar metrics collection configuration
                   properties:
                     includeUnused:
-                      default: false
                       description: >-
                         IncludeUnused if false will scrape only metrics that has
                         been by sidecar (counters incremented
@@ -9123,6 +9122,8 @@ components:
 
                         least once). If true will scrape all metrics (even the
                         ones with zeros).
+
+                        If not specified then the default value is false.
                       type: boolean
                     profiles:
                       description: >-
@@ -9384,15 +9385,19 @@ components:
                       value:
                         description: Value for the specified Type.
                         type: string
+                    required:
+                      - type
+                      - value
                     type: object
                   type: array
                 passthroughMode:
-                  default: None
                   description: >-
                     Defines the passthrough behavior. Possible values: `All`,
                     `None`, `Matched`
 
                     When `All` or `None` `appendMatch` has no effect.
+
+                    If not specified then the default value is "Matched".
                   enum:
                     - All
                     - Matched
@@ -10118,8 +10123,6 @@ components:
                         type: object
                     type: object
                   type: array
-              required:
-                - appendModifications
               type: object
             targetRef:
               description: >-
@@ -11111,13 +11114,15 @@ components:
                               backoff strategy between retries.
                             properties:
                               baseInterval:
-                                default: 25ms
                                 description: >-
                                   BaseInterval is an amount of time which should
                                   be taken between retries.
 
                                   Must be greater than zero. Values less than 1
                                   ms are rounded up to 1 ms.
+
+                                  If not specified then the default value is
+                                  "25ms".
                                 type: string
                               maxInterval:
                                 description: >-
@@ -11156,10 +11161,12 @@ components:
                               configured.
                             properties:
                               maxInterval:
-                                default: 300s
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
+
+                                  If not specified then the default value is
+                                  "300s".
                                 type: string
                               resetHeaders:
                                 description: >-
@@ -11227,13 +11234,15 @@ components:
                               backoff strategy between retries.
                             properties:
                               baseInterval:
-                                default: 25ms
                                 description: >-
                                   BaseInterval is an amount of time which should
                                   be taken between retries.
 
                                   Must be greater than zero. Values less than 1
                                   ms are rounded up to 1 ms.
+
+                                  If not specified then the default value is
+                                  "25ms".
                                 type: string
                               maxInterval:
                                 description: >-
@@ -11328,10 +11337,12 @@ components:
                               configured.
                             properties:
                               maxInterval:
-                                default: 300s
                                 description: >-
                                   MaxInterval is a maximal amount of time which
                                   will be taken between retries.
+
+                                  If not specified then the default value is
+                                  "300s".
                                 type: string
                               resetHeaders:
                                 description: >-
@@ -11853,10 +11864,7 @@ components:
                                     minimum: 0
                                     type: integer
                                 type: object
-                              minItems: 1
                               type: array
-                          required:
-                            - backendRefs
                           type: object
                       required:
                         - default
@@ -13057,7 +13065,6 @@ components:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests that will be force traced
                         if the
@@ -13068,12 +13075,13 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                     overall:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests will be traced
 
@@ -13096,12 +13104,13 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                     random:
                       anyOf:
                         - type: integer
                         - type: string
-                      default: 100
                       description: >-
                         Target percentage of requests that will be randomly
                         selected for trace
@@ -13114,6 +13123,8 @@ components:
                         https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
 
                         Either int or decimal represented as string.
+
+                        If not specified then the default value is 100.
                       x-kubernetes-int-or-string: true
                   type: object
                 tags:

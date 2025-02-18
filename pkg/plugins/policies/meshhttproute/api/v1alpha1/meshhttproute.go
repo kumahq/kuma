@@ -33,7 +33,7 @@ type To struct {
 	// effects of the rules to requests to this hostname.
 	// Given hostnames must intersect with the hostname of the listeners the
 	// route attaches to.
-	Hostnames []string `json:"hostnames,omitempty"`
+	Hostnames *[]string `json:"hostnames,omitempty"`
 	// TargetRef is a reference to the resource that represents a group of
 	// request destinations.
 	TargetRef common_api.TargetRef `json:"targetRef"`
@@ -63,8 +63,8 @@ type Match struct {
 	Method *Method    `json:"method,omitempty"`
 	// QueryParams matches based on HTTP URL query parameters. Multiple matches
 	// are ANDed together such that all listed matches must succeed.
-	QueryParams []QueryParamsMatch       `json:"queryParams,omitempty"`
-	Headers     []common_api.HeaderMatch `json:"headers,omitempty"`
+	QueryParams *[]QueryParamsMatch       `json:"queryParams,omitempty"`
+	Headers     *[]common_api.HeaderMatch `json:"headers,omitempty"`
 }
 
 // +kubebuilder:validation:Enum=Exact;PathPrefix;RegularExpression
@@ -130,13 +130,13 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Set []HeaderKeyValue `json:"set,omitempty"`
+	Set *[]HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Add []HeaderKeyValue `json:"add,omitempty"`
+	Add *[]HeaderKeyValue `json:"add,omitempty"`
 	// +kubebuilder:validation:MaxItems=16
-	Remove []string `json:"remove,omitempty"`
+	Remove *[]string `json:"remove,omitempty"`
 }
 
 // PreciseHostname is the fully qualified domain name of a network host. This
@@ -172,9 +172,10 @@ type RequestRedirect struct {
 	Port *PortNumber `json:"port,omitempty"`
 	// StatusCode is the HTTP status code to be used in response.
 	//
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=302
 	// +kubebuilder:validation:Enum=301;302;303;307;308
-	StatusCode *int `json:"statusCode,omitempty"`
+	StatusCode int `json:"statusCode"`
 }
 
 // +kubebuilder:validation:Enum=ReplaceFullPath;ReplacePrefixMatch
@@ -198,7 +199,7 @@ type URLRewrite struct {
 	Path *PathRewrite `json:"path,omitempty"`
 	// HostToBackendHostname rewrites the hostname to the hostname of the
 	// upstream host. This option is only available when targeting MeshGateways.
-	HostToBackendHostname bool `json:"hostToBackendHostname,omitempty"`
+	HostToBackendHostname *bool `json:"hostToBackendHostname,omitempty"`
 }
 
 type RequestMirror struct {

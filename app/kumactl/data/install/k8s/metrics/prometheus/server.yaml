@@ -423,7 +423,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.6.1"
+          image: "jimmidyson/configmap-reload:v0.9.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -435,16 +435,16 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.35.0"
+          image: "prom/prometheus:v3.1.0"
           imagePullPolicy: "IfNotPresent"
           args:
-            - --storage.tsdb.retention.time=15d
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
+            - --storage.tsdb.retention.time=15d
+            - --storage.tsdb.retention.size=7GB
             - --web.console.libraries=/etc/prometheus/console_libraries
             - --web.console.templates=/etc/prometheus/consoles
             - --web.enable-lifecycle
-            - --storage.tsdb.retention.size=7GB
           ports:
             - containerPort: 9090
           resources:

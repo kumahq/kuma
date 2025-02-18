@@ -8,6 +8,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -37,8 +38,8 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) error {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
-			if len(c.JsonPatches) > 0 {
-				if err := jsonpatch.MergeJsonPatch(cluster.Resource, c.JsonPatches); err != nil {
+			if len(pointer.Deref(c.JsonPatches)) > 0 {
+				if err := jsonpatch.MergeJsonPatch(cluster.Resource, pointer.Deref(c.JsonPatches)); err != nil {
 					return err
 				}
 

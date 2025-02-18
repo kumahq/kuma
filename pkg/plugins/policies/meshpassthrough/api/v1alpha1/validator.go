@@ -51,7 +51,7 @@ func validateDefault(conf Conf) validators.ValidationError {
 		protocol ProtocolType
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
-	for i, match := range conf.AppendMatch {
+	for i, match := range pointer.Deref(conf.AppendMatch) {
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}

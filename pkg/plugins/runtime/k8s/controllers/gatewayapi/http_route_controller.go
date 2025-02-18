@@ -221,7 +221,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 						Tags: tags,
 					},
 					To: &[]meshhttproute_api.To{{
-						Hostnames: headers,
+						Hostnames: &headers,
 						TargetRef: common_api.TargetRef{Kind: common_api.Mesh},
 						Rules:     rules,
 					}},

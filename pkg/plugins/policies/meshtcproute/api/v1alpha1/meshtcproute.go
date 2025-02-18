@@ -58,6 +58,5 @@ type Rule struct {
 }
 
 type RuleConf struct {
-	// +kubebuilder:validation:MinItems=1
-	BackendRefs []common_api.BackendRef `json:"backendRefs"`
+	BackendRefs *[]common_api.BackendRef `json:"backendRefs,omitempty"`
 }
