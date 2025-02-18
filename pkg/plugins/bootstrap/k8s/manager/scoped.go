@@ -63,7 +63,9 @@ func NewScopedManager(b *core_runtime.Builder, cfg core_plugins.PluginConfig, re
 }
 
 func getCacheConfig(cfg *runtime_config.KubernetesRuntimeConfig, systemNamespace string) cache.Options {
-	cacheConfig := cache.Options{}
+	cacheConfig := cache.Options{
+
+	}
 	if len(cfg.WatchNamespaces) == 0 {
 		return cacheConfig
 	}
@@ -185,15 +187,17 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 	for _, o := range opts {
 		o.ApplyToList(lo)
 	}
-	core.Log.Info("CALLING MY CUSTOM LIST", "watchedNamespaces", s.watchedNamespaces, "lo", lo)
-	if len(s.watchedNamespaces) == 0 {
+	core.Log.Info("CALLING MY CUSTOM LIST", "watchedNamespaces", s.watchedNamespaces, "lo", lo, "list.GetObjectKind().GroupVersionKind().Kind", list.GetObjectKind().GroupVersionKind().Kind)
+	if len(s.watchedNamespaces) == 0 || list.GetObjectKind().GroupVersionKind().Kind == "MeshList" ||list.GetObjectKind().GroupVersionKind().Kind == "Mesh" {
 		return s.Client.List(ctx, list, opts...)
 	}
+	core.Log.Info("CALLING MY CUSTOM LIST if watchedNamespaces is more than 0")
 
 	if lo.Namespace != "" {
 		if _, allowed := s.watchedNamespaces[lo.Namespace]; !allowed {
 			return fmt.Errorf("namespace %q is not a part of the mesh", lo.Namespace)
 		}
+		core.Log.Info("CALLING MY CUSTOM LIST namespace is in the request", "lo", lo.Namespace)
 		return s.Client.List(ctx, list, opts...)
 	}
 
@@ -210,12 +214,14 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 		if err := s.Client.List(ctx, tempList, optsForNS...); err != nil {
 			return err
 		}
+		core.Log.Info("CALLING MY CUSTOM LIST tempList", "tempList", tempList)
 
 		// Extract the items from the temporary list.
 		items, err := meta.ExtractList(tempList)
 		if err != nil {
 			return err
 		}
+		core.Log.Info("CALLING MY CUSTOM LIST items", "items", items)
 		allItems = append(allItems, items...)
 	}
 
@@ -223,6 +229,7 @@ func (s *scopedClient) List(ctx context.Context, list client.ObjectList, opts ..
 	if err := meta.SetList(list, allItems); err != nil {
 		return err
 	}
+	core.Log.Info("CALLING MY CUSTOM LIST list", "list", list)
 	return nil
 }
 

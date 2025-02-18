@@ -404,7 +404,8 @@ runtime:
     # The downside is that control plane requires permission to read Secrets in all namespaces.
     supportGatewaySecretsInAllNamespaces: false # ENV: KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES
     # WatchNamespaces defines the list of namespaces that controllers monitor for changes.
-	  # By default, the control plane monitors all namespaces.
+
+    # By default, the control plane monitors all namespaces.
     watchNamespaces: [] # ENV: KUMA_RUNTIME_KUBERNETES_WATCH_NAMESPACES
   # Universal-specific configuration
   universal:

@@ -23,6 +23,9 @@ noHelmHooks: false
 # -- Whether to restart control-plane by calculating a new checksum for the secret
 restartOnSecretChange: true
 
+# -- List of namespaces that the control-plane should watch and have permissions for
+watchNamespaces: ["kuma-demo", "kuma-test"]
+
 controlPlane:
   # -- Environment that control plane is run in, useful when running universal global control plane on k8s
   environment: "kubernetes"
@@ -426,7 +429,7 @@ dataPlane:
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
-  enabled: false
+  enabled: true
 
   # -- Labels to add to resources, in addition to default labels
   extraLabels: {}
@@ -566,7 +569,7 @@ ingress:
 
 egress:
   # -- If true, it deploys Egress for cross cluster communication
-  enabled: false
+  enabled: true
   # -- Labels to add to resources, in addition to the default labels.
   extraLabels: {}
   # -- Time for which old listener will still be active as draining

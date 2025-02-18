@@ -16,3 +16,10 @@ var NameToModule = map[string]*plugins.PluginInitializer{
 	"meshmultizoneservices": {InitFn: meshmultizoneservice.InitPlugin, Initialized: false},
 	"meshservices":          {InitFn: meshservice.InitPlugin, Initialized: false},
 }
+
+var ResourceToScope = map[string]bool{
+	"hostnamegenerator":    false,
+	"meshexternalservice":  false,
+	"meshmultizoneservice": false,
+	"meshservice":          false,
+}
