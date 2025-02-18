@@ -347,7 +347,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Zone:       "zone-1",
 				APIVersion: envoy.APIV3,
 			}
-			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, *mc)
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
 			Expect(err).ToNot(HaveOccurred())
 
 			proxy.Outbounds = xds_types.Outbounds{{
