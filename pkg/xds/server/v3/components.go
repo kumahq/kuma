@@ -42,19 +42,15 @@ func RegisterXDS(
 	reconciler := DefaultReconciler(rt, xdsContext, statsCallbacks)
 	ingressReconciler := DefaultIngressReconciler(rt, xdsContext, statsCallbacks)
 	egressReconciler := DefaultEgressReconciler(rt, xdsContext, statsCallbacks)
-	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, envoy_common.APIV3)
-	if err != nil {
-		return err
-	}
 
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v3.AdaptCallbacks(statsCallbacks),
 		util_xds_v3.AdaptCallbacks(authCallbacks),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(
-			xds_callbacks.NewDataplaneLifecycle(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration)),
-		),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.DataplaneCallbacksToXdsCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory))),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneSyncCallbacks(
+			xds_sync.DefaultDataplaneWatchdogFactory(rt, reconciler, ingressReconciler, egressReconciler, xdsMetrics, envoyCpCtx, envoy_common.APIV3),
+			xds_callbacks.DataplaneLifecycleFactory(rt.AppContext(), rt.ResourceManager(), authenticator, rt.Config().XdsServer.DataplaneDeregistrationDelay.Duration, rt.GetInstanceId(), rt.Config().Store.Cache.ExpirationTime.Duration),
+		)),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt, envoyCpCtx.Secrets)),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff.Duration)),
 	}

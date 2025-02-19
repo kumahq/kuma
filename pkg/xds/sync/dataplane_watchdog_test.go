@@ -5,6 +5,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/go-logr/logr"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"k8s.io/client-go/util/cert"
@@ -107,7 +108,7 @@ var _ = Describe("Dataplane Watchdog", func() {
 			metadata = &core_xds.DataplaneMetadata{
 				ProxyType: mesh_proto.DataplaneProxyType,
 			}
-			watchdog = sync.NewDataplaneWatchdog(deps, resKey)
+			watchdog = sync.NewDataplaneWatchdog(logr.Discard(), deps, resKey)
 			ctx = context.Background()
 		})
 

@@ -253,28 +253,28 @@ func (d ResourceTypeDescriptor) HasInsights() bool {
 
 func (d ResourceTypeDescriptor) NewInsight() Resource {
 	if !d.HasInsights() {
-		panic("No insight type precondition broken")
+		panic(fmt.Sprintf("No insight for type %s precondition broken", d.Name))
 	}
 	return newObject(d.Insight)
 }
 
 func (d ResourceTypeDescriptor) NewInsightList() ResourceList {
 	if !d.HasInsights() {
-		panic("No insight type precondition broken")
+		panic(fmt.Sprintf("No insight for type %s precondition broken", d.Name))
 	}
 	return d.Insight.Descriptor().NewList()
 }
 
 func (d ResourceTypeDescriptor) NewOverview() Resource {
 	if !d.HasInsights() {
-		panic("No insight type precondition broken")
+		panic(fmt.Sprintf("No insight for type %s precondition broken", d.Name))
 	}
 	return newObject(d.Overview)
 }
 
 func (d ResourceTypeDescriptor) NewOverviewList() ResourceList {
 	if !d.HasInsights() {
-		panic("No insight type precondition broken")
+		panic(fmt.Sprintf("No insight for type %s precondition broken", d.Name))
 	}
 	return d.Overview.Descriptor().NewList()
 }

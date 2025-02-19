@@ -53,8 +53,8 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		resManager = core_manager.NewResourceManager(store)
 		ctx, cancel = context.WithCancel(context.Background())
 
-		dpLifecycle := NewDataplaneLifecycle(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second)
-		callbacks = util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(dpLifecycle))
+		dpLifecycle := DataplaneLifecycleFactory(ctx, resManager, authenticator, 0*time.Second, cpInstanceID, 0*time.Second)
+		callbacks = util_xds_v3.AdaptCallbacks(NewDataplaneSyncCallbacks(nil, dpLifecycle))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -117,7 +117,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
-	It("should not override extisting DP with different service", func() {
+	It("should not override existing DP with different service", func() {
 		// given already created DP
 		dp := &core_mesh.DataplaneResource{
 			Meta: &model.ResourceMeta{
@@ -221,11 +221,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		}
 		const streamId = 123
 
-		// when
-		err = callbacks.OnStreamRequest(streamId, &req)
+		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+		// when
+		Expect(callbacks.OnStreamRequest(streamId, &req)).To(Succeed())
 
 		// when
 		callbacks.OnStreamClosed(streamId, node)
@@ -271,29 +270,6 @@ var _ = Describe("Dataplane Lifecycle", func() {
 			Node: node,
 		}
 
-		dp := &core_mesh.DataplaneResource{
-			Meta: &model.ResourceMeta{
-				Mesh: "default",
-				Name: "dp-01",
-			},
-			Spec: &mesh_proto.Dataplane{
-				Networking: &mesh_proto.Dataplane_Networking{
-					Address: "192.168.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-						{
-							Port:        8080,
-							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service": "backend",
-							},
-						},
-					},
-				},
-			},
-		}
-		err := resManager.Create(context.Background(), dp, core_store.CreateByKey("dp-01", "default"))
-		Expect(err).ToNot(HaveOccurred())
-
 		const streamId = 123
 
 		// when
@@ -302,7 +278,11 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		})
 		Expect(callbacks.OnStreamOpen(ctx, streamId, "")).To(Succeed())
 
-		err = callbacks.OnStreamRequest(streamId, &req)
+		err := callbacks.OnStreamRequest(streamId, &req)
+		Expect(err).ToNot(HaveOccurred())
+
+		// dp should be created by the lifecycle manager
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		cancel()

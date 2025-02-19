@@ -50,7 +50,7 @@ func DefaultDataplaneWatchdogFactory(
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion core_xds.APIVersion,
-) (DataplaneWatchdogFactory, error) {
+) DataplaneWatchdogFactory {
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
@@ -77,8 +77,8 @@ func DefaultDataplaneWatchdogFactory(
 		ResManager:            rt.ReadOnlyResourceManager(),
 	}
 	return NewDataplaneWatchdogFactory(
-		xdsMetrics,
-		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
 		deps,
+		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
+		xdsMetrics,
 	)
 }
