@@ -31,33 +31,45 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
+type singletonWatchdogWrapper struct {
+	*util_watchdog.SimpleWatchdog
+	stateChecker func() bool
+}
+
+func (w *singletonWatchdogWrapper) ExistsStaleState() bool {
+	return w.stateChecker()
+}
+
+func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.SingletonWatchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
-	return &util_watchdog.SimpleWatchdog{
-		NewTicker: func() *time.Ticker {
-			return time.NewTicker(d.refreshInterval)
-		},
-		OnTick: func(ctx context.Context) error {
-			ctx = user.Ctx(ctx, user.ControlPlane)
-			start := core.Now()
-			result, err := dataplaneWatchdog.Sync(ctx)
-			if err != nil {
-				return err
-			}
-			d.xdsMetrics.XdsGenerations.
-				WithLabelValues(string(result.ProxyType), string(result.Status)).
-				Observe(float64(core.Now().Sub(start).Milliseconds()))
-			return nil
-		},
-		OnError: func(err error) {
-			d.xdsMetrics.XdsGenerationsErrors.Inc()
-			log.Error(err, "OnTick() failed")
-		},
-		OnStop: func() {
-			if err := dataplaneWatchdog.Cleanup(); err != nil {
+	return &singletonWatchdogWrapper{
+		SimpleWatchdog: &util_watchdog.SimpleWatchdog{
+			NewTicker: func() *time.Ticker {
+				return time.NewTicker(d.refreshInterval)
+			},
+			OnTick: func(ctx context.Context) error {
+				ctx = user.Ctx(ctx, user.ControlPlane)
+				start := core.Now()
+				result, err := dataplaneWatchdog.Sync(ctx)
+				if err != nil {
+					return err
+				}
+				d.xdsMetrics.XdsGenerations.
+					WithLabelValues(string(result.ProxyType), string(result.Status)).
+					Observe(float64(core.Now().Sub(start).Milliseconds()))
+				return nil
+			},
+			OnError: func(err error) {
+				d.xdsMetrics.XdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
-			}
+			},
+			OnStop: func() {
+				if err := dataplaneWatchdog.Cleanup(); err != nil {
+					log.Error(err, "OnTick() failed")
+				}
+			},
 		},
+		stateChecker: dataplaneWatchdog.DataplaneStateExists,
 	}
 }

@@ -38,6 +38,12 @@ func (r *reconciler) Clear(proxyId *model.ProxyId) error {
 	return nil
 }
 
+func (r *reconciler) CacheExists(proxyId *model.ProxyId) bool {
+	nodeId := &envoy_core.Node{Id: proxyId.String()}
+	snap, err := r.cacher.Get(nodeId)
+	return err == nil && snap != nil
+}
+
 func (r *reconciler) clearUndeliveredConfigStats(nodeId *envoy_core.Node) {
 	snap, err := r.cacher.Get(nodeId)
 	if err != nil {

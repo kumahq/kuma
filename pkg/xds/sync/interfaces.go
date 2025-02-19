@@ -21,9 +21,10 @@ type ConnectionInfoTracker interface {
 type SnapshotReconciler interface {
 	Reconcile(context.Context, xds_context.Context, *core_xds.Proxy) (bool, error)
 	Clear(proxyId *core_xds.ProxyId) error
+	CacheExists(proxyId *core_xds.ProxyId) bool
 }
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-	New(dpKey core_model.ResourceKey) util_xds_v3.Watchdog
+	New(dpKey core_model.ResourceKey) util_xds_v3.SingletonWatchdog
 }

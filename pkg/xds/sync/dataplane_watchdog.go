@@ -114,6 +114,40 @@ func (d *DataplaneWatchdog) Cleanup() error {
 	}
 }
 
+func (d *DataplaneWatchdog) DataplaneStateExists() bool {
+	proxyID := core_xds.FromResourceKey(d.key)
+	switch d.dpType {
+	case mesh_proto.DataplaneProxyType:
+		certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.DataplaneProxyType, d.key)
+		if certInfo != nil {
+			return true
+		}
+		return d.DataplaneReconciler.CacheExists(&proxyID)
+	case mesh_proto.IngressProxyType:
+		return d.IngressReconciler.CacheExists(&proxyID)
+	case mesh_proto.EgressProxyType:
+		if d.EgressReconciler.CacheExists(&proxyID) {
+			return true
+		}
+		aggregatedMeshCtxs, _ := xds_context.AggregateMeshContexts(
+			context.TODO(),
+			d.ResManager,
+			d.MeshCache.GetMeshContext,
+		)
+		for _, mesh := range aggregatedMeshCtxs.Meshes {
+			certInfo := d.EnvoyCpCtx.Secrets.Info(mesh_proto.EgressProxyType,
+				core_model.ResourceKey{Mesh: mesh.GetMeta().GetName(), Name: d.key.Name})
+			if certInfo != nil {
+				return true
+			}
+		}
+	default:
+		return false
+	}
+
+	return false
+}
+
 // syncDataplane syncs state of the Dataplane.
 // It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncDataplane(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
