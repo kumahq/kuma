@@ -155,13 +155,14 @@ func (t *dataplaneSyncCallbacks) OnStreamRequest(streamID core_xds.StreamID, req
 		t.proxyInfos[dpKey] = pInfo
 	}
 	t.activeStreams[streamID].proxyInfo = pInfo
+	ctx := t.activeStreams[streamID].ctx
 	pInfo.Lock()
 	defer pInfo.Unlock()
 	t.Unlock()
 	pInfo.streams = append(pInfo.streams, streamID)
 	pInfo.meta.Store(metadata)
 	if len(pInfo.streams) == 1 {
-		err := pInfo.lifecycleManager.Register(l, t.activeStreams[streamID].ctx, metadata)
+		err := pInfo.lifecycleManager.Register(l, ctx, metadata)
 		if err != nil {
 			return err
 		}

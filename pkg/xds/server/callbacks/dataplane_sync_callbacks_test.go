@@ -36,15 +36,14 @@ func (c *dummyLifecycleManager) Deregister(logr.Logger, context.Context) {
 var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncCallbacks", func() {
 		DescribeTable("when concurrent calls", MustPassRepeatedly(3),
-			func(run func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, r *rand.Rand)) {
+			func(run func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest)) {
 				wdCount := atomic.Int32{}
 				events := make(chan string, 1000)
-				r := &rand.Rand{} // #nosec G404 - math rand is enough
-				r.Seed(GinkgoRandomSeed())
 				stateFactory := xds_sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, fetchMeta func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 					wdNum := wdCount.Add(1)
 					events <- fmt.Sprintf("create:%d", wdNum)
 					return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
+						r := rand.New(rand.NewSource(GinkgoRandomSeed())) // #nosec G404 - math rand is enough
 						events <- fmt.Sprintf("start:%d", wdNum)
 						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 						<-ctx.Done()
@@ -59,7 +58,7 @@ var _ = Describe("Sync", func() {
 				n := &envoy_core.Node{Id: "demo.example"}
 				req := &envoy_sd.DiscoveryRequest{Node: n}
 				callbacks := util_xds_v3.AdaptCallbacks(tracker)
-				run(callbacks, req, r)
+				run(callbacks, req)
 
 				time.Sleep(time.Second)
 				// Let's check events:
@@ -85,7 +84,7 @@ var _ = Describe("Sync", func() {
 				}
 				Expect(all[len(all)-1]).To(HavePrefix("stop:"))
 			},
-			Entry("simple same thread", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, _ *rand.Rand) {
+			Entry("simple same thread", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest) {
 				ctx := context.Background()
 				streamA := int64(1)
 				streamB := int64(2)
@@ -98,11 +97,12 @@ var _ = Describe("Sync", func() {
 				callbacks.OnStreamClosed(streamB, nil)
 				callbacks.OnStreamClosed(streamA, nil)
 			}),
-			Entry("concurrent clients", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, r *rand.Rand) {
+			Entry("concurrent clients", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest) {
 				wg := sync.WaitGroup{}
 				wg.Add(2)
 				for i := range 2 {
 					go func() {
+						r := rand.New(rand.NewSource(GinkgoRandomSeed())) // #nosec G404 - math rand is enough
 						defer GinkgoRecover()
 						defer wg.Done()
 						ctx := context.Background()
@@ -118,7 +118,8 @@ var _ = Describe("Sync", func() {
 				}
 				wg.Wait()
 			}),
-			Entry("start/stop and then restart", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, r *rand.Rand) {
+			Entry("start/stop and then restart", func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest) {
+				r := rand.New(rand.NewSource(GinkgoRandomSeed())) // #nosec G404 - math rand is enough
 				ctx := context.Background()
 				streamA := int64(1)
 				Expect(callbacks.OnStreamOpen(ctx, streamA, "")).To(Succeed())
