@@ -3,7 +3,7 @@ package callbacks_test
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
+	"math/rand"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -39,15 +39,15 @@ var _ = Describe("Sync", func() {
 			func(run func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, r *rand.Rand)) {
 				wdCount := atomic.Int32{}
 				events := make(chan string, 1000)
-				r := rand.New(rand.NewPCG(1, uint64(GinkgoRandomSeed()))) // #nosec G404 - math rand is enough
+				r := rand.New(rand.NewSource(GinkgoRandomSeed())) // #nosec G404 - math rand is enough
 				stateFactory := xds_sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, fetchMeta func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 					wdNum := wdCount.Add(1)
 					events <- fmt.Sprintf("create:%d", wdNum)
 					return util_xds_v3.WatchdogFunc(func(ctx context.Context) {
 						events <- fmt.Sprintf("start:%d", wdNum)
-						time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 						<-ctx.Done()
-						time.Sleep(time.Duration(r.IntN(100)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(100)) * time.Millisecond)
 						events <- fmt.Sprintf("stop:%d", wdNum)
 					})
 				})
@@ -71,6 +71,7 @@ var _ = Describe("Sync", func() {
 				for i := range all {
 					if i == 0 {
 						Expect(all[0]).To(HavePrefix("create:"))
+						continue
 					}
 					switch {
 					case strings.HasPrefix(all[i], "create:"):
@@ -78,7 +79,7 @@ var _ = Describe("Sync", func() {
 					case strings.HasPrefix(all[i], "start:"):
 						Expect(all[i-1]).To(HavePrefix("create:"))
 					case strings.HasPrefix(all[i], "stop:"):
-						Expect(all[i-1]).To(HavePrefix("create:"))
+						Expect(all[i-1]).To(HavePrefix("start:"))
 					}
 				}
 				Expect(all[len(all)-1]).To(HavePrefix("stop:"))
@@ -105,13 +106,13 @@ var _ = Describe("Sync", func() {
 						defer wg.Done()
 						ctx := context.Background()
 						streamID := int64(i)
-						time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 						Expect(callbacks.OnStreamOpen(ctx, streamID, "")).To(Succeed())
-						time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 						Expect(callbacks.OnStreamRequest(streamID, req)).To(Succeed())
-						time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 						callbacks.OnStreamClosed(streamID, nil)
-						time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+						time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 					}()
 				}
 				wg.Wait()
@@ -121,7 +122,7 @@ var _ = Describe("Sync", func() {
 				streamA := int64(1)
 				Expect(callbacks.OnStreamOpen(ctx, streamA, "")).To(Succeed())
 				Expect(callbacks.OnStreamRequest(streamA, req)).To(Succeed())
-				time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+				time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 				streamB := int64(2)
 				Expect(callbacks.OnStreamOpen(ctx, streamB, "")).To(Succeed())
 				go func() { // We do this in another goroutine so that the new stream happens concurrently with the old one closing.
@@ -129,7 +130,7 @@ var _ = Describe("Sync", func() {
 					callbacks.OnStreamClosed(streamA, nil)
 				}()
 				Expect(callbacks.OnStreamRequest(streamB, req)).To(Succeed())
-				time.Sleep(time.Duration(r.IntN(200)) * time.Millisecond)
+				time.Sleep(time.Duration(r.Intn(200)) * time.Millisecond)
 				callbacks.OnStreamClosed(streamB, nil)
 			}),
 		)
