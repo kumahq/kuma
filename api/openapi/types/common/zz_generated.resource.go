@@ -27,6 +27,20 @@ type Inbound struct {
 	Tags map[string]string `json:"tags"`
 }
 
+// InboundRule defines model for InboundRule.
+type InboundRule struct {
+	// Conf The actual conf generated
+	Conf []interface{} `json:"conf"`
+
+	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin []ResourceRuleOrigin `json:"origin"`
+}
+
+// InboundRules defines model for InboundRules.
+type InboundRules struct {
+	Rules *[]InboundRule `json:"rules,omitempty"`
+}
+
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
 	// FromRules a set of rules for each inbound of this proxy
@@ -48,6 +62,9 @@ type InspectRule struct {
 	Warnings *[]string `json:"warnings,omitempty"`
 }
 
+// KumaResourceIdentifier defines model for KumaResourceIdentifier.
+type KumaResourceIdentifier = string
+
 // Meta defines model for Meta.
 type Meta struct {
 	// Labels the label of the resource
@@ -63,6 +80,11 @@ type Meta struct {
 	Type string `json:"type"`
 }
 
+// OutboundRules defines model for OutboundRules.
+type OutboundRules struct {
+	Rules *[]ResourceRule `json:"rules,omitempty"`
+}
+
 // PolicyDescription information about a policy
 type PolicyDescription struct {
 	// HasFromTargetRef indicates that this policy can be used as an inbound policy
@@ -75,11 +97,50 @@ type PolicyDescription struct {
 	IsTargetRef bool `json:"isTargetRef"`
 }
 
+// ProxyInbound defines model for ProxyInbound.
+type ProxyInbound struct {
+	Address  string                 `json:"address"`
+	Kri      KumaResourceIdentifier `json:"kri"`
+	Port     float32                `json:"port"`
+	Protocol *string                `json:"protocol,omitempty"`
+	State    *string                `json:"state,omitempty"`
+}
+
+// ProxyInboundsList defines model for ProxyInboundsList.
+type ProxyInboundsList struct {
+	Inbounds *[]ProxyInbound `json:"inbounds,omitempty"`
+}
+
+// ProxyOutbound defines model for ProxyOutbound.
+type ProxyOutbound struct {
+	Address string                 `json:"address"`
+	Kri     KumaResourceIdentifier `json:"kri"`
+	Port    float32                `json:"port"`
+}
+
+// ProxyOutboundsList defines model for ProxyOutboundsList.
+type ProxyOutboundsList struct {
+	Outbounds *[]ProxyOutbound `json:"outbounds,omitempty"`
+}
+
+// ProxyResource defines model for ProxyResource.
+type ProxyResource struct {
+	Inbounds  *[]ProxyInbound         `json:"inbounds,omitempty"`
+	Kri       string                  `json:"kri"`
+	Labels    *map[string]interface{} `json:"labels,omitempty"`
+	Outbounds *[]ProxyOutbound        `json:"outbounds,omitempty"`
+}
+
 // ProxyRule a rule that affects the entire proxy
 type ProxyRule struct {
 	// Conf The actual conf generated
 	Conf   interface{} `json:"conf"`
 	Origin []Meta      `json:"origin"`
+}
+
+// ProxyRules defines model for ProxyRules.
+type ProxyRules struct {
+	Rules *[]ProxyRule `json:"rules,omitempty"`
 }
 
 // ResourceRule defines model for ResourceRule.
