@@ -54,7 +54,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	dataplaneWatchdog := t.newDataplaneWatchdog(dpKey)
 	if dataplaneWatchdog.ExistsStaleState() {
 		dataplaneSyncTrackerLog.Info("[WARNING] rejected a Dataplane connect attempt when it's previous state is still being cleaned up", "dpKey", dpKey, "streamID", streamID)
-		return errors.Errorf("an existing state of the Dataplane is being removed")
+		return errors.Errorf("an existing state of the Dataplane is being removed, try again later")
 	}
 	//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
 	go dataplaneWatchdog.Start(ctx)

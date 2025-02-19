@@ -115,6 +115,14 @@ func (d *DataplaneWatchdog) Cleanup() error {
 }
 
 func (d *DataplaneWatchdog) DataplaneStateExists() bool {
+	if d.dpType == "" {
+		metadata := d.MetadataTracker.Metadata(d.key)
+		if metadata == nil {
+			d.log.Info("[WARNING] could not check state for dataplane without metadata")
+			return false
+		}
+		d.dpType = metadata.GetProxyType()
+	}
 	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.DataplaneProxyType:
