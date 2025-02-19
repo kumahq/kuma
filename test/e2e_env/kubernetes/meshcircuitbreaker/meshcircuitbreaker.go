@@ -206,7 +206,15 @@ spec:
           maxConnections: 1
           maxPendingRequests: 1
           maxRequests: 1
-          maxRetries: 1`, namespace, mesh, namespace)))).To(Succeed())
+          maxRetries: 1
+        outlierDetection:
+          interval: 1s
+          baseEjectionTime: 30s
+          maxEjectionPercent: 100
+          detectors:
+            totalFailures:
+              consecutive: 10
+          healthyPanicThreshold: 0`, namespace, mesh, namespace)))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
@@ -224,5 +232,16 @@ spec:
 			HaveLen(10),
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
+
+		// then
+		// with the above 10 times 503, we're in panic mode.
+		Consistently(func(g Gomega) ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				kubernetes.Cluster,
+				"demo-client",
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+		}, "10s", "1s").Should(ContainElement(HaveField("ResponseCode", 503)))
 	})
 }
