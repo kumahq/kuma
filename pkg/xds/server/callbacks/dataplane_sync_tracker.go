@@ -2,7 +2,11 @@ package callbacks
 
 import (
 	"context"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/pkg/errors"
 	stdsync "sync"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,9 +18,11 @@ var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-
 
 type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_xds_v3.Watchdog
 
-func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
+func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc, hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
+		nodeHasher:           hasher,
+		snapshotCache:        cache,
 		watchdogs:            map[core_model.ResourceKey]context.CancelFunc{},
 	}
 }
@@ -36,12 +42,19 @@ type dataplaneSyncTracker struct {
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]context.CancelFunc
+	nodeHasher      envoy_cache.NodeHash
+	snapshotCache   envoy_cache.SnapshotCache
 }
 
-func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, _ core_xds.DataplaneMetadata) error {
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
+
+	// when there is an existing cache to be cleaned up, we wait for it to be removed
+	if err := t.waitForCleaningUpExisting(dpKey, ctx, 3*time.Second); err != nil {
+		return err
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	t.watchdogs[dpKey] = func() {
@@ -61,4 +74,43 @@ func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds
 		cancelFn()
 	}
 	delete(t.watchdogs, dpKey)
+}
+
+func (t *dataplaneSyncTracker) waitForCleaningUpExisting(dpKey core_model.ResourceKey, ctx context.Context, maxWait time.Duration) error {
+	timeout := time.After(maxWait)
+	timer := time.NewTicker(50 * time.Millisecond)
+	defer timer.Stop()
+
+	if t.nodeHasher == nil || t.snapshotCache == nil {
+		return nil
+	}
+
+	proxyId := core_xds.FromResourceKey(dpKey)
+	nodeCacheKey := t.nodeHasher.ID(&envoy_core.Node{Id: proxyId.String()})
+	cacheExists := func() error {
+		snapshot, err := t.snapshotCache.GetSnapshot(nodeCacheKey)
+		if err != nil || snapshot == nil {
+			return nil
+		}
+		return errors.New("dataplane is still in the cache")
+	}
+
+	if cacheExists() == nil {
+		return nil
+	}
+
+	for {
+		select {
+		case <-timer.C:
+			if cacheExists() == nil {
+				return nil
+			}
+		case <-timeout:
+			// if the cache is still there, this means there is a performance issue on the CP
+			// in this case, we kick out the connection and the DPP will reconnect later
+			return errors.Errorf("timeout while waiting for dataplane %s to be removed from the cache", proxyId)
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	}
 }

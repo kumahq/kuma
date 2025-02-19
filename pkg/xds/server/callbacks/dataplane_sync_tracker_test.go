@@ -20,7 +20,7 @@ var _ = Describe("Sync", func() {
 	Describe("dataplaneSyncTracker", func() {
 		It("should not fail when ADS stream is closed before Watchdog is even created", func() {
 			// setup
-			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil))
+			tracker := DataplaneCallbacksToXdsCallbacks(NewDataplaneSyncTracker(nil, nil, nil))
 
 			// given
 			ctx := context.Background()
@@ -43,7 +43,7 @@ var _ = Describe("Sync", func() {
 
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
-			tracker := NewDataplaneSyncTracker(nil)
+			tracker := NewDataplaneSyncTracker(nil, nil, nil)
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -82,7 +82,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					close(watchdogCh)
 				})
-			})
+			}, nil, nil)
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// given
@@ -136,7 +136,7 @@ var _ = Describe("Sync", func() {
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
 				})
-			})
+			}, nil, nil)
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
