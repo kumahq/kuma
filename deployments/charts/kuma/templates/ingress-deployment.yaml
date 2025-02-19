@@ -80,6 +80,7 @@ spec:
             - --log-level={{ .Values.ingress.logLevel | default "info" }}
           ports:
             - containerPort: 10001
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
