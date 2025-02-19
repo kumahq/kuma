@@ -39,7 +39,8 @@ var _ = Describe("Sync", func() {
 			func(run func(callbacks envoy_xds.Callbacks, req *envoy_sd.DiscoveryRequest, r *rand.Rand)) {
 				wdCount := atomic.Int32{}
 				events := make(chan string, 1000)
-				r := rand.New(rand.NewSource(GinkgoRandomSeed())) // #nosec G404 - math rand is enough
+				r := rand.Rand{} // #nosec G404 - math rand is enough
+				r.Seed(GinkgoRandomSeed())
 				stateFactory := xds_sync.DataplaneWatchdogFactoryFunc(func(key core_model.ResourceKey, fetchMeta func() *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 					wdNum := wdCount.Add(1)
 					events <- fmt.Sprintf("create:%d", wdNum)
