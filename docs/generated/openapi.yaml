@@ -87,12 +87,14 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
-      operationId: get-meshes-mesh-dataplanes-name-config
-      summary: Get a proxy XDS config on a CP
+      operationId: get-dataplanes-xds-config
+      summary: >-
+        Get a proxy XDS config on a CP, this endpoint is only available on zone
+        CPs.
       description: >-
-        Returns the configuration of the proxy
-        ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol)
-        configuration).
+        Returns the
+        [xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol)
+        configuration of the proxy.
       parameters:
         - in: path
           name: mesh
@@ -109,7 +111,7 @@ paths:
         - in: query
           name: shadow
           description: >
-            When computing XDS config the CP takes into account policies with
+            When computing XDS config the CP take into account policies with
             'kuma.io/effect: shadow' label
           schema:
             type: boolean
@@ -130,7 +132,7 @@ paths:
                 - diff
       responses:
         '200':
-          $ref: '#/components/responses/InspectDataplanesConfigResponse'
+          $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -332,6 +334,22 @@ paths:
         - MeshAccessLog
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -451,6 +469,22 @@ paths:
       tags:
         - MeshCircuitBreaker
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -572,6 +606,22 @@ paths:
         - MeshFaultInjection
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -692,6 +742,22 @@ paths:
         - MeshHealthCheck
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -811,6 +877,22 @@ paths:
       tags:
         - MeshHTTPRoute
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -933,6 +1015,22 @@ paths:
         - MeshLoadBalancingStrategy
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -1050,6 +1148,22 @@ paths:
       tags:
         - MeshMetric
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -1171,6 +1285,22 @@ paths:
         - MeshPassthrough
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -1290,6 +1420,22 @@ paths:
       tags:
         - MeshProxyPatch
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -1411,6 +1557,22 @@ paths:
         - MeshRateLimit
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -1528,6 +1690,22 @@ paths:
       tags:
         - MeshRetry
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -1647,6 +1825,22 @@ paths:
         - MeshTCPRoute
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -1764,6 +1958,22 @@ paths:
       tags:
         - MeshTimeout
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -1883,6 +2093,22 @@ paths:
         - MeshTLS
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -2000,6 +2226,22 @@ paths:
       tags:
         - MeshTrace
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -2122,6 +2364,22 @@ paths:
         - MeshTrafficPermission
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -2221,6 +2479,22 @@ paths:
       tags:
         - Mesh
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -2334,6 +2608,22 @@ paths:
         - MeshGateway
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -2435,6 +2725,22 @@ paths:
       tags:
         - HostnameGenerator
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -2549,6 +2855,22 @@ paths:
       tags:
         - MeshExternalService
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
         - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
@@ -2670,6 +2992,22 @@ paths:
         - MeshMultiZoneService
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -2788,6 +3126,22 @@ paths:
         - MeshService
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
@@ -2873,9 +3227,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Meta'
-    InspectDataplanesConfig:
+    DataplaneXDSConfig:
       type: object
-      title: InspectDataplanesConfig
+      title: DataplaneXDSConfig
       required:
         - xds
       properties:
@@ -14862,12 +15216,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
-    InspectDataplanesConfigResponse:
+    GetDataplaneXDSConfigResponse:
       description: Successfully retrieved proxy XDS config.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InspectDataplanesConfig'
+            $ref: '#/components/schemas/DataplaneXDSConfig'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

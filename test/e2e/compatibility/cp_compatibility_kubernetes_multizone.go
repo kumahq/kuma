@@ -27,9 +27,9 @@ var _ = E2EBeforeSuite(func() {
 	// `--force-update` flag prevents helm emitting an error
 	// in this case.
 	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts,
-		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().To(BeNil())
+		"repo", "add", "--force-update", "kuma", Config.HelmRepoUrl)).Error().ToNot(HaveOccurred())
 
-	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().To(BeNil())
+	Expect(helm.RunHelmCommandAndGetOutputE(t, &opts, "repo", "update")).Error().ToNot(HaveOccurred())
 })
 
 func CpCompatibilityMultizoneKubernetes() {

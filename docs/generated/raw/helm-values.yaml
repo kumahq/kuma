@@ -368,7 +368,7 @@ cni:
   # -- Node Selector for the CNI pods
   nodeSelector:
     kubernetes.io/os: linux
-  # -- Tolerations for the CNI pods
+  # -- Additional tolerations for the CNI pods
   tolerations: []
   # -- Additional pod annotations
   podAnnotations: { }
@@ -710,7 +710,7 @@ kubectl:
     # -- The kubectl image repository
     repository: bitnami/kubectl
     # -- The kubectl image tag
-    tag: "1.32.0"
+    tag: "1.32.2"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

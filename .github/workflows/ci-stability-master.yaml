@@ -1,0 +1,82 @@
+name: ci-stability-master
+
+on:
+  schedule:
+    # Monday to Friday: Every 2 hours from 7 PM to 7 AM CEST
+    - cron: "0 17 * * 1-5"
+    - cron: "0 19 * * 1-5"
+    - cron: "0 21 * * 1-5"
+    - cron: "0 23 * * 1-5"
+    - cron: "0 1 * * 2-6"
+    - cron: "0 3 * * 2-6"
+    - cron: "0 5 * * 2-6"
+    # Saturday and Sunday: Every 2 hours all day
+    - cron: "0 */2 * * 6,0"
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+env:
+  WORKFLOW_ID_TO_TRIGGER: build-test-distribute.yaml
+  BRANCH: "master"
+
+jobs:
+  trigger-build-test-distribute:
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write # required to trigger workflows
+      checks: read # required to list workflow runs
+    env:
+      REPOSITORY: ${{ github.repository }}
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: "Trigger the workflow"
+        id: trigger-workflow
+        run: |
+          echo "started=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          gh workflow run "$WORKFLOW_ID_TO_TRIGGER" --repo "$REPOSITORY" --ref "$BRANCH"
+          echo "finished=$(date -u -d '10 seconds' +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+      - name: "Retrieve workflow run ID"
+        id: get-run-id
+        env:
+          STARTED: ${{ steps.trigger-workflow.outputs.started }}
+          FINISHED: ${{ steps.trigger-workflow.outputs.finished }}
+        run: |
+          max_retries=5
+          retry_count=0
+          run_id=""
+          url=""
+
+          while [[ $retry_count -lt $max_retries && -z $run_id ]]; do
+            runs=$(gh run list \
+              --repo "$REPOSITORY" \
+              --workflow "$WORKFLOW_ID_TO_TRIGGER" \
+              --branch "$BRANCH" \
+              --created "$STARTED..$FINISHED" \
+              --json databaseId,url \
+              --limit 1 \
+              --jq 'first(.[] // "") // ""')
+
+            if [[ -n "$runs" ]]; then
+              run_id=$(echo "$runs" | jq -r '.databaseId')
+              url=$(echo "$runs" | jq -r '.url')
+            fi
+
+            if [[ -z $run_id ]]; then
+              retry_count=$((retry_count + 1))
+              echo "Attempt $retry_count: Run not found, retrying in 5 seconds..."
+              sleep 5
+            fi
+          done
+
+          if [[ -z $run_id ]]; then
+            echo "Unable to retrieve run ID after $max_retries retries"
+            exit 1
+          fi
+
+          echo "Attempt $((retry_count + 1)): Retrieved run ID: $run_id ($url)"
+          echo "run_id=$run_id" >>$GITHUB_OUTPUT
+
+          echo "Run [$run_id]($url)" >> $GITHUB_STEP_SUMMARY

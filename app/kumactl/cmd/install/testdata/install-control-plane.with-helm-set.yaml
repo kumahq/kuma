@@ -11026,6 +11026,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10002
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
@@ -11157,6 +11158,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10001
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"

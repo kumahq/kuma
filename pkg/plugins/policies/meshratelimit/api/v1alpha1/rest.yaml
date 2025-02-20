@@ -102,6 +102,22 @@ paths:
       tags: [ "MeshRateLimit" ]
       parameters:
         - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          default: 100
+          schema:
+            type: integer
+            maximum: 1000
+            minimum: 1
+        - in: query
           name: filter
           description: filter by labels when multiple filters are present, they are ANDed
           required: false
