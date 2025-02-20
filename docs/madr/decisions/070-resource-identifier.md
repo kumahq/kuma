@@ -140,7 +140,7 @@ Discoveries in this work helped me to fill the tables.
 
 There are no restriction on the name format from the Envoy's side.
 Some Envoy resources could be directly correlated with Kuma resources and that's why we should consider renaming them using the resource identifier.
-There are tables below for all Kuma proxies. Resources in `Internal` table exist in all proxies. 
+The tables below are an inventory of resource usage for all Kuma proxies. Resources in `Internal` table exist in all proxies. 
 Column "Correlated Resources" provides the Kuma resources that could be used for naming. 
 
 ##### Sidecar
