@@ -111,7 +111,7 @@ A Helm chart for the Kuma Control Plane
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
-| cni.tolerations | list | `[]` | Tolerations for the CNI pods |
+| cni.tolerations | list | `[]` | Additional tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.namespace | string | `"kube-system"` | Set the CNI namespace |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
