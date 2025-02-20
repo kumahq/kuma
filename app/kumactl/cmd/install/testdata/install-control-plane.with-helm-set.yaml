@@ -3830,6 +3830,7 @@ spec:
                 - meshService
                 type: object
             required:
+            - ports
             - selector
             type: object
           status:

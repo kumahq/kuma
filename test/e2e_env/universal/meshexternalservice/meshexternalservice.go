@@ -74,6 +74,7 @@ networking:
 				Enabled: true,
 				Verification: &meshexternalservice_api.Verification{
 					CaCert: &common_api.DataSource{Inline: &caCert},
+					Mode:   meshexternalservice_api.TLSVerificationSecured,
 				},
 			}
 		}
