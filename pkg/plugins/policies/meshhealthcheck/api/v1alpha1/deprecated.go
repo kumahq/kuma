@@ -9,7 +9,8 @@ func (t *MeshHealthCheckResource) Deprecations() []string {
 	deprecations := validators.TopLevelTargetRefDeprecations(t.Spec.TargetRef)
 	for _, to := range pointer.Deref(t.Spec.To) {
 		if to.Default.HealthyPanicThreshold != nil {
-			deprecations = append(deprecations, "healthyPanicThreshold for 'to[].default' is deprecated, use MeshCircuitBreaker instead")
+			deprecations = append(deprecations, "healthyPanicThreshold for 'to[].default' is deprecated. "+
+				"The setting has been moved to MeshCircuitBreaker policy, please use MeshCircuitBreaker policy instead.")
 		}
 	}
 	return deprecations
