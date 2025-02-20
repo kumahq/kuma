@@ -79,7 +79,7 @@ func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, proxyK
 	return d.register(ctx, streamID, proxyKey, md)
 }
 
-func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, proxyKey core_model.ResourceKey, done chan<- struct{}) {
+func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, proxyKey core_model.ResourceKey, callback func()) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
 	// must not delete Dataplane resource, data plane proxy will be reconnected to another
@@ -87,12 +87,13 @@ func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID c
 	select {
 	case <-d.appCtx.Done():
 		lifecycleLog.Info("graceful shutdown, don't delete Dataplane resource")
+		callback()
 		return
 	default:
 	}
 
 	d.deregister(ctx, streamID, proxyKey)
-	done <- struct{}{}
+	callback()
 }
 
 func (d *DataplaneLifecycle) register(

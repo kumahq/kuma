@@ -38,9 +38,9 @@ func (d *DataplaneMetadataTracker) storeMetadata(dpKey core_model.ResourceKey, m
 	d.metadataForDp[dpKey] = &metadata
 }
 
-func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, done chan<- struct{}) {
+func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, callback func()) {
 	d.Lock()
 	defer d.Unlock()
 	delete(d.metadataForDp, dpKey)
-	done <- struct{}{}
+	callback()
 }

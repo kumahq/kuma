@@ -37,7 +37,7 @@ type dataplaneSyncTracker struct {
 }
 type trackerCleanup struct {
 	cancelFunc     context.CancelFunc
-	disconnectDone chan<- struct{}
+	disconnectDone func()
 }
 
 func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
@@ -58,11 +58,11 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, done chan<- struct{}) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, disconnectDone func()) {
 	t.RLock()
 	defer t.RUnlock()
 	if cleanup := t.watchdogs[dpKey]; cleanup != nil {
-		cleanup.disconnectDone = done
+		cleanup.disconnectDone = disconnectDone
 		// kick off stopping of the watchdog
 		cleanup.cancelFunc()
 	}
@@ -72,7 +72,7 @@ func (t *dataplaneSyncTracker) onWatchDogStopped(dpKey core_model.ResourceKey) {
 	t.Lock()
 	defer t.Unlock()
 	if cleanup := t.watchdogs[dpKey]; cleanup != nil && cleanup.disconnectDone != nil {
-		cleanup.disconnectDone <- struct{}{}
+		cleanup.disconnectDone()
 	}
 	delete(t.watchdogs, dpKey)
 }
