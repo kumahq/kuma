@@ -209,7 +209,3 @@ type WatchdogFunc func(ctx context.Context)
 func (f WatchdogFunc) Start(ctx context.Context) {
 	f(ctx)
 }
-
-func (f WatchdogFunc) ExistsStaleState() bool {
-	return false
-}

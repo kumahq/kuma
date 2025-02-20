@@ -140,7 +140,7 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 		}
 	} else {
 		d.Unlock()
-		// we don't allow more than one active stream from a data plane as their can be race conditions
+		// we don't allow more than one active stream from a data plane as there can be race conditions
 		return errors.New("there is already an active stream from this node, try again later")
 	}
 	return nil
