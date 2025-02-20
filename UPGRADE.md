@@ -47,7 +47,7 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 #### Changes on revoking dataplane tokens
 
-Revoking a dataplane token on Unversal mesh clusters now requires restarting the mesh control plane, otherwise connected dataplanes will still be able to communicate until they restart/reconnect to the control plane.  
+Authentication between the control plane and dataplanes is only checked at connection start now. This means that if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to either restart the control plane or the concerned dataplanes.
 
 ## Upgrade to `2.9.x`
 
