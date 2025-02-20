@@ -26,13 +26,9 @@ func (c *countingDpCallbacks) OnProxyConnected(streamID core_xds.StreamID, dpKey
 	return nil
 }
 
-func (c *countingDpCallbacks) OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
-	c.OnProxyReconnectedCounter++
-	return nil
-}
-
-func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey, done chan<- struct{}) {
 	c.OnProxyDisconnectedCounter++
+	done <- struct{}{}
 }
 
 var _ DataplaneCallbacks = &countingDpCallbacks{}

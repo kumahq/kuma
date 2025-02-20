@@ -14,12 +14,6 @@ type Watchdog interface {
 	Start(ctx context.Context)
 }
 
-// SingletonWatchdog can check if there is an existing state
-type SingletonWatchdog interface {
-	Watchdog
-	ExistsStaleState() bool
-}
-
 type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (Watchdog, error)
 
 func NewWatchdogCallbacks(newNodeWatchdog NewNodeWatchdogFunc) envoy_xds.Callbacks {

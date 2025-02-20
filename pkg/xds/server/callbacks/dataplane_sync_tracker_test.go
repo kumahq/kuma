@@ -76,11 +76,12 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.SingletonWatchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					watchdogCh <- key
 					<-ctx.Done()
 					close(watchdogCh)
+					stopped(key)
 				})
 			})
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
@@ -130,11 +131,12 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.SingletonWatchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
+					stopped(key)
 				})
 			})
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))

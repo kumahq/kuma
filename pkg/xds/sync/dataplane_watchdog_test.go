@@ -51,10 +51,6 @@ func (s *staticSnapshotReconciler) Clear(proxyId *core_xds.ProxyId) error {
 	return nil
 }
 
-func (s *staticSnapshotReconciler) CacheExists(proxyId *core_xds.ProxyId) bool {
-	return false
-}
-
 var _ sync.SnapshotReconciler = &staticSnapshotReconciler{}
 
 var _ = Describe("Dataplane Watchdog", func() {

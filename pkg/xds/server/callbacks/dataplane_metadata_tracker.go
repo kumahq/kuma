@@ -27,11 +27,6 @@ func (d *DataplaneMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_
 	return d.metadataForDp[dpKey]
 }
 
-func (d *DataplaneMetadataTracker) OnProxyReconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
-	d.storeMetadata(dpKey, metadata)
-	return nil
-}
-
 func (d *DataplaneMetadataTracker) OnProxyConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
 	d.storeMetadata(dpKey, metadata)
 	return nil
@@ -43,8 +38,9 @@ func (d *DataplaneMetadataTracker) storeMetadata(dpKey core_model.ResourceKey, m
 	d.metadataForDp[dpKey] = &metadata
 }
 
-func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (d *DataplaneMetadataTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, done chan<- struct{}) {
 	d.Lock()
 	defer d.Unlock()
 	delete(d.metadataForDp, dpKey)
+	done <- struct{}{}
 }
