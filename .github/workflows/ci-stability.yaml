@@ -2,7 +2,7 @@ name: Check CI stability for PRs with "ci/verify-stability" or "ci/verify-stabil
 
 on:
   schedule:
-    # Monday to Friday: Every 2 hours from 7 PM to 7 AM CEST
+    # Monday to Friday: Every 2 hours from 8 PM to 8 AM CEST
     - cron: "0 18 * * 1-5"
     - cron: "0 20 * * 1-5"
     - cron: "0 22 * * 1-5"
