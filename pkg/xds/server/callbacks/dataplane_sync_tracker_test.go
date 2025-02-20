@@ -131,52 +131,72 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
+			cleanupDone := make(chan struct{})
 			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
 					stopped(key)
+					cleanupDone <- struct{}{}
 				})
 			})
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
 
 			// when one stream for backend-01 is connected and request is sent
-			streamID := int64(1)
-			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
+			streamID1 := int64(1)
+			streamID2 := int64(2)
+			streamID3 := int64(3)
+			err := callbacks.OnStreamOpen(context.Background(), streamID1, "")
 			Expect(err).ToNot(HaveOccurred())
-			n := &envoy_core.Node{Id: "default.backend-01"}
-			err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{Node: n})
+			node := &envoy_core.Node{Id: "default.backend-01"}
+			err = callbacks.OnStreamRequest(streamID1, &envoy_sd.DiscoveryRequest{Node: node})
 			Expect(err).ToNot(HaveOccurred())
 
+			// then a watchdog is active
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
+
 			// and when new stream from backend-01 is connected  and request is sent
-			streamID = 2
-			err = callbacks.OnStreamOpen(context.Background(), streamID, "")
+			err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = callbacks.OnStreamRequest(streamID, &envoy_sd.DiscoveryRequest{
-				Node: &envoy_core.Node{
-					Id: "default.backend-01",
-				},
-			})
-			Expect(err).ToNot(HaveOccurred())
+			err = callbacks.OnStreamRequest(streamID2, &envoy_sd.DiscoveryRequest{Node: node})
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("already an active stream"))
 
 			// then only one watchdog is active
 			Eventually(func() int32 {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
-			// when first stream is closed
-			callbacks.OnStreamClosed(1, n)
+			callbacks.OnStreamClosed(streamID2, node)
 
-			// then watchdog is still active because other stream is opened
+			// when first stream is closed
+			callbacks.OnStreamClosed(streamID1, node)
+			<-cleanupDone
+			// cleanupDone is inside the watchdog, it's still not the accurate time of cleanup done in the dataplane_callback
+			// to prevent flakiness, we introduce this tiny delay here, it does no harm to the test workflow
+			<-time.After(50 * time.Millisecond)
+
+			// then there is no active watchdog
+			Eventually(func() int32 { return atomic.LoadInt32(&activeWatchdogs) }, "5s", "10ms").Should(Equal(int32(0)))
+
+			// and when the third stream from backend-01 is connected after the first active stream closed and request is sent
+			err = callbacks.OnStreamOpen(context.Background(), streamID3, "")
+			Expect(err).ToNot(HaveOccurred())
+			err = callbacks.OnStreamRequest(streamID3, &envoy_sd.DiscoveryRequest{Node: node})
+			Expect(err).ToNot(HaveOccurred())
+
+			// then a watchdog is active
 			Eventually(func() int32 {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
-			// when other stream is closed
-			callbacks.OnStreamClosed(2, n)
+			// when other stream is closed and the third stream is open
+			callbacks.OnStreamClosed(streamID3, node)
 
-			// then no watchdog is stopped
+			// then no watchdog is active
 			Eventually(func() int32 {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(0)))

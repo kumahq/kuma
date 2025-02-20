@@ -51,28 +51,23 @@ type dpStream struct {
 var _ util_xds.Callbacks = &xdsCallbacks{}
 
 func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
-	var lastStreamDpKey *core_model.ResourceKey
+	var streamDpKey *core_model.ResourceKey
 	d.RLock()
 	dpStream := d.dpStreams[streamID]
-	if dpKey := dpStream.dp; dpKey != nil {
-		if d.activeStreams[*dpKey] == 1 {
-			lastStreamDpKey = dpKey
-		}
-	}
+	streamDpKey = dpStream.dp
 	d.RUnlock()
 
-	if lastStreamDpKey != nil {
+	if streamDpKey != nil {
 		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
 		// proxy disconnect may take some time, we don't want to block the callback for every DPP here
 		disconnectDone := make(chan struct{})
-		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *lastStreamDpKey, disconnectDone)
+		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *streamDpKey, disconnectDone)
 		go func() {
 			<-disconnectDone
-			d.Lock()
 			d.cleanupDpStream(streamID)
-			d.Unlock()
 		}()
 	} else {
+		// when the stream is not actually processed, clean it up immediately
 		d.cleanupDpStream(streamID)
 	}
 }
@@ -124,22 +119,24 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 	// wasn't processed
 	alreadyProcessed = d.dpStreams[streamID].dp != nil
 	if alreadyProcessed {
+		d.Unlock()
 		return nil
 	}
 
-	dpStream := d.dpStreams[streamID]
-	dpStream.dp = &dpKey
-	d.dpStreams[streamID] = dpStream
-
 	activeStreams := d.activeStreams[dpKey]
-	d.activeStreams[dpKey]++
-	d.Unlock()
-
 	if activeStreams == 0 {
+		dpStream := d.dpStreams[streamID]
+		dpStream.dp = &dpKey
+		d.dpStreams[streamID] = dpStream
+
+		d.activeStreams[dpKey]++
+		d.Unlock()
+
 		if err := d.callbacks.OnProxyConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
 			return err
 		}
 	} else {
+		d.Unlock()
 		// we don't allow more than one active stream from a data plane as their can be race conditions
 		return errors.New("there is already an active stream from this node, try again later")
 	}
