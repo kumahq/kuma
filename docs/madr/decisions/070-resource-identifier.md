@@ -239,7 +239,7 @@ ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" 
 
 In Envoy resource names we can use any character except `:` if we want to solve [Issue #2363](https://github.com/kumahq/kuma/issues/2363) without workaround.
 
-In Envoy stats fields we can use any character except `:` to avoid on the fly conversion of `:` to `_` for Cluster names in Prometheus labels.
+In Envoy stats fields we can use any character except `:` to avoid on the fly conversion of `:` to `_` for Cluster names in Prometheus label values.
 
 OpenTelemetry defines "Attribute", it's a key-value pair similar to Prometheus labels.
 There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common/?utm_source=chatgpt.com#attribute).
