@@ -9,9 +9,9 @@ import (
 	externalRef0 "github.com/kumahq/kuma/api/openapi/types/common"
 )
 
-// Defines values for GetMeshesMeshDataplanesNameConfigParamsInclude.
+// Defines values for GetDataplanesXdsConfigParamsInclude.
 const (
-	Diff GetMeshesMeshDataplanesNameConfigParamsInclude = "diff"
+	Diff GetDataplanesXdsConfigParamsInclude = "diff"
 )
 
 // Defines values for InspectDataplanesRulesParamsResourceType.
@@ -31,6 +31,16 @@ const (
 type BaseStatus struct {
 	Online int `json:"online"`
 	Total  int `json:"total"`
+}
+
+// DataplaneXDSConfig defines model for DataplaneXDSConfig.
+type DataplaneXDSConfig struct {
+	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
+	// By default, the field is empty. To include the diff in the response, use the `include=diff` query parameter.
+	Diff *[]externalRef0.JsonPatchItem `json:"diff,omitempty"`
+
+	// Xds The raw XDS config as an inline JSON object
+	Xds map[string]interface{} `json:"xds"`
 }
 
 // DataplanesStats Dataplanes statistics
@@ -76,16 +86,6 @@ type Index struct {
 
 	// Version The semantic version of the server running
 	Version string `json:"version"`
-}
-
-// InspectDataplanesConfig defines model for InspectDataplanesConfig.
-type InspectDataplanesConfig struct {
-	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
-	// By default, the field is empty. To include the diff in the response, use the `include=diff` query parameter.
-	Diff *[]externalRef0.JsonPatchItem `json:"diff,omitempty"`
-
-	// Xds The raw XDS config as an inline JSON object
-	Xds map[string]interface{} `json:"xds"`
 }
 
 // InspectDataplanesForPolicy A list of proxies
@@ -199,14 +199,14 @@ type SchemasGlobalInsight struct {
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
+// GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
+type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
+
 // GlobalInsightResponse defines model for GlobalInsightResponse.
 type GlobalInsightResponse = GlobalInsight
 
 // IndexResponse Some metadata about the service
 type IndexResponse = Index
-
-// InspectDataplanesConfigResponse defines model for InspectDataplanesConfigResponse.
-type InspectDataplanesConfigResponse = InspectDataplanesConfig
 
 // InspectDataplanesForPolicyResponse A list of proxies
 type InspectDataplanesForPolicyResponse = InspectDataplanesForPolicy
@@ -223,18 +223,18 @@ type Internal = externalRef0.Error
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
 
-// GetMeshesMeshDataplanesNameConfigParams defines parameters for GetMeshesMeshDataplanesNameConfig.
-type GetMeshesMeshDataplanesNameConfigParams struct {
-	// Shadow When computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label
+// GetDataplanesXdsConfigParams defines parameters for GetDataplanesXdsConfig.
+type GetDataplanesXdsConfigParams struct {
+	// Shadow When computing XDS config the CP take into account policies with 'kuma.io/effect: shadow' label
 	Shadow *bool `form:"shadow,omitempty" json:"shadow,omitempty"`
 
 	// Include An array of extra fields to include in the response. When `include=diff` the server computes a diff in JSONPatch format
 	// between the current proxy XDS config and the config returned in the 'xds' field.
-	Include *[]GetMeshesMeshDataplanesNameConfigParamsInclude `form:"include,omitempty" json:"include,omitempty"`
+	Include *[]GetDataplanesXdsConfigParamsInclude `form:"include,omitempty" json:"include,omitempty"`
 }
 
-// GetMeshesMeshDataplanesNameConfigParamsInclude defines parameters for GetMeshesMeshDataplanesNameConfig.
-type GetMeshesMeshDataplanesNameConfigParamsInclude string
+// GetDataplanesXdsConfigParamsInclude defines parameters for GetDataplanesXdsConfig.
+type GetDataplanesXdsConfigParamsInclude string
 
 // InspectResourcesParams defines parameters for InspectResources.
 type InspectResourcesParams struct {

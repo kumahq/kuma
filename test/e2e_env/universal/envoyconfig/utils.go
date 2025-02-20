@@ -36,7 +36,7 @@ func getConfig(mesh, dpp string) string {
 	Expect(err).ToNot(HaveOccurred())
 	redacted := redactStatPrefixes(redactIPs(output))
 
-	response := types.InspectDataplanesConfig{}
+	response := types.GetDataplaneXDSConfigResponse{}
 	Expect(json.Unmarshal([]byte(redacted), &response)).To(Succeed())
 	Expect(response.Diff).ToNot(BeNil())
 	response.Diff = pointer.To(slices.DeleteFunc(*response.Diff, func(item api_common.JsonPatchItem) bool {
