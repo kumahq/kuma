@@ -357,28 +357,29 @@ func MeshMetric() {
 					otelcollector.WithIPv6(Config.IPV6),
 				),
 				democlient.Install(democlient.WithNamespace(secondaryOpenTelemetryCollectorNamespace)),
+				testserver.Install(
+					testserver.WithName("test-server-0"),
+					testserver.WithMesh(mainMesh),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-1"),
+					testserver.WithMesh(mainMesh),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-2"),
+					testserver.WithMesh(secondaryMesh),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-3"),
+					testserver.WithMesh(secondaryMesh),
+					testserver.WithNamespace(namespace),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).To(Succeed())
-
-		for i := 0; i < 2; i++ {
-			Expect(
-				kubernetes.Cluster.Install(testserver.Install(
-					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
-					testserver.WithMesh(mainMesh),
-					testserver.WithNamespace(namespace),
-				)),
-			).To(Succeed())
-		}
-		for i := 2; i < 4; i++ {
-			Expect(
-				kubernetes.Cluster.Install(testserver.Install(
-					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
-					testserver.WithMesh(secondaryMesh),
-					testserver.WithNamespace(namespace),
-				)),
-			).To(Succeed())
-		}
 	})
 
 	AfterEachFailure(func() {

@@ -8,13 +8,22 @@ import (
 
 // MeshTLS
 // +kuma:policy:singular_display_name=Mesh TLS
+// +kuma:policy:interpret_from_entries_as_rules=true
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
+	// Rules defines inbound tls configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	Rules *[]Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound tls
+	Default Conf `json:"default,omitempty"`
 }
 
 type From struct {
@@ -41,7 +50,7 @@ type Conf struct {
 	TlsVersion *common_tls.Version `json:"tlsVersion,omitempty"`
 
 	// TlsCiphers section for providing ciphers specification.
-	TlsCiphers common_tls.TlsCiphers `json:"tlsCiphers,omitempty"`
+	TlsCiphers *[]common_tls.TlsCipher `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
 	Mode *Mode `json:"mode,omitempty"`

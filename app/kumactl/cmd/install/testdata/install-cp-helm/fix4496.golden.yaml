@@ -423,7 +423,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2f553eadd8f68661f4b1fd0b3ccbbc562943d89fa76f2f2ba2975541290fda71
-        checksum/tls-secrets: bbecd21c7374b699f4387578539f3fce455980c01ff148ebb8c57cad6b7486f9
+        checksum/tls-secrets: 3151f37535f344e57c3df6ac2a14306ea9c637f139c3811b0256324f78bb9afd
       labels: 
         app: kuma-control-plane
         "foo": "bar"
@@ -673,6 +673,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10001
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
@@ -996,31 +997,6 @@ webhooks:
           - meshservices
     
       
-    sideEffects: None
-  - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: ["v1"]
-    failurePolicy: Ignore
-    namespaceSelector:
-      matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: ["kube-system"]
-    clientConfig:
-      caBundle: XYZ
-      service:
-        namespace: kuma-system
-        name: kuma-control-plane
-        path: /validate-v1-service
-    rules:
-      - apiGroups:
-          - ""
-        apiVersions:
-          - v1
-        operations:
-          - CREATE
-          - UPDATE
-        resources:
-          - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]

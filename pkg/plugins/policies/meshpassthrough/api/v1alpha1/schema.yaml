@@ -52,13 +52,16 @@ properties:
                 value:
                   description: Value for the specified Type.
                   type: string
+              required:
+                - type
+                - value
               type: object
             type: array
           passthroughMode:
-            default: None
             description: |-
               Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
               When `All` or `None` `appendMatch` has no effect.
+              If not specified then the default value is "Matched".
             enum:
               - All
               - Matched
@@ -130,11 +133,13 @@ properties:
         type: object
     type: object
   creationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was created'
     format: date-time
     example: '0001-01-01T00:00:00Z'
   modificationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was updated'
     format: date-time

@@ -144,6 +144,8 @@ components:
       type: object
       required: [tags, port]
       properties:
+        name:
+          type: string
         tags:
           type: object
           additionalProperties: 

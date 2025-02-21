@@ -16,7 +16,7 @@ type ServerSideMTLSConfigurer struct {
 	Mesh           *core_mesh.MeshResource
 	SecretsTracker core_xds.SecretsTracker
 	TlsVersion     *common_tls.Version
-	TlsCiphers     common_tls.TlsCiphers
+	TlsCiphers     []common_tls.TlsCipher
 }
 
 var _ FilterChainConfigurer = &ServerSideMTLSConfigurer{}

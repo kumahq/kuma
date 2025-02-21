@@ -29,14 +29,14 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 
 	onRateLimit := &envoy_routes_v3.OnRateLimit{}
 	if rl.OnRateLimit != nil {
-		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
+		for _, h := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Add) {
 			onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 				Key:    string(h.Name),
 				Value:  string(h.Value),
 				Append: true,
 			})
 		}
-		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+		for _, header := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Set) {
 			for _, val := range strings.Split(string(header.Value), ",") {
 				onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 					Key:    string(header.Name),
@@ -58,6 +58,7 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 type Configurer struct {
 	Element subsetutils.Element
 	Rules   core_rules.Rules
+	Conf    *api.Conf
 }
 
 func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
@@ -246,6 +247,9 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 }
 
 func (c *Configurer) getConf(element subsetutils.Element) *api.Conf {
+	if c.Conf != nil {
+		return c.Conf
+	}
 	if c.Rules == nil {
 		return &api.Conf{}
 	}

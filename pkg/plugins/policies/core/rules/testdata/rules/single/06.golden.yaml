@@ -4,6 +4,9 @@ Rules:
     backends:
     - type: Zipkin
       zipkin:
+        apiVersion: httpJson
+        sharedSpanContext: true
+        traceId128bit: false
         url: http://jaeger-collector.mesh-observability:9411/api/v2/spans
     tags:
     - literal: core

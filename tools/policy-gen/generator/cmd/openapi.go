@@ -62,7 +62,17 @@ func newOpenAPI(rootArgs *args) *cobra.Command {
 
 			yqExec := exec.CommandContext(cmd.Context(), // nolint: gosec
 				localArgs.yqBin, "e", "-i",
-				fmt.Sprintf(`.properties *= (load(%q)| ((.spec.versions[0] | .schema.openAPIV3Schema.properties | del(.apiVersion) | del(.metadata) | del(.kind)) * {"type": {"enum": [.spec.names.kind]}}))`, crdPath),
+				fmt.Sprintf(`.properties *= (
+    load(%q)
+    | (
+        .spec.versions[0]
+        | .schema.openAPIV3Schema.properties
+        | del(.apiVersion)
+        | del(.metadata)
+        | del(.kind)
+      ) * {"type": {"enum": [.spec.names.kind]}}
+  )
+  | (.properties | select(has("status")).status) |= . + {"readOnly": true}`, crdPath),
 				schemaOutPath,
 			)
 			yqExec.Stderr = cmd.ErrOrStderr()

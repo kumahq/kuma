@@ -64,7 +64,7 @@ func getBackendRefs(
 
 	var backendRefs []core_model.ResolvedBackendRef
 	if tcpConf != nil {
-		for _, br := range tcpConf.Default.BackendRefs {
+		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
 			if backendRefOrigin != nil {
 				if resolved := core_model.ResolveBackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)

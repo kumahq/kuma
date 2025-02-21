@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
@@ -26,7 +27,7 @@ func (m *MeshServiceResource) findPort(port uint32) (Port, bool) {
 
 func (m *MeshServiceResource) FindSectionNameByPort(port uint32) (string, bool) {
 	if port, found := m.findPort(port); found {
-		return port.GetName(), true
+		return port.GetNameOrStringifyPort(), true
 	}
 	return "", false
 }
@@ -93,13 +94,6 @@ func (t *MeshServiceResource) SNIName(systemNamespace string) string {
 	return t.GetMeta().GetName()
 }
 
-func (t *MeshServiceResource) Default() error {
-	if t.Spec.State == "" {
-		t.Spec.State = StateUnavailable
-	}
-	return nil
-}
-
 func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, vip := range t.Status.VIPs {
@@ -107,7 +101,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     port.Port,
-				Resource: pointer.To(model.NewTypedResourceIdentifier(t, model.WithSectionName(port.GetName()))),
+				Resource: pointer.To(model.NewTypedResourceIdentifier(t, model.WithSectionName(port.GetNameOrStringifyPort()))),
 			})
 		}
 	}
@@ -128,9 +122,25 @@ func (t *MeshServiceResource) Domains() *xds_types.VIPDomains {
 	return nil
 }
 
-func (p *Port) GetName() string {
+func (t *MeshServiceResource) GetPorts() []core.Port {
+	var ports []core.Port
+	for _, port := range t.Spec.Ports {
+		ports = append(ports, core.Port(port))
+	}
+	return ports
+}
+
+func (p Port) GetNameOrStringifyPort() string {
 	if p.Name != "" {
 		return p.Name
 	}
 	return fmt.Sprintf("%d", p.Port)
+}
+
+func (p Port) GetName() string {
+	return p.Name
+}
+
+func (p Port) GetValue() uint32 {
+	return p.Port
 }

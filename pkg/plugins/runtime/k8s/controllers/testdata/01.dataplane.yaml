@@ -50,6 +50,7 @@ spec:
         version: "0.1"
     - health:
         ready: true
+      name: metrics
       port: 6060
       tags:
         app: example

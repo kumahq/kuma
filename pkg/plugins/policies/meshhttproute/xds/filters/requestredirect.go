@@ -5,7 +5,6 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type RequestRedirectConfigurer struct {
@@ -52,7 +51,9 @@ func (f *RequestRedirectConfigurer) Configure(envoyRoute *envoy_route.Route) err
 		}
 	}
 
-	switch pointer.DerefOr(redirect.StatusCode, 302) {
+	switch redirect.StatusCode {
+	case 0: // code default, should be handled by "base policy"
+		envoyRedirect.ResponseCode = envoy_route.RedirectAction_FOUND
 	case 301:
 		envoyRedirect.ResponseCode = envoy_route.RedirectAction_MOVED_PERMANENTLY
 	case 302:

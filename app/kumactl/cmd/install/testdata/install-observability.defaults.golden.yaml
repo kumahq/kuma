@@ -11715,6 +11715,13 @@ rules:
       - list
       - watch
   - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - list
+      - watch
+  - apiGroups:
       - extensions
     resources:
       - daemonsets
@@ -11776,6 +11783,7 @@ rules:
       - networking.k8s.io
     resources:
       - networkpolicies
+      - ingresses
     verbs:
       - list
       - watch
@@ -12141,7 +12149,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.6.1"
+          image: "jimmidyson/configmap-reload:v0.9.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -12153,16 +12161,16 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.35.0"
+          image: "prom/prometheus:v3.1.0"
           imagePullPolicy: "IfNotPresent"
           args:
-            - --storage.tsdb.retention.time=15d
             - --config.file=/etc/config/prometheus.yml
             - --storage.tsdb.path=/data
+            - --storage.tsdb.retention.time=15d
+            - --storage.tsdb.retention.size=7GB
             - --web.console.libraries=/etc/prometheus/console_libraries
             - --web.console.templates=/etc/prometheus/consoles
             - --web.enable-lifecycle
-            - --storage.tsdb.retention.size=7GB
           ports:
             - containerPort: 9090
           resources:
@@ -12214,8 +12222,50 @@ metadata:
   labels:
     app: loki
     release: loki
-data:
-  loki.yaml: YXV0aF9lbmFibGVkOiBmYWxzZQpxdWVyaWVyOgogIGVuZ2luZToKICAgIG1heF9sb29rX2JhY2tfcGVyaW9kOiAwcwppbmdlc3RlcjoKICBjaHVua19ibG9ja19zaXplOiAyNjIxNDQKICBjaHVua19pZGxlX3BlcmlvZDogM20KICBjaHVua19yZXRhaW5fcGVyaW9kOiAxbQogIGxpZmVjeWNsZXI6CiAgICByaW5nOgogICAgICBrdnN0b3JlOgogICAgICAgIHN0b3JlOiBpbm1lbW9yeQogICAgICByZXBsaWNhdGlvbl9mYWN0b3I6IDEKICB3YWw6CiAgICBlbmFibGVkOiBmYWxzZQpjb21wYWN0b3I6CiAgcmV0ZW50aW9uX2VuYWJsZWQ6IGZhbHNlCiAgd29ya2luZ19kaXJlY3Rvcnk6IC9kYXRhL2xva2kvcmV0ZW50aW9uCiAgY29tcGFjdGlvbl9pbnRlcnZhbDogMTBtCiAgZGVsZXRlX3JlcXVlc3Rfc3RvcmU6IHRzZGIKc2NoZW1hX2NvbmZpZzoKICBjb25maWdzOgogICAgLSBmcm9tOiAyMDIzLTEwLTIwCiAgICAgIHN0b3JlOiB0c2RiCiAgICAgIG9iamVjdF9zdG9yZTogZmlsZXN5c3RlbQogICAgICBzY2hlbWE6IHYxMwogICAgICBpbmRleDoKICAgICAgICBwcmVmaXg6IGluZGV4XwogICAgICAgIHBlcmlvZDogMjRoCnN0b3JhZ2VfY29uZmlnOgogIHRzZGJfc2hpcHBlcjoKICAgIGFjdGl2ZV9pbmRleF9kaXJlY3Rvcnk6IC9kYXRhL2xva2kvaW5kZXgKICAgIGNhY2hlX2xvY2F0aW9uOiAvZGF0YS9sb2tpL2NhY2hlCiAgZmlsZXN5c3RlbToKICAgIGRpcmVjdG9yeTogL2RhdGEvbG9raS9jaHVua3MKdGFibGVfbWFuYWdlcjoKICByZXRlbnRpb25fZGVsZXRlc19lbmFibGVkOiBmYWxzZQogIHJldGVudGlvbl9wZXJpb2Q6IDBzCg==
+stringData:
+  loki.yaml: |-
+    auth_enabled: false
+    querier:
+      engine:
+        max_look_back_period: 0s
+    ingester:
+      chunk_block_size: 262144
+      chunk_idle_period: 3m
+      chunk_retain_period: 1m
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+          replication_factor: 1
+      wal:
+        enabled: false
+      shutdown_marker_path: /data/liki/shutdown
+    pattern_ingester:
+      enabled: true
+      lifecycler:
+        ring:
+          kvstore:
+            store: inmemory
+    compactor:
+      retention_enabled: false
+      working_directory: /data/loki/retention
+      compaction_interval: 10m
+      delete_request_store: tsdb
+    schema_config:
+      configs:
+        - from: 2023-10-20
+          store: tsdb
+          object_store: filesystem
+          schema: v13
+          index:
+            prefix: index_
+            period: 24h
+    storage_config:
+      tsdb_shipper:
+        active_index_directory: /data/loki/index
+        cache_location: /data/loki/cache
+      filesystem:
+        directory: /data/loki/chunks
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -12240,6 +12290,8 @@ data:
       filename: /run/promtail/positions.yaml
     server:
       http_listen_port: 3101
+    clients:
+      - url: http://loki.mesh-observability:3100/loki/api/v1/push
     target_config:
       sync_period: 10s
     scrape_configs:
@@ -12695,18 +12747,16 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
-            - "-client.url=http://loki.mesh-observability:3100/loki/api/v1/push"
           volumeMounts:
             - name: config
               mountPath: /etc/promtail
             - name: run
               mountPath: /run/promtail
-            - mountPath: /var/lib/docker/containers
-              name: docker
+            - name: docker
+              mountPath: /var/lib/docker/containers
               readOnly: true
-            - mountPath: /var/log/pods
-              name: pods
-              readOnly: true
+            - name: logs
+              mountPath: /var/log
           env:
             - name: HOSTNAME
               valueFrom:
@@ -12745,12 +12795,12 @@ spec:
         - name: run
           hostPath:
             path: /run/promtail
-        - hostPath:
+        - name: docker
+          hostPath:
             path: /var/lib/docker/containers
-          name: docker
-        - hostPath:
-            path: /var/log/pods
-          name: pods
+        - name: logs
+          hostPath:
+            path: /var/log
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -12797,7 +12847,6 @@ spec:
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
-            - "-target=all,table-manager"
           volumeMounts:
             - name: config
               mountPath: /etc/loki
@@ -12807,16 +12856,20 @@ spec:
             - name: http-metrics
               containerPort: 3100
               protocol: TCP
+          startupProbe:
+            httpGet:
+              path: /ready
+              port: http-metrics
+            failureThreshold: 60
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /ready
               port: http-metrics
-            initialDelaySeconds: 45
           readinessProbe:
             httpGet:
               path: /ready
               port: http-metrics
-            initialDelaySeconds: 45
           resources:
             {}
           securityContext:

@@ -97,6 +97,9 @@ spec:
       {{- with .Values.controlPlane.topologySpreadConstraints }}
       topologySpreadConstraints: {{ tpl (toYaml . | nindent 8) $ }}
       {{- end }}
+      {{- with .Values.controlPlane.priorityClassName }}
+      priorityClassName: {{ . }}
+      {{- end }}
       securityContext:
       {{- toYaml .Values.controlPlane.podSecurityContext | trim | nindent 8 }}
       serviceAccountName: {{ include "kuma.name" . }}-control-plane

@@ -13,7 +13,7 @@ type MeshTrafficPermission struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 }
 
 type From struct {
@@ -40,5 +40,5 @@ var AllowWithShadowDeny Action = "AllowWithShadowDeny"
 type Conf struct {
 	// Action defines a behavior for the specified group of clients:
 	// +kubebuilder:validation:Enum=Allow;Deny;AllowWithShadowDeny
-	Action Action `json:"action,omitempty"`
+	Action *Action `json:"action,omitempty"`
 }

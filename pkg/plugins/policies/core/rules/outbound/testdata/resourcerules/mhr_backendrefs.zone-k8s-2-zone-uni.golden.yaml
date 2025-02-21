@@ -20,6 +20,7 @@ meshservice:mesh/mesh-1:zone/zone-k8s:namespace/ns-k8s:name/backend:
         backendRefs:
         - kind: MeshService
           name: backend-v1
+          weight: 1
       matches:
       - path:
           type: PathPrefix

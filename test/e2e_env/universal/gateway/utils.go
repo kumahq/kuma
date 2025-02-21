@@ -101,23 +101,27 @@ conf:
 `, name, mesh, serviceName, port, crossMesh, hostname)
 
 	route := fmt.Sprintf(`
-type: MeshGatewayRoute
+type: MeshHTTPRoute
 name: %s
 mesh: %s
-selectors:
-- match:
-    kuma.io/service: %s
-conf:
-  http:
+spec:
+  targetRef:
+    kind: MeshGateway
+    name: %s
+  to:
+  - targetRef:
+      kind: Mesh
     rules:
     - matches:
       - path:
-          match: PREFIX
-          value: /
-      backends:
-      - destination:
-          kuma.io/service: %s
-`, name, mesh, serviceName, backendService)
+          type: PathPrefix
+          value: "/"
+      default:
+        backendRefs:
+        - kind: MeshService
+          name: %s
+          weight: 100
+`, name, mesh, name, backendService)
 
 	return strings.Join([]string{meshGateway, route}, "\n---\n")
 }
@@ -163,7 +167,7 @@ func GatewayClientAppUniversal(name string) InstallFunc {
 	}
 }
 
-func echoServerApp(mesh, name, service, instance string) InstallFunc {
+func EchoServerApp(mesh, name, service, instance string) InstallFunc {
 	return func(cluster Cluster) error {
 		return TestServerUniversal(
 			name,

@@ -2,14 +2,14 @@ name: Check CI stability for PRs with "ci/verify-stability" or "ci/verify-stabil
 
 on:
   schedule:
-    # Monday to Friday: Every 2 hours from 7 PM to 7 AM CEST
-    - cron: "0 17 * * 1-5"
-    - cron: "0 19 * * 1-5"
-    - cron: "0 21 * * 1-5"
-    - cron: "0 23 * * 1-5"
-    - cron: "0 1 * * 2-6"
-    - cron: "0 3 * * 2-6"
-    - cron: "0 5 * * 2-6"
+    # Monday to Friday: Every 2 hours from 8 PM to 8 AM CEST
+    - cron: "0 18 * * 1-5"
+    - cron: "0 20 * * 1-5"
+    - cron: "0 22 * * 1-5"
+    - cron: "0 0 * * 1-5"
+    - cron: "0 2 * * 2-6"
+    - cron: "0 4 * * 2-6"
+    - cron: "0 6 * * 2-6"
     # Saturday and Sunday: Every 2 hours all day
     - cron: "0 */2 * * 6,0"
   workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@c1a285145b9d317df6ced56c09f525b5c2b6f755 # v1.11.1
+        uses: actions/create-github-app-token@0d564482f06ca65fa9e77e2510873638c82206f2 # v1.11.5
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

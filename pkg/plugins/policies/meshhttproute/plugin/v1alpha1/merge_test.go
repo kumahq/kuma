@@ -42,7 +42,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -64,7 +64,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefService("web")),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -163,7 +163,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -188,7 +188,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -259,7 +259,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -336,7 +336,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{

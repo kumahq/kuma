@@ -73,6 +73,7 @@ properties:
             type: object
         type: object
       state:
+        default: Unavailable
         description: |-
           State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
           It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
@@ -82,11 +83,13 @@ properties:
         type: string
     type: object
   creationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was created'
     format: date-time
     example: '0001-01-01T00:00:00Z'
   modificationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was updated'
     format: date-time
@@ -196,3 +199,4 @@ properties:
           type: object
         type: array
     type: object
+    readOnly: true

@@ -102,10 +102,10 @@ properties:
                         backoff strategy between retries.
                       properties:
                         baseInterval:
-                          default: 25ms
                           description: |-
                             BaseInterval is an amount of time which should be taken between retries.
                             Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                            If not specified then the default value is "25ms".
                           type: string
                         maxInterval:
                           description: |-
@@ -131,8 +131,9 @@ properties:
                         the upstream returns one of the headers configured.
                       properties:
                         maxInterval:
-                          default: 300s
-                          description: MaxInterval is a maximal amount of time which will be taken between retries.
+                          description: |-
+                            MaxInterval is a maximal amount of time which will be taken between retries.
+                            If not specified then the default value is "300s".
                           type: string
                         resetHeaders:
                           description: |-
@@ -187,10 +188,10 @@ properties:
                         backoff strategy between retries.
                       properties:
                         baseInterval:
-                          default: 25ms
                           description: |-
                             BaseInterval is an amount of time which should be taken between retries.
                             Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                            If not specified then the default value is "25ms".
                           type: string
                         maxInterval:
                           description: |-
@@ -256,8 +257,9 @@ properties:
                         when the upstream returns one of the headers configured.
                       properties:
                         maxInterval:
-                          default: 300s
-                          description: MaxInterval is a maximal amount of time which will be taken between retries.
+                          description: |-
+                            MaxInterval is a maximal amount of time which will be taken between retries.
+                            If not specified then the default value is "300s".
                           type: string
                         resetHeaders:
                           description: |-
@@ -465,11 +467,13 @@ properties:
         type: array
     type: object
   creationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was created'
     format: date-time
     example: '0001-01-01T00:00:00Z'
   modificationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was updated'
     format: date-time

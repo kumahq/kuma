@@ -10,6 +10,8 @@ typedExtensionProtocolOptions:
   envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
     '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
     commonHttpProtocolOptions:
-      idleTimeout: 0s
+      idleTimeout: 3600s
+      maxConnectionDuration: 0s
+      maxStreamDuration: 0s
     explicitHttpConfig:
       httpProtocolOptions: {}

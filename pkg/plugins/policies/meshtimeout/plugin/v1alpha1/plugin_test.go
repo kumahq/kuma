@@ -656,6 +656,22 @@ var _ = Describe("MeshTimeout", func() {
 					},
 				},
 			},
+			InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+				{Address: "192.168.0.1", Port: 8080}: {
+					{Conf: []interface{}{
+						api.Conf{
+							IdleTimeout: test.ParseDuration("1h"),
+							Http: &api.Http{
+								RequestTimeout:        test.ParseDuration("311s"),
+								StreamIdleTimeout:     test.ParseDuration("1s"),
+								MaxStreamDuration:     test.ParseDuration("10m"),
+								MaxConnectionDuration: test.ParseDuration("10m"),
+								RequestHeadersTimeout: test.ParseDuration("99s"),
+							},
+						},
+					}},
+				},
+			},
 			ToRules: core_rules.GatewayToRules{
 				ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 					{Address: "192.168.0.1", Port: 8080}: {

@@ -8,9 +8,10 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type ResourceSection struct {
@@ -30,66 +31,133 @@ func UniqueKey(r core_model.Resource, sectionName string) core_model.TypedResour
 	}
 }
 
+type ResourceWithPorts interface {
+	GetPorts() []core.Port
+}
+
+type query struct {
+	byIdentifier *core_model.ResourceIdentifier
+	byLabels     map[string]string
+	port         uint32
+	sectionName  string
+}
+
+func (q query) findPort(ports []core.Port) core.Port {
+	switch {
+	case q.port != 0:
+		for _, port := range ports {
+			if port.GetValue() == q.port {
+				return port
+			}
+		}
+	case q.sectionName != "":
+		for _, port := range ports {
+			if port.GetName() == q.sectionName {
+				return port
+			}
+			if parsed, ok := tryParsePort(q.sectionName); ok && port.GetName() == "" && port.GetValue() == parsed {
+				return port
+			}
+		}
+	}
+	return nil
+}
+
 func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader ResourceReader) []*ResourceSection {
 	if !targetRef.Kind.IsRealResource() {
 		return nil
 	}
-	rtype := core_model.ResourceType(targetRef.Kind)
-	list := reader.ListOrEmpty(rtype).GetItems()
 
-	var implicitPort uint32
-	implicitLabels := map[string]string{}
+	// targetRef to query
+	var q query
+	switch {
+	case len(targetRef.Labels) > 0:
+		q = query{
+			byLabels:    targetRef.Labels,
+			sectionName: targetRef.SectionName,
+		}
+	default:
+		q = query{
+			byIdentifier: pointer.To(core_model.TargetRefToResourceIdentifier(tMeta, targetRef)),
+			sectionName:  targetRef.SectionName,
+		}
+	}
+
+	// backwards compatibility, we want old policies with targetRef{kind:MeshService,name:backend_kuma-demo_svc_8080}
+	// to resolve to new MeshService backend in the kuma-demo namespace on port 8080
 	if targetRef.Kind == common_api.MeshService && targetRef.SectionName == "" {
 		if name, namespace, port, err := parseService(targetRef.Name); err == nil {
-			implicitLabels[mesh_proto.KubeNamespaceTag] = namespace
-			implicitLabels[mesh_proto.DisplayName] = name
-			implicitPort = port
+			q = query{
+				byLabels: map[string]string{
+					mesh_proto.KubeNamespaceTag: namespace,
+					mesh_proto.DisplayName:      name,
+				},
+				port: port,
+			}
 		}
 	}
 
-	labels := targetRef.Labels
-	if len(implicitLabels) > 0 {
-		labels = implicitLabels
-	}
-
-	if len(labels) > 0 {
-		var rv []*ResourceSection
-		trLabels := subsetutils.NewSubset(labels)
+	// resolve query without taking port/sectionName into account
+	rtype := core_model.ResourceType(targetRef.Kind)
+	var resources []core_model.Resource
+	switch {
+	case q.byLabels != nil:
+		list := reader.ListOrEmpty(rtype).GetItems()
+		trLabels := subsetutils.NewSubset(q.byLabels)
 		for _, r := range list {
 			rLabels := subsetutils.NewSubset(r.GetMeta().GetLabels())
-			var implicitSectionName string
-			if ms, ok := r.(*meshservice_api.MeshServiceResource); ok && implicitPort != 0 {
-				for _, port := range ms.Spec.Ports {
-					if port.Port == implicitPort {
-						implicitSectionName = port.Name
-					}
-				}
-			}
-			sn := targetRef.SectionName
-			if sn == "" {
-				sn = implicitSectionName
-			}
 			if trLabels.IsSubset(rLabels) {
-				rv = append(rv, &ResourceSection{
-					Resource:    r,
-					SectionName: sn,
-				})
+				resources = append(resources, r)
 			}
 		}
-		return rv
+	case q.byIdentifier != nil:
+		if r := reader.Get(rtype, *q.byIdentifier); r != nil {
+			resources = []core_model.Resource{r}
+		}
 	}
 
-	ri := core_model.TargetRefToResourceIdentifier(tMeta, targetRef)
-	if resource := reader.Get(rtype, ri); resource != nil {
-		return []*ResourceSection{{
-			Resource:    resource,
-			SectionName: targetRef.SectionName,
-		}}
+	if len(resources) == 0 {
+		return []*ResourceSection{}
 	}
 
-	return nil
+	if q.port == 0 && q.sectionName == "" {
+		result := make([]*ResourceSection, len(resources))
+		for i := range resources {
+			result[i] = &ResourceSection{Resource: resources[i]}
+		}
+		return result
+	}
+
+	// filter out resources that don't have requested section name or port
+	var result []*ResourceSection
+	for _, r := range resources {
+		if resourceWithPorts, ok := r.(ResourceWithPorts); ok {
+			if port := q.findPort(resourceWithPorts.GetPorts()); port != nil {
+				result = append(result, &ResourceSection{
+					Resource:    r,
+					SectionName: port.GetNameOrStringifyPort(),
+				})
+			}
+		} else {
+			result = append(result, &ResourceSection{Resource: r})
+		}
+	}
+
+	return result
 }
 
+func tryParsePort(s string) (uint32, bool) {
+	u, err := strconv.ParseUint(s, 10, 32)
+	if err != nil {
+		return 0, false
+	}
+	return uint32(u), true
+}
+
+// parseService is copied from pkg/plugins/runtime/k8s/controllers/outbound_converter.go
+// but when port is not specified it returns 0 instead of IANA Reserved port 49151.
+// We don't need reserved port in the original 'parseService',
+// there is an issue to fix it https://github.com/kumahq/kuma/issues/12834
 func parseService(host string) (string, string, uint32, error) {
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
@@ -105,7 +173,7 @@ func parseService(host string) (string, string, uint32, error) {
 	case 3:
 		// service less service names have no port, so we just put the reserved
 		// one here to note that this service is actually
-		port = mesh_proto.TCPPortReserved
+		port = 0
 	default:
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}

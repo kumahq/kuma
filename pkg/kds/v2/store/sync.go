@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	std_errors "errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -41,12 +42,20 @@ type ResourceSyncer interface {
 	//
 	// Sync takes into account only 'Name' and 'Mesh' when it comes to upstream's Meta.
 	// 'Version', 'CreationTime' and 'ModificationTime' are managed by downstream store.
-	Sync(ctx context.Context, upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) error
+	// We return now 2 errors:
+	// The first error cancels the connection, forcing the client to re-establish it.
+	// This can happen due to a database error.
+	//
+	// The second error is related to non-critical issues, such as `ResourceAlreadyExists`,
+	// which shouldn't prevent other resources from being stored.
+	// Instead, we return a NACK message with information for the user.
+	Sync(ctx context.Context, upstream client_v2.UpstreamResponse, fs ...SyncOptionFunc) (error, error)
 }
 
 type SyncOption struct {
-	Predicate func(r core_model.Resource) bool
-	Zone      string
+	Predicate            func(r core_model.Resource) bool
+	SkipConflictResource bool
+	Zone                 string
 }
 
 type SyncOptionFunc func(*SyncOption)
@@ -62,6 +71,12 @@ func NewSyncOptions(fs ...SyncOptionFunc) *SyncOption {
 func Zone(name string) SyncOptionFunc {
 	return func(opts *SyncOption) {
 		opts.Zone = name
+	}
+}
+
+func SkipConflictResource() SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.SkipConflictResource = true
 	}
 }
 
@@ -107,7 +122,7 @@ type OnUpdate struct {
 	opts []store.UpdateOptionsFunc
 }
 
-func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) error {
+func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse client_v2.UpstreamResponse, fs ...SyncOptionFunc) (error, error) {
 	now := core.Now()
 	defer func() {
 		s.metric.Observe(float64(time.Since(now).Milliseconds()) / 1000)
@@ -118,37 +133,54 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
+	indexedInvalidResources := model.IndexKeys(upstreamResponse.InvalidResourcesKey)
 	if err != nil {
-		return err
+		return err, nil
 	}
 	if upstreamResponse.IsInitialRequest {
 		if err := s.resourceStore.List(ctx, downstream); err != nil {
-			return err
+			return err, nil
 		}
 	} else {
 		upstreamChangeKeys := append(core_model.ResourceListToResourceKeys(upstream), upstreamResponse.RemovedResourcesKey...)
 		if err := s.resourceStore.List(ctx, downstream, store.ListByResourceKeys(upstreamChangeKeys)); err != nil {
-			return err
+			return err, nil
 		}
 	}
+
+	filterResources := func(resources core_model.ResourceList, predicates []func(core_model.Resource) bool) (core_model.ResourceList, error) {
+		return filter(resources, func(r core_model.Resource) bool {
+			includeResource := true
+			for _, predicate := range predicates {
+				includeResource = includeResource && predicate(r)
+			}
+			return includeResource
+		})
+	}
+
+	isValidResource := func(r core_model.Resource) bool {
+		_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
+		return !exists
+	}
+
+	predicate := []func(r core_model.Resource) bool{isValidResource}
+	if opts.Predicate != nil {
+		predicate = append(predicate, opts.Predicate)
+	}
+
 	log.V(1).Info("before filtering", "downstream", downstream, "upstream", upstream)
 
-	if opts.Predicate != nil {
-		if filtered, err := filter(downstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			downstream = filtered
-		}
-		if filtered, err := filter(upstream, opts.Predicate); err != nil {
-			return err
-		} else {
-			upstream = filtered
-		}
+	if downstream, err = filterResources(downstream, predicate); err != nil {
+		return err, nil
 	}
+	if upstream, err = filterResources(upstream, predicate); err != nil {
+		return err, nil
+	}
+
 	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
 
-	indexedDownstream := newIndexed(downstream)
-	indexedUpstream := newIndexed(upstream)
+	indexedDownstream := model.IndexByKey(downstream.GetItems())
+	indexedUpstream := model.IndexByKey(upstream.GetItems())
 
 	onDelete := []core_model.Resource{}
 	// 1. delete resources which were removed from the upstream
@@ -159,18 +191,18 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	// so we don't want to remove resources haven't changed.
 	if upstreamResponse.IsInitialRequest {
 		for _, r := range downstream.GetItems() {
-			if indexedUpstream.get(core_model.MetaToResourceKey(r.GetMeta())) == nil {
+			if indexedUpstream[core_model.MetaToResourceKey(r.GetMeta())] == nil {
 				onDelete = append(onDelete, r)
 			}
 		}
 	} else {
 		for _, rk := range upstreamResponse.RemovedResourcesKey {
 			// check if we are adding and removing the resource at the same time
-			if r := indexedUpstream.get(rk); r != nil {
+			if r := indexedUpstream[rk]; r != nil {
 				// it isn't remove but update
 				continue
 			}
-			if r := indexedDownstream.get(rk); r != nil {
+			if r := indexedDownstream[rk]; r != nil {
 				onDelete = append(onDelete, r)
 			}
 		}
@@ -180,7 +212,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	onCreate := []core_model.Resource{}
 	onUpdate := []OnUpdate{}
 	for _, r := range upstream.GetItems() {
-		existing := indexedDownstream.get(core_model.MetaToResourceKey(r.GetMeta()))
+		existing := indexedDownstream[core_model.MetaToResourceKey(r.GetMeta())]
 		if existing == nil {
 			onCreate = append(onCreate, r)
 			continue
@@ -199,11 +231,11 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	zone := system.NewZoneResource()
 	if opts.Zone != "" && len(onCreate) > 0 {
 		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, core_model.NoMesh)); err != nil {
-			return err
+			return err, nil
 		}
 	}
-
-	return store.InTx(ctx, s.transactions, func(ctx context.Context) error {
+	var nackError error
+	err = store.InTx(ctx, s.transactions, func(ctx context.Context) error {
 		for _, r := range onCreate {
 			rk := core_model.MetaToResourceKey(r.GetMeta())
 			log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
@@ -221,7 +253,11 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			r.SetMeta(nil)
 
 			if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
-				return err
+				if opts.SkipConflictResource && store.IsResourceAlreadyExists(err) {
+					nackError = std_errors.Join(nackError, err)
+				} else {
+					return err
+				}
 			}
 		}
 
@@ -245,6 +281,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 		}
 		return nil
 	})
+	return err, nackError
 }
 
 func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bool) (core_model.ResourceList, error) {
@@ -262,28 +299,12 @@ func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bo
 	return rv, nil
 }
 
-type indexed struct {
-	indexByResourceKey map[core_model.ResourceKey]core_model.Resource
-}
-
-func (i *indexed) get(rk core_model.ResourceKey) core_model.Resource {
-	return i.indexByResourceKey[rk]
-}
-
-func newIndexed(rs core_model.ResourceList) *indexed {
-	idxByRk := map[core_model.ResourceKey]core_model.Resource{}
-	for _, r := range rs.GetItems() {
-		idxByRk[core_model.MetaToResourceKey(r.GetMeta())] = r
-	}
-	return &indexed{indexByResourceKey: idxByRk}
-}
-
 func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
-		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
+		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
 			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
 				if err := addNamespaceSuffix(kubeFactory, upstream, systemNamespace); err != nil {
-					return err
+					return err, nil
 				}
 			}
 
@@ -300,6 +321,11 @@ func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer 
 						zone_tokens.SigningPublicKeyPrefix,
 					)
 				}))
+
+			case upstream.Type == system.SecretType:
+				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
+				}), SkipConflictResource())
 			}
 
 			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
@@ -334,10 +360,11 @@ func GlobalSyncCallback(
 	supportsHashSuffixes := kds.ContextHasFeature(ctx, kds.FeatureHashSuffix)
 
 	return &client_v2.Callbacks{
-		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) error {
+		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
 			if !supportsHashSuffixes {
 				// todo: remove in 2 releases after 2.6.x
 				upstream.RemovedResourcesKey = util.AddPrefixToResourceKeyNames(upstream.RemovedResourcesKey, upstream.ControlPlaneId)
+				upstream.InvalidResourcesKey = util.AddPrefixToResourceKeyNames(upstream.InvalidResourcesKey, upstream.ControlPlaneId)
 				util.AddPrefixToNames(upstream.AddedResources.GetItems(), upstream.ControlPlaneId)
 			}
 
@@ -350,7 +377,7 @@ func GlobalSyncCallback(
 
 			if k8sStore {
 				if err := addNamespaceSuffix(kubeFactory, upstream, systemNamespace); err != nil {
-					return err
+					return err, nil
 				}
 			}
 
@@ -390,6 +417,7 @@ func addNamespaceSuffix(kubeFactory resources_k8s.KubeFactory, upstream client_v
 	if kubeObject.Scope() == k8s_model.ScopeNamespace {
 		util.AddSuffixToNames(upstream.AddedResources.GetItems(), ns)
 		upstream.RemovedResourcesKey = util.AddSuffixToResourceKeyNames(upstream.RemovedResourcesKey, ns)
+		upstream.InvalidResourcesKey = util.AddSuffixToResourceKeyNames(upstream.InvalidResourcesKey, ns)
 	}
 	return nil
 }

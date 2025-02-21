@@ -70,7 +70,7 @@ func MatchService(svc *kube_core.Service, predicates ...ServicePredicate) bool {
 // targetPort is a number, use that.  If the targetPort is a string, look that
 // string up in all named ports in all containers in the target pod.  If no
 // match is found, fail.
-func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_core.Container, error) {
+func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, string, *kube_core.Container, error) {
 	givenOrDefault := func(value kube_core.Protocol) kube_core.Protocol {
 		if value != "" {
 			return value
@@ -85,7 +85,7 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_co
 		for _, container := range pod.Spec.Containers {
 			for _, port := range container.Ports {
 				if port.Name == name && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
-					return int(port.ContainerPort), &container, nil
+					return int(port.ContainerPort), port.Name, &container, nil
 				}
 			}
 		}
@@ -98,14 +98,14 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_co
 		for _, container := range pod.Spec.Containers {
 			for _, port := range container.Ports {
 				if port.ContainerPort == portName.IntVal && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
-					return int(port.ContainerPort), &container, nil
+					return int(port.ContainerPort), port.Name, &container, nil
 				}
 			}
 		}
-		return portName.IntValue(), nil, nil
+		return portName.IntValue(), "", nil, nil
 	}
 
-	return 0, nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
+	return 0, "", nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
 }
 
 func findContainerStatus(containerName string, status []kube_core.ContainerStatus, initStatus []kube_core.ContainerStatus) *kube_core.ContainerStatus {

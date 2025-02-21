@@ -35,7 +35,7 @@ properties:
                   description: Name of the application to scrape
                   type: string
                 path:
-                  default: /metrics/prometheus
+                  default: /metrics
                   description: Path on which an application expose HTTP endpoint with metrics.
                   type: string
                 port:
@@ -88,12 +88,7 @@ properties:
                             - ProvidedTLS
                             - ActiveMTLSBackend
                           type: string
-                      required:
-                        - mode
                       type: object
-                  required:
-                    - path
-                    - port
                   type: object
                 type:
                   description: Type of the backend that will be used to collect metrics. At the moment only Prometheus backend is available.
@@ -109,11 +104,11 @@ properties:
             description: Sidecar metrics collection configuration
             properties:
               includeUnused:
-                default: false
                 description: |-
                   IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                   at least once, gauges changed at least once, and histograms added to at
                   least once). If true will scrape all metrics (even the ones with zeros).
+                  If not specified then the default value is false.
                 type: boolean
               profiles:
                 description: Profiles allows to customize which metrics are published.
@@ -245,11 +240,13 @@ properties:
         type: object
     type: object
   creationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was created'
     format: date-time
     example: '0001-01-01T00:00:00Z'
   modificationTime:
+    readOnly: true
     type: string
     description: 'Time at which the resource was updated'
     format: date-time
