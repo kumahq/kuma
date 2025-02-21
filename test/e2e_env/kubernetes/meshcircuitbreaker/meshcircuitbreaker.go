@@ -155,10 +155,8 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionLimits:
           maxConnectionPools: 1
           maxConnections: 1

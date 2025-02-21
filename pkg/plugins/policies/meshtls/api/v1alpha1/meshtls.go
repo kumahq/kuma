@@ -15,10 +15,10 @@ type MeshTLS struct {
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 	// Rules defines inbound tls configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
@@ -50,7 +50,7 @@ type Conf struct {
 	TlsVersion *common_tls.Version `json:"tlsVersion,omitempty"`
 
 	// TlsCiphers section for providing ciphers specification.
-	TlsCiphers common_tls.TlsCiphers `json:"tlsCiphers,omitempty"`
+	TlsCiphers *[]common_tls.TlsCipher `json:"tlsCiphers,omitempty"`
 
 	// Mode defines the behavior of inbound listeners with regard to traffic encryption.
 	Mode *Mode `json:"mode,omitempty"`

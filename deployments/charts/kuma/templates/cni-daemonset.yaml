@@ -34,10 +34,6 @@ spec:
       nodeSelector:
       {{ toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.cni.tolerations }}
-      tolerations:
-      {{ toYaml . | nindent 8 }}
-      {{- end }}
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.
         - effect: NoSchedule
@@ -47,6 +43,9 @@ spec:
           operator: Exists
         - effect: NoExecute
           operator: Exists
+      {{- with .Values.cni.tolerations }}
+      {{- toYaml . | nindent 8}}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-cni
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.

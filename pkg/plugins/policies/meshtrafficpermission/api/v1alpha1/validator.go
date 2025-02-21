@@ -5,16 +5,17 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshTrafficPermissionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
-	if len(r.Spec.From) == 0 {
+	if len(pointer.Deref(r.Spec.From)) == 0 {
 		verr.AddViolationAt(path.Field("from"), "needs at least one item")
 	}
-	verr.AddErrorAt(path, validateFrom(r.Spec.From))
+	verr.AddErrorAt(path, validateFrom(pointer.Deref(r.Spec.From)))
 	return verr.OrNil()
 }
 
@@ -56,7 +57,7 @@ func validateFrom(from []From) validators.ValidationError {
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	if len(conf.Action) == 0 {
+	if len(pointer.Deref(conf.Action)) == 0 {
 		verr.AddViolation("action", validators.MustBeDefined)
 	}
 	return verr

@@ -417,8 +417,6 @@ properties:
                   type: object
               type: object
             type: array
-        required:
-          - appendModifications
         type: object
       targetRef:
         description: |-

@@ -1,6 +1,10 @@
 package v1alpha1
 
-import "slices"
+import (
+	"slices"
+
+	"github.com/kumahq/kuma/pkg/util/pointer"
+)
 
 type PolicyDefault struct {
 	Rules     []Rule   `json:"rules,omitempty" policyMerge:"mergeValuesByKey"`
@@ -12,7 +16,7 @@ func (x *To) GetDefault() interface{} {
 	slices.Reverse(reversed)
 	return PolicyDefault{
 		Rules:     reversed,
-		Hostnames: x.Hostnames,
+		Hostnames: pointer.Deref(x.Hostnames),
 	}
 }
 

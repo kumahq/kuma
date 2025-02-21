@@ -53,6 +53,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -93,6 +96,9 @@ properties:
                                   type: string
                                 value:
                                   type: string
+                              required:
+                                - key
+                                - value
                               type: object
                             type: array
                           body:
@@ -141,6 +147,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -234,6 +243,7 @@ properties:
                   type: object
               type: object
           required:
+            - default
             - targetRef
           type: object
         type: array
@@ -269,6 +279,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -309,6 +322,9 @@ properties:
                                   type: string
                                 value:
                                   type: string
+                              required:
+                                - key
+                                - value
                               type: object
                             type: array
                           body:
@@ -357,6 +373,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -387,6 +406,8 @@ properties:
                     type: object
                   type: array
               type: object
+          required:
+            - default
           type: object
         type: array
       targetRef:
@@ -484,6 +505,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -524,6 +548,9 @@ properties:
                                   type: string
                                 value:
                                   type: string
+                              required:
+                                - key
+                                - value
                               type: object
                             type: array
                           body:
@@ -572,6 +599,9 @@ properties:
                                       type: string
                                     value:
                                       type: string
+                                  required:
+                                    - key
+                                    - value
                                   type: object
                                 type: array
                               omitEmptyValues:
@@ -665,6 +695,7 @@ properties:
                   type: object
               type: object
           required:
+            - default
             - targetRef
           type: object
         type: array

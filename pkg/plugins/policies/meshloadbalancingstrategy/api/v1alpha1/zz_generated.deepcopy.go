@@ -105,9 +105,13 @@ func (in *CrossZone) DeepCopyInto(out *CrossZone) {
 	*out = *in
 	if in.Failover != nil {
 		in, out := &in.Failover, &out.Failover
-		*out = make([]Failover, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Failover)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Failover, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 	if in.FailoverThreshold != nil {
@@ -421,9 +425,13 @@ func (in *MeshLoadBalancingStrategy) DeepCopyInto(out *MeshLoadBalancingStrategy
 	}
 	if in.To != nil {
 		in, out := &in.To, &out.To
-		*out = make([]To, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]To)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]To, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

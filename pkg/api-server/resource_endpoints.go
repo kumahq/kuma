@@ -788,7 +788,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		out := &api_types.InspectDataplanesConfig{
+		out := &api_types.GetDataplaneXDSConfigResponse{
 			Xds: config,
 		}
 
@@ -812,10 +812,10 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 	}
 }
 
-func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetMeshesMeshDataplanesNameConfigParams, error) {
-	params := &api_types.GetMeshesMeshDataplanesNameConfigParams{
+func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetDataplanesXdsConfigParams, error) {
+	params := &api_types.GetDataplanesXdsConfigParams{
 		Shadow:  pointer.To(false),
-		Include: &[]api_types.GetMeshesMeshDataplanesNameConfigParamsInclude{},
+		Include: &[]api_types.GetDataplanesXdsConfigParamsInclude{},
 	}
 
 	if shadow := request.QueryParameter("shadow"); shadow != "" {
@@ -828,12 +828,12 @@ func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api
 
 	if include := request.QueryParameter("include"); include != "" {
 		for _, v := range strings.Split(include, ",") {
-			switch api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v) {
+			switch api_types.GetDataplanesXdsConfigParamsInclude(v) {
 			case api_types.Diff:
 			default:
 				return nil, rest_errors.NewBadRequestError("unsupported value for query parameter 'include'")
 			}
-			*params.Include = append(*params.Include, api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v))
+			*params.Include = append(*params.Include, api_types.GetDataplanesXdsConfigParamsInclude(v))
 		}
 	}
 

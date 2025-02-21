@@ -25,8 +25,8 @@ func (x *From) GetDefault() interface{} {
 
 func (x *MeshTLS) GetFromList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range x.From {
-		item := x.From[i]
+	for _, itm := range pointer.Deref(x.From) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
@@ -38,8 +38,8 @@ func (x *Rule) GetDefault() interface{} {
 
 func (x *MeshTLS) GetRules() []inbound.RuleEntry {
 	var result []inbound.RuleEntry
-	for i := range x.Rules {
-		item := x.Rules[i]
+	for _, itm := range pointer.Deref(x.Rules) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result

@@ -665,6 +665,9 @@ spec:
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
                       type: object
+                  required:
+                  - rules
+                  - targetRef
                   type: object
                 type: array
             type: object

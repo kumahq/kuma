@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -160,15 +159,12 @@ func applyToGateways(
 			continue
 		}
 		// there is only one rule always because we're in `Mesh/Mesh`
-		var conf *api.Conf
-		for _, r := range gatewayRules.FromRules {
-			conf = core_rules.ComputeConf[api.Conf](r, subsetutils.MeshElement())
+		var conf api.Conf
+		for _, r := range gatewayRules.InboundRules {
+			conf = rules_inbound.MatchesAllIncomingTraffic[api.Conf](r)
 			break
 		}
-		if conf == nil {
-			continue
-		}
-		if err := configureParams(*conf, cluster); err != nil {
+		if err := configureParams(conf, cluster); err != nil {
 			return err
 		}
 	}
@@ -227,7 +223,7 @@ func configureParams(conf api.Conf, cluster *envoy_cluster.Cluster) error {
 		}
 	}
 
-	ciphers := conf.TlsCiphers
+	ciphers := pointer.Deref(conf.TlsCiphers)
 	if ciphers != nil {
 		if tlsContext.CommonTlsContext.TlsParams != nil {
 			var cipherSuites []string
@@ -284,24 +280,24 @@ func configure(
 	switch mode {
 	case api.ModeStrict:
 		listenerBuilder.
-			Configure(envoy_listeners.FilterChain(generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, conf.TlsCiphers).Configure(
+			Configure(envoy_listeners.FilterChain(generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 				envoy_listeners.NetworkRBAC(listener.GetName(), mesh.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),
 			)))
 	case api.ModePermissive:
 		listenerBuilder.
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, conf.TlsCiphers).Configure(
+				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("raw_buffer"))),
 			).
 			Configure(envoy_listeners.FilterChain(
 				// we need to differentiate between just TLS and Kuma's TLS, because with permissive mode
 				// the app itself might be protected by TLS.
-				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, conf.TlsCiphers).Configure(
+				generator.FilterChainBuilder(false, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"))),
 			).
 			Configure(envoy_listeners.FilterChain(
-				generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, conf.TlsCiphers).Configure(
+				generator.FilterChainBuilder(true, protocol, proxy, localClusterName, xdsCtx, iface, service, &routes, conf.TlsVersion, pointer.Deref(conf.TlsCiphers)).Configure(
 					envoy_listeners.MatchTransportProtocol("tls"),
 					envoy_listeners.MatchApplicationProtocols(xds_tls.KumaALPNProtocols...),
 					envoy_listeners.NetworkRBAC(listener.GetName(), xdsCtx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface]),

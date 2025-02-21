@@ -38,6 +38,27 @@ New rule:
 
 > A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
 
+### MeshTrace
+
+#### Unifying defaults for `sharedSpanContext`
+
+Due to misconfiguration a default `sharedSpanContext` for metrics on Universal ("false") was different from on Kubernetes ("true").
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.sharedSpanContext` value in your `MeshTrace` resource, you have to explicitly set it to "false" to continue using that value.
+
+### MeshMetric
+
+#### Unifying defaults for `path`
+
+Due to misconfiguration a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
+If you're using Universal mode, and you did not specify `default.applications[].path` value in your `MeshMetric` resource, you have to explicitly set it to "/metrics" to continue using that value.
+
+### MeshPassthrough
+
+#### Unifying defaults for `passthroughMode`
+
+Due to misconfiguration a default `passthroughMode` for `MeshPasstrhough` on Universal ("Matched") was different from on Kubernetes ("None").
+If you're using Kubernetes mode, and you did not specify `default.passthroughMode` value in your `MeshPasstrhough` resource, you have to explicitly set it to "None" to continue using that value.
+
 ### MeshLoadBalancingStrategy
 
 #### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
@@ -45,9 +66,16 @@ New rule:
 The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
 is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
 
-#### Changes on revoking dataplane tokens
+### MeshHealthCheck
+
+#### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
+
+The `healthyPanicThreshold` field is deprecated and will be removed in a future release, and we will add it to `MeshCircuitBreaker` policy. 
+
+### Changes on revoking dataplane tokens
 
 Authentication between the control plane and dataplanes is only checked at connection start now. This means that if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to either restart the control plane or the concerned dataplanes.
+
 
 ## Upgrade to `2.9.x`
 
