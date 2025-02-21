@@ -57,11 +57,8 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ServerName != nil && !govalidator.IsDNSName(*tls.Verification.ServerName) {
 			verr.AddViolationAt(path.Field("serverName"), "must be a valid DNS name")
 		}
-		if tls.Verification.Mode == "" {
-			// code default to be backwards compatible
-			tls.Verification.Mode = TLSVerificationSecured
-		}
-		if !slices.Contains(allVerificationModes, string(tls.Verification.Mode)) {
+		// checking "" is for backwards compatibility, should be handled by "base policy" in the future
+		if !slices.Contains(append(allVerificationModes, ""), string(tls.Verification.Mode)) {
 			verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))
 		}
 		for i, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
