@@ -66,6 +66,6 @@ func UpgradingWithHelmChartStandalone() {
 			Expect(out).To(ContainSubstring("AllowWithShadowDeny"))
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries(),
+		SupportedVersionEntries(NewTestingT()),
 	)
 }

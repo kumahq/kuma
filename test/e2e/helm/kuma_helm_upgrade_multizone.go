@@ -195,6 +195,6 @@ spec:
 			}, "5s", "100ms").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries(),
+		SupportedVersionEntries(NewTestingT()),
 	)
 }

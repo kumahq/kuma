@@ -15,6 +15,7 @@ const previewVersion = "preview"
 
 type Version struct {
 	Version       string `json:"version"`
+	Release       string `json:"release"`
 	Lts           bool   `json:"lts,omitempty"`
 	EndOfLifeDate string `json:"endOfLifeDate"`
 	ReleaseDate   string `json:"releaseDate"`
@@ -65,12 +66,12 @@ func UpgradableVersions(versions []Version, currentVersion semver.Version) []str
 				panic(err)
 			}
 			if version.Lts && eol.After(time.Now()) {
-				res = append(res, version.SemVer.String())
+				res = append(res, version.Release)
 				continue
 			}
 		}
 		if version.SemVer.LessThan(&currentVersion) && version.SemVer.Major() == currentVersion.Major() && version.SemVer.Minor() >= currentVersion.Minor()-2 {
-			res = append(res, version.SemVer.String())
+			res = append(res, version.Release)
 		}
 	}
 	if len(res) == 0 {

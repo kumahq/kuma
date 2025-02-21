@@ -1,9 +1,12 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 
+	"github.com/gruntwork-io/terratest/modules/helm"
+	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/onsi/ginkgo/v2"
 
 	"github.com/kumahq/kuma/test/framework/versions"
@@ -99,10 +102,35 @@ func E2EDeferCleanup(args ...interface{}) {
 	ginkgo.DeferCleanup(fn, args[1:])
 }
 
-func SupportedVersionEntries() []ginkgo.TableEntry {
+func SupportedVersionEntries(t testing.TestingT) []ginkgo.TableEntry {
 	var res []ginkgo.TableEntry
 	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
-		res = append(res, ginkgo.Entry(nil, v))
+		version, err := GetLatestPatch(t, v)
+		if err != nil {
+			ginkgo.Fail(fmt.Sprintf("failed to find the newest patch version, error: %v", err))
+		}
+		res = append(res, ginkgo.Entry(nil, version.Version))
 	}
 	return res
+}
+
+type HelmChart struct {
+	Version string `json:"version"`
+}
+
+func GetLatestPatch(t testing.TestingT, version string) (*HelmChart, error) {
+	out, err := helm.RunHelmCommandAndGetStdOutE(t, &helm.Options{}, "search", "repo", "kuma/kuma", "--version", version, "-o", "json")
+	if err != nil {
+		return nil, err
+	}
+	// Parse JSON into a slice of HelmChart structs
+	var newestPatch []HelmChart
+	err = json.Unmarshal([]byte(out), &newestPatch)
+	if err != nil {
+		return nil, err
+	}
+	if len(newestPatch) != 1 {
+		return nil, fmt.Errorf("invalid number of helm patch versions, expected: 1, actual %d", len(newestPatch))
+	}
+	return &newestPatch[0], nil
 }

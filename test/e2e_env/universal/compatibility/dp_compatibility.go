@@ -65,5 +65,5 @@ func UniversalCompatibility() {
 			}, "20s", "250ms").Should(Succeed())
 		},
 		EntryDescription("from version: %s"),
-		SupportedVersionEntries())
+		SupportedVersionEntries(universal.Cluster.GetTesting()))
 }
