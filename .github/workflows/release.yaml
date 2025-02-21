@@ -142,13 +142,13 @@ jobs:
       - name: update-versions.yml
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-        run: | # need update here if tag 0.0.0
+        run: |
           release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --branch ${{ env.BRANCH }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
-        run: | # need update here
-          release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
+        run: |
+          release-tool changelog.md --repo ${{ github.repository }} --branch ${{ env.BRANCH }} > CHANGELOG.md
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7.0.6
         with:
