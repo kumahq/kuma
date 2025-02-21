@@ -28,7 +28,7 @@ ports:
 		ErrorCase("spec.template empty",
 			validators.Violation{
 				Field:   `spec.ports[0].appProtocol`,
-				Message: `must be one of [grpc, http, http2, kafka, tcp]`,
+				Message: `appProtocol must be one of: grpc, http, http2, kafka, tcp`,
 			}, `
 selector:
   meshService:
