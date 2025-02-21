@@ -58,11 +58,10 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey, disconnectDone func()) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	t.RLock()
 	defer t.RUnlock()
 	if cleanup := t.watchdogs[dpKey]; cleanup != nil {
-		cleanup.disconnectDone = disconnectDone
 		// kick off stopping of the watchdog
 		cleanup.cancelFunc()
 	}

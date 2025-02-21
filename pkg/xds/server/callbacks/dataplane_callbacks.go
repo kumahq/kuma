@@ -23,8 +23,7 @@ type DataplaneCallbacks interface {
 	// OnProxyConnected is executed when an active stream from a proxy is connected
 	OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error
 	// OnProxyDisconnected is executed only when an active stream of the proxy disconnects
-	// Implementations should call disconnectComplete to notify when the disconnect handling is complete
-	OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey, disconnectComplete func())
+	OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey)
 }
 
 type xdsCallbacks struct {
@@ -60,28 +59,14 @@ func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 
 	if streamDpKey != nil {
 		// execute callback after lock is freed, so heavy callback implementation won't block every callback for every DPP.
-		// proxy disconnect may take some time, we don't want to block the callback for every DPP here
-		disconnectDone := make(chan struct{})
-		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *streamDpKey, func() {
-			go func() { disconnectDone <- struct{}{} }()
-		})
-		go func() {
-			<-disconnectDone
-			d.cleanupDpStream(streamID)
-		}()
-	} else {
-		// when the stream is not actually processed, clean it up immediately
-		d.cleanupDpStream(streamID)
+		d.callbacks.OnProxyDisconnected(dpStream.ctx, streamID, *streamDpKey)
 	}
-}
 
-func (d *xdsCallbacks) cleanupDpStream(streamID core_xds.StreamID) {
 	d.Lock()
-	dpStream := d.dpStreams[streamID]
-	if dpKey := dpStream.dp; dpKey != nil {
-		d.activeStreams[*dpKey]--
-		if d.activeStreams[*dpKey] == 0 {
-			delete(d.activeStreams, *dpKey)
+	if streamDpKey != nil {
+		d.activeStreams[*streamDpKey]--
+		if d.activeStreams[*streamDpKey] == 0 {
+			delete(d.activeStreams, *streamDpKey)
 		}
 	}
 	delete(d.dpStreams, streamID)
@@ -163,8 +148,7 @@ func (n *NoopDataplaneCallbacks) OnProxyConnected(core_xds.StreamID, core_model.
 	return nil
 }
 
-func (n *NoopDataplaneCallbacks) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey, callback func()) {
-	callback()
+func (n *NoopDataplaneCallbacks) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, _ core_model.ResourceKey) {
 }
 
 var _ DataplaneCallbacks = &NoopDataplaneCallbacks{}

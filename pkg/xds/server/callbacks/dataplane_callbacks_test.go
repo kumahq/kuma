@@ -26,9 +26,8 @@ func (c *countingDpCallbacks) OnProxyConnected(streamID core_xds.StreamID, dpKey
 	return nil
 }
 
-func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey, callback func()) {
+func (c *countingDpCallbacks) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
 	c.OnProxyDisconnectedCounter++
-	callback()
 }
 
 var _ DataplaneCallbacks = &countingDpCallbacks{}
