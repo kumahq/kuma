@@ -47,11 +47,8 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 
 	ctx, cancel := context.WithCancel(context.Background())
 	state := &watchdogState{
-		cancelFunc: func() {
-			dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-			cancel()
-		},
-		stopped: make(chan struct{}),
+		cancelFunc: cancel,
+		stopped:    make(chan struct{}),
 	}
 	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
 	stoppedDone := state.stopped
@@ -64,7 +61,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
 	t.RLock()
 	dpData := t.watchdogs[dpKey]
 	t.RUnlock()
@@ -72,6 +69,7 @@ func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds
 	if dpData != nil {
 		dpData.cancelFunc()
 		<-dpData.stopped
+		dataplaneSyncTrackerLog.V(1).Info("watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
 		t.Lock()
 		defer t.Unlock()
 		delete(t.watchdogs, dpKey)
