@@ -31,71 +31,13 @@ env:
 permissions:
   contents: read
 jobs:
-  get-active-release-branches:
-    runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-    outputs:
-      branches: ${{ steps.get-branches.outputs.branches }}
-    steps:
-      - name: "Get active branches"
-        id: get-branches
-        env:
-          REPOSITORY: ${{ github.repository }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          active_branches=$(gh api repos/$REPOSITORY/contents/active-branches.json --jq '[.content | @base64d | fromjson | .[] ]')
-          if [[ "$active_branches" == "[]" || -z "$active_branches" ]]; then
-              echo "No active branches to process"
-              exit 1
-          fi
-          branches=($(echo "$active_branches" | jq -r '.[]'))
-
-          if [[ ${{ env.RELEASE }} == "0.0.0" ]]; then
-              echo "branches=$active_branches" >> $GITHUB_OUTPUT
-              exit 0
-          fi
-
-          TARGET_MAJOR_MINOR=$(echo ${{ env.RELEASE }} | awk -F. '{print $1"."$2}')
-
-          # Function to compare versions (ignores patch versions)
-          compare_versions() {
-              if [[ $1 == "master" ]]; then
-                  return 0
-              fi
-              # Extract major.minor from branch (removing "release-" prefix)
-              branch_major_minor=$(echo "$1" | sed 's/release-//' | cut -d'.' -f1,2)
-              target_major_minor=$(echo "$2" | cut -d'.' -f1,2)
-
-              # Compare versions using sort -V
-              if [[ "$branch_major_minor" == "$target_major_minor" || "$(printf "%s\n%s" "$branch_major_minor" "$target_major_minor" | sort -V | head -n1)" == "$target_major_minor" ]]; then
-                  return 0  # branch_version >= target_version (valid)
-              else
-                  return 1  # branch_version < target_version (skip)
-              fi
-          }
-          valid_branches=()
-          for branch in ${branches[@]}; do
-              if compare_versions "$branch" "$TARGET_MAJOR_MINOR"; then
-                  valid_branches+=("$branch")
-              fi
-          done
-          valid_branches_json=$(printf '%s\n' "${valid_branches[@]}" | jq -R . | jq -cs .)
-
-          echo "branches=$valid_branches_json" >> $GITHUB_OUTPUT
   release:
-    strategy:
-      matrix:
-        branch: ${{ fromJSON(needs.get-active-release-branches.outputs.branches) }}
-      fail-fast: false
     timeout-minutes: 30
     runs-on: ubuntu-24.04
-    env:
-      BRANCH: ${{ matrix.branch }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ env.BRANCH }}
+          ref: "master"
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5.3.0
         with:
           go-version-file: go.mod
@@ -134,7 +76,6 @@ jobs:
         run: |
           release-tool release docker --repo ${{ github.repository }} --release ${{ env.RELEASE }} --docker-repo ${{env.DOCKER_REPO }} --images ${{ env.DOCKER_IMAGES }}
       - name: update-active-branches.json
-        if: env.RELEASE == '0.0.0'
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
@@ -143,23 +84,23 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} --branch ${{ env.BRANCH }} > versions.yml
+          release-tool version-file --repo ${{ github.repository }} --edition ${{ env.EDITION }} --min-version ${{ env.MIN_VERSION }} > versions.yml
       - name: update-CHANGELOG.md
         env:
           GITHUB_TOKEN: ${{ steps.github-app-token.outputs.token }}
         run: |
-          release-tool changelog.md --repo ${{ github.repository }} --branch ${{ env.BRANCH }} > CHANGELOG.md
+          release-tool changelog.md --repo ${{ github.repository }} > CHANGELOG.md
       - name: "Create Pull Request"
         uses: peter-evans/create-pull-request@67ccf781d68cd99b580ae25a5c18a1cc84ffff1f # v7.0.6
         with:
           commit-message: "docs(CHANGELOG.md): updating changelog and version files"
           signoff: true
-          branch: chore/update-changelog-${{ env.BRANCH }}
-          base: ${{ env.BRANCH }}
+          branch: chore/update-changelog
+          base: master
           delete-branch: true
           title: "docs(CHANGELOG.md): updating changelog and version files"
           draft: false
-          labels: ci/skip-test,ci/auto-merge,${{ env.BRANCH }}
+          labels: ci/skip-test,ci/auto-merge
           token: ${{ steps.github-app-token.outputs.token }}
           committer: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
           author: kumahq[bot] <110050114+kumahq[bot]@users.noreply.github.com>
