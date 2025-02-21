@@ -107,7 +107,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "interpretFromEntriesAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -122,7 +122,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "interpretFromEntriesAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -293,7 +293,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "interpretFromEntriesAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -347,7 +347,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "interpretFromEntriesAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,

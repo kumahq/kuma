@@ -944,6 +944,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
+			getInboundPortName := func(port uint32) *string {
+				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+					return &name
+				}
+				return nil
+			}
+
 			fromRules := []api_common.FromRule{}
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
@@ -964,10 +971,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					} else {
 						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
 					}
-					inboundName := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).GetName()
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
-							Name: &inboundName,
+							Name: getInboundPortName(inbound.Port),
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
@@ -995,6 +1001,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
 					Inbound: api_common.Inbound{
+						Name: getInboundPortName(inbound.Port),
 						Port: int(inbound.Port),
 						Tags: tags,
 					},

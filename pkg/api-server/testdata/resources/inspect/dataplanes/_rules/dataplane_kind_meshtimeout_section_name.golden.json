@@ -76,6 +76,83 @@
      ]
     }
    ],
+   "inboundRules": [
+    {
+     "inbound": {
+      "name": "secondary-port",
+      "port": 9090,
+      "tags": {
+       "kuma.io/service": "bar"
+      }
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "connectionTimeout": "7s",
+         "idleTimeout": "7s",
+         "http": {
+          "requestTimeout": "2s"
+         }
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "select-whole-dpp",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        },
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "select-single-inbound",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "inbound": {
+      "name": "main-port",
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "connectionTimeout": "7s",
+         "idleTimeout": "7s",
+         "http": {
+          "requestTimeout": "7s"
+         }
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "select-whole-dpp",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    }
+   ],
    "toResourceRules": [],
    "toRules": [],
    "type": "MeshTimeout",
