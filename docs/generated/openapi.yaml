@@ -3725,6 +3725,8 @@ components:
         - tags
         - port
       properties:
+        name:
+          type: string
         tags:
           type: object
           additionalProperties:
