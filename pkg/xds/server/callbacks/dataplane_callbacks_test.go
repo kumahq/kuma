@@ -101,12 +101,11 @@ var _ = Describe("Dataplane Callbacks", func() {
 		// setup
 		cleanupCost := 2 * time.Second
 		cleanupStarted := make(chan struct{})
-		tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
+		tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 			return WatchdogFunc(func(ctx context.Context) {
 				<-ctx.Done()
 				cleanupStarted <- struct{}{}
 				<-time.After(cleanupCost)
-				stopped(key)
 			})
 		})
 		callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
@@ -122,7 +121,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and when a new stream from backend-01 tries to connect quickly before the cleanup is complete
-		callbacks.OnStreamClosed(streamID1, node)
+		go callbacks.OnStreamClosed(streamID1, node)
 		<-cleanupStarted
 		<-time.After(cleanupCost - time.Second)
 
@@ -133,7 +132,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 		// then it should be rejected
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("already an active stream"))
-		callbacks.OnStreamClosed(streamID2, node)
+		go callbacks.OnStreamClosed(streamID2, node)
 
 		// and when a new stream from backend-01 tries to connect quickly after the cleanup is complete
 		<-time.After(cleanupCost)
@@ -144,6 +143,6 @@ var _ = Describe("Dataplane Callbacks", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when other stream is closed and the third stream is open
-		callbacks.OnStreamClosed(streamID3, node)
+		go callbacks.OnStreamClosed(streamID3, node)
 	})
 })

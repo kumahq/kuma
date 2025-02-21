@@ -76,12 +76,11 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					watchdogCh <- key
 					<-ctx.Done()
 					close(watchdogCh)
-					stopped(key)
 				})
 			})
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
@@ -132,12 +131,11 @@ var _ = Describe("Sync", func() {
 			// setup
 			var activeWatchdogs int32
 			cleanupDone := make(chan struct{})
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey, stopped func(key core_model.ResourceKey)) util_xds_v3.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
-					stopped(key)
 					cleanupDone <- struct{}{}
 				})
 			})
@@ -170,10 +168,10 @@ var _ = Describe("Sync", func() {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
-			callbacks.OnStreamClosed(streamID2, node)
+			go callbacks.OnStreamClosed(streamID2, node)
 
 			// when first stream is closed
-			callbacks.OnStreamClosed(streamID1, node)
+			go callbacks.OnStreamClosed(streamID1, node)
 			<-cleanupDone
 			// cleanupDone is inside the watchdog, it's still not the accurate time of cleanup done in the dataplane_callback
 			// to prevent flakiness, we introduce this tiny delay here, it does no harm to the test workflow
@@ -194,7 +192,7 @@ var _ = Describe("Sync", func() {
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when other stream is closed and the third stream is open
-			callbacks.OnStreamClosed(streamID3, node)
+			go callbacks.OnStreamClosed(streamID3, node)
 
 			// then no watchdog is active
 			Eventually(func() int32 {
