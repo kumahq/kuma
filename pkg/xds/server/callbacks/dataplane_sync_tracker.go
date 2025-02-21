@@ -12,12 +12,12 @@ import (
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-type NewDataplaneWatchdogFunc func(key core_model.ResourceKey, onDisconnectDone func(key core_model.ResourceKey)) util_xds_v3.Watchdog
+type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_xds_v3.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
-		watchdogs:            map[core_model.ResourceKey]*trackerCleanup{},
+		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
 	}
 }
 
@@ -33,11 +33,11 @@ type dataplaneSyncTracker struct {
 	newDataplaneWatchdog NewDataplaneWatchdogFunc
 
 	stdsync.RWMutex // protects access to the fields below
-	watchdogs       map[core_model.ResourceKey]*trackerCleanup
+	watchdogs       map[core_model.ResourceKey]*watchdogState
 }
-type trackerCleanup struct {
-	cancelFunc     context.CancelFunc
-	disconnectDone func()
+type watchdogState struct {
+	cancelFunc context.CancelFunc
+	stopped    chan struct{}
 }
 
 func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
@@ -46,32 +46,34 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	defer t.Unlock()
 
 	ctx, cancel := context.WithCancel(context.Background())
-	t.watchdogs[dpKey] = &trackerCleanup{
+	state := &watchdogState{
 		cancelFunc: func() {
 			dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
 			cancel()
 		},
+		stopped: make(chan struct{}),
 	}
 	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-	//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
-	go t.newDataplaneWatchdog(dpKey, t.onWatchDogStopped).Start(ctx)
+	stoppedDone := state.stopped
+	go func() {
+		defer close(stoppedDone)
+		//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
+		t.newDataplaneWatchdog(dpKey).Start(ctx)
+	}()
+	t.watchdogs[dpKey] = state
 	return nil
 }
 
 func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
 	t.RLock()
-	defer t.RUnlock()
-	if cleanup := t.watchdogs[dpKey]; cleanup != nil {
-		// kick off stopping of the watchdog
-		cleanup.cancelFunc()
-	}
-}
+	dpData := t.watchdogs[dpKey]
+	t.RUnlock()
 
-func (t *dataplaneSyncTracker) onWatchDogStopped(dpKey core_model.ResourceKey) {
-	t.Lock()
-	defer t.Unlock()
-	if cleanup := t.watchdogs[dpKey]; cleanup != nil && cleanup.disconnectDone != nil {
-		cleanup.disconnectDone()
+	if dpData != nil {
+		dpData.cancelFunc()
+		<-dpData.stopped
+		t.Lock()
+		defer t.Unlock()
+		delete(t.watchdogs, dpKey)
 	}
-	delete(t.watchdogs, dpKey)
 }

@@ -31,7 +31,7 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, onStopped func(key model.ResourceKey)) util_xds_v3.Watchdog {
+func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
 	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
 	return &util_watchdog.SimpleWatchdog{
@@ -58,7 +58,6 @@ func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, onStopped func(k
 			if err := dataplaneWatchdog.Cleanup(); err != nil {
 				log.Error(err, "OnTick() failed")
 			}
-			onStopped(dpKey)
 		},
 	}
 }

@@ -25,5 +25,5 @@ type SnapshotReconciler interface {
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-	New(dpKey core_model.ResourceKey, onDisconnectDone func(key core_model.ResourceKey)) util_xds_v3.Watchdog
+	New(dpKey core_model.ResourceKey) util_xds_v3.Watchdog
 }
