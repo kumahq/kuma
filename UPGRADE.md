@@ -72,6 +72,11 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 The `healthyPanicThreshold` field is deprecated and will be removed in a future release, and we will add it to `MeshCircuitBreaker` policy. 
 
+### Changes on revoking dataplane tokens
+
+Authentication between the control plane and dataplanes is only checked at connection start now. This means that if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to either restart the control plane or the concerned dataplanes.
+
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog
