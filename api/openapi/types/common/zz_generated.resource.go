@@ -44,7 +44,7 @@ type InboundRulesEntry struct {
 
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
-	// FromRules a set of rules for each inbound of this proxy. The field is not set when 'interpretFromEntriesAsRules' on PolicyDescriptor is set to true.
+	// FromRules a set of rules for each inbound of this proxy
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
 
 	// InboundRules a set of rules for each inbound of the proxy. When policy descriptor has 'interpretFromEntriesAsRules' set to true, this field replaces 'fromRules'.

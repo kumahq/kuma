@@ -90,7 +90,7 @@ components:
             $ref: '#/components/schemas/ResourceRule'
         fromRules:
           type: array
-          description: a set of rules for each inbound of this proxy. The field is not set when 'interpretFromEntriesAsRules' on PolicyDescriptor is set to true.
+          description: a set of rules for each inbound of this proxy
           items:
             $ref: '#/components/schemas/FromRule'
         inboundRules:
