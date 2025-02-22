@@ -1,3 +1,19 @@
+# delete this file once MeshHealthcheck policy remove healthyPanicThreshold field
+type: MeshHealthCheck
+name: mhc-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        healthyPanicThreshold: 80
+        http:
+          disabled: true
+---
 type: MeshCircuitBreaker
 name: mcb-1
 mesh: envoyconfig
@@ -30,4 +46,4 @@ spec:
               requestVolume: 10
               minimumHosts: 5
               threshold: 85
-          healthyPanicThreshold: 20
+          healthyPanicThreshold: 0

@@ -5144,6 +5144,19 @@ components:
                               When set to true, outlierDetection configuration
                               won't take any effect
                             type: boolean
+                          healthyPanicThreshold:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: >-
+                              Allows to configure panic threshold for Envoy
+                              cluster. If not specified,
+
+                              the default is 50%. To disable panic mode, set to
+                              0%.
+
+                              Either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                           interval:
                             description: >-
                               The time interval between ejection analysis
@@ -5688,6 +5701,19 @@ components:
                               When set to true, outlierDetection configuration
                               won't take any effect
                             type: boolean
+                          healthyPanicThreshold:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: >-
+                              Allows to configure panic threshold for Envoy
+                              cluster. If not specified,
+
+                              the default is 50%. To disable panic mode, set to
+                              0%.
+
+                              Either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                           interval:
                             description: >-
                               The time interval between ejection analysis
@@ -6232,6 +6258,19 @@ components:
                               When set to true, outlierDetection configuration
                               won't take any effect
                             type: boolean
+                          healthyPanicThreshold:
+                            anyOf:
+                              - type: integer
+                              - type: string
+                            description: >-
+                              Allows to configure panic threshold for Envoy
+                              cluster. If not specified,
+
+                              the default is 50%. To disable panic mode, set to
+                              0%.
+
+                              Either int or decimal represented as string.
+                            x-kubernetes-int-or-string: true
                           interval:
                             description: >-
                               The time interval between ejection analysis

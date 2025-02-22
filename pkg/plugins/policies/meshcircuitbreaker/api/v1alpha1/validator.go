@@ -127,6 +127,7 @@ func validateOutlierDetection(path validators.PathBuilder, outlierDetection *Out
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("interval"), outlierDetection.Interval))
 	verr.Add(validators.ValidateDurationGreaterThanZeroOrNil(path.Field("baseEjectionTime"), outlierDetection.BaseEjectionTime))
 	verr.Add(validators.ValidateUInt32PercentageOrNil(path.Field("maxEjectionPercent"), outlierDetection.MaxEjectionPercent))
+	verr.Add(validators.ValidatePercentageOrNil(path.Field("healthyPanicThreshold"), outlierDetection.HealthyPanicThreshold))
 
 	verr.Add(validateDetectors(path.Field("detectors"), outlierDetection.Detectors))
 

@@ -36,8 +36,9 @@ var Policies = []plugins.PluginName{
 	plugins.PluginName(meshratelimit_api.MeshRateLimitResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtimeout_api.MeshTimeoutResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshtrafficpermission_api.MeshTrafficPermissionResourceTypeDescriptor.KumactlArg),
-	plugins.PluginName(meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshhealthcheck_api.MeshHealthCheckResourceTypeDescriptor.KumactlArg),
+	// MeshCircuitBreaker needs to overwrite MeshHealthCheck 'HealthyPanicThreshold' for cluster
+	plugins.PluginName(meshcircuitbreaker_api.MeshCircuitBreakerResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshretry_api.MeshRetryResourceTypeDescriptor.KumactlArg),
 	plugins.PluginName(meshmetric_api.MeshMetricResourceTypeDescriptor.KumactlArg),
 	// MeshProxyPatch comes after all others

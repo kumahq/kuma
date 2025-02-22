@@ -4,9 +4,7 @@
       "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/commonLbConfig",
       "value": {
-        "healthyPanicThreshold": {
-          "value": 20
-        }
+        "healthyPanicThreshold": {}
       }
     },
     {
@@ -99,9 +97,7 @@
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
         "commonLbConfig": {
-          "healthyPanicThreshold": {
-            "value": 20
-          }
+          "healthyPanicThreshold": {}
         },
         "connectTimeout": "5s",
         "edsClusterConfig": {
