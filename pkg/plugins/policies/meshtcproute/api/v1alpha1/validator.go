@@ -15,7 +15,7 @@ func (r *MeshTCPRouteResource) validate() error {
 	path := validators.RootedAt("spec")
 
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), r.Spec.To))
+	verr.AddErrorAt(path, validateTo(pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), pointer.Deref(r.Spec.To)))
 
 	return verr.OrNil()
 }
@@ -88,9 +88,13 @@ func validateRules(rules []Rule) validators.ValidationError {
 	for i, rule := range rules {
 		path := validators.Root().Index(i)
 
-		verr.AddErrorAt(path.Field("default").Field("backendRefs"),
-			validateBackendRefs(rule.Default.BackendRefs),
-		)
+		if len(pointer.Deref(rule.Default.BackendRefs)) == 0 {
+			verr.AddViolationAt(path.Field("default").Field("backendRefs"), validators.MustBeDefined)
+		} else {
+			verr.AddErrorAt(path.Field("default").Field("backendRefs"),
+				validateBackendRefs(pointer.Deref(rule.Default.BackendRefs)),
+			)
+		}
 	}
 
 	return verr

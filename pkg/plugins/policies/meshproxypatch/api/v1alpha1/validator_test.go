@@ -317,16 +317,6 @@ default:
 				Expect(err).ToNot(HaveOccurred())
 				Expect(actual).To(MatchYAML(given.expected))
 			},
-			Entry("empty default", testCase{
-				inputYaml: `
-targetRef:
-  kind: Mesh
-`,
-				expected: `
-                violations:
-                - field: spec.default.appendModifications
-                  message: must not be empty`,
-			}),
 			Entry("empty modification", testCase{
 				inputYaml: `
 targetRef:

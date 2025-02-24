@@ -15,12 +15,12 @@ type MeshRateLimit struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
 	// To list makes a match between clients and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 	// Rules defines inbound rate limiting configurations. Currently limited to
 	// selecting all inbound traffic, as L7 matching is not yet implemented.
-	Rules []Rule `json:"rules,omitempty"`
+	Rules *[]Rule `json:"rules,omitempty"`
 }
 
 type Rule struct {
@@ -62,6 +62,7 @@ type LocalHTTP struct {
 	// Define if rate limiting should be disabled.
 	Disabled *bool `json:"disabled,omitempty"`
 	// Defines how many requests are allowed per interval.
+	// +kuma:non-mergeable-struct
 	RequestRate *Rate `json:"requestRate,omitempty"`
 	// Describes the actions to take on a rate limit event
 	OnRateLimit *OnRateLimit `json:"onRateLimit,omitempty"`
@@ -85,11 +86,11 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Set []HeaderKeyValue `json:"set,omitempty"`
+	Set *[]HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Add []HeaderKeyValue `json:"add,omitempty"`
+	Add *[]HeaderKeyValue `json:"add,omitempty"`
 }
 
 // LocalTCP defines confguration of local TCP rate limiting
@@ -99,6 +100,7 @@ type LocalTCP struct {
 	// Default: false
 	Disabled *bool `json:"disabled,omitempty"`
 	// Defines how many connections are allowed per interval.
+	// +kuma:non-mergeable-struct
 	ConnectionRate *Rate `json:"connectionRate,omitempty"`
 }
 

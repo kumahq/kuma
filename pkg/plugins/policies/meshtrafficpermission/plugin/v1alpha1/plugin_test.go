@@ -19,6 +19,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -109,7 +110,7 @@ var _ = Describe("RBAC", func() {
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
-											Action: "Allow",
+											Action: pointer.To[policies_api.Action]("Allow"),
 										},
 									},
 								},
@@ -220,7 +221,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshService("frontend"),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -236,7 +237,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -273,7 +274,7 @@ var _ = Describe("RBAC", func() {
 												}: {
 													{
 														Subset: subsetutils.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},

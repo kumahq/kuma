@@ -17,8 +17,8 @@ func (r *MeshFaultInjectionResource) validate() error {
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
-	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
+	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
+	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 

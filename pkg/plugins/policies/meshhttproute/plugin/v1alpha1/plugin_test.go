@@ -439,7 +439,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "http-route", Mesh: "default"},
 				Spec: &api.MeshHTTPRoute{
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
-					To: []api.To{
+					To: &[]api.To{
 						{
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
@@ -723,7 +723,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}},
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v3"}},
 										}): 0,
-										api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
+										api.HashMatches([]api.Match{{QueryParams: &[]api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
 									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
@@ -759,7 +759,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										}, {
 											Matches: []api.Match{{
-												QueryParams: []api.QueryParamsMatch{{
+												QueryParams: &[]api.QueryParamsMatch{{
 													Type:  api.ExactQueryMatch,
 													Name:  "v1",
 													Value: "true",
@@ -1275,18 +1275,18 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Filters: &[]api.Filter{{
 														Type: api.RequestHeaderModifierType,
 														RequestHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
+															Add: &[]api.HeaderKeyValue{{
 																Name:  "request-add-header",
 																Value: "add-value",
 															}},
-															Set: []api.HeaderKeyValue{{
+															Set: &[]api.HeaderKeyValue{{
 																Name:  "request-set-header",
 																Value: "set-value",
 															}, {
 																Name:  "request-set-header-multiple",
 																Value: "one-value,second-value",
 															}},
-															Remove: []string{
+															Remove: &[]string{
 																"request-header-to-remove",
 															},
 														},
@@ -1344,15 +1344,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Filters: &[]api.Filter{{
 														Type: api.ResponseHeaderModifierType,
 														ResponseHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
+															Add: &[]api.HeaderKeyValue{{
 																Name:  "response-add-header",
 																Value: "add-value",
 															}},
-															Set: []api.HeaderKeyValue{{
+															Set: &[]api.HeaderKeyValue{{
 																Name:  "response-set-header",
 																Value: "set-value",
 															}},
-															Remove: []string{
+															Remove: &[]string{
 																"response-header-to-remove",
 															},
 														},
@@ -1515,7 +1515,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
-													Headers: []common_api.HeaderMatch{{
+													Headers: &[]common_api.HeaderMatch{{
 														Type:  pointer.To(common_api.HeaderMatchExact),
 														Name:  "foo-exact",
 														Value: "bar",

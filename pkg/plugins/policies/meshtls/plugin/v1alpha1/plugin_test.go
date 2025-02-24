@@ -109,7 +109,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(policy.Spec.From))).
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From)))).
 				Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -209,7 +209,7 @@ var _ = Describe("MeshTLS", func() {
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithSecretsTracker(secretsTracker).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(policy.Spec.From)).
+					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(pointer.Deref(policy.Spec.From))).
 					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, core_rules.GatewayRules{
 						ToRules: core_rules.GatewayToRules{
 							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{

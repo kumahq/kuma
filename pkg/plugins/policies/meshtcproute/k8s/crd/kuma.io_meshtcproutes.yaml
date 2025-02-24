@@ -202,10 +202,7 @@ spec:
                                       minimum: 0
                                       type: integer
                                   type: object
-                                minItems: 1
                                 type: array
-                            required:
-                            - backendRefs
                             type: object
                         required:
                         - default
@@ -276,6 +273,7 @@ spec:
                           type: object
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1
