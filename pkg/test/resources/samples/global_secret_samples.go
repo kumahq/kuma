@@ -36,7 +36,7 @@ zk0CWhRmtI7HMSnFTQOz9421MiMO8CnLZLqxRBxro/Hr5kb7FqmI4/ItURKbJReK
 
 func SampleSigningKeyGlobalSecretBuilder() *builders.GlobalSecretBuilder {
 	return builders.GlobalSecret().
-		WithName("user-token-signing-key-1").
+		WithName(system.UserTokenSigningKeyPrefix + "-1").
 		WithStringValue(SampleSigningKeyValue)
 }
 

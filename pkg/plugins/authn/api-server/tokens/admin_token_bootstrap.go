@@ -20,8 +20,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 )
 
-var AdminTokenKey = model.ResourceKey{
-	Name: "admin-user-token",
+var globalSecretKey = model.ResourceKey{
+	Name: system.AdminUserToken,
 }
 
 type adminTokenBootstrap struct {
@@ -47,9 +47,9 @@ func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
 		} else {
 			msg := "bootstrap of Admin User Token is enabled. "
 			if a.cpCfg.Environment == config_core.KubernetesEnvironment {
-				msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", AdminTokenKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
+				msg += fmt.Sprintf("To extract credentials execute 'kubectl get secret %s -n %s --template={{.data.value}} | base64 -d'. ", globalSecretKey.Name, a.cpCfg.Store.Kubernetes.SystemNamespace)
 			} else {
-				msg += fmt.Sprintf("To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", a.cpCfg.ApiServer.HTTP.Port, AdminTokenKey.Name)
+				msg += fmt.Sprintf("To extract admin credentials execute 'curl http://localhost:%d/global-secrets/%s | jq -r .data | base64 -d'. ", a.cpCfg.ApiServer.HTTP.Port, globalSecretKey.Name)
 			}
 			msg += "You configure kumactl with them 'kumactl config control-planes add --auth-type=tokens --auth-conf token=YOUR_TOKEN'." +
 				" To disable bootstrap of Admin User Token set KUMA_API_SERVER_AUTHN_TOKENS_BOOTSTRAP_ADMIN_TOKEN to false."
@@ -63,7 +63,7 @@ func (a *adminTokenBootstrap) Start(stop <-chan struct{}) error {
 
 func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error {
 	secret := system.NewGlobalSecretResource()
-	err := a.resManager.Get(ctx, secret, core_store.GetBy(AdminTokenKey))
+	err := a.resManager.Get(ctx, secret, core_store.GetBy(globalSecretKey))
 	if err == nil {
 		return nil // already exists
 	}
@@ -77,11 +77,11 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 		return errors.Wrap(err, "could not generate admin token")
 	}
 
-	log.Info("saving generated Admin User Token", "globalSecretName", AdminTokenKey.Name)
+	log.Info("saving generated Admin User Token", "globalSecretName", globalSecretKey.Name)
 	secret.Spec.Data = &wrapperspb.BytesValue{
 		Value: []byte(token),
 	}
-	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(AdminTokenKey)); err != nil {
+	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(globalSecretKey)); err != nil {
 		return err
 	}
 	return nil

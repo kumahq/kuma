@@ -18,9 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 )
 
 type exportContext struct {
@@ -129,9 +126,9 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
 			for _, res := range allResources {
-				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), issuer.UserTokenSigningKeyPrefix)
-				if res.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
-					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name &&
+				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
+				if res.GetMeta().GetName() != core_system.EnvoyAdminCA &&
+					res.GetMeta().GetName() != core_system.InterCpCA &&
 					!isUserTokenSigningKey {
 					resources = append(resources, res)
 				}
