@@ -964,14 +964,19 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					} else {
 						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
 					}
+					inboundName := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).GetName()
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
+							Name: &inboundName,
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
 						Rules: fromRulesForInbound,
 					})
 				}
+				sort.SliceStable(fromRules, func(i, j int) bool {
+					return pointer.Deref(fromRules[i].Inbound.Name) < pointer.Deref(fromRules[j].Inbound.Name)
+				})
 			}
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {

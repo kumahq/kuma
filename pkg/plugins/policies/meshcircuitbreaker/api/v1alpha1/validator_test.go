@@ -59,6 +59,7 @@ from:
             requestVolume: 10
             minimumHosts: 5
             threshold: 31
+          healthyPanicThreshold: 60
 to:
   - targetRef:
       kind: MeshService
@@ -91,6 +92,7 @@ to:
             requestVolume: 10
             minimumHosts: 5
             threshold: 85
+          healthyPanicThreshold: 70
   - targetRef:
       kind: Mesh
     default:
@@ -121,6 +123,7 @@ to:
             requestVolume: 10
             minimumHosts: 5
             threshold: 85
+          healthyPanicThreshold: 80
   - targetRef:
       kind: MeshService
       name: web-backend
@@ -151,7 +154,8 @@ to:
           failurePercentage:
             requestVolume: 4
             minimumHosts: 2
-            threshold: 75`),
+            threshold: 75
+          healthyPanicThreshold: 90`),
 			Entry("only to targetRef", `
 targetRef:
   kind: MeshService
@@ -417,7 +421,7 @@ violations:
   - field: spec.to[0].default.connectionLimits.maxRequests
     message: must be greater than 0`,
 			}),
-			Entry("any outlierDetection's numeric property cannot be be 0 when specified", testCase{
+			Entry("any outlierDetection's numeric property except 'healthyPanicThreshold' cannot be be 0 when specified", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -445,7 +449,8 @@ to:
           failurePercentage:
             requestVolume: 0
             minimumHosts: 0
-            threshold: 0`,
+            threshold: 0
+        healthyPanicThreshold: 0`,
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.interval
@@ -483,13 +488,38 @@ to:
         maxEjectionPercent: 101
         detectors:
           failurePercentage:
-            threshold: 101`,
+            threshold: 101
+        healthyPanicThreshold: 101`,
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
     message: must be in inclusive range [0, 100]
+  - field: spec.to[0].default.outlierDetection.healthyPanicThreshold
+    message: must be in inclusive range [0.0, 100.0]
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
     message: must be in inclusive range [0, 100]`,
+			}),
+			Entry("any outlierDetection's percentage property cannot be be smaller than 0 when specified", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      outlierDetection:
+        detectors:
+          successRate:
+            standardDeviationFactor: -2
+        healthyPanicThreshold: -3`,
+				expected: `
+violations:
+  - field: spec.to[0].default.outlierDetection.healthyPanicThreshold
+    message: must be in inclusive range [0.0, 100.0]
+  - field: spec.to[0].default.outlierDetection.detectors.successRate.standardDeviationFactor
+    message: must be greater than 0`,
 			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `

@@ -66,6 +66,17 @@ If you're using Kubernetes mode, and you did not specify `default.passthroughMod
 The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
 is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
 
+### MeshHealthCheck
+
+#### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
+
+The `healthyPanicThreshold` field is deprecated and will be removed in a future release, and we will add it to `MeshCircuitBreaker` policy. 
+
+### Changes on revoking dataplane tokens
+
+Authentication between the control plane and dataplanes is only checked at connection start now. This means that if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to either restart the control plane or the concerned dataplanes.
+
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog

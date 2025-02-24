@@ -461,7 +461,7 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 	l = l.WithName("namespace-to-service-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		services := &kube_core.ServiceList{}
-		if err := client.List(ctx, services, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+		if err := client.List(ctx, services, kube_client.InNamespace(obj.GetName())); err != nil {
 			l.WithValues("namespace", obj.GetName()).Error(err, "failed to fetch Services")
 			return nil
 		}

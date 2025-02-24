@@ -11,6 +11,7 @@
    "fromRules": [
     {
      "inbound": {
+      "name": "",
       "port": 8080,
       "tags": {
        "kuma.io/service": "foo"
