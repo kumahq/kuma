@@ -3,6 +3,7 @@ package builders
 import (
 	"context"
 
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 
@@ -71,7 +72,7 @@ func (m *MeshBuilder) WithoutBackendValidation() *MeshBuilder {
 	if m.res.Spec.Mtls == nil {
 		m.res.Spec.Mtls = &mesh_proto.Mesh_Mtls{}
 	}
-	m.res.Spec.Mtls.SkipValidation = true
+	m.res.Spec.Mtls.SkipValidation = &wrapperspb.BoolValue{Value: true}
 	return m
 }
 
@@ -102,7 +103,7 @@ func (m *MeshBuilder) WithEgressRoutingEnabled() *MeshBuilder {
 	if m.res.Spec.Routing == nil {
 		m.res.Spec.Routing = &mesh_proto.Routing{}
 	}
-	m.res.Spec.Routing.ZoneEgress = true
+	m.res.Spec.Routing.ZoneEgress = &wrapperspb.BoolValue{Value: true}
 	return m
 }
 
@@ -110,7 +111,7 @@ func (m *MeshBuilder) WithMeshExternalServiceTrafficForbidden() *MeshBuilder {
 	if m.res.Spec.Routing == nil {
 		m.res.Spec.Routing = &mesh_proto.Routing{}
 	}
-	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = true
+	m.res.Spec.Routing.DefaultForbidMeshExternalServiceAccess = &wrapperspb.BoolValue{Value: true}
 	return m
 }
 
