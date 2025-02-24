@@ -15,6 +15,8 @@ import (
 // +kuma:policy:has_status=true
 // +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=mzsvc
+// MeshMultizoneServices are only created on global
+// +kuma:policy:kds_flags=model.GlobalToZonesFlag
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshMultiZoneService struct {
 	// Selector is a way to select multiple MeshServices

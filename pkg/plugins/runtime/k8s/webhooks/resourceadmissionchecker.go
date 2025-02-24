@@ -37,7 +37,7 @@ func (c *ResourceAdmissionChecker) IsOperationAllowed(userInfo authenticationv1.
 		}
 	}
 
-	if !c.isResourceTypeAllowed(r.Descriptor()) {
+	if r.Descriptor().IsReadOnly(c.Mode == core.Global, c.FederatedZone) {
 		return *forbiddenResponse(resourceTypeNotAllowedMsg(r.Descriptor().Name, c.Mode))
 	}
 
@@ -60,19 +60,6 @@ func (c *ResourceAdmissionChecker) isNamespaceAllowed(r core_model.Resource, ns 
 		}
 	}
 	return admission.Allowed("")
-}
-
-func (c *ResourceAdmissionChecker) isResourceTypeAllowed(d core_model.ResourceTypeDescriptor) bool {
-	if d.KDSFlags == core_model.KDSDisabledFlag {
-		return true
-	}
-	if c.Mode == core.Global && !d.KDSFlags.Has(core_model.AllowedOnGlobalSelector) {
-		return false
-	}
-	if c.FederatedZone && !d.KDSFlags.Has(core_model.AllowedOnZoneSelector) {
-		return false
-	}
-	return true
 }
 
 func (c *ResourceAdmissionChecker) isResourceAllowed(r core_model.Resource, ns string) *admission.Response {

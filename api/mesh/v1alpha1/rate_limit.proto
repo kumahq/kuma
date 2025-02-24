@@ -16,7 +16,7 @@ message RateLimit {
   option (kuma.mesh.resource).name = "RateLimitResource";
   option (kuma.mesh.resource).type = "RateLimit";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "rate-limit";
   option (kuma.mesh.resource).allow_to_inspect = true;
 

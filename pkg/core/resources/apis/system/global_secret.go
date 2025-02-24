@@ -106,17 +106,17 @@ func (l *GlobalSecretResourceList) SetPagination(p model.Pagination) {
 var GlobalSecretResourceTypeDescriptor model.ResourceTypeDescriptor
 
 func init() {
-	GlobalSecretResourceTypeDescriptor = model.ResourceTypeDescriptor{
-		Name:           GlobalSecretType,
-		Resource:       NewGlobalSecretResource(),
-		ResourceList:   &GlobalSecretResourceList{},
-		ReadOnly:       false,
-		AdminOnly:      true,
-		Scope:          model.ScopeGlobal,
-		KDSFlags:       model.GlobalToAllZonesFlag,
-		WsPath:         "global-secrets",
-		KumactlArg:     "global-secret",
-		KumactlListArg: "global-secrets",
-	}
+	// GlobalSecret is a frankenstein type as it's extracted from the secret one with a different scope
+	// so for the type descriptor we copy the one from secret and then change types
+	GlobalSecretResourceTypeDescriptor = SecretResourceTypeDescriptor
+	GlobalSecretResourceTypeDescriptor.Name = GlobalSecretType
+	GlobalSecretResourceTypeDescriptor.Resource = NewGlobalSecretResource()
+	GlobalSecretResourceTypeDescriptor.ResourceList = &GlobalSecretResourceList{}
+	GlobalSecretResourceTypeDescriptor.Scope = model.ScopeGlobal
+	GlobalSecretResourceTypeDescriptor.WsPath = "global-secrets"
+	GlobalSecretResourceTypeDescriptor.KumactlArg = "global-secret"
+	GlobalSecretResourceTypeDescriptor.KumactlListArg = "global-secrets"
+	GlobalSecretResourceTypeDescriptor.SingularDisplayName = "Global Secret"
+	GlobalSecretResourceTypeDescriptor.PluralDisplayName = "Global Secrets"
 	registry.RegisterType(GlobalSecretResourceTypeDescriptor)
 }

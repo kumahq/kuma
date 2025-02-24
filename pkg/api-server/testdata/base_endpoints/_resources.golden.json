@@ -61,10 +61,10 @@
    "includeInFederation": true,
    "name": "GlobalSecret",
    "path": "global-secrets",
-   "pluralDisplayName": "",
+   "pluralDisplayName": "Global Secrets",
    "readOnly": false,
    "scope": "Global",
-   "singularDisplayName": ""
+   "singularDisplayName": "Global Secret"
   },
   {
    "includeInFederation": true,
