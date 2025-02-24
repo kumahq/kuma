@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -27,7 +26,6 @@ type DataplaneWatchdogDependencies struct {
 	EgressReconciler      SnapshotReconciler
 	EnvoyCpCtx            *xds_context.ControlPlaneContext
 	MeshCache             *mesh.Cache
-	MetadataTracker       DataplaneMetadataTracker
 	ResManager            core_manager.ReadOnlyResourceManager
 }
 
@@ -57,21 +55,16 @@ type DataplaneWatchdog struct {
 	dpAddress        string
 }
 
-func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, dpKey core_model.ResourceKey) *DataplaneWatchdog {
+func NewDataplaneWatchdog(l logr.Logger, deps DataplaneWatchdogDependencies, dpKey core_model.ResourceKey) *DataplaneWatchdog {
 	return &DataplaneWatchdog{
 		DataplaneWatchdogDependencies: deps,
 		key:                           dpKey,
-		log:                           core.Log.WithName("xds").WithValues("key", dpKey),
+		log:                           l.WithName("xds"),
 		proxyTypeSettled:              false,
 	}
 }
 
-func (d *DataplaneWatchdog) Sync(ctx context.Context) (SyncResult, error) {
-	metadata := d.MetadataTracker.Metadata(d.key)
-	if metadata == nil {
-		return SyncResult{}, errors.New("metadata cannot be nil")
-	}
-
+func (d *DataplaneWatchdog) Sync(ctx context.Context, metadata *core_xds.DataplaneMetadata) (SyncResult, error) {
 	if d.dpType == "" {
 		d.dpType = metadata.GetProxyType()
 	}

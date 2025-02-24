@@ -41,16 +41,16 @@ func DefaultEgressProxyBuilder(rt core_runtime.Runtime, apiVersion core_xds.APIV
 	}
 }
 
+// DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 func DefaultDataplaneWatchdogFactory(
 	rt core_runtime.Runtime,
-	metadataTracker DataplaneMetadataTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
 	egressReconciler SnapshotReconciler,
 	xdsMetrics *xds_metrics.Metrics,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion core_xds.APIVersion,
-) (DataplaneWatchdogFactory, error) {
+) DataplaneWatchdogFactory {
 	config := rt.Config()
 
 	dataplaneProxyBuilder := DefaultDataplaneProxyBuilder(
@@ -74,12 +74,11 @@ func DefaultDataplaneWatchdogFactory(
 		EgressReconciler:      egressReconciler,
 		EnvoyCpCtx:            envoyCpCtx,
 		MeshCache:             rt.MeshCache(),
-		MetadataTracker:       metadataTracker,
 		ResManager:            rt.ReadOnlyResourceManager(),
 	}
 	return NewDataplaneWatchdogFactory(
-		xdsMetrics,
-		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
 		deps,
+		config.XdsServer.DataplaneConfigurationRefreshInterval.Duration,
+		xdsMetrics,
 	)
 }
