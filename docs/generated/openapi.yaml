@@ -262,6 +262,38 @@ paths:
       tags:
         - MeshAccessLog
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -357,6 +389,38 @@ paths:
       tags:
         - MeshCircuitBreaker
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -452,6 +516,38 @@ paths:
       tags:
         - MeshFaultInjection
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -547,6 +643,38 @@ paths:
       tags:
         - MeshHealthCheck
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -642,6 +770,38 @@ paths:
       tags:
         - MeshHTTPRoute
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -737,6 +897,38 @@ paths:
       tags:
         - MeshLoadBalancingStrategy
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -830,6 +1022,38 @@ paths:
       tags:
         - MeshMetric
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -925,6 +1149,38 @@ paths:
       tags:
         - MeshPassthrough
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1020,6 +1276,38 @@ paths:
       tags:
         - MeshProxyPatch
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1115,6 +1403,38 @@ paths:
       tags:
         - MeshRateLimit
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1208,6 +1528,38 @@ paths:
       tags:
         - MeshRetry
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1301,6 +1653,38 @@ paths:
       tags:
         - MeshTCPRoute
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1394,6 +1778,38 @@ paths:
       tags:
         - MeshTimeout
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1403,6 +1819,143 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTimeoutList'
+<<<<<<< HEAD
+=======
+  /meshes/{mesh}/meshtlses/{name}:
+    get:
+      operationId: getMeshTLS
+      summary: Returns MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTLSItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshTLS
+      summary: Creates or Updates MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshTLSItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshTLS
+      summary: Deletes MeshTLS entity
+      tags:
+        - MeshTLS
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshTLS
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTLSDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshtlses:
+    get:
+      operationId: getMeshTLSList
+      summary: Returns a list of MeshTLS in the mesh.
+      tags:
+        - MeshTLS
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshTLSList'
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
   /meshes/{mesh}/meshtraces/{name}:
     get:
       summary: Returns MeshTrace entity
@@ -1487,6 +2040,38 @@ paths:
       tags:
         - MeshTrace
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1582,6 +2167,38 @@ paths:
       tags:
         - MeshTrafficPermission
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1591,6 +2208,253 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshTrafficPermissionList'
+<<<<<<< HEAD
+=======
+  /meshes/{name}:
+    get:
+      operationId: getMesh
+      summary: Returns Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMesh
+      summary: Creates or Updates Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMesh
+      summary: Deletes Mesh entity
+      tags:
+        - Mesh
+      parameters:
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the Mesh
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes:
+    get:
+      operationId: getMeshList
+      summary: Returns a list of Mesh in the mesh.
+      tags:
+        - Mesh
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshList'
+  /meshes/{mesh}/meshgateways/{name}:
+    get:
+      operationId: getMeshGateway
+      summary: Returns MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshGateway
+      summary: Creates or Updates MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshGatewayItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
+    delete:
+      operationId: deleteMeshGateway
+      summary: Deletes MeshGateway entity
+      tags:
+        - MeshGateway
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshGateway
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshgateways:
+    get:
+      operationId: getMeshGatewayList
+      summary: Returns a list of MeshGateway in the mesh.
+      tags:
+        - MeshGateway
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshGatewayList'
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
   /hostnamegenerators/{name}:
     get:
       summary: Returns HostnameGenerator entity
@@ -1658,6 +2522,39 @@ paths:
       summary: Returns a list of HostnameGenerator in the mesh.
       tags:
         - HostnameGenerator
+<<<<<<< HEAD
+=======
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
       responses:
         '200':
           $ref: '#/components/responses/HostnameGeneratorList'
@@ -1747,6 +2644,38 @@ paths:
       tags:
         - MeshExternalService
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -1756,6 +2685,145 @@ paths:
       responses:
         '200':
           $ref: '#/components/responses/MeshExternalServiceList'
+<<<<<<< HEAD
+=======
+  /meshes/{mesh}/meshmultizoneservices/{name}:
+    get:
+      operationId: getMeshMultiZoneService
+      summary: Returns MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceItem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      operationId: putMeshMultiZoneService
+      summary: Creates or Updates MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MeshMultiZoneServiceItem'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: >-
+                  #/components/schemas/MeshMultiZoneServiceCreateOrUpdateSuccessResponse
+    delete:
+      operationId: deleteMeshMultiZoneService
+      summary: Deletes MeshMultiZoneService entity
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the MeshMultiZoneService
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshMultiZoneServiceDeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /meshes/{mesh}/meshmultizoneservices:
+    get:
+      operationId: getMeshMultiZoneServiceList
+      summary: Returns a list of MeshMultiZoneService in the mesh.
+      tags:
+        - MeshMultiZoneService
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      responses:
+        '200':
+          $ref: '#/components/responses/MeshMultiZoneServiceList'
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
   /meshes/{mesh}/meshservices/{name}:
     get:
       summary: Returns MeshService entity
@@ -1840,6 +2908,38 @@ paths:
       tags:
         - MeshService
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:

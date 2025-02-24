@@ -3,13 +3,14 @@ info:
   version: v1alpha1
   title: Kuma API
   description: Kuma API
-  x-ref-schema-name: "MeshMetric"
+  x-ref-schema-name: "MeshGateway"
 
 paths:
-  /meshes/{mesh}/meshmetrics/{name}:
+  /meshes/{mesh}/meshgateways/{name}:
     get:
-      summary: Returns MeshMetric entity
-      tags: [ "MeshMetric" ]
+      operationId: getMeshGateway
+      summary: Returns MeshGateway entity
+      tags: [ "MeshGateway" ]
       parameters:
         - in: path
           name: mesh
@@ -22,14 +23,17 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the MeshMetric
+          description: name of the MeshGateway
       responses:
         '200':
-          $ref: "#/components/responses/MeshMetricItem"
+          $ref: "#/components/responses/MeshGatewayItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
-      summary: Creates or Updates MeshMetric entity
-      tags: [ "MeshMetric" ]
+      operationId: putMeshGateway
+      summary: Creates or Updates MeshGateway entity
+      tags: [ "MeshGateway" ]
       parameters:
         - in: path
           name: mesh
@@ -42,31 +46,32 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the MeshMetric
+          description: name of the MeshGateway
       requestBody:
         description: Put request
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MeshMetricItem'
+              $ref: '#/components/schemas/MeshGatewayItem'
       responses:
         '200':
           description: Updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MeshMetricCreateOrUpdateSuccessResponse'
+                $ref: '#/components/schemas/MeshGatewayCreateOrUpdateSuccessResponse'
 
     delete:
-      summary: Deletes MeshMetric entity
-      tags: [ "MeshMetric" ]
+      operationId: deleteMeshGateway
+      summary: Deletes MeshGateway entity
+      tags: [ "MeshGateway" ]
       parameters:
         - in: path
           name: mesh
@@ -79,18 +84,23 @@ paths:
           schema:
             type: string
           required: true
-          description: name of the MeshMetric
+          description: name of the MeshGateway
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshGatewayDeleteSuccessResponse'
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
-  /meshes/{mesh}/meshmetrics:
+  /meshes/{mesh}/meshgateways:
     get:
-      summary: Returns a list of MeshMetric in the mesh.
-      tags: [ "MeshMetric" ]
+      operationId: getMeshGatewayList
+      summary: Returns a list of MeshGateway in the mesh.
+      tags: [ "MeshGateway" ]
       parameters:
-<<<<<<< HEAD
-=======
         - in: query
           name: offset
           description: offset in the list of entities
@@ -120,7 +130,6 @@ paths:
                 type: string
           example:
             label.k8s.kuma.io/namespace: my-ns
->>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
@@ -129,31 +138,35 @@ paths:
           description: name of the mesh
       responses:
         '200':
-          $ref: "#/components/responses/MeshMetricList"
+          $ref: "#/components/responses/MeshGatewayList"
 
 components:
   schemas:
-    MeshMetricItem:
+    MeshGatewayItem:
       $ref: 'schema.yaml'
-    MeshMetricCreateOrUpdateSuccessResponse:
+    MeshGatewayCreateOrUpdateSuccessResponse:
       type: object
       properties:
         warnings:
           type: array
+          readOnly: true
           description: |
             warnings is a list of warning messages to return to the requesting Kuma API clients.
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
+    MeshGatewayDeleteSuccessResponse:
+      type: object
+      properties: {}
 
   responses:
-    MeshMetricItem:
+    MeshGatewayItem:
       description: Successful response
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/MeshMetricItem'
-    MeshMetricList:
+            $ref: '#/components/schemas/MeshGatewayItem'
+    MeshGatewayList:
       description: List
       content:
         application/json:
@@ -163,7 +176,7 @@ components:
               items:
                 type: array
                 items:
-                  $ref: "#/components/schemas/MeshMetricItem"
+                  $ref: "#/components/schemas/MeshGatewayItem"
               total:
                 type: number
                 description: The total number of entities
