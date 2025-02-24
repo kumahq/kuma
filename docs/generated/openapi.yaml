@@ -344,9 +344,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -480,9 +480,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -616,9 +616,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -752,9 +752,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -888,9 +888,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1025,9 +1025,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1159,9 +1159,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1295,9 +1295,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1431,9 +1431,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1567,9 +1567,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1701,9 +1701,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1835,9 +1835,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -1969,9 +1969,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2103,9 +2103,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2237,9 +2237,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2374,9 +2374,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2490,9 +2490,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2618,9 +2618,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2736,9 +2736,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -2866,9 +2866,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -3002,9 +3002,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
@@ -3136,9 +3136,9 @@ paths:
           name: size
           description: the number of items per page
           required: false
-          default: 100
           schema:
             type: integer
+            default: 100
             maximum: 1000
             minimum: 1
         - in: query
