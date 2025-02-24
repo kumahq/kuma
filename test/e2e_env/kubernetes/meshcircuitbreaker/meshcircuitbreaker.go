@@ -190,7 +190,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb-outbound
+  name: mcb-outbound-ms
   namespace: %s
   labels:
     kuma.io/mesh: %s
