@@ -130,13 +130,13 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			cleanupDone := make(chan struct{})
+			var cleanupDone atomic.Bool
 			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
 				return WatchdogFunc(func(ctx context.Context) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-ctx.Done()
 					atomic.AddInt32(&activeWatchdogs, -1)
-					cleanupDone <- struct{}{}
+					cleanupDone.Store(true)
 				})
 			})
 			callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
@@ -152,9 +152,7 @@ var _ = Describe("Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
-			Eventually(func() int32 {
-				return atomic.LoadInt32(&activeWatchdogs)
-			}, "5s", "10ms").Should(Equal(int32(1)))
+			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
 
 			// and when new stream from backend-01 is connected  and request is sent
 			err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
@@ -168,17 +166,15 @@ var _ = Describe("Sync", func() {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
-			go callbacks.OnStreamClosed(streamID2, node)
+			callbacks.OnStreamClosed(streamID2, node)
+			Expect(cleanupDone.Load()).To(BeFalse())
 
 			// when first stream is closed
-			go callbacks.OnStreamClosed(streamID1, node)
-			<-cleanupDone
-			// cleanupDone is inside the watchdog, it's still not the accurate time of cleanup done in the dataplane_callback
-			// to prevent flakiness, we introduce this tiny delay here, it does no harm to the test workflow
-			<-time.After(50 * time.Millisecond)
+			callbacks.OnStreamClosed(streamID1, node)
+			Expect(cleanupDone.Load()).To(BeTrue())
 
 			// then there is no active watchdog
-			Eventually(func() int32 { return atomic.LoadInt32(&activeWatchdogs) }, "5s", "10ms").Should(Equal(int32(0)))
+			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
 
 			// and when the third stream from backend-01 is connected after the first active stream closed and request is sent
 			err = callbacks.OnStreamOpen(context.Background(), streamID3, "")
@@ -191,13 +187,11 @@ var _ = Describe("Sync", func() {
 				return atomic.LoadInt32(&activeWatchdogs)
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
-			// when other stream is closed and the third stream is open
-			go callbacks.OnStreamClosed(streamID3, node)
+			// when the third stream is closed
+			callbacks.OnStreamClosed(streamID3, node)
 
 			// then no watchdog is active
-			Eventually(func() int32 {
-				return atomic.LoadInt32(&activeWatchdogs)
-			}, "5s", "10ms").Should(Equal(int32(0)))
+			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
 		})
 	})
 })

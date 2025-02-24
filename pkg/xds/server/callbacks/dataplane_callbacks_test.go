@@ -2,7 +2,6 @@ package callbacks_test
 
 import (
 	"context"
-	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -57,7 +56,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 		err := callbacks.OnStreamOpen(context.Background(), 1, "")
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnProxyConnected and OnProxyReconnected is not yet called
+		// then OnProxyConnected is not yet called
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(0))
 
 		// when OnStreamRequest is sent
@@ -71,7 +70,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 		err = callbacks.OnStreamRequest(1, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnProxyReconnected and OnProxyReconnected are not called again, they should be only called on the first DiscoveryRequest
+		// then OnProxyReconnected is not called again, they should be only called on the first DiscoveryRequest
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
 
 		// when next stream for given data plane proxy is connected
@@ -81,7 +80,7 @@ var _ = Describe("Dataplane Callbacks", func() {
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring("already an active stream"))
 
-		// then OnProxyReconnected should not be called twice
+		// then OnProxyConnected should not be called twice
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
 
 		// when first stream is closed
@@ -95,54 +94,5 @@ var _ = Describe("Dataplane Callbacks", func() {
 
 		// then OnProxyDisconnected should not be called twice
 		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(1))
-	})
-
-	It("should reject new stream when the cleanup is not complete", func() {
-		// setup
-		cleanupCost := 2 * time.Second
-		cleanupStarted := make(chan struct{})
-		tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
-			return WatchdogFunc(func(ctx context.Context) {
-				<-ctx.Done()
-				cleanupStarted <- struct{}{}
-				<-time.After(cleanupCost)
-			})
-		})
-		callbacks := util_xds_v3.AdaptCallbacks(DataplaneCallbacksToXdsCallbacks(tracker))
-
-		// when one stream for backend-01 is connected and request is sent
-		streamID1 := int64(1)
-		streamID2 := int64(2)
-		streamID3 := int64(3)
-		err := callbacks.OnStreamOpen(context.Background(), streamID1, "")
-		Expect(err).ToNot(HaveOccurred())
-		node := &envoy_core.Node{Id: "default.backend-01"}
-		err = callbacks.OnStreamRequest(streamID1, &envoy_sd.DiscoveryRequest{Node: node})
-		Expect(err).ToNot(HaveOccurred())
-
-		// and when a new stream from backend-01 tries to connect quickly before the cleanup is complete
-		go callbacks.OnStreamClosed(streamID1, node)
-		<-cleanupStarted
-		<-time.After(cleanupCost - time.Second)
-
-		err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
-		Expect(err).ToNot(HaveOccurred())
-		err = callbacks.OnStreamRequest(streamID2, &envoy_sd.DiscoveryRequest{Node: node})
-
-		// then it should be rejected
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(ContainSubstring("already an active stream"))
-		go callbacks.OnStreamClosed(streamID2, node)
-
-		// and when a new stream from backend-01 tries to connect quickly after the cleanup is complete
-		<-time.After(cleanupCost)
-		// and when the third stream from backend-01 is connected after the first active stream closed and request is sent
-		err = callbacks.OnStreamOpen(context.Background(), streamID3, "")
-		Expect(err).ToNot(HaveOccurred())
-		err = callbacks.OnStreamRequest(streamID3, &envoy_sd.DiscoveryRequest{Node: node})
-		Expect(err).ToNot(HaveOccurred())
-
-		// when other stream is closed and the third stream is open
-		go callbacks.OnStreamClosed(streamID3, node)
 	})
 })

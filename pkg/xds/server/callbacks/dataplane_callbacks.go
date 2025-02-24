@@ -32,14 +32,14 @@ type xdsCallbacks struct {
 
 	sync.RWMutex
 	dpStreams     map[core_xds.StreamID]dpStream
-	activeStreams map[core_model.ResourceKey]int
+	activeStreams map[core_model.ResourceKey]core_xds.StreamID
 }
 
 func DataplaneCallbacksToXdsCallbacks(callbacks DataplaneCallbacks) util_xds.Callbacks {
 	return &xdsCallbacks{
 		callbacks:     callbacks,
 		dpStreams:     map[core_xds.StreamID]dpStream{},
-		activeStreams: map[core_model.ResourceKey]int{},
+		activeStreams: map[core_model.ResourceKey]core_xds.StreamID{},
 	}
 }
 
@@ -64,10 +64,7 @@ func (d *xdsCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 
 	d.Lock()
 	if streamDpKey != nil {
-		d.activeStreams[*streamDpKey]--
-		if d.activeStreams[*streamDpKey] == 0 {
-			delete(d.activeStreams, *streamDpKey)
-		}
+		delete(d.activeStreams, *streamDpKey)
 	}
 	delete(d.dpStreams, streamID)
 	d.Unlock()
@@ -103,32 +100,29 @@ func (d *xdsCallbacks) OnStreamRequest(streamID core_xds.StreamID, request util_
 
 	d.Lock()
 	// in case client will open 2 concurrent request for the same streamID then
-	// we don't to increment the counter twice, so checking once again that stream
-	// wasn't processed
+	// checking once again that stream wasn't processed
 	alreadyProcessed = d.dpStreams[streamID].dp != nil
 	if alreadyProcessed {
 		d.Unlock()
 		return nil
 	}
 
-	activeStreams := d.activeStreams[dpKey]
-	if activeStreams == 0 {
-		dpStream := d.dpStreams[streamID]
-		dpStream.dp = &dpKey
-		d.dpStreams[streamID] = dpStream
+	var streamInfo dpStream
+	_, alreadyConnected := d.activeStreams[dpKey]
+	if !alreadyConnected {
+		streamInfo = d.dpStreams[streamID]
+		streamInfo.dp = &dpKey
+		d.dpStreams[streamID] = streamInfo
 
-		d.activeStreams[dpKey]++
-		d.Unlock()
-
-		if err := d.callbacks.OnProxyConnected(streamID, dpKey, dpStream.ctx, *metadata); err != nil {
-			return err
-		}
-	} else {
-		d.Unlock()
-		// we don't allow more than one active stream from a data plane as there can be race conditions
-		return errors.New("there is already an active stream from this node, try again later")
+		d.activeStreams[dpKey] = streamID
 	}
-	return nil
+	d.Unlock()
+
+	if !alreadyConnected {
+		return d.callbacks.OnProxyConnected(streamID, dpKey, streamInfo.ctx, *metadata)
+	}
+	// we don't allow more than one active stream from a data plane as there can be race conditions
+	return errors.New("there is already an active stream from this node, try again later")
 }
 
 func (d *xdsCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
