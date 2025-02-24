@@ -9,7 +9,7 @@ GINKGO_UNIT_TEST_FLAGS ?= \
 	--skip-package ./test --race
 
 ifdef CI
-	GINKGO_OPTS ?= -p --github-output
+	GINKGO_OPTS ?= --procs 2 --github-output
 else
 	GINKGO_OPTS ?= -p
 endif
