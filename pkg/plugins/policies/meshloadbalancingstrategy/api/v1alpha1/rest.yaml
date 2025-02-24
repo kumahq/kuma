@@ -89,6 +89,38 @@ paths:
       summary: Returns a list of MeshLoadBalancingStrategy in the mesh.
       tags: [ "MeshLoadBalancingStrategy" ]
       parameters:
+<<<<<<< HEAD
+=======
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+>>>>>>> 3ab8d8d74 (fix(oapi): fix default in size query parameter (#12936))
         - in: path
           name: mesh
           schema:
