@@ -17,17 +17,11 @@ import (
 
 type countingDpCallbacks struct {
 	OnProxyConnectedCounter    int
-	OnProxyReconnectedCounter  int
 	OnProxyDisconnectedCounter int
 }
 
 func (c *countingDpCallbacks) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
 	c.OnProxyConnectedCounter++
-	return nil
-}
-
-func (c *countingDpCallbacks) OnProxyReconnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, ctx context.Context, metadata core_xds.DataplaneMetadata) error {
-	c.OnProxyReconnectedCounter++
 	return nil
 }
 
@@ -62,9 +56,8 @@ var _ = Describe("Dataplane Callbacks", func() {
 		err := callbacks.OnStreamOpen(context.Background(), 1, "")
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnProxyConnected and OnProxyReconnected is not yet called
+		// then OnProxyConnected is not yet called
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(0))
-		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when OnStreamRequest is sent
 		err = callbacks.OnStreamRequest(1, &req)
@@ -72,36 +65,34 @@ var _ = Describe("Dataplane Callbacks", func() {
 
 		// then only OnProxyConnected should be called
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when next OnStreamRequest on the same stream is sent
 		err = callbacks.OnStreamRequest(1, &req)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then OnProxyReconnected and OnProxyReconnected are not called again, they should be only called on the first DiscoveryRequest
+		// then OnProxyReconnected is not called again, they should be only called on the first DiscoveryRequest
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(0))
 
 		// when next stream for given data plane proxy is connected
 		err = callbacks.OnStreamOpen(context.Background(), 2, "")
 		Expect(err).ToNot(HaveOccurred())
 		err = callbacks.OnStreamRequest(2, &req)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(ContainSubstring("already an active stream"))
 
-		// then only OnProxyReconnected should be called
+		// then OnProxyConnected should not be called twice
 		Expect(countingCallbacks.OnProxyConnectedCounter).To(Equal(1))
-		Expect(countingCallbacks.OnProxyReconnectedCounter).To(Equal(1))
 
 		// when first stream is closed
 		callbacks.OnStreamClosed(1, node)
 
-		// then OnProxyDisconnected should not yet be called
-		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(0))
+		// then OnProxyDisconnected should be called
+		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(1))
 
 		// when last stream is closed
 		callbacks.OnStreamClosed(2, node)
 
-		// then OnProxyDisconnected should be called
+		// then OnProxyDisconnected should not be called twice
 		Expect(countingCallbacks.OnProxyDisconnectedCounter).To(Equal(1))
 	})
 })
