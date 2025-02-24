@@ -3,6 +3,7 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"reflect"
 	"strings"
 	"time"
@@ -510,7 +511,7 @@ func ComputeLabels(
 ) (map[string]string, error) {
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
-		labels = existingLabels
+		labels = maps.Clone(existingLabels)
 	}
 
 	setIfNotExist := func(k, v string) {
