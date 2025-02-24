@@ -18,6 +18,10 @@ import (
 )
 
 func EnsureHostnameGeneratorExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
+	if cfg.Defaults.Mode == kuma_cp.ModeNone {
+		log.V(1).Info("skipping default hostname generators because KUMA_DEFAULTS_MODE is set to none")
+		return nil
+	}
 	if cfg.Defaults.SkipHostnameGenerators {
 		log.V(1).Info("skip ensuring default hostname generators because SkipHostnameGenerators is set to true")
 		return nil

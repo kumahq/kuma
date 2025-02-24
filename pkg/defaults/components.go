@@ -31,6 +31,11 @@ var EnsureDefaultFuncs = []EnsureDefaultFunc{
 }
 
 func Setup(runtime runtime.Runtime) error {
+	if runtime.Config().Defaults.Mode == kuma_cp.ModeNone {
+		log.V(1).Info("skipping default tenant resources because KUMA_DEFAULTS_MODE is set to none")
+		return nil
+	}
+
 	if runtime.Config().Defaults.SkipTenantResources {
 		log.V(1).Info("skipping default tenant resources because KUMA_DEFAULTS_SKIP_TENANT_RESOURCES is set to true")
 		return nil

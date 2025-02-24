@@ -280,6 +280,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
 			Expect(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 
+			Expect(cfg.Defaults.Mode).To(Equal(kuma_cp.ModeNone))
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
 			Expect(cfg.Defaults.CreateMeshRoutingResources).To(BeTrue())
@@ -649,6 +650,7 @@ dnsServer:
   serviceVipEnabled: false
   serviceVipPort: 9090
 defaults:
+  skipMeshCreation: None
   skipMeshCreation: true
   skipHostnameGenerators: true
   skipTenantResources: true

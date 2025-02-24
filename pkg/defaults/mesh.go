@@ -22,6 +22,10 @@ func EnsureDefaultMeshExists(
 	logger logr.Logger,
 	cfg kuma_cp.Config,
 ) error {
+	if cfg.Defaults.Mode == kuma_cp.ModeNone {
+		log.V(1).Info("skipping default Mesh creation because KUMA_DEFAULTS_MODE is set to none")
+		return nil
+	}
 	if cfg.Defaults.SkipMeshCreation {
 		log.V(1).Info("skipping default Mesh creation because KUMA_DEFAULTS_SKIP_MESH_CREATION is set to true")
 		return nil

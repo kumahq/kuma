@@ -60,6 +60,14 @@ var _ = Describe("Ensure Hostname Generators", func() {
 			},
 			expectedGenNames: nil,
 		}),
+		Entry("skip defaults via mode", testCase{
+			cpConfig: kuma_cp.Config{
+				Defaults: &kuma_cp.Defaults{
+					Mode: kuma_cp.ModeNone,
+				},
+			},
+			expectedGenNames: nil,
+		}),
 		Entry("global universal", testCase{
 			cpConfig: kuma_cp.Config{
 				Defaults:    &kuma_cp.Defaults{},
