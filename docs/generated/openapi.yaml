@@ -15281,8 +15281,8 @@ components:
           schema:
             $ref: '#/components/schemas/InspectHostnames'
           examples:
-            ResponseForDataplane:
-              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+            ResponseForHostnames:
+              $ref: '#/components/examples/InspectHostnamesExample'
     BadRequest:
       description: Bad Request
       content:
