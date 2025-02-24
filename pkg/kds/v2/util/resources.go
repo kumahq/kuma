@@ -7,7 +7,7 @@ import (
 
 func GetSupportedTypes() []string {
 	var types []string
-	for _, def := range registry.Global().ObjectTypes(model.HasKdsEnabled()) {
+	for _, def := range registry.Global().ObjectTypes(model.HasKDSEnabled()) {
 		types = append(types, string(def))
 	}
 	return types

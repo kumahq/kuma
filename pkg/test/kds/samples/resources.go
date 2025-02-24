@@ -301,6 +301,9 @@ var (
 			},
 		},
 	}
+	Secret2 = &system_proto.Secret{
+		Data: util_proto.Bytes([]byte("secret")),
+	}
 	Secret = &system_proto.Secret{
 		Data: util_proto.Bytes([]byte("secret key")),
 	}

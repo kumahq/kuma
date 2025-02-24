@@ -54,35 +54,24 @@ type KDSFlagType uint32
 
 const (
 	// KDSDisabledFlag is a flag that indicates that this resource type is not sent using KDS.
-	KDSDisabledFlag = KDSFlagType(0)
-
-	// ZoneToGlobalFlag is a flag that indicates that this resource type is sent from Zone CP to Global CP.
-	ZoneToGlobalFlag = KDSFlagType(1)
-
-	// GlobalToAllZonesFlag is a flag that indicates that this resource type is sent from Global CP to all zones.
-	GlobalToAllZonesFlag = KDSFlagType(1 << 2)
-
-	// GlobalToAllButOriginalZoneFlag is a flag that indicates that this resource type is sent from Global CP to
-	// all zones except the zone where the resource was originally created. Today the only resource that has this
-	// flag is ZoneIngress.
-	GlobalToAllButOriginalZoneFlag = KDSFlagType(1 << 3)
-)
-
-const (
-	// GlobalToZoneSelector is selector for all flags that indicate resource sync from Global to Zone.
-	// Can't be used as KDS flag for resource type.
-	GlobalToZoneSelector = GlobalToAllZonesFlag | GlobalToAllButOriginalZoneFlag
-
-	// AllowedOnGlobalSelector is selector for all flags that indicate resource can be created on Global.
-	AllowedOnGlobalSelector = GlobalToAllZonesFlag
-
-	// AllowedOnZoneSelector is selector for all flags that indicate resource can be created on Zone.
-	AllowedOnZoneSelector = ZoneToGlobalFlag | GlobalToAllButOriginalZoneFlag
+	KDSDisabledFlag      = KDSFlagType(0)
+	ConsumedByZoneFlag   = KDSFlagType(1)
+	ConsumedByGlobalFlag = KDSFlagType(1 << 2)
+	ProvidedByZoneFlag   = KDSFlagType(1 << 3)
+	ProvidedByGlobalFlag = KDSFlagType(1 << 4)
+	// SyncedAcrossZonesFlag is a flag that indicates that this resource type is synced from one zone to the other ones.
+	// there is a mechanism to avoid sending it back to the original Zone (.e.g producer policies, zone origin labels...).
+	// but this is outside of the resourceType sync mechanism.
+	SyncedAcrossZonesFlag = KDSFlagType(1 << 5)
+	// ZoneToGlobalFlag gets sent from Zone to Global
+	ZoneToGlobalFlag = ConsumedByGlobalFlag | ProvidedByZoneFlag
+	// GlobalToZonesFlag gets sent from Global to Zone
+	GlobalToZonesFlag = ProvidedByGlobalFlag | ConsumedByZoneFlag
 )
 
 // Has return whether this flag has all the passed flags on.
 func (kt KDSFlagType) Has(flag KDSFlagType) bool {
-	return kt&flag != 0
+	return kt&flag == flag
 }
 
 type ResourceSpec interface{}
@@ -166,6 +155,8 @@ type ResourceTypeDescriptor struct {
 	Scope ResourceScope
 	// KDSFlags a set of flags that defines how this entity is sent using KDS (if unset KDS is disabled).
 	KDSFlags KDSFlagType
+	// SkipKDSHash a small set of entities (legacy only) that do not have a hash when they are synced from Global to Zone.
+	SkipKDSHash bool
 	// WsPath the path to access on the REST api.
 	WsPath string
 	// KumactlArg the name of the cmdline argument when doing `get` or `delete`.
@@ -284,6 +275,16 @@ func (d ResourceTypeDescriptor) IsInsight() bool {
 	return strings.HasSuffix(string(d.Name), "Insight")
 }
 
+func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool {
+	if d.KDSFlags == KDSDisabledFlag {
+		return false
+	}
+	// On Zone non federated we can do everything locally.
+	// On Zone federated we can only do things that are provided by the zone.
+	// On Global we can only do things that are provided by the global.
+	return (isGlobal && !d.KDSFlags.Has(ProvidedByGlobalFlag)) || (isFederated && !d.KDSFlags.Has(ProvidedByZoneFlag))
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -294,13 +295,19 @@ func (f TypeFilterFn) Apply(descriptor ResourceTypeDescriptor) bool {
 	return f(descriptor)
 }
 
-func HasKDSFlag(flagType KDSFlagType) TypeFilter {
+func SentFromGlobalToZone() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags.Has(flagType)
+		return descriptor.KDSFlags.Has(GlobalToZonesFlag) || descriptor.KDSFlags.Has(SyncedAcrossZonesFlag)
 	})
 }
 
-func HasKdsEnabled() TypeFilter {
+func SentFromZoneToGlobal() TypeFilter {
+	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
+		return descriptor.KDSFlags.Has(ZoneToGlobalFlag)
+	})
+}
+
+func HasKDSEnabled() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.KDSFlags != KDSDisabledFlag
 	})
@@ -550,7 +557,7 @@ func ComputeLabels(
 	if mode == config_core.Zone {
 		// If resource can't be created on Zone (like Mesh), there is no point in adding
 		// 'kuma.io/zone', 'kuma.io/origin' and 'kuma.io/env' labels even if the zone is non-federated
-		if rd.KDSFlags.Has(AllowedOnZoneSelector) {
+		if rd.KDSFlags.Has(ProvidedByZoneFlag) {
 			setIfNotExist(mesh_proto.ResourceOriginLabel, string(mesh_proto.ZoneResourceOrigin))
 			if labels[mesh_proto.ResourceOriginLabel] != string(mesh_proto.GlobalResourceOrigin) {
 				setIfNotExist(mesh_proto.ZoneTag, localZone)

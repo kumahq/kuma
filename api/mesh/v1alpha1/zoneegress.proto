@@ -14,8 +14,7 @@ message ZoneEgress {
   option (kuma.mesh.resource).type = "ZoneEgress";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_global = true;
-  option (kuma.mesh.resource).kds.send_to_zone = false;
+  option (kuma.mesh.resource).kds = "model.ZoneToGlobalFlag";
   option (kuma.mesh.resource).ws.name = "zoneegress";
   option (kuma.mesh.resource).ws.plural = "zoneegresses";
   option (kuma.mesh.resource).scope_namespace = true;

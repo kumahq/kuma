@@ -155,7 +155,7 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTimeoutResource(),
 	ResourceList:                 &MeshTimeoutResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtimeouts",
 	KumactlArg:                   "meshtimeout",
 	KumactlListArg:               "meshtimeouts",

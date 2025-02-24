@@ -145,7 +145,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
+		Expect(actualProvidedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.SentFromGlobalToZone())))
 	}
 
 	Context("Delta KDS", func() {

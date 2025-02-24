@@ -36,14 +36,6 @@ var _ = Describe("Zone Delta Sync", func() {
 	zoneName := "zone-1"
 
 	runtimeInfo := core_runtime.NewRuntimeInfo("zone-inst", config_core.Zone)
-	newPolicySink := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) client_v2.KDSSyncClient {
-		return client_v2.NewKDSSyncClient(
-			core.Log.WithName("kds-sink"),
-			registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-			client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
-			sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"), 0,
-		)
-	}
 	ingressFunc := func(zone string) *mesh_proto.ZoneIngress {
 		return &mesh_proto.ZoneIngress{
 			Zone: zone,
@@ -76,7 +68,7 @@ var _ = Describe("Zone Delta Sync", func() {
 
 		kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
 		srv, err := setup.NewKdsServerBuilder(globalStore).
-			WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
+			WithTypes(kdsCtx.TypesSentByGlobal).
 			WithKdsContext(kdsCtx).
 			Delta()
 		Expect(err).ToNot(HaveOccurred())
@@ -102,7 +94,13 @@ var _ = Describe("Zone Delta Sync", func() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			_ = newPolicySink(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
+			policySync := client_v2.NewKDSSyncClient(
+				core.Log.WithName("kds-sink"),
+				kdsCtx.TypesSentByGlobal,
+				client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+				sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"), 0,
+			)
+			_ = policySync.Receive()
 		}()
 		closeFunc = func() {
 			defer GinkgoRecover()
@@ -127,7 +125,13 @@ var _ = Describe("Zone Delta Sync", func() {
 			actual := mesh.MeshResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(actual.Items).To(HaveLen(1))
+			g.Expect(actual.Items).To(WithTransform(func([]*mesh.MeshResource) []string {
+				var out []string
+				for _, item := range actual.Items {
+					out = append(out, item.Meta.GetName())
+				}
+				return out
+			}, ConsistOf("mesh-1")))
 		}, "5s", "100ms").Should(Succeed())
 
 		actual := mesh.MeshResourceList{}
@@ -153,7 +157,13 @@ var _ = Describe("Zone Delta Sync", func() {
 			actual := mesh.MeshResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(actual.Items).To(HaveLen(1))
+			g.Expect(actual.Items).To(WithTransform(func([]*mesh.MeshResource) []string {
+				var out []string
+				for _, item := range actual.Items {
+					out = append(out, item.Meta.GetName())
+				}
+				return out
+			}, ConsistOf("mesh-1")))
 		}, "5s", "100ms").Should(Succeed())
 
 		// then zone store should have mesh resource
@@ -202,14 +212,14 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items).To(BeEmpty())
 		}, "5s", "100ms").Should(Succeed())
 	})
+	labelFn := func(zoneName string) map[string]string {
+		return map[string]string{
+			mesh_proto.ZoneTag:             zoneName,
+			mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
+		}
+	}
 
 	It("should sync ingresses", func() {
-		labelFn := func(zoneName string) map[string]string {
-			return map[string]string{
-				mesh_proto.ZoneTag:             zoneName,
-				mesh_proto.ResourceOriginLabel: string(mesh_proto.ZoneResourceOrigin),
-			}
-		}
 		// create Ingress for current zone, shouldn't be synced
 		err := globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc(zoneName)}, store.CreateByKey("dp-1", model.NoMesh), store.CreateWithLabels(labelFn(zoneName)))
 		Expect(err).ToNot(HaveOccurred())
@@ -253,7 +263,7 @@ var _ = Describe("Zone Delta Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.SentFromGlobalToZone())))
 	})
 
 	It("should not delete predefined ConfigMaps in the Zone cluster", func() {
@@ -272,12 +282,18 @@ var _ = Describe("Zone Delta Sync", func() {
 			store.CreateByKey("kuma-control-plane-config", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func() int {
+		Eventually(func(g Gomega) {
 			actual := system.ConfigResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(3))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(WithTransform(func([]*system.ConfigResource) []string {
+				var out []string
+				for _, item := range actual.Items {
+					out = append(out, item.Meta.GetName())
+				}
+				return out
+			}, ConsistOf("kuma-cluster-id", "kuma-cp-leader", "kuma-control-plane-config")))
+		}, "5s", "100ms").Should(Succeed())
 
 		actual := system.ConfigResourceList{}
 		err = zoneStore.List(context.Background(), &actual)
@@ -309,6 +325,36 @@ var _ = Describe("Zone Delta Sync", func() {
 			g.Expect(actual.Items[0].GetMeta().GetLabels()).To(Equal(map[string]string{
 				mesh_proto.ResourceOriginLabel: string(mesh_proto.GlobalResourceOrigin),
 			}))
+		}, "5s", "100ms").Should(Succeed())
+	})
+
+	It("should not override zone resources that conflict with global for secret", func() {
+		// given global with 3 secrets
+		Expect(globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).To(Succeed())
+		Expect(globalStore.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret-global", "mesh-1"))).To(Succeed())
+		Expect(globalStore.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret", "mesh-1"))).To(Succeed())
+
+		// given zone with 2 secrets (including "secret" that is also in global)
+		Expect(zoneStore.Create(context.Background(), &system.SecretResource{Spec: samples.Secret2}, store.CreateByKey("secret", "mesh-1"))).To(Succeed())
+		Expect(zoneStore.Create(context.Background(), &system.SecretResource{Spec: samples.Secret}, store.CreateByKey("secret-zone", "mesh-1"))).To(Succeed())
+
+		// then the zone should have 3 secrets and "secret" should not be overridden
+		Eventually(func(g Gomega) {
+			actual := system.SecretResourceList{}
+			err := zoneStore.List(context.Background(), &actual)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(WithTransform(func([]*system.SecretResource) []string {
+				var out []string
+				for _, item := range actual.Items {
+					out = append(out, item.Meta.GetName())
+				}
+				return out
+			}, ConsistOf("secret", "secret-global", "secret-zone")))
+			for _, item := range actual.Items {
+				if item.GetMeta().GetName() == "secret" {
+					g.Expect(item.GetSpec()).To(Equal(samples.Secret2), "secret should not be overridden")
+				}
+			}
 		}, "5s", "100ms").Should(Succeed())
 	})
 })

@@ -11,7 +11,8 @@ message ServiceInsight {
   option (kuma.mesh.resource).name = "ServiceInsightResource";
   option (kuma.mesh.resource).type = "ServiceInsight";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  // ServiceInsight needs to be synced to zones to support permissive mTLS
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "service-insight";
   option (kuma.mesh.resource).ws.read_only = true;
 

@@ -84,6 +84,10 @@ var _ = Describe("Zone Sync", func() {
 		// create Ingress for current zone, shouldn't be synced
 		err := globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc(zoneName)}, store.CreateByKey("dp-1", model.NoMesh), store.CreateWithLabels(labelFn(zoneName)))
 		Expect(err).ToNot(HaveOccurred())
+		err = globalStore.Create(context.Background(), &system.ZoneResource{Spec: &v1alpha1.Zone{}}, store.CreateByKey("another-zone-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = globalStore.Create(context.Background(), &system.ZoneResource{Spec: &v1alpha1.Zone{}}, store.CreateByKey("another-zone-2", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
 		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-1")}, store.CreateByKey("dp-2", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-1")))
 		Expect(err).ToNot(HaveOccurred())
 		err = globalStore.Create(context.Background(), &mesh.ZoneIngressResource{Spec: ingressFunc("another-zone-2")}, store.CreateByKey("dp-3", model.NoMesh), store.CreateWithLabels(labelFn("another-zone-2")))
@@ -124,7 +128,7 @@ var _ = Describe("Zone Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))))
+		Expect(actualConsumedTypes).To(ConsistOf(registry.Global().ObjectTypes(model.SentFromGlobalToZone())))
 	}
 
 	VerifySyncDoesntDeletePredefinedConfigMaps := func() {
@@ -143,12 +147,18 @@ var _ = Describe("Zone Sync", func() {
 			store.CreateByKey("kuma-control-plane-config", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func() int {
+		Eventually(func(g Gomega) {
 			actual := system.ConfigResourceList{}
 			err := zoneStore.List(context.Background(), &actual)
-			Expect(err).ToNot(HaveOccurred())
-			return len(actual.Items)
-		}, "5s", "100ms").Should(Equal(3))
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(actual.Items).To(WithTransform(func([]*system.ConfigResource) []string {
+				var names []string
+				for _, item := range actual.Items {
+					names = append(names, item.GetMeta().GetName())
+				}
+				return names
+			}, ConsistOf("kuma-cluster-id", "kuma-cp-leader", "kuma-control-plane-config")))
+		}, "5s", "100ms").Should(Succeed())
 
 		actual := system.ConfigResourceList{}
 		err = zoneStore.List(context.Background(), &actual)
@@ -169,15 +179,6 @@ var _ = Describe("Zone Sync", func() {
 	Context("GlobalToZone", func() {
 		var zoneSyncer sync_store_v2.ResourceSyncer
 		runtimeInfo := core_runtime.NewRuntimeInfo("global-inst", config_core.Global)
-		newPolicySyncClient := func(zoneName string, resourceSyncer sync_store_v2.ResourceSyncer, cs *grpc.MockDeltaClientStream, configs map[string]bool) kds_client_v2.KDSSyncClient {
-			return kds_client_v2.NewKDSSyncClient(
-				core.Log.WithName("kds-sink"),
-				registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-				kds_client_v2.NewDeltaKDSStream(cs, zoneName, runtimeInfo, ""),
-				sync_store_v2.ZoneSyncCallback(context.Background(), configs, resourceSyncer, false, zoneName, nil, "kuma-system"),
-				0,
-			)
-		}
 
 		BeforeEach(func() {
 			globalStore = memory.NewStore()
@@ -188,7 +189,6 @@ var _ = Describe("Zone Sync", func() {
 
 			kdsCtx := kds_context.DefaultContext(context.Background(), manager.NewResourceManager(globalStore), cfg)
 			srv, err := setup.NewKdsServerBuilder(globalStore).
-				WithTypes(registry.Global().ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector))).
 				WithKdsContext(kdsCtx).
 				Delta()
 			Expect(err).ToNot(HaveOccurred())
@@ -213,8 +213,16 @@ var _ = Describe("Zone Sync", func() {
 
 			wg.Add(1)
 			go func() {
+				defer GinkgoRecover()
 				defer wg.Done()
-				_ = newPolicySyncClient(zoneName, zoneSyncer, clientStream, kdsCtx.Configs).Receive()
+				syncClient := kds_client_v2.NewKDSSyncClient(
+					core.Log.WithName("kds-sink"),
+					kdsCtx.TypesSentByGlobal,
+					kds_client_v2.NewDeltaKDSStream(clientStream, zoneName, runtimeInfo, ""),
+					sync_store_v2.ZoneSyncCallback(context.Background(), zoneSyncer, false, nil, "kuma-system"),
+					0,
+				)
+				_ = syncClient.Receive()
 			}()
 			closeFunc = func() {
 				defer GinkgoRecover()

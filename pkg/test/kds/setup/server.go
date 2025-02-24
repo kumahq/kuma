@@ -235,7 +235,7 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	return &KdsServerBuilder{
 		rt:             rt,
 		providedMapper: reconcile_v2.NoopResourceMapper,
-		providedTypes:  registry.Global().ObjectTypes(model.HasKdsEnabled()),
+		providedTypes:  registry.Global().ObjectTypes(model.HasKDSEnabled()),
 		providedFilter: reconcile_v2.Any,
 	}
 }

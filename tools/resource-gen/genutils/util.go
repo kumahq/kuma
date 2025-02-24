@@ -2,6 +2,7 @@ package genutils
 
 import (
 	"fmt"
+	"slices"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -77,6 +78,7 @@ type ResourceInfo struct {
 	WsAdminOnly              bool
 	WsPath                   string
 	KdsDirection             string
+	SkipKDSHash              bool
 	AllowToInspect           bool
 	StorageVersion           bool
 	IsPolicy                 bool
@@ -109,6 +111,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		AdditionalPrinterColumns: r.AdditionalPrinterColumns,
 		HasInsights:              r.HasInsights,
 		IsProxy:                  r.IsProxy,
+		KdsDirection:             r.Kds,
 	}
 	if r.Ws != nil {
 		pluralResourceName := r.Ws.Plural
@@ -128,26 +131,21 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 			}
 		}
 	}
+
+	// There are a few legacy exception where we don't want to add a hash to the resource when synced to zones
+	// - Secret and GlobalSecret already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
+	//     particular format to be able to reference them
+	// - Mesh name has to be the same. In multizone deployments it can only be applied on Global CP so we won't hit conflicts.
+	// - Config are a bit special because we only sync 1 config (the kuma-cluster-id)
+	if slices.Contains([]string{"Mesh", "Secret", "GlobalSecret", "Config"}, out.ResourceType) {
+		out.SkipKDSHash = true
+	}
 	if out.PluralDisplayName == "" {
 		out.PluralDisplayName = core_model.PluralType(core_model.DisplayName(r.Type))
 	}
 	// Working around the fact we don't really differentiate policies from the rest of resources:
 	// Anything global can't be a policy as it need to be on a mesh. Anything with locked Ws config is something internal and therefore not a policy
 	out.IsPolicy = !out.SkipRegistration && !out.Global && !out.WsAdminOnly && !out.WsReadOnly && out.ResourceType != "Dataplane" && out.ResourceType != "ExternalService" && out.ResourceType != "MeshGateway"
-	switch {
-	case r.Kds == nil || (!r.Kds.SendToZone && !r.Kds.SendToGlobal):
-		out.KdsDirection = ""
-	case r.Kds.SendToGlobal && r.Kds.SendToZone:
-		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag"
-	case r.Kds.SendToGlobal:
-		out.KdsDirection = "model.ZoneToGlobalFlag"
-	case r.Kds.SendToZone:
-		out.KdsDirection = "model.GlobalToAllZonesFlag"
-	}
-
-	if out.ResourceType == "MeshGateway" {
-		out.KdsDirection = "model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag"
-	}
 
 	if p := desc.Parent(); p != nil {
 		if _, ok := p.(protoreflect.MessageDescriptor); ok {

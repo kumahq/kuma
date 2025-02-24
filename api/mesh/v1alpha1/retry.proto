@@ -32,7 +32,7 @@ message Retry {
   option (kuma.mesh.resource).name = "RetryResource";
   option (kuma.mesh.resource).type = "Retry";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "retry";
   option (kuma.mesh.resource).ws.plural = "retries";
   option (kuma.mesh.resource).allow_to_inspect = true;

@@ -16,7 +16,7 @@ message ExternalService {
   option (kuma.mesh.resource).name = "ExternalServiceResource";
   option (kuma.mesh.resource).type = "ExternalService";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "external-service";
 
   // Networking describes the properties of the external service connectivity
