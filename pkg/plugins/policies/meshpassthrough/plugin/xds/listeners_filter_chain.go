@@ -155,10 +155,8 @@ func (c FilterChainConfigurer) configureTcpFilterChain(listener *envoy_listener.
 		WithClusterName(clusterName).
 		Build()
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, chainName).
-		Configure(xds_listeners.TCPProxy(clusterName, split))
-	if c.Protocol != core_mesh.ProtocolMysql {
-		filterChainBuilder.Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
-	}
+		Configure(xds_listeners.TCPProxy(clusterName, split)).
+		Configure(xds_listeners.MatchTransportProtocol("raw_buffer"))
 	c.configureAddressMatch(filterChainBuilder)
 	if c.Port != 0 {
 		filterChainBuilder.

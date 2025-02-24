@@ -12,6 +12,7 @@ resources:
         prefixRanges:
         - addressPrefix: 172.12.2.2
           prefixLen: 32
+        transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
@@ -24,6 +25,7 @@ resources:
         prefixRanges:
         - addressPrefix: 172.12.2.0
           prefixLen: 24
+        transportProtocol: raw_buffer
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
