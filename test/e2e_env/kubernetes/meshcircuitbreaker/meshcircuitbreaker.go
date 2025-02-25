@@ -213,7 +213,7 @@ spec:
           maxEjectionPercent: 100
           detectors:
             totalFailures:
-              consecutive: 10
+              consecutive: 1
           healthyPanicThreshold: 0`, namespace, mesh, namespace)))).To(Succeed())
 
 		// then
@@ -240,8 +240,12 @@ spec:
 				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				// errors returned by circuit breaker don't count for outlier detection
+				// only upstream returned errors
+				client.WithHeader("x-set-response-code", "500"),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
+			// we expect 503 because we are in the panic mode
 		}, "10s", "1s").Should(ContainElement(HaveField("ResponseCode", 503)))
 	})
 }
