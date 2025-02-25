@@ -206,6 +206,7 @@ spec:
           maxConnections: 1
           maxPendingRequests: 1
           maxRequests: 1
+          maxRetries: 1
         outlierDetection:
           interval: 1s
           baseEjectionTime: 30s
