@@ -37,7 +37,7 @@ func getMatchedPolicies(
 	*core_xds.Proxy, error,
 ) {
 	proxyBuilder := sync.DefaultDataplaneProxyBuilder(*cfg, envoy.APIV3)
-	proxy, err := proxyBuilder.Build(ctx, dataplaneKey, meshContext)
+	proxy, err := proxyBuilder.Build(ctx, dataplaneKey, &core_xds.DataplaneMetadata{}, meshContext)
 	if err != nil {
 		return nil, err
 	}

@@ -115,7 +115,7 @@ var _ = Describe("Proxy Builder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := egressProxyBuilder.Build(ctx, rk, meshContexts)
+			proxy, err := egressProxyBuilder.Build(ctx, rk, &core_xds.DataplaneMetadata{}, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -199,7 +199,7 @@ var _ = Describe("Proxy Builder", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			proxy, err := ingressProxyBuilder.Build(ctx, rk, meshContexts)
+			proxy, err := ingressProxyBuilder.Build(ctx, rk, &core_xds.DataplaneMetadata{}, meshContexts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

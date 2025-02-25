@@ -9,10 +9,6 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
-type DataplaneMetadataTracker interface {
-	Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata
-}
-
 type ConnectionInfoTracker interface {
 	ConnectionInfo(dpKey core_model.ResourceKey) *xds_context.ConnectionInfo
 }
@@ -25,5 +21,11 @@ type SnapshotReconciler interface {
 
 // DataplaneWatchdogFactory returns a Watchdog that creates a new XdsContext and Proxy and executes SnapshotReconciler if there is any change
 type DataplaneWatchdogFactory interface {
-	New(dpKey core_model.ResourceKey) util_xds_v3.Watchdog
+	New(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog
+}
+
+type DataplaneWatchdogFactoryFunc func(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog
+
+func (f DataplaneWatchdogFactoryFunc) New(dpKey core_model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
+	return f(dpKey, meta)
 }
