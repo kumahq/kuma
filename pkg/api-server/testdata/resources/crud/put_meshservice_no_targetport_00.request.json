@@ -1,0 +1,18 @@
+{
+  "type": "MeshService",
+  "name": "redis",
+  "mesh": "default",
+  "spec": {
+    "selector": {
+      "dataplaneTags": {
+        "app": "redis"
+      }
+    },
+    "ports": [
+      {
+        "port": 6379,
+        "protocol": "tcp"
+      }
+    ]
+  }
+}
