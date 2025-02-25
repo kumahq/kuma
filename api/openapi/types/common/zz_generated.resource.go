@@ -39,8 +39,10 @@ type InboundRule struct {
 
 // InboundRulesEntry defines model for InboundRulesEntry.
 type InboundRulesEntry struct {
-	Inbound Inbound       `json:"inbound"`
-	Rules   []InboundRule `json:"rules"`
+	Inbound Inbound `json:"inbound"`
+
+	// Rules The 'rules' field is an array to allow for future expansion when 'matches' conditions are added. Currently, it contains a single item.
+	Rules []InboundRule `json:"rules"`
 }
 
 // InspectRule defines model for InspectRule.

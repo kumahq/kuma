@@ -3790,6 +3790,10 @@ components:
           $ref: '#/components/schemas/Inbound'
         rules:
           type: array
+          description: >-
+            The 'rules' field is an array to allow for future expansion when
+            'matches' conditions are added. Currently, it contains a single
+            item.
           items:
             $ref: '#/components/schemas/InboundRule'
     InspectRule:
