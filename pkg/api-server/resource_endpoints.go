@@ -984,6 +984,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
 				})
 			}
+
 			inboundRules := []api_common.InboundRulesEntry{}
 			for inbound, rulesForInbound := range res.FromRules.InboundRules {
 				if len(rulesForInbound) == 0 {
@@ -1010,10 +1011,11 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					},
 					Rules: rs,
 				})
-				sort.SliceStable(fromRules, func(i, j int) bool {
-					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
-				})
 			}
+			sort.SliceStable(inboundRules, func(i, j int) bool {
+				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
+			})
+
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
