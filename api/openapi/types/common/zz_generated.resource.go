@@ -30,7 +30,7 @@ type Inbound struct {
 
 // InboundRule defines model for InboundRule.
 type InboundRule struct {
-	// Conf The actual conf generated
+	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 	Conf []interface{} `json:"conf"`
 
 	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
