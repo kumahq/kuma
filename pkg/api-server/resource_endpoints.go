@@ -981,7 +981,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 				sort.SliceStable(fromRules, func(i, j int) bool {
-					return pointer.Deref(fromRules[i].Inbound.Name) < pointer.Deref(fromRules[j].Inbound.Name)
+					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
 				})
 			}
 			inboundRules := []api_common.InboundRulesEntry{}
@@ -1009,6 +1009,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 						Tags: tags,
 					},
 					Rules: rs,
+				})
+				sort.SliceStable(fromRules, func(i, j int) bool {
+					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
 				})
 			}
 			toResourceRules := []api_common.ResourceRule{}
