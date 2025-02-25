@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
+	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol), string(MysqlProtocol)}
 	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
 	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^\.]+`)
 )
@@ -52,6 +52,9 @@ func validateDefault(conf Conf) validators.ValidationError {
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
 	for i, match := range pointer.Deref(conf.AppendMatch) {
+		if match.Protocol == MysqlProtocol && match.Port == nil {
+			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be defined for Mysql protocol")
+		}
 		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
@@ -90,8 +93,8 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided IP has incorrect value")
 			}
 		case "Domain":
-			if match.Protocol == "tcp" {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), "protocol tcp is not supported for a domain")
+			if match.Protocol == "tcp" || match.Protocol == "mysql" {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), fmt.Sprintf("protocol %s is not supported for a domain", match.Protocol))
 			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")

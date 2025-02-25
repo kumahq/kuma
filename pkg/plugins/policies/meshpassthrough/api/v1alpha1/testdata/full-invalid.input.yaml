@@ -45,3 +45,10 @@ default:
   - type: Domain
     value: "*.example.com"
     protocol: http
+  - type: Domain
+    value: mysql.server.com
+    port: 3306
+    protocol: mysql
+  - type: IP
+    value: 172.1.1.1
+    protocol: mysql
