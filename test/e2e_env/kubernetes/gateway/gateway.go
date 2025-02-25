@@ -555,7 +555,6 @@ spec:
   - targetRef:
       kind: Mesh
     default:
-      idleTimeout: 10s
       http:
         maxConnectionDuration: 10s`, Config.KumaNamespace, meshName)
 		mlbs := fmt.Sprintf(`
