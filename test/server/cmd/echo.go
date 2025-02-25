@@ -43,6 +43,7 @@ func newEchoHTTPCmd() *cobra.Command {
 			handleEcho := func(writer http.ResponseWriter, request *http.Request) {
 				headers := request.Header
 				handleDelay(headers)
+				responseCode := getResponseCode(headers)
 				headers.Add("host", request.Host)
 
 				if n, id, ok := parseSucceedAfterNHeaders(headers); ok {
@@ -67,7 +68,7 @@ func newEchoHTTPCmd() *cobra.Command {
 					}
 					writer.WriteHeader(500)
 				}
-				writer.WriteHeader(http.StatusOK)
+				writer.WriteHeader(responseCode)
 				if _, err := writer.Write(respBody); err != nil {
 					panic(err)
 				}
@@ -187,4 +188,16 @@ func handleDelay(headers http.Header) {
 		return
 	}
 	time.Sleep(time.Duration(delay) * time.Millisecond)
+}
+
+func getResponseCode(headers http.Header) int {
+	respCodeHeader := headers.Get("x-set-response-code")
+	if respCodeHeader == "" {
+		return http.StatusOK
+	}
+	responseCode, err := strconv.Atoi(respCodeHeader)
+	if err != nil {
+		return 500
+	}
+	return responseCode
 }

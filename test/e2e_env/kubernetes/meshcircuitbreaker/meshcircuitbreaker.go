@@ -8,7 +8,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
-	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	. "github.com/kumahq/kuma/test/framework"
@@ -75,7 +74,6 @@ spec:
 		Expect(DeleteMeshResources(kubernetes.Cluster, mesh,
 			v1alpha1.MeshCircuitBreakerResourceTypeDescriptor,
 			meshretry_api.MeshRetryResourceTypeDescriptor,
-			meshfaultinjection_api.MeshFaultInjectionResourceTypeDescriptor,
 		)).To(Succeed())
 	})
 
@@ -235,32 +233,6 @@ spec:
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
 
-		// errors returned by circuit breaker don't count for outlier detection
-		// only upstream returned errors
-		Expect(kubernetes.Cluster.Install(YamlK8s(fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: MeshFaultInjection
-metadata:
-  name: fi-circuit-breaker
-  namespace: %s
-  labels:
-    kuma.io/mesh: %s
-spec:
-  targetRef:
-    kind: MeshSubset
-    proxyTypes:
-    - Sidecar
-    tags:
-      app: test-server
-  from:
-  - targetRef:
-      kind: Mesh
-    default:
-      http:
-      - abort:
-          httpStatus: 500
-          percentage: 50`, namespace, mesh)))).To(Succeed())
-
 		// then
 		// with the above 10 times 503, we're in panic mode.
 		Consistently(func(g Gomega) ([]client.FailureResponse, error) {
@@ -268,8 +240,12 @@ spec:
 				kubernetes.Cluster,
 				"demo-client",
 				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				// errors returned by circuit breaker don't count for outlier detection
+				// only upstream returned errors
+				client.WithHeader("x-set-response-code", "500"),
 				client.FromKubernetesPod(namespace, "demo-client"),
 			)
+			// we expect 503 because we are in the panic mode
 		}, "10s", "1s").Should(ContainElement(HaveField("ResponseCode", 503)))
 	})
 }
