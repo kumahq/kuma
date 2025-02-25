@@ -57,15 +57,15 @@ func LeaderElectionPostgres() {
 
 	It("should elect only one leader and drop the leader on DB disconnect", func() {
 		var leader, follower Cluster
-	
+
 		// ensure only one control plane instance is elected as leader
 		Eventually(func(g Gomega) {
 			cp1Metrics, err := zone1.GetKuma().GetMetrics()
 			g.Expect(err).ToNot(HaveOccurred())
-	
+
 			cp2Metrics, err := zone2.GetKuma().GetMetrics()
 			g.Expect(err).ToNot(HaveOccurred())
-	
+
 			// Identify the current leader dynamically
 			if strings.Contains(cp1Metrics, `leader{zone="kuma-leader1"} 1`) {
 				g.Expect(cp1Metrics).To(ContainSubstring(`leader{zone="kuma-leader1"} 1`))
@@ -77,20 +77,20 @@ func LeaderElectionPostgres() {
 				leader, follower = zone2, zone1
 			}
 		}, "10s", "100ms").Should(Succeed())
-	
+
 		// Kill the current leader
 		_, _, err := leader.Exec("", "", AppModeCP, "pkill", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
-	
+
 		// Verify that the other instance takes over as leader
 		Eventually(func() (string, error) {
 			return follower.GetKuma().GetMetrics()
 		}, "30s", "1s").Should(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 1`, follower.Name())))
-	
+
 		// Shut down PostgreSQL
 		err = zone1.DeleteDeployment(postgres.AppPostgres + clusterName1)
 		Expect(err).ToNot(HaveOccurred())
-	
+
 		// Verify that the remaining control plane instance loses leadership
 		Eventually(func() (string, error) {
 			return follower.GetKuma().GetMetrics()
