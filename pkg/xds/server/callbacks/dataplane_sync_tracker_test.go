@@ -127,7 +127,7 @@ var _ = Describe("Sync", func() {
 			Expect(watchdogIsRunning).To(BeFalse())
 		}))
 
-		It("should start only one watchdog per dataplane", func() {
+		FIt("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
 			var cleanupDone atomic.Bool
@@ -152,7 +152,9 @@ var _ = Describe("Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then a watchdog is active
-			Expect(atomic.LoadInt32(&activeWatchdogs)).To(Equal(int32(0)))
+			Eventually(func() int32 {
+				return atomic.LoadInt32(&activeWatchdogs)
+			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// and when new stream from backend-01 is connected  and request is sent
 			err = callbacks.OnStreamOpen(context.Background(), streamID2, "")
