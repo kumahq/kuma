@@ -170,16 +170,16 @@ func LocalityAwareLB() {
 	It("should route based on defined strategy", func() {
 		// should load balance traffic equally when no policy
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 20, 5)),
-				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 20, 5)),
-				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 20, 5)),
-				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 20, 5)),
-				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 6, 3)),
-				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 6, 3)),
-				HaveKeyWithValue(Equal(`test-server-zone-2`), BeNumerically("~", 6, 3)),
+				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 40, 10)),
+				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 40, 10)),
+				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 40, 10)),
+				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 40, 10)),
+				HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 12, 6)),
+				HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 12, 6)),
+				HaveKeyWithValue(Equal(`test-server-zone-2`), BeNumerically("~", 12, 6)),
 			),
 		)
 
@@ -224,16 +224,16 @@ spec:
 
 		// then traffic should be routed based on the policy
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 93, 5)),
-				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 7, 5)),
+				HaveKeyWithValue(Equal(`test-server-node-1-zone-4`), BeNumerically("~", 185, 10)),
+				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 15, 10)),
 				Or(
-					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 2, 2)),
-					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 2, 2)),
-					Not(HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 2, 2))),
-					Not(HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 2, 2))),
+					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 4, 4)),
+					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 4, 4)),
+					Not(HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 4, 4))),
+					Not(HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 4, 4))),
 				),
 			),
 		)
@@ -243,13 +243,13 @@ spec:
 
 		// then traffic goes to the next highest
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 90, 5)),
+				HaveKeyWithValue(Equal(`test-server-az-1-zone-4`), BeNumerically("~", 180, 10)),
 				Or(
-					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 5, 3)),
-					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 5, 3)),
+					HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 10, 6)),
+					HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 10, 6)),
 				),
 			),
 		)
@@ -259,11 +259,11 @@ spec:
 
 		// then traffic goes to the next highest
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
 		}, "30s", "5s").Should(
 			And(
-				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 50, 5)),
-				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 50, 5)),
+				HaveKeyWithValue(Equal(`test-server-node-2-zone-4`), BeNumerically("~", 100, 10)),
+				HaveKeyWithValue(Equal(`test-server-no-tags-zone-4`), BeNumerically("~", 100, 10)),
 			),
 		)
 
@@ -273,16 +273,16 @@ spec:
 
 		// then traffic goes to the zone with the next priority, kuma-5
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("==", 100)))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
+		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("==", 200)))
 
 		// when zone kuma-5 is disabled
 		Expect(multizone.UniZone2.DeleteApp("test-server")).To(Succeed())
 
 		// then traffic should goes to k8s
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(100))
-		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("==", 100)))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-svc", "test-server_locality-aware-lb_svc_80.mesh", client.WithNumberOfRequests(200))
+		}, "30s", "5s").Should(HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("==", 200)))
 
 		// when zone kuma-1-zone is disabled
 		Expect(DeleteK8sApp(multizone.KubeZone1, "test-server", namespace)).To(Succeed())
