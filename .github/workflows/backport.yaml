@@ -1,0 +1,27 @@
+name: backport
+run-name: "${{ format( 'backport #{0} to {1}', inputs.PR, ( inputs.branches || 'active branches' )) }}"
+on:
+  workflow_dispatch:
+    inputs:
+      PR:
+        description: "number of the PR to be backported"
+        type: string
+        default: ""
+        required: true
+      branches:
+        description: "target branches to backport to (use comma to separate multi-values, leave empty to target all active branches that applies)"
+        type: string
+        default: ""
+        required: false
+jobs:
+  maybe-backport:
+    uses: kumahq/.github/workflows/wcf_backport_dispatch.yml@main
+    permissions:
+      contents: read
+      pull-requests: write
+    with:
+      pr_number: ${{ inputs.PR }}
+      target_branches: ${{ inputs.branches }}
+    secrets:
+      app_id: ${{ secrets.APP_ID }}
+      private_key: ${{ secrets.APP_PRIVATE_KEY }}
