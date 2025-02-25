@@ -536,6 +536,28 @@ spec:
 	})
 
 	Context("MeshLoadBalancingStrategy", func() {
+		// Introduce a shorter connection duration because, once a connection is established,
+		// the load balancer might continue routing traffic to existing instances.
+		mt := fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  name: mt-close-connection
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes:
+    - Gateway
+  to:
+  - targetRef:
+      kind: Mesh
+    default:
+      idleTimeout: 10s
+      http:
+        maxConnectionDuration: 10s`, Config.KumaNamespace, meshName)
 		mlbs := fmt.Sprintf(`
 kind: MeshLoadBalancingStrategy
 apiVersion: kuma.io/v1alpha1
@@ -572,6 +594,7 @@ spec:
 					testserver.WithReplicas(3),
 				)).
 				Install(YamlK8s(routes...)).
+				Install(YamlK8s(mt)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
@@ -580,6 +603,7 @@ spec:
 			err := NewClusterSetup().
 				Install(DeleteYamlK8s(routes...)).
 				Install(DeleteYamlK8s(mlbs)).
+				Install(DeleteYamlK8s(mt)).
 				Setup(kubernetes.Cluster)
 			Expect(err).ToNot(HaveOccurred())
 		})
