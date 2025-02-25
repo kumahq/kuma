@@ -1,0 +1,62 @@
+#/meshes/mesh-1/dataplanes/dp-1/_rules 200
+type: Mesh
+name: mesh-1
+---
+type: Dataplane
+name: dp-1
+mesh: mesh-1
+labels:
+  app: demo-app
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 8080
+      name: main-port
+      tags:
+        kuma.io/service: foo
+    - port: 9090
+      name: secondary-port
+      tags:
+        kuma.io/service: bar
+    - port: 7070
+      name: admin-port
+      tags:
+        kuma.io/service: admin-dashboard
+---
+type: MeshTimeout
+name: global
+mesh: mesh-1
+spec:
+  rules:
+    - default:
+        idleTimeout: 7s
+        connectionTimeout: 7s
+        http:
+          requestTimeout: 7s
+---
+type: MeshTimeout
+name: select-main-port
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: demo-app
+    sectionName: main-port
+  rules:
+    - default:
+        http:
+          requestTimeout: 2s
+---
+type: MeshTimeout
+name: select-secondary-port
+mesh: mesh-1
+spec:
+  targetRef:
+    kind: Dataplane
+    labels:
+      app: demo-app
+    sectionName: secondary-port
+  rules:
+    - default:
+        connectionTimeout: 3s
