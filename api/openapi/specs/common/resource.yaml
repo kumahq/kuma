@@ -95,7 +95,7 @@ components:
             $ref: '#/components/schemas/FromRule'
         inboundRules:
           type: array
-          description: a set of rules for each inbound of the proxy. When policy descriptor has 'interpretFromEntriesAsRules' set to true, this field replaces 'fromRules'.
+          description: a set of rules for each inbound port of the proxy. When the policy descriptor has 'interpretFromEntriesAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
           items:
             $ref: '#/components/schemas/InboundRulesEntry'
         warnings:
