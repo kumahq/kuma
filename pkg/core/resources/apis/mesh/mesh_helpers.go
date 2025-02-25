@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -39,11 +40,11 @@ func (m *MeshResource) MTLSEnabled() bool {
 // Configuration of mTLS is validated on Mesh configuration
 // change and when zoneEgress is enabled.
 func (m *MeshResource) ZoneEgressEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetZoneEgress()
+	return m != nil && pointer.Deref(m.Spec.GetRouting().GetZoneEgress()).Value
 }
 
 func (m *MeshResource) LocalityAwareLbEnabled() bool {
-	return m != nil && m.Spec.GetRouting().GetLocalityAwareLoadBalancing()
+	return m != nil && pointer.Deref(m.Spec.GetRouting().GetLocalityAwareLoadBalancing()).Value
 }
 
 func (m *MeshResource) GetLoggingBackend(name string) *mesh_proto.LoggingBackend {

@@ -27,6 +27,7 @@ const (
 	ProtocolHTTP2   = "http2"
 	ProtocolGRPC    = "grpc"
 	ProtocolKafka   = "kafka"
+	ProtocolMysql   = "mysql"
 )
 
 func ParseProtocol(tag string) Protocol {
@@ -43,6 +44,8 @@ func ParseProtocol(tag string) Protocol {
 		return ProtocolGRPC
 	case ProtocolKafka:
 		return ProtocolKafka
+	case ProtocolMysql:
+		return ProtocolMysql
 	default:
 		return ProtocolUnknown
 	}

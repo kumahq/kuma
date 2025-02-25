@@ -9,6 +9,9 @@ resources:
         maxPendingRequests: 3333
         maxRequests: 4444
         maxRetries: 5555
+    commonLbConfig:
+      healthyPanicThreshold:
+        value: 30.2
     name: external
     outlierDetection:
       baseEjectionTime: 8s

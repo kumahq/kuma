@@ -33,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
-	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -76,7 +75,7 @@ func DefaultContext(
 		reconcile_v2.If(
 			reconcile_v2.And(
 				reconcile_v2.TypeIs(system.GlobalSecretType),
-				reconcile_v2.NameHasPrefix(zone_tokens.SigningKeyPrefix),
+				reconcile_v2.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		reconcile_v2.If(
@@ -203,8 +202,8 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 	publicSigningKeyResource := system.NewGlobalSecretResource()
 	newResName := strings.ReplaceAll(
 		r.GetMeta().GetName(),
-		zone_tokens.SigningKeyPrefix,
-		zone_tokens.SigningPublicKeyPrefix,
+		system.ZoneTokenSigningKeyPrefix,
+		system.ZoneTokenSigningPublicKeyPrefix,
 	)
 	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
 
@@ -270,7 +269,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return configs[resName]
 		case r.Descriptor().Name == system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
-				zone_tokens.SigningKeyPrefix,
+				system.ZoneTokenSigningKeyPrefix,
 			}...)
 		}
 

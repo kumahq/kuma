@@ -6,6 +6,9 @@ circuitBreakers:
     maxRequests: 4444
     maxRetries: 5555
     trackRemaining: true
+commonLbConfig:
+  healthyPanicThreshold:
+    value: 30.2
 name: other-service-5ab6003f460fabce
 outlierDetection:
   baseEjectionTime: 8s

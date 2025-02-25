@@ -2,6 +2,15 @@
   "diff": [
     {
       "op": "add",
+      "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/commonLbConfig",
+      "value": {
+        "healthyPanicThreshold": {
+          "value": 20
+        }
+      }
+    },
+    {
+      "op": "add",
       "path": "/type.googleapis.com~1envoy.config.cluster.v3.Cluster/envoyconfig_test-server__kuma-3_msvc_80/outlierDetection",
       "value": {
         "baseEjectionTime": "30s",
@@ -89,6 +98,11 @@
         }
       },
       "envoyconfig_test-server__kuma-3_msvc_80": {
+        "commonLbConfig": {
+          "healthyPanicThreshold": {
+            "value": 20
+          }
+        },
         "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {

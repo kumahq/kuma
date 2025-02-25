@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // CustomTablePrinters are used to define different ways to print entities in table format.
@@ -54,11 +55,11 @@ var CustomTablePrinters = map[model.ResourceType]RowPrinter{
 			}
 
 			locality := "off"
-			if mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
+			if pointer.Deref(mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing()).Value {
 				locality = "on"
 			}
 			zoneEgress := "off"
-			if mesh.Spec.GetRouting().GetZoneEgress() {
+			if pointer.Deref(mesh.Spec.GetRouting().GetZoneEgress()).Value {
 				zoneEgress = "on"
 			}
 			return []string{

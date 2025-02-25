@@ -57,9 +57,9 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err).ToNot(HaveOccurred())
 		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, "zone-1")
 
-		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
+		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
@@ -200,7 +200,7 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and new signing key
-		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(resManager.DeleteAll(ctx, &system.SecretResourceList{})).To(Succeed())
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
@@ -240,7 +240,7 @@ var _ = Describe("Authentication flow", func() {
 			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)
+			zoneKeyManager := tokens.NewSigningKeyManager(resManager, system.ZoneTokenSigningKeyPrefix)
 			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
 		})

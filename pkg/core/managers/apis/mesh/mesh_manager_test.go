@@ -28,7 +28,6 @@ import (
 	test_resources "github.com/kumahq/kuma/pkg/test/resources"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -119,7 +118,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			key := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
+			key := tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(meshName), tokens.DefaultKeyID, meshName)
 			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(key))
 			Expect(err).ToNot(HaveOccurred())
 		})

@@ -30,3 +30,4 @@ spec:
               requestVolume: 10
               minimumHosts: 5
               threshold: 85
+          healthyPanicThreshold: 20

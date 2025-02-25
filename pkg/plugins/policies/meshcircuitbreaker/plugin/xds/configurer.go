@@ -1,9 +1,13 @@
 package xds
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/shopspring/decimal"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	"github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -90,6 +94,12 @@ func configureOutlierDetection(cluster *envoy_cluster.Cluster, conf *api.Outlier
 	if err := configureDetectors(cluster.OutlierDetection, conf.Detectors); err != nil {
 		return err
 	}
+
+	// if the HealthyPanicThreshold property isn't set, then defaults to 50 in Envoy
+	if err := configureHealthyPanicThreshold(cluster, conf.HealthyPanicThreshold); err != nil {
+		return fmt.Errorf("failed to configure healthy panic threshold: %v", err)
+	}
+
 	return nil
 }
 
@@ -209,4 +219,30 @@ func configureTotalFailures(
 
 	outlierDetection.EnforcingConsecutive_5Xx = util_proto.UInt32(100)
 	outlierDetection.Consecutive_5Xx = util_proto.UInt32(*conf.Consecutive)
+}
+
+func configureHealthyPanicThreshold(cluster *envoy_cluster.Cluster, value *intstr.IntOrString) error {
+	if value == nil {
+		return nil
+	}
+	if cluster.CommonLbConfig == nil {
+		cluster.CommonLbConfig = &envoy_cluster.Cluster_CommonLbConfig{}
+	}
+	percentage, err := envoyPercent(*value)
+	if err != nil {
+		return err
+	}
+	cluster.CommonLbConfig.HealthyPanicThreshold = percentage
+	return nil
+}
+
+func envoyPercent(intOrStr intstr.IntOrString) (*envoy_type.Percent, error) {
+	decimalVal, err := v1alpha1.NewDecimalFromIntOrString(intOrStr)
+	if err != nil {
+		return nil, err
+	}
+	value, _ := decimalVal.Float64()
+	return &envoy_type.Percent{
+		Value: value,
+	}, nil
 }

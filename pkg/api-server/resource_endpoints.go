@@ -980,6 +980,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 						Rules: fromRulesForInbound,
 					})
 				}
+				sort.SliceStable(fromRules, func(i, j int) bool {
+					return pointer.Deref(fromRules[i].Inbound.Name) < pointer.Deref(fromRules[j].Inbound.Name)
+				})
 			}
 			inboundRules := []api_common.InboundRulesEntry{}
 			for inbound, rulesForInbound := range res.FromRules.InboundRules {
