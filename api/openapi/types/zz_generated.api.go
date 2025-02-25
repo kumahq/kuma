@@ -132,6 +132,11 @@ type PoliciesStats struct {
 	Total int `json:"total"`
 }
 
+// ProxiesList defines model for ProxiesList.
+type ProxiesList struct {
+	Proxies *[]externalRef0.ProxyResource `json:"proxies,omitempty"`
+}
+
 // ResourceStats Resource statistics
 type ResourceStats struct {
 	// Total Number of resources

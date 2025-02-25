@@ -212,6 +212,179 @@ paths:
           $ref: "./common/error_schema.yaml#/components/responses/NotFound"
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyListResponse'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}/rules:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyRulesResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}/inbounds:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyInboundsResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}/inbounds/{kri}/rules:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+        - in: path
+          name: kri
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyInboundRulesResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}/outbounds:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyOutboundsResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/proxies/{proxyName}/outbounds/{kri}/rules:
+    get:
+      parameters:
+        - in: path
+          name: mesh
+          example: default
+          schema:
+            type: string
+          required: true
+          description: The mesh the proxy is part of
+        - in: path
+          name: proxyName
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+        - in: path
+          name: kri
+          example: TODO
+          schema:
+            type: string
+          required: true
+          description: TODO
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyOutboundRulesResponse'
+        '404':
+          $ref: "./common/error_schema.yaml#/components/responses/NotFound"
+        '500':
+          $ref: '#/components/responses/Internal'
 components:
   schemas:
     Index:
@@ -296,6 +469,13 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/HttpMatch'
+    ProxiesList:
+      type: object
+      properties:
+        proxies:
+          type: array
+          items:
+            $ref: './common/resource.yaml#/components/schemas/ProxyResource'
     BaseStatus:
       type: object
       title: Status
@@ -576,6 +756,48 @@ components:
         application/problem+json:
           schema:
             $ref: './common/error_schema.yaml#/components/schemas/Error'
+    ProxyListResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProxiesList'
+    ProxyResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/ProxyResource'
+    ProxyRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/ProxyRules'
+    ProxyInboundsResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/ProxyInboundsList'
+    ProxyInboundRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/InboundRules'
+    ProxyOutboundsResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/ProxyOutboundsList'
+    ProxyOutboundRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: './common/resource.yaml/#/components/schemas/OutboundRules'
   examples:
     GlobalInsightExample:
       value:
