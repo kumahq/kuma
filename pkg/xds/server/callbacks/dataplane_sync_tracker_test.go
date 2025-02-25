@@ -127,7 +127,7 @@ var _ = Describe("Sync", func() {
 			Expect(watchdogIsRunning).To(BeFalse())
 		}))
 
-		FIt("should start only one watchdog per dataplane", func() {
+		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
 			var cleanupDone atomic.Bool
