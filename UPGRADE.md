@@ -38,6 +38,13 @@ New rule:
 
 > A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
 
+### MeshHTTPRoute
+
+#### Unifying defaults for `statusCode`
+
+Due to misconfiguration, a default for `statusCode` for http route on Universal could have been missing.
+If you're using Universal mode, and you did not specify `default.filters[].requestRedirect.statusCode` value in your `MeshHTTPRoute` resource, you have to explicitly set it to 302.
+
 ### MeshTrace
 
 #### Unifying defaults for `apiVersion`
