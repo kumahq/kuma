@@ -15,7 +15,7 @@ on:
         required: false
 jobs:
   maybe-backport:
-    uses: kumahq/.github/workflows/wcf_backport_dispatch.yml@main
+    uses: kumahq/.github/workflows/wfc_backport_dispatch.yml@main
     permissions:
       contents: read
       pull-requests: write
