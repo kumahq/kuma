@@ -158,7 +158,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 k3d/configure/calico:
 ifeq ($(K3D_NETWORK_CNI),calico)
     # https://docs.tigera.io/calico/latest/getting-started/kubernetes/k3s/quickstart
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f kubectl apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/calico.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/calico.yaml
 endif
 
 .PHONY: k3d/configure/ebpf
