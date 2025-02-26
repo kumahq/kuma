@@ -1,0 +1,84 @@
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-dev:section/http-port:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 12s
+    http:
+      requestTimeout: 32s
+    idleTimeout: 11s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-x7x4w48vccc4f9vx
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-x7x4w48vccc4f9vx
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 2
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      domain: backend
+      env: dev
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: backend-dev
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-dev-49fv7cw4czv6949v
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: http-port
+meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-prod:section/http-port:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 31s
+    http:
+      requestTimeout: 32s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-x7x4w48vccc4f9vx
+      NameExtensions: null
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      domain: backend
+      env: prod
+      k8s.kuma.io/namespace: ns-k8s
+      kuma.io/display-name: backend-prod
+      kuma.io/mesh: mesh-1
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-prod-xf9f8b49cwb79x96
+    NameExtensions: null
+    Version: ""
+  ResourceSectionName: http-port
