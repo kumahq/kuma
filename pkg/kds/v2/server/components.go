@@ -44,7 +44,7 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants())
+	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes)
 	syncTracker, err := newSyncTracker(
 		log,
 		reconciler,

@@ -1343,6 +1343,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.ProvidedByGlobalFlag,
 	WsPath:              "mesh-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",

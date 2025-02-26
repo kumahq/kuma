@@ -13,13 +13,12 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
-	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, tenants multitenant.Tenants) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache, generator SnapshotGenerator, mode config_core.CpMode, statsCallbacks xds.StatsCallbacks, tenants multitenant.Tenants, types []core_model.ResourceType) Reconciler {
 	return &reconciler{
 		hasher:         hasher,
 		cache:          cache,
@@ -27,6 +26,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache envoy_cache.SnapshotCache,
 		mode:           mode,
 		statsCallbacks: statsCallbacks,
 		tenants:        tenants,
+		providedTypes:  types,
 	}
 }
 
@@ -38,7 +38,8 @@ type reconciler struct {
 	statsCallbacks xds.StatsCallbacks
 	tenants        multitenant.Tenants
 
-	lock sync.Mutex
+	lock          sync.Mutex
+	providedTypes []core_model.ResourceType
 }
 
 func (r *reconciler) Clear(node *envoy_core.Node) error {
@@ -53,8 +54,8 @@ func (r *reconciler) Clear(node *envoy_core.Node) error {
 	if snapshot == nil {
 		return nil
 	}
-	for _, typ := range util_kds_v2.GetSupportedTypes() {
-		r.statsCallbacks.DiscardConfig(node.Id + typ)
+	for _, typ := range r.providedTypes {
+		r.statsCallbacks.DiscardConfig(node.Id + string(typ))
 	}
 	return nil
 }
@@ -64,15 +65,14 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 	old, _ := r.cache.GetSnapshot(id)
 
 	// construct builder with unchanged types from the old snapshot
-	builder := cache_v2.NewSnapshotBuilder()
+	builder := cache_v2.NewSnapshotBuilder(r.providedTypes)
 	if old != nil {
-		for _, typ := range util_kds_v2.GetSupportedTypes() {
-			resType := core_model.ResourceType(typ)
+		for _, resType := range r.providedTypes {
 			if _, ok := changedTypes[resType]; ok {
 				continue
 			}
 
-			oldRes := old.GetResources(typ)
+			oldRes := old.GetResources(string(resType))
 			if len(oldRes) > 0 {
 				builder = builder.With(resType, util_maps.AllValues(oldRes))
 			}
@@ -107,7 +107,8 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 
 func (r *reconciler) changedTypes(old, new envoy_cache.ResourceSnapshot) []core_model.ResourceType {
 	var changed []core_model.ResourceType
-	for _, typ := range util_kds_v2.GetSupportedTypes() {
+	for _, resType := range r.providedTypes {
+		typ := string(resType)
 		if (old == nil && len(new.GetVersionMap(typ)) > 0) ||
 			(old != nil && !maps.Equal(old.GetVersionMap(typ), new.GetVersionMap(typ))) {
 			changed = append(changed, core_model.ResourceType(typ))

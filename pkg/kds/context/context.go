@@ -49,6 +49,8 @@ type Context struct {
 	GlobalProvidedFilter  reconcile_v2.ResourceFilter
 	ZoneProvidedFilter    reconcile_v2.ResourceFilter
 	GlobalServerFiltersV2 []mux.FilterV2
+	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
+	Configs map[string]bool
 
 	GlobalResourceMapper reconcile_v2.ResourceMapper
 	ZoneResourceMapper   reconcile_v2.ResourceMapper
@@ -57,6 +59,11 @@ type Context struct {
 	ServerStreamInterceptors []grpc.StreamServerInterceptor
 	ServerUnaryInterceptor   []grpc.UnaryServerInterceptor
 	CreateZoneOnFirstConnect bool
+}
+
+// KDSSyncedConfigs A select set of keys that are synced from global to zones
+var KDSSyncedConfigs = map[string]struct{}{
+	config_manager.ClusterIdConfigKey: {},
 }
 
 func DefaultContext(
@@ -255,8 +262,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 		// we filter them out to not send them to other CPs
 		switch r.Descriptor().Name {
 		case system.ConfigType:
-			// We only sync the clusterId config for configs.
-			return r.GetMeta().GetName() == config_manager.ClusterIdConfigKey
+			// We only sync specific entries for configs.
+			_, exists := KDSSyncedConfigs[r.GetMeta().GetName()]
+			return exists
 		case system.GlobalSecretType:
 			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations}, r.GetMeta().GetName()) {
 				return false
