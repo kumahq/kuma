@@ -260,6 +260,8 @@ var _ = Describe("Zone Delta Sync", func() {
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,
+			system.ZoneType,
+			system.ZoneInsightType,
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
