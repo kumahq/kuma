@@ -8,7 +8,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -50,7 +50,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -74,7 +74,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -107,7 +107,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -122,7 +122,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -146,7 +146,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -170,7 +170,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -185,7 +185,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -200,7 +200,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -224,7 +224,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -239,7 +239,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -263,7 +263,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -278,7 +278,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -293,7 +293,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -308,7 +308,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -332,7 +332,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -347,7 +347,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -362,7 +362,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
-    "interpretFromEntriesAsRules": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -377,7 +377,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -392,7 +392,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -407,7 +407,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -422,7 +422,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -437,7 +437,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -470,7 +470,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -485,7 +485,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -500,7 +500,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -515,7 +515,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -530,7 +530,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -545,7 +545,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
-    "interpretFromEntriesAsRules": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,

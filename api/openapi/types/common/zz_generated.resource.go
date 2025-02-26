@@ -50,7 +50,7 @@ type InspectRule struct {
 	// FromRules a set of rules for each inbound of this proxy
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
 
-	// InboundRules a set of rules for each inbound port of the proxy. When the policy descriptor has 'interpretFromEntriesAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
+	// InboundRules a set of rules for each inbound port of the proxy. When the policy descriptor has 'isFromAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
 	InboundRules *[]InboundRulesEntry `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
@@ -92,8 +92,8 @@ type PolicyDescription struct {
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
 
-	// InterpretFromEntriesAsRules indicates that existing 'spec.from' entries are interpreted as 'spec.rules'
-	InterpretFromEntriesAsRules bool `json:"interpretFromEntriesAsRules"`
+	// IsFromAsRules indicates that existing 'spec.from' entries are interpreted as 'spec.rules'
+	IsFromAsRules bool `json:"isFromAsRules"`
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`

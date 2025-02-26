@@ -3547,7 +3547,7 @@ components:
         - hasToTargetRef
         - hasFromTargetRef
         - isTargetRef
-        - interpretFromEntriesAsRules
+        - isFromAsRules
       description: information about a policy
       properties:
         isTargetRef:
@@ -3559,7 +3559,7 @@ components:
         hasFromTargetRef:
           description: indicates that this policy can be used as an inbound policy
           type: boolean
-        interpretFromEntriesAsRules:
+        isFromAsRules:
           description: >-
             indicates that existing 'spec.from' entries are interpreted as
             'spec.rules'
@@ -3830,8 +3830,8 @@ components:
           type: array
           description: >-
             a set of rules for each inbound port of the proxy. When the policy
-            descriptor has 'interpretFromEntriesAsRules' set to true, this field
-            supersedes 'fromRules' and should be used instead.
+            descriptor has 'isFromAsRules' set to true, this field supersedes
+            'fromRules' and should be used instead.
           items:
             $ref: '#/components/schemas/InboundRulesEntry'
         warnings:

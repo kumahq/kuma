@@ -173,5 +173,5 @@ var MeshTimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mt",
-	InterpretFromEntriesAsRules:  true,
+	IsFromAsRules:                true,
 }

@@ -23,10 +23,10 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 		}
 		if def.IsPolicy {
 			td.Policy = &api_common.PolicyDescription{
-				HasToTargetRef:              def.HasToTargetRef,
-				HasFromTargetRef:            def.HasFromTargetRef,
-				IsTargetRef:                 def.IsTargetRefBased,
-				InterpretFromEntriesAsRules: def.InterpretFromEntriesAsRules,
+				HasToTargetRef:   def.HasToTargetRef,
+				HasFromTargetRef: def.HasFromTargetRef,
+				IsTargetRef:      def.IsTargetRefBased,
+				IsFromAsRules:    def.IsFromAsRules,
 			}
 		}
 		response.Resources = append(response.Resources, td)
