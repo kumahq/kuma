@@ -92,7 +92,7 @@ type PolicyDescription struct {
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
 
-	// IsFromAsRules indicates that existing 'spec.from' entries are interpreted as 'spec.rules'
+	// IsFromAsRules If set to `true`, performs a backward compatibility conversion from the deprecated 'from' array to the new 'rules' array. This ensures older policies remain functional under the updated schema.
 	IsFromAsRules bool `json:"isFromAsRules"`
 
 	// IsTargetRef whether this policy uses targetRef matching

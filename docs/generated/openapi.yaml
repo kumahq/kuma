@@ -3561,8 +3561,9 @@ components:
           type: boolean
         isFromAsRules:
           description: >-
-            indicates that existing 'spec.from' entries are interpreted as
-            'spec.rules'
+            If set to `true`, performs a backward compatibility conversion from
+            the deprecated 'from' array to the new 'rules' array. This ensures
+            older policies remain functional under the updated schema.
           type: boolean
     ResourceTypeDescription:
       description: >-
