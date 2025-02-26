@@ -59,6 +59,7 @@ from:
             requestVolume: 10
             minimumHosts: 5
             threshold: 31
+          healthyPanicThreshold: 60
 to:
   - targetRef:
       kind: MeshService
@@ -91,6 +92,7 @@ to:
             requestVolume: 10
             minimumHosts: 5
             threshold: 85
+          healthyPanicThreshold: 70
   - targetRef:
       kind: Mesh
     default:
@@ -121,6 +123,7 @@ to:
             requestVolume: 10
             minimumHosts: 5
             threshold: 85
+          healthyPanicThreshold: 80
   - targetRef:
       kind: MeshService
       name: web-backend
@@ -151,7 +154,8 @@ to:
           failurePercentage:
             requestVolume: 4
             minimumHosts: 2
-            threshold: 75`),
+            threshold: 75
+          healthyPanicThreshold: 90`),
 			Entry("only to targetRef", `
 targetRef:
   kind: MeshService
@@ -287,7 +291,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`,
+    message: at least one of 'from', 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
@@ -304,6 +308,44 @@ violations:
   - field: spec.from[0].targetRef.kind
     message: value is not supported`,
 			}),
+			Entry("from mixed with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionLimits: { }
+rules:
+  - default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+  - field: spec
+    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+			}),
+			Entry("to mixed with rules", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      connectionLimits: { }
+rules:
+  - default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+- field: spec
+  message: fields 'to' and 'from' must be empty when 'rules' is defined
+- field: spec.to[0].targetRef.kind
+  message: value is not supported`,
+			}),
 			Entry("unsupported kind in to selector", testCase{
 				inputYaml: `
 targetRef:
@@ -318,6 +360,23 @@ to:
 violations:
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
+			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      connectionLimits: { }`,
+				expected: `
+violations:
+- field: spec.targetRef.sectionName
+  message: can only be used with inbound policies
+- field: spec.to[0].targetRef.kind
+  message: value is not supported`,
 			}),
 			Entry("missing configuration", testCase{
 				inputYaml: `
@@ -362,7 +421,7 @@ violations:
   - field: spec.to[0].default.connectionLimits.maxRequests
     message: must be greater than 0`,
 			}),
-			Entry("any outlierDetection's numeric property cannot be be 0 when specified", testCase{
+			Entry("any outlierDetection's numeric property except 'healthyPanicThreshold' cannot be be 0 when specified", testCase{
 				inputYaml: `
 targetRef:
   kind: MeshService
@@ -390,7 +449,8 @@ to:
           failurePercentage:
             requestVolume: 0
             minimumHosts: 0
-            threshold: 0`,
+            threshold: 0
+        healthyPanicThreshold: 0`,
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.interval
@@ -428,13 +488,38 @@ to:
         maxEjectionPercent: 101
         detectors:
           failurePercentage:
-            threshold: 101`,
+            threshold: 101
+        healthyPanicThreshold: 101`,
 				expected: `
 violations:
   - field: spec.to[0].default.outlierDetection.maxEjectionPercent
     message: must be in inclusive range [0, 100]
+  - field: spec.to[0].default.outlierDetection.healthyPanicThreshold
+    message: must be in inclusive range [0.0, 100.0]
   - field: spec.to[0].default.outlierDetection.detectors.failurePercentage.threshold
     message: must be in inclusive range [0, 100]`,
+			}),
+			Entry("any outlierDetection's percentage property cannot be be smaller than 0 when specified", testCase{
+				inputYaml: `
+targetRef:
+  kind: MeshService
+  name: web-frontend
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      outlierDetection:
+        detectors:
+          successRate:
+            standardDeviationFactor: -2
+        healthyPanicThreshold: -3`,
+				expected: `
+violations:
+  - field: spec.to[0].default.outlierDetection.healthyPanicThreshold
+    message: must be in inclusive range [0.0, 100.0]
+  - field: spec.to[0].default.outlierDetection.detectors.successRate.standardDeviationFactor
+    message: must be greater than 0`,
 			}),
 			Entry("detectors are not defined", testCase{
 				inputYaml: `

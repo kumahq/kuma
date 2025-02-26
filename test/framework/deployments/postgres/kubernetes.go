@@ -13,7 +13,10 @@ type k8SDeployment struct {
 	options *deployOptions
 }
 
-const releaseName = "postgres-release"
+const (
+	releaseName = "postgres-release"
+	chart       = "oci://registry-1.docker.io/bitnamicharts/postgresql"
+)
 
 func (t *k8SDeployment) GetEnvVars() map[string]string {
 	return t.envVars
@@ -55,12 +58,7 @@ data:
 		helmOpts.SetValues["primary.initdb.password"] = t.options.postgresPassword
 	}
 
-	err := helm.AddRepoE(cluster.GetTesting(), helmOpts, "bitnami", "https://charts.bitnami.com/bitnami")
-	if err != nil {
-		return err
-	}
-
-	return helm.InstallE(cluster.GetTesting(), helmOpts, "bitnami/postgresql", releaseName)
+	return helm.InstallE(cluster.GetTesting(), helmOpts, chart, releaseName)
 }
 
 func (t *k8SDeployment) Delete(cluster framework.Cluster) error {

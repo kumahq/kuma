@@ -12,9 +12,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/xds"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
@@ -98,9 +100,9 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 func (p plugin) denyRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{
-			Subset: core_rules.MeshSubset(),
+			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
-				Action: api.Deny,
+				Action: &api.Deny,
 			},
 		},
 	}
@@ -109,9 +111,9 @@ func (p plugin) denyRules() core_rules.Rules {
 func (p plugin) allowRules() core_rules.Rules {
 	return core_rules.Rules{
 		&core_rules.Rule{
-			Subset: core_rules.MeshSubset(),
+			Subset: subsetutils.MeshSubset(),
 			Conf: api.Conf{
-				Action: api.Allow,
+				Action: &api.Allow,
 			},
 		},
 	}
@@ -184,7 +186,7 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 		for _, mesName := range mesNames {
 			rule := p.allowRules()
-			if resource.Mesh.Spec.GetRouting() != nil && resource.Mesh.Spec.GetRouting().DefaultForbidMeshExternalServiceAccess {
+			if resource.Mesh.Spec.GetRouting() != nil && pointer.Deref(resource.Mesh.Spec.GetRouting().DefaultForbidMeshExternalServiceAccess).Value {
 				rule = p.denyRules()
 			}
 			rules := core_rules.FromRules{

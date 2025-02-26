@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	system_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -91,13 +92,15 @@ var _ = Describe("KubernetesStore", func() {
             kind: ConfigMap
             metadata:
               name: "kuma-internal-config"
-              namespace : "kuma-system"
+              namespace: "kuma-system"
             data:
               config: "test" 
 `).(*kube_core.ConfigMap)
 
 			// when
-			err := s.Create(context.Background(), config, core_store.CreateByKey("kuma-internal-config", ""))
+			err := s.Create(context.Background(), config, core_store.CreateByKey("kuma-internal-config", ""), core_store.CreateWithLabels(map[string]string{
+				mesh_proto.DisplayName: "kuma-internal-config",
+			}))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -108,6 +111,8 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
+			Expect(actual.GetLabels()).NotTo(HaveKey(mesh_proto.DisplayName))
+			Expect(actual.GetAnnotations()).To(HaveKeyWithValue(mesh_proto.DisplayName, "kuma-internal-config"))
 		})
 	})
 
@@ -120,6 +125,8 @@ var _ = Describe("KubernetesStore", func() {
             metadata:
               name: "kuma-internal-config"
               namespace : %s
+              annotations:
+                kuma.io/display-name: "kuma-internal-config"
             data:
               config: "test" 
     `, ns))
@@ -130,7 +137,9 @@ var _ = Describe("KubernetesStore", func() {
             kind: ConfigMap
             metadata:
               name: "kuma-internal-config"
-              namespace : %s
+              namespace: %s
+              annotations:
+                kuma.io/display-name: "kuma-internal-config"
             data:
               config: "next test" 
     `, ns)).(*kube_core.ConfigMap)
@@ -156,6 +165,8 @@ var _ = Describe("KubernetesStore", func() {
 
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
+			Expect(actual.GetLabels()).NotTo(HaveKey(mesh_proto.DisplayName))
+			Expect(actual.GetAnnotations()).To(HaveKeyWithValue(mesh_proto.DisplayName, "kuma-internal-config"))
 		})
 
 		It("should return error in case of resource conflict", func() {

@@ -67,6 +67,7 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 		// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
 		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
 		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
+		framework.WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
 	}
 	options = append(options, extraOptions...)
 	zone := NewK8sCluster(NewTestingT(), clusterName, Verbose)
@@ -87,6 +88,7 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framew
 			WithIngressEnvoyAdminTunnel(),
 			WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
 			WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
 		},
 		extraOptions...,
 	)
@@ -110,6 +112,7 @@ func SetupAndGetState() []byte {
 	globalOptions := append(
 		[]framework.KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF", "1s"),
+			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
 		},
 		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
@@ -131,6 +134,7 @@ func SetupAndGetState() []byte {
 	KubeZone1 = setupKubeZone(&wg, Kuma1, kubeZone1Options...)
 
 	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
+	kubeZone2Options = append(kubeZone2Options, WithCNI())
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
 	UniZone1 = setupUniZone(&wg, Kuma4, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...)

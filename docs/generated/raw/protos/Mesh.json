@@ -282,6 +282,7 @@
                     "description": "List of available Certificate Authority backends"
                 },
                 "skipValidation": {
+                    "additionalProperties": true,
                     "type": "boolean",
                     "description": "If enabled, skips CA validation."
                 }
@@ -360,14 +361,17 @@
         "kuma.mesh.v1alpha1.Routing": {
             "properties": {
                 "localityAwareLoadBalancing": {
+                    "additionalProperties": true,
                     "type": "boolean",
                     "description": "Enable the Locality Aware Load Balancing"
                 },
                 "zoneEgress": {
+                    "additionalProperties": true,
                     "type": "boolean",
                     "description": "Enable routing traffic to services in other zone or external services through ZoneEgress. Default: false"
                 },
                 "defaultForbidMeshExternalServiceAccess": {
+                    "additionalProperties": true,
                     "type": "boolean",
                     "description": "If true, blocks traffic to MeshExternalServices. Default: false"
                 }

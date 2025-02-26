@@ -7,6 +7,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
@@ -47,9 +48,9 @@ func NewCallbacks(
 	log logr.Logger,
 	resourceManager manager.ResourceManager,
 	readOnlyResourceManager manager.ReadOnlyResourceManager,
-	cache util_xds_v3.SnapshotCache,
+	cache envoy_cache.SnapshotCache,
 	config *dp_server.HdsConfig,
-	hasher util_xds_v3.NodeHash,
+	hasher envoy_cache.NodeHash,
 	metrics *hds_metrics.Metrics,
 	defaultAdminPort uint32,
 ) hds_callbacks.Callbacks {
@@ -143,7 +144,7 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) util_xds_v3.Watchdog {
 			t.log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
-			if err := t.reconciler.Clear(node); err != nil {
+			if err := t.reconciler.Clear(context.Background(), node); err != nil {
 				t.log.Error(err, "OnTick() failed")
 			}
 		},

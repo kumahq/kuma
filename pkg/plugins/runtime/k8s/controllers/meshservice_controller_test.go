@@ -114,5 +114,9 @@ var _ = Describe("MeshServiceController", func() {
 			inputFile:  "headless.resources.yaml",
 			outputFile: "headless.meshservice.yaml",
 		}),
+		Entry("with kuma.io/ignore", testCase{
+			inputFile:  "ignore.resources.yaml",
+			outputFile: "ignore.meshservice.yaml",
+		}),
 	)
 })

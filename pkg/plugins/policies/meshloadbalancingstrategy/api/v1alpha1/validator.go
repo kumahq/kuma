@@ -13,16 +13,16 @@ import (
 func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
-	if len(r.Spec.To) == 0 {
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
+	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshLoadBalancingStrategyResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -33,6 +33,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 			common_api.MeshGateway,
 			common_api.MeshService,
 			common_api.MeshServiceSubset,
+			common_api.Dataplane,
 		},
 		GatewayListenerTagsAllowed: true,
 	})
@@ -129,7 +130,7 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
 	}
 
-	for idx, failover := range crossZone.Failover {
+	for idx, failover := range pointer.Deref(crossZone.Failover) {
 		path := validators.RootedAt("failover").Index(idx)
 		if failover.From != nil {
 			if len(failover.From.Zones) == 0 {
@@ -249,7 +250,7 @@ func validateHashPolicies(conf *[]HashPolicy) validators.ValidationError {
 			if policy.FilterState == nil {
 				verr.AddViolationAt(path.Field("filterState"), validators.MustBeDefined)
 			}
-		case ConnectionType:
+		case ConnectionType, SourceIPType:
 			if policy.Connection == nil {
 				verr.AddViolationAt(path.Field("connection"), validators.MustBeDefined)
 			}

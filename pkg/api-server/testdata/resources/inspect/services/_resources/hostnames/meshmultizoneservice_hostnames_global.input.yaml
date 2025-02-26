@@ -1,0 +1,26 @@
+#/meshes/default/meshmultizoneservices/test-server/_hostnames 200
+type: Mesh
+name: default
+---
+type: MeshMultiZoneService
+name: test-server
+mesh: default
+spec:
+  selector:
+    meshService:
+      matchLabels:
+        kuma.io/display-name: test-server
+  ports:
+    - port: 80
+      appProtocol: http
+---
+type: HostnameGenerator
+name: synced-meshmultizoneservice
+labels:
+  kuma.io/origin: global
+spec:
+  template: '{{ .DisplayName }}.mzsvc.mesh.local'
+  selector:
+    meshMultiZoneService:
+      matchLabels:
+        kuma.io/origin: global

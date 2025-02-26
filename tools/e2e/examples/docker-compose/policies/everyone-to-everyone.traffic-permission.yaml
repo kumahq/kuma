@@ -1,9 +1,0 @@
-type: TrafficPermission
-name: everyone-to-everyone
-mesh: default
-sources:
-- match:
-    kuma.io/service: '*'
-destinations:
-- match:
-    kuma.io/service: '*'

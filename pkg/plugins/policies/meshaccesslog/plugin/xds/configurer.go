@@ -110,13 +110,13 @@ func (c *Configurer) tcpBackend(backend *api.TCPBackend, defaultFormat string) (
 		sfs = c.sfsJSON(map[string]*structpb.Value{
 			"address": structpb.NewStringValue(backend.Address),
 			"message": structpb.NewStringValue(envoyFormat),
-		}, pointer.Deref(backend.Format.OmitEmptyValues))
+		}, backend.Format.OmitEmptyValues)
 	case backend.Format.Json != nil:
 		fields := c.jsonToFields(*backend.Format.Json)
 		sfs = c.sfsJSON(map[string]*structpb.Value{
 			"address": structpb.NewStringValue(backend.Address),
 			"message": structpb.NewStructValue(&structpb.Struct{Fields: fields}),
-		}, pointer.Deref(backend.Format.OmitEmptyValues))
+		}, backend.Format.OmitEmptyValues)
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
@@ -131,10 +131,10 @@ func (c *Configurer) fileBackend(backend *api.FileBackend, defaultFormat string)
 	case backend.Format == nil:
 		sfs = c.sfsPlain(newLine(defaultFormat), false)
 	case backend.Format.Plain != nil:
-		sfs = c.sfsPlain(newLine(*backend.Format.Plain), pointer.Deref(backend.Format.OmitEmptyValues))
+		sfs = c.sfsPlain(newLine(*backend.Format.Plain), backend.Format.OmitEmptyValues)
 	case backend.Format.Json != nil:
 		fields := c.jsonToFields(*backend.Format.Json)
-		sfs = c.sfsJSON(fields, pointer.Deref(backend.Format.OmitEmptyValues))
+		sfs = c.sfsJSON(fields, backend.Format.OmitEmptyValues)
 	default:
 		return nil, errors.New(validators.MustHaveOnlyOne("format", "plain", "json"))
 	}
@@ -251,7 +251,7 @@ func (c *Configurer) otelAccessLog(
 	}
 
 	attributes := otlp.KeyValueList{}
-	for _, kv := range backend.Attributes {
+	for _, kv := range pointer.Deref(backend.Attributes) {
 		attributes.Values = append(attributes.Values, &otlp.KeyValue{
 			Key: kv.Key,
 			Value: &otlp.AnyValue{

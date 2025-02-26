@@ -33,7 +33,6 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
-	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -69,11 +68,14 @@ func DefaultContext(
 	}
 
 	globalMappers := []reconcile_v2.ResourceMapper{
-		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))),
+		UpdateResourceMeta(
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
+			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
+		),
 		reconcile_v2.If(
 			reconcile_v2.And(
 				reconcile_v2.TypeIs(system.GlobalSecretType),
-				reconcile_v2.NameHasPrefix(zone_tokens.SigningKeyPrefix),
+				reconcile_v2.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		reconcile_v2.If(
@@ -104,6 +106,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
 			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
+			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
@@ -199,8 +202,8 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 	publicSigningKeyResource := system.NewGlobalSecretResource()
 	newResName := strings.ReplaceAll(
 		r.GetMeta().GetName(),
-		zone_tokens.SigningKeyPrefix,
-		zone_tokens.SigningPublicKeyPrefix,
+		system.ZoneTokenSigningKeyPrefix,
+		system.ZoneTokenSigningPublicKeyPrefix,
 	)
 	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
 
@@ -266,7 +269,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			return configs[resName]
 		case r.Descriptor().Name == system.GlobalSecretType:
 			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
-				zone_tokens.SigningKeyPrefix,
+				system.ZoneTokenSigningKeyPrefix,
 			}...)
 		}
 
@@ -324,7 +327,9 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 
 			zone := system.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
-				log.Error(err, "failed to get zone", "zone", zoneTag)
+				if !errors.Is(err, context.Canceled) {
+					log.Error(err, "failed to get zone", "zone", zoneTag)
+				}
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
 				return true

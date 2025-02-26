@@ -9,6 +9,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
@@ -38,8 +39,8 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) error {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
-			if len(l.JsonPatches) > 0 {
-				if err := jsonpatch.MergeJsonPatch(listener.Resource, l.JsonPatches); err != nil {
+			if len(pointer.Deref(l.JsonPatches)) > 0 {
+				if err := jsonpatch.MergeJsonPatch(listener.Resource, pointer.Deref(l.JsonPatches)); err != nil {
 					return err
 				}
 
@@ -79,10 +80,10 @@ func (l *listenerModificator) listenerMatches(listener *core_xds.Resource) bool 
 	if l.Match.Origin != nil && *l.Match.Origin != listener.Origin {
 		return false
 	}
-	if len(l.Match.Tags) > 0 {
+	if len(pointer.Deref(l.Match.Tags)) > 0 {
 		if listenerProto, ok := listener.Resource.(*envoy_listener.Listener); ok {
 			listenerTags := envoy_metadata.ExtractTags(listenerProto.Metadata)
-			if !mesh_proto.TagSelector(l.Match.Tags).Matches(listenerTags) {
+			if !mesh_proto.TagSelector(pointer.Deref(l.Match.Tags)).Matches(listenerTags) {
 				return false
 			}
 		}

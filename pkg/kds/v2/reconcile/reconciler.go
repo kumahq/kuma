@@ -2,19 +2,20 @@ package reconcile
 
 import (
 	"context"
+	"maps"
 	"sync"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_kds_v2 "github.com/kumahq/kuma/pkg/kds/v2/util"
 	"github.com/kumahq/kuma/pkg/multitenant"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/xds"
 )
 
@@ -73,7 +74,7 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node, chang
 
 			oldRes := old.GetResources(typ)
 			if len(oldRes) > 0 {
-				builder = builder.With(resType, maps.Values(oldRes))
+				builder = builder.With(resType, util_maps.AllValues(oldRes))
 			}
 		}
 	}

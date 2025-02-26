@@ -68,36 +68,38 @@ func ChangeService() {
 			Install(MTLSMeshKubernetes(mesh)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(mesh)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("demo-client"),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("test-server-first"),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-first"),
-				testserver.WithoutService(),
-				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
-				testserver.WithPodLabels(firstTestServerLabels),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("test-server-second"),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-second"),
-				testserver.WithoutService(),
-				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
-				testserver.WithPodLabels(secondTestServerLabels),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithName("test-server-third"),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-third"),
-				testserver.WithoutService(),
-				testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
-				testserver.WithPodLabels(thirdTestServerLabels),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("demo-client"),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("test-server-first"),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-first"),
+					testserver.WithoutService(),
+					testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+					testserver.WithPodLabels(firstTestServerLabels),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("test-server-second"),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-second"),
+					testserver.WithoutService(),
+					testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+					testserver.WithPodLabels(secondTestServerLabels),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithName("test-server-third"),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-third"),
+					testserver.WithoutService(),
+					testserver.WithoutWaitingToBeReady(), // WaitForPods assumes that app label is name, but we change this in WithPodLabels
+					testserver.WithPodLabels(thirdTestServerLabels),
+				),
 			)).
 			Install(YamlK8sObject(newSvc(firstTestServerLabels))).
 			Setup(kubernetes.Cluster)

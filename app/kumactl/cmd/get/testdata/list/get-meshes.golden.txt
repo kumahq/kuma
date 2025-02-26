@@ -1,3 +1,3 @@
-NAME    mTLS                METRICS                   LOGGING                   TRACING                              LOCALITY   ZONEEGRESS   AGE
-mesh1   builtin/builtin-1   prometheus/prometheus-1   tcp/logstash, file/file   zipkin/zipkin-us, zipkin/zipkin-eu   on         on           292y
-mesh2   off                 off                       off                       off                                  off        off          292y
+NAME    mTLS                LOCALITY   ZONEEGRESS   AGE
+mesh1   builtin/builtin-1   on         on           292y
+mesh2   off                 off        off          292y

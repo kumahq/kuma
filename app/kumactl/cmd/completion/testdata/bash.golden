@@ -886,6 +886,7 @@ _kumactl_generate_dataplane-token()
     flags+=("--no-config")
 
     must_have_one_flag=()
+    must_have_one_flag+=("--valid-for=")
     must_have_one_noun=()
     noun_aliases=()
 }

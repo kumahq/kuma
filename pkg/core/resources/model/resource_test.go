@@ -393,5 +393,52 @@ var _ = Describe("ComputeLabels", func() {
 				"kuma.io/env":           "kubernetes",
 			},
 		}),
+		Entry("gateway dataplane proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				WithBuiltInGateway("test-gateway").
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":       "mesh-1",
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "gateway",
+			},
+		}),
+		Entry("dataplane proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":       "mesh-1",
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "sidecar",
+			},
+		}),
+		Entry("zone egress proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.ZoneEgress().
+				WithPort(1001).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "zoneegress",
+			},
+		}),
 	)
 })

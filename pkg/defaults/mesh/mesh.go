@@ -3,19 +3,19 @@ package mesh
 import (
 	"context"
 	"fmt"
+	"slices"
 	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/slices"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 var log = core.Log.WithName("defaults").WithName("mesh")
@@ -50,7 +50,7 @@ func EnsureDefaultMeshResources(
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
 	if created {
-		resKey := tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(meshName), tokens.DefaultKeyID, meshName)
+		resKey := tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(meshName), tokens.DefaultKeyID, meshName)
 		logger.Info("default Dataplane Token Signing Key created", "name", resKey.Name)
 	} else {
 		logger.Info("Dataplane Token Signing Key already exists")

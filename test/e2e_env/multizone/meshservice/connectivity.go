@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"golang.org/x/sync/errgroup"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -155,35 +156,69 @@ spec:
                 port: 80
                 weight: 1
 `, Config.KumaNamespace, meshName, namespace)
-		err := NewClusterSetup().
+
+		group := errgroup.Group{}
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(clientNamespace)).
-			Install(testserver.Install(
-				testserver.WithName("demo-client"),
-				testserver.WithNamespace(clientNamespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithName("statefulset-test-server"),
-				testserver.WithStatefulSet(),
-				testserver.WithHeadlessService(),
-				testserver.WithEchoArgs("echo", "--instance", "kube-statefulset-test-server-1"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("demo-client"),
+					testserver.WithNamespace(clientNamespace),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(meshName),
+					testserver.WithName("statefulset-test-server"),
+					testserver.WithStatefulSet(),
+					testserver.WithHeadlessService(),
+					testserver.WithEchoArgs("echo", "--instance", "kube-statefulset-test-server-1"),
+				),
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName)),
 			)).
 			Install(YamlK8s(meshGateway)).
 			Install(YamlK8s(gatewayRoute)).
 			Install(YamlK8s(gateway.MkGatewayInstance("edge-gateway-ms", namespace, meshName))).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
+			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(testserver.Install(
+				testserver.WithNamespace(namespace),
+				testserver.WithMesh(meshName),
+				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
+			)).
+			SetupInGroup(multizone.KubeZone2, &group)
+
+		NewClusterSetup().
+			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-1"}))).
+			SetupInGroup(multizone.UniZone1, &group)
+
+		NewClusterSetup().
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
+			SetupInGroup(multizone.UniZone2, &group)
+
+		autoGenerateUniversalCluster = NewUniversalCluster(NewTestingT(), autoGenerateUniversalClusterName, Silent)
+		NewClusterSetup().
+			Install(Kuma(
+				core.Zone,
+				WithGlobalAddress(multizone.Global.GetKuma().GetKDSServerAddress()),
+				WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
+				WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
+			)).
+			Install(IngressUniversal(multizone.Global.GetKuma().GenerateZoneIngressToken)).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "auto-uni-test-server"}))).
+			SetupInGroup(autoGenerateUniversalCluster, &group)
+
+		Expect(group.Wait()).To(Succeed())
 
 		Expect(multizone.KubeZone1.WaitApp("statefulset-test-server", namespace, 1)).To(Succeed())
-
 		for _, pod := range k8s.ListPods(multizone.KubeZone1.GetTesting(),
 			multizone.KubeZone1.GetKubectlOptions(namespace),
 			kube_meta.ListOptions{
@@ -193,40 +228,6 @@ spec:
 			testServerPodNames = append(testServerPodNames, pod.Name)
 		}
 		Expect(testServerPodNames).To(HaveLen(1))
-
-		err = NewClusterSetup().
-			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(meshName),
-				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-2"),
-			)).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(DemoClientUniversal("uni-demo-client", meshName, WithTransparentProxy(true))).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server-1"}))).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
-
-		autoGenerateUniversalCluster = NewUniversalCluster(NewTestingT(), autoGenerateUniversalClusterName, Silent)
-		err = NewClusterSetup().
-			Install(Kuma(
-				core.Zone,
-				WithGlobalAddress(multizone.Global.GetKuma().GetKDSServerAddress()),
-				WithEnv("KUMA_XDS_DATAPLANE_DEREGISTRATION_DELAY", "0s"), // we have only 1 Kuma CP instance so there is no risk setting this to 0
-				WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
-			)).
-			Install(IngressUniversal(multizone.Global.GetKuma().GenerateZoneIngressToken)).
-			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "auto-uni-test-server"}))).
-			Setup(autoGenerateUniversalCluster)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEachFailure(func() {

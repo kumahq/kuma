@@ -9,13 +9,13 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 )
 
 var log = core.Log.WithName("defaults")
@@ -85,5 +85,5 @@ func EnsureZoneTokenSigningKeyExists(ctx context.Context, resManager core_manage
 	if cfg.IsFederatedZoneCP() {
 		return nil
 	}
-	return tokens.EnsureDefaultSigningKeyExist(zone.SigningKeyPrefix, ctx, resManager, logger)
+	return tokens.EnsureDefaultSigningKeyExist(system.ZoneTokenSigningKeyPrefix, ctx, resManager, logger)
 }

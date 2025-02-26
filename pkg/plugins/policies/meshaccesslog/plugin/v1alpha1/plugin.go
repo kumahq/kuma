@@ -13,6 +13,9 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/xds"
@@ -86,8 +89,8 @@ func applyToInbounds(rules core_rules.FromRules, inboundListeners map[core_rules
 		if !ok {
 			continue
 		}
-
-		if err := configureInbound(rules.Rules[listenerKey], dataplane, listener, backends, path); err != nil {
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](rules.InboundRules[listenerKey])
+		if err := configureInbound(conf, dataplane, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -112,7 +115,7 @@ func applyToOutbounds(
 
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		if err := configureOutbound(rules.Rules, dataplane, core_rules.MeshService(serviceName), serviceName, listener, backends, path); err != nil {
+		if err := configureOutbound(rules.Rules, dataplane, subsetutils.MeshServiceElement(serviceName), serviceName, listener, backends, path); err != nil {
 			return err
 		}
 	}
@@ -128,7 +131,7 @@ func applyToTransparentProxyListeners(
 		if err := configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			subsetutils.MeshServiceElement(core_mesh.PassThroughService),
 			"external",
 			ipv4,
 			backends,
@@ -142,7 +145,7 @@ func applyToTransparentProxyListeners(
 		return configureOutbound(
 			policies.ToRules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			subsetutils.MeshServiceElement(core_mesh.PassThroughService),
 			"external",
 			ipv6,
 			backends,
@@ -162,7 +165,7 @@ func applyToDirectAccess(
 		return configureOutbound(
 			rules.Rules,
 			dataplane,
-			core_rules.MeshService(core_mesh.PassThroughService),
+			subsetutils.MeshServiceElement(core_mesh.PassThroughService),
 			name,
 			listener,
 			backends,
@@ -209,7 +212,7 @@ func applyToGateway(
 			if err := configureOutbound(
 				toListenerRules.Rules,
 				proxy.Dataplane,
-				core_rules.Subset{},
+				subsetutils.MeshElement(),
 				mesh_proto.MatchAllTag,
 				listener,
 				backends,
@@ -219,8 +222,9 @@ func applyToGateway(
 			}
 		}
 
-		if fromListenerRules, ok := rules.FromRules[listenerKey]; ok {
-			if err := configureInbound(fromListenerRules, proxy.Dataplane, listener, backends, path); err != nil {
+		if fromListenerRules, ok := rules.InboundRules[listenerKey]; ok {
+			conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromListenerRules)
+			if err := configureInbound(conf, proxy.Dataplane, listener, backends, path); err != nil {
 				return err
 			}
 		}
@@ -230,19 +234,13 @@ func applyToGateway(
 }
 
 func configureInbound(
-	fromRules core_rules.Rules,
+	conf api.Conf,
 	dataplane *core_mesh.DataplaneResource,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
 	accessLogSocketPath string,
 ) error {
 	serviceName := dataplane.Spec.GetIdentifyingService()
-
-	// `from` section of MeshAccessLog only allows Mesh targetRef
-	conf := core_rules.ComputeConf[api.Conf](fromRules, core_rules.MeshSubset())
-	if conf == nil {
-		return nil
-	}
 
 	for _, backend := range pointer.Deref(conf.Backends) {
 		configurer := plugin_xds.Configurer{
@@ -268,7 +266,7 @@ func configureInbound(
 func configureOutbound(
 	toRules core_rules.Rules,
 	dataplane *core_mesh.DataplaneResource,
-	subset core_rules.Subset,
+	element subsetutils.Element,
 	destinationServiceName string,
 	listener *envoy_listener.Listener,
 	backendsAcc *plugin_xds.EndpointAccumulator,
@@ -276,7 +274,7 @@ func configureOutbound(
 ) error {
 	sourceService := dataplane.Spec.GetIdentifyingService()
 
-	conf := core_rules.ComputeConf[api.Conf](toRules, subset)
+	conf := core_rules.ComputeConf[api.Conf](toRules, element)
 	if conf == nil {
 		return nil
 	}
@@ -302,7 +300,7 @@ func configureOutbound(
 	return nil
 }
 
-func applyToRealResources(rs *core_xds.ResourceSet, rules core_rules.ResourceRules, meshCtx xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, backendsAcc *plugin_xds.EndpointAccumulator, accessLogSocketPath string) error {
+func applyToRealResources(rs *core_xds.ResourceSet, rules outbound.ResourceRules, meshCtx xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, backendsAcc *plugin_xds.EndpointAccumulator, accessLogSocketPath string) error {
 	for uri, resType := range rs.IndexByOrigin() {
 		conf := rules.Compute(uri, meshCtx.Resources)
 		if conf == nil {

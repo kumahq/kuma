@@ -111,7 +111,7 @@ func NewCert(
 }
 
 func newCert(issuer *pkix.Name, certType CertType, hosts ...string) (x509.Certificate, error) {
-	notBefore := time.Now()
+	notBefore := time.Now().Add(-DefaultAllowedClockSkew)
 	notAfter := notBefore.Add(DefaultValidityPeriod)
 	serialNumberLimit := new(big.Int).Lsh(big.NewInt(1), 128)
 	serialNumber, err := rand.Int(rand.Reader, serialNumberLimit)

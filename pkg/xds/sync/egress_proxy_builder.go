@@ -28,6 +28,7 @@ type EgressProxyBuilder struct {
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	xdsMeta *core_xds.DataplaneMetadata,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
 	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
@@ -125,6 +126,7 @@ func (p *EgressProxyBuilder) Build(
 			ZoneIngresses:      zoneIngresses,
 			MeshResourcesList:  meshResourcesList,
 		},
+		Metadata: xdsMeta,
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies

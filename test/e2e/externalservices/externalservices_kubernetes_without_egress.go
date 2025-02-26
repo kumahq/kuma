@@ -56,22 +56,21 @@ spec:
 			Install(YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))).
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
 			Install(Namespace(externalServicesNamespace)).
-			Install(testserver.Install(
-				testserver.WithNamespace(externalServicesNamespace),
-				testserver.WithName("external-service"),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
+				testserver.Install(
+					testserver.WithNamespace(externalServicesNamespace),
+					testserver.WithName("external-service"),
+				),
 			)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		Expect(cluster.TriggerDeleteNamespace(externalServicesNamespace)).To(Succeed())
-		Expect(cluster.TriggerDeleteNamespace(TestNamespace)).To(Succeed())
-		Expect(cluster.WaitNamespaceDelete(externalServicesNamespace)).To(Succeed())
-		Expect(cluster.WaitNamespaceDelete(TestNamespace)).To(Succeed())
-
+		Expect(cluster.DeleteNamespace(externalServicesNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

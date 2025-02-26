@@ -30,16 +30,18 @@ properties:
               properties:
                 port:
                   description: Port defines the port to which a user makes a request.
+                  format: int32
                   type: integer
                 protocol:
                   default: tcp
-                  description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                  description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`, `mysql`.'
                   enum:
                     - tcp
                     - tls
                     - grpc
                     - http
                     - http2
+                    - mysql
                   type: string
                 type:
                   description: Type of the match, one of `Domain`, `IP` or `CIDR` is available.
@@ -51,13 +53,16 @@ properties:
                 value:
                   description: Value for the specified Type.
                   type: string
+              required:
+                - type
+                - value
               type: object
             type: array
           passthroughMode:
-            default: None
             description: |-
               Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
               When `All` or `None` `appendMatch` has no effect.
+              If not specified then the default value is "Matched".
             enum:
               - All
               - Matched
@@ -81,6 +86,7 @@ properties:
               - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
+              - Dataplane
             type: string
           labels:
             additionalProperties:
@@ -127,3 +133,15 @@ properties:
             type: object
         type: object
     type: object
+  creationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

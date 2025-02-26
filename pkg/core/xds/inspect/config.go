@@ -51,7 +51,7 @@ func (p *ProxyConfigInspector) Get(ctx context.Context, name string, shadow bool
 		IncludeShadow: shadow,
 	}
 
-	proxy, err := proxyBuilder.Build(ctx, model.ResourceKey{Name: name, Mesh: p.mesh()}, p.meshContext)
+	proxy, err := proxyBuilder.Build(ctx, model.ResourceKey{Name: name, Mesh: p.mesh()}, &core_xds.DataplaneMetadata{}, p.meshContext)
 	if err != nil {
 		return nil, err
 	}

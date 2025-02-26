@@ -18,6 +18,8 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
@@ -138,7 +140,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](1),
@@ -209,7 +211,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"test": "test",
 										},
 									},
@@ -231,7 +233,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							HTTP: &api.HTTP{
 								NumRetries:    pointer.To[uint32](0),
@@ -252,7 +254,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "grpc-service",
 						}},
@@ -300,7 +302,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{core_rules.Tag{
+						Subset: subsetutils.Subset{subsetutils.Tag{
 							Key:   mesh_proto.ServiceTag,
 							Value: "grpc-service",
 						}},
@@ -324,7 +326,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							TCP: &api.TCP{
 								MaxConnectAttempt: pointer.To[uint32](21),
@@ -346,7 +348,7 @@ var _ = Describe("MeshRetry", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{
+						Subset: subsetutils.Subset{
 							{
 								Key:   mesh_proto.ServiceTag,
 								Value: "http-service",
@@ -426,7 +428,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"test": "test",
 										},
 									},
@@ -436,7 +438,7 @@ var _ = Describe("MeshRetry", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{
+						Subset: subsetutils.Subset{
 							{
 								Key:   mesh_proto.ServiceTag,
 								Value: "http-service",
@@ -490,7 +492,7 @@ var _ = Describe("MeshRetry", func() {
 									},
 									{
 										PredicateType: "OmitHostsWithTags",
-										Tags: map[string]string{
+										Tags: &map[string]string{
 											"another-test": "another-test",
 										},
 									},
@@ -512,7 +514,7 @@ var _ = Describe("MeshRetry", func() {
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -585,7 +587,7 @@ var _ = Describe("MeshRetry", func() {
 										},
 										{
 											PredicateType: "OmitHostsWithTags",
-											Tags: map[string]string{
+											Tags: &map[string]string{
 												"test": "test",
 											},
 										},
@@ -608,7 +610,7 @@ var _ = Describe("MeshRetry", func() {
 				Protocol:       core_mesh.ProtocolHTTP,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -681,7 +683,7 @@ var _ = Describe("MeshRetry", func() {
 										},
 										{
 											PredicateType: "OmitHostsWithTags",
-											Tags: map[string]string{
+											Tags: &map[string]string{
 												"test": "test",
 											},
 										},
@@ -792,7 +794,7 @@ var _ = Describe("MeshRetry", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.Subset{},
+									Subset: subsetutils.Subset{},
 									Conf: api.Conf{
 										HTTP: &api.HTTP{
 											NumRetries:    pointer.To[uint32](1),
@@ -863,7 +865,7 @@ var _ = Describe("MeshRetry", func() {
 												},
 												{
 													PredicateType: "OmitHostsWithTags",
-													Tags: map[string]string{
+													Tags: &map[string]string{
 														"test": "test",
 													},
 												},
@@ -887,7 +889,7 @@ var _ = Describe("MeshRetry", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									TCP: &api.TCP{
 										MaxConnectAttempt: pointer.To[uint32](21),
@@ -909,7 +911,7 @@ var _ = Describe("MeshRetry", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.Subset{
+									Subset: subsetutils.Subset{
 										{
 											Key:   core_rules.RuleMatchesHashTag,
 											Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
@@ -985,7 +987,7 @@ var _ = Describe("MeshRetry", func() {
 												},
 												{
 													PredicateType: "OmitHostsWithTags",
-													Tags: map[string]string{
+													Tags: &map[string]string{
 														"test": "test",
 													},
 												},
@@ -1006,7 +1008,7 @@ var _ = Describe("MeshRetry", func() {
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.MeshSubset(),
+									Subset: subsetutils.MeshSubset(),
 									Conf: meshhttproute_api.PolicyDefault{
 										Rules: []meshhttproute_api.Rule{
 											{

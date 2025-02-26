@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -27,42 +28,46 @@ func TrafficRoute() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8))).
-			Install(TestServerUniversal("dp-echo-1", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v1"}),
-				WithServiceVersion("v1"),
+		group := errgroup.Group{}
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(AppModeDemoClient, meshName, WithTransparentProxy(true), WithConcurrency(8)),
+				TestServerUniversal("dp-echo-1", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v1"}),
+					WithServiceVersion("v1"),
+				),
+				TestServerUniversal("dp-echo-5", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v5"}),
+					WithServiceVersion("v5"),
+				),
+				TestServerUniversal("dp-echo-6", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v6"}),
+					WithServiceVersion("v6"),
+				),
 			)).
-			Install(TestServerUniversal("dp-echo-5", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v5"}),
-				WithServiceVersion("v5"),
-			)).
-			Install(TestServerUniversal("dp-echo-6", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v6"}),
-				WithServiceVersion("v6"),
-			)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.UniZone1, &group)
 
-		err = NewClusterSetup().
-			Install(TestServerUniversal("dp-echo-2", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v2"}),
-				WithServiceVersion("v2"),
+		NewClusterSetup().
+			Install(Parallel(
+				TestServerUniversal("dp-echo-2", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v2"}),
+					WithServiceVersion("v2"),
+				),
+				TestServerUniversal("dp-echo-3", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v3"}),
+					WithServiceVersion("v3"),
+				),
+				TestServerUniversal("dp-echo-4", meshName,
+					WithArgs([]string{"echo", "--instance", "echo-v4"}),
+					WithServiceVersion("v4"),
+				),
+				TestServerUniversal("dp-another-test", meshName,
+					WithArgs([]string{"echo", "--instance", "another-test-server"}),
+					WithServiceName("another-test-server"),
+				),
 			)).
-			Install(TestServerUniversal("dp-echo-3", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v3"}),
-				WithServiceVersion("v3"),
-			)).
-			Install(TestServerUniversal("dp-echo-4", meshName,
-				WithArgs([]string{"echo", "--instance", "echo-v4"}),
-				WithServiceVersion("v4"),
-			)).
-			Install(TestServerUniversal("dp-another-test", meshName,
-				WithArgs([]string{"echo", "--instance", "another-test-server"}),
-				WithServiceName("another-test-server"),
-			)).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.UniZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -376,7 +381,8 @@ conf:
 			Expect(WaitForResource(mesh.TrafficRouteResourceTypeDescriptor, model.ResourceKey{Mesh: meshName, Name: hashedName}, multizone.Zones()...)).Should(Succeed())
 		})
 
-		It("should loadbalance all requests equally by default", func() {
+		// TODO(bartsmykla): disabled while investingating flake (https://github.com/kumahq/kuma/issues/12142)
+		XIt("should loadbalance all requests equally by default", func() {
 			Eventually(func() (map[string]int, error) {
 				return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh/split", client.WithNumberOfRequests(40))
 			}, "30s", "500ms").Should(
@@ -387,11 +393,6 @@ conf:
 					"echo-v4": Not(BeNil()),
 					"echo-v5": Not(BeNil()),
 					"echo-v6": Not(BeNil()),
-					// todo(jakubdyszkiewicz) uncomment when https://github.com/kumahq/kuma/issues/2563 is fixed
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), BeNumerically("~", 10, 1)),
-					// HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), BeNumerically("~", 10, 1)),
 				}),
 			)
 		})

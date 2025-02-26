@@ -17,7 +17,9 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/defaults/mesh"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -37,13 +39,13 @@ const (
 // It should be removed after we stop using kuma.io/service tag, and move fully to new MeshService
 // Deprecated
 type DeprecatedConfigurer struct {
-	Subset   core_rules.Subset
+	Element  subsetutils.Element
 	Rules    core_rules.Rules
 	Protocol core_mesh.Protocol
 }
 
 func (c *DeprecatedConfigurer) ConfigureListener(ln *envoy_listener.Listener) error {
-	conf := c.getConf(c.Subset)
+	conf := c.getConf(c.Element)
 
 	for _, fc := range ln.FilterChains {
 		if c.Protocol == core_mesh.ProtocolTCP && conf != nil && conf.TCP != nil && conf.TCP.MaxConnectAttempt != nil {
@@ -66,13 +68,13 @@ func (c *DeprecatedConfigurer) ConfigureRoute(route *envoy_route.RouteConfigurat
 		return nil
 	}
 
-	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Subset), c.Protocol)
+	defaultPolicy, err := getRouteRetryConfig(c.getConf(c.Element), c.Protocol)
 	if err != nil {
 		return err
 	}
 	for _, virtualHost := range route.VirtualHosts {
 		for _, route := range virtualHost.Routes {
-			routeConfig := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, route.Name, false))
+			routeConfig := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, route.Name))
 			policy, err := getRouteRetryConfig(routeConfig, c.Protocol)
 			if err != nil {
 				return err
@@ -152,6 +154,9 @@ func genGrpcRetryPolicy(conf *api.GRPC) (*envoy_route.RetryPolicy, error) {
 
 		if conf.BackOff.BaseInterval != nil {
 			policy.RetryBackOff.BaseInterval = util_proto.Duration(conf.BackOff.BaseInterval.Duration)
+		} else {
+			// TODO: this should be handled by "base policy"
+			policy.RetryBackOff.BaseInterval = util_proto.Duration(mesh.DefaultBaseInterval.Duration)
 		}
 		if conf.BackOff.MaxInterval != nil {
 			policy.RetryBackOff.MaxInterval = util_proto.Duration(conf.BackOff.MaxInterval.Duration)
@@ -293,7 +298,7 @@ func configureHostSelectionPredicates(hostSelection *[]api.Predicate, policy *en
 		case api.OmitHostsWithTags:
 			taggedHosts, err := util_proto.MarshalAnyDeterministic(
 				&envoy_host_meta.OmitHostMetadataConfig{
-					MetadataMatch: envoy_meta.LbMetadata(hostSelect.Tags),
+					MetadataMatch: envoy_meta.LbMetadata(pointer.Deref(hostSelect.Tags)),
 				},
 			)
 			if err != nil {
@@ -419,11 +424,11 @@ func ensureRetriableStatusCodes(policyRetryOn string) string {
 	return policyRetryOn
 }
 
-func (c *DeprecatedConfigurer) getConf(subset core_rules.Subset) *api.Conf {
+func (c *DeprecatedConfigurer) getConf(element subsetutils.Element) *api.Conf {
 	if c.Rules == nil {
 		return nil
 	}
-	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
+	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type Configurer struct {

@@ -27,12 +27,12 @@ type latestReceived struct {
 }
 
 type stream struct {
-	streamClient   KDSSyncServiceStream
-	latestACKed    map[core_model.ResourceType]string
-	latestReceived map[core_model.ResourceType]*latestReceived
-	clientId       string
-	cpConfig       string
-	runtimeInfo    core_runtime.RuntimeInfo
+	streamClient       KDSSyncServiceStream
+	initialRequestDone map[core_model.ResourceType]bool
+	latestReceived     map[core_model.ResourceType]*latestReceived
+	clientId           string
+	cpConfig           string
+	runtimeInfo        core_runtime.RuntimeInfo
 }
 
 type KDSSyncServiceStream interface {
@@ -42,12 +42,12 @@ type KDSSyncServiceStream interface {
 
 func NewDeltaKDSStream(s KDSSyncServiceStream, clientId string, runtimeInfo core_runtime.RuntimeInfo, cpConfig string) DeltaKDSStream {
 	return &stream{
-		streamClient:   s,
-		runtimeInfo:    runtimeInfo,
-		latestACKed:    make(map[core_model.ResourceType]string),
-		latestReceived: make(map[core_model.ResourceType]*latestReceived),
-		clientId:       clientId,
-		cpConfig:       cpConfig,
+		streamClient:       s,
+		runtimeInfo:        runtimeInfo,
+		initialRequestDone: make(map[core_model.ResourceType]bool),
+		latestReceived:     make(map[core_model.ResourceType]*latestReceived),
+		clientId:           clientId,
+		cpConfig:           cpConfig,
 	}
 }
 
@@ -101,10 +101,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		return UpstreamResponse{}, err
 	}
 	// when there isn't nonce it means it's the first request
-	isInitialRequest := true
-	if _, found := s.latestACKed[rs.GetItemType()]; found {
-		isInitialRequest = false
-	}
+	isInitialRequest := !s.initialRequestDone[rs.GetItemType()]
 	s.latestReceived[rs.GetItemType()] = &latestReceived{
 		nonce:         resp.Nonce,
 		nameToVersion: nameToVersion,
@@ -115,6 +112,7 @@ func (s *stream) Receive() (UpstreamResponse, error) {
 		AddedResources:      rs,
 		RemovedResourcesKey: s.mapRemovedResources(resp.RemovedResources),
 		IsInitialRequest:    isInitialRequest,
+		InvalidResourcesKey: []core_model.ResourceKey{},
 	}, err
 }
 
@@ -131,7 +129,7 @@ func (s *stream) ACK(resourceType core_model.ResourceType) error {
 		TypeUrl: string(resourceType),
 	})
 	if err == nil {
-		s.latestACKed[resourceType] = latestReceived.nonce
+		s.initialRequestDone[resourceType] = true
 	}
 	return err
 }
@@ -141,6 +139,7 @@ func (s *stream) NACK(resourceType core_model.ResourceType, err error) error {
 	if !found {
 		return nil
 	}
+	s.initialRequestDone[resourceType] = true
 	return s.streamClient.Send(&envoy_sd.DeltaDiscoveryRequest{
 		ResponseNonce:          latestReceived.nonce,
 		ResourceNamesSubscribe: []string{"*"},

@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol)}
+	allMatchProtocols                = []string{string(TcpProtocol), string(TlsProtocol), string(GrpcProtocol), string(HttpProtocol), string(Http2Protocol), string(MysqlProtocol)}
 	notAllowedProtocolsOnTheSamePort = []ProtocolType{GrpcProtocol, HttpProtocol, Http2Protocol}
 	wildcardPartialPrefixPattern     = regexp.MustCompile(`^\*[^\.]+`)
 )
@@ -24,12 +24,12 @@ var (
 func (r *MeshPassthroughResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
 	verr.AddErrorAt(path.Field("default"), validateDefault(r.Spec.Default))
 	return verr.OrNil()
 }
 
-func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshPassthroughResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -37,6 +37,7 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 		SupportedKinds: []common_api.TargetRefKind{
 			common_api.Mesh,
 			common_api.MeshSubset,
+			common_api.Dataplane,
 		},
 	})
 	return targetRefErr
@@ -44,21 +45,24 @@ func validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
 
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
-	portAndProtocol := map[int]ProtocolType{}
+	portAndProtocol := map[uint32]ProtocolType{}
 	type portProtocol struct {
-		port     int
+		port     uint32
 		protocol ProtocolType
 	}
 	uniqueDomains := map[portProtocol]map[string]bool{}
-	for i, match := range conf.AppendMatch {
-		if match.Port != nil && pointer.Deref[int](match.Port) == 0 || pointer.Deref[int](match.Port) > math.MaxUint16 {
+	for i, match := range pointer.Deref(conf.AppendMatch) {
+		if match.Protocol == MysqlProtocol && match.Port == nil {
+			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be defined for Mysql protocol")
+		}
+		if match.Port != nil && pointer.Deref[uint32](match.Port) == 0 || pointer.Deref[uint32](match.Port) > math.MaxUint16 {
 			verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "port must be a valid (1-65535)")
 		}
 		if match.Port != nil {
-			if value, found := portAndProtocol[pointer.Deref[int](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+			if value, found := portAndProtocol[pointer.Deref[uint32](match.Port)]; found && value != match.Protocol && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), fmt.Sprintf("using the same port in multiple matches requires the same protocol for the following protocols: %v", notAllowedProtocolsOnTheSamePort))
 			} else {
-				portAndProtocol[pointer.Deref[int](match.Port)] = match.Protocol
+				portAndProtocol[pointer.Deref[uint32](match.Port)] = match.Protocol
 			}
 			key := portProtocol{
 				port:     *match.Port,
@@ -89,11 +93,14 @@ func validateDefault(conf Conf) validators.ValidationError {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided IP has incorrect value")
 			}
 		case "Domain":
-			if match.Protocol == "tcp" {
-				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), "protocol tcp is not supported for a domain")
+			if match.Protocol == "tcp" || match.Protocol == "mysql" {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("protocol"), fmt.Sprintf("protocol %s is not supported for a domain", match.Protocol))
 			}
 			if wildcardPartialPrefixPattern.MatchString(match.Value) {
 				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("value"), "provided DNS has incorrect value, partial wildcard is currently not supported")
+			}
+			if match.Port == nil && strings.HasPrefix(match.Value, "*") && slices.Contains(notAllowedProtocolsOnTheSamePort, match.Protocol) {
+				verr.AddViolationAt(validators.RootedAt("appendMatch").Index(i).Field("port"), "wildcard domains doesn't work for all ports and layer 7 protocol")
 			}
 			if !strings.HasPrefix(match.Value, "*") {
 				isValid := govalidator.IsDNSName(match.Value)

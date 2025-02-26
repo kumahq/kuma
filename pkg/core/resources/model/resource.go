@@ -3,12 +3,14 @@ package model
 import (
 	"fmt"
 	"hash/fnv"
+	"maps"
 	"reflect"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
-	"k8s.io/kube-openapi/pkg/validation/spec"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -145,6 +147,10 @@ type ResourceWithInsights interface {
 	NewOverviewList() ResourceList
 }
 
+type ProxyResource interface {
+	GetProxyType() mesh_proto.ProxyTypeLabelValues
+}
+
 type ResourceTypeDescriptor struct {
 	// Name identifier of this resourceType this maps to the k8s entity and universal name.
 	Name ResourceType
@@ -182,12 +188,18 @@ type ResourceTypeDescriptor struct {
 	IsTargetRefBased bool
 	// HasToTargetRef indicates that the policy can be applied to outbound traffic
 	HasToTargetRef bool
-	// HasFromTargetRef indicates that the policy can be applied to outbound traffic
+	// HasFromTargetRef indicates that the policy can be applied to inbound traffic
 	HasFromTargetRef bool
+	// HasRulesTargetRef indicates that the policy can be applied to inbound traffic
+	HasRulesTargetRef bool
 	// HasStatus indicates that the policy has a status field
 	HasStatus bool
-	// Schema contains an unmarshalled OpenAPI schema of the resource
-	Schema *spec.Schema
+	// IsProxy indicates if this resource is a proxy
+	IsProxy bool
+	// Validator contains an OpenAPI validator for this resource
+	Validator *validate.SchemaValidator
+	// StructuralSchema contains an unmarshalled OpenAPI schema of the resource
+	StructuralSchema *schema.Structural
 	// Insight contains the insight type attached to this resourceType
 	Insight Resource
 	// Overview contains the overview type attached to this resourceType
@@ -198,6 +210,11 @@ type ResourceTypeDescriptor struct {
 	AllowedOnSystemNamespaceOnly bool
 	// IsReferenceableInTo whether this resource type can be used in spec.to[].targetRef
 	IsReferenceableInTo bool
+	// ShortName a name that is used in kubectl or in the envoy configuration
+	ShortName string
+	// InterpretFromEntriesAsRules if true, the entries in the spec.from field should be interpreted as rules.
+	// It's true for policies that allow only kind 'Mesh' in the spec.from.targetRef.
+	InterpretFromEntriesAsRules bool
 }
 
 func newObject(baseResource Resource) Resource {
@@ -510,7 +527,7 @@ func ComputeLabels(
 ) (map[string]string, error) {
 	labels := map[string]string{}
 	if len(existingLabels) > 0 {
-		labels = existingLabels
+		labels = maps.Clone(existingLabels)
 	}
 
 	setIfNotExist := func(k, v string) {
@@ -556,6 +573,13 @@ func ComputeLabels(
 			return nil, err
 		}
 		labels[mesh_proto.PolicyRoleLabel] = string(role)
+	}
+
+	if rd.IsProxy {
+		proxy, ok := spec.(ProxyResource)
+		if ok {
+			labels[mesh_proto.ProxyTypeLabel] = strings.ToLower(string(proxy.GetProxyType()))
+		}
 	}
 
 	return labels, nil
@@ -748,6 +772,14 @@ func IndexByKey[T Resource](resources []T) map[ResourceKey]T {
 		indexedResources[key] = resource
 	}
 	return indexedResources
+}
+
+func IndexKeys(keys []ResourceKey) map[ResourceKey]struct{} {
+	indexedKeys := make(map[ResourceKey]struct{})
+	for _, key := range keys {
+		indexedKeys[key] = struct{}{}
+	}
+	return indexedKeys
 }
 
 // Resource can implement defaulter to provide static default fields.

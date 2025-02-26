@@ -1,25 +1,28 @@
 package v1alpha1
 
 import (
+	"fmt"
+
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (r *MeshFaultInjectionResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
-	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
+	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef, inbound.AffectsInbounds(r.Spec)))
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateFrom(topLevel, r.Spec.From))
-	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
+	verr.AddErrorAt(path, validateFrom(topLevel, pointer.Deref(r.Spec.From)))
+	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
-func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef) validators.ValidationError {
+func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef, isInboundPolicy bool) validators.ValidationError {
 	if targetRef == nil {
 		return validators.ValidationError{}
 	}
@@ -32,8 +35,10 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 				common_api.MeshGateway,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: true,
+			IsInboundPolicy:            isInboundPolicy,
 		})
 	default:
 		return mesh.ValidateTargetRef(*targetRef, &mesh.ValidateTargetRefOpts{
@@ -42,7 +47,9 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 				common_api.MeshSubset,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
+				common_api.Dataplane,
 			},
+			IsInboundPolicy: isInboundPolicy,
 		})
 	}
 }
@@ -50,7 +57,8 @@ func (r *MeshFaultInjectionResource) validateTop(targetRef *common_api.TargetRef
 func validateFrom(topTargetRef common_api.TargetRef, from []From) validators.ValidationError {
 	var verr validators.ValidationError
 	if common_api.IncludesGateways(topTargetRef) && len(from) != 0 {
-		verr.AddViolationAt(validators.RootedAt("from"), validators.MustNotBeDefined)
+		verr.AddViolationAt(validators.RootedAt("from"),
+			fmt.Sprintf("%s when the scope includes a Gateway, select only proxyType Sidecar or select only gateways and use spec.to", validators.MustNotBeDefined))
 		return verr
 	}
 	for idx, fromItem := range from {

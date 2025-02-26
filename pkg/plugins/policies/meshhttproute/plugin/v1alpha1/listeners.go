@@ -2,8 +2,7 @@ package v1alpha1
 
 import (
 	"reflect"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -11,7 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
@@ -78,11 +77,15 @@ func generateFromService(
 	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
 		outboundRouteName = resourceName
 	}
+	var dpTags mesh_proto.MultiValueTagSet
+	if meshCtx.IsXKumaTagsUsed() {
+		dpTags = proxy.Dataplane.Spec.TagSet()
+	}
 	outboundRouteConfigurer := &xds.HttpOutboundRouteConfigurer{
 		Name:    outboundRouteName,
 		Service: svc.ServiceName,
 		Routes:  routes,
-		DpTags:  proxy.Dataplane.Spec.TagSet(),
+		DpTags:  dpTags,
 	}
 
 	filterChainBuilder.
@@ -146,7 +149,7 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 	var conf *api.PolicyDefault
 	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
-	ruleHTTP := toRules.Rules.Compute(core_rules.MeshService(svc.ServiceName))
+	ruleHTTP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
 		for hash := range ruleHTTP.BackendRefOriginIndex {

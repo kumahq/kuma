@@ -72,6 +72,10 @@ const (
 	// Kuma CP based on the policy spec. Supported values are "producer", "consumer", "system" and "workload-owner".
 	PolicyRoleLabel = "kuma.io/policy-role"
 
+	// ProxyTypeLabel is a standard label that reflects the type of proxy. Supported values are "sidecar", "gateway",
+	// "zoneingress", "zoneegress"
+	ProxyTypeLabel = "kuma.io/proxy-type"
+
 	// ManagedByLabel is used when a MeshService is auto-generated
 	ManagedByLabel = "kuma.io/managed-by"
 
@@ -139,6 +143,15 @@ var roleOrder = map[PolicyRole]int{
 func (r PolicyRole) Compare(o PolicyRole) int {
 	return roleOrder[r] - roleOrder[o]
 }
+
+type ProxyTypeLabelValues string
+
+const (
+	SidecarLabel     ProxyTypeLabelValues = "sidecar"
+	GatewayLabel     ProxyTypeLabelValues = "gateway"
+	ZoneIngressLabel ProxyTypeLabelValues = "zoneingress"
+	ZoneEgressLabel  ProxyTypeLabelValues = "zoneegress"
+)
 
 type ProxyType string
 
@@ -594,6 +607,13 @@ func (d *Dataplane) IsDelegatedGateway() bool {
 func (d *Dataplane) IsBuiltinGateway() bool {
 	return d.GetNetworking().GetGateway() != nil &&
 		d.GetNetworking().GetGateway().GetType() == Dataplane_Networking_Gateway_BUILTIN
+}
+
+func (d *Dataplane) GetProxyType() ProxyTypeLabelValues {
+	if d.IsBuiltinGateway() {
+		return GatewayLabel
+	}
+	return SidecarLabel
 }
 
 func (t MultiValueTagSet) String() string {

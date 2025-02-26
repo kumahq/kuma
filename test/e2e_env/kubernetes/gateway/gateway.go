@@ -102,15 +102,17 @@ type: system.kuma.io/secret
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(Namespace(clientNamespace)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("demo-client"),
-				testserver.WithNamespace(clientNamespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("echo-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "echo-server"),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("demo-client"),
+					testserver.WithNamespace(clientNamespace),
+				),
+				testserver.Install(
+					testserver.WithName("echo-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "echo-server"),
+				),
 			)).
 			Install(YamlK8s(httpsSecret())).
 			Install(YamlK8s(meshGateway)).
@@ -468,7 +470,7 @@ spec:
 
 					g.Expect(err).ToNot(HaveOccurred())
 					g.Expect(status.ResponseCode).To(Equal(404))
-				}, "30s", "1s").Should(Succeed())
+				}, "10s", "1s").Should(Succeed())
 			})
 		})
 	}
@@ -728,7 +730,7 @@ spec:
 					client.FromKubernetesPod(clientNamespace, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
+			}, "10s", "1s").Should(Succeed())
 		})
 	})
 
@@ -842,7 +844,7 @@ apiVersion: kuma.io/v1alpha1
 kind: MeshFaultInjection
 metadata:
   namespace: %s
-  name: mesh-fault-injecton
+  name: mesh-fault-injecton-gw
   labels:
     kuma.io/mesh: %s
 spec:

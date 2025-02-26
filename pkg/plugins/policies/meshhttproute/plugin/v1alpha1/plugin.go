@@ -13,6 +13,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -25,7 +26,7 @@ import (
 var _ core_plugins.PolicyPlugin = &plugin{}
 
 type ToRouteRule struct {
-	Subset    rules.Subset
+	Subset    subsetutils.Subset
 	Rules     []api.Rule
 	Hostnames []string
 

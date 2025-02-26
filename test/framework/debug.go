@@ -186,61 +186,10 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 
 	Logf("printing debug information of cluster %q for mesh %q and namespaces %q", cluster.Name(), mesh, namespaces)
 	for _, namespace := range namespaces {
-		nsDir := getNsDirPath(debugPath, cluster.Name(), namespace)
-		createDir(nsDir)
-
-		kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
-		kubeOptions.Logger = logger.Discard                  // to not print on stdout
-		out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
-		if err != nil {
-			out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err.Error())
+		nsErr := debugKubeNamespace(cluster, namespace, debugPath)
+		if nsErr {
 			errorSeen = true
 		}
-
-		// Ignore it if we don't have Gateway API resources installed
-		gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
-		if err == nil {
-			out += gatewayAPIOut
-		} else {
-			Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
-		}
-
-		manifestsExportPath := filepath.Join(nsDir, fmt.Sprintf("manifests-%s.yaml", namespace))
-		Expect(os.WriteFile(manifestsExportPath, []byte(out), 0o600)).To(Succeed())
-		Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), manifestsExportPath)
-
-		deployDetailsJson := ""
-		deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
-		if err == nil {
-			for _, deployment := range deployments {
-				deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
-
-				for _, pod := range deployDetails.Pods {
-					for container, log := range pod.Logs {
-						if log == "" {
-							continue
-						}
-
-						logFilePath := filepath.Join(nsDir, fmt.Sprintf("logs-%s-%s.log", pod.Name, container))
-						Expect(os.WriteFile(logFilePath, []byte(log), 0o600)).To(Succeed())
-						Logf("saving container logs of \"%s/%s\" in namespace %q of cluster %q to a file %q",
-							pod.Name, container, namespace, cluster.Name(), logFilePath)
-					}
-				}
-
-				for _, pod := range deployDetails.Pods {
-					pod.Logs = map[string]string{}
-				}
-				deployDetailsJson += MarshalObjectDetails(deployDetails)
-			}
-		} else {
-			deployDetailsJson += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
-			errorSeen = true
-		}
-
-		deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("deploy-%s.json", namespace))
-		Expect(os.WriteFile(deployDetailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
-		Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), deployDetailsFilePath)
 	}
 
 	kumactlOpts := *cluster.GetKumactlOptions() // copy to not override fields globally
@@ -259,9 +208,71 @@ func DebugKube(cluster Cluster, mesh string, namespaces ...string) {
 	Logf("saving export of cluster %q for mesh %q to a file %q", cluster.Name(), mesh, kumaExportPath)
 	Expect(os.WriteFile(kumaExportPath, []byte(out), 0o600)).To(Succeed())
 
-	configDump(kumactlOpts, debugPath, cluster, mesh, dataplaneType)
-	configDump(kumactlOpts, debugPath, cluster, mesh, zoneegressType)
-	configDump(kumactlOpts, debugPath, cluster, mesh, zoneingressType)
+	inspectDataplane(&kumactlOpts, debugPath, cluster, mesh, dataplaneType)
+	inspectDataplane(&kumactlOpts, debugPath, cluster, mesh, zoneegressType)
+	inspectDataplane(&kumactlOpts, debugPath, cluster, mesh, zoneingressType)
+}
+
+func debugKubeNamespace(cluster Cluster, namespace string, debugPath string) bool {
+	errorSeen := false
+
+	nsDir := getNsDirPath(debugPath, cluster.Name(), namespace)
+	createDir(nsDir)
+
+	kubeOptions := *cluster.GetKubectlOptions(namespace) // copy to not override fields globally
+	kubeOptions.Logger = logger.Discard                  // to not print on stdout
+	out, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "all,kuma", "-oyaml")
+	if err != nil {
+		out = fmt.Sprintf("kubectl get for namespace %s failed with error: %s", namespace, err.Error())
+		errorSeen = true
+	}
+
+	// Ignore it if we don't have Gateway API resources installed
+	gatewayAPIOut, err := k8s.RunKubectlAndGetOutputE(cluster.GetTesting(), &kubeOptions, "get", "gateway-api", "-oyaml")
+	if err == nil {
+		out += gatewayAPIOut
+	} else {
+		Logf("Gateway API CRDs not installed in cluster %q", cluster.Name())
+	}
+
+	manifestsExportPath := filepath.Join(nsDir, fmt.Sprintf("manifests-%s.yaml", namespace))
+	Expect(os.WriteFile(manifestsExportPath, []byte(out), 0o600)).To(Succeed())
+	Logf("saving state of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), manifestsExportPath)
+
+	deployDetailsJson := ""
+	deployments, err := k8s.ListDeploymentsE(cluster.GetTesting(), &kubeOptions, kube_meta.ListOptions{})
+	if err == nil {
+		for _, deployment := range deployments {
+			deployDetails := ExtractDeploymentDetails(cluster.GetTesting(), &kubeOptions, deployment.Name)
+
+			for _, pod := range deployDetails.Pods {
+				for container, log := range pod.Logs {
+					if log == "" {
+						continue
+					}
+
+					logFilePath := filepath.Join(nsDir, fmt.Sprintf("logs-%s-%s.log", pod.Name, container))
+					Expect(os.WriteFile(logFilePath, []byte(log), 0o600)).To(Succeed())
+					Logf("saving container logs of \"%s/%s\" in namespace %q of cluster %q to a file %q",
+						pod.Name, container, namespace, cluster.Name(), logFilePath)
+				}
+			}
+
+			for _, pod := range deployDetails.Pods {
+				pod.Logs = map[string]string{}
+			}
+			deployDetailsJson += MarshalObjectDetails(deployDetails)
+		}
+	} else {
+		deployDetailsJson += fmt.Sprintf("failed to list deployments in namespace %s with error: %s", namespace, err.Error())
+		errorSeen = true
+	}
+
+	deployDetailsFilePath := filepath.Join(nsDir, fmt.Sprintf("deploy-%s.json", namespace))
+	Expect(os.WriteFile(deployDetailsFilePath, []byte(deployDetailsJson), 0o600)).To(Succeed())
+	Logf("saving deployment details of the namespace %q of cluster %q to a file %q", namespace, cluster.Name(), deployDetailsFilePath)
+
+	return errorSeen
 }
 
 type dpType string
@@ -272,8 +283,7 @@ const (
 	zoneingressType dpType = "zoneingress"
 )
 
-func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
-	errorSeen := false
+func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, debugPath string, cluster Cluster, mesh string, dpType dpType) {
 	dpInspectError := ""
 	dpResp := dataplaneListResponse{}
 	dpListJson := ""
@@ -291,64 +301,83 @@ func configDump(kumactlOpts kumactl.KumactlOptions, debugPath string, cluster Cl
 	}
 	if err != nil {
 		dpInspectError = fmt.Sprintf("kumactl get dataplanes failed with error: %s", err.Error())
-		errorSeen = true
 	} else {
 		if jsonErr := json.Unmarshal([]byte(dpListJson), &dpResp); jsonErr != nil {
 			dpInspectError = fmt.Sprintf("json Unmarshal dataplane list failed with error: %s", jsonErr.Error())
-			errorSeen = true
-		} else {
-			for _, dpObj := range dpResp.Items {
-				var dpNS string
-				dpNameParts := strings.Split(dpObj.Name, ".")
-				if len(dpNameParts) > 1 {
-					dpNS = dpNameParts[1]
-				}
-				if dpNS == "" {
-					continue
-				}
-				if !namespaceExported(debugPath, cluster.Name(), dpNS) {
+		}
+	}
+
+	if dpInspectError == "" {
+		for _, dpObj := range dpResp.Items {
+			for typ, extension := range map[string]string{
+				"config-dump": ".json",
+				"config":      ".json",
+				"policies":    "",
+				"stats":       "",
+				"clusters":    "",
+			} {
+				if dpType == dataplaneType && typ == "config" {
 					continue
 				}
 
-				configDumpResp := ""
-				switch dpType {
-				case dataplaneType:
-					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "dataplane", dpObj.Name, "--mesh", dpObj.Mesh, "--type", "config-dump")
-				case zoneegressType:
-					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneegress", dpObj.Name, "--type", "config-dump")
-				case zoneingressType:
-					configDumpResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", "zoneingresses", dpObj.Name, "--type", "config-dump")
-				default:
-					Logf("[WARNING]: unknown dp type " + string(dpType))
-					return
-				}
-				if err != nil {
-					if dpType == dataplaneType {
-						dpInspectError += fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type config-dump' failed with error: %s",
-							dpObj.Name, dpObj.Mesh, err.Error())
-					} else {
-						dpInspectError += fmt.Sprintf("'kumactl inspect %s %s --type config-dump' failed with error: %s",
-							dpObj.Name, dpType, err.Error())
-					}
-					errorSeen = true
-				} else {
-					dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, cluster.Name(), dpNS), fmt.Sprintf("xds-%s.json", dpNameParts[0]))
-					Logf("saving DP xds of dp %q from cluster %q for mesh %q to a file %q", dpObj.Name, cluster.Name(), mesh, dpXdsFilePath)
-					Expect(os.WriteFile(dpXdsFilePath, []byte(configDumpResp), 0o600)).To(Succeed())
+				inspectErr := doInspect(kumactlOpts, dpType, dpObj.Name, mesh, typ, debugPath, cluster.Name(), extension)
+				if inspectErr != "" {
+					dpInspectError += "\n" + inspectErr
 				}
 			}
 		}
 	}
 
 	if dpInspectError != "" {
+		Logf("[WARNING]: some debug commands failed")
+
 		dpErrFilePath := filepath.Join(debugPath, "dp-xds-error.txt")
-		Logf("saving DP xds dump errors from cluster %q for mesh %q to a file %q", cluster.Name(), mesh, dpErrFilePath)
+		Logf("saving inspect DP errors from cluster %q for mesh %q to a file %q", cluster.Name(), mesh, dpErrFilePath)
 		Expect(os.WriteFile(dpErrFilePath, []byte(dpInspectError), 0o600)).To(Succeed())
 	}
+}
 
-	if errorSeen {
-		Logf("[WARNING]: some debug commands failed")
+func doInspect(kumactlOpts *kumactl.KumactlOptions, dpType dpType, dpName string, mesh string, inspectType string,
+	debugPath string, clusterName string, fileExtension string,
+) string {
+	var dpNS string
+	dpNameParts := strings.Split(dpName, ".")
+	if len(dpNameParts) > 1 {
+		dpNS = dpNameParts[1]
 	}
+
+	if dpNS == "" || !namespaceExported(debugPath, clusterName, dpNS) {
+		return ""
+	}
+
+	var err error
+	inspectResp := ""
+
+	switch dpType {
+	case dataplaneType:
+		inspectResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", string(dataplaneType), dpName, "--mesh", mesh, "--type", inspectType)
+	case zoneegressType, zoneingressType:
+		inspectResp, err = kumactlOpts.RunKumactlAndGetOutput("inspect", string(dpType), dpName, "--type", inspectType)
+	default:
+		Logf("[WARNING]: unknown dp type " + string(dpType))
+		return ""
+	}
+
+	if err != nil {
+		if dpType == dataplaneType {
+			return fmt.Sprintf("'kumactl inspect dataplane %s --mesh %s --type %s' failed with error: %s",
+				dpName, mesh, inspectType, err.Error())
+		} else {
+			return fmt.Sprintf("'kumactl inspect %s %s --type %s' failed with error: %s",
+				dpName, dpType, inspectType, err.Error())
+		}
+	} else {
+		dpXdsFilePath := filepath.Join(getNsDirPath(debugPath, clusterName, dpNS), fmt.Sprintf("%s-%s%s", inspectType, dpName, fileExtension))
+		Logf("saving inspect %s of dp %q from cluster %q for mesh %q to a file %q", inspectType, dpName, dpNS, mesh, dpXdsFilePath)
+		Expect(os.WriteFile(dpXdsFilePath, []byte(inspectResp), 0o600)).To(Succeed())
+	}
+
+	return ""
 }
 
 func prepareDebugDir() string {

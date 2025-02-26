@@ -11,6 +11,7 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -134,7 +135,7 @@ var _ = Describe("GenerateSnapshot", func() {
 
 		mCtx.VIPOutbounds = outbounds
 
-		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
+		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, &model.DataplaneMetadata{}, mCtx)
 		Expect(err).ToNot(HaveOccurred())
 
 		metrics, err := metrics.NewMetrics("")
@@ -258,7 +259,7 @@ var _ = Describe("GenerateSnapshot", func() {
 				WithName("demo").
 				With(func(resource *core_mesh.MeshResource) {
 					resource.Spec.Routing = &mesh_proto.Routing{
-						LocalityAwareLoadBalancing: true,
+						LocalityAwareLoadBalancing: &wrapperspb.BoolValue{Value: true},
 					}
 				}).
 				Build(),

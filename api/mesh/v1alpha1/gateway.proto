@@ -25,6 +25,7 @@ message MeshGateway {
 
   option (kuma.mesh.resource).kds.send_to_zone = true;
   option (kuma.mesh.resource).ws.name = "meshgateway";
+  option (kuma.mesh.resource).short_name = "mgw";
 
   // TLSConfig describes a TLS configuration.
   message TLS {

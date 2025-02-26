@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"cirello.io/pglock"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -111,7 +112,16 @@ func (p *postgresLeaderElector) IsLeader() bool {
 type KumaPqLockLogger struct{}
 
 func (k *KumaPqLockLogger) Error(msg string, args ...interface{}) {
-	log.Error(nil, fmt.Sprintf(msg, args...))
+	if len(args) > 0 {
+		err, ok := args[0].(error)
+		if ok {
+			if !errors.Is(err, context.Canceled) {
+				log.Error(err, fmt.Sprintf(msg, args...))
+			}
+		}
+	} else {
+		log.Error(nil, fmt.Sprintf(msg, args...))
+	}
 }
 
 func (k *KumaPqLockLogger) Debug(msg string, args ...interface{}) {

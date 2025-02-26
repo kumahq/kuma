@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.4
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshhealthchecks.kuma.io
 spec:
   group: kuma.io
@@ -13,6 +13,8 @@ spec:
     kind: MeshHealthCheck
     listKind: MeshHealthCheckList
     plural: meshhealthchecks
+    shortNames:
+    - mhc
     singular: meshhealthcheck
   scope: Namespaced
   versions:
@@ -64,6 +66,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                     type: string
                   labels:
                     additionalProperties:
@@ -164,11 +167,13 @@ spec:
                             Allows to configure panic threshold for Envoy cluster. If not specified,
                             the default is 50%. To disable panic mode, set to 0%.
                             Either int or decimal represented as string.
+                            Deprecated: the setting has been moved to MeshCircuitBreaker policy,
+                            please use MeshCircuitBreaker policy instead.
                           x-kubernetes-int-or-string: true
                         healthyThreshold:
-                          default: 1
-                          description: Number of consecutive healthy checks before
-                            considering a host healthy.
+                          description: |-
+                            Number of consecutive healthy checks before considering a host healthy.
+                            If not specified then the default value is 1
                           format: int32
                           type: integer
                         http:
@@ -187,10 +192,10 @@ spec:
                                 type: integer
                               type: array
                             path:
-                              default: /
                               description: |-
                                 The HTTP path which will be requested during the health check
                                 (ie. /health)
+                                If not specified then the default value is "/"
                               type: string
                             requestHeadersToAdd:
                               description: |-
@@ -244,8 +249,9 @@ spec:
                             check.
                           type: string
                         interval:
-                          default: 1m
-                          description: Interval between consecutive health checks.
+                          description: |-
+                            Interval between consecutive health checks.
+                            If not specified then the default value is 1m
                           type: string
                         intervalJitter:
                           description: |-
@@ -298,14 +304,15 @@ spec:
                               type: string
                           type: object
                         timeout:
-                          default: 15s
-                          description: Maximum time to wait for a health check response.
+                          description: |-
+                            Maximum time to wait for a health check response.
+                            If not specified then the default value is 15s
                           type: string
                         unhealthyThreshold:
-                          default: 5
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
                             unhealthy.
+                            If not specified then the default value is 5
                           format: int32
                           type: integer
                       type: object
@@ -325,6 +332,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:

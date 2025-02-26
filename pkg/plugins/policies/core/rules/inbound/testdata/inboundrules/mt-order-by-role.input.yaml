@@ -1,0 +1,35 @@
+# should sort policies by role
+type: MeshTimeout
+name: matched-for-rules-ccc
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: consumer
+spec:
+  rules:
+    - default:
+        connectionTimeout: 111s
+        idleTimeout: 109s
+---
+type: MeshTimeout
+name: matched-for-rules-bbb
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: producer
+spec:
+  rules:
+    - default:
+        connectionTimeout: 211s
+        http:
+          requestTimeout: 209s
+---
+type: MeshTimeout
+name: matched-for-rules-aaa
+mesh: mesh-1
+labels:
+  kuma.io/policy-role: system
+spec:
+  rules:
+    - default:
+        connectionTimeout: 11s
+        http:
+          requestTimeout: 12s

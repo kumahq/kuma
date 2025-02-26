@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/user"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
@@ -31,9 +32,9 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey) util_xds_v3.Watchdog {
+func (d *dataplaneWatchdogFactory) New(dpKey model.ResourceKey, meta *core_xds.DataplaneMetadata) util_xds_v3.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", dpKey)
-	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, dpKey)
+	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, meta, dpKey)
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)

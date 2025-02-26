@@ -14,27 +14,22 @@ import (
 // +kuma:policy:is_policy=false
 // +kuma:policy:has_status=true
 // +kuma:policy:is_referenceable_in_to=true
+// +kuma:policy:short_name=mzsvc
 // +kubebuilder:printcolumn:JSONPath=".status.addresses[0].hostname",name=Hostname,type=string
 type MeshMultiZoneService struct {
 	// Selector is a way to select multiple MeshServices
 	Selector Selector `json:"selector"`
 	// Ports is a list of ports from selected MeshServices
 	// +kubebuilder:validation:MinItems=1
-	Ports []Port `json:"ports,omitempty"`
+	Ports []Port `json:"ports"`
 }
 
 type Port struct {
-	Name string `json:"name,omitempty"`
-	Port uint32 `json:"port"`
+	Name *string `json:"name,omitempty"`
+	Port uint32  `json:"port"`
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
-	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
-}
-
-func (p *Port) GetName() string {
-	if p.Name != "" {
-		return p.Name
-	}
-	return fmt.Sprintf("%d", p.Port)
+	AppProtocol core_mesh.Protocol `json:"appProtocol"`
 }
 
 type Selector struct {

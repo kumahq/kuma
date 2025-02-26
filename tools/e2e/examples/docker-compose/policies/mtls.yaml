@@ -1,7 +1,0 @@
-type: Mesh
-name: default
-mtls:
-  enabledBackend: builtin-1
-  backends:
-    - name: builtin-1
-      type: builtin

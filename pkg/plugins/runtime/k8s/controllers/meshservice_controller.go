@@ -121,6 +121,12 @@ func (r *MeshServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Req
 	}
 
 	if len(svc.GetAnnotations()) > 0 {
+		if ignored, _, _ := metadata.Annotations(svc.GetAnnotations()).GetBoolean(metadata.KumaIgnoreAnnotation); ignored {
+			if err := r.deleteIfExist(ctx, req.NamespacedName); err != nil {
+				return kube_ctrl.Result{}, err
+			}
+			return kube_ctrl.Result{}, nil
+		}
 		if _, ok := svc.GetAnnotations()[metadata.KumaGatewayAnnotation]; ok {
 			log.V(1).Info("service is for gateway. Ignoring.")
 			return kube_ctrl.Result{}, nil
@@ -455,7 +461,7 @@ func NamespaceToServiceMapper(l logr.Logger, client kube_client.Client) kube_han
 	l = l.WithName("namespace-to-service-mapper")
 	return func(ctx context.Context, obj kube_client.Object) []kube_reconcile.Request {
 		services := &kube_core.ServiceList{}
-		if err := client.List(ctx, services, kube_client.InNamespace(obj.GetNamespace())); err != nil {
+		if err := client.List(ctx, services, kube_client.InNamespace(obj.GetName())); err != nil {
 			l.WithValues("namespace", obj.GetName()).Error(err, "failed to fetch Services")
 			return nil
 		}

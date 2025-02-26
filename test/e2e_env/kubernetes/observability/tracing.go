@@ -57,9 +57,11 @@ func Tracing() {
 		err := NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(ns)).
 			Install(MeshKubernetes(mesh)).
-			Install(democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh))).
-			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns))).
-			Install(obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(ns), democlient.WithMesh(mesh)),
+				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(ns)),
+				obs.Install(obsDeployment, obs.WithNamespace(obsNs), obs.WithComponents(obs.JaegerComponent)),
+			)).
 			Install(TrafficRouteKubernetes(mesh)).
 			Install(TrafficPermissionKubernetes(mesh)).
 			Setup(kubernetes.Cluster)

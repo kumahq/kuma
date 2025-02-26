@@ -53,11 +53,11 @@ func getLocalLbGroups(conf *api.Conf, inboundTags mesh_proto.MultiValueTagSet) [
 
 func getCrossZoneLbGroups(conf *api.Conf, localZone string) []CrossZoneLbGroup {
 	var crossZoneGroups []CrossZoneLbGroup
-	if conf.LocalityAwareness.CrossZone != nil && len(conf.LocalityAwareness.CrossZone.Failover) > 0 {
+	if conf.LocalityAwareness.CrossZone != nil && len(pointer.Deref(conf.LocalityAwareness.CrossZone.Failover)) > 0 {
 		// iterator starts from 0 while for remote zones we always set priority that favors local zone
 		// we are using priority based on the rule position in the list so we increment it even if it doesn't match
 		// that doesn't affect envoy behavior
-		for priority, rule := range conf.LocalityAwareness.CrossZone.Failover {
+		for priority, rule := range pointer.Deref(conf.LocalityAwareness.CrossZone.Failover) {
 			if !doesRuleApply(rule.From, localZone) {
 				continue
 			}

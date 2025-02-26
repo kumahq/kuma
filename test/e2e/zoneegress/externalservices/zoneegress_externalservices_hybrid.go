@@ -6,6 +6,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -93,44 +94,49 @@ conf:
 
 		globalCP := global.GetKuma()
 
+		group := errgroup.Group{}
+
 		// K8s Cluster 1
 		zone1 = NewK8sCluster(NewTestingT(), Kuma1, Silent)
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh))).
-			Install(testserver.Install(
-				testserver.WithName("es-test-server"),
-				testserver.WithNamespace("default"),
-				testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh(nonDefaultMesh)),
+				testserver.Install(
+					testserver.WithName("es-test-server"),
+					testserver.WithNamespace("default"),
+					testserver.WithEchoArgs("echo", "--instance", "es-test-server"),
+				),
 			)).
-			Setup(zone1)).To(Succeed())
+			SetupInGroup(zone1, &group)
 
 		// Universal Cluster 4
 		zone4 = NewUniversalCluster(NewTestingT(), Kuma4, Silent)
-
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(Kuma(config_core.Zone, WithGlobalAddress(globalCP.GetKDSServerAddress()))). // do not deploy Egress
 			Install(IngressUniversal(global.GetKuma().GenerateZoneIngressToken)).
-			Install(DemoClientUniversal(
-				"zone4-demo-client",
-				nonDefaultMesh,
-				WithTransparentProxy(true),
-			)).
-			Install(
+			Install(Parallel(
+				DemoClientUniversal(
+					"zone4-demo-client",
+					nonDefaultMesh,
+					WithTransparentProxy(true),
+				),
 				func(cluster Cluster) error {
 					return cluster.DeployApp(
 						WithArgs([]string{"test-server", "echo", "--port", "8080", "--instance", "es-test-server"}),
 						WithName("es-test-server"),
 						WithoutDataplane(),
 						WithVerbose())
-				}).
-			Install(TestServerUniversal("test-server", nonDefaultMesh,
-				WithArgs([]string{"echo", "--instance", "test-server"}),
-				WithTransparentProxy(true),
+				},
+				TestServerUniversal("test-server", nonDefaultMesh,
+					WithArgs([]string{"echo", "--instance", "test-server"}),
+					WithTransparentProxy(true),
+				),
 			)).
-			Setup(zone4),
-		).To(Succeed())
+			SetupInGroup(zone4, &group)
+
+		Expect(group.Wait()).To(Succeed())
 
 		Expect(global.GetKumactlOptions().
 			KumactlApplyFromString(

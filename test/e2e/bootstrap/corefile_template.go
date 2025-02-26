@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/random"
@@ -35,6 +36,7 @@ data:
 	}
 
 	dnsConfigDir := "/tmp/kuma-dp-config/coredns"
+	minReplicas := 3
 	BeforeAll(func() {
 		k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
@@ -49,6 +51,8 @@ data:
 				WithHelmOpt("controlPlane.extraConfigMaps[0].name", configMapName),
 				WithHelmOpt("controlPlane.extraConfigMaps[0].mountPath", dnsConfigDir),
 				WithHelmOpt("controlPlane.extraConfigMaps[0].readonly", "false"),
+				WithHelmOpt("controlPlane.autoscaling.enabled", "true"),
+				WithHelmOpt("controlPlane.autoscaling.minReplicas", strconv.Itoa(minReplicas)),
 			)).
 			Install(MeshKubernetes("default")).
 			Install(NamespaceWithSidecarInjection(appNamespace)).
@@ -67,6 +71,10 @@ data:
 		Expect(k8sCluster.TriggerDeleteNamespace(appNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
+	})
+
+	It("should deploy 3 CP replicas", func() {
+		Expect(k8sCluster.WaitApp(Config.KumaServiceName, Config.KumaNamespace, minReplicas)).To(Succeed())
 	})
 
 	It("should use Corefile template from control plane at data plane", func() {

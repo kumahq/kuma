@@ -21,10 +21,10 @@ const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
 
 var (
 	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
+	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
 	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
 	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
-	domainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
 )
 
 type (
@@ -64,6 +64,7 @@ type ValidateTargetRefOpts struct {
 	//   includes a forward slash, but it's allowed as an exception to
 	//   handle unresolved references.
 	AllowedInvalidNames []string
+	IsInboundPolicy     bool
 }
 
 func ValidateSelectors(path validators.PathBuilder, sources []*mesh_proto.Selector, opts ValidateSelectorsOpts) validators.ValidationError {
@@ -233,14 +234,14 @@ func ValidateHostname(path validators.PathBuilder, hostname string) validators.V
 	}
 
 	if strings.HasPrefix(hostname, "*.") {
-		if !domainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
+		if !DomainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
 			err.AddViolationAt(path, "invalid wildcard domain")
 		}
 
 		return err
 	}
 
-	if !domainRegexp.MatchString(hostname) {
+	if !DomainRegexp.MatchString(hostname) {
 		err.AddViolationAt(path, "invalid hostname")
 	}
 
@@ -376,6 +377,16 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", ref.Labels, ref.Kind))
 		err.Add(disallowedField("namespace", ref.Namespace, ref.Kind))
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
+	case common_api.Dataplane:
+		err.Add(disallowedField("tags", ref.Tags, ref.Kind))
+		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
+		if len(ref.Labels) > 0 && (ref.Name != "" || ref.Namespace != "") {
+			err.AddViolation("labels", "either labels or name and namespace must be specified")
+		}
+		if !opts.IsInboundPolicy && ref.SectionName != "" {
+			err.AddViolation("sectionName", "can only be used with inbound policies")
+		}
 	case common_api.MeshSubset:
 		err.Add(disallowedField("name", ref.Name, ref.Kind))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
@@ -399,7 +410,7 @@ func ValidateTargetRef(
 		err.Add(validateName(ref.Name, opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
-		err.Add(ValidateTags(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
+		err.Add(ValidateSelector(validators.RootedAt("tags"), ref.Tags, ValidateTagsOpts{}))
 		if ref.Kind == common_api.MeshGateway && len(ref.Tags) > 0 && !opts.GatewayListenerTagsAllowed {
 			err.Add(disallowedField("tags", ref.Tags, ref.Kind))
 		}

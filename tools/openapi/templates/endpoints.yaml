@@ -1,0 +1,193 @@
+openapi: 3.0.3
+info:
+  version: {{ .Package }}
+  title: Kuma API
+  description: Kuma API
+  x-ref-schema-name: "{{ .Name }}"
+
+paths:
+  {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}/{name}:
+    get:
+      operationId: get{{ .Name }}
+      summary: Returns {{ .Name }} entity
+      tags: [ "{{ .Name }}" ]
+      parameters:
+        {{- if eq .Scope "Mesh"}}
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        {{- end}}
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the {{ .Name }}
+      responses:
+        '200':
+          $ref: "#/components/responses/{{.Name}}Item"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+    put:
+      operationId: put{{ .Name }}
+      summary: Creates or Updates {{ .Name }} entity
+      tags: [ "{{ .Name }}" ]
+      parameters:
+        {{- if eq .Scope "Mesh"}}
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        {{- end}}
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the {{ .Name }}
+      requestBody:
+        description: Put request
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/{{.Name}}Item'
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{.Name}}CreateOrUpdateSuccessResponse'
+
+    delete:
+      operationId: delete{{ .Name }}
+      summary: Deletes {{ .Name }} entity
+      tags: [ "{{ .Name }}" ]
+      parameters:
+        {{- if eq .Scope "Mesh"}}
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+        {{- end}}
+        - in: path
+          name: name
+          schema:
+            type: string
+          required: true
+          description: name of the {{ .Name }}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{.Name}}DeleteSuccessResponse'
+          description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
+
+  {{if eq .Scope "Mesh"}}/meshes/{mesh}{{end}}/{{ .Path }}:
+    get:
+      operationId: get{{ .Name }}List
+      summary: Returns a list of {{ .Name }} in the mesh.
+      tags: [ "{{ .Name }}" ]
+      parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
+      {{- if eq .Scope "Mesh"}}
+        - in: path
+          name: mesh
+          schema:
+            type: string
+          required: true
+          description: name of the mesh
+      {{- end}}
+      responses:
+        '200':
+          $ref: "#/components/responses/{{.Name}}List"
+
+components:
+  schemas:
+    {{.Name}}Item:
+      $ref: 'schema.yaml'
+    {{.Name}}CreateOrUpdateSuccessResponse:
+      type: object
+      properties:
+        warnings:
+          type: array
+          readOnly: true
+          description: |
+            warnings is a list of warning messages to return to the requesting Kuma API clients.
+            Warning messages describe a problem the client making the API request should correct or be aware of.
+          items:
+            type: string
+    {{.Name}}DeleteSuccessResponse:
+      type: object
+      properties: {}
+
+  responses:
+    {{.Name}}Item:
+      description: Successful response
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/{{.Name}}Item'
+    {{.Name}}List:
+      description: List
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              items:
+                type: array
+                items:
+                  $ref: "#/components/schemas/{{.Name}}Item"
+              total:
+                type: number
+                description: The total number of entities
+              next:
+                type: string
+                description: URL to the next page

@@ -14,6 +14,12 @@ type Watchdog interface {
 	Start(ctx context.Context)
 }
 
+type WatchdogFunc func(ctx context.Context)
+
+func (f WatchdogFunc) Start(ctx context.Context) {
+	f(ctx)
+}
+
 type NewNodeWatchdogFunc func(ctx context.Context, node *envoy_core.Node, streamId int64) (Watchdog, error)
 
 func NewWatchdogCallbacks(newNodeWatchdog NewNodeWatchdogFunc) envoy_xds.Callbacks {

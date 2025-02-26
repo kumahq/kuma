@@ -59,7 +59,7 @@ func (g *ExternalServicesGenerator) Generate(
 		services,
 		endpointMap,
 		proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6(),
-		proxy.Metadata.GetDynamicMetadata(core_xds.FieldSystemCaPath),
+		proxy.Metadata.GetSystemCaPath(),
 	)
 	if err != nil {
 		return nil, err

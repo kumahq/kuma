@@ -1,0 +1,28 @@
+rules:
+- conf:
+  - connectionTimeout: 1m41s
+    http:
+      requestTimeout: 3m22s
+    idleTimeout: 10s
+  origin:
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-mt-cccccc
+      type: MeshTimeout
+    RuleIndex: 0
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-mt-bbbbbb
+      type: MeshTimeout
+    RuleIndex: 0
+  - Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: matched-for-rules-mt-aaaaaa
+      type: MeshTimeout
+    RuleIndex: 0

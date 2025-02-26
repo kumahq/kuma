@@ -21,6 +21,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
@@ -170,7 +173,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: core_rules.MeshService("backend"),
+								Subset: subsetutils.MeshService("backend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
@@ -178,7 +181,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("frontend"),
+								Subset: subsetutils.MeshService("frontend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.LeastRequestType,
@@ -189,7 +192,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("payment"),
+								Subset: subsetutils.MeshService("payment"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
@@ -304,7 +307,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
 																	To: v1alpha1.ToZone{
@@ -340,7 +343,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	To: v1alpha1.ToZone{
 																		Type: v1alpha1.Any,
@@ -524,7 +527,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								"mesh-1_external___extsvc_9000": {
 									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
 										ToRules: core_rules.ToRules{
-											ResourceRules: core_rules.ResourceRules{
+											ResourceRules: outbound.ResourceRules{
 												*externalMeshExternalServiceIdentifier: {
 													Conf: []interface{}{
 														v1alpha1.Conf{
@@ -663,7 +666,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: subsetutils.MeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -687,7 +690,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											CrossZone: &v1alpha1.CrossZone{
 												FailoverThreshold: &v1alpha1.FailoverThreshold{Percentage: intstr.FromString("99")},
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -715,7 +718,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -759,7 +762,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -845,7 +848,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: subsetutils.MeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -868,7 +871,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -896,7 +899,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -940,7 +943,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -1029,7 +1032,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: subsetutils.MeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
@@ -1055,7 +1058,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -1159,14 +1162,14 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 							Rules: []*core_rules.Rule{
 								{
-									Subset: core_rules.MeshService("backend"),
+									Subset: subsetutils.MeshService("backend"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RandomType,
 										},
 										LocalityAwareness: &v1alpha1.LocalityAwareness{
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -1194,7 +1197,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 									},
 								},
 								{
-									Subset: core_rules.MeshService("payment"),
+									Subset: subsetutils.MeshService("payment"),
 									Conf: v1alpha1.Conf{
 										LoadBalancer: &v1alpha1.LoadBalancer{
 											Type: v1alpha1.RingHashType,
@@ -1340,7 +1343,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					xds_builders.MatchedPolicies().WithToPolicy(v1alpha1.MeshLoadBalancingStrategyType, core_rules.ToRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: core_rules.MeshService("backend"),
+								Subset: subsetutils.MeshService("backend"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RandomType,
@@ -1360,7 +1363,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1388,7 +1391,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								},
 							},
 							{
-								Subset: core_rules.MeshService("payment"),
+								Subset: subsetutils.MeshService("payment"),
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
@@ -1507,7 +1510,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: v1alpha1.Conf{
 									LoadBalancer: &v1alpha1.LoadBalancer{
 										Type: v1alpha1.RingHashType,
@@ -1559,7 +1562,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
 										LocalZone: &v1alpha1.LocalZone{
@@ -1579,7 +1582,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1630,11 +1633,11 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type: v1alpha1.None,
@@ -1696,7 +1699,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{{
 										Matches: []meshhttproute_api.Match{{
@@ -1717,7 +1720,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								Origin: []core_model.ResourceMeta{
 									&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
 								},
-								BackendRefOriginIndex: core_rules.BackendRefOriginIndex{
+								BackendRefOriginIndex: rules_common.BackendRefOriginIndex{
 									meshhttproute_api.HashMatches([]meshhttproute_api.Match{{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}}}): 0,
 								},
 							}},
@@ -1729,7 +1732,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										v1alpha1.Conf{
@@ -1751,7 +1754,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 												CrossZone: &v1alpha1.CrossZone{
-													Failover: []v1alpha1.Failover{
+													Failover: &[]v1alpha1.Failover{
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,

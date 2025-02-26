@@ -29,7 +29,7 @@ var log = core.Log.WithName("dp-server")
 
 const (
 	grpcMaxConcurrentStreams = 1000000
-	grpcKeepAliveTime        = 15 * time.Second
+	GrpcKeepAliveTime        = 15 * time.Second
 )
 
 type Filter func(writer http.ResponseWriter, request *http.Request) bool
@@ -49,11 +49,11 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics, filte
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
 		grpc.KeepaliveParams(keepalive.ServerParameters{
-			Time:    grpcKeepAliveTime,
-			Timeout: grpcKeepAliveTime,
+			Time:    GrpcKeepAliveTime,
+			Timeout: GrpcKeepAliveTime,
 		}),
 		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
-			MinTime:             grpcKeepAliveTime,
+			MinTime:             GrpcKeepAliveTime,
 			PermitWithoutStream: true,
 		}),
 	}

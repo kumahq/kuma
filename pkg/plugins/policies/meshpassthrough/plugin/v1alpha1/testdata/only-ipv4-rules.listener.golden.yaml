@@ -17,10 +17,13 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: meshpassthrough_192.168.0.0_80
-          statPrefix: meshpassthrough_192_168_0_0_80
-      name: meshpassthrough_192.168.0.0_80
+          cluster: meshpassthrough_tcp_192.168.0.0_80
+          statPrefix: meshpassthrough_tcp_192_168_0_0_80
+      name: meshpassthrough_tcp_192.168.0.0_80
     listenerFilters:
+    - name: envoy.filters.listener.original_dst
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector

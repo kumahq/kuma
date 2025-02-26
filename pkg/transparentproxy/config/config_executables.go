@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 	k8s_version "k8s.io/apimachinery/pkg/util/version"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
@@ -691,7 +690,7 @@ func inferIptablesMode(executables ...InitializedExecutable) (consts.IptablesMod
 		modesSet[executable.version.Mode] = struct{}{}
 	}
 
-	modes := maps.Keys(modesSet)
+	modes := util_maps.AllKeys(modesSet)
 
 	if len(modes) != 1 {
 		return consts.IptablesModeUnknown, errors.Errorf(
@@ -740,7 +739,7 @@ func getNonEmptyPaths(eps ...executablesPaths) []string {
 	var result []string
 
 	for _, ep := range eps {
-		result = slices.Concat(result, removeEmptyStrings(maps.Values(ep.getPathsMap())))
+		result = slices.Concat(result, removeEmptyStrings(util_maps.AllValues(ep.getPathsMap())))
 	}
 
 	return result

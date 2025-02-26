@@ -36,26 +36,28 @@ func ApplicationProbeProxy() {
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName(httpAppName),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithArgs("echo", "--port", "80", "--probes"),
-				testserver.WithProbe(testserver.ReadinessProbe, testserver.ProbeHttpGet, 80, "/probes?type=readiness"),
-			)).
-			Install(testserver.Install(
-				testserver.WithName(tcpAppName),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithArgs("health-check", "tcp", "--port", "6379"),
-				testserver.WithProbe(testserver.LivenessProbe, testserver.ProbeTcpSocket, 6379, ""),
-			)).
-			Install(testserver.Install(
-				testserver.WithName(gRPCAppName),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithArgs("grpc", "server", "--port", "8080"),
-				testserver.WithProbe(testserver.StartupProbe, testserver.ProbeGRPC, 8080, ""),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName(httpAppName),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithArgs("echo", "--port", "80", "--probes"),
+					testserver.WithProbe(testserver.ReadinessProbe, testserver.ProbeHttpGet, 80, "/probes?type=readiness"),
+				),
+				testserver.Install(
+					testserver.WithName(tcpAppName),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithArgs("health-check", "tcp", "--port", "6379"),
+					testserver.WithProbe(testserver.LivenessProbe, testserver.ProbeTcpSocket, 6379, ""),
+				),
+				testserver.Install(
+					testserver.WithName(gRPCAppName),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithArgs("grpc", "server", "--port", "8080"),
+					testserver.WithProbe(testserver.StartupProbe, testserver.ProbeGRPC, 8080, ""),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

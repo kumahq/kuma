@@ -4,7 +4,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/envoy/admin/tls"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -25,8 +24,7 @@ func SampleGlobalSecretAdminCa() *system.GlobalSecretResource {
 		Value: []byte{},
 	}
 	globalSecret.SetMeta(&test_model.ResourceMeta{
-		Name: tls.GlobalSecretKey.Name,
-		Mesh: tls.GlobalSecretKey.Mesh,
+		Name: system.EnvoyAdminCA,
 	})
 	return globalSecret
 }

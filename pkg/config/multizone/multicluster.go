@@ -46,6 +46,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 			TlsMinVersion:            "TLSv1_2",
 			TlsCipherSuites:          []string{},
 			NackBackoff:              config_types.Duration{Duration: 5 * time.Second},
+			Tracing: KDSServerTracing{
+				Enabled: true,
+			},
 		},
 	}
 }

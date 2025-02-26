@@ -15,7 +15,7 @@ type MeshRetry struct {
 	// defined inplace.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 }
 
 type To struct {
@@ -223,7 +223,7 @@ type GRPC struct {
 type BackOff struct {
 	// BaseInterval is an amount of time which should be taken between retries.
 	// Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
-	// +kubebuilder:default="25ms"
+	// If not specified then the default value is "25ms".
 	BaseInterval *k8s.Duration `json:"baseInterval,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
 	// Default is 10 times the "BaseInterval".
@@ -237,7 +237,7 @@ type RateLimitedBackOff struct {
 	// If no headers match the default exponential BackOff is used instead.
 	ResetHeaders *[]ResetHeader `json:"resetHeaders,omitempty"`
 	// MaxInterval is a maximal amount of time which will be taken between retries.
-	// +kubebuilder:default="300s"
+	// If not specified then the default value is "300s".
 	MaxInterval *k8s.Duration `json:"maxInterval,omitempty"`
 }
 
@@ -255,11 +255,12 @@ type Predicate struct {
 	PredicateType PredicateType `json:"predicate"`
 	// Tags is a map of metadata to match against for selecting the omitted hosts. Required if Type is
 	// OmitHostsWithTags
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags *map[string]string `json:"tags,omitempty"`
 	// UpdateFrequency is how often the priority load should be updated based on previously attempted priorities.
 	// Used for OmitPreviousPriorities.
 	// +kubebuilder:default=2
-	UpdateFrequency int32 `json:"updateFrequency,omitempty"`
+	// +kubebuilder:validation:Optional
+	UpdateFrequency int32 `json:"updateFrequency"`
 }
 
 // +kubebuilder:validation:Enum=Seconds;UnixTimestamp

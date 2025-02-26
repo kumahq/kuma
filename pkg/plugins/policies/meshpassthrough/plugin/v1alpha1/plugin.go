@@ -65,6 +65,11 @@ func applyToOutboundPassthrough(
 	rawConf := rules.Rules[0].Conf
 	conf := rawConf.(api.Conf)
 
+	// todo: this should be handled by "base policy"
+	if pointer.Deref(conf.PassthroughMode) == "" {
+		conf.PassthroughMode = pointer.To[api.PassthroughMode]("Matched")
+	}
+
 	if disableDefaultPassthrough(conf, ctx.Mesh.Resource.Spec.IsPassthrough()) {
 		// remove clusters because they were added in TransparentProxyGenerator
 		removeDefaultPassthroughCluster(rs)
@@ -74,14 +79,14 @@ func applyToOutboundPassthrough(
 		// add clusters because they were not added in TransparentProxyGenerator
 		return addDefaultPassthroughClusters(rs, proxy.APIVersion)
 	}
-	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("All") {
+	if ctx.Mesh.Resource.Spec.IsPassthrough() && conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == api.PassthroughMode("All") {
 		// clusters were added in TransparentProxyGenerator, do nothing
 		return nil
 	}
 
-	if conf.PassthroughMode != nil && pointer.Deref[api.PassthroughMode](conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
+	if conf.PassthroughMode != nil && pointer.Deref(conf.PassthroughMode) == api.PassthroughMode("Matched") || conf.PassthroughMode == nil {
 		removeDefaultPassthroughCluster(rs)
-		if len(conf.AppendMatch) > 0 {
+		if len(pointer.Deref(conf.AppendMatch)) > 0 {
 			configurer := xds.Configurer{
 				APIVersion: proxy.APIVersion,
 				Conf:       conf,

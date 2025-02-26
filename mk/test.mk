@@ -28,7 +28,7 @@ ifndef TEST_REPORTS
 ifdef CI
 	go clean -testcache
 endif
-	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/blackbox_network_tests" | grep -E -v "test/transparentproxy")
+	$(UNIT_TEST_ENV) go test $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) -race $$(go list $(TEST_PKG_LIST) | grep -E -v "test/e2e" | grep -E -v "test/transparentproxy")
 endif
 
 $(REPORTS_DIR):

@@ -43,6 +43,17 @@ func MatchDataplanesWithMeshServices(
 	return result
 }
 
+func MatchesDataplane(meshService *meshservice_api.MeshService, dpp *core_mesh.DataplaneResource) bool {
+	switch {
+	case meshService.Selector.DataplaneRef != nil:
+		return meshService.Selector.DataplaneRef.Name == dpp.GetMeta().GetName()
+	case meshService.Selector.DataplaneTags != nil:
+		return dpp.Spec.Matches(mesh_proto.TagSelector(meshService.Selector.DataplaneTags))
+	default:
+		return false
+	}
+}
+
 func indexDpsForMatching(
 	dpps []*core_mesh.DataplaneResource,
 	matchOnlyHealthy bool,

@@ -1,0 +1,94 @@
+resources:
+- name: inbound
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 17777
+    enableReusePort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: "127_0_0_1_17777"
+          tracing:
+            clientSampling:
+              value: 20
+            customTags:
+            - literal:
+                value: backend
+              tag: app
+            - requestHeader:
+                name: app_code
+              tag: app_code
+            - requestHeader:
+                defaultValue: none
+                name: client_id
+              tag: client_id
+            overallSampling:
+              value: 10
+            provider:
+              name: envoy.tracers.opentelemetry
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                grpcService:
+                  envoyGrpc:
+                    clusterName: meshtrace:opentelemetry
+                serviceName: backend
+            randomSampling:
+              value: 50
+            spawnUpstreamSpan: false
+    name: inbound:127.0.0.1:17777
+    trafficDirection: INBOUND
+- name: outbound
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 27777
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          statPrefix: "127_0_0_1_27777"
+          tracing:
+            clientSampling:
+              value: 20
+            customTags:
+            - literal:
+                value: backend
+              tag: app
+            - requestHeader:
+                name: app_code
+              tag: app_code
+            - requestHeader:
+                defaultValue: none
+                name: client_id
+              tag: client_id
+            overallSampling:
+              value: 10
+            provider:
+              name: envoy.tracers.opentelemetry
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.trace.v3.OpenTelemetryConfig
+                grpcService:
+                  envoyGrpc:
+                    clusterName: meshtrace:opentelemetry
+                serviceName: backend
+            randomSampling:
+              value: 50
+            spawnUpstreamSpan: false
+    name: outbound:127.0.0.1:27777
+    trafficDirection: OUTBOUND

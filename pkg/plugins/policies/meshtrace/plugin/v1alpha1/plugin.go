@@ -6,15 +6,18 @@ import (
 	"strings"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -54,6 +57,9 @@ func (p plugin) Apply(rs *xds.ResourceSet, ctx xds_context.Context, proxy *xds.P
 		return err
 	}
 	if err := applyToGateway(policies.SingleItemRules, listeners.Gateway, ctx.Mesh.Resources.MeshLocalResources, proxy.Dataplane); err != nil {
+		return err
+	}
+	if err := applyToRealResources(ctx, policies.SingleItemRules, rs, proxy); err != nil {
 		return err
 	}
 
@@ -134,6 +140,33 @@ func applyToOutbounds(
 		}
 	}
 
+	return nil
+}
+
+func applyToRealResources(
+	ctx xds_context.Context,
+	rules core_rules.SingleItemRules,
+	rs *xds.ResourceSet,
+	proxy *xds.Proxy,
+) error {
+	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
+		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &model.RealResourceBackendRef{
+			Resource: &uri,
+		})
+		if !found {
+			continue
+		}
+		for typ, resources := range resType {
+			switch typ {
+			case envoy_resource.ListenerType:
+				for _, listener := range resources {
+					if err := configureListener(rules, proxy.Dataplane, listener.Resource.(*envoy_listener.Listener), service); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return nil
 }
 

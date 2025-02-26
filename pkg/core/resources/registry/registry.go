@@ -93,6 +93,14 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 	if previous, ok := t.descriptors[res.Name]; ok {
 		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, reflect.TypeOf(res.Resource).Elem().String())
 	}
+	// check no duplicated short name
+	if res.ShortName != "" {
+		for _, descriptor := range t.descriptors {
+			if descriptor.ShortName == res.ShortName {
+				return errors.Errorf("duplicate registration of ResourceType under short name %q: previous=%#v new=%#v", res.ShortName, descriptor.Name, res.Name)
+			}
+		}
+	}
 	t.descriptors[res.Name] = res
 	return nil
 }

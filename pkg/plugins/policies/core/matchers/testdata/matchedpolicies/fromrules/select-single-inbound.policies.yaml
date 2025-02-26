@@ -1,0 +1,32 @@
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+    sectionName: main-port
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Allow
+    - targetRef:
+        kind: MeshService
+        name: orders
+      default:
+        action: AllowWithShadowDeny
+---
+type: MeshTrafficPermission
+mesh: mesh-1
+name: mtp-1
+spec:
+  targetRef:
+    kind: Dataplane
+    name: dp-1
+    sectionName: secondary-port
+  from:
+    - targetRef:
+        kind: Mesh
+      default:
+        action: Deny

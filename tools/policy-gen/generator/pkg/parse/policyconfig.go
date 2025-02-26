@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/pkg/errors"
 
@@ -29,10 +30,12 @@ type PolicyConfig struct {
 	SkipGetDefault               bool
 	SingularDisplayName          string
 	PluralDisplayName            string
+	ShortName                    string
 	Path                         string
 	AlternativeNames             []string
 	HasTo                        bool
 	HasFrom                      bool
+	HasRules                     bool
 	HasStatus                    bool
 	GoModule                     string
 	ResourceDir                  string
@@ -42,6 +45,7 @@ type PolicyConfig struct {
 	AllowedOnSystemNamespaceOnly bool
 	IsReferenceableInTo          bool
 	KubebuilderMarkers           []string
+	InterpretFromEntriesAsRules  bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -139,9 +143,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		NameLower:           strings.ToLower(name),
 		SingularDisplayName: core_model.DisplayName(name),
 		PluralDisplayName:   core_model.PluralType(core_model.DisplayName(name)),
-		AlternativeNames:    []string{strings.ToLower(name)},
 		HasTo:               fields["To"],
 		HasFrom:             fields["From"],
+		HasRules:            fields["Rules"],
 		IsPolicy:            true,
 	}
 
@@ -162,6 +166,9 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	}
 	if v, ok := parseBool(markers, "kuma:policy:is_referenceable_in_to"); ok {
 		res.IsReferenceableInTo = v
+	}
+	if v, ok := parseBool(markers, "kuma:policy:interpret_from_entries_as_rules"); ok {
+		res.InterpretFromEntriesAsRules = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v
@@ -195,6 +202,17 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		res.Plural = core_model.PluralType(res.Name)
 	}
 
+	if v, ok := markers["kuma:policy:short_name"]; ok {
+		res.ShortName = v
+	} else {
+		var result []rune
+		for _, char := range res.SingularDisplayName {
+			if unicode.IsUpper(char) {
+				result = append(result, unicode.ToLower(char))
+			}
+		}
+		res.ShortName = string(result)
+	}
 	res.Path = strings.ToLower(res.Plural)
 
 	return res, nil

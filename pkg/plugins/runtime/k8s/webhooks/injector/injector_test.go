@@ -827,6 +827,23 @@ spec:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.vp-disabled.config.yaml",
 		}),
+		Entry("41. gateway provided with cni enabled", testCase{
+			num: "41",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                labels:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config-cni.yaml",
+		}),
 	)
 
 	DescribeTable("should not inject Kuma into a Pod",

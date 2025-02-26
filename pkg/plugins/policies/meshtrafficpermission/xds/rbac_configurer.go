@@ -12,7 +12,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -115,7 +117,7 @@ type PrincipalMap map[policies_api.Action][]*rbac_config.Principal
 func (c *RBACConfigurer) principalsByAction() PrincipalMap {
 	pm := PrincipalMap{}
 	for _, rule := range c.Rules {
-		action := rule.Conf.(policies_api.Conf).Action
+		action := pointer.Deref(rule.Conf.(policies_api.Conf).Action)
 		pm[action] = append(pm[action], c.principalFromSubset(rule.Subset))
 	}
 	return pm
@@ -170,7 +172,7 @@ func createShadowRules(pm PrincipalMap) *rbac_config.RBAC {
 	}
 }
 
-func (c *RBACConfigurer) principalFromSubset(ss core_xds.Subset) *rbac_config.Principal {
+func (c *RBACConfigurer) principalFromSubset(ss subsetutils.Subset) *rbac_config.Principal {
 	principals := []*rbac_config.Principal{}
 
 	for _, t := range ss {

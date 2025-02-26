@@ -48,8 +48,10 @@ func FederateKubeZoneCPToKubeGlobal() {
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(MTLSMeshKubernetes("default")).
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
-			Install(democlient.Install()).
-			Install(testserver.Install()).
+			Install(Parallel(
+				democlient.Install(),
+				testserver.Install(),
+			)).
 			Setup(zone)
 		Expect(err).ToNot(HaveOccurred())
 	})

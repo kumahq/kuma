@@ -12,6 +12,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -116,6 +117,19 @@ type: Mesh
 name: %s
 `, name)
 	return YamlUniversal(mesh)
+}
+
+func Parallel(fns ...InstallFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		eg := errgroup.Group{}
+		for _, fn := range fns {
+			installFn := fn
+			eg.Go(func() error {
+				return installFn(cluster)
+			})
+		}
+		return eg.Wait()
+	}
 }
 
 func MeshKubernetes(name string) InstallFunc {
@@ -766,14 +780,18 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			additionalTags += fmt.Sprintf(`
       %s: %s`, key, val)
 		}
+		serviceName := opts.serviceName
+		if opts.serviceName == "" {
+			serviceName = name
+		}
 		if appYaml == "" {
 			if transparent {
-				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, additionalTags, redirectPortInbound, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", serviceName, additionalTags, redirectPortInbound, redirectPortOutbound, strings.Join(opts.reachableServices, ","))
 			} else {
 				if opts.serviceProbe {
-					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, additionalTags, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", serviceName, additionalTags, "80", "8080")
 				} else {
-					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, additionalTags, "80", "8080")
+					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", serviceName, additionalTags, "80", "8080")
 				}
 			}
 		}
@@ -782,7 +800,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			token := opts.token
 			var err error
 			if token == "" {
-				token, err = cluster.GetKuma().GenerateDpToken(mesh, name)
+				token, err = cluster.GetKuma().GenerateDpToken(mesh, serviceName)
 				if err != nil {
 					return err
 				}
@@ -794,7 +812,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 			opt,
 			WithName(name),
 			WithMesh(mesh),
-			WithAppname(AppModeDemoClient),
+			WithAppname(serviceName),
 			WithArgs(args),
 			WithYaml(appYaml),
 			WithIPv6(Config.IPV6),
@@ -992,6 +1010,23 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func (cs *ClusterSetup) SetupInGroup(cluster Cluster, group *errgroup.Group) {
+	group.Go(func() error {
+		return errors.Wrap(Combine(cs.installFuncs...)(cluster), cluster.Name())
+	})
+}
+
+func (cs *ClusterSetup) SetupInParallel(cluster Cluster) error {
+	errGroup := errgroup.Group{}
+	for _, f := range cs.installFuncs {
+		fn := f
+		errGroup.Go(func() error {
+			return fn(cluster)
+		})
+	}
+	return errGroup.Wait()
 }
 
 func (cs *ClusterSetup) SetupWithRetries(cluster Cluster, maxRetries int) error {

@@ -4,8 +4,8 @@ import (
 	"errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 	"sigs.k8s.io/yaml"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -17,7 +17,7 @@ func ResourceFromYaml(resYaml string) (proto.Message, error) {
 		json = []byte(resYaml)
 	}
 
-	var anything any.Any
+	var anything anypb.Any
 	if err := util_proto.FromJSON(json, &anything); err != nil {
 		return nil, err
 	}

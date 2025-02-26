@@ -1,0 +1,27 @@
+{
+ "total": 1,
+ "items": [
+  {
+   "type": "Dataplane",
+   "mesh": "default",
+   "name": "dp-1",
+   "creationTime": "0001-01-01T00:00:00Z",
+   "modificationTime": "0001-01-01T00:00:00Z",
+   "labels": {
+    "k8s.kuma.io/namespace": "ns1"
+   },
+   "networking": {
+    "address": "10.1.2.1",
+    "inbound": [
+     {
+      "port": 1234,
+      "tags": {
+       "kuma.io/service": "my-svc"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "next": null
+}

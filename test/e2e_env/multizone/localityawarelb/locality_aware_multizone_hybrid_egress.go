@@ -91,25 +91,30 @@ spec:
 		// Kubernetes Zone 1
 		Expect(NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace))).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(mesh),
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+			Install(Parallel(
+				democlient.Install(democlient.WithMesh(mesh), democlient.WithNamespace(namespace)),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(mesh),
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("echo", "--instance", "test-server-zone-1"),
+				),
 			)).
 			Setup(multizone.KubeZone1)).ToNot(HaveOccurred())
 
 		// Universal Zone 5
 		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb-egress_svc",
-				mesh,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-zone-5", mesh,
-				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client-locality-aware-lb-egress-svc",
+					mesh,
+					WithTransparentProxy(true),
+					WithServiceName("demo-client_locality-aware-lb_svc"),
+				),
+				TestServerUniversal("test-server-zone-5", mesh,
+					WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-zone-5"}),
+				),
 			)).
 			Setup(multizone.UniZone2),
 		).To(Succeed())
@@ -127,14 +132,17 @@ spec:
 
 		// Universal Zone 4
 		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"demo-client_locality-aware-lb-egress_svc",
-				mesh,
-				WithTransparentProxy(true),
-			)).
-			Install(TestServerUniversal("test-server-zone-4", mesh,
-				WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
-				WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+			Install(Parallel(
+				DemoClientUniversal(
+					"demo-client-locality-aware-lb-egress-svc",
+					mesh,
+					WithTransparentProxy(true),
+					WithServiceName("demo-client_locality-aware-lb_svc"),
+				),
+				TestServerUniversal("test-server-zone-4", mesh,
+					WithServiceName("test-server_locality-aware-lb-egress_svc_80"),
+					WithArgs([]string{"echo", "--instance", "test-server-zone-4"}),
+				),
 			)).
 			Setup(multizone.UniZone1),
 		).To(Succeed())
@@ -157,7 +165,7 @@ spec:
 	XIt("should route based on defined strategy with egress enabled", FlakeAttempts(3), func() {
 		// no lb priorities
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(300))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-egress-svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(300))
 		}, "2m", "10s").Should(
 			And(
 				HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 200, 40)),
@@ -171,7 +179,7 @@ spec:
 		Expect(multizone.Global.Install(YamlUniversal(meshLoadBalancingStrategyDemoClient))).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-egress-svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-4`), BeNumerically("~", 50, 25)),
 		)
@@ -181,7 +189,7 @@ spec:
 
 		// traffic goes to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-egress-svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 50, 25)),
 		)
@@ -199,11 +207,11 @@ spec:
 			g.Expect(cluster).ToNot(BeNil())
 			return cluster.GetPriorityForZone("kuma-5")
 		}, "2m", "5s").Should(Equal(1))
-		Expect(multizone.UniZone1.GetApp("demo-client_locality-aware-lb-egress_svc").ReStart()).To(Succeed())
+		Expect(multizone.UniZone1.GetApp("demo-client-locality-aware-lb-egress-svc").ReStart()).To(Succeed())
 
 		// traffic goes to kuma-5 zone
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-egress-svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-5`), BeNumerically("~", 50, 25)),
 		)
@@ -213,7 +221,7 @@ spec:
 
 		// then traffic should go to kuma-1 zone
 		Eventually(func() (map[string]int, error) {
-			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client_locality-aware-lb-egress_svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
+			return client.CollectResponsesByInstance(multizone.UniZone1, "demo-client-locality-aware-lb-egress-svc", "test-server_locality-aware-lb-egress_svc_80.mesh", client.WithNumberOfRequests(50))
 		}, "1m", "10s").Should(
 			HaveKeyWithValue(Equal(`test-server-zone-1`), BeNumerically("~", 50, 25)),
 		)

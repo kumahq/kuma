@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -Eeuo pipefail
 
 command -v osv-scanner >/dev/null 2>&1 || { echo >&2 "osv-scanner not installed!"; exit 1; }
 command -v jq >/dev/null 2>&1 || { echo >&2 "jq not installed!"; exit 1; }

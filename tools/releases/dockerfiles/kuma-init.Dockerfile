@@ -1,10 +1,5 @@
-# until there is a distroless iptables image we have to use something else
-FROM ubuntu:jammy-20240808@sha256:adbb90115a21969d2fe6fa7f9af4253e16d45f8d4c1e930182610c4731962658
+FROM gcr.io/k8s-staging-build-image/distroless-iptables:v0.7.3@sha256:25cc119a89bf860f964e5c47d0422eabcd260424692a2b6d4e7a74d5c3bb2231
 ARG ARCH
-
-RUN apt-get update && \
-    apt-get install --no-install-recommends -y iptables=1.8.7-1ubuntu5.2 iproute2=5.15.0-1ubuntu2 && \
-    rm -rf /var/lib/apt/lists/*
 
 COPY /build/artifacts-linux-$ARCH/kumactl/kumactl /usr/bin
 
@@ -15,7 +10,9 @@ COPY /tools/releases/templates/LICENSE \
 
 COPY /tools/releases/templates/NOTICE /kuma/NOTICE
 
-RUN adduser --system --disabled-password --group kumactl --uid 5678
+# Copy modified system files
+COPY /tools/releases/templates/passwd /etc/passwd
+COPY /tools/releases/templates/group /etc/group
 
 ENTRYPOINT ["/usr/bin/kumactl"]
 CMD ["install", "transparent-proxy"]

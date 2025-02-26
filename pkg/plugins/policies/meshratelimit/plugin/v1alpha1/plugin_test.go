@@ -19,6 +19,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
@@ -128,7 +130,7 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -136,7 +138,7 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
@@ -146,7 +148,7 @@ var _ = Describe("MeshRateLimit", func() {
 													Value: "other-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header-set",
 													Value: "test-value",
@@ -159,7 +161,7 @@ var _ = Describe("MeshRateLimit", func() {
 						},
 					}},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -167,6 +169,54 @@ var _ = Describe("MeshRateLimit", func() {
 								},
 								TCP: &api.LocalTCP{
 									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(444)),
+											Headers: &api.HeaderModifier{
+												Add: &[]api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header",
+														Value: "test-value",
+													},
+													{
+														Name:  "x-kuma-rate-limit",
+														Value: "other-value",
+													},
+												},
+												Set: &[]api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header-set",
+														Value: "test-value",
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}},
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
+									TCP: &api.LocalTCP{
+										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
 								},
 							},
 						},
@@ -218,7 +268,7 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
@@ -229,13 +279,13 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit",
 													Value: "other-value",
@@ -248,6 +298,45 @@ var _ = Describe("MeshRateLimit", func() {
 									ConnectionRate: &api.Rate{
 										Num:      100,
 										Interval: *test.ParseDuration("99s"),
+									},
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: &api.Rate{
+											Num:      100,
+											Interval: *test.ParseDuration("10s"),
+										},
+										OnRateLimit: &api.OnRateLimit{
+											Status: pointer.To(uint32(444)),
+											Headers: &api.HeaderModifier{
+												Add: &[]api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit-header",
+														Value: "test-value",
+													},
+												},
+												Set: &[]api.HeaderKeyValue{
+													{
+														Name:  "x-kuma-rate-limit",
+														Value: "other-value",
+													},
+												},
+											},
+										},
+									},
+									TCP: &api.LocalTCP{
+										ConnectionRate: &api.Rate{
+											Num:      100,
+											Interval: *test.ParseDuration("99s"),
+										},
 									},
 								},
 							},
@@ -296,12 +385,26 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
 									Disabled:       pointer.To(true),
 									ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									TCP: &api.LocalTCP{
+										Disabled:       pointer.To(true),
+										ConnectionRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
 								},
 							},
 						},
@@ -336,12 +439,26 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
 									Disabled:    pointer.To(true),
 									RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										Disabled:    pointer.To(true),
+										RequestRate: &api.Rate{Num: 100, Interval: *test.ParseDuration("10s")},
+									},
 								},
 							},
 						},
@@ -363,11 +480,24 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								TCP: &api.LocalTCP{
 									ConnectionRate: nil,
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17778}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									TCP: &api.LocalTCP{
+										ConnectionRate: nil,
+									},
 								},
 							},
 						},
@@ -402,11 +532,24 @@ var _ = Describe("MeshRateLimit", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Local: &api.Local{
 								HTTP: &api.LocalHTTP{
 									RequestRate: nil,
+								},
+							},
+						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{
+							api.Conf{
+								Local: &api.Local{
+									HTTP: &api.LocalHTTP{
+										RequestRate: nil,
+									},
 								},
 							},
 						},
@@ -517,7 +660,7 @@ var _ = Describe("MeshRateLimit", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.Conf{
 														Local: &api.Local{
 															HTTP: &api.LocalHTTP{
@@ -576,7 +719,7 @@ var _ = Describe("MeshRateLimit", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.Conf{
 														Local: &api.Local{
 															TCP: &api.LocalTCP{
@@ -598,7 +741,7 @@ var _ = Describe("MeshRateLimit", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.Conf{
 														Local: &api.Local{
 															HTTP: &api.LocalHTTP{
@@ -724,7 +867,7 @@ var _ = Describe("MeshRateLimit", func() {
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{
 								{
-									Subset: core_rules.Subset{},
+									Subset: subsetutils.Subset{},
 									Conf: api.Conf{
 										Local: &api.Local{
 											HTTP: &api.LocalHTTP{
@@ -735,7 +878,7 @@ var _ = Describe("MeshRateLimit", func() {
 												OnRateLimit: &api.OnRateLimit{
 													Status: pointer.To(uint32(444)),
 													Headers: &api.HeaderModifier{
-														Add: []api.HeaderKeyValue{
+														Add: &[]api.HeaderKeyValue{
 															{
 																Name:  "x-kuma-rate-limit-header",
 																Value: "test-value",
@@ -765,7 +908,7 @@ var _ = Describe("MeshRateLimit", func() {
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.MeshSubset(),
+								Subset: subsetutils.MeshSubset(),
 								Conf: meshhttproute_api.PolicyDefault{
 									Rules: []meshhttproute_api.Rule{
 										{
@@ -809,7 +952,7 @@ var _ = Describe("MeshRateLimit", func() {
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{
+								Subset: subsetutils.Subset{
 									{
 										Key:   core_rules.RuleMatchesHashTag,
 										Value: "L2t9uuHxXPXUg5ULwRirUaoxN4BU/zlqyPK8peSWm2g=",
@@ -825,7 +968,7 @@ var _ = Describe("MeshRateLimit", func() {
 											OnRateLimit: &api.OnRateLimit{
 												Status: pointer.To(uint32(444)),
 												Headers: &api.HeaderModifier{
-													Add: []api.HeaderKeyValue{
+													Add: &[]api.HeaderKeyValue{
 														{
 															Name:  "x-kuma-rate-limit-header",
 															Value: "test-value",

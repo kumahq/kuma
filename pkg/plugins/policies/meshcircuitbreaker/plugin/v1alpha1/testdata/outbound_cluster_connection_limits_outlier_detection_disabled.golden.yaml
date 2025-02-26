@@ -5,4 +5,5 @@ circuitBreakers:
     maxPendingRequests: 3333
     maxRequests: 4444
     maxRetries: 5555
+    trackRemaining: true
 name: second-service

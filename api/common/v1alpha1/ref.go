@@ -7,13 +7,14 @@ import (
 	"sort"
 	"strings"
 
-	"golang.org/x/exp/maps"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 type TargetRefKind string
 
 var (
 	Mesh                 TargetRefKind = "Mesh"
+	Dataplane            TargetRefKind = "Dataplane"
 	MeshSubset           TargetRefKind = "MeshSubset"
 	MeshGateway          TargetRefKind = "MeshGateway"
 	MeshService          TargetRefKind = "MeshService"
@@ -25,13 +26,14 @@ var (
 
 var order = map[TargetRefKind]int{
 	Mesh:                 1,
-	MeshSubset:           2,
-	MeshGateway:          3,
-	MeshService:          4,
-	MeshExternalService:  5,
-	MeshMultiZoneService: 6,
-	MeshServiceSubset:    7,
-	MeshHTTPRoute:        8,
+	Dataplane:            2,
+	MeshSubset:           3,
+	MeshGateway:          4,
+	MeshService:          5,
+	MeshExternalService:  6,
+	MeshMultiZoneService: 7,
+	MeshServiceSubset:    8,
+	MeshHTTPRoute:        9,
 }
 
 // +kubebuilder:validation:Enum=Sidecar;Gateway
@@ -67,7 +69,7 @@ func (k TargetRefKind) IsOldKind() bool {
 }
 
 func AllTargetRefKinds() []TargetRefKind {
-	keys := maps.Keys(order)
+	keys := util_maps.AllKeys(order)
 	sort.Sort(TargetRefKindSlice(keys))
 	return keys
 }
@@ -85,7 +87,7 @@ type TargetRef struct {
 	UsesSyntacticSugar bool `json:"-"`
 
 	// Kind of the referenced resource
-	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute
+	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
 	Kind TargetRefKind `json:"kind,omitempty"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
@@ -108,6 +110,33 @@ type TargetRef struct {
 	// SectionName is used to target specific section of resource.
 	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
 	SectionName string `json:"sectionName,omitempty"`
+}
+
+func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
+	if t.Kind != Dataplane || other.Kind != Dataplane {
+		return 0
+	}
+	if selectsNameAndNamespace(t) && selectsLabels(other) {
+		return 1
+	}
+	if selectsLabels(t) && selectsNameAndNamespace(other) {
+		return -1
+	}
+	if t.SectionName != "" && other.SectionName == "" {
+		return 1
+	}
+	if t.SectionName == "" && other.SectionName != "" {
+		return -1
+	}
+	return 0
+}
+
+func selectsNameAndNamespace(tr TargetRef) bool {
+	return tr.Name != ""
+}
+
+func selectsLabels(tr TargetRef) bool {
+	return tr.Labels != nil
 }
 
 func IncludesGateways(ref TargetRef) bool {
@@ -152,15 +181,13 @@ type BackendRefHash string
 
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
-	keys := maps.Keys(in.Tags)
-	sort.Strings(keys)
+	keys := util_maps.SortedKeys(in.Tags)
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
 	}
 
-	keys = maps.Keys(in.Labels)
-	sort.Strings(keys)
+	keys = util_maps.SortedKeys(in.Labels)
 	orderedLabels := make([]string, 0, len(in.Labels))
 	for _, k := range keys {
 		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))

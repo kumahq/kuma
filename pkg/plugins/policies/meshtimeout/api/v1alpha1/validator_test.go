@@ -140,7 +140,7 @@ targetRef:
 				expected: `
 violations:
   - field: spec
-    message: at least one of 'from', 'to' has to be defined`,
+    message: at least one of 'from', 'to' or 'rules' has to be defined`,
 			}),
 			Entry("unsupported kind in from selector", testCase{
 				inputYaml: `
@@ -171,6 +171,24 @@ to:
         requestTimeout: 1s`,
 				expected: `
 violations:
+  - field: spec.to[0].targetRef.kind
+    message: value is not supported`,
+			}),
+			Entry("sectionName with outbound policy", testCase{
+				inputYaml: `
+targetRef:
+  kind: Dataplane
+  sectionName: test
+to:
+  - targetRef:
+      kind: MeshServiceSubset
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.targetRef.sectionName
+    message: can only be used with inbound policies
   - field: spec.to[0].targetRef.kind
     message: value is not supported`,
 			}),
@@ -323,6 +341,52 @@ to:
 violations:
   - field: spec.to[0].targetRef.labels
     message: either labels or name must be specified`,
+			}),
+			Entry("when rules is defined, to cannot be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+to:
+  - targetRef:
+      kind: MeshService
+      name: web-backend
+    default:
+      connectionTimeout: 10s`,
+				expected: `
+violations:
+  - field: spec
+    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+			}),
+			Entry("when rules is defined, from cannot be defined", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default:
+      connectionTimeout: 10s
+from:
+  - targetRef:
+      kind: Mesh
+    default:
+      connectionTimeout: 10s`,
+				expected: `
+violations:
+  - field: spec
+    message: fields 'to' and 'from' must be empty when 'rules' is defined`,
+			}),
+			Entry("rules with empty spec", testCase{
+				inputYaml: `
+targetRef:
+  kind: Mesh
+rules:
+  - default: {}`,
+				expected: `
+violations:
+  - field: spec.rules[0].default
+    message: at least one timeout should be configured`,
 			}),
 		)
 	})
