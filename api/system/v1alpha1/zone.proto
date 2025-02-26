@@ -16,6 +16,8 @@ message Zone {
   option (kuma.mesh.resource).package = "system";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).ws.name = "zone";
+  // Zones are only managed globally
+  option (kuma.mesh.resource).kds = "model.ProvidedByGlobalFlag";
   option (kuma.mesh.resource).has_insights = true;
 
   // enable allows to turn the zone on/off and exclude the whole zone from

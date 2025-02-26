@@ -54,10 +54,14 @@ type KDSFlagType uint32
 
 const (
 	// KDSDisabledFlag is a flag that indicates that this resource type is not sent using KDS.
-	KDSDisabledFlag      = KDSFlagType(0)
-	ConsumedByZoneFlag   = KDSFlagType(1)
+	KDSDisabledFlag = KDSFlagType(0)
+	// ConsumedByZoneFlag indicate that this resource is used by zone CPs, it's synced with KDS only if it's also ProvidedByGlobalFlag or SyncedAcrossZonesFlag.
+	ConsumedByZoneFlag = KDSFlagType(1)
+	// ConsumedByGlobalFlag is a flag that indicates that this resource type is consumed by the global CP, it's synced with KDS only if it's also ProvidedByZoneFlag.
 	ConsumedByGlobalFlag = KDSFlagType(1 << 2)
-	ProvidedByZoneFlag   = KDSFlagType(1 << 3)
+	// ProvidedByZoneFlag is a flag that indicates that this resource type can be created, modified and deleted by the zone CPs.
+	ProvidedByZoneFlag = KDSFlagType(1 << 3)
+	// ProvidedByGlobalFlag is a flag that indicates that this resource type can be created, modified and deleted by the global CP.
 	ProvidedByGlobalFlag = KDSFlagType(1 << 4)
 	// SyncedAcrossZonesFlag is a flag that indicates that this resource type is synced from one zone to the other ones.
 	// there is a mechanism to avoid sending it back to the original Zone (.e.g producer policies, zone origin labels...).
@@ -276,7 +280,7 @@ func (d ResourceTypeDescriptor) IsInsight() bool {
 }
 
 func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool {
-	if d.KDSFlags == KDSDisabledFlag {
+	if d.ReadOnly {
 		return false
 	}
 	// On Zone non federated we can do everything locally.

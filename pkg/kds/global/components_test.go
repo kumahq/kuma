@@ -274,12 +274,18 @@ var _ = Describe("Global Sync", func() {
 			}
 			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey("dp-1", "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
-			Consistently(func() int {
+			Consistently(func(g Gomega) {
 				actual := mesh.DataplaneResourceList{}
 				err := globalStore.List(context.Background(), &actual)
-				Expect(err).ToNot(HaveOccurred())
-				return len(actual.Items)
-			}, "5s", "100ms").Should(Equal(0))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(WithTransform(func([]*mesh.DataplaneResource) []string {
+					var names []string
+					for _, item := range actual.Items {
+						names = append(names, item.Meta.GetName())
+					}
+					return names
+				}, BeEmpty()))
+			}, "5s", "100ms").Should(Succeed())
 
 			dp1 := mesh.NewDataplaneResource()
 			err = zoneStores[0].Get(context.Background(), dp1, store.GetByKey("dp-1", "mesh-1"))
@@ -289,12 +295,18 @@ var _ = Describe("Global Sync", func() {
 			err = zoneStores[0].Update(context.Background(), dp1)
 			Expect(err).ToNot(HaveOccurred())
 
-			Eventually(func() int {
+			Eventually(func(g Gomega) {
 				actual := mesh.DataplaneResourceList{}
 				err := globalStore.List(context.Background(), &actual)
-				Expect(err).ToNot(HaveOccurred())
-				return len(actual.Items)
-			}, "5s", "100ms").Should(Equal(1))
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(actual.Items).To(WithTransform(func([]*mesh.DataplaneResource) []string {
+					var names []string
+					for _, item := range actual.Items {
+						names = append(names, item.Meta.GetName())
+					}
+					return names
+				}, ConsistOf("zone-0.dp-1")))
+			}, "5s", "100ms").Should(Succeed())
 		})
 	})
 })

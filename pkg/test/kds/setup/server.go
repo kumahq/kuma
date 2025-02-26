@@ -235,7 +235,7 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	return &KdsServerBuilder{
 		rt:             rt,
 		providedMapper: reconcile_v2.NoopResourceMapper,
-		providedTypes:  registry.Global().ObjectTypes(model.HasKDSEnabled()),
+		providedTypes:  registry.Global().ObjectTypes(model.SentFromGlobalToZone()),
 		providedFilter: reconcile_v2.Any,
 	}
 }
@@ -243,6 +243,7 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.providedTypes = registry.Global().ObjectTypes(model.SentFromZoneToGlobal())
 	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
 }
