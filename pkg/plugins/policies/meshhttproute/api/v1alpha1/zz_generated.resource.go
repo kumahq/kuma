@@ -173,5 +173,5 @@ var MeshHTTPRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mhttpr",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

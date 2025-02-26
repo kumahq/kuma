@@ -944,6 +944,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
+			getInboundPortName := func(port uint32) *string {
+				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+					return &name
+				}
+				return nil
+			}
+
 			fromRules := []api_common.FromRule{}
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
@@ -964,10 +971,9 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					} else {
 						tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
 					}
-					inboundName := dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).GetName()
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
-							Name: &inboundName,
+							Name: getInboundPortName(inbound.Port),
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
@@ -975,9 +981,41 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					})
 				}
 				sort.SliceStable(fromRules, func(i, j int) bool {
-					return pointer.Deref(fromRules[i].Inbound.Name) < pointer.Deref(fromRules[j].Inbound.Name)
+					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
 				})
 			}
+
+			inboundRules := []api_common.InboundRulesEntry{}
+			for inbound, rulesForInbound := range res.FromRules.InboundRules {
+				if len(rulesForInbound) == 0 {
+					continue
+				}
+				rs := make([]api_common.InboundRule, len(rulesForInbound))
+				for i := range rulesForInbound {
+					rs[i] = api_common.InboundRule{
+						Conf:   rulesForInbound[i].Conf,
+						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, rulesForInbound[i].Origin),
+					}
+				}
+				var tags map[string]string
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					tags = dp.Spec.Networking.Gateway.Tags
+				} else {
+					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				}
+				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
+					Inbound: api_common.Inbound{
+						Name: getInboundPortName(inbound.Port),
+						Port: int(inbound.Port),
+						Tags: tags,
+					},
+					Rules: rs,
+				})
+			}
+			sort.SliceStable(inboundRules, func(i, j int) bool {
+				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
+			})
+
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
@@ -991,7 +1029,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -1004,6 +1042,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
 				FromRules:       &fromRules,
+				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,
 			})

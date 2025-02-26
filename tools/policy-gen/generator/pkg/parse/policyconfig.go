@@ -45,7 +45,7 @@ type PolicyConfig struct {
 	AllowedOnSystemNamespaceOnly bool
 	IsReferenceableInTo          bool
 	KubebuilderMarkers           []string
-	InterpretFromEntriesAsRules  bool
+	IsFromAsRules                bool
 }
 
 func Policy(path string) (PolicyConfig, error) {
@@ -168,7 +168,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 		res.IsReferenceableInTo = v
 	}
 	if v, ok := parseBool(markers, "kuma:policy:interpret_from_entries_as_rules"); ok {
-		res.InterpretFromEntriesAsRules = v
+		res.IsFromAsRules = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
 		res.KDSFlags = v

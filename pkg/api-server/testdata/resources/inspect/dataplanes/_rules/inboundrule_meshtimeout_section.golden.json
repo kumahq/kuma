@@ -10,79 +10,14 @@
  },
  "rules": [
   {
-   "fromRules": [
-    {
-     "inbound": {
-      "name": "main-port",
-      "port": 8080,
-      "tags": {
-       "kuma.io/service": "foo"
-      }
-     },
-     "rules": [
-      {
-       "conf": {
-        "connectionTimeout": "7s",
-        "idleTimeout": "7s",
-        "http": {
-         "requestTimeout": "7s"
-        }
-       },
-       "matchers": [],
-       "origin": [
-        {
-         "labels": {},
-         "mesh": "mesh-1",
-         "name": "select-whole-dpp",
-         "type": "MeshTimeout"
-        }
-       ]
-      }
-     ]
-    },
-    {
-     "inbound": {
-      "name": "secondary-port",
-      "port": 9090,
-      "tags": {
-       "kuma.io/service": "bar"
-      }
-     },
-     "rules": [
-      {
-       "conf": {
-        "connectionTimeout": "7s",
-        "idleTimeout": "7s",
-        "http": {
-         "requestTimeout": "2s"
-        }
-       },
-       "matchers": [],
-       "origin": [
-        {
-         "labels": {},
-         "mesh": "mesh-1",
-         "name": "select-whole-dpp",
-         "type": "MeshTimeout"
-        },
-        {
-         "labels": {},
-         "mesh": "mesh-1",
-         "name": "select-single-inbound",
-         "type": "MeshTimeout"
-        }
-       ]
-      }
-     ]
-    }
-   ],
+   "fromRules": [],
    "inboundRules": [
     {
      "inbound": {
-      "name": "main-port",
-      "port": 8080,
+      "name": "admin-port",
+      "port": 7070,
       "tags": {
-       "kuma.io/service": "foo"
+       "kuma.io/service": "admin-dashboard"
       }
      },
      "rules": [
@@ -101,7 +36,49 @@
          "resourceMeta": {
           "labels": {},
           "mesh": "mesh-1",
-          "name": "select-whole-dpp",
+          "name": "global",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "inbound": {
+      "name": "main-port",
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "connectionTimeout": "7s",
+         "idleTimeout": "7s",
+         "http": {
+          "requestTimeout": "2s"
+         }
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "global",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        },
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "mesh-1",
+          "name": "select-main-port",
           "type": "MeshTimeout"
          },
          "ruleIndex": 0
@@ -122,10 +99,10 @@
       {
        "conf": [
         {
-         "connectionTimeout": "7s",
+         "connectionTimeout": "3s",
          "idleTimeout": "7s",
          "http": {
-          "requestTimeout": "2s"
+          "requestTimeout": "7s"
          }
         }
        ],
@@ -134,7 +111,7 @@
          "resourceMeta": {
           "labels": {},
           "mesh": "mesh-1",
-          "name": "select-whole-dpp",
+          "name": "global",
           "type": "MeshTimeout"
          },
          "ruleIndex": 0
@@ -143,7 +120,7 @@
          "resourceMeta": {
           "labels": {},
           "mesh": "mesh-1",
-          "name": "select-single-inbound",
+          "name": "select-secondary-port",
           "type": "MeshTimeout"
          },
          "ruleIndex": 0

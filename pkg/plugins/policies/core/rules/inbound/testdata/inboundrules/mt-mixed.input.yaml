@@ -1,4 +1,4 @@
-# it should handle policies when some of them have 'rules', some have 'from' and InterpretFromEntriesAsRules is set to true
+# it should handle policies when some of them have 'rules', some have 'from' and IsFromAsRules is set to true
 type: MeshTimeout
 name: matched-for-rules-mt-aaaaaa
 mesh: mesh-1

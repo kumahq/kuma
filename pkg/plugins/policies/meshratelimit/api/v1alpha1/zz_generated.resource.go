@@ -173,5 +173,5 @@ var MeshRateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mrl",
-	InterpretFromEntriesAsRules:  true,
+	IsFromAsRules:                true,
 }
