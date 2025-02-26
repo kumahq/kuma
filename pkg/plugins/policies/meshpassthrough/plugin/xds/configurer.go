@@ -61,6 +61,7 @@ func (c Configurer) configureListener(
 	if listener == nil {
 		return nil
 	}
+	listenerFiltersExcludedOnPorts := []uint32{}
 	// remove default filter chain provided by `transparent_proxy_generator`
 	listener.FilterChains = []*envoy_listener.FilterChain{}
 	for _, matcher := range orderedFilterChainMatches {
@@ -73,18 +74,21 @@ func (c Configurer) configureListener(
 			Routes:     matcher.Routes,
 			IsIPv6:     isIPv6,
 		}
+		if matcher.Protocol == core_mesh.Protocol(api.MysqlProtocol) {
+			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)
+		}
 		err := configurer.Configure(listener, clustersAccumulator)
 		if err != nil {
 			return err
 		}
 	}
-	if err := c.configureListenerFilter(listener); err != nil {
+	if err := c.configureListenerFilter(listener, listenerFiltersExcludedOnPorts); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) error {
+func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, listenerFiltersExcludedOnPorts []uint32) error {
 	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {
@@ -95,16 +99,25 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 			hasHttpInspector = true
 		}
 	}
-	var err error
+
+	originalDstConfigurer := xds_listeners_v3.OriginalDstFilterConfigurer{}
+	err := originalDstConfigurer.Configure(listener)
+	if err != nil {
+		return err
+	}
 	if !hasTlsInspector {
-		configurer := xds_listeners_v3.TLSInspectorConfigurer{}
+		configurer := xds_listeners_v3.TLSInspectorConfigurer{
+			DisabledPorts: listenerFiltersExcludedOnPorts,
+		}
 		err = configurer.Configure(listener)
 	}
 	if err != nil {
 		return err
 	}
 	if !hasHttpInspector {
-		configurer := xds_listeners_v3.HTTPInspectorConfigurer{}
+		configurer := xds_listeners_v3.HTTPInspectorConfigurer{
+			DisabledPorts: listenerFiltersExcludedOnPorts,
+		}
 		err = configurer.Configure(listener)
 	}
 	return err

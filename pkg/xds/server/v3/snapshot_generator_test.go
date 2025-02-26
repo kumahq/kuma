@@ -135,7 +135,7 @@ var _ = Describe("GenerateSnapshot", func() {
 
 		mCtx.VIPOutbounds = outbounds
 
-		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, mCtx)
+		proxy, err := proxyBuilder.Build(context.Background(), core_model.ResourceKey{Name: name, Mesh: mesh}, &model.DataplaneMetadata{}, mCtx)
 		Expect(err).ToNot(HaveOccurred())
 
 		metrics, err := metrics.NewMetrics("")

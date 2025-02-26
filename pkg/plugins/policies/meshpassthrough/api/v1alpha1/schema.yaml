@@ -34,13 +34,14 @@ properties:
                   type: integer
                 protocol:
                   default: tcp
-                  description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                  description: 'Protocol defines the communication protocol. Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`, `mysql`.'
                   enum:
                     - tcp
                     - tls
                     - grpc
                     - http
                     - http2
+                    - mysql
                   type: string
                 type:
                   description: Type of the match, one of `Domain`, `IP` or `CIDR` is available.

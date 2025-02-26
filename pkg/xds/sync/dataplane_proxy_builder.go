@@ -33,7 +33,7 @@ type DataplaneProxyBuilder struct {
 	IncludeShadow bool
 }
 
-func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
 	dp, found := meshContext.DataplanesByName[key.Name]
 	if !found {
 		return nil, core_store.ErrorResourceNotFound(core_mesh.DataplaneType, key.Name, key.Mesh)
@@ -65,7 +65,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 		Routing:           *routing,
 		Policies:          *matchedPolicies,
 		SecretsTracker:    secretsTracker,
-		Metadata:          &core_xds.DataplaneMetadata{},
+		Metadata:          meta,
 		Zone:              p.Zone,
 		RuntimeExtensions: map[string]interface{}{},
 	}

@@ -663,7 +663,7 @@ var _ = Describe("Dataplane", func() {
 			}),
 			Entry("mysql", testCase{
 				tag:      "mysql",
-				expected: ProtocolUnknown,
+				expected: ProtocolMysql,
 			}),
 			Entry("unknown", testCase{
 				tag:      "unknown",

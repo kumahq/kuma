@@ -306,12 +306,12 @@ spec:
 				"test-client",
 				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
 				client.FromKubernetesPod(namespace, "test-client"),
-				client.WithNumberOfRequests(100),
+				client.WithNumberOfRequests(200),
 			)
 		}, "30s", "5s").Should(And(
-			HaveLen(100),
-			WithTransform(countResponseCodes(503), BeNumerically("~", 50, 15)),
-			WithTransform(countResponseCodes(200), BeNumerically("~", 50, 15)),
+			HaveLen(200),
+			WithTransform(countResponseCodes(503), BeNumerically("~", 100, 30)),
+			WithTransform(countResponseCodes(200), BeNumerically("~", 100, 30)),
 		))
 
 		Eventually(func(g Gomega) {
@@ -351,10 +351,10 @@ spec:
 				"test-client",
 				fmt.Sprintf("test-server.%s.svc.%s.mesh.local", namespace, Kuma2),
 				client.FromKubernetesPod(namespace, "test-client"),
-				client.WithNumberOfRequests(100),
+				client.WithNumberOfRequests(200),
 			)
 		}, "30s", "5s").Should(And(
-			HaveLen(100),
+			HaveLen(200),
 			ContainElements(HaveField("ResponseCode", 200)),
 		))
 

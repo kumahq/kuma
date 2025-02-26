@@ -28,6 +28,7 @@ type IngressProxyBuilder struct {
 func (p *IngressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	meta *core_xds.DataplaneMetadata,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
 	zoneIngress, err := p.getZoneIngress(ctx, key)
@@ -45,6 +46,7 @@ func (p *IngressProxyBuilder) Build(
 		APIVersion:       p.apiVersion,
 		Zone:             p.zone,
 		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
+		Metadata:         meta,
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies

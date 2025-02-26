@@ -2,7 +2,7 @@ violations:
 - field: spec.default.appendMatch[0].port
   message: port must be a valid (1-65535)
 - field: spec.default.appendMatch[0].protocol
-  message: '"protocol" must be one of ["tcp", "tls", "grpc", "http", "http2"]'
+  message: '"protocol" must be one of ["tcp", "tls", "grpc", "http", "http2", "mysql"]'
 - field: spec.default.appendMatch[0].type
   message: provided type test is not supported, one of Domain, IP, or CIDR is supported
 - field: spec.default.appendMatch[1].protocol
@@ -24,3 +24,7 @@ violations:
   message: value google.com is already defiend for this port and protocol
 - field: spec.default.appendMatch[10].port
   message: wildcard domains doesn't work for all ports and layer 7 protocol
+- field: spec.default.appendMatch[11].protocol
+  message: protocol mysql is not supported for a domain
+- field: spec.default.appendMatch[12].port
+  message: port must be defined for Mysql protocol

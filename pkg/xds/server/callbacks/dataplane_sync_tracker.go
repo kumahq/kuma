@@ -7,14 +7,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
 var dataplaneSyncTrackerLog = core.Log.WithName("xds").WithName("dataplane-sync-tracker")
 
-type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_xds_v3.Watchdog
-
-func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
+func NewDataplaneSyncTracker(factoryFunc sync.DataplaneWatchdogFactory) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
 		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
@@ -29,8 +27,9 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 //
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
+
 type dataplaneSyncTracker struct {
-	newDataplaneWatchdog NewDataplaneWatchdogFunc
+	newDataplaneWatchdog sync.DataplaneWatchdogFactory
 
 	stdsync.RWMutex // protects access to the fields below
 	watchdogs       map[core_model.ResourceKey]*watchdogState
@@ -41,7 +40,7 @@ type watchdogState struct {
 }
 
 //nolint:contextcheck // it's not clear how the parent go-control-plane context lives
-func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
+func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, meta core_xds.DataplaneMetadata) error {
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
@@ -55,7 +54,7 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	stoppedDone := state.stopped
 	go func() {
 		defer close(stoppedDone)
-		t.newDataplaneWatchdog(dpKey).Start(ctx)
+		t.newDataplaneWatchdog.New(dpKey, &meta).Start(ctx)
 	}()
 	t.watchdogs[dpKey] = state
 	return nil
