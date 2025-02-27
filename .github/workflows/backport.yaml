@@ -13,11 +13,8 @@ on:
         type: string
         default: ""
         required: false
-    secrets:
-      app_id: ${{ secrets.APP_ID }}
-      private_key: ${{ secrets.APP_PRIVATE_KEY }}
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 env:
   GH_USER: kumahq[bot]
@@ -93,7 +90,7 @@ jobs:
       PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}
       SHA: ${{ needs.collect-info.outputs.pr_merge_commit_sha }}
       TARGET_BRANCH: ${{ matrix.branch }}
-      USE_APP_TOKEN: ${{ secrets.app_id != '' }}
+      USE_APP_TOKEN: ${{ secrets.APP_ID != '' }}
     steps:
       - uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd # v2.8.0
         with:
@@ -103,8 +100,8 @@ jobs:
         uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
         if: ${{ env.USE_APP_TOKEN == 'true' }}
         with:
-          app_id: ${{ secrets.app_id }}
-          private_key: ${{ secrets.private_key }}
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
       - id: github-context-token
         if: ${{ env.USE_APP_TOKEN != 'true' }}
         run: |
@@ -156,6 +153,6 @@ jobs:
           delete-branch: true
           draft: ${{ contains(env.LABELS, 'conflict') }}
           labels: ${{ env.LABELS }}
-          token: ${{ secrets.app_id != '' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
+          token: ${{ secrets.APP_ID != '' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
           committer: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
           author: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
