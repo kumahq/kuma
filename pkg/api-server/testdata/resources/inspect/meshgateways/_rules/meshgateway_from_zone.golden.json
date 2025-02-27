@@ -12,6 +12,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [
     {
      "conf": [
@@ -78,6 +79,7 @@
   },
   {
    "fromRules": [],
+   "inboundRules": [],
    "proxyRule": {
     "conf": {
      "appendModifications": [

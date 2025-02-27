@@ -173,5 +173,5 @@ var MeshProxyPatchResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mpp",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

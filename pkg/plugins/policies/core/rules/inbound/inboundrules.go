@@ -80,7 +80,7 @@ func getEntries(resources core_model.ResourceList) ([]common.WithPolicyAttribute
 					RuleIndex: j,
 				})
 			}
-		case desc.InterpretFromEntriesAsRules && len(policy.GetFromList()) > 0:
+		case desc.IsFromAsRules && len(policy.GetFromList()) > 0:
 			for j, fromEntry := range policy.GetFromList() {
 				entries = append(entries, common.WithPolicyAttributes[RuleEntry]{
 					Entry:     newRuleEntryAdapter(fromEntry),

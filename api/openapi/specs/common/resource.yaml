@@ -27,7 +27,7 @@ components:
           $ref: "#/components/schemas/PolicyDescription"
     PolicyDescription:
       type: object
-      required: [hasToTargetRef, hasFromTargetRef, isTargetRef]
+      required: [hasToTargetRef, hasFromTargetRef, isTargetRef, isFromAsRules]
       description: information about a policy
       properties:
         isTargetRef:
@@ -38,6 +38,9 @@ components:
           type: boolean
         hasFromTargetRef:
           description: indicates that this policy can be used as an inbound policy
+          type: boolean
+        isFromAsRules:
+          description: If set to `true`, performs a backward compatibility conversion from the deprecated 'from' array to the new 'rules' array. This ensures older policies remain functional under the updated schema.
           type: boolean
     Meta:
       type: object
@@ -90,6 +93,11 @@ components:
           description: a set of rules for each inbound of this proxy
           items:
             $ref: '#/components/schemas/FromRule'
+        inboundRules:
+          type: array
+          description: a set of rules for each inbound port of the proxy. When the policy descriptor has 'isFromAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
+          items:
+            $ref: '#/components/schemas/InboundRulesEntry'
         warnings:
           type: array
           description: a set of warnings to show in policy matching
@@ -106,6 +114,33 @@ components:
          type: array
          items:
            $ref: '#/components/schemas/Rule'
+    InboundRulesEntry:
+      type: object
+      required: [inbound, rules]
+      properties:
+        inbound:
+          $ref: '#/components/schemas/Inbound'
+        rules:
+          type: array
+          description: The 'rules' field is an array to allow for future expansion when 'matches' conditions are added. Currently, it contains a single item.
+          items:
+            $ref: '#/components/schemas/InboundRule'
+    InboundRule:
+      type: object
+      required: [conf, origin]
+      properties:
+        conf:
+          description: The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+            x-go-type: 'interface{}'
+        origin:
+          type: array
+          description: The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+          items:
+            $ref: '#/components/schemas/ResourceRuleOrigin'
     Inbound:
       type: object
       required: [tags, port]

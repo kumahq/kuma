@@ -12,6 +12,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "proxyRule": {
     "conf": {
      "backends": [

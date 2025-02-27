@@ -35,6 +35,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [
     {
      "conf": [
@@ -216,6 +217,7 @@
   },
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [],
    "toRules": [
     {

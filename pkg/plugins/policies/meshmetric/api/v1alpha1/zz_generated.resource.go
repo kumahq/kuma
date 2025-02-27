@@ -173,5 +173,5 @@ var MeshMetricResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mm",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

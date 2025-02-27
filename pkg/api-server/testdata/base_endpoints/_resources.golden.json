@@ -8,6 +8,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -49,6 +50,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -72,6 +74,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -104,6 +107,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -118,6 +122,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -141,6 +146,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -164,6 +170,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -178,6 +185,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -192,6 +200,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -215,6 +224,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -229,6 +239,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -252,6 +263,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -266,6 +278,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -280,6 +293,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -294,6 +308,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -317,6 +332,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": true,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -331,6 +347,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -345,6 +362,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": true,
+    "isFromAsRules": true,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -359,6 +377,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -373,6 +392,7 @@
    "policy": {
     "hasFromTargetRef": true,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": true
    },
    "readOnly": false,
@@ -387,6 +407,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -401,6 +422,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -415,6 +437,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -447,6 +470,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -461,6 +485,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -475,6 +500,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -489,6 +515,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -503,6 +530,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,
@@ -517,6 +545,7 @@
    "policy": {
     "hasFromTargetRef": false,
     "hasToTargetRef": false,
+    "isFromAsRules": false,
     "isTargetRef": false
    },
    "readOnly": false,

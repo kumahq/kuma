@@ -173,5 +173,5 @@ var MeshPassthroughResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mp",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }
