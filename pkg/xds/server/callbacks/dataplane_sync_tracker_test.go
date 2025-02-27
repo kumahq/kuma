@@ -131,14 +131,9 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-<<<<<<< HEAD
+			var cleanupDone atomic.Bool
 			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
-=======
-			var cleanupDone atomic.Bool
-			tracker := NewDataplaneSyncTracker(func(key core_model.ResourceKey) util_xds_v3.Watchdog {
-				return WatchdogFunc(func(ctx context.Context) {
->>>>>>> f6f58cf76 (fix(kuma-dp): prevent watchers from being cleaned up unexpectedly (#12886))
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop
 					atomic.AddInt32(&activeWatchdogs, -1)
