@@ -21,6 +21,11 @@ type staticReconciler struct {
 	changedResTypes chan map[core_model.ResourceType]struct{}
 }
 
+func (s staticReconciler) SupportedTypes() []core_model.ResourceType {
+	// TODO implement me
+	panic("implement me")
+}
+
 func (s staticReconciler) ForceVersion(node *envoy_core.Node, resourceType core_model.ResourceType) {
 }
 
