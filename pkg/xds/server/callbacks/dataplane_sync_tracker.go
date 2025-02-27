@@ -17,7 +17,7 @@ type NewDataplaneWatchdogFunc func(key core_model.ResourceKey) util_watchdog.Wat
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) DataplaneCallbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
-		watchdogs:            map[core_model.ResourceKey]context.CancelFunc{},
+		watchdogs:            map[core_model.ResourceKey]*watchdogState{},
 	}
 }
 
@@ -30,35 +30,50 @@ var _ DataplaneCallbacks = &dataplaneSyncTracker{}
 // Node info can be (but does not have to be) carried only on the first XDS request. That's why need streamsAssociation map
 // that indicates that the stream was already associated
 type dataplaneSyncTracker struct {
-	NoopDataplaneCallbacks
-
 	newDataplaneWatchdog NewDataplaneWatchdogFunc
 
 	stdsync.RWMutex // protects access to the fields below
-	watchdogs       map[core_model.ResourceKey]context.CancelFunc
+	watchdogs       map[core_model.ResourceKey]*watchdogState
+}
+type watchdogState struct {
+	cancelFunc context.CancelFunc
+	stopped    chan struct{}
 }
 
+//nolint:contextcheck // it's not clear how the parent go-control-plane context lives
 func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, _ core_xds.DataplaneMetadata) error {
 	// We use OnProxyConnected because there should be only one watchdog for given dataplane.
 	t.Lock()
 	defer t.Unlock()
 
 	stopCh := make(chan struct{})
-
-	t.watchdogs[dpKey] = func() {
-		dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-		close(stopCh)
+	state := &watchdogState{
+		cancelFunc: func() {
+			close(stopCh)
+		},
+		stopped: make(chan struct{}),
 	}
 	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-	go t.newDataplaneWatchdog(dpKey).Start(stopCh)
+	stoppedDone := state.stopped
+	go func() {
+		defer close(stoppedDone)
+		t.newDataplaneWatchdog(dpKey).Start(stopCh)
+	}()
+	t.watchdogs[dpKey] = state
 	return nil
 }
 
-func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, _ core_xds.StreamID, dpKey core_model.ResourceKey) {
-	t.Lock()
-	defer t.Unlock()
-	if cancelFn := t.watchdogs[dpKey]; cancelFn != nil {
-		cancelFn()
+func (t *dataplaneSyncTracker) OnProxyDisconnected(_ context.Context, streamID core_xds.StreamID, dpKey core_model.ResourceKey) {
+	t.RLock()
+	dpData := t.watchdogs[dpKey]
+	t.RUnlock()
+
+	if dpData != nil {
+		dpData.cancelFunc()
+		<-dpData.stopped
+		dataplaneSyncTrackerLog.V(1).Info("watchdog for a Dataplane stopped", "dpKey", dpKey, "streamID", streamID)
+		t.Lock()
+		defer t.Unlock()
+		delete(t.watchdogs, dpKey)
 	}
-	delete(t.watchdogs, dpKey)
 }
