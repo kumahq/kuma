@@ -44,13 +44,11 @@ func New(
 	if err != nil {
 		return nil, err
 	}
-	reconciler := reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes)
 	syncTracker, err := newSyncTracker(
 		log,
-		reconciler,
+		reconcile_v2.NewReconciler(hasher, cache, generator, rt.GetMode(), statsCallbacks, rt.Tenants(), providedTypes),
 		refresh,
 		rt.Metrics(),
-		providedTypes,
 		rt.EventBus(),
 		rt.Config().Experimental.KDSEventBasedWatchdog,
 		rt.Extensions(),
@@ -76,7 +74,6 @@ func newSyncTracker(
 	reconciler reconcile_v2.Reconciler,
 	refresh time.Duration,
 	metrics core_metrics.Metrics,
-	providedTypes []model.ResourceType,
 	eventBus events.EventBus,
 	experimentalWatchdogCfg kuma_cp.ExperimentalKDSEventBasedWatchdog,
 	extensions context.Context,
@@ -86,7 +83,7 @@ func newSyncTracker(
 		return nil, err
 	}
 	changedTypes := map[model.ResourceType]struct{}{}
-	for _, typ := range providedTypes {
+	for _, typ := range reconciler.SupportedTypes() {
 		changedTypes[typ] = struct{}{}
 	}
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_xds_v3.Watchdog, error) {
