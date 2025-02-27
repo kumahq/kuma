@@ -925,10 +925,18 @@ func DumpTempCerts(names ...string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(filepath.Join(path, "cert.pem"), []byte(fmt.Sprintf("---\n%s", cert)), os.ModePerm); err != nil {
+	if err := os.WriteFile(
+		filepath.Join(path, "cert.pem"),
+		[]byte(fmt.Sprintf("---\n%s", cert)),
+		os.ModePerm, // #nosec G306
+	); err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(filepath.Join(path, "key.pem"), []byte(fmt.Sprintf("---\n%s", key)), os.ModePerm); err != nil {
+	if err := os.WriteFile(
+		filepath.Join(path, "key.pem"),
+		[]byte(fmt.Sprintf("---\n%s", key)),
+		os.ModePerm, // #nosec G306
+	); err != nil {
 		return "", err
 	}
 	return path, nil
