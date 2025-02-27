@@ -42,6 +42,10 @@ type reconciler struct {
 	providedTypes []core_model.ResourceType
 }
 
+func (r *reconciler) SupportedTypes() []core_model.ResourceType {
+	return r.providedTypes
+}
+
 func (r *reconciler) Clear(node *envoy_core.Node) error {
 	id := r.hasher.ID(node)
 	r.lock.Lock()
