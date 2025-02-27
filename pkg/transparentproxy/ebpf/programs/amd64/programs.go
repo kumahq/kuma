@@ -1,4 +1,5 @@
-// go:build linux && amd64
+//go:build linux && amd64
+
 package amd64
 
 import "embed"

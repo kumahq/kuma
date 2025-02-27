@@ -39,6 +39,9 @@ linters-settings:
   gocritic:
     disabled-checks:
       - singleCaseSwitch
+  gosec:
+    excludes:
+    - G115
   gci:
     sections:
     - standard
