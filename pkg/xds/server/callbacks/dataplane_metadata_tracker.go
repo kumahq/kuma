@@ -27,11 +27,6 @@ func (d *DataplaneMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_
 	return d.metadataForDp[dpKey]
 }
 
-func (d *DataplaneMetadataTracker) OnProxyReconnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
-	d.storeMetadata(dpKey, metadata)
-	return nil
-}
-
 func (d *DataplaneMetadataTracker) OnProxyConnected(_ core_xds.StreamID, dpKey core_model.ResourceKey, _ context.Context, metadata core_xds.DataplaneMetadata) error {
 	d.storeMetadata(dpKey, metadata)
 	return nil
