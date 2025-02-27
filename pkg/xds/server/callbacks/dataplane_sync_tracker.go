@@ -46,29 +46,21 @@ func (t *dataplaneSyncTracker) OnProxyConnected(streamID core_xds.StreamID, dpKe
 	t.Lock()
 	defer t.Unlock()
 
-<<<<<<< HEAD
 	stopCh := make(chan struct{})
 
-	t.watchdogs[dpKey] = func() {
-		dataplaneSyncTrackerLog.V(1).Info("stopping Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-		close(stopCh)
-	}
-	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
-	go t.newDataplaneWatchdog(dpKey).Start(stopCh)
-=======
-	ctx, cancel := context.WithCancel(context.Background())
 	state := &watchdogState{
-		cancelFunc: cancel,
-		stopped:    make(chan struct{}),
+		cancelFunc: func() {
+			close(stopCh)
+		},
+		stopped: make(chan struct{}),
 	}
 	dataplaneSyncTrackerLog.V(1).Info("starting Watchdog for a Dataplane", "dpKey", dpKey, "streamID", streamID)
 	stoppedDone := state.stopped
 	go func() {
 		defer close(stoppedDone)
-		t.newDataplaneWatchdog(dpKey).Start(ctx)
+		t.newDataplaneWatchdog(dpKey).Start(stopCh)
 	}()
 	t.watchdogs[dpKey] = state
->>>>>>> f6f58cf76 (fix(kuma-dp): prevent watchers from being cleaned up unexpectedly (#12886))
 	return nil
 }
 
