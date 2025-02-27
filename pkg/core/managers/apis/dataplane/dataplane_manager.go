@@ -2,6 +2,7 @@ package dataplane
 
 import (
 	"context"
+	"maps"
 
 	"github.com/pkg/errors"
 
@@ -55,10 +56,15 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
+	existingLabels := map[string]string{}
+	maps.Copy(existingLabels, opts.Labels)
+	if resource.GetMeta() != nil && resource.GetMeta().GetLabels() != nil {
+		maps.Copy(existingLabels, resource.GetMeta().GetLabels())
+	}
 	labels, err := core_model.ComputeLabels(
 		resource.Descriptor(),
 		resource.GetSpec(),
-		opts.Labels,
+		existingLabels,
 		core_model.UnsetNamespace,
 		opts.Mesh,
 		m.mode,

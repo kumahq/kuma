@@ -124,6 +124,7 @@ func (d *DataplaneLifecycle) register(
 		if err := d.validateUpsert(ctx, md.Resource); err != nil {
 			return errors.Wrap(err, "you are trying to override existing proxy to which you don't have an access.")
 		}
+		existing.SetMeta(md.Resource.GetMeta())
 		return existing.SetSpec(md.Resource.GetSpec())
 	})
 	if err != nil {
