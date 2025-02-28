@@ -2,8 +2,6 @@ package dataplane
 
 import (
 	"context"
-	"maps"
-
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -56,15 +54,10 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 	m.setHealth(dp)
-	existingLabels := map[string]string{}
-	maps.Copy(existingLabels, opts.Labels)
-	if resource.GetMeta() != nil && resource.GetMeta().GetLabels() != nil {
-		maps.Copy(existingLabels, resource.GetMeta().GetLabels())
-	}
 	labels, err := core_model.ComputeLabels(
 		resource.Descriptor(),
 		resource.GetSpec(),
-		existingLabels,
+		opts.Labels,
 		core_model.UnsetNamespace,
 		opts.Mesh,
 		m.mode,

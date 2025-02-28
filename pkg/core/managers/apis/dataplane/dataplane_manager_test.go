@@ -13,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("Dataplane Manager", func() {
@@ -26,12 +25,6 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// given
 		input := core_mesh.DataplaneResource{
-			Meta: &test_model.ResourceMeta{
-				Name: "dp1",
-				Labels: map[string]string{
-					"app": "test-app",
-				},
-			},
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
@@ -61,14 +54,13 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 
 		Expect(actual.Meta.GetLabels()).To(And(
-			HaveKeyWithValue("app", "test-app"),
 			HaveKeyWithValue(mesh_proto.ZoneTag, "zone-1"),
 			HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"),
 			HaveKeyWithValue(mesh_proto.EnvTag, "universal"),
 			HaveKeyWithValue(mesh_proto.MeshTag, "default")))
 	})
 
-	It("should update a dataplane with inbound zone tag and labels", func() {
+	It("should update a dataplane with inbound zone tag", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1", config_core.Zone, false, "", dataplane.NewMembershipValidator())
@@ -93,7 +85,7 @@ var _ = Describe("Dataplane Manager", func() {
 			},
 		}
 
-		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"), store.CreateWithLabels(map[string]string{"app": "test-app"}))
+		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := core_mesh.NewDataplaneResource()
@@ -105,7 +97,6 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// when
 		input.Spec.Networking.Address = "10.0.0.2"
-		input.Meta.GetLabels()["new-label"] = "extra"
 		err = manager.Update(context.Background(), &input)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -117,8 +108,6 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 
 		Expect(actual.Meta.GetLabels()).To(And(
-			HaveKeyWithValue("app", "test-app"),
-			HaveKeyWithValue("new-label", "extra"),
 			HaveKeyWithValue(mesh_proto.ZoneTag, "zone-1"),
 			HaveKeyWithValue(mesh_proto.ResourceOriginLabel, "zone"),
 			HaveKeyWithValue(mesh_proto.EnvTag, "universal"),
