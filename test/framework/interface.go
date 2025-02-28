@@ -95,6 +95,7 @@ type appDeploymentOptions struct {
 	name                  string
 	appYaml               string
 	appArgs               []string
+	appLabel              string
 	token                 string
 	transparent           *bool
 	builtindns            *bool // true by default
@@ -421,6 +422,12 @@ func WithArgs(appArgs []string) AppDeploymentOption {
 func WithServiceName(name string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.serviceName = name
+	})
+}
+
+func WithAppLabel(app string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appLabel = app
 	})
 }
 
