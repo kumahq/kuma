@@ -8,22 +8,23 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("HttpConnectionManager Configurers", func() {
 	type Opt = FilterChainBuilderOpt
 
 	type testCase struct {
-		opts            []Opt
-		expected        string
-		internalAddress string
+		opts         []Opt
+		hcmAnnotator v3.HttpConnectionManagerConfigurerAnnotateFunc
+		expected     string
 	}
 
 	Context("V3", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				opts := append([]Opt{
-					HttpConnectionManager("test", false),
+					HttpConnectionManager("test", false, given.hcmAnnotator),
 				}, given.opts...)
 
 				// when
@@ -88,9 +89,12 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 			}),
 
 			Entry("internal address config", testCase{
-				opts: []Opt{InternalAddressPools([]core_xds.InternalAddress{
-					{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
-				})},
+				hcmAnnotator: func(configurer *v3.HttpConnectionManagerConfigurer) {
+					configurer.InternalAddresses = []core_xds.InternalAddress{
+						{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
+					}
+				},
+				opts: []Opt{},
 				expected: `
           filters:
           - name: envoy.filters.network.http_connection_manager

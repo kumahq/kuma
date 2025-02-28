@@ -1,8 +1,11 @@
 package v3
 
 import (
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -12,6 +15,7 @@ type HttpConnectionManagerConfigurer struct {
 	StatsName                string
 	ForwardClientCertDetails bool
 	NormalizePath            bool
+	InternalAddresses        []core_xds.InternalAddress
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -33,6 +37,22 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 		config.NormalizePath = util_proto.Bool(true)
 	}
 
+	if len(c.InternalAddresses) > 0 {
+		var cidrRanges []*envoy_config_core.CidrRange
+
+		for _, internalAddressPool := range c.InternalAddresses {
+			cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
+				AddressPrefix: internalAddressPool.AddressPrefix,
+				PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},
+			})
+		}
+
+		config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
+			UnixSockets: false,
+			CidrRanges:  cidrRanges,
+		}
+	}
+
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
 	if err != nil {
 		return err
@@ -46,3 +66,5 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 	})
 	return nil
 }
+
+type HttpConnectionManagerConfigurerAnnotateFunc func(*HttpConnectionManagerConfigurer)

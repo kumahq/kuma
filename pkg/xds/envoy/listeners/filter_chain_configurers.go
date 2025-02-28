@@ -5,8 +5,6 @@ import (
 	envoy_extensions_compression_gzip_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/compression/gzip/compressor/v3"
 	envoy_extensions_filters_http_compressor_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/compressor/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
-
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -87,11 +85,18 @@ func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBu
 	})
 }
 
-func HttpConnectionManager(statsName string, forwardClientCertDetails bool) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.HttpConnectionManagerConfigurer{
+func HttpConnectionManager(statsName string, forwardClientCertDetails bool, annotations ...v3.HttpConnectionManagerConfigurerAnnotateFunc) FilterChainBuilderOpt {
+	hcmConfigurer := &v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,
 		ForwardClientCertDetails: forwardClientCertDetails,
-	})
+	}
+
+	for _, annotateFunc := range annotations {
+		if annotateFunc != nil {
+			annotateFunc(hcmConfigurer)
+		}
+	}
+	return AddFilterChainConfigurer(hcmConfigurer)
 }
 
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {
@@ -341,29 +346,4 @@ func DefaultCompressorFilter() FilterChainBuilderOpt {
 			hcm.HttpFilters = append(hcm.HttpFilters, gzip)
 		}),
 	)
-}
-
-// InternalAddressPools set the address list containing IP address pools which are considered internal
-func InternalAddressPools(addrPools []core_xds.InternalAddress) FilterChainBuilderOpt {
-	var setupHCM func(hcm *envoy_hcm.HttpConnectionManager)
-	if len(addrPools) > 0 {
-		setupHCM = func(hcm *envoy_hcm.HttpConnectionManager) {
-			var cidrRanges []*envoy_config_core.CidrRange
-
-			for _, internalAddressPool := range addrPools {
-				cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
-					AddressPrefix: internalAddressPool.AddressPrefix,
-					PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},
-				})
-			}
-
-			hcm.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
-				UnixSockets: false,
-				CidrRanges:  cidrRanges,
-			}
-		}
-		return AddFilterChainConfigurer(v3.HttpConnectionManagerMustConfigureFunc(setupHCM))
-	}
-
-	return nil
 }
