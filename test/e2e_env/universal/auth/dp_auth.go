@@ -64,6 +64,12 @@ func DpAuth() {
 		// then
 		Eventually(func() (string, error) {
 			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
-		}, "30s", "1s").ShouldNot(And(ContainSubstring("192.168.0.2"), ContainSubstring("not-test-server")))
+		}, "30s", "1s").Should(
+			And(
+				Not(ContainSubstring("192.168.0.2")),
+				Not(ContainSubstring("not-test-server")),
+				ContainSubstring("test-server"),
+			),
+		)
 	})
 }
