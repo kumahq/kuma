@@ -1,6 +1,7 @@
 package listeners_test
 
 import (
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -13,8 +14,9 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
 	type Opt = FilterChainBuilderOpt
 
 	type testCase struct {
-		opts     []Opt
-		expected string
+		opts            []Opt
+		expected        string
+		internalAddress string
 	}
 
 	Context("V3", func() {
@@ -83,6 +85,26 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: test
               stripAnyHostPort: true`,
+			}),
+
+			Entry("internal address config", testCase{
+				opts: []Opt{InternalAddressPools([]core_xds.InternalAddress{
+					{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
+				})},
+				expected: `
+          filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              statPrefix: test
+              internalAddressConfig:
+                  cidrRanges:
+                      - addressPrefix: 10.17.0.0
+                        prefixLen: 16`,
 			}),
 		)
 	})
