@@ -127,6 +127,7 @@ type ConflictRetry struct {
 type UpsertOpts struct {
 	ConflictRetry ConflictRetry
 	Transactions  store.Transactions
+	Labels        map[string]string
 }
 
 type UpsertFunc func(opts *UpsertOpts)
@@ -155,6 +156,12 @@ func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
 	return opts
 }
 
+func UpsertWithLabels(labels map[string]string) UpsertFunc {
+	return func(opts *UpsertOpts) {
+		opts.Labels = labels
+	}
+}
+
 var ErrSkipUpsert = errors.New("don't do upsert")
 
 func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource) error, fs ...UpsertFunc) error {
@@ -177,9 +184,9 @@ func Upsert(ctx context.Context, manager ResourceManager, key model.ResourceKey,
 				return err
 			}
 			if create {
-				return manager.Create(ctx, resource, store.CreateBy(key))
+				return manager.Create(ctx, resource, store.CreateBy(key), store.CreateWithLabels(opts.Labels))
 			} else {
-				return manager.Update(ctx, resource)
+				return manager.Update(ctx, resource, store.UpdateWithLabels(opts.Labels))
 			}
 		})
 	}

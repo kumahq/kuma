@@ -73,6 +73,9 @@ var _ = Describe("Dataplane Lifecycle", func() {
                                   "type": "Dataplane",
                                   "mesh": "default",
                                   "name": "backend-01",
+                                  "labels": {
+                                    "app": "backend",
+                                  },
                                   "networking": {
                                     "address": "127.0.0.1",
                                     "inbound": [
@@ -106,8 +109,10 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		// then dp is created
 		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
+		dp := core_mesh.NewDataplaneResource()
+		err = resManager.Get(context.Background(), dp, core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
+		Expect(dp.GetMeta().GetLabels()).To(HaveKeyWithValue("app", "backend"))
 
 		// when
 		callbacks.OnStreamClosed(streamId, node)

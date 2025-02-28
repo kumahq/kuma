@@ -125,7 +125,7 @@ func (d *DataplaneLifecycle) register(
 			return errors.Wrap(err, "you are trying to override existing proxy to which you don't have an access.")
 		}
 		return existing.SetSpec(md.Resource.GetSpec())
-	})
+	}, manager.UpsertWithLabels(md.Resource.GetMeta().GetLabels()))
 	if err != nil {
 		log.Info("cannot register proxy", "reason", err.Error())
 		if !loaded {
