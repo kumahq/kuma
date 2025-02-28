@@ -123,11 +123,12 @@ Maintainers and reviewers can leave by just submitting a PR to the repository's 
 
 Kuma is a CNCF Sandbox project. As such, it is subject to the CNCF governance model. A new maintainer should update the corresponding CNCF informations:
 
-- Update [CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv)
-- Apply for CNCF [Service Desk](http://servicedesk.cncf.io/) account.
-- Join [cncf-kuma-maintainers](https://lists.cncf.io/groups) mailing list group.
+- Update [CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv) like the [PR](https://github.com/cncf/foundation/pull/906)
+- Follow the [CNCF ServiceDesk README](https://github.com/cncf/servicedesk) to send an email to apply for **Service Desk** and **Maintainer's email list group**
+  * Apply for CNCF [Service Desk](http://servicedesk.cncf.io/) account.
+  * Join [cncf-kuma-maintainers](https://lists.cncf.io/groups) mailing list group.
 
-You can follow the [Steps](https://github.com/kumahq/kuma/issues/11920#issuecomment-2510493702) to update the upper informations.
+The [Steps](https://github.com/kumahq/kuma/issues/11920#issuecomment-2510493702) is a record that we've gone through before.
 
 ## Organization members
 
