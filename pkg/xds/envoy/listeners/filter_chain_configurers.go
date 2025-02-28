@@ -343,7 +343,7 @@ func DefaultCompressorFilter() FilterChainBuilderOpt {
 	)
 }
 
-// InternalAddressPools set the address list containing items which are considered internal
+// InternalAddressPools set the address list containing IP address pools which are considered internal
 func InternalAddressPools(addrPools []core_xds.InternalAddress) FilterChainBuilderOpt {
 	var setupHCM func(hcm *envoy_hcm.HttpConnectionManager)
 	if len(addrPools) > 0 {

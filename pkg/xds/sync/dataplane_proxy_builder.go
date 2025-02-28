@@ -28,9 +28,10 @@ import (
 )
 
 type DataplaneProxyBuilder struct {
-	Zone          string
-	APIVersion    core_xds.APIVersion
-	IncludeShadow bool
+	Zone              string
+	APIVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
+	IncludeShadow     bool
 }
 
 func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.ResourceKey, meta *core_xds.DataplaneMetadata, meshContext xds_context.MeshContext) (*core_xds.Proxy, error) {
@@ -60,6 +61,7 @@ func (p *DataplaneProxyBuilder) Build(ctx context.Context, key core_model.Resour
 	proxy := &core_xds.Proxy{
 		Id:                core_xds.FromResourceKey(key),
 		APIVersion:        p.APIVersion,
+		InternalAddresses: p.InternalAddresses,
 		Dataplane:         dp,
 		Outbounds:         outbounds,
 		Routing:           *routing,
@@ -220,4 +222,18 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 		matchedPolicies.Dynamic[res.Type] = res
 	}
 	return matchedPolicies, nil
+}
+
+func cidrListToInternalAddresses(cidrs []string) []core_xds.InternalAddress {
+	var internalAddresses []core_xds.InternalAddress
+	for _, cidr := range cidrs {
+		ip, ipNet, _ := net.ParseCIDR(cidr)
+
+		prefixLen, _ := ipNet.Mask.Size()
+		internalAddresses = append(internalAddresses, core_xds.InternalAddress{
+			AddressPrefix: ip.String(),
+			PrefixLen:     uint32(prefixLen),
+		})
+	}
+	return internalAddresses
 }

@@ -16,8 +16,9 @@ func DefaultDataplaneProxyBuilder(
 	apiVersion core_xds.APIVersion,
 ) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		Zone:       config.Multizone.Zone.Name,
-		APIVersion: apiVersion,
+		Zone:              config.Multizone.Zone.Name,
+		APIVersion:        apiVersion,
+		InternalAddresses: cidrListToInternalAddresses(config.IPAM.KnownInternalCIDRs),
 	}
 }
 
@@ -31,13 +32,15 @@ func DefaultIngressProxyBuilder(
 		apiVersion:        apiVersion,
 		zone:              rt.Config().Multizone.Zone.Name,
 		ingressTagFilters: rt.Config().Experimental.IngressTagFilters,
+		InternalAddresses: cidrListToInternalAddresses(rt.Config().IPAM.KnownInternalCIDRs),
 	}
 }
 
 func DefaultEgressProxyBuilder(rt core_runtime.Runtime, apiVersion core_xds.APIVersion) *EgressProxyBuilder {
 	return &EgressProxyBuilder{
-		apiVersion: apiVersion,
-		zone:       rt.Config().Multizone.Zone.Name,
+		apiVersion:        apiVersion,
+		zone:              rt.Config().Multizone.Zone.Name,
+		InternalAddresses: cidrListToInternalAddresses(rt.Config().IPAM.KnownInternalCIDRs),
 	}
 }
 
