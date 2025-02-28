@@ -8,8 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 var Cluster *framework.UniversalCluster
@@ -58,27 +57,11 @@ func RestoreState(bytes []byte) {
 	Cluster.SetCp(cp)
 }
 
-func ExpectCpToNotPanic() {
-	logs, err := Cluster.GetKumaCPLogs()
-	if err != nil {
-		framework.Logf("could not retrieve cp logs")
-	} else {
-		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
-	}
-}
-
 func SynchronizedAfterSuite() {
-	ExpectCpToNotPanic()
-	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
+	framework.ControlPlaneAssertions(Cluster)
 	Expect(Cluster.DismissCluster()).To(Succeed())
 }
 
-func AfterSuite(report ginkgo.Report) {
-	if framework.Config.CleanupLogsOnSuccess {
-		universal_logs.CleanupIfSuccess(framework.Config.UniversalE2ELogsPath, report)
-	}
-	if !report.SuiteSucceeded {
-		framework.Logf("Please see full CP logs by downloading the debug artifacts")
-		framework.DebugUniversalCPLogs(Cluster)
-	}
+func AfterSuite(r ginkgo.Report) {
+	report.DumpReport(r)
 }

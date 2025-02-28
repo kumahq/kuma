@@ -11,13 +11,13 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/test/matchers"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/pkg/util/files"
 )
 
 var _ = Describe("Metrics format mapper", func() {
 	DescribeTable("should convert from Prometheus metrics to OpenTelemetry backend", func() {
 		// given
-		name := utils.TestCaseName(GinkgoT())
+		name := files.ToValidUnixFilename(CurrentSpecReport().FullText())
 		input, err := os.Open(path.Join("testdata", "otel", name+".in"))
 		Expect(err).ToNot(HaveOccurred())
 

@@ -34,7 +34,6 @@ require (
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kennygrant/sanitize v1.2.4
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/miekg/dns v1.1.63
 	github.com/moby/sys/mountinfo v0.7.2

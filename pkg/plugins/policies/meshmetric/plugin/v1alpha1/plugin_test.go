@@ -18,10 +18,10 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/pkg/util/files"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -45,7 +45,7 @@ var _ = Describe("MeshMetric", func() {
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
 
-		name := utils.TestCaseName(GinkgoT())
+		name := files.ToValidUnixFilename(CurrentSpecReport().FullText())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
