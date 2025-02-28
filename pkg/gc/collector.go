@@ -57,14 +57,14 @@ func NewCollector(
 		newTicker:          newTicker,
 		metric:             metric,
 		resourcesToCleanup: resourcesToCleanup,
-		gcLog:              core.Log.WithName(fmt.Sprintf("%s-gc", metricsName)),
+		log:                core.Log.WithName(fmt.Sprintf("%s-gc", metricsName)),
 	}, nil
 }
 
 func (d *collector) Start(stop <-chan struct{}) error {
 	ticker := d.newTicker()
 	defer ticker.Stop()
-	d.gcLog.Info("started")
+	d.log.Info("started")
 	ctx := user.Ctx(context.Background(), user.ControlPlane)
 	for {
 		select {
@@ -72,13 +72,13 @@ func (d *collector) Start(stop <-chan struct{}) error {
 			start := core.Now()
 			for insightType, resourceType := range d.resourcesToCleanup {
 				if err := d.cleanup(ctx, now, insightType, resourceType); err != nil {
-					d.gcLog.Error(err, "unable to cleanup")
+					d.log.Error(err, "unable to cleanup")
 					continue
 				}
 			}
 			d.metric.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case <-stop:
-			d.gcLog.Info("stopped")
+			d.log.Info("stopped")
 			return nil
 		}
 	}
@@ -97,7 +97,7 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 		}
 		if s := insight.GetLastSubscription().(*mesh_proto.DiscoverySubscription); s != nil {
 			if err := s.GetDisconnectTime().CheckValid(); err != nil {
-				d.gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), insightType, item.GetMeta().GetName())
+				d.log.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime(), "mesh", item.GetMeta().GetMesh(), insightType, item.GetMeta().GetName())
 				continue
 			}
 			age := now.Sub(s.GetDisconnectTime().AsTime())
@@ -107,10 +107,10 @@ func (d *collector) cleanup(ctx context.Context, now time.Time, insightType Insi
 		}
 	}
 	for rk, age := range onDelete {
-		d.gcLog.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
+		d.log.Info(fmt.Sprintf("deleting %s which is offline for %v", resourceType, age), "name", rk.Name, "mesh", rk.Mesh)
 		resource := registry.Global().MustNewObject(core_model.ResourceType(resourceType))
 		if err := d.rm.Delete(ctx, resource, store.DeleteBy(rk)); err != nil {
-			d.gcLog.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)
+			d.log.Error(err, "unable to delete", "resourceType", resourceType, "name", rk.Name, "mesh", rk.Mesh)
 			continue
 		}
 	}
