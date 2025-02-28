@@ -58,12 +58,12 @@ func DpAuth() {
 		Expect(universal.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
 
 		// when
-		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"), WithAppLabel("test-server"))(universal.Cluster)
+		err := TestServerUniversal("dp-01", meshName, WithServiceName("test-server"), WithAppLabel("test-server"))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Eventually(func() (string, error) {
-			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
+			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", meshName, "-oyaml")
 		}, "30s", "1s").Should(
 			And(
 				Not(ContainSubstring("192.168.0.2")),
