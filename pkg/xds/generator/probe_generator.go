@@ -2,6 +2,7 @@ package generator
 
 import (
 	"context"
+	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -67,7 +68,9 @@ func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet,
 	probeListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, model.SocketAddressProtocolTCP).
 		WithOverwriteName(listenerName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
-			Configure(envoy_listeners.HttpConnectionManager(listenerName, false)).
+			Configure(envoy_listeners.HttpConnectionManager(listenerName, false, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
+				configurer.InternalAddresses = proxy.InternalAddresses
+			})).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, routeConfigurationName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).

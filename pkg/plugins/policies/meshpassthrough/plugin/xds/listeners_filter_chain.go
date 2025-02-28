@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"net/http"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
@@ -17,13 +18,14 @@ import (
 const NoMatchMsg = "This response comes from Kuma Sidecar. No routes matched this domain - check configuration of your MeshPassthrough policy.\n"
 
 type FilterChainConfigurer struct {
-	APIVersion core_xds.APIVersion
-	Protocol   core_mesh.Protocol
-	Port       uint32
-	MatchType  MatchType
-	MatchValue string
-	Routes     []Route // should be set only for http and domains/wildcard
-	IsIPv6     bool
+	APIVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
+	Protocol          core_mesh.Protocol
+	Port              uint32
+	MatchType         MatchType
+	MatchValue        string
+	Routes            []Route // should be set only for http and domains/wildcard
+	IsIPv6            bool
 }
 
 func (c FilterChainConfigurer) Configure(listener *envoy_listener.Listener, clustersAccumulator map[string]core_mesh.Protocol) error {
@@ -126,7 +128,9 @@ func (c FilterChainConfigurer) configureHttpFilterChain(
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, filterChainName).
 		Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
 		Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).
-		Configure(xds_listeners.HttpConnectionManager(filterChainName, false)).
+		Configure(xds_listeners.HttpConnectionManager(filterChainName, false, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
+			configurer.InternalAddresses = c.InternalAddresses
+		})).
 		Configure(xds_listeners.HttpStaticRoute(routeBuilder))
 	c.configureAddressMatch(filterChainBuilder)
 	if c.Port != 0 {
