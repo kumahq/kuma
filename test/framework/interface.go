@@ -567,7 +567,8 @@ type Cluster interface {
 	// Generic
 	DeployKuma(mode core.CpMode, opts ...KumaDeploymentOption) error
 	GetKuma() ControlPlane
-	GetKumaCPLogs() (string, error)
+	// GetKumaCPLogs returns a set of logs (depending on env it can be stdout, stderr or current and previous)...
+	GetKumaCPLogs() map[string]string
 	VerifyKuma() error
 	DeleteKuma() error
 	GetKumactlOptions() *kumactl.KumactlOptions

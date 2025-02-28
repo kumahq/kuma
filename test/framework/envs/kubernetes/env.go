@@ -3,13 +3,12 @@ package kubernetes
 import (
 	"encoding/json"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 var Cluster *framework.K8sCluster
@@ -87,41 +86,11 @@ func RestoreState(bytes []byte) {
 	Expect(Cluster.AddPortForward(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 }
 
-func PrintCPLogsOnFailure(report ginkgo.Report) {
-	if !report.SuiteSucceeded {
-		logs, err := Cluster.GetKumaCPLogs()
-		if err != nil {
-			framework.Logf("could not retrieve cp logs")
-		} else {
-			framework.Logf(logs)
-		}
-	}
-}
-
-func PrintKubeState(report ginkgo.Report) {
-	if !report.SuiteSucceeded {
-		// just running it, prints the logs
-		if err := k8s.RunKubectlE(Cluster.GetTesting(), Cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
-			framework.Logf("could not retrieve kube pods")
-		}
-	}
-}
-
-func ExpectCpToNotPanic() {
-	logs, err := Cluster.GetKumaCPLogs()
-	if err != nil {
-		framework.Logf("could not retrieve cp logs")
-	} else {
-		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
-	}
-}
-
 func SynchronizedAfterSuite() {
-	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
-	ExpectCpToNotPanic()
+	framework.ControlPlaneAssertions(Cluster)
+	framework.DebugCPLogs(Cluster)
 }
 
-func AfterSuite(report ginkgo.Report) {
-	PrintCPLogsOnFailure(report)
-	PrintKubeState(report)
+func AfterSuite(r ginkgo.Report) {
+	report.DumpReport(r)
 }
