@@ -32,7 +32,7 @@ type collector struct {
 	newTicker          func() *time.Ticker
 	metric             prometheus.Summary
 	resourcesToCleanup map[InsightType]ResourceType
-	gcLog              logr.Logger
+	log                logr.Logger
 }
 
 func NewCollector(
