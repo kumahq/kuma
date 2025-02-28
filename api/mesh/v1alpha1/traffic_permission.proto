@@ -13,7 +13,7 @@ message TrafficPermission {
   option (kuma.mesh.resource).name = "TrafficPermissionResource";
   option (kuma.mesh.resource).type = "TrafficPermission";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "traffic-permission";
   option (kuma.mesh.resource).allow_to_inspect = true;
 

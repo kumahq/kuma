@@ -16,7 +16,7 @@ message HealthCheck {
   option (kuma.mesh.resource).name = "HealthCheckResource";
   option (kuma.mesh.resource).type = "HealthCheck";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "health-check";
   option (kuma.mesh.resource).allow_to_inspect = true;
 

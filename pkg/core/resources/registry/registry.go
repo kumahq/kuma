@@ -90,6 +90,17 @@ func (t *typeRegistry) RegisterType(res model.ResourceTypeDescriptor) error {
 	if res.Resource.GetSpec() == nil {
 		return errors.New("spec in the object cannot be nil")
 	}
+
+	// Some logic validations for the resource type
+	if res.KDSFlags == model.KDSDisabledFlag {
+		return fmt.Errorf("KDS flag must be set for ResourceType %q", res.Name)
+	}
+	if res.KDSFlags.Has(model.SyncedAcrossZonesFlag) && !res.KDSFlags.Has(model.ProvidedByZoneFlag) {
+		return fmt.Errorf("ResourceType %q must be provided by zone if it is synced across zones", res.Name)
+	}
+	if !res.KDSFlags.Has(model.ProvidedByZoneFlag) && !res.KDSFlags.Has(model.ProvidedByGlobalFlag) {
+		return fmt.Errorf("ResourceType %q must be provided by zone or global", res.Name)
+	}
 	if previous, ok := t.descriptors[res.Name]; ok {
 		return errors.Errorf("duplicate registration of ResourceType under name %q: previous=%#v new=%#v", res.Name, previous, reflect.TypeOf(res.Resource).Elem().String())
 	}

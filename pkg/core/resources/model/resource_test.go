@@ -35,6 +35,19 @@ var _ = Describe("Resource", func() {
 		Expect(reflect.TypeOf(obj.GetSpec()).String()).To(Equal("*v1alpha1.MeshAccessLog"))
 		Expect(reflect.ValueOf(obj.GetSpec()).IsNil()).To(BeFalse())
 	})
+
+	DescribeTable("KDS flags",
+		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) {
+			Expect(flags.Has(against)).To(Equal(expected))
+		},
+		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) string {
+			return fmt.Sprintf("%v.Has(%v) = %v", flags, against, expected)
+		},
+		Entry(nil, core_model.ProvidedByGlobalFlag, core_model.GlobalToZonesFlag, false),
+		Entry(nil, core_model.GlobalToZonesFlag, core_model.ProvidedByGlobalFlag, true),
+		Entry(nil, core_model.GlobalToZonesFlag, core_model.ZoneToGlobalFlag, false),
+		Entry(nil, core_model.KDSDisabledFlag, core_model.ProvidedByGlobalFlag, false),
+	)
 })
 
 var _ = Describe("IsReferenced", func() {

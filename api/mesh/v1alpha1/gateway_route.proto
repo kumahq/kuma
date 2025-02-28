@@ -16,7 +16,7 @@ message MeshGatewayRoute {
   option (kuma.mesh.resource).type = "MeshGatewayRoute";
   option (kuma.mesh.resource).package = "mesh";
 
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "meshgatewayroute";
 
   // Backend selects a target for HTTP request forwarding.

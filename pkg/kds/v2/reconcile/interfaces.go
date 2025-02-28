@@ -16,6 +16,9 @@ type Reconciler interface {
 	// Reconcile reconciles state of node given changed resource types.
 	// Returns error and bool which is true if any resource was changed.
 	Reconcile(context.Context, *envoy_core.Node, map[model.ResourceType]struct{}, logr.Logger) (error, bool)
+
+	// SupportedTypes returns a list of resource types that are supported by this Reconciler.
+	SupportedTypes() []model.ResourceType
 	// Clear remove local state of node
 	Clear(*envoy_core.Node) error
 }

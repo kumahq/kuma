@@ -13,7 +13,7 @@ message VirtualOutbound {
   option (kuma.mesh.resource).name = "VirtualOutboundResource";
   option (kuma.mesh.resource).type = "VirtualOutbound";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "virtual-outbound";
 
   // List of selectors to match dataplanes that this policy applies to

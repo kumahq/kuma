@@ -13,7 +13,7 @@ message TrafficLog {
   option (kuma.mesh.resource).name = "TrafficLogResource";
   option (kuma.mesh.resource).type = "TrafficLog";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "traffic-log";
   option (kuma.mesh.resource).allow_to_inspect = true;
 
