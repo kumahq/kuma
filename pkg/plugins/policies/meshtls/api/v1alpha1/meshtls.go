@@ -8,7 +8,7 @@ import (
 
 // MeshTLS
 // +kuma:policy:singular_display_name=Mesh TLS
-// +kuma:policy:interpret_from_entries_as_rules=true
+// +kuma:policy:is_from_as_rules=true
 type MeshTLS struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource

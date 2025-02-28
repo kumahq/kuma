@@ -167,7 +167,7 @@ func newPolicyConfig(pkg, name string, markers map[string]string, fields map[str
 	if v, ok := parseBool(markers, "kuma:policy:is_referenceable_in_to"); ok {
 		res.IsReferenceableInTo = v
 	}
-	if v, ok := parseBool(markers, "kuma:policy:interpret_from_entries_as_rules"); ok {
+	if v, ok := parseBool(markers, "kuma:policy:is_from_as_rules"); ok {
 		res.IsFromAsRules = v
 	}
 	if v, ok := markers["kuma:policy:kds_flags"]; ok {
