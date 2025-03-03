@@ -49,8 +49,6 @@ type Context struct {
 	GlobalProvidedFilter  reconcile_v2.ResourceFilter
 	ZoneProvidedFilter    reconcile_v2.ResourceFilter
 	GlobalServerFiltersV2 []mux.FilterV2
-	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
-	Configs map[string]bool
 
 	GlobalResourceMapper reconcile_v2.ResourceMapper
 	ZoneResourceMapper   reconcile_v2.ResourceMapper
