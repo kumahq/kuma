@@ -61,7 +61,7 @@ spec:
 
 		// then we check that no meshService with this name gets created
 		Consistently(func(g Gomega) {
-			names, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("mesh-services", meshName)
+			names, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("meshservices", meshName)
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(names).ToNot(ContainElement("externalname-service"))
 		}, "10s", "1s").Should(Succeed())
