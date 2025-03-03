@@ -25,6 +25,11 @@ type zoneTenant struct {
 	tenantID string
 }
 
+type streamConnStart struct {
+	id             int64
+	connectionTime time.Time
+}
+
 type ZoneWatch struct {
 	log        logr.Logger
 	poll       time.Duration
@@ -33,7 +38,7 @@ type ZoneWatch struct {
 	extensions context.Context
 	rm         manager.ReadOnlyResourceManager
 	summary    prometheus.Summary
-	zones      map[zoneTenant]time.Time
+	zones      map[zoneTenant]streamConnStart
 }
 
 func NewZoneWatch(
@@ -61,7 +66,7 @@ func NewZoneWatch(
 		extensions: extensions,
 		rm:         rm,
 		summary:    summary,
-		zones:      map[zoneTenant]time.Time{},
+		zones:      map[zoneTenant]streamConnStart{},
 	}, nil
 }
 
@@ -101,8 +106,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				// lastSeen time because we know the zone was connected at that
 				// point at least
 				lastHealthCheck := zoneInsight.Spec.GetHealthCheck().GetTime().AsTime()
-				if lastStreamOpened.After(lastHealthCheck) {
-					lastHealthCheck = lastStreamOpened
+				if lastStreamOpened.connectionTime.After(lastHealthCheck) {
+					lastHealthCheck = lastStreamOpened.connectionTime
 				}
 				if time.Since(lastHealthCheck) > zw.timeout {
 					zw.bus.Send(service.ZoneWentOffline{
@@ -115,6 +120,17 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			zw.summary.Observe(float64(core.Now().Sub(start).Milliseconds()))
 		case e := <-connectionWatch.Recv():
 			newStream := e.(service.ZoneOpenedStream)
+			// Disconnect the old stream.
+			// There should not be two streams for the same zone, as only the leader can connect to the global control plane.
+			// Instead, we generate a unique StreamID for each stream. If we detect a second control plane 
+			// connecting to the same zone with a different StreamID, we cancel the previous stream.
+			if val, found := zw.zones[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}]; found && val.id != newStream.StreamID {
+				zw.bus.Send(service.StreamCancelled{
+					Zone:     newStream.Zone,
+					TenantID: newStream.TenantID,
+					StreamID: val.id,
+				})
+			}
 
 			// We keep a record of the time we open a stream.
 			// This is to prevent the zone from timing out on a poll
@@ -129,7 +145,10 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			zw.zones[zoneTenant{
 				tenantID: newStream.TenantID,
 				zone:     newStream.Zone,
-			}] = core.Now()
+			}] = streamConnStart{
+				id:             newStream.StreamID,
+				connectionTime: time.Now(),
+			}
 		case <-stop:
 			return nil
 		}
