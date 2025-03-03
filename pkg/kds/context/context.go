@@ -270,7 +270,6 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) {
 				return false
 			}
-		case system.SecretType:
 		}
 
 		isGlobal := core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())

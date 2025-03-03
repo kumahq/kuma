@@ -281,7 +281,7 @@ func (d ResourceTypeDescriptor) IsInsight() bool {
 
 func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool {
 	if d.ReadOnly {
-		return false
+		return true
 	}
 	// On Zone non federated we can do everything locally.
 	// On Zone federated we can only do things that are provided by the zone.
