@@ -174,7 +174,7 @@ var _ = Describe("Forwarding KDS Client", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("couldn't execute Clusters operation, zone is oflline"))
+		Expect(err.Error()).To(Equal("couldn't execute Clusters operation, zone is offline"))
 	})
 })
 

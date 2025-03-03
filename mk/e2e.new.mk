@@ -16,7 +16,6 @@ ifdef CI
 # In circleCI all this was built from previous targets let's reuse them!
 E2E_K8S_BIN_DEPS+= docker/load
 E2E_UNIVERSAL_BIN_DEPS+= docker/load
-E2E_ENV_VARS+= CLEANUP_LOGS_ON_SUCCESS=true
 else
 E2E_K8S_BIN_DEPS+= build/kumactl images
 E2E_UNIVERSAL_BIN_DEPS+= build/kumactl
