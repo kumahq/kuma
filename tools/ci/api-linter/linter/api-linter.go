@@ -45,7 +45,7 @@ var Analyzer = &analysis.Analyzer{
 
 func flags() flag.FlagSet {
 	set := flag.NewFlagSet("", flag.ExitOnError)
-	debugLog = set.Bool("debugLog", false, "disable nolint checks")
+	debugLog = set.Bool("debugLog", false, "print debug logs")
 	return *set
 }
 
@@ -54,6 +54,9 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		fileName := pass.Fset.File(file.Pos()).Name()
 		fileNameWithoutExtension := stripExtension(fileName)
 		if shouldExcludeResource(pass.Pkg.Path(), excludedPackages) || shouldExcludeResource(fileName, excludedFiles) {
+			if *debugLog {
+				fmt.Println("DEBUG: Skipping file", fileName, "in package", pass.Pkg.Path())
+			}
 			continue
 		}
 		ast.Inspect(file, func(n ast.Node) bool {
