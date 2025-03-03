@@ -18,7 +18,7 @@ import (
 )
 
 func AvailableServices() {
-	statefulClusterName := "statefulCluster"
+	statefulClusterName := "stateful-cluster"
 	meshName := "available-services"
 
 	var statefulCluster *UniversalCluster
