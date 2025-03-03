@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 func FederateKubeZoneCPToKubeGlobal() {
@@ -80,6 +81,8 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 			out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("export", "--profile", "federation", "--format", "kubernetes")
 			Expect(err).ToNot(HaveOccurred())
+
+			report.AddFileToReportEntry("kumactl-export-federation-output.yaml", out)
 
 			err = k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)
 			Expect(err).ToNot(HaveOccurred())
