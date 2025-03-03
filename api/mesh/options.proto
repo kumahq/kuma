@@ -22,8 +22,11 @@ message KumaResourceOptions {
   // Whether to skip type registration for this resource.
   bool skip_registration = 6;
 
-  KumaKdsOptions kds = 10;
+  // Some options for the webservice
   KumaWsOptions ws = 7;
+
+  // A set of kds flag to set the behaviour of the resource with KDS.
+  string kds = 10;
 
   // Whether scope is "Namespace"; Otherwise to "Cluster".
   bool scope_namespace = 11;
@@ -70,13 +73,6 @@ message KumaWsOptions {
   // AdminOnly whether this entity requires admin auth to access these
   // endpoints.
   bool admin_only = 4;
-}
-
-message KumaKdsOptions {
-  // SendToGlobal whether this entity will be sent from zone cp to global cp
-  bool send_to_global = 1;
-  // SendToZone whether this entity will be sent from global cp to zone cp
-  bool send_to_zone = 2;
 }
 
 message KumaPolicyOptions {

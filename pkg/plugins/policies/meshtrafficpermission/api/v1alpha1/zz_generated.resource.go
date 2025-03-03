@@ -155,7 +155,7 @@ var MeshTrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTrafficPermissionResource(),
 	ResourceList:                 &MeshTrafficPermissionResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtrafficpermissions",
 	KumactlArg:                   "meshtrafficpermission",
 	KumactlListArg:               "meshtrafficpermissions",

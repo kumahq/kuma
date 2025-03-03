@@ -155,7 +155,7 @@ var MeshPassthroughResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshPassthroughResource(),
 	ResourceList:                 &MeshPassthroughResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshpassthroughs",
 	KumactlArg:                   "meshpassthrough",
 	KumactlListArg:               "meshpassthroughs",

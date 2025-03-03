@@ -353,6 +353,9 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		{{- if ne .KdsDirection ""}}
 		KDSFlags: {{.KdsDirection}},
 		{{- end}}
+		{{- if .SkipKDSHash }}
+		SkipKDSHash: true,
+		{{- end}}
 		WsPath: "{{.WsPath}}",
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",

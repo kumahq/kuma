@@ -18,6 +18,8 @@ import (
 )
 
 type (
+	// ResourceFilter filters resources based on the context and the resource itself
+	// return true if the resource should be included in the request sent to KDS
 	ResourceFilter func(ctx context.Context, clusterID string, features kds.Features, r model.Resource) bool
 	ResourceMapper func(features kds.Features, r model.Resource) (model.Resource, error)
 )
@@ -30,6 +32,9 @@ func Any(context.Context, string, kds.Features, model.Resource) bool {
 	return true
 }
 
+// TypeIs filters resources by type. This should be avoided and used only in exceptional cases.
+// it is usually preferable to use a filter on a property of the ResourceTypeDescriptor
+// are these are meant to define generic behaviors and not case by case exceptions.
 func TypeIs(rtype model.ResourceType) func(model.Resource) bool {
 	return func(r model.Resource) bool {
 		return r.Descriptor().Name == rtype
@@ -42,21 +47,9 @@ func IsKubernetes(storeType config_store.StoreType) func(model.Resource) bool {
 	}
 }
 
-func ScopeIs(s model.ResourceScope) func(model.Resource) bool {
-	return func(r model.Resource) bool {
-		return r.Descriptor().Scope == s
-	}
-}
-
 func NameHasPrefix(prefix string) func(model.Resource) bool {
 	return func(r model.Resource) bool {
 		return strings.HasPrefix(r.GetMeta().GetName(), prefix)
-	}
-}
-
-func Not(f func(model.Resource) bool) func(model.Resource) bool {
-	return func(r model.Resource) bool {
-		return !f(r)
 	}
 }
 

@@ -11,11 +11,13 @@ import (
 )
 
 // MeshExternalService
+// MeshExternalService are only synced from a global to zones and from zones to global, they are never synced between zones.
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:has_status=true
 // +kuma:policy:is_referenceable_in_to=true
 // +kuma:policy:short_name=extsvc
+// +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 // +kubebuilder:printcolumn:name=Hostname,type=string,JSONPath=".status.addresses[0].hostname"
 type MeshExternalService struct {
 	// Match defines traffic that should be routed through the sidecar.
