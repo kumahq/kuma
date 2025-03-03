@@ -26,6 +26,7 @@ func MapResourceTypeDescription(defs []model.ResourceTypeDescriptor, readOnly bo
 				HasToTargetRef:   def.HasToTargetRef,
 				HasFromTargetRef: def.HasFromTargetRef,
 				IsTargetRef:      def.IsTargetRefBased,
+				IsFromAsRules:    def.IsFromAsRules,
 			}
 		}
 		response.Resources = append(response.Resources, td)

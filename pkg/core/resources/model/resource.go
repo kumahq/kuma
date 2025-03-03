@@ -212,9 +212,9 @@ type ResourceTypeDescriptor struct {
 	IsReferenceableInTo bool
 	// ShortName a name that is used in kubectl or in the envoy configuration
 	ShortName string
-	// InterpretFromEntriesAsRules if true, the entries in the spec.from field should be interpreted as rules.
+	// IsFromAsRules if true, the entries in the spec.from field should be interpreted as rules.
 	// It's true for policies that allow only kind 'Mesh' in the spec.from.targetRef.
-	InterpretFromEntriesAsRules bool
+	IsFromAsRules bool
 }
 
 func newObject(baseResource Resource) Resource {
