@@ -257,7 +257,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMa
 }
 
 func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilter {
-	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
+	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
 		// for Config, Secret and GlobalSecret there are resources that are internal to each CP
 		// we filter them out to not send them to other CPs
 		switch r.Descriptor().Name {
@@ -312,7 +312,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 				}
 				if policy.GetTargetRef().Kind == common_api.MeshSubset {
 					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
-					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
+					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != zoneName {
 						return false
 					}
 				}
@@ -323,7 +323,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 			zoneTag := util.ZoneTag(r)
 
 			// don't need to sync resource to the zone where resource is originating from
-			if clusterID == zoneTag {
+			if zoneName == zoneTag {
 				return false
 			}
 

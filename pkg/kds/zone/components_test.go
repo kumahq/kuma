@@ -124,8 +124,6 @@ var _ = Describe("Zone Sync", func() {
 			mesh.ZoneIngressType,
 			system.ConfigType,
 			system.GlobalSecretType,
-			system.ZoneType,
-			system.ZoneInsightType,
 			hostnamegenerator_api.HostnameGeneratorType,
 		}
 

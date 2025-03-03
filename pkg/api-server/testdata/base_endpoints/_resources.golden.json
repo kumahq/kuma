@@ -553,7 +553,7 @@
    "singularDisplayName": "Virtual Outbound"
   },
   {
-   "includeInFederation": true,
+   "includeInFederation": false,
    "name": "Zone",
    "path": "zones",
    "pluralDisplayName": "Zones",

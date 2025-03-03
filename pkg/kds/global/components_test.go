@@ -142,8 +142,6 @@ var _ = Describe("Global Sync", func() {
 			system.ConfigType,
 			system.GlobalSecretType,
 			hostnamegenerator_api.HostnameGeneratorType,
-			system.ZoneType,
-			system.ZoneInsightType,
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)

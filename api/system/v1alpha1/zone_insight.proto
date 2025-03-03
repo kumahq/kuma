@@ -17,9 +17,10 @@ message ZoneInsight {
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).ws.name = "zone-insight";
   option (kuma.mesh.resource).ws.read_only = true;
-  // Zones are only managed globally
-  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
-
+  // Zone object are managed independently by each Control Plane, they are not
+  // synced
+  option (kuma.mesh.resource).kds =
+      "model.ProvidedByGlobalFlag | model.ProvidedByZoneFlag";
   // List of KDS subscriptions created by a given Zone Kuma CP.
   repeated KDSSubscription subscriptions = 1;
 
