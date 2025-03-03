@@ -2,15 +2,14 @@ package xds
 
 import (
 	"fmt"
-	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	"net/http"
-
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	xds_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	xds_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
