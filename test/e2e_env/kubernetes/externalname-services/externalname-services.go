@@ -59,8 +59,11 @@ spec:
 		// when
 		Expect(kubernetes.Cluster.Install(YamlK8s(externalNameService))).To(Succeed())
 
-		// then
-		Consistently(kubernetes.Cluster.GetKumaCPLogs, "10s", "1s").
-			ShouldNot(ContainSubstring("could not parse hostname entry"))
+		// then we check that no meshService with this name gets created
+		Consistently(func(g Gomega) {
+			names, err := kubernetes.Cluster.GetKumactlOptions().KumactlList("mesh-services", meshName)
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(names).ToNot(ContainElement("externalname-service"))
+		}, "10s", "1s").Should(Succeed())
 	})
 }

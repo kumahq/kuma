@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
-	"github.com/kumahq/kuma/pkg/util/files"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -42,10 +41,9 @@ var _ = Describe("MeshMetric", func() {
 	DescribeTable("Apply to sidecar Dataplane", func(given testCase) {
 		resources := core_xds.NewResourceSet()
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		name := CurrentSpecReport().LeafNodeText
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
-
-		name := files.ToValidUnixFilename(CurrentSpecReport().FullText())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
