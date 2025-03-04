@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/common.sh"
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Update enabled plugin policies in the kuma-cp defaults file"
+#MISE depends=["generate:tools:policy-gen"]
+#MISE wait_for=["generate:resources:base", "generate:resources:helm"]
+#USAGE flag "--resources-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Base directory for resources (e.g., pkg/plugins/policies)"
+#USAGE }
+#USAGE flag "--defaults-file" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the YAML file to update with policy settings"
+#USAGE }
+
+__task_defaults_file="${usage_defaults_file:-${DEFAULTS_FILE:-pkg/config/app/kuma-cp/kuma-cp.defaults.yaml}}"
+___task_r_resources_dir="${usage_resources_dir:-${RESOURCES_DIR:-}}"
+read -r -a ___task_resources <<< "$(common::get_resources "$___task_r_resources_dir")"
+
+variables::verify
+
+# Collect unique policies from plugins
+policies=$(
+  for r in "${___task_resources[@]}"; do
+    base_dir="pkg/plugins/policies/$r"
+    plugin_file="$base_dir/zz_generated.plugin.go"
+    crd_file=$(find "$base_dir/k8s/crd" -type f -name "*.yaml" | head -n 1)
+
+    if [[ -f "$plugin_file" && -n "$crd_file" ]]; then
+      yq e '.spec.names.plural' "$crd_file"
+    fi
+  done | sort -u
+)
+
+# Format policies as a yq-compatible array
+# shellcheck disable=SC2086
+formatted_policies=$(printf '"%s", ' $policies) # Add quotes and commas to each policy
+formatted_policies="${formatted_policies%, }"   # Remove trailing comma and space
+
+# Update defaults file with policies
+yq -i ".policies.pluginPoliciesEnabled = [$formatted_policies]" "$__task_defaults_file"

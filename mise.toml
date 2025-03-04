@@ -1,0 +1,96 @@
+min_version = "2024.12.20"
+
+[tools]
+#go = """
+#{{- exec(cache_key='go', command='grep "^go " go.mod | cut -d" " -f2') -}}
+#"""
+#ginkgo = """
+#{%- set tool = 'github.com/onsi/ginkgo/v2' -%}
+#{%- set cmd = 'grep -oE "tool v[0-9.]+" go.mod | grep -oE "[0-9.]+$"' -%}
+#{{- exec(cache_key=tool, command=cmd | replace(from='tool', to=tool)) -}}
+#"""
+#kube-controller-tools = """
+#{%- set tool = 'sigs.k8s.io/controller-tools' -%}
+#{%- set cmd = 'grep -oE "tool v[0-9.]+" go.mod | grep -oE "[0-9.]+$"' -%}
+#{{- exec(cache_key=tool, command=cmd | replace(from='tool', to=tool)) -}}
+#"""
+#protoc-gen-validate = """
+#{%- set tool = 'github.com/envoyproxy/protoc-gen-validate' -%}
+#{%- set cmd = 'grep -oE "tool v[0-9.]+" go.mod | grep -oE "[0-9.]+$"' -%}
+#{{- exec(cache_key=tool, command=cmd | replace(from='tool', to=tool)) -}}
+#"""
+
+### static versions
+clang-tools-static-binaries = { version = "master-208096c1", exe = "clang-format-13" }
+container-structure-test = "1.19.3"
+etcd = "3.5.17"
+find = { version = "0.7.0", exe = "find" }
+ginkgo = "2.22.2"
+golangci-lint = "1.61.0"
+gum = "0.14.5"
+hadolint = "2.12.1-beta"
+helm = "3.16.4"
+helm-docs = "1.11.0"
+jq = "1.7.1"
+k3d = "5.7.5"
+kind = "0.26.0"
+kube-controller-tools = "0.17.0"
+kube-linter = "0.6.5"
+kubebuilder = "4.3.1"
+kubectl = "1.32.0"
+oapi-codegen = "2.4.1"
+osv-scanner = "1.9.1"
+protoc = "3.20.0"
+protoc-gen-go = "1.28.1"
+protoc-gen-go-grpc = "1.1.0"
+protoc-gen-jsonschema = "1.4.1"
+protoc-gen-validate = "1.1.0"
+shellcheck = "0.10.0"
+yq = "4.30.8"
+xargs = { version = "0.7.0", exe = "xargs" }
+
+[alias]
+clang-tools-static-binaries = "ubi:muttleyxd/clang-tools-static-binaries"
+find = "ubi:uutils/findutils"
+osv-scanner = "go:github.com/google/osv-scanner/cmd/osv-scanner"
+protoc-gen-go-grpc = "go:google.golang.org/grpc/cmd/protoc-gen-go-grpc"
+protoc-gen-jsonschema = "go:github.com/chrusty/protoc-gen-jsonschema/cmd/protoc-gen-jsonschema"
+protoc-gen-validate = "go:github.com/envoyproxy/protoc-gen-validate"
+xargs = "ubi:uutils/findutils"
+
+[settings]
+experimental = true
+task_timings = true
+#task_output = "keep-order"
+
+[task_config]
+includes = [
+    ".mise/tasks",
+    ".mise/tasks/debug.toml",
+    ".mise/tasks/fmt.toml",
+    ".mise/tasks/generate.toml",
+    ".mise/tasks/clean.toml",
+    ".mise/tasks/check.toml",
+    ".mise/tasks/lint.toml",
+]
+
+[[env]]
+#__GO = { value = "{{ exec(command='mise which go', cache_key='go') }}", tools = true }
+__GOOS = { value = "{{ env.GOOS | default(value=exec(command='go env GOOS', cache_key='GOOS')) }}", tools = true }
+__GOARCH = { value = "{{ env.GOARCH | default(value=exec(command='go env GOARCH', cache_key='GOARCH')) }}", tools = true }
+__GOPATH = { value = "{{ env.GOPATH | default(value=exec(command='go env GOPATH', cache_key='GOPATH')) }}", tools = true }
+
+[[env]]
+CLICOLOR_FORCE = 1
+
+# GitHub Action prefix (can be set externally)
+ACTION_PREFIX = ""
+
+PROTO_DIRS = "{{ env.PROTO_DIRS | default(value='./pkg/config ./api ./pkg/plugins ./test/server/grpc/api') }}"
+GO_MODULE = "{{ env.GO_MODULE | default(value='github.com/kumahq/kuma') }}"
+ENVOY_IMPORTS = "{{ env.ENVOY_IMPORTS | default(value='./pkg/xds/envoy/imports.go') }}"
+
+_.source = { path = ".mise/env.sh", tools = true }
+
+#[[env]]
+#_.path = { path = ["{{ env.__GENERATE_TOOLS_DIR }}"], tools = true }

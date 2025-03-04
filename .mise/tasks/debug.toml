@@ -1,0 +1,27 @@
+["debug:a"]
+run = """
+jq <<< cat <<'EOF'
+{{ __tera_context }}
+EOF
+"""
+
+["debug:clean"]
+run = """
+cat <<'EOF' | sed -e "s|$PWD|/project|g" -e "s|$HOME||g" | jq '.env.PATH = "..."'
+{{ __tera_context }}
+EOF
+"""
+
+["debug:env"]
+run = """
+jq <<< cat <<'EOF'
+{{ env | json_encode() }}
+EOF
+"""
+
+["debug:env:clean"]
+run = """
+cat <<'EOF' | sed -e "s|$HOME||g" | jq '.PATH = "..."'
+{{ env | json_encode() }}
+EOF
+"""

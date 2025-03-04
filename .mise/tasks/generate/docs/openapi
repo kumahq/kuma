@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Generate OpenAPI specs"
+# MISE sources=["pkg/plugins/policies/**/*", "pkg/core/resources/apis/**/*"]
+# MISE outputs={auto=true}
+#USAGE flag "--policies-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Base directory containing policy definitions (e.g., plugins/policies)"
+#USAGE }
+#USAGE flag "--resources-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Directory containing resources"
+#USAGE }
+#USAGE flag "--api-dirs" {
+#USAGE   arg "<dir>"
+#USAGE   var true
+#USAGE   help "List of API directories"
+#USAGE }
+#USAGE flag "--tmp-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Temporary directory for OpenAPI generation"
+#USAGE }
+#USAGE flag "--base-api" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the base OpenAPI file"
+#USAGE }
+#USAGE flag "--openapi-output" {
+#USAGE   arg "<file>"
+#USAGE   help "Path to the generated OpenAPI file"
+#USAGE }
+#USAGE flag "--openapi-tool-image" {
+#USAGE   arg "<container-image>"
+#USAGE   help "Container image used for generating OpenAPI specs"
+#USAGE }
+
+# Variables
+___task_tmp_dir="${usage_tmp_dir:-${TMP_DIR:-build/oapitmp}}"
+___task_policies_dir="${usage_policies_dir:-${POLICIES_DIR:-pkg/plugins/policies}}"
+___task_resources_dir="${usage_resources_dir:-${RESOURCES_DIR:-pkg/core/resources/apis}}"
+___task_base_api="${usage_base_api:-${BASE_API:-}}"
+___task_openapi_output="${usage_openapi_output:-${OPENAPI_OUTPUT:-docs/generated/openapi.yaml}}"
+___task_openapi_tool_image="${usage_openapi_tool_image:-${OPENAPI_TOOL_IMAGE:-ghcr.io/kumahq/openapi-tool:v0.12.0}}"
+read -r -a ___task_api_dirs <<< "${usage_api_dirs:-${API_DIRS:-api/openapi/specs:base}}"
+
+variables::verify
+
+# Convert relative paths to absolute
+___task_openapi_output="$(realpath "$___task_openapi_output")"
+___task_tmp_dir="$(realpath "$___task_tmp_dir")"
+
+# Check if output_file exists and is a directory
+if [[ -d "$___task_openapi_output" ]]; then
+  echo "Error: The provided OpenAPI output path '$___task_openapi_output' already exists and is a directory" >&2
+  exit 1
+fi
+
+# Clean and prepare directories
+rm -rf "$___task_tmp_dir" "$___task_openapi_output"
+mkdir -p "$___task_tmp_dir"/{policies,resources}
+mkdir -p "${___task_openapi_output%/*}" # Extract directory path from output_file: `/path/to/output.yaml` → `/path/to`
+
+# Process API directories
+for api_dir in "${___task_api_dirs[@]}"; do
+  src_dir="${api_dir%%:*}" # Extract before `:`: `/path/to/spec:base` → `/path/to/spec`
+  dest_subdir="${api_dir##*:}" # Extract after `:`: `/path/to/spec:base` → `base`
+  dest_path="$___task_tmp_dir/$dest_subdir"
+
+  mkdir -p "$dest_path"
+  cp -R "$src_dir" "$dest_path"
+done
+
+# Process policies
+find "$___task_policies_dir" -name '*.yaml' -path '*/api/*' ! -path '*/testdata/*' | while read -r file; do
+  filename="${file##*/}" # Extract filename: `.../meshtls/api/v1alpha1/rest.yaml` → `rest.yaml`
+  subdir="${file%/*/*/*}" # Trim last 3 segments: `.../meshtls/api/v1alpha1/rest.yaml` → `.../meshtls`
+  name="${subdir##*/}" # Extract last directory: `.../meshtls` → `meshtls`
+  dest_path="$___task_tmp_dir/policies/$name"
+
+  mkdir -p "$dest_path"
+  cp "$file" "$dest_path/$filename"
+done
+
+# Process resources
+find "$___task_resources_dir" -name '*.yaml' -path '*/api/*' ! -path '*/testdata/*' | while read -r file; do
+  filename="${file##*/}" # Extract filename: `.../meshservice/api/v1alpha1/rest.yaml` → `rest.yaml`
+  subdir="${file%/*/*/*}" # Trim last 3 segments: `.../meshservice/api/v1alpha1/rest.yaml` → `.../meshservice`
+  name="${subdir##*/}" # Extract last directory: `.../meshservice` → `meshservice`
+  dest_path="$___task_tmp_dir/resources/$name"
+
+  mkdir -p "$dest_path"
+  cp "$file" "$dest_path/$filename"
+done
+
+# Generate OpenAPI file
+if [[ -n "$___task_base_api" ]]; then
+  filename="${___task_base_api##*/}" # Extract filename: `/path/to/api.yaml` → `api.yaml`
+  base_dir="${___task_base_api%/*}" # Extract directory: `/path/to/api.yaml` → `/path/to`
+
+  docker run --rm \
+    --volume "$base_dir:/base" \
+    --volume "$___task_tmp_dir:/specs" \
+    "$___task_openapi_tool_image" \
+    generate "/base/$filename" "/specs/**/*.yaml" '!/specs/kuma/**' > "$___task_openapi_output"
+else
+  docker run --rm \
+    --volume "$___task_tmp_dir:/specs" \
+    "$___task_openapi_tool_image" \
+    generate '/specs/**/*.yaml' > "$___task_openapi_output"
+fi

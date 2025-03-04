@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -o errexit  # Exit immediately if any command exits with a non-zero status
+set -o errtrace # Ensure traps are inherited by functions, command substitutions, and subshells
+set -o nounset  # Treat unset variables as an error and exit immediately
+set -o pipefail # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/log.sh"
+
+#MISE description="Generate OpenAPI types for the Kuma project from YAML specifications"
+#MISE depends=["generate:tools:resource-gen"]
+#MISE dir="api/openapi/specs"
+
+log::info "Starting OpenAPI type generation"
+
+# Generate OAS files
+find specs -type f -name '*.yaml' | sort | while read -r endpoint; do
+  filename="${endpoint##*/}"
+  subdir="${endpoint#specs/}"
+  destination="types/${subdir%/*}/zz_generated.${filename%.*}.go"
+
+  log::info "Processing $endpoint -> $destination"
+
+  oapi-codegen \
+    -config openapi.cfg.yaml \
+    -o "$destination" \
+    "$endpoint"
+done
+
+log::info "Running resource generation"
+resource-gen -package mesh -generator openapi -rootDir "$__KUMA_DIR"
+
+log::info "OpenAPI type generation completed successfully"

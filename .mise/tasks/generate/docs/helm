@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+
+set -o errexit   # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace  # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset   # Treat any unset variables as an error and exit immediately
+set -o pipefail  # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/variables.sh"
+
+#MISE description="Generate Helm chart documentation using helm-docs"
+#USAGE flag "--charts-dir" {
+#USAGE   arg "<dir>"
+#USAGE   help "Directory containing the Helm charts"
+#USAGE }
+
+# Variables
+___task_charts_dir="${usage_charts_dir:-${__GENERATE_HELM_CHARTS_DIR:-deployments/charts}}"
+
+variables::verify
+
+helm-docs --sort-values-order file --chart-search-root "$___task_charts_dir"

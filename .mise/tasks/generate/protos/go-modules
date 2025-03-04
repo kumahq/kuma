@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+set -o errexit  # Exit immediately if any command has a non-zero exit status (error)
+set -o errtrace # Ensure that traps are inherited by functions, command substitutions, and subshells
+set -o nounset  # Treat any unset variables as an error and exit immediately
+set -o pipefail # If any command in a pipeline fails, the entire pipeline fails
+
+source "$__TASKS_SCRIPTS_PATH/log.sh"
+
+#MISE description="Downloads and copies .proto files from Go module dependencies to the tools directory"
+#MISE sources=["{{env.__BUILD_DIR}}", "{{env.__TOOLS_DIR}}", "{{env.__TOOLS_DIR_PROTOS}}", "{{env.__TOOLS_DIR_PROTOS}}/envoy", "{{env.__TOOLS_DIR_PROTOS}}/google", "{{env.__TOOLS_DIR_PROTOS}}/udpa", "{{env.__TOOLS_DIR_PROTOS}}/validate", "{{env.__TOOLS_DIR_PROTOS}}/xds", "{{env.__TOOLS_DIR_PROTOS}}/**/*.proto", "{{env.__GOPATH_MOD_GITHUB}}/cncf/xds*/**/*", "{{env.__GOPATH_MOD_GITHUB}}/envoyproxy/data-plane-api*/**/*", "{{env.__GOPATH_MOD_GITHUB}}/protoc-gen-validate*/**/*", "{{env.__GOPATH_MOD_GITHUB}}/googleapis/googleapis*/**/*"]
+#MISE outputs={auto=true}
+
+copy_proto_files() {
+  local src_dir="$1"
+  local dest_dir="$2"
+
+  log::info "Copying .proto files from $src_dir to $dest_dir"
+
+  find "$src_dir" -name '*.proto' -printf '/%P\n' | while read -r proto_file; do
+    local target_dir="$dest_dir${proto_file%/*}"
+    local log_target_dir="${target_dir#"$MISE_PROJECT_ROOT/"}" # Strip "$MISE_PROJECT_ROOT/" prefix for logging
+    local log_proto_file="${proto_file#/}"                     # Strip leading / from proto_file for logging
+
+    mkdir -p "$target_dir"
+    install "$src_dir$proto_file" "$target_dir"
+
+    log::verbose "Copied $log_proto_file to $log_target_dir/$log_proto_file"
+  done
+}
+
+# Download a Go module and return its latest version path
+download_module_version() {
+  local module="$1"
+  local version="$2"
+
+  log::info "Downloading Go module: $module@$version"
+
+  go mod download "$module@$version"
+  find "$__GOPATH/pkg/mod/$module@"* -maxdepth 0 | sort -r | head -n 1
+}
+
+# Clean and prepare directories
+prepare_directory() {
+  local dir="$1"
+  log::info "Preparing directory: $dir"
+  rm -rf "$dir"
+  mkdir -p "$dir"
+}
+
+# Process specific Go module subdirectories
+process_module() {
+  local module="$1"
+  local sub_dir="$2"
+  local version="$3"
+
+  log::info "Processing module: $module, subdir: $sub_dir, version: $version"
+
+  prepare_directory "$__TOOLS_DIR_PROTOS/$sub_dir"
+  local module_version
+  module_version=$(download_module_version "$module" "$version")
+  copy_proto_files "$module_version/$sub_dir" "$__TOOLS_DIR_PROTOS/$sub_dir"
+}
+
+# Main logic
+prepare_directory "$__TOOLS_DIR_PROTOS"
+
+# Fetch versions of required modules
+log::info "Fetching versions of required modules"
+version_xds="$(go list -m -f '{{.Version}}' github.com/cncf/xds/go)"
+version_pgv="$(go list -m -f '{{.Version}}' github.com/envoyproxy/protoc-gen-validate)"
+log::info "Version fetched - xds: $version_xds, protoc-gen-validate: $version_pgv"
+
+# Define modules to process
+modules=(
+  "github.com/googleapis/googleapis google/api master"
+  "github.com/googleapis/googleapis google/rpc master"
+  "github.com/envoyproxy/data-plane-api envoy main"
+  "github.com/envoyproxy/protoc-gen-validate validate $version_pgv"
+  "github.com/cncf/xds udpa $version_xds"
+  "github.com/cncf/xds xds $version_xds"
+)
+
+printf "%s\n" "${modules[@]}" | while read -r module sub_dir version; do
+  process_module "$module" "$sub_dir" "$version"
+done
+
+log::info "All modules processed successfully"
