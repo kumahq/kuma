@@ -80,7 +80,10 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		}
 	}
 	if err := s.client.Create(ctx, cm); err != nil {
-		return err
+		if kube_apierrs.IsAlreadyExists(err) {
+			return core_store.ErrorResourceAlreadyExists(r.Descriptor().Name, opts.Name, opts.Mesh)
+		}
+		return errors.Wrap(err, "failed to create k8s resource")
 	}
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
