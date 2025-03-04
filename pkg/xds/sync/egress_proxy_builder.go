@@ -21,8 +21,9 @@ import (
 )
 
 type EgressProxyBuilder struct {
-	zone       string
-	apiVersion core_xds.APIVersion
+	zone              string
+	apiVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
 }
 
 func (p *EgressProxyBuilder) Build(
@@ -118,9 +119,10 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	proxy := &core_xds.Proxy{
-		Id:         core_xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
-		Zone:       p.zone,
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.apiVersion,
+		InternalAddresses: p.InternalAddresses,
+		Zone:              p.zone,
 		ZoneEgressProxy: &core_xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
 			ZoneIngresses:      zoneIngresses,

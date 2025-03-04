@@ -188,6 +188,8 @@ type Proxy struct {
 	RuntimeExtensions map[string]interface{}
 	// Zone the zone the proxy is in
 	Zone string
+	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
+	InternalAddresses []InternalAddress
 }
 
 type ServerSideMTLSCerts struct {
@@ -290,6 +292,11 @@ type CaSecret struct {
 type IdentitySecret struct {
 	PemCerts [][]byte
 	PemKey   []byte
+}
+
+type InternalAddress struct {
+	AddressPrefix string
+	PrefixLen     uint32
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

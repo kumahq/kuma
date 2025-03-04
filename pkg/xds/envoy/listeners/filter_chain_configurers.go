@@ -86,11 +86,18 @@ func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBu
 	})
 }
 
-func HttpConnectionManager(statsName string, forwardClientCertDetails bool) FilterChainBuilderOpt {
-	return AddFilterChainConfigurer(&v3.HttpConnectionManagerConfigurer{
+func HttpConnectionManager(statsName string, forwardClientCertDetails bool, annotators ...v3.HttpConnectionManagerConfigurerAnnotateFunc) FilterChainBuilderOpt {
+	hcmConfigurer := &v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,
 		ForwardClientCertDetails: forwardClientCertDetails,
-	})
+	}
+
+	for _, annotateFunc := range annotators {
+		if annotateFunc != nil {
+			annotateFunc(hcmConfigurer)
+		}
+	}
+	return AddFilterChainConfigurer(hcmConfigurer)
 }
 
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *core_mesh.TrafficPermissionResource) FilterChainBuilderOpt {

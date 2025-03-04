@@ -4,24 +4,27 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
 var _ = Describe("HttpConnectionManager Configurers", func() {
 	type Opt = FilterChainBuilderOpt
 
 	type testCase struct {
-		opts     []Opt
-		expected string
+		opts         []Opt
+		hcmAnnotator v3.HttpConnectionManagerConfigurerAnnotateFunc
+		expected     string
 	}
 
 	Context("V3", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {
 				opts := append([]Opt{
-					HttpConnectionManager("test", false),
+					HttpConnectionManager("test", false, given.hcmAnnotator),
 				}, given.opts...)
 
 				// when
@@ -83,6 +86,29 @@ var _ = Describe("HttpConnectionManager Configurers", func() {
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: test
               stripAnyHostPort: true`,
+			}),
+
+			Entry("internal address config", testCase{
+				hcmAnnotator: func(configurer *v3.HttpConnectionManagerConfigurer) {
+					configurer.InternalAddresses = []core_xds.InternalAddress{
+						{PrefixLen: 16, AddressPrefix: "10.17.0.0"},
+					}
+				},
+				opts: []Opt{},
+				expected: `
+          filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+              statPrefix: test
+              internalAddressConfig:
+                  cidrRanges:
+                      - addressPrefix: 10.17.0.0
+                        prefixLen: 16`,
 			}),
 		)
 	})
