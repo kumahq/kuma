@@ -123,9 +123,13 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 	*out = *in
 	if in.Tags != nil {
 		in, out := &in.Tags, &out.Tags
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 	if in.ProxyTypes != nil {

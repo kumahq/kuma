@@ -541,6 +541,9 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
+                - name
                 type: object
             required:
             - default

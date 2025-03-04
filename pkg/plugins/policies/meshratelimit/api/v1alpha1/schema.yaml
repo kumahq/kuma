@@ -198,6 +198,9 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
+                - name
               type: object
           required:
             - targetRef
@@ -383,6 +386,9 @@ properties:
               Tags used to select a subset of proxies by tags. Can only be used with kinds
               `MeshSubset` and `MeshServiceSubset`
             type: object
+        required:
+          - kind
+          - name
         type: object
       to:
         description: To list makes a match between clients and corresponding configurations
@@ -561,6 +567,9 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
+                - name
               type: object
           required:
             - targetRef

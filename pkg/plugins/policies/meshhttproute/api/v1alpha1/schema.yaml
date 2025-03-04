@@ -83,6 +83,9 @@ properties:
               Tags used to select a subset of proxies by tags. Can only be used with kinds
               `MeshSubset` and `MeshServiceSubset`
             type: object
+        required:
+          - kind
+          - name
         type: object
       to:
         description: To matches destination services of requests and holds configuration.
@@ -176,6 +179,9 @@ properties:
                               default: 1
                               minimum: 0
                               type: integer
+                          required:
+                            - kind
+                            - name
                           type: object
                         type: array
                       filters:
@@ -300,6 +306,9 @@ properties:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                    - kind
+                                    - name
                                   type: object
                                 percentage:
                                   anyOf:
@@ -620,6 +629,9 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
+                - name
               type: object
           required:
             - rules

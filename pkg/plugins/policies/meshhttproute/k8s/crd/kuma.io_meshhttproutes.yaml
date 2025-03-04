@@ -112,6 +112,9 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
+                - name
                 type: object
               to:
                 description: To matches destination services of requests and holds
@@ -209,6 +212,9 @@ spec:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                  - kind
+                                  - name
                                   type: object
                                 type: array
                               filters:
@@ -338,6 +344,9 @@ spec:
                                               default: 1
                                               minimum: 0
                                               type: integer
+                                          required:
+                                          - kind
+                                          - name
                                           type: object
                                         percentage:
                                           anyOf:
@@ -664,6 +673,9 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
+                      - name
                       type: object
                   required:
                   - rules

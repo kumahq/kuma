@@ -2,6 +2,7 @@ package builders
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func TargetRefMesh() common_api.TargetRef {
@@ -13,7 +14,7 @@ func TargetRefMesh() common_api.TargetRef {
 func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshSubset,
-		Tags: TagsKVToMap(kv),
+		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
 
@@ -28,7 +29,7 @@ func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshServiceSubset,
 		Name: name,
-		Tags: TagsKVToMap(kv),
+		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
 
