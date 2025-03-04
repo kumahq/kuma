@@ -91,7 +91,7 @@ type TargetRef struct {
 	Kind TargetRefKind `json:"kind"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
-	Name string `json:"name,omitempty"`
+	Name string `json:"name"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
 	Tags map[string]string `json:"tags,omitempty"`
