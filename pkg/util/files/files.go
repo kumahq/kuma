@@ -39,7 +39,7 @@ func ToValidUnixFilename(input ...string) string {
 
 	// Remove or replace characters that are problematic in Unix filenames
 	// This includes control characters, /, and other special characters
-	reg := regexp.MustCompile(`[^\w\-]`)
+	reg := regexp.MustCompile(`[^\w\-|]`)
 	sanitized := reg.ReplaceAllString(noSpaces, "?")
 
 	// Trim leading/trailing periods and dashes which can cause issues
