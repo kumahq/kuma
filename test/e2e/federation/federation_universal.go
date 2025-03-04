@@ -95,7 +95,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			}, "30s", "1s").Should(Succeed())
 		})
 
-		It("should sync data policies to global cp", func() {
+		It("should sync policies to global cp", func() {
 			Eventually(func(g Gomega) {
 				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshcircuitbreakers")
 				g.Expect(err).ToNot(HaveOccurred())

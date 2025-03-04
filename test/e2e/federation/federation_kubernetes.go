@@ -101,7 +101,7 @@ func FederateKubeZoneCPToKubeGlobal() {
 			}, "120s", "1s").Should(Succeed())
 		})
 
-		It("should sync data policies to global cp", func() {
+		It("should sync policies to global cp", func() {
 			Eventually(func(g Gomega) {
 				out, err := k8s.RunKubectlAndGetOutputE(global.GetTesting(), global.GetKubectlOptions(), "get", "meshcircuitbreakers", "-A")
 				g.Expect(err).ToNot(HaveOccurred())
