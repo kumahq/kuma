@@ -37,16 +37,16 @@ func TargetRefMeshService(name, namespace, sectionName string) common_api.Target
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
 		Name:        &name,
-		Namespace:   namespace,
-		SectionName: sectionName,
+		Namespace:   pointer.To(namespace),
+		SectionName: pointer.To(sectionName),
 	}
 }
 
 func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
-		Labels:      labels,
-		SectionName: sectionName,
+		Labels:      pointer.To(labels),
+		SectionName: pointer.To(sectionName),
 	}
 }
 

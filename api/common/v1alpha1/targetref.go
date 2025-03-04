@@ -100,17 +100,16 @@ type TargetRef struct {
 	Mesh *string `json:"mesh,omitempty"`
 	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
 	// all data plane types are targeted by the policy.
-	// +kubebuilder:validation:MinItems=1
-	ProxyTypes []TargetRefProxyType `json:"proxyTypes,omitempty"`
+	ProxyTypes *[]TargetRefProxyType `json:"proxyTypes,omitempty"`
 	// Namespace specifies the namespace of target resource. If empty only resources in policy namespace
 	// will be targeted.
-	Namespace string `json:"namespace,omitempty"`
+	Namespace *string `json:"namespace,omitempty"`
 	// Labels are used to select group of MeshServices that match labels. Either Labels or
 	// Name and Namespace can be used.
-	Labels map[string]string `json:"labels,omitempty"`
+	Labels *map[string]string `json:"labels,omitempty"`
 	// SectionName is used to target specific section of resource.
 	// For example, you can target port from MeshService.ports[] by its name. Only traffic to this port will be affected.
-	SectionName string `json:"sectionName,omitempty"`
+	SectionName *string `json:"sectionName,omitempty"`
 }
 
 func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
@@ -123,10 +122,10 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 	if selectsLabels(t) && selectsNameAndNamespace(other) {
 		return -1
 	}
-	if t.SectionName != "" && other.SectionName == "" {
+	if pointer.Deref(t.SectionName) != "" && pointer.Deref(other.SectionName) == "" {
 		return 1
 	}
-	if t.SectionName == "" && other.SectionName != "" {
+	if pointer.Deref(t.SectionName) == "" && pointer.Deref(other.SectionName) != "" {
 		return -1
 	}
 	return 0
@@ -143,7 +142,7 @@ func selectsLabels(tr TargetRef) bool {
 func IncludesGateways(ref TargetRef) bool {
 	isGateway := ref.Kind == MeshGateway
 	isMeshKind := ref.Kind == Mesh || ref.Kind == MeshSubset
-	isGatewayInProxyTypes := len(ref.ProxyTypes) == 0 || slices.Contains(ref.ProxyTypes, Gateway)
+	isGatewayInProxyTypes := len(pointer.Deref(ref.ProxyTypes)) == 0 || slices.Contains(pointer.Deref(ref.ProxyTypes), Gateway)
 	isGatewayCompatible := isMeshKind && isGatewayInProxyTypes
 	isMeshHTTPRoute := ref.Kind == MeshHTTPRoute
 
@@ -188,10 +187,10 @@ func (in BackendRef) Hash() BackendRefHash {
 		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
 	}
 
-	keys = util_maps.SortedKeys(in.Labels)
-	orderedLabels := make([]string, 0, len(in.Labels))
+	keys = util_maps.SortedKeys(pointer.Deref(in.Labels))
+	orderedLabels := make([]string, 0, len(pointer.Deref(in.Labels)))
 	for _, k := range keys {
-		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, in.Labels[k]))
+		orderedLabels = append(orderedLabels, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Labels)[k]))
 	}
 
 	name := in.Name

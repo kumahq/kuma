@@ -245,7 +245,7 @@ func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentif
 				TargetRef: common_api.TargetRef{
 					Kind:   common_api.TargetRefKind(o.BackendRef.Kind),
 					Name:   pointer.To(o.BackendRef.Name),
-					Labels: o.BackendRef.Labels,
+					Labels: pointer.To(o.BackendRef.Labels),
 				},
 				Port: pointer.To(o.BackendRef.Port),
 			}

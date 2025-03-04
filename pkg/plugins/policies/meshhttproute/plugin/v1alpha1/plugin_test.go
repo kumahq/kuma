@@ -1056,7 +1056,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "first",
 																	},
@@ -1077,7 +1077,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "second",
 																	},

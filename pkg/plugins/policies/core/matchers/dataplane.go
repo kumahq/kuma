@@ -179,7 +179,7 @@ func dppSelectedByPolicy(
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
-		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
 		}
@@ -189,12 +189,12 @@ func dppSelectedByPolicy(
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
-			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
+			inbounds := inboundsSelectedBySectionName(pointer.Deref(ref.SectionName), dpp)
 			return inbounds, nil, false, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:
-		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
 		}
@@ -231,7 +231,7 @@ func dppSelectedByPolicy(
 }
 
 func allDataplanesSelected(ref common_api.TargetRef) bool {
-	return pointer.Deref(ref.Name) == "" && ref.Namespace == "" && ref.Labels == nil
+	return pointer.Deref(ref.Name) == "" && pointer.Deref(ref.Namespace) == "" && pointer.Deref(ref.Labels) == nil
 }
 
 func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
@@ -253,11 +253,11 @@ func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneR
 
 // TODO this is common functionality with selecting MeshService by labels, we should refactor this and extract to some common function
 func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
-	if ref.Labels == nil {
+	if pointer.Deref(ref.Labels) == nil {
 		return false
 	}
 
-	for label, value := range ref.Labels {
+	for label, value := range pointer.Deref(ref.Labels) {
 		if dpp.GetMeta().GetLabels()[label] != value {
 			return false
 		}

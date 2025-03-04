@@ -40,7 +40,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:      common_api.MeshService,
 			Name:      pointer.To("backend"),
-			Namespace: "kuma-demo",
+			Namespace: pointer.To("kuma-demo"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -71,7 +71,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:      common_api.MeshService,
 			Name:      pointer.To("backend"),
-			Namespace: "kuma-demo",
+			Namespace: pointer.To("kuma-demo"),
 		}
 
 		// given no MeshServices
@@ -92,8 +92,8 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:        common_api.MeshService,
 			Name:        pointer.To("backend"),
-			Namespace:   "kuma-demo",
-			SectionName: "tcp-port",
+			Namespace:   pointer.To("kuma-demo"),
+			SectionName: pointer.To("tcp-port"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -124,8 +124,8 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:        common_api.MeshService,
 			Name:        pointer.To("backend"),
-			Namespace:   "kuma-demo",
-			SectionName: "tcp-port",
+			Namespace:   pointer.To("kuma-demo"),
+			SectionName: pointer.To("tcp-port"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -155,8 +155,8 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:        common_api.MeshService,
 			Name:        pointer.To("backend"),
-			Namespace:   "kuma-demo",
-			SectionName: "8080",
+			Namespace:   pointer.To("kuma-demo"),
+			SectionName: pointer.To("8080"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -186,8 +186,8 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:        common_api.MeshService,
 			Name:        pointer.To("backend"),
-			Namespace:   "kuma-demo",
-			SectionName: "8080",
+			Namespace:   pointer.To("kuma-demo"),
+			SectionName: pointer.To("8080"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -217,7 +217,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		}
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Labels: map[string]string{
+			Labels: &map[string]string{
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			},
@@ -250,11 +250,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		}
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Labels: map[string]string{
+			Labels: &map[string]string{
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			},
-			SectionName: "tcp-port",
+			SectionName: pointer.To("tcp-port"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -284,11 +284,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		}
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Labels: map[string]string{
+			Labels: &map[string]string{
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			},
-			SectionName: "8080",
+			SectionName: pointer.To("8080"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -318,11 +318,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		}
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Labels: map[string]string{
+			Labels: &map[string]string{
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			},
-			SectionName: "8080",
+			SectionName: pointer.To("8080"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -351,11 +351,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		}
 		targetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Labels: map[string]string{
+			Labels: &map[string]string{
 				"k8s.kuma.io/namespace": "kuma-demo",
 				"kuma.io/display-name":  "backend",
 			},
-			SectionName: "non-existent-section",
+			SectionName: pointer.To("non-existent-section"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshService().
@@ -475,8 +475,8 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:        common_api.MeshMultiZoneService,
 			Name:        pointer.To("backend-mzsvc"),
-			Namespace:   "kuma-demo",
-			SectionName: "tcp-port",
+			Namespace:   pointer.To("kuma-demo"),
+			SectionName: pointer.To("tcp-port"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshMultiZoneService().
@@ -510,7 +510,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		targetRef := common_api.TargetRef{
 			Kind:      common_api.MeshExternalService,
 			Name:      pointer.To("mes"),
-			Namespace: "kuma-demo",
+			Namespace: pointer.To("kuma-demo"),
 		}
 		// given actual MeshService 'backend' in 'kuma-demo' namespace with port 8080
 		addResource(builders.MeshExternalService().

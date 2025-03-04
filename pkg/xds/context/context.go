@@ -161,7 +161,7 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 				ResourceType: core_model.ResourceType(reachableBackend.Kind),
 				ResourceIdentifier: core_model.TargetRefToResourceIdentifier(dataplane.GetMeta(), common_api.TargetRef{
 					Name:      &reachableBackend.Name,
-					Namespace: reachableBackend.Namespace,
+					Namespace: &reachableBackend.Namespace,
 				}),
 			}
 			if port := reachableBackend.Port; port != nil {

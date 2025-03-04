@@ -139,14 +139,22 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 	}
 	if in.ProxyTypes != nil {
 		in, out := &in.ProxyTypes, &out.ProxyTypes
-		*out = make([]TargetRefProxyType, len(*in))
-		copy(*out, *in)
+		*out = new([]TargetRefProxyType)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]TargetRefProxyType, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
-		*out = make(map[string]string, len(*in))
-		for key, val := range *in {
-			(*out)[key] = val
+		*out = new(map[string]string)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make(map[string]string, len(*in))
+			for key, val := range *in {
+				(*out)[key] = val
+			}
 		}
 	}
 }
