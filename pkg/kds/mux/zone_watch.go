@@ -139,8 +139,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					// There's no need to check globalId since the connection exists in the map, meaning it is local.
 					activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
 					if connOpenTime.Before(*activeStreamConnTime) {
-						log.V(1).Info("the same zone has connected but the previous connection wasn't closed, closing",
-							"zone", zone.zone, "previouslyConnected", connOpenTime, "currentlyConnected", activeStreamConnTime)
+						log.Info("the same zone has connected but the previous connection wasn't closed, closing",
+							"zone", zone.zone, "streamType", stream, "previouslyConnected", connOpenTime, "currentlyConnected", activeStreamConnTime)
 						zw.bus.Send(service.StreamCancelled{
 							Zone:     zone.zone,
 							TenantID: zone.tenantID,
@@ -163,7 +163,7 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 				if prevConnTime, exist := streams[newStream.Type]; exist && prevConnTime.Before(newStream.ConnTime) {
 					ctx := multitenant.WithTenant(context.TODO(), newStream.TenantID)
 					log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
-					log.V(1).Info("the same zone has connected but the previous connection wasn't closed, closing",
+					log.Info("the same zone has connected but the previous connection wasn't closed, closing",
 						"zone", newStream.Zone, "streamType", newStream.Type, "previouslyConnected", prevConnTime, "currentlyConnected", newStream.ConnTime)
 					zw.bus.Send(service.StreamCancelled{
 						Zone:     newStream.Zone,
