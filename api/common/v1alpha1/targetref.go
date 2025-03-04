@@ -97,7 +97,7 @@ type TargetRef struct {
 	// `MeshSubset` and `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
-	Mesh string `json:"mesh,omitempty"`
+	Mesh *string `json:"mesh,omitempty"`
 	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
 	// all data plane types are targeted by the policy.
 	// +kubebuilder:validation:MinItems=1
@@ -198,5 +198,5 @@ func (in BackendRef) Hash() BackendRefHash {
 	if in.Port != nil {
 		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), pointer.Deref(in.Mesh)))
 }

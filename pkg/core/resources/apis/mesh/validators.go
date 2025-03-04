@@ -373,14 +373,14 @@ func ValidateTargetRef(
 		if pointer.Deref(ref.Name) != "" {
 			err.AddViolation("name", fmt.Sprintf("using name with kind %v is not yet supported", ref.Kind))
 		}
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("labels", ref.Labels, ref.Kind))
 		err.Add(disallowedField("namespace", ref.Namespace, ref.Kind))
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	case common_api.Dataplane:
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		if len(ref.Labels) > 0 && (pointer.Deref(ref.Name) != "" || ref.Namespace != "") {
 			err.AddViolation("labels", "either labels or name and namespace must be specified")
@@ -390,14 +390,14 @@ func ValidateTargetRef(
 		}
 	case common_api.MeshSubset:
 		err.Add(disallowedField("name", pointer.Deref(ref.Name), ref.Kind))
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(ValidateTags(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
 		err.Add(disallowedField("labels", ref.Labels, ref.Kind))
 		err.Add(disallowedField("namespace", ref.Namespace, ref.Kind))
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		if len(ref.Labels) == 0 {
@@ -409,7 +409,7 @@ func ValidateTargetRef(
 	case common_api.MeshServiceSubset, common_api.MeshGateway:
 		err.Add(requiredField("name", pointer.Deref(ref.Name), ref.Kind))
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		err.Add(ValidateSelector(validators.RootedAt("tags"), pointer.Deref(ref.Tags), ValidateTagsOpts{}))
 		if ref.Kind == common_api.MeshGateway && len(pointer.Deref(ref.Tags)) > 0 && !opts.GatewayListenerTagsAllowed {
@@ -420,7 +420,7 @@ func ValidateTargetRef(
 		err.Add(disallowedField("sectionName", ref.SectionName, ref.Kind))
 	case common_api.MeshExternalService:
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
-		err.Add(disallowedField("mesh", ref.Mesh, ref.Kind))
+		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("proxyTypes", ref.ProxyTypes, ref.Kind))
 		if len(ref.Labels) == 0 {
