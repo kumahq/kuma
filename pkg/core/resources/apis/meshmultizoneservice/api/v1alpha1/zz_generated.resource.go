@@ -166,7 +166,7 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshMultiZoneServiceResource(),
 	ResourceList:                 &MeshMultiZoneServiceResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag,
 	WsPath:                       "meshmultizoneservices",
 	KumactlArg:                   "meshmultizoneservice",
 	KumactlListArg:               "meshmultizoneservices",
@@ -184,5 +184,5 @@ var MeshMultiZoneServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          true,
 	ShortName:                    "mzsvc",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

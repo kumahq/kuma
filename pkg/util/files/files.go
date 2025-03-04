@@ -4,6 +4,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 func FileExists(path string) bool {
@@ -28,4 +30,20 @@ func IsDirWriteable(dir string) error {
 		return err
 	}
 	return os.Remove(f)
+}
+
+// ToValidUnixFilename sanitizes input strings and concatenates them into a valid Unix filename.
+func ToValidUnixFilename(input ...string) string {
+	// Replace spaces with underscores
+	noSpaces := strings.ReplaceAll(strings.Join(input, "_"), " ", "_")
+
+	// Remove or replace characters that are problematic in Unix filenames
+	// This includes control characters, /, and other special characters
+	reg := regexp.MustCompile(`[^\w\-|]`)
+	sanitized := reg.ReplaceAllString(noSpaces, "?")
+
+	// Trim leading/trailing periods and dashes which can cause issues
+	sanitized = strings.Trim(sanitized, ".-")
+
+	return sanitized
 }

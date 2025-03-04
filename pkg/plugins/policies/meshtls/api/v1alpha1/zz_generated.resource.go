@@ -155,7 +155,7 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTLSResource(),
 	ResourceList:                 &MeshTLSResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtlses",
 	KumactlArg:                   "meshtls",
 	KumactlListArg:               "meshtlses",
@@ -173,5 +173,5 @@ var MeshTLSResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mtls",
-	InterpretFromEntriesAsRules:  true,
+	IsFromAsRules:                true,
 }

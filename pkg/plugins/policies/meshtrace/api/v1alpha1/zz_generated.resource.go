@@ -155,7 +155,7 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshTraceResource(),
 	ResourceList:                 &MeshTraceResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshtraces",
 	KumactlArg:                   "meshtrace",
 	KumactlListArg:               "meshtraces",
@@ -173,5 +173,5 @@ var MeshTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "mtr",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

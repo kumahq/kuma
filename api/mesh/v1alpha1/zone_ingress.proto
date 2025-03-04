@@ -16,8 +16,10 @@ message ZoneIngress {
   option (kuma.mesh.resource).type = "ZoneIngress";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_global = true;
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  // ZoneIngresses resources come from zones always and get copied to other
+  // zones.
+  option (kuma.mesh.resource).kds =
+      "model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag";
   option (kuma.mesh.resource).ws.name = "zone-ingress";
   option (kuma.mesh.resource).ws.plural = "zone-ingresses";
   option (kuma.mesh.resource).scope_namespace = true;

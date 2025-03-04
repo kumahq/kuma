@@ -235,7 +235,7 @@ type ZoneOfflineError struct {
 }
 
 func (e *ZoneOfflineError) Error() string {
-	return fmt.Sprintf("couldn't execute %s operation, zone is oflline", e.rpcName)
+	return fmt.Sprintf("couldn't execute %s operation, zone is offline", e.rpcName)
 }
 
 func (e *ZoneOfflineError) Is(err error) bool {

@@ -640,6 +640,45 @@ violations:
     message: must not be set with kind MeshGateway
 `,
 		}),
+		Entry("Mesh with empty proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: []
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must be undefined or have at least one element
+`,
+		}),
+		Entry("Mesh with one proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
+		Entry("Mesh with no proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
 		Entry("MeshGateway when it's not supported", testCase{
 			inputYaml: `
 kind: MeshGateway
@@ -872,24 +911,6 @@ namespace: test-ns
 violations:
   - field: targetRef.name
     message: must be set with kind MeshService
-`,
-		}),
-		Entry("MeshService should not have sectionName when labels are set", testCase{
-			inputYaml: `
-kind: MeshService
-sectionName: http-port
-labels:
-  kuma.io/zone: east
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.sectionName
-    message: sectionName should not be combined with labels
 `,
 		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{

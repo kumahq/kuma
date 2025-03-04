@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -42,10 +41,9 @@ var _ = Describe("MeshMetric", func() {
 	DescribeTable("Apply to sidecar Dataplane", func(given testCase) {
 		resources := core_xds.NewResourceSet()
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		name := CurrentSpecReport().LeafNodeText
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
-
-		name := utils.TestCaseName(GinkgoT())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))

@@ -28,7 +28,7 @@ func doIfNoSkipCleanup(fn func()) func() {
 }
 
 func AfterEachFailure(fn func()) bool {
-	return ginkgo.AfterEach(func() {
+	return ginkgo.JustAfterEach(func() {
 		if !ginkgo.CurrentSpecReport().Failed() {
 			return
 		}

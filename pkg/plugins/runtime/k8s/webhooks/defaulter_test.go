@@ -257,7 +257,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -282,7 +284,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -300,7 +304,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -325,7 +331,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -346,7 +354,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -367,7 +377,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -385,7 +397,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -410,7 +424,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -491,7 +507,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -513,7 +531,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -536,7 +556,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -558,7 +580,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,

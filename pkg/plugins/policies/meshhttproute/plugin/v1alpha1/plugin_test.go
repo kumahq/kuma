@@ -443,7 +443,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						{
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
-								Name: "example",
+								Name: pointer.To("example"),
 							},
 							Rules: []api.Rule{
 								{
@@ -457,7 +457,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										BackendRefs: &[]common_api.BackendRef{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshExternalService,
-												Name: "external",
+												Name: pointer.To("external"),
 											},
 											Port:   pointer.To(uint32(9090)),
 											Weight: pointer.To(uint(100)),
@@ -1056,7 +1056,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "first",
 																	},
@@ -1077,7 +1077,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "second",
 																	},
@@ -1652,8 +1652,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 																BackendRef: common_api.BackendRef{
 																	TargetRef: common_api.TargetRef{
 																		Kind: common_api.MeshServiceSubset,
-																		Name: "payments",
-																		Tags: map[string]string{
+																		Name: pointer.To("payments"),
+																		Tags: &map[string]string{
 																			"version": "v1",
 																			"region":  "us",
 																			"env":     "dev",
@@ -1668,7 +1668,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 																BackendRef: common_api.BackendRef{
 																	TargetRef: common_api.TargetRef{
 																		Kind: common_api.MeshService,
-																		Name: "backend",
+																		Name: pointer.To("backend"),
 																	},
 																},
 															},
@@ -1923,7 +1923,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									BackendRefs: &[]common_api.BackendRef{{
 										TargetRef: common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: "backend",
+											Name: pointer.To("backend"),
 										},
 										Port:   pointer.To(uint32(80)),
 										Weight: pointer.To(uint(100)),

@@ -154,7 +154,7 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewDoNothingPolicyResource(),
 	ResourceList:                 &DoNothingPolicyResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "donothingpolicies",
 	KumactlArg:                   "donothingpolicy",
 	KumactlListArg:               "donothingpolicies",
@@ -172,5 +172,5 @@ var DoNothingPolicyResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: false,
 	IsReferenceableInTo:          false,
 	ShortName:                    "dnp",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

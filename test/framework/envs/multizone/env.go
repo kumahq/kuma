@@ -4,15 +4,13 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 var (
@@ -253,55 +251,17 @@ func RestoreState(bytes []byte) {
 }
 
 func SynchronizedAfterSuite() {
-	ExpectCpsToNotCrash()
-	ExpectCpsToNotPanic()
+	for _, cluster := range append(Zones(), Global) {
+		ControlPlaneAssertions(cluster)
+	}
+	for _, cluster := range append(Zones(), Global) {
+		framework.DebugCPLogs(cluster)
+	}
 	Expect(Global.DismissCluster()).To(Succeed())
 	Expect(UniZone1.DismissCluster()).To(Succeed())
 	Expect(UniZone2.DismissCluster()).To(Succeed())
 }
 
-func AfterSuite(report ginkgo.Report) {
-	if Config.CleanupLogsOnSuccess {
-		universal_logs.CleanupIfSuccess(Config.UniversalE2ELogsPath, report)
-	}
-	PrintCPLogsOnFailure(report)
-	PrintKubeState(report)
-}
-
-func PrintCPLogsOnFailure(report ginkgo.Report) {
-	if !report.SuiteSucceeded {
-		framework.Logf("Please see full CP logs by downloading the debug artifacts")
-		for _, cluster := range append(Zones(), Global) {
-			framework.DebugUniversalCPLogs(cluster)
-		}
-	}
-}
-
-func PrintKubeState(report ginkgo.Report) {
-	if !report.SuiteSucceeded {
-		for _, cluster := range []Cluster{KubeZone1, KubeZone2} {
-			Logf("Kube state of cluster: " + cluster.Name())
-			// just running it, prints the logs
-			if err := k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "get", "pods", "-A"); err != nil {
-				framework.Logf("could not retrieve kube pods")
-			}
-		}
-	}
-}
-
-func ExpectCpsToNotCrash() {
-	for _, cluster := range append(Zones(), Global) {
-		Expect(CpRestarted(cluster)).To(BeFalse(), cluster.Name()+" restarted in this suite, this should not happen.")
-	}
-}
-
-func ExpectCpsToNotPanic() {
-	for _, cluster := range append(Zones(), Global) {
-		logs, err := cluster.GetKumaCPLogs()
-		if err != nil {
-			Logf("could not retrieve cp logs")
-		} else {
-			Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
-		}
-	}
+func AfterSuite(r ginkgo.Report) {
+	report.DumpReport(r)
 }

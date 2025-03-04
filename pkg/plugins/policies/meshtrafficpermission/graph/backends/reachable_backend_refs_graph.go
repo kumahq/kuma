@@ -10,6 +10,7 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("rms-graph")
@@ -41,19 +42,19 @@ func BuildRules(meshServices []*ms_api.MeshServiceResource, mtps []*mtp_api.Mesh
 func trimNotSupportedTags(mtps []*mtp_api.MeshTrafficPermissionResource, supportedTags map[string]string) []*mtp_api.MeshTrafficPermissionResource {
 	newMtps := make([]*mtp_api.MeshTrafficPermissionResource, len(mtps))
 	for i, mtp := range mtps {
-		if mtp.Spec != nil && mtp.Spec.TargetRef != nil && len(mtp.Spec.TargetRef.Tags) > 0 {
+		if mtp.Spec != nil && mtp.Spec.TargetRef != nil && len(pointer.Deref(mtp.Spec.TargetRef.Tags)) > 0 {
 			filteredTags := map[string]string{}
-			for tag, val := range mtp.Spec.TargetRef.Tags {
+			for tag, val := range pointer.Deref(mtp.Spec.TargetRef.Tags) {
 				if _, ok := supportedTags[tag]; ok {
 					filteredTags[tag] = val
 				}
 			}
-			if len(filteredTags) != len(mtp.Spec.TargetRef.Tags) {
+			if len(filteredTags) != len(pointer.Deref(mtp.Spec.TargetRef.Tags)) {
 				mtp = &mtp_api.MeshTrafficPermissionResource{
 					Meta: mtp.Meta,
 					Spec: mtp.Spec.DeepCopy(),
 				}
-				mtp.Spec.TargetRef.Tags = filteredTags
+				mtp.Spec.TargetRef.Tags = &filteredTags
 			}
 		}
 		newMtps[i] = mtp

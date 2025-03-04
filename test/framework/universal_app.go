@@ -8,6 +8,7 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -16,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/ssh"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
 )
 
 type AppMode string
@@ -188,7 +188,6 @@ networking:
 
 type UniversalApp struct {
 	t             testing.TestingT
-	logsPath      string
 	mainApp       *ssh.App
 	mainAppEnv    map[string]string
 	mainAppArgs   []string
@@ -201,17 +200,18 @@ type UniversalApp struct {
 	verbose       bool
 	mesh          string
 	concurrency   int
+	clusterName   string
 }
 
 func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
-		logsPath:      universal_logs.CurrentLogsPath(Config.UniversalE2ELogsPath),
 		ports:         map[string]string{},
 		verbose:       verbose,
 		mesh:          mesh,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, dpName, random.UniqueId()),
 		concurrency:   concurrency,
+		clusterName:   clusterName,
 	}
 	if containerName != "" {
 		app.containerName = containerName
@@ -240,12 +240,17 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName, mesh string, mode 
 	for _, c := range caps {
 		dockerExtraOptions = append(dockerExtraOptions, "--cap-add", c)
 	}
+	l := logger.Discard
+	if verbose {
+		l = logger.Default
+	}
 	container, err := docker.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
 		Detach:       true,
 		Remove:       true,
 		Name:         app.containerName,
 		Volumes:      volumes,
 		OtherOptions: dockerExtraOptions,
+		Logger:       l,
 	})
 	if err != nil {
 		return nil, err
@@ -372,12 +377,12 @@ func (s *UniversalApp) StartMainApp() error {
 func (s *UniversalApp) CreateMainApp(env map[string]string, args []string) {
 	s.mainAppEnv = env
 	s.mainAppArgs = args
-	s.mainApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], env, args)
+	s.mainApp = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], env, args)
 }
 
 func (s *UniversalApp) OverrideDpVersion(version string) error {
 	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
-	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
+	err := ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{
 		"wget",
 		fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", version, Config.Arch),
 		"-O",
@@ -387,7 +392,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 		return err
 	}
 
-	err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
+	err = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{
 		"mkdir",
 		"-p",
 		"/tmp/kuma/",
@@ -396,7 +401,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 		return err
 	}
 
-	err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
+	err = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{
 		"tar",
 		"xvzf",
 		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
@@ -407,7 +412,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 		return err
 	}
 
-	err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
+	err = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{
 		"cp",
 		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/kuma-dp", version),
 		"/usr/bin/kuma-dp",
@@ -416,7 +421,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 		return err
 	}
 
-	err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{
+	err = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{
 		"cp",
 		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/envoy", version),
 		"/usr/local/bin/envoy",
@@ -436,7 +441,7 @@ func (s *UniversalApp) CreateDP(
 	envsMap map[string]string,
 ) {
 	// create the token file on the app container
-	err := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
+	err := ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + name}).Run()
 	if err != nil {
 		panic(err)
 	}
@@ -451,7 +456,7 @@ func (s *UniversalApp) CreateDP(
 	}
 
 	if dpyaml != "" {
-		err = ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
+		err = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + name}).Run()
 		if err != nil {
 			panic(err)
 		}
@@ -481,7 +486,7 @@ func (s *UniversalApp) CreateDP(
 		args = append(args, "--log-level", "debug")
 	}
 
-	s.dpApp = ssh.NewApp(s.containerName, s.logsPath, s.verbose, s.ports[sshPort], envsMap, args)
+	s.dpApp = ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], envsMap, args)
 }
 
 func (s *UniversalApp) setupTransparent(builtindns bool) {
@@ -496,7 +501,7 @@ func (s *UniversalApp) setupTransparent(builtindns bool) {
 		)
 	}
 
-	app := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, args)
+	app := ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, args)
 	err := app.Run()
 	if err != nil {
 		panic(fmt.Sprintf("err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out()))
@@ -504,7 +509,7 @@ func (s *UniversalApp) setupTransparent(builtindns bool) {
 }
 
 func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
-	cmd := ssh.NewApp(s.containerName, "", s.verbose, s.ports[sshPort], nil, []string{"getent", "ahosts", s.container[:12]})
+	cmd := ssh.NewApp(s.containerName, s.clusterName, s.verbose, s.ports[sshPort], nil, []string{"getent", "ahosts", s.container[:12]})
 	err := cmd.Run()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", cmd.Err())

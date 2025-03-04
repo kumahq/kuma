@@ -155,7 +155,7 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewHostnameGeneratorResource(),
 	ResourceList:                 &HostnameGeneratorResourceList{},
 	Scope:                        model.ScopeGlobal,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "hostnamegenerators",
 	KumactlArg:                   "hostnamegenerator",
 	KumactlListArg:               "hostnamegenerators",
@@ -173,5 +173,5 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	AllowedOnSystemNamespaceOnly: true,
 	IsReferenceableInTo:          false,
 	ShortName:                    "hg",
-	InterpretFromEntriesAsRules:  false,
+	IsFromAsRules:                false,
 }

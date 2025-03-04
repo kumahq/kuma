@@ -67,6 +67,11 @@ func (d *DataplaneBuilder) WithMesh(mesh string) *DataplaneBuilder {
 	return d
 }
 
+func (d *DataplaneBuilder) WithLabels(labels map[string]string) *DataplaneBuilder {
+	d.res.Meta.(*test_model.ResourceMeta).Labels = labels
+	return d
+}
+
 func (d *DataplaneBuilder) WithVersion(version string) *DataplaneBuilder {
 	d.res.Meta.(*test_model.ResourceMeta).Version = version
 	return d
