@@ -4158,7 +4158,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -4434,7 +4433,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -4695,7 +4693,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -5313,7 +5310,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -5877,7 +5873,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -6431,7 +6426,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -6683,7 +6677,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -6772,7 +6765,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -6959,7 +6951,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -7107,7 +7098,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -7468,7 +7458,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -7616,7 +7605,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -7738,7 +7726,6 @@ components:
                                         - Sidecar
                                         - Gateway
                                       type: string
-                                    minItems: 1
                                     type: array
                                   sectionName:
                                     description: >-
@@ -7894,7 +7881,6 @@ components:
                                                 - Sidecar
                                                 - Gateway
                                               type: string
-                                            minItems: 1
                                             type: array
                                           sectionName:
                                             description: >-
@@ -8292,7 +8278,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -8443,7 +8428,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -9068,7 +9052,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -9411,7 +9394,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -9611,7 +9593,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -10333,7 +10314,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -10618,7 +10598,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -10852,7 +10831,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -11076,7 +11054,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -11224,7 +11201,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -11742,7 +11718,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -11890,7 +11865,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -12000,7 +11974,6 @@ components:
                                         - Sidecar
                                         - Gateway
                                       type: string
-                                    minItems: 1
                                     type: array
                                   sectionName:
                                     description: >-
@@ -12093,7 +12066,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12330,7 +12302,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12510,7 +12481,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -12680,7 +12650,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12889,7 +12858,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -13042,7 +13010,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -13404,7 +13371,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -13568,7 +13534,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -13657,7 +13622,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-

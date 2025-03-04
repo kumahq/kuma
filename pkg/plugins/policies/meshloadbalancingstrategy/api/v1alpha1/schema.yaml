@@ -69,7 +69,6 @@ properties:
                 - Sidecar
                 - Gateway
               type: string
-            minItems: 1
             type: array
           sectionName:
             description: |-
@@ -501,7 +500,6 @@ properties:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: |-

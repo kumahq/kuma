@@ -137,6 +137,11 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 			}
 		}
 	}
+	if in.Mesh != nil {
+		in, out := &in.Mesh, &out.Mesh
+		*out = new(string)
+		**out = **in
+	}
 	if in.ProxyTypes != nil {
 		in, out := &in.ProxyTypes, &out.ProxyTypes
 		*out = new([]TargetRefProxyType)
@@ -145,6 +150,11 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 			*out = make([]TargetRefProxyType, len(*in))
 			copy(*out, *in)
 		}
+	}
+	if in.Namespace != nil {
+		in, out := &in.Namespace, &out.Namespace
+		*out = new(string)
+		**out = **in
 	}
 	if in.Labels != nil {
 		in, out := &in.Labels, &out.Labels
@@ -156,6 +166,11 @@ func (in *TargetRef) DeepCopyInto(out *TargetRef) {
 				(*out)[key] = val
 			}
 		}
+	}
+	if in.SectionName != nil {
+		in, out := &in.SectionName, &out.SectionName
+		*out = new(string)
+		**out = **in
 	}
 }
 

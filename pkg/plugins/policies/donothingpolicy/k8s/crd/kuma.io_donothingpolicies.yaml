@@ -113,7 +113,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -183,7 +182,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -264,7 +262,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
