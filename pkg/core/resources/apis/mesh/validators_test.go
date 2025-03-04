@@ -640,6 +640,45 @@ violations:
     message: must not be set with kind MeshGateway
 `,
 		}),
+		Entry("Mesh with empty proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: []
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must be undefined or have at least one element
+`,
+		}),
+		Entry("Mesh with one proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
+		Entry("Mesh with no proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
 		Entry("MeshGateway when it's not supported", testCase{
 			inputYaml: `
 kind: MeshGateway

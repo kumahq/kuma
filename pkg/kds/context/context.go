@@ -34,6 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -309,7 +310,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilte
 				}
 				if policy.GetTargetRef().Kind == common_api.MeshSubset {
 					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
-					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != zoneName {
+					if targetZone, ok := pointer.Deref(policy.GetTargetRef().Tags)[mesh_proto.ZoneTag]; ok && targetZone != zoneName {
 						return false
 					}
 				}

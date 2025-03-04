@@ -264,7 +264,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -278,6 +277,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object

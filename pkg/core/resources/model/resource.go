@@ -622,7 +622,7 @@ func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
 	}
 
 	isProducerItem := func(tr common_api.TargetRef) bool {
-		return tr.Kind == common_api.MeshService && tr.Name != "" && (tr.Namespace == "" || tr.Namespace == ns.value)
+		return tr.Kind == common_api.MeshService && pointer.Deref(tr.Name) != "" && (pointer.Deref(tr.Namespace) == "" || pointer.Deref(tr.Namespace) == ns.value)
 	}
 
 	producerItems := 0
@@ -824,8 +824,8 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 		}
 	default:
 		var namespace string
-		if tr.Namespace != "" {
-			namespace = tr.Namespace
+		if pointer.Deref(tr.Namespace) != "" {
+			namespace = pointer.Deref(tr.Namespace)
 		} else {
 			namespace = meta.GetLabels()[mesh_proto.KubeNamespaceTag]
 		}
@@ -833,7 +833,7 @@ func TargetRefToResourceIdentifier(meta ResourceMeta, tr common_api.TargetRef) R
 			Mesh:      meta.GetMesh(),
 			Zone:      meta.GetLabels()[mesh_proto.ZoneTag],
 			Namespace: namespace,
-			Name:      tr.Name,
+			Name:      pointer.Deref(tr.Name),
 		}
 	}
 }
@@ -843,8 +843,8 @@ func ResourceToBackendRef(r Resource, resType ResourceType, port uint32) common_
 	return common_api.BackendRef{
 		TargetRef: common_api.TargetRef{
 			Kind:      common_api.TargetRefKind(resType),
-			Name:      id.Name,
-			Namespace: id.Namespace,
+			Name:      pointer.To(id.Name),
+			Namespace: pointer.To(id.Namespace),
 		},
 		Port: pointer.To(port),
 	}
@@ -869,8 +869,8 @@ func ResolveBackendRef(meta ResourceMeta, br common_api.BackendRef, resolver Lab
 		Weight: pointer.DerefOr(br.Weight, 1),
 	}
 
-	if len(br.Labels) > 0 {
-		ri := resolver(ResourceType(br.Kind), br.Labels)
+	if len(pointer.Deref(br.Labels)) > 0 {
+		ri := resolver(ResourceType(br.Kind), pointer.Deref(br.Labels))
 		if ri == nil {
 			return nil
 		}
