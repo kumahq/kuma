@@ -88,7 +88,7 @@ type TargetRef struct {
 
 	// Kind of the referenced resource
 	// +kubebuilder:validation:Enum=Mesh;MeshSubset;MeshGateway;MeshService;MeshExternalService;MeshMultiZoneService;MeshServiceSubset;MeshHTTPRoute;Dataplane
-	Kind TargetRefKind `json:"kind,omitempty"`
+	Kind TargetRefKind `json:"kind"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
 	Name string `json:"name,omitempty"`
