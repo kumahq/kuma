@@ -199,7 +199,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -270,7 +269,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between clients and corresponding
@@ -421,7 +419,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef

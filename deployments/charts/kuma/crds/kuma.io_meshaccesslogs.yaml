@@ -276,7 +276,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - default
@@ -515,7 +514,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -744,7 +742,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - default

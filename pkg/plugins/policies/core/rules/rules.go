@@ -304,7 +304,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
 		for _, route := range httpRoutes {
-			if core_model.IsReferenced(p.GetMeta(), policyWithTo.GetTargetRef().Name, route.GetMeta()) {
+			if core_model.IsReferenced(p.GetMeta(), pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
 				if r, ok := route.(*v1alpha1.MeshHTTPRouteResource); ok {
 					mhr = r
 				}
@@ -551,9 +551,9 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}, nil
 	case common_api.MeshServiceSubset:
-		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
+		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}
 		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}

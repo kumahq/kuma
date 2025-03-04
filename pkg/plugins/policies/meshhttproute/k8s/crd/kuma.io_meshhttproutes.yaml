@@ -114,7 +114,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To matches destination services of requests and holds
@@ -214,7 +213,6 @@ spec:
                                       type: integer
                                   required:
                                   - kind
-                                  - name
                                   type: object
                                 type: array
                               filters:
@@ -346,7 +344,6 @@ spec:
                                               type: integer
                                           required:
                                           - kind
-                                          - name
                                           type: object
                                         percentage:
                                           anyOf:
@@ -675,7 +672,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - rules

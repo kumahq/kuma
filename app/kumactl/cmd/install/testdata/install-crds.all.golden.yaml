@@ -787,7 +787,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - default
@@ -1026,7 +1025,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -1255,7 +1253,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - default
@@ -1636,7 +1633,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -1962,7 +1958,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: |-
@@ -2282,7 +2277,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -2880,7 +2874,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -2951,7 +2944,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between clients and corresponding
@@ -3102,7 +3094,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -3914,7 +3905,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -4183,7 +4173,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -4310,7 +4299,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To matches destination services of requests and holds
@@ -4410,7 +4398,6 @@ spec:
                                       type: integer
                                   required:
                                   - kind
-                                  - name
                                   type: object
                                 type: array
                               filters:
@@ -4542,7 +4529,6 @@ spec:
                                               type: integer
                                           required:
                                           - kind
-                                          - name
                                           type: object
                                         percentage:
                                           anyOf:
@@ -4871,7 +4857,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - rules
@@ -5050,7 +5035,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -5506,7 +5490,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -5803,7 +5786,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object
@@ -6181,7 +6163,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object
@@ -6733,7 +6714,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             required:
             - default
@@ -6982,7 +6962,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -7180,7 +7159,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between clients and corresponding
@@ -7371,7 +7349,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -7498,7 +7475,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -7888,7 +7864,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -8236,7 +8211,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: |-
@@ -8328,7 +8302,6 @@ spec:
                                       type: integer
                                   required:
                                   - kind
-                                  - name
                                   type: object
                                 type: array
                             type: object
@@ -8401,7 +8374,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - rules
@@ -8586,7 +8558,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -8715,7 +8686,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -8838,7 +8808,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -9020,7 +8989,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -9148,7 +9116,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object
@@ -9437,7 +9404,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object
@@ -9579,7 +9545,6 @@ spec:
                           type: object
                       required:
                       - kind
-                      - name
                       type: object
                   required:
                   - targetRef
@@ -9650,7 +9615,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object

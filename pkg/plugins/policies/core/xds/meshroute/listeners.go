@@ -73,7 +73,7 @@ func (ds *DestinationService) DefaultBackendRef() *core_model.ResolvedBackendRef
 		return core_model.NewResolvedBackendRef(&core_model.LegacyBackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: ds.Outbound.LegacyOutbound.GetService(),
+				Name: pointer.To(ds.Outbound.LegacyOutbound.GetService()),
 				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
 			},
 			Weight: pointer.To(uint(100)),
@@ -325,7 +325,7 @@ func handleLegacyBackendRef(
 		return nil
 	}
 
-	service := ref.Name
+	service := pointer.Deref(ref.Name)
 	protocol := meshCtx.GetServiceProtocol(service)
 	if _, ok := protocols[protocol]; !ok {
 		return nil
@@ -366,7 +366,7 @@ func handleLegacyBackendRef(
 		WithService(service).
 		WithName(clusterName).
 		WithTags(envoy_tags.Tags(pointer.Deref(ref.Tags)).
-			WithTags(mesh_proto.ServiceTag, ref.Name).
+			WithTags(mesh_proto.ServiceTag, pointer.Deref(ref.Name)).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
 

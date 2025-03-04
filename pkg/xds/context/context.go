@@ -160,7 +160,7 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 			key := core_model.TypedResourceIdentifier{
 				ResourceType: core_model.ResourceType(reachableBackend.Kind),
 				ResourceIdentifier: core_model.TargetRefToResourceIdentifier(dataplane.GetMeta(), common_api.TargetRef{
-					Name:      reachableBackend.Name,
+					Name:      &reachableBackend.Name,
 					Namespace: reachableBackend.Namespace,
 				}),
 			}

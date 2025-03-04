@@ -1,7 +1,6 @@
 package backends
 
 import (
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -11,6 +10,7 @@ import (
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	graph_util "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/util"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 var log = core.Log.WithName("rms-graph")

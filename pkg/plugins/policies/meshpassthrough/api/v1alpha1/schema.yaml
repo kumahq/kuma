@@ -133,7 +133,6 @@ properties:
             type: object
         required:
           - kind
-          - name
         type: object
     type: object
   creationTime:

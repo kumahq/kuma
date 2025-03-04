@@ -91,14 +91,14 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "backend",
+							Name: pointer.To("backend"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "web",
+							Name: pointer.To("web"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
@@ -119,14 +119,14 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "backend",
+							Name: pointer.To("backend"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "web",
+							Name: pointer.To("web"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
@@ -155,14 +155,14 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "backend",
+							Name: pointer.To("backend"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "web",
+							Name: pointer.To("web"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},
@@ -183,14 +183,14 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "backend",
+							Name: pointer.To("backend"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Allow")},
 					},
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshService",
-							Name: "web",
+							Name: pointer.To("web"),
 						},
 						Default: meshtrafficpermissions_proto.Conf{Action: pointer.To[meshtrafficpermissions_proto.Action]("Deny")},
 					},

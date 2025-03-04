@@ -85,7 +85,6 @@ properties:
             type: object
         required:
           - kind
-          - name
         type: object
       to:
         description: To matches destination services of requests and holds configuration.
@@ -181,7 +180,6 @@ properties:
                               type: integer
                           required:
                             - kind
-                            - name
                           type: object
                         type: array
                       filters:
@@ -308,7 +306,6 @@ properties:
                                       type: integer
                                   required:
                                     - kind
-                                    - name
                                   type: object
                                 percentage:
                                   anyOf:
@@ -631,7 +628,6 @@ properties:
                   type: object
               required:
                 - kind
-                - name
               type: object
           required:
             - rules

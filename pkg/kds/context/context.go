@@ -3,7 +3,6 @@ package context
 import (
 	"context"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"strings"
 
@@ -34,6 +33,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
 )

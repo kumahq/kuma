@@ -21,14 +21,14 @@ func TargetRefMeshSubset(kv ...string) common_api.TargetRef {
 func TargetRefService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshService,
-		Name: name,
+		Name: &name,
 	}
 }
 
 func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshServiceSubset,
-		Name: name,
+		Name: &name,
 		Tags: pointer.To(TagsKVToMap(kv)),
 	}
 }
@@ -36,7 +36,7 @@ func TargetRefServiceSubset(name string, kv ...string) common_api.TargetRef {
 func TargetRefMeshService(name, namespace, sectionName string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind:        common_api.MeshService,
-		Name:        name,
+		Name:        &name,
 		Namespace:   namespace,
 		SectionName: sectionName,
 	}
@@ -53,13 +53,13 @@ func TargetRefMeshServiceLabels(labels map[string]string, sectionName string) co
 func TargetRefMeshExternalService(name string) common_api.TargetRef {
 	return common_api.TargetRef{
 		Kind: common_api.MeshExternalService,
-		Name: name,
+		Name: &name,
 	}
 }
 
 func TargetRefMeshGateway(name string) *common_api.TargetRef {
 	return &common_api.TargetRef{
 		Kind: common_api.MeshGateway,
-		Name: name,
+		Name: &name,
 	}
 }

@@ -201,12 +201,12 @@ func dppSelectedByPolicy(
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshService:
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: ref.Name,
+			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}, dpp, gateway)
 		return inbounds, gwListeners, gateway, nil
 	case common_api.MeshServiceSubset:
 		tags := map[string]string{
-			mesh_proto.ServiceTag: ref.Name,
+			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}
 		for k, v := range pointer.Deref(ref.Tags) {
 			tags[k] = v
@@ -214,15 +214,15 @@ func dppSelectedByPolicy(
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(tags, dpp, gateway)
 		return inbounds, gwListeners, gateway, nil
 	case common_api.MeshGateway:
-		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, ref.Name, gateway.GetMeta()) {
+		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, pointer.Deref(ref.Name), gateway.GetMeta()) {
 			return nil, nil, false, nil
 		}
 		inbounds, gwListeners, _ := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 		return inbounds, gwListeners, false, nil
 	case common_api.MeshHTTPRoute:
-		mhr := resolveMeshHTTPRouteRef(meta, ref.Name, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
+		mhr := resolveMeshHTTPRouteRef(meta, pointer.Deref(ref.Name), referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if mhr == nil {
-			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", ref.Name)
+			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
 		}
 		return dppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
 	default:
@@ -231,7 +231,7 @@ func dppSelectedByPolicy(
 }
 
 func allDataplanesSelected(ref common_api.TargetRef) bool {
-	return ref.Name == "" && ref.Namespace == "" && ref.Labels == nil
+	return pointer.Deref(ref.Name) == "" && ref.Namespace == "" && ref.Labels == nil
 }
 
 func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
@@ -266,7 +266,7 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 }
 
 func isSelectedByResourceIdentifier(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef, meta core_model.ResourceMeta) bool {
-	if ref.Name == "" {
+	if pointer.Deref(ref.Name) == "" {
 		return false
 	}
 	return core_model.NewResourceIdentifier(dpp) == core_model.TargetRefToResourceIdentifier(meta, ref)

@@ -280,7 +280,6 @@ spec:
                     type: object
                 required:
                 - kind
-                - name
                 type: object
             type: object
         type: object

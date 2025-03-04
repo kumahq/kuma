@@ -3,12 +3,12 @@ package v1alpha1
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 	"sort"
 	"strings"
 
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type TargetRefKind string
@@ -92,7 +92,7 @@ type TargetRef struct {
 	Kind TargetRefKind `json:"kind"`
 	// Name of the referenced resource. Can only be used with kinds: `MeshService`,
 	// `MeshServiceSubset` and `MeshGatewayRoute`
-	Name string `json:"name"`
+	Name *string `json:"name,omitempty"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
 	Tags *map[string]string `json:"tags,omitempty"`
@@ -133,7 +133,7 @@ func (t TargetRef) CompareDataplaneKind(other TargetRef) int {
 }
 
 func selectsNameAndNamespace(tr TargetRef) bool {
-	return tr.Name != ""
+	return pointer.Deref(tr.Name) != ""
 }
 
 func selectsLabels(tr TargetRef) bool {
@@ -196,7 +196,7 @@ func (in BackendRef) Hash() BackendRefHash {
 
 	name := in.Name
 	if in.Port != nil {
-		name = fmt.Sprintf("%s_svc_%d", in.Name, *in.Port)
+		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, *name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
 }

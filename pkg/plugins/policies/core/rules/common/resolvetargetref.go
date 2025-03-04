@@ -86,7 +86,7 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 	// backwards compatibility, we want old policies with targetRef{kind:MeshService,name:backend_kuma-demo_svc_8080}
 	// to resolve to new MeshService backend in the kuma-demo namespace on port 8080
 	if targetRef.Kind == common_api.MeshService && targetRef.SectionName == "" {
-		if name, namespace, port, err := parseService(targetRef.Name); err == nil {
+		if name, namespace, port, err := parseService(pointer.Deref(targetRef.Name)); err == nil {
 			q = query{
 				byLabels: map[string]string{
 					mesh_proto.KubeNamespaceTag: namespace,
