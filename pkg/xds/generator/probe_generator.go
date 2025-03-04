@@ -3,6 +3,7 @@ package generator
 import (
 	"context"
 	"net/url"
+
 	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
