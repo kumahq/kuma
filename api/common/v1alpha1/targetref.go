@@ -198,5 +198,5 @@ func (in BackendRef) Hash() BackendRefHash {
 	if in.Port != nil {
 		name = pointer.To(fmt.Sprintf("%s_svc_%d", pointer.Deref(in.Name), *in.Port))
 	}
-	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, *name, strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
+	return BackendRefHash(fmt.Sprintf("%s/%s/%s/%s/%s", in.Kind, pointer.Deref(name), strings.Join(orderedTags, "/"), strings.Join(orderedLabels, "/"), in.Mesh))
 }
