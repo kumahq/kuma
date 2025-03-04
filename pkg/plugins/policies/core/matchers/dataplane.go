@@ -179,7 +179,7 @@ func dppSelectedByPolicy(
 	}
 	switch ref.Kind {
 	case common_api.Mesh:
-		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
+		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
 			inbounds, gwListeners, gateway := inboundsSelectedByTags(nil, dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
 		}
@@ -189,40 +189,40 @@ func dppSelectedByPolicy(
 			return []core_rules.InboundListener{}, nil, false, nil
 		}
 		if allDataplanesSelected(ref) || isSelectedByResourceIdentifier(dpp, ref, meta) || isSelectedByLabels(dpp, ref) {
-			inbounds := inboundsSelectedBySectionName(ref.SectionName, dpp)
+			inbounds := inboundsSelectedBySectionName(pointer.Deref(ref.SectionName), dpp)
 			return inbounds, nil, false, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:
-		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
-			inbounds, gwListeners, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+		if isSupportedProxyType(pointer.Deref(ref.ProxyTypes), resolveDataplaneProxyType(dpp)) {
+			inbounds, gwListeners, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshService:
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(map[string]string{
-			mesh_proto.ServiceTag: ref.Name,
+			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}, dpp, gateway)
 		return inbounds, gwListeners, gateway, nil
 	case common_api.MeshServiceSubset:
 		tags := map[string]string{
-			mesh_proto.ServiceTag: ref.Name,
+			mesh_proto.ServiceTag: pointer.Deref(ref.Name),
 		}
-		for k, v := range ref.Tags {
+		for k, v := range pointer.Deref(ref.Tags) {
 			tags[k] = v
 		}
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(tags, dpp, gateway)
 		return inbounds, gwListeners, gateway, nil
 	case common_api.MeshGateway:
-		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, ref.Name, gateway.GetMeta()) {
+		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, pointer.Deref(ref.Name), gateway.GetMeta()) {
 			return nil, nil, false, nil
 		}
-		inbounds, gwListeners, _ := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+		inbounds, gwListeners, _ := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 		return inbounds, gwListeners, false, nil
 	case common_api.MeshHTTPRoute:
-		mhr := resolveMeshHTTPRouteRef(meta, ref.Name, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
+		mhr := resolveMeshHTTPRouteRef(meta, pointer.Deref(ref.Name), referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
 		if mhr == nil {
-			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", ref.Name)
+			return nil, nil, false, fmt.Errorf("couldn't resolve MeshHTTPRoute targetRef with name '%s'", pointer.Deref(ref.Name))
 		}
 		return dppSelectedByPolicy(mhr.Meta, pointer.DerefOr(mhr.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh}), dpp, gateway, referencableResources)
 	default:
@@ -231,7 +231,7 @@ func dppSelectedByPolicy(
 }
 
 func allDataplanesSelected(ref common_api.TargetRef) bool {
-	return ref.Name == "" && ref.Namespace == "" && ref.Labels == nil
+	return pointer.Deref(ref.Name) == "" && pointer.Deref(ref.Namespace) == "" && pointer.Deref(ref.Labels) == nil
 }
 
 func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneResource) []core_rules.InboundListener {
@@ -253,11 +253,11 @@ func inboundsSelectedBySectionName(sectionName string, dpp *core_mesh.DataplaneR
 
 // TODO this is common functionality with selecting MeshService by labels, we should refactor this and extract to some common function
 func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef) bool {
-	if ref.Labels == nil {
+	if pointer.Deref(ref.Labels) == nil {
 		return false
 	}
 
-	for label, value := range ref.Labels {
+	for label, value := range pointer.Deref(ref.Labels) {
 		if dpp.GetMeta().GetLabels()[label] != value {
 			return false
 		}
@@ -266,7 +266,7 @@ func isSelectedByLabels(dpp *core_mesh.DataplaneResource, ref common_api.TargetR
 }
 
 func isSelectedByResourceIdentifier(dpp *core_mesh.DataplaneResource, ref common_api.TargetRef, meta core_model.ResourceMeta) bool {
-	if ref.Name == "" {
+	if pointer.Deref(ref.Name) == "" {
 		return false
 	}
 	return core_model.NewResourceIdentifier(dpp) == core_model.TargetRefToResourceIdentifier(meta, ref)
@@ -403,7 +403,7 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		}
 
 		if tr1.Kind == common_api.MeshGateway {
-			if less := len(tr1.Tags) - len(tr2.Tags); less != 0 {
+			if less := len(pointer.Deref(tr1.Tags)) - len(pointer.Deref(tr2.Tags)); less != 0 {
 				return less
 			}
 		}

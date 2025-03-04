@@ -4158,7 +4158,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -4178,6 +4177,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - default
@@ -4432,7 +4433,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -4450,6 +4450,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -4691,7 +4693,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -4711,6 +4712,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - default
@@ -5307,7 +5310,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -5327,6 +5329,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -5869,7 +5873,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -5887,6 +5890,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -6421,7 +6426,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -6441,6 +6445,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -6671,7 +6677,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -6691,6 +6696,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -6758,7 +6765,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -6776,6 +6782,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -6943,7 +6951,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -6963,6 +6970,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -7089,7 +7098,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -7107,6 +7115,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -7448,7 +7458,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -7468,6 +7477,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -7594,7 +7605,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -7612,6 +7622,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -7714,7 +7726,6 @@ components:
                                         - Sidecar
                                         - Gateway
                                       type: string
-                                    minItems: 1
                                     type: array
                                   sectionName:
                                     description: >-
@@ -7738,6 +7749,8 @@ components:
                                     default: 1
                                     minimum: 0
                                     type: integer
+                                required:
+                                  - kind
                                 type: object
                               type: array
                             filters:
@@ -7868,7 +7881,6 @@ components:
                                                 - Sidecar
                                                 - Gateway
                                               type: string
-                                            minItems: 1
                                             type: array
                                           sectionName:
                                             description: >-
@@ -7892,6 +7904,8 @@ components:
                                             default: 1
                                             minimum: 0
                                             type: integer
+                                        required:
+                                          - kind
                                         type: object
                                       percentage:
                                         anyOf:
@@ -8264,7 +8278,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -8284,6 +8297,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - rules
@@ -8413,7 +8428,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -8431,6 +8445,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -9036,7 +9052,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -9056,6 +9071,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -9377,7 +9394,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -9395,6 +9411,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -9575,7 +9593,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -9593,6 +9610,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -10295,7 +10314,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -10313,6 +10331,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           required:
             - default
@@ -10578,7 +10598,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -10598,6 +10617,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -10810,7 +10831,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -10828,6 +10848,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11032,7 +11054,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -11052,6 +11073,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -11178,7 +11201,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -11196,6 +11218,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11694,7 +11718,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -11714,6 +11737,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -11840,7 +11865,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -11858,6 +11882,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11948,7 +11974,6 @@ components:
                                         - Sidecar
                                         - Gateway
                                       type: string
-                                    minItems: 1
                                     type: array
                                   sectionName:
                                     description: >-
@@ -11972,6 +11997,8 @@ components:
                                     default: 1
                                     minimum: 0
                                     type: integer
+                                required:
+                                  - kind
                                 type: object
                               type: array
                           type: object
@@ -12039,7 +12066,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12059,6 +12085,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - rules
@@ -12274,7 +12302,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12294,6 +12321,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12452,7 +12481,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -12470,6 +12498,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -12620,7 +12650,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12640,6 +12669,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12827,7 +12858,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -12847,6 +12877,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12978,7 +13010,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -12996,6 +13027,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -13338,7 +13371,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -13356,6 +13388,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -13500,7 +13534,6 @@ components:
                             - Sidecar
                             - Gateway
                           type: string
-                        minItems: 1
                         type: array
                       sectionName:
                         description: >-
@@ -13520,6 +13553,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -13587,7 +13622,6 @@ components:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: >-
@@ -13605,6 +13639,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:

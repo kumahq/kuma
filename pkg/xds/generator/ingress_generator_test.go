@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -688,12 +689,12 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: "frontend",
+											Name: pointer.To("frontend"),
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: "backend",
+												Name: pointer.To("backend"),
 											},
 											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
@@ -706,8 +707,8 @@ var _ = Describe("IngressGenerator", func() {
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
-															Name: "backend",
-															Tags: map[string]string{
+															Name: pointer.To("backend"),
+															Tags: &map[string]string{
 																"version": "v1",
 																"region":  "eu",
 															},
@@ -782,12 +783,12 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshhttproute_api.MeshHTTPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: "frontend",
+											Name: pointer.To("frontend"),
 										},
 										To: &[]meshhttproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: "backend",
+												Name: pointer.To("backend"),
 											},
 											Rules: []meshhttproute_api.Rule{{
 												Matches: []meshhttproute_api.Match{{
@@ -800,8 +801,8 @@ var _ = Describe("IngressGenerator", func() {
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
-															Name: "backend",
-															Tags: map[string]string{
+															Name: pointer.To("backend"),
+															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",
 																"kuma.io/zone": "zone",
@@ -877,20 +878,20 @@ var _ = Describe("IngressGenerator", func() {
 									Spec: &meshtcproute_api.MeshTCPRoute{
 										TargetRef: &common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: "frontend",
+											Name: pointer.To("frontend"),
 										},
 										To: &[]meshtcproute_api.To{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshService,
-												Name: "backend",
+												Name: pointer.To("backend"),
 											},
 											Rules: []meshtcproute_api.Rule{{
 												Default: meshtcproute_api.RuleConf{
 													BackendRefs: &[]common_api.BackendRef{{
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
-															Name: "backend",
-															Tags: map[string]string{
+															Name: pointer.To("backend"),
+															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",
 																"kuma.io/zone": "zone",

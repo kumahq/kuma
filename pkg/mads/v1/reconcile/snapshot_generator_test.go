@@ -30,6 +30,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -493,7 +494,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
-								Name: "backend-01",
+								Name: pointer.To("backend-01"),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -591,7 +592,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
-								Name: "backend-02",
+								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{
@@ -711,7 +712,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Spec: &v1alpha1.MeshMetric{
 							TargetRef: &common_api.TargetRef{
 								Kind: common_api.MeshService,
-								Name: "backend-02",
+								Name: pointer.To("backend-02"),
 							},
 							Default: v1alpha1.Conf{
 								Backends: &[]v1alpha1.Backend{

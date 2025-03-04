@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/sort"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func Sort[T interface {
@@ -26,7 +27,7 @@ func CompareByToEntry[T common.Entry[ToEntry]](a, b T) int {
 
 	if a.GetEntry().GetTargetRef().Kind == common_api.MeshService {
 		sectionNameToNum := func(tr common_api.TargetRef) int {
-			if tr.SectionName != "" {
+			if pointer.Deref(tr.SectionName) != "" {
 				return 1
 			}
 			return 0

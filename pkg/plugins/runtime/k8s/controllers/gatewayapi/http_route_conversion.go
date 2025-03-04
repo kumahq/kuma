@@ -65,7 +65,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	// consumer route
 	targetRef := common_api.TargetRef{
 		Kind: common_api.MeshSubset,
-		Tags: map[string]string{
+		Tags: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
@@ -97,7 +97,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: serviceName,
+				Name: pointer.To(serviceName),
 			},
 			Rules: rules,
 		})
@@ -397,7 +397,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
-		Name: metadata.UnresolvedBackendServiceTag,
+		Name: pointer.To(metadata.UnresolvedBackendServiceTag),
 	}
 
 	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
@@ -433,8 +433,8 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		//     services across multiple zones.
 		return common_api.TargetRef{
 			Kind: common_api.MeshServiceSubset,
-			Name: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
-			Tags: map[string]string{
+			Name: pointer.To(k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port)),
+			Tags: &map[string]string{
 				mesh_proto.ZoneTag: r.Zone,
 			},
 		}, nil, nil
@@ -454,7 +454,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 
 		return common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: resource.Spec.GetService(),
+			Name: pointer.To(resource.Spec.GetService()),
 		}, nil, nil
 	}
 
@@ -480,7 +480,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	if refAttachmentKind != attachment.Service {
 		unresolvedTargetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: metadata.UnresolvedBackendServiceTag,
+			Name: pointer.To(metadata.UnresolvedBackendServiceTag),
 		}
 
 		policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
