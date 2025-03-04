@@ -6,6 +6,7 @@ import (
 	"io"
 	"math/rand"
 	"slices"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -50,7 +51,8 @@ type GlobalKDSServiceServer struct {
 	eventBus                events.EventBus
 	zoneHealthCheckInterval time.Duration
 	mesh_proto.UnimplementedGlobalKDSServiceServer
-	context context.Context
+	context     context.Context
+	streamCount atomic.Int64
 }
 
 func NewGlobalKDSServiceServer(ctx context.Context, envoyAdminRPCs EnvoyAdminRPCs, resManager manager.ResourceManager, instanceID string, filters []StreamInterceptor, extensions context.Context, upsertCfg config_store.UpsertConfig, eventBus events.EventBus, zoneHealthCheckInterval time.Duration) *GlobalKDSServiceServer {
@@ -119,9 +121,15 @@ type ZoneWentOffline struct {
 	TenantID string
 	Zone     string
 }
+type StreamCancelled struct {
+	TenantID string
+	Zone     string
+	StreamID int64
+}
 type ZoneOpenedStream struct {
 	TenantID string
 	Zone     string
+	StreamID int64
 }
 
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
@@ -152,13 +160,19 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	shouldDisconnectStream := events.NewNeverListener()
 	md, _ := metadata.FromIncomingContext(stream.Context())
 	features := md.Get(kds.FeaturesMetadataKey)
-
+	streamID := g.streamCount.Add(1)
 	if slices.Contains(features, kds.FeatureZonePingHealth) {
 		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
-			disconnectEvent, ok := e.(ZoneWentOffline)
-			return ok && disconnectEvent.TenantID == tenantZoneID.TenantID && disconnectEvent.Zone == zone
+			switch event := e.(type) {
+			case ZoneWentOffline:
+				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone
+			case StreamCancelled:
+				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone && event.StreamID == streamID
+			default:
+				return false
+			}
 		})
-		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID, StreamID: streamID})
 	}
 	defer shouldDisconnectStream.Close()
 
