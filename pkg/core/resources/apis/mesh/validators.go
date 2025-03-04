@@ -378,6 +378,7 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
+		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.Dataplane:
 		err.Add(disallowedField("tags", pointer.Deref(ref.Tags), ref.Kind))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
@@ -395,6 +396,7 @@ func ValidateTargetRef(
 		err.Add(disallowedField("labels", pointer.Deref(ref.Labels), ref.Kind))
 		err.Add(disallowedField("namespace", pointer.Deref(ref.Namespace), ref.Kind))
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
+		err.Add(validateProxyTypes("proxyTypes", ref.ProxyTypes))
 	case common_api.MeshService, common_api.MeshHTTPRoute:
 		err.Add(validateName(pointer.Deref(ref.Name), opts.AllowedInvalidNames))
 		err.Add(disallowedField("mesh", pointer.Deref(ref.Mesh), ref.Kind))
@@ -430,6 +432,16 @@ func ValidateTargetRef(
 			err.AddViolation("labels", "either labels or name must be specified")
 		}
 		err.Add(disallowedField("sectionName", pointer.Deref(ref.SectionName), ref.Kind))
+	}
+
+	return err
+}
+
+func validateProxyTypes(field string, proxyTypes *[]common_api.TargetRefProxyType) validators.ValidationError {
+	var err validators.ValidationError
+
+	if proxyTypes != nil && len(pointer.Deref(proxyTypes)) == 0 {
+		err.AddViolation(field, "must be undefined or have at least one element")
 	}
 
 	return err
