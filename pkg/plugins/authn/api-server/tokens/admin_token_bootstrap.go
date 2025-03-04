@@ -9,6 +9,7 @@ import (
 	"github.com/sethvargo/go-retry"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -81,7 +82,9 @@ func (a *adminTokenBootstrap) generateTokenIfNotExist(ctx context.Context) error
 	secret.Spec.Data = &wrapperspb.BytesValue{
 		Value: []byte(token),
 	}
-	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(globalSecretKey)); err != nil {
+	if err := a.resManager.Create(ctx, secret, core_store.CreateBy(globalSecretKey), core_store.CreateWithLabels(map[string]string{
+		mesh_proto.KDSSyncLabel: "disabled",
+	})); err != nil {
 		return err
 	}
 	return nil

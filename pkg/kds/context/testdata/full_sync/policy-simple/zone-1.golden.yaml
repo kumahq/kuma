@@ -1,0 +1,52 @@
+# Mesh
+---
+creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/origin: global
+modificationTime: "0001-01-01T00:00:00Z"
+name: default
+type: Mesh
+
+# MeshTimeout
+---
+creationTime: "0001-01-01T00:00:00Z"
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: default-timeout-zone-1
+spec:
+  to:
+  - default:
+      connectionTimeout: 2s
+      http:
+        requestTimeout: 2s
+      idleTimeout: 20s
+    targetRef:
+      kind: Mesh
+type: MeshTimeout
+
+---
+creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/display-name: default-timeout-global
+  kuma.io/origin: global
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: default-timeout-global-54dbd4c66zwbcf9c
+spec:
+  to:
+  - default:
+      connectionTimeout: 2s
+      http:
+        requestTimeout: 2s
+      idleTimeout: 20s
+    targetRef:
+      kind: Mesh
+type: MeshTimeout
+
+# ZoneInsight
+---
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-1
+type: ZoneInsight
+
