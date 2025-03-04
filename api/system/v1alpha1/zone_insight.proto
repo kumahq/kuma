@@ -22,9 +22,12 @@ message ZoneInsight {
   repeated KDSSubscription subscriptions = 1;
 
   // Statistics about Envoy Admin Streams
+  // Deprecated: use kds_streams instead.
   EnvoyAdminStreams envoy_admin_streams = 2;
 
   HealthCheck health_check = 3;
+  // Information about kds streams that are estabilished between global and zone
+  KDSStreams kds_streams = 4;
 }
 
 message EnvoyAdminStreams {
@@ -34,6 +37,26 @@ message EnvoyAdminStreams {
   string stats_global_instance_id = 2;
   // Global instance ID that handles Clusters streams.
   string clusters_global_instance_id = 3;
+}
+
+message KDSStreams {
+  // Details of stream that handles Clusters stream.
+  KDSStream clusters = 1;
+  // Details of stream that handles XDS Config Dump stream.
+  KDSStream config_dump = 2;
+  // Details of stream that handles Stats stream.
+  KDSStream stats = 3;
+  // Details of stream that handles global to zone resource sync stream.
+  KDSStream global_to_zone = 4;
+  // Details of stream that handles zone to global resource sync stream.
+  KDSStream zone_to_global = 5;
+}
+
+message KDSStream {
+  // Global instance ID that handles the stream.
+  string global_instance_id = 1;
+  // Time when the stream was open.
+  google.protobuf.Timestamp connect_time = 2;
 }
 
 // KDSSubscription describes a single KDS subscription

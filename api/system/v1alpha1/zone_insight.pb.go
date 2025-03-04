@@ -32,8 +32,11 @@ type ZoneInsight struct {
 	// List of KDS subscriptions created by a given Zone Kuma CP.
 	Subscriptions []*KDSSubscription `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
 	// Statistics about Envoy Admin Streams
+	// Deprecated: use kds_streams instead.
 	EnvoyAdminStreams *EnvoyAdminStreams `protobuf:"bytes,2,opt,name=envoy_admin_streams,json=envoyAdminStreams,proto3" json:"envoy_admin_streams,omitempty"`
 	HealthCheck       *HealthCheck       `protobuf:"bytes,3,opt,name=health_check,json=healthCheck,proto3" json:"health_check,omitempty"`
+	// Information about kds streams that are estabilished between global and zone
+	KdsStreams *KDSStreams `protobuf:"bytes,4,opt,name=kds_streams,json=kdsStreams,proto3" json:"kds_streams,omitempty"`
 }
 
 func (x *ZoneInsight) Reset() {
@@ -85,6 +88,13 @@ func (x *ZoneInsight) GetEnvoyAdminStreams() *EnvoyAdminStreams {
 func (x *ZoneInsight) GetHealthCheck() *HealthCheck {
 	if x != nil {
 		return x.HealthCheck
+	}
+	return nil
+}
+
+func (x *ZoneInsight) GetKdsStreams() *KDSStreams {
+	if x != nil {
+		return x.KdsStreams
 	}
 	return nil
 }
@@ -155,6 +165,147 @@ func (x *EnvoyAdminStreams) GetClustersGlobalInstanceId() string {
 	return ""
 }
 
+type KDSStreams struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Details of stream that handles Clusters stream.
+	Clusters *KDSStream `protobuf:"bytes,1,opt,name=clusters,proto3" json:"clusters,omitempty"`
+	// Details of stream that handles XDS Config Dump stream.
+	ConfigDump *KDSStream `protobuf:"bytes,2,opt,name=config_dump,json=configDump,proto3" json:"config_dump,omitempty"`
+	// Details of stream that handles Stats stream.
+	Stats *KDSStream `protobuf:"bytes,3,opt,name=stats,proto3" json:"stats,omitempty"`
+	// Details of stream that handles global to zone resource sync stream.
+	GlobalToZone *KDSStream `protobuf:"bytes,4,opt,name=global_to_zone,json=globalToZone,proto3" json:"global_to_zone,omitempty"`
+	// Details of stream that handles zone to global resource sync stream.
+	ZoneToGlobal *KDSStream `protobuf:"bytes,5,opt,name=zone_to_global,json=zoneToGlobal,proto3" json:"zone_to_global,omitempty"`
+}
+
+func (x *KDSStreams) Reset() {
+	*x = KDSStreams{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[2]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *KDSStreams) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KDSStreams) ProtoMessage() {}
+
+func (x *KDSStreams) ProtoReflect() protoreflect.Message {
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[2]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KDSStreams.ProtoReflect.Descriptor instead.
+func (*KDSStreams) Descriptor() ([]byte, []int) {
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *KDSStreams) GetClusters() *KDSStream {
+	if x != nil {
+		return x.Clusters
+	}
+	return nil
+}
+
+func (x *KDSStreams) GetConfigDump() *KDSStream {
+	if x != nil {
+		return x.ConfigDump
+	}
+	return nil
+}
+
+func (x *KDSStreams) GetStats() *KDSStream {
+	if x != nil {
+		return x.Stats
+	}
+	return nil
+}
+
+func (x *KDSStreams) GetGlobalToZone() *KDSStream {
+	if x != nil {
+		return x.GlobalToZone
+	}
+	return nil
+}
+
+func (x *KDSStreams) GetZoneToGlobal() *KDSStream {
+	if x != nil {
+		return x.ZoneToGlobal
+	}
+	return nil
+}
+
+type KDSStream struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// Global instance ID that handles the stream.
+	GlobalInstanceId string `protobuf:"bytes,1,opt,name=global_instance_id,json=globalInstanceId,proto3" json:"global_instance_id,omitempty"`
+	// Time when the stream was open.
+	ConnectTime *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
+}
+
+func (x *KDSStream) Reset() {
+	*x = KDSStream{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[3]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *KDSStream) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*KDSStream) ProtoMessage() {}
+
+func (x *KDSStream) ProtoReflect() protoreflect.Message {
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[3]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use KDSStream.ProtoReflect.Descriptor instead.
+func (*KDSStream) Descriptor() ([]byte, []int) {
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *KDSStream) GetGlobalInstanceId() string {
+	if x != nil {
+		return x.GlobalInstanceId
+	}
+	return ""
+}
+
+func (x *KDSStream) GetConnectTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ConnectTime
+	}
+	return nil
+}
+
 // KDSSubscription describes a single KDS subscription
 // created by a Zone to the Global.
 // Ideally, there should be only one such subscription per Zone lifecycle.
@@ -197,7 +348,7 @@ type KDSSubscription struct {
 func (x *KDSSubscription) Reset() {
 	*x = KDSSubscription{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[2]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -210,7 +361,7 @@ func (x *KDSSubscription) String() string {
 func (*KDSSubscription) ProtoMessage() {}
 
 func (x *KDSSubscription) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[2]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -223,7 +374,7 @@ func (x *KDSSubscription) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KDSSubscription.ProtoReflect.Descriptor instead.
 func (*KDSSubscription) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{2}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *KDSSubscription) GetId() string {
@@ -312,7 +463,7 @@ type KDSSubscriptionStatus struct {
 func (x *KDSSubscriptionStatus) Reset() {
 	*x = KDSSubscriptionStatus{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[3]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[5]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -325,7 +476,7 @@ func (x *KDSSubscriptionStatus) String() string {
 func (*KDSSubscriptionStatus) ProtoMessage() {}
 
 func (x *KDSSubscriptionStatus) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[3]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[5]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -338,7 +489,7 @@ func (x *KDSSubscriptionStatus) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KDSSubscriptionStatus.ProtoReflect.Descriptor instead.
 func (*KDSSubscriptionStatus) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{3}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *KDSSubscriptionStatus) GetLastUpdateTime() *timestamppb.Timestamp {
@@ -379,7 +530,7 @@ type KDSServiceStats struct {
 func (x *KDSServiceStats) Reset() {
 	*x = KDSServiceStats{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[4]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -392,7 +543,7 @@ func (x *KDSServiceStats) String() string {
 func (*KDSServiceStats) ProtoMessage() {}
 
 func (x *KDSServiceStats) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[4]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -405,7 +556,7 @@ func (x *KDSServiceStats) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KDSServiceStats.ProtoReflect.Descriptor instead.
 func (*KDSServiceStats) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{4}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *KDSServiceStats) GetResponsesSent() uint64 {
@@ -442,7 +593,7 @@ type Version struct {
 func (x *Version) Reset() {
 	*x = Version{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[5]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -455,7 +606,7 @@ func (x *Version) String() string {
 func (*Version) ProtoMessage() {}
 
 func (x *Version) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[5]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -468,7 +619,7 @@ func (x *Version) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Version.ProtoReflect.Descriptor instead.
 func (*Version) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{5}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Version) GetKumaCp() *KumaCpVersion {
@@ -499,7 +650,7 @@ type KumaCpVersion struct {
 func (x *KumaCpVersion) Reset() {
 	*x = KumaCpVersion{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[6]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -512,7 +663,7 @@ func (x *KumaCpVersion) String() string {
 func (*KumaCpVersion) ProtoMessage() {}
 
 func (x *KumaCpVersion) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[6]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -525,7 +676,7 @@ func (x *KumaCpVersion) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use KumaCpVersion.ProtoReflect.Descriptor instead.
 func (*KumaCpVersion) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{6}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *KumaCpVersion) GetVersion() string {
@@ -576,7 +727,7 @@ type HealthCheck struct {
 func (x *HealthCheck) Reset() {
 	*x = HealthCheck{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[7]
+		mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -589,7 +740,7 @@ func (x *HealthCheck) String() string {
 func (*HealthCheck) ProtoMessage() {}
 
 func (x *HealthCheck) ProtoReflect() protoreflect.Message {
-	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[7]
+	mi := &file_api_system_v1alpha1_zone_insight_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -602,7 +753,7 @@ func (x *HealthCheck) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use HealthCheck.ProtoReflect.Descriptor instead.
 func (*HealthCheck) Descriptor() ([]byte, []int) {
-	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{7}
+	return file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *HealthCheck) GetTime() *timestamppb.Timestamp {
@@ -624,7 +775,7 @@ var file_api_system_v1alpha1_zone_insight_proto_rawDesc = []byte{
 	0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2f, 0x74, 0x69, 0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d,
 	0x70, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x1a, 0x17, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74,
 	0x65, 0x2f, 0x76, 0x61, 0x6c, 0x69, 0x64, 0x61, 0x74, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x22, 0xdf, 0x02, 0x0a, 0x0b, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74,
+	0x22, 0xa2, 0x03, 0x0a, 0x0b, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74,
 	0x12, 0x4b, 0x0a, 0x0d, 0x73, 0x75, 0x62, 0x73, 0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e,
 	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x25, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x73,
 	0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b,
@@ -639,27 +790,60 @@ var file_api_system_v1alpha1_zone_insight_proto_rawDesc = []byte{
 	0x5f, 0x63, 0x68, 0x65, 0x63, 0x6b, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x21, 0x2e, 0x6b,
 	0x75, 0x6d, 0x61, 0x2e, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70,
 	0x68, 0x61, 0x31, 0x2e, 0x48, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x52,
-	0x0b, 0x68, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x3a, 0x64, 0xaa, 0x8c,
-	0x89, 0xa6, 0x01, 0x15, 0x0a, 0x13, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73, 0x69, 0x67, 0x68,
-	0x74, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x0d, 0x12,
-	0x0b, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74, 0xaa, 0x8c, 0x89, 0xa6,
-	0x01, 0x08, 0x22, 0x06, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x02,
-	0x18, 0x01, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x10, 0x3a, 0x0e, 0x0a, 0x0c, 0x7a, 0x6f, 0x6e, 0x65,
-	0x2d, 0x69, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x04, 0x3a, 0x02,
-	0x18, 0x01, 0x22, 0xcf, 0x01, 0x0a, 0x11, 0x45, 0x6e, 0x76, 0x6f, 0x79, 0x41, 0x64, 0x6d, 0x69,
-	0x6e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x12, 0x42, 0x0a, 0x1e, 0x63, 0x6f, 0x6e, 0x66,
-	0x69, 0x67, 0x5f, 0x64, 0x75, 0x6d, 0x70, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x69,
-	0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09,
-	0x52, 0x1a, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x44, 0x75, 0x6d, 0x70, 0x47, 0x6c, 0x6f, 0x62,
-	0x61, 0x6c, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x37, 0x0a, 0x18,
-	0x73, 0x74, 0x61, 0x74, 0x73, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x69, 0x6e, 0x73,
-	0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x15,
-	0x73, 0x74, 0x61, 0x74, 0x73, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e, 0x73, 0x74, 0x61,
-	0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x3d, 0x0a, 0x1b, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65, 0x72,
-	0x73, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63,
-	0x65, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x18, 0x63, 0x6c, 0x75, 0x73,
-	0x74, 0x65, 0x72, 0x73, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e,
-	0x63, 0x65, 0x49, 0x64, 0x22, 0x89, 0x04, 0x0a, 0x0f, 0x4b, 0x44, 0x53, 0x53, 0x75, 0x62, 0x73,
+	0x0b, 0x68, 0x65, 0x61, 0x6c, 0x74, 0x68, 0x43, 0x68, 0x65, 0x63, 0x6b, 0x12, 0x41, 0x0a, 0x0b,
+	0x6b, 0x64, 0x73, 0x5f, 0x73, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28,
+	0x0b, 0x32, 0x20, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e,
+	0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x44, 0x53, 0x53, 0x74, 0x72, 0x65,
+	0x61, 0x6d, 0x73, 0x52, 0x0a, 0x6b, 0x64, 0x73, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x3a,
+	0x64, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x15, 0x0a, 0x13, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73,
+	0x69, 0x67, 0x68, 0x74, 0x52, 0x65, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0xaa, 0x8c, 0x89, 0xa6,
+	0x01, 0x0d, 0x12, 0x0b, 0x5a, 0x6f, 0x6e, 0x65, 0x49, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74, 0xaa,
+	0x8c, 0x89, 0xa6, 0x01, 0x08, 0x22, 0x06, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0xaa, 0x8c, 0x89,
+	0xa6, 0x01, 0x02, 0x18, 0x01, 0xaa, 0x8c, 0x89, 0xa6, 0x01, 0x10, 0x3a, 0x0e, 0x0a, 0x0c, 0x7a,
+	0x6f, 0x6e, 0x65, 0x2d, 0x69, 0x6e, 0x73, 0x69, 0x67, 0x68, 0x74, 0xaa, 0x8c, 0x89, 0xa6, 0x01,
+	0x04, 0x3a, 0x02, 0x18, 0x01, 0x22, 0xcf, 0x01, 0x0a, 0x11, 0x45, 0x6e, 0x76, 0x6f, 0x79, 0x41,
+	0x64, 0x6d, 0x69, 0x6e, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x12, 0x42, 0x0a, 0x1e, 0x63,
+	0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x64, 0x75, 0x6d, 0x70, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61,
+	0x6c, 0x5f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x1a, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x44, 0x75, 0x6d, 0x70, 0x47,
+	0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12,
+	0x37, 0x0a, 0x18, 0x73, 0x74, 0x61, 0x74, 0x73, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f,
+	0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x15, 0x73, 0x74, 0x61, 0x74, 0x73, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e,
+	0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x3d, 0x0a, 0x1b, 0x63, 0x6c, 0x75, 0x73,
+	0x74, 0x65, 0x72, 0x73, 0x5f, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x69, 0x6e, 0x73, 0x74,
+	0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x18, 0x63,
+	0x6c, 0x75, 0x73, 0x74, 0x65, 0x72, 0x73, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e, 0x73,
+	0x74, 0x61, 0x6e, 0x63, 0x65, 0x49, 0x64, 0x22, 0xd0, 0x02, 0x0a, 0x0a, 0x4b, 0x44, 0x53, 0x53,
+	0x74, 0x72, 0x65, 0x61, 0x6d, 0x73, 0x12, 0x3b, 0x0a, 0x08, 0x63, 0x6c, 0x75, 0x73, 0x74, 0x65,
+	0x72, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e,
+	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x4b, 0x44, 0x53, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x08, 0x63, 0x6c, 0x75, 0x73, 0x74,
+	0x65, 0x72, 0x73, 0x12, 0x40, 0x0a, 0x0b, 0x63, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x5f, 0x64, 0x75,
+	0x6d, 0x70, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e,
+	0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e,
+	0x4b, 0x44, 0x53, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x0a, 0x63, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x44, 0x75, 0x6d, 0x70, 0x12, 0x35, 0x0a, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0x18, 0x03,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x44, 0x53, 0x53,
+	0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x05, 0x73, 0x74, 0x61, 0x74, 0x73, 0x12, 0x45, 0x0a, 0x0e,
+	0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x74, 0x6f, 0x5f, 0x7a, 0x6f, 0x6e, 0x65, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x73, 0x79, 0x73, 0x74,
+	0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4b, 0x44, 0x53, 0x53,
+	0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x0c, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x54, 0x6f, 0x5a,
+	0x6f, 0x6e, 0x65, 0x12, 0x45, 0x0a, 0x0e, 0x7a, 0x6f, 0x6e, 0x65, 0x5f, 0x74, 0x6f, 0x5f, 0x67,
+	0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x18, 0x05, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1f, 0x2e, 0x6b, 0x75,
+	0x6d, 0x61, 0x2e, 0x73, 0x79, 0x73, 0x74, 0x65, 0x6d, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68,
+	0x61, 0x31, 0x2e, 0x4b, 0x44, 0x53, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x52, 0x0c, 0x7a, 0x6f,
+	0x6e, 0x65, 0x54, 0x6f, 0x47, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x22, 0x78, 0x0a, 0x09, 0x4b, 0x44,
+	0x53, 0x53, 0x74, 0x72, 0x65, 0x61, 0x6d, 0x12, 0x2c, 0x0a, 0x12, 0x67, 0x6c, 0x6f, 0x62, 0x61,
+	0x6c, 0x5f, 0x69, 0x6e, 0x73, 0x74, 0x61, 0x6e, 0x63, 0x65, 0x5f, 0x69, 0x64, 0x18, 0x01, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x10, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x49, 0x6e, 0x73, 0x74, 0x61,
+	0x6e, 0x63, 0x65, 0x49, 0x64, 0x12, 0x3d, 0x0a, 0x0c, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
+	0x5f, 0x74, 0x69, 0x6d, 0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f,
+	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x54, 0x69,
+	0x6d, 0x65, 0x73, 0x74, 0x61, 0x6d, 0x70, 0x52, 0x0b, 0x63, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
+	0x54, 0x69, 0x6d, 0x65, 0x22, 0x89, 0x04, 0x0a, 0x0f, 0x4b, 0x44, 0x53, 0x53, 0x75, 0x62, 0x73,
 	0x63, 0x72, 0x69, 0x70, 0x74, 0x69, 0x6f, 0x6e, 0x12, 0x17, 0x0a, 0x02, 0x69, 0x64, 0x18, 0x01,
 	0x20, 0x01, 0x28, 0x09, 0x42, 0x07, 0xfa, 0x42, 0x04, 0x72, 0x02, 0x10, 0x01, 0x52, 0x02, 0x69,
 	0x64, 0x12, 0x35, 0x0a, 0x12, 0x67, 0x6c, 0x6f, 0x62, 0x61, 0x6c, 0x5f, 0x69, 0x6e, 0x73, 0x74,
@@ -760,38 +944,47 @@ func file_api_system_v1alpha1_zone_insight_proto_rawDescGZIP() []byte {
 	return file_api_system_v1alpha1_zone_insight_proto_rawDescData
 }
 
-var file_api_system_v1alpha1_zone_insight_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_api_system_v1alpha1_zone_insight_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_api_system_v1alpha1_zone_insight_proto_goTypes = []interface{}{
 	(*ZoneInsight)(nil),           // 0: kuma.system.v1alpha1.ZoneInsight
 	(*EnvoyAdminStreams)(nil),     // 1: kuma.system.v1alpha1.EnvoyAdminStreams
-	(*KDSSubscription)(nil),       // 2: kuma.system.v1alpha1.KDSSubscription
-	(*KDSSubscriptionStatus)(nil), // 3: kuma.system.v1alpha1.KDSSubscriptionStatus
-	(*KDSServiceStats)(nil),       // 4: kuma.system.v1alpha1.KDSServiceStats
-	(*Version)(nil),               // 5: kuma.system.v1alpha1.Version
-	(*KumaCpVersion)(nil),         // 6: kuma.system.v1alpha1.KumaCpVersion
-	(*HealthCheck)(nil),           // 7: kuma.system.v1alpha1.HealthCheck
-	nil,                           // 8: kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry
-	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
+	(*KDSStreams)(nil),            // 2: kuma.system.v1alpha1.KDSStreams
+	(*KDSStream)(nil),             // 3: kuma.system.v1alpha1.KDSStream
+	(*KDSSubscription)(nil),       // 4: kuma.system.v1alpha1.KDSSubscription
+	(*KDSSubscriptionStatus)(nil), // 5: kuma.system.v1alpha1.KDSSubscriptionStatus
+	(*KDSServiceStats)(nil),       // 6: kuma.system.v1alpha1.KDSServiceStats
+	(*Version)(nil),               // 7: kuma.system.v1alpha1.Version
+	(*KumaCpVersion)(nil),         // 8: kuma.system.v1alpha1.KumaCpVersion
+	(*HealthCheck)(nil),           // 9: kuma.system.v1alpha1.HealthCheck
+	nil,                           // 10: kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
 }
 var file_api_system_v1alpha1_zone_insight_proto_depIdxs = []int32{
-	2,  // 0: kuma.system.v1alpha1.ZoneInsight.subscriptions:type_name -> kuma.system.v1alpha1.KDSSubscription
+	4,  // 0: kuma.system.v1alpha1.ZoneInsight.subscriptions:type_name -> kuma.system.v1alpha1.KDSSubscription
 	1,  // 1: kuma.system.v1alpha1.ZoneInsight.envoy_admin_streams:type_name -> kuma.system.v1alpha1.EnvoyAdminStreams
-	7,  // 2: kuma.system.v1alpha1.ZoneInsight.health_check:type_name -> kuma.system.v1alpha1.HealthCheck
-	9,  // 3: kuma.system.v1alpha1.KDSSubscription.connect_time:type_name -> google.protobuf.Timestamp
-	9,  // 4: kuma.system.v1alpha1.KDSSubscription.disconnect_time:type_name -> google.protobuf.Timestamp
-	3,  // 5: kuma.system.v1alpha1.KDSSubscription.status:type_name -> kuma.system.v1alpha1.KDSSubscriptionStatus
-	5,  // 6: kuma.system.v1alpha1.KDSSubscription.version:type_name -> kuma.system.v1alpha1.Version
-	9,  // 7: kuma.system.v1alpha1.KDSSubscriptionStatus.last_update_time:type_name -> google.protobuf.Timestamp
-	4,  // 8: kuma.system.v1alpha1.KDSSubscriptionStatus.total:type_name -> kuma.system.v1alpha1.KDSServiceStats
-	8,  // 9: kuma.system.v1alpha1.KDSSubscriptionStatus.stat:type_name -> kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry
-	6,  // 10: kuma.system.v1alpha1.Version.kumaCp:type_name -> kuma.system.v1alpha1.KumaCpVersion
-	9,  // 11: kuma.system.v1alpha1.HealthCheck.time:type_name -> google.protobuf.Timestamp
-	4,  // 12: kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry.value:type_name -> kuma.system.v1alpha1.KDSServiceStats
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	9,  // 2: kuma.system.v1alpha1.ZoneInsight.health_check:type_name -> kuma.system.v1alpha1.HealthCheck
+	2,  // 3: kuma.system.v1alpha1.ZoneInsight.kds_streams:type_name -> kuma.system.v1alpha1.KDSStreams
+	3,  // 4: kuma.system.v1alpha1.KDSStreams.clusters:type_name -> kuma.system.v1alpha1.KDSStream
+	3,  // 5: kuma.system.v1alpha1.KDSStreams.config_dump:type_name -> kuma.system.v1alpha1.KDSStream
+	3,  // 6: kuma.system.v1alpha1.KDSStreams.stats:type_name -> kuma.system.v1alpha1.KDSStream
+	3,  // 7: kuma.system.v1alpha1.KDSStreams.global_to_zone:type_name -> kuma.system.v1alpha1.KDSStream
+	3,  // 8: kuma.system.v1alpha1.KDSStreams.zone_to_global:type_name -> kuma.system.v1alpha1.KDSStream
+	11, // 9: kuma.system.v1alpha1.KDSStream.connect_time:type_name -> google.protobuf.Timestamp
+	11, // 10: kuma.system.v1alpha1.KDSSubscription.connect_time:type_name -> google.protobuf.Timestamp
+	11, // 11: kuma.system.v1alpha1.KDSSubscription.disconnect_time:type_name -> google.protobuf.Timestamp
+	5,  // 12: kuma.system.v1alpha1.KDSSubscription.status:type_name -> kuma.system.v1alpha1.KDSSubscriptionStatus
+	7,  // 13: kuma.system.v1alpha1.KDSSubscription.version:type_name -> kuma.system.v1alpha1.Version
+	11, // 14: kuma.system.v1alpha1.KDSSubscriptionStatus.last_update_time:type_name -> google.protobuf.Timestamp
+	6,  // 15: kuma.system.v1alpha1.KDSSubscriptionStatus.total:type_name -> kuma.system.v1alpha1.KDSServiceStats
+	10, // 16: kuma.system.v1alpha1.KDSSubscriptionStatus.stat:type_name -> kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry
+	8,  // 17: kuma.system.v1alpha1.Version.kumaCp:type_name -> kuma.system.v1alpha1.KumaCpVersion
+	11, // 18: kuma.system.v1alpha1.HealthCheck.time:type_name -> google.protobuf.Timestamp
+	6,  // 19: kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry.value:type_name -> kuma.system.v1alpha1.KDSServiceStats
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_api_system_v1alpha1_zone_insight_proto_init() }
@@ -825,7 +1018,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KDSSubscription); i {
+			switch v := v.(*KDSStreams); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -837,7 +1030,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KDSSubscriptionStatus); i {
+			switch v := v.(*KDSStream); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -849,7 +1042,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KDSServiceStats); i {
+			switch v := v.(*KDSSubscription); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -861,7 +1054,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Version); i {
+			switch v := v.(*KDSSubscriptionStatus); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -873,7 +1066,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*KumaCpVersion); i {
+			switch v := v.(*KDSServiceStats); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -885,6 +1078,30 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			}
 		}
 		file_api_system_v1alpha1_zone_insight_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Version); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_system_v1alpha1_zone_insight_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*KumaCpVersion); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_api_system_v1alpha1_zone_insight_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*HealthCheck); i {
 			case 0:
 				return &v.state
@@ -903,7 +1120,7 @@ func file_api_system_v1alpha1_zone_insight_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_api_system_v1alpha1_zone_insight_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   9,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

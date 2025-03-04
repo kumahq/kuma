@@ -6,7 +6,6 @@ import (
 	"io"
 	"math/rand"
 	"slices"
-	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -33,6 +32,7 @@ import (
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var log = core.Log.WithName("kds-service")
@@ -51,8 +51,7 @@ type GlobalKDSServiceServer struct {
 	eventBus                events.EventBus
 	zoneHealthCheckInterval time.Duration
 	mesh_proto.UnimplementedGlobalKDSServiceServer
-	context     context.Context
-	streamCount atomic.Int64
+	context context.Context
 }
 
 func NewGlobalKDSServiceServer(ctx context.Context, envoyAdminRPCs EnvoyAdminRPCs, resManager manager.ResourceManager, instanceID string, filters []StreamInterceptor, extensions context.Context, upsertCfg config_store.UpsertConfig, eventBus events.EventBus, zoneHealthCheckInterval time.Duration) *GlobalKDSServiceServer {
@@ -117,19 +116,32 @@ func (g *GlobalKDSServiceServer) HealthCheck(ctx context.Context, _ *mesh_proto.
 	}, nil
 }
 
+type StreamType string
+
+var (
+	Clusters     StreamType = "clusters"
+	ConfigDump   StreamType = "configDump"
+	Stats        StreamType = "stats"
+	GlobalToZone StreamType = "globalToZone"
+	ZoneToGlobal StreamType = "zoneToGlobal"
+)
+
 type ZoneWentOffline struct {
 	TenantID string
 	Zone     string
+	Type     StreamType
 }
 type StreamCancelled struct {
 	TenantID string
 	Zone     string
-	StreamID int64
+	Type     StreamType
+	ConnTime time.Time
 }
 type ZoneOpenedStream struct {
 	TenantID string
 	Zone     string
-	StreamID int64
+	Type     StreamType
+	ConnTime time.Time
 }
 
 func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
@@ -160,25 +172,26 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	shouldDisconnectStream := events.NewNeverListener()
 	md, _ := metadata.FromIncomingContext(stream.Context())
 	features := md.Get(kds.FeaturesMetadataKey)
-	streamID := g.streamCount.Add(1)
+	connectTime := time.Now()
+	streamType := GetStreamType(rpcName)
 	if slices.Contains(features, kds.FeatureZonePingHealth) {
 		shouldDisconnectStream = g.eventBus.Subscribe(func(e events.Event) bool {
 			switch event := e.(type) {
 			case ZoneWentOffline:
 				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone
 			case StreamCancelled:
-				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone && event.StreamID == streamID
+				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone && event.Type == streamType && event.ConnTime == connectTime
 			default:
 				return false
 			}
 		})
-		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID, StreamID: streamID})
+		g.eventBus.Send(ZoneOpenedStream{Zone: zone, TenantID: tenantZoneID.TenantID, Type: streamType, ConnTime: connectTime})
 	}
 	defer shouldDisconnectStream.Close()
 
 	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(tenantZoneID.String(), stream)
-	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, g.instanceID); err != nil {
+	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
 			return status.Error(codes.Canceled, "stream was cancelled")
 		}
@@ -225,7 +238,19 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 	}
 }
 
-func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, instance string) error {
+func GetStreamType(rpcName string) StreamType {
+	switch rpcName {
+	case ClustersRPC:
+		return Clusters
+	case ConfigDumpRPC:
+		return ConfigDump
+	case StatsRPC:
+		return Stats
+	}
+	return StreamType("NotSupported")
+}
+
+func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, connectTime time.Time) error {
 	key := model.ResourceKey{Name: zone}
 
 	// wait for Zone to be created, only then we can create Zone Insight
@@ -249,16 +274,32 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
-		if zoneInsight.Spec.EnvoyAdminStreams == nil {
-			zoneInsight.Spec.EnvoyAdminStreams = &v1alpha1.EnvoyAdminStreams{}
+		if zoneInsight.Spec.KdsStreams == nil {
+			zoneInsight.Spec.KdsStreams = &v1alpha1.KDSStreams{}
+		}
+		var stream *system_proto.KDSStream
+		switch rpcName {
+		case ConfigDumpRPC:
+			stream = zoneInsight.Spec.GetKdsStreams().GetConfigDump()
+		case StatsRPC:
+			stream = zoneInsight.Spec.GetKdsStreams().GetStats()
+		case ClustersRPC:
+			stream = zoneInsight.Spec.GetKdsStreams().GetClusters()
+		}
+		if stream == nil {
+			stream = &v1alpha1.KDSStream{}
+		}
+		if stream.GetConnectTime() == nil || proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
+			stream.GlobalInstanceId = g.instanceID
+			stream.ConnectTime = proto.MustTimestampProto(connectTime)
 		}
 		switch rpcName {
 		case ConfigDumpRPC:
-			zoneInsight.Spec.EnvoyAdminStreams.ConfigDumpGlobalInstanceId = instance
+			zoneInsight.Spec.KdsStreams.ConfigDump = stream
 		case StatsRPC:
-			zoneInsight.Spec.EnvoyAdminStreams.StatsGlobalInstanceId = instance
+			zoneInsight.Spec.KdsStreams.Stats = stream
 		case ClustersRPC:
-			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceId = instance
+			zoneInsight.Spec.KdsStreams.Clusters = stream
 		}
 		return nil
 	}, manager.WithConflictRetry(g.upsertCfg.ConflictRetryBaseBackoff.Duration, g.upsertCfg.ConflictRetryMaxTimes, g.upsertCfg.ConflictRetryJitterPercent)) // we need retry because zone sink or other RPC may also update the insight.
