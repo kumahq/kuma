@@ -274,6 +274,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - default
@@ -510,6 +512,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -736,6 +740,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - default
