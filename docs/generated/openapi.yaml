@@ -4178,6 +4178,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - default
@@ -4450,6 +4452,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -4711,6 +4715,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - default
@@ -5327,6 +5333,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -5887,6 +5895,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -6441,6 +6451,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -6691,6 +6703,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -6776,6 +6790,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -6963,6 +6979,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -7107,6 +7125,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -7468,6 +7488,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -7612,6 +7634,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -7738,6 +7762,8 @@ components:
                                     default: 1
                                     minimum: 0
                                     type: integer
+                                required:
+                                  - kind
                                 type: object
                               type: array
                             filters:
@@ -7892,6 +7918,8 @@ components:
                                             default: 1
                                             minimum: 0
                                             type: integer
+                                        required:
+                                          - kind
                                         type: object
                                       percentage:
                                         anyOf:
@@ -8284,6 +8312,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - rules
@@ -8431,6 +8461,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -9056,6 +9088,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -9395,6 +9429,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -9593,6 +9629,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -10313,6 +10351,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           required:
             - default
@@ -10598,6 +10638,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -10828,6 +10870,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11052,6 +11096,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -11196,6 +11242,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11714,6 +11762,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -11858,6 +11908,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -11972,6 +12024,8 @@ components:
                                     default: 1
                                     minimum: 0
                                     type: integer
+                                required:
+                                  - kind
                                 type: object
                               type: array
                           type: object
@@ -12059,6 +12113,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - rules
@@ -12294,6 +12350,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12470,6 +12528,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
             to:
               description: >-
@@ -12640,6 +12700,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12847,6 +12909,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -12996,6 +13060,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -13356,6 +13422,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
@@ -13520,6 +13588,8 @@ components:
 
                           `MeshSubset` and `MeshServiceSubset`
                         type: object
+                    required:
+                      - kind
                     type: object
                 required:
                   - targetRef
@@ -13605,6 +13675,8 @@ components:
 
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           type: object
         creationTime:
