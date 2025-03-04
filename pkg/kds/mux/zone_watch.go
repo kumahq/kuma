@@ -135,8 +135,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					if conf == nil {
 						continue
 					}
-					// if we have a connection which is before one from insight, lets cancel the stream
-					// we don't need to check globalId since we have a connection in the map which means is local
+					// If we have a connection that started before the one from insight, cancel the stream.
+					// There's no need to check globalId since the connection exists in the map, meaning it is local.
 					activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
 					if connOpenTime.Before(*activeStreamConnTime) {
 						log.V(1).Info("the same zone has connected but the previous connection wasn't closed, closing",
