@@ -166,7 +166,7 @@ var MeshServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewMeshServiceResource(),
 	ResourceList:                 &MeshServiceResourceList{},
 	Scope:                        model.ScopeMesh,
-	KDSFlags:                     model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
+	KDSFlags:                     model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:                       "meshservices",
 	KumactlArg:                   "meshservice",
 	KumactlListArg:               "meshservices",

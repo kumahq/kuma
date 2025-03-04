@@ -15,6 +15,8 @@ message MeshInsight {
   option (kuma.mesh.resource).package = "mesh";
   option (kuma.mesh.resource).ws.name = "mesh-insight";
   option (kuma.mesh.resource).ws.read_only = true;
+  // MeshInsights are only managed globally
+  option (kuma.mesh.resource).kds = "model.ProvidedByGlobalFlag";
 
   reserved 1; // formerly last_sync
 

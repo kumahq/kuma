@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -43,12 +42,11 @@ func Setup(rt runtime.Runtime) error {
 		// Only run on global
 		return nil
 	}
-	reg := registry.Global()
 
 	kdsServerV2, err := kds_server_v2.New(
 		kdsDeltaGlobalLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
+		rt.KDSContext().TypesSentByGlobal,
 		"global",
 		rt.Config().Multizone.Global.KDS.RefreshInterval.Duration,
 		rt.KDSContext().GlobalProvidedFilter,
@@ -98,7 +96,7 @@ func Setup(rt runtime.Runtime) error {
 		kdsStream := kds_client_v2.NewDeltaKDSStream(stream, zoneID, rt, "")
 		sink := kds_client_v2.NewKDSSyncClient(
 			log,
-			reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
+			rt.KDSContext().TypesSentByZone,
 			kdsStream,
 			kds_sync_store_v2.GlobalSyncCallback(stream.Context(), resourceSyncerV2, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory, rt.Config().Store.Kubernetes.SystemNamespace),
 			rt.Config().Multizone.Global.KDS.ResponseBackoff.Duration,

@@ -32,6 +32,8 @@ func (s LabelSelector) Matches(labels map[string]string) bool {
 // +kuma:policy:is_policy=false
 // +kuma:policy:allowed_on_system_namespace_only=true
 // +kuma:policy:scope=Global
+// hostname generators to not get synced across zones
+// +kuma:policy:kds_flags=model.GlobalToZonesFlag | model.ZoneToGlobalFlag
 type HostnameGenerator struct {
 	Selector Selector `json:"selector,omitempty"`
 	Template string   `json:"template,omitempty"`

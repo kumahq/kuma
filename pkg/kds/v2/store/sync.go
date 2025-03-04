@@ -146,6 +146,10 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 			return err, nil
 		}
 	}
+	// if there are no resources in the upstream and downstream then we don't need to do anything
+	if len(downstream.GetItems()) == 0 && len(upstream.GetItems()) == 0 {
+		return nil, nil
+	}
 
 	filterResources := func(resources core_model.ResourceList, predicates []func(core_model.Resource) bool) (core_model.ResourceList, error) {
 		return filter(resources, func(r core_model.Resource) bool {
@@ -298,55 +302,34 @@ func filter(rs core_model.ResourceList, predicate func(r core_model.Resource) bo
 	return rv, nil
 }
 
-func ZoneSyncCallback(ctx context.Context, configToSync map[string]bool, syncer ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
+func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory, systemNamespace string) *client_v2.Callbacks {
 	return &client_v2.Callbacks{
 		OnResourcesReceived: func(upstream client_v2.UpstreamResponse) (error, error) {
-			if k8sStore && upstream.Type != system.ConfigType && upstream.Type != system.SecretType && upstream.Type != system.GlobalSecretType {
+			tDesc := upstream.AddedResources.NewItem().Descriptor()
+			if k8sStore && !tDesc.SkipKDSHash {
 				if err := addNamespaceSuffix(kubeFactory, upstream, systemNamespace); err != nil {
 					return err, nil
 				}
 			}
 
-			switch {
-			case upstream.Type == system.ConfigType:
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
-					return configToSync[r.GetMeta().GetName()]
-				}))
-
-			case upstream.Type == system.GlobalSecretType:
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
-					return util.ResourceNameHasAtLeastOneOfPrefixes(
-						r.GetMeta().GetName(),
-						system.ZoneTokenSigningPublicKeyPrefix,
-					)
-				}))
-
-			case upstream.Type == system.SecretType:
-				return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
+			syncOptions := []SyncOptionFunc{
+				PrefilterBy(func(r core_model.Resource) bool {
+					// If it's not provided by zone we should always override as this is when we prefer global over zone
+					// this can happen when we've just started federation
+					if !tDesc.KDSFlags.Has(model.ProvidedByZoneFlag) {
+						return true
+					}
 					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
-				}), SkipConflictResource())
+				}),
+			}
+			// When there is no KDS hash suffix, we can have conflicts in resources so we simply skip them
+			if tDesc.SkipKDSHash {
+				syncOptions = append(syncOptions, SkipConflictResource())
 			}
 
-			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
-				if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
-					// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
-					// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
-					// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
-					// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
-					// todo: remove in 2 releases after 2.6.x
-					return zi.IsRemoteIngress(localZone)
-				}
-				return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels()) || !isExpectedOnZoneCP(r.Descriptor())
-			}))
+			return syncer.Sync(ctx, upstream, syncOptions...)
 		},
 	}
-}
-
-// isExpectedOnZoneCP returns true if it's possible for the resource type to be on Zone CP. Some resource types
-// (i.e. Mesh, Secret) are allowed on non-federated Zone CPs, but after transition to federated Zone CP they're moved
-// to Global and must be replaced during the KDS sync.
-func isExpectedOnZoneCP(desc core_model.ResourceTypeDescriptor) bool {
-	return desc.KDSFlags.Has(core_model.ZoneToGlobalFlag)
 }
 
 func GlobalSyncCallback(
