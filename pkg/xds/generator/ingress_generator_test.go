@@ -707,7 +707,7 @@ var _ = Describe("IngressGenerator", func() {
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
 															Name: "backend",
-															Tags: map[string]string{
+															Tags: &map[string]string{
 																"version": "v1",
 																"region":  "eu",
 															},
@@ -801,7 +801,7 @@ var _ = Describe("IngressGenerator", func() {
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
 															Name: "backend",
-															Tags: map[string]string{
+															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",
 																"kuma.io/zone": "zone",
@@ -890,7 +890,7 @@ var _ = Describe("IngressGenerator", func() {
 														TargetRef: common_api.TargetRef{
 															Kind: common_api.MeshServiceSubset,
 															Name: "backend",
-															Tags: map[string]string{
+															Tags: &map[string]string{
 																"version":      "v1",
 																"region":       "eu",
 																"kuma.io/zone": "zone",

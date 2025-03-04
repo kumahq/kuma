@@ -3,6 +3,7 @@ package context
 import (
 	"context"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"reflect"
 	"strings"
 
@@ -310,7 +311,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				}
 				if policy.GetTargetRef().Kind == common_api.MeshSubset {
 					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
-					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
+					if targetZone, ok := pointer.Deref(policy.GetTargetRef().Tags)[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
 						return false
 					}
 				}

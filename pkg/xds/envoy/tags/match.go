@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"regexp"
 	"sort"
 	"strings"
@@ -121,12 +122,12 @@ func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 		service = targetRef.Name
 	case common_api.MeshServiceSubset:
 		service = targetRef.Name
-		tags = targetRef.Tags
+		tags = pointer.Deref(targetRef.Tags)
 	case common_api.Mesh:
 		service = mesh_proto.MatchAllTag
 	case common_api.MeshSubset:
 		service = mesh_proto.MatchAllTag
-		tags = targetRef.Tags
+		tags = pointer.Deref(targetRef.Tags)
 	default:
 		return nil, false
 	}

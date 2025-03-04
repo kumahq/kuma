@@ -188,7 +188,7 @@ func ipFamilyModeEnumValue(mode string) mesh_proto.Dataplane_Networking_Transpar
 	}
 }
 
-func TagsKVToMap(tagsKV []string) map[string]string {
+func TagsKVToMap(tagsKV []string) *map[string]string {
 	if len(tagsKV)%2 == 1 {
 		panic("tagsKV has to have even number of arguments")
 	}
@@ -196,7 +196,7 @@ func TagsKVToMap(tagsKV []string) map[string]string {
 	for i := 0; i < len(tagsKV); i += 2 {
 		tags[tagsKV[i]] = tagsKV[i+1]
 	}
-	return tags
+	return &tags
 }
 
 func (d *DataplaneBuilder) WithPrometheusMetrics(config *mesh_proto.PrometheusMetricsBackendConfig) *DataplaneBuilder {

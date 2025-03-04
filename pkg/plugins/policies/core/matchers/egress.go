@@ -1,6 +1,7 @@
 package matchers
 
 import (
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -227,11 +228,11 @@ func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string)
 	case common_api.Mesh:
 		return true
 	case common_api.MeshSubset:
-		return mesh_proto.TagSelector(tr.Tags).Matches(tags)
+		return mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	case common_api.MeshService:
 		return tr.Name == tags[mesh_proto.ServiceTag]
 	case common_api.MeshServiceSubset:
-		return tr.Name == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(tr.Tags).Matches(tags)
+		return tr.Name == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	}
 	return false
 }

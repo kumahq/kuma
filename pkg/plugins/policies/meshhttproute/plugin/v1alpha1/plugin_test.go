@@ -1653,7 +1653,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 																	TargetRef: common_api.TargetRef{
 																		Kind: common_api.MeshServiceSubset,
 																		Name: "payments",
-																		Tags: map[string]string{
+																		Tags: &map[string]string{
 																			"version": "v1",
 																			"region":  "us",
 																			"env":     "dev",

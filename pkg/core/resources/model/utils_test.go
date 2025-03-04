@@ -105,7 +105,7 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshSubset",
-							Tags: map[string]string{
+							Tags: &map[string]string{
 								"version": "v3",
 							},
 						},
@@ -133,7 +133,7 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshSubset",
-							Tags: map[string]string{
+							Tags: &map[string]string{
 								"version": "v3",
 							},
 						},
@@ -169,7 +169,7 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshSubset",
-							Tags: map[string]string{
+							Tags: &map[string]string{
 								"version": "v3",
 							},
 						},
@@ -197,7 +197,7 @@ var _ = Describe("Resource Utils", func() {
 					{
 						TargetRef: common_api.TargetRef{
 							Kind: "MeshSubset",
-							Tags: map[string]string{
+							Tags: &map[string]string{
 								"version": "v5", // different from 'v3'
 							},
 						},

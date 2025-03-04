@@ -65,7 +65,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	// consumer route
 	targetRef := common_api.TargetRef{
 		Kind: common_api.MeshSubset,
-		Tags: map[string]string{
+		Tags: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
@@ -434,7 +434,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		return common_api.TargetRef{
 			Kind: common_api.MeshServiceSubset,
 			Name: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
-			Tags: map[string]string{
+			Tags: &map[string]string{
 				mesh_proto.ZoneTag: r.Zone,
 			},
 		}, nil, nil

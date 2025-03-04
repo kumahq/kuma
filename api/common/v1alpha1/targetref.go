@@ -3,6 +3,7 @@ package v1alpha1
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"slices"
 	"sort"
 	"strings"
@@ -94,7 +95,7 @@ type TargetRef struct {
 	Name string `json:"name"`
 	// Tags used to select a subset of proxies by tags. Can only be used with kinds
 	// `MeshSubset` and `MeshServiceSubset`
-	Tags map[string]string `json:"tags,omitempty"`
+	Tags *map[string]string `json:"tags,omitempty"`
 	// Mesh is reserved for future use to identify cross mesh resources.
 	Mesh string `json:"mesh,omitempty"`
 	// ProxyTypes specifies the data plane types that are subject to the policy. When not specified,
@@ -181,10 +182,10 @@ type BackendRefHash string
 
 // Hash returns a hash of the BackendRef
 func (in BackendRef) Hash() BackendRefHash {
-	keys := util_maps.SortedKeys(in.Tags)
+	keys := util_maps.SortedKeys(pointer.Deref(in.Tags))
 	orderedTags := make([]string, 0, len(keys))
 	for _, k := range keys {
-		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, in.Tags[k]))
+		orderedTags = append(orderedTags, fmt.Sprintf("%s=%s", k, pointer.Deref(in.Tags)[k]))
 	}
 
 	keys = util_maps.SortedKeys(in.Labels)

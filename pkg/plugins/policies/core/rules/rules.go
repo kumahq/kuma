@@ -327,7 +327,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 				case common_api.Mesh, common_api.MeshSubset:
 					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshSubset,
-						Tags: map[string]string{
+						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
@@ -335,7 +335,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshServiceSubset,
 						Name: mhrRules.TargetRef.Name,
-						Tags: map[string]string{
+						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
@@ -546,7 +546,7 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		return subsetutils.Subset{}, nil
 	case common_api.MeshSubset:
 		ss := subsetutils.Subset{}
-		for k, v := range tr.Tags {
+		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}
 		return ss, nil
@@ -554,7 +554,7 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
 	case common_api.MeshServiceSubset:
 		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
-		for k, v := range tr.Tags {
+		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}
 		return ss, nil

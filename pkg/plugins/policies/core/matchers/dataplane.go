@@ -195,7 +195,7 @@ func dppSelectedByPolicy(
 		return []core_rules.InboundListener{}, nil, false, nil
 	case common_api.MeshSubset:
 		if isSupportedProxyType(ref.ProxyTypes, resolveDataplaneProxyType(dpp)) {
-			inbounds, gwListeners, gateway := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+			inbounds, gwListeners, gateway := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 			return inbounds, gwListeners, gateway, nil
 		}
 		return []core_rules.InboundListener{}, nil, false, nil
@@ -208,7 +208,7 @@ func dppSelectedByPolicy(
 		tags := map[string]string{
 			mesh_proto.ServiceTag: ref.Name,
 		}
-		for k, v := range ref.Tags {
+		for k, v := range pointer.Deref(ref.Tags) {
 			tags[k] = v
 		}
 		inbounds, gwListeners, gateway := inboundsSelectedByTags(tags, dpp, gateway)
@@ -217,7 +217,7 @@ func dppSelectedByPolicy(
 		if gateway == nil || !dpp.Spec.IsBuiltinGateway() || !core_model.IsReferenced(meta, ref.Name, gateway.GetMeta()) {
 			return nil, nil, false, nil
 		}
-		inbounds, gwListeners, _ := inboundsSelectedByTags(ref.Tags, dpp, gateway)
+		inbounds, gwListeners, _ := inboundsSelectedByTags(pointer.Deref(ref.Tags), dpp, gateway)
 		return inbounds, gwListeners, false, nil
 	case common_api.MeshHTTPRoute:
 		mhr := resolveMeshHTTPRouteRef(meta, ref.Name, referencableResources.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType))
@@ -403,7 +403,7 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 		}
 
 		if tr1.Kind == common_api.MeshGateway {
-			if less := len(tr1.Tags) - len(tr2.Tags); less != 0 {
+			if less := len(pointer.Deref(tr1.Tags)) - len(pointer.Deref(tr2.Tags)); less != 0 {
 				return less
 			}
 		}
