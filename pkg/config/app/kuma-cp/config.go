@@ -32,17 +32,31 @@ var _ config.Config = &Config{}
 
 var _ config.Config = &Defaults{}
 
+const (
+	ModeNone DefaultsMode = "none"
+	ModeDemo DefaultsMode = "demo"
+)
+
+type DefaultsMode string
+
 type Defaults struct {
 	config.BaseConfig
 
+	// Mode for defining default resources. Possible values: "none", "demo".
+	// None - no default resources will be created. This is best suited for IaC and production use cases where you want to precisely control what's created.
+	// Demo - default resources will be created. This is best suited for demoing and testing use cases where you want to quickly get started.
+	Mode DefaultsMode `json:"mode" envconfig:"kuma_defaults_mode"`
 	// If true, it skips creating the default Mesh
+	// Deprecated: use mode instead.
 	SkipMeshCreation bool `json:"skipMeshCreation" envconfig:"kuma_defaults_skip_mesh_creation"`
 	// If true, it skips creating the default tenant resources
+	// Deprecated: use mode instead.
 	SkipTenantResources bool `json:"skipTenantResources" envconfig:"kuma_defaults_skip_tenant_resources"`
 	// If true, automatically create the default routing (TrafficPermission and TrafficRoute) resources for a new Mesh.
 	// These policies are essential for traffic to flow correctly when operating a global control plane with zones running older (<2.6.0) versions of Kuma.
 	CreateMeshRoutingResources bool `json:"createMeshRoutingResources" envconfig:"kuma_defaults_create_mesh_routing_resources"`
 	// If true, it skips creating default hostname generators
+	// Deprecated: use mode instead.
 	SkipHostnameGenerators bool `json:"SkipHostnameGenerators" envconfig:"kuma_defaults_skip_hostname_generators"`
 }
 
@@ -427,6 +441,7 @@ func DefaultGeneralConfig() *GeneralConfig {
 
 func DefaultDefaultsConfig() *Defaults {
 	return &Defaults{
+		Mode:                       ModeDemo,
 		SkipMeshCreation:           false,
 		SkipTenantResources:        false,
 		CreateMeshRoutingResources: false,
