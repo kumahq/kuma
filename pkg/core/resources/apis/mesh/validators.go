@@ -18,14 +18,19 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-const dnsLabel = `[a-z0-9]([-a-z0-9]*[a-z0-9])?`
+const (
+	dns1035LabelFmt     = "[a-z]([-a-z0-9]*[a-z0-9])?"
+	dns1123LabelFmt     = "[a-z0-9]([-a-z0-9]*[a-z0-9])?"
+	dns1123SubdomainFmt = dns1123LabelFmt + "(\\." + dns1123LabelFmt + ")*"
+)
 
 var (
-	NameCharacterSet     = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
-	DomainRegexp         = regexp.MustCompile("^" + dnsLabel + "(\\." + dnsLabel + ")*" + "$")
-	tagNameCharacterSet  = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
-	tagValueCharacterSet = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
-	selectorCharacterSet = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
+	NameCharacterSet       = regexp.MustCompile(`^[0-9a-z.\-_]*$`)
+	DNS1123SubdomainRegexp = regexp.MustCompile("^" + dns1123SubdomainFmt + "$")
+	DNS1035LabelRegexp     = regexp.MustCompile("^" + dns1035LabelFmt + "$")
+	tagNameCharacterSet    = regexp.MustCompile(`^[a-zA-Z0-9.\-_:/]*$`)
+	tagValueCharacterSet   = regexp.MustCompile(`^[a-zA-Z0-9.\-_:]*$`)
+	selectorCharacterSet   = regexp.MustCompile(`^([a-zA-Z0-9.\-_:/]*|\*)$`)
 )
 
 type (
@@ -235,14 +240,14 @@ func ValidateHostname(path validators.PathBuilder, hostname string) validators.V
 	}
 
 	if strings.HasPrefix(hostname, "*.") {
-		if !DomainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
+		if !DNS1123SubdomainRegexp.MatchString(strings.TrimPrefix(hostname, "*.")) {
 			err.AddViolationAt(path, "invalid wildcard domain")
 		}
 
 		return err
 	}
 
-	if !DomainRegexp.MatchString(hostname) {
+	if !DNS1123SubdomainRegexp.MatchString(hostname) {
 		err.AddViolationAt(path, "invalid hostname")
 	}
 
