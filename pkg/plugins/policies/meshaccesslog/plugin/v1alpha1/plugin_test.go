@@ -102,6 +102,7 @@ var _ = Describe("MeshAccessLog", func() {
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
+				WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 				Build()
 
 			// when

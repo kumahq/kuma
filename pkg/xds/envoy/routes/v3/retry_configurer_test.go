@@ -122,6 +122,12 @@ var _ = Describe("RetryConfigurer", func() {
                           cluster: backend
                           timeout: 0s
                   statPrefix: "127_0_0_1_17777"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
 		}),
@@ -202,6 +208,12 @@ var _ = Describe("RetryConfigurer", func() {
                           cluster: backend
                           timeout: 0s
                   statPrefix: "127_0_0_1_18080"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
 		}),
@@ -269,6 +281,12 @@ var _ = Describe("RetryConfigurer", func() {
                           cluster: backend
                           timeout: 0s
                   statPrefix: "127_0_0_1_17777"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:17777
             trafficDirection: OUTBOUND`,
 		}),
@@ -349,6 +367,12 @@ var _ = Describe("RetryConfigurer", func() {
                           cluster: backend
                           timeout: 0s
                   statPrefix: "127_0_0_1_18080"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
 		}),
@@ -431,6 +455,12 @@ var _ = Describe("RetryConfigurer", func() {
                           cluster: backend
                           timeout: 0s
                   statPrefix: "127_0_0_1_18080"
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:18080
             trafficDirection: OUTBOUND`,
 		}),

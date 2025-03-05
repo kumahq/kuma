@@ -63,6 +63,12 @@ var _ = Describe("TracingConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
                   tracing:
                     spawnUpstreamSpan: false
                     overallSampling:
@@ -102,6 +108,12 @@ var _ = Describe("TracingConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
                   tracing:
                     spawnUpstreamSpan: false
                     provider:
@@ -141,6 +153,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -179,6 +197,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -218,6 +242,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -249,6 +279,12 @@ var _ = Describe("TracingConfigurer", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 	)

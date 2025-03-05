@@ -1823,7 +1823,7 @@ func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 func paymentsListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager("127.0.0.1:27778", false)).
+			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil)).
 			Configure(
 				HttpOutboundRoute(
 					"backend",
@@ -1846,7 +1846,7 @@ func paymentsListener() envoy_common.NamedResource {
 func backendListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 			Configure(
 				HttpOutboundRoute(
 					"backend",

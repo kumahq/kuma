@@ -164,6 +164,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -187,6 +193,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 0s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -210,6 +222,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -252,6 +270,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -275,6 +299,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -298,6 +328,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -371,6 +407,12 @@ filterChains:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
       streamIdleTimeout: 3600s
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
 `

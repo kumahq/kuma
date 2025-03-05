@@ -12,11 +12,12 @@ import (
 
 var _ = Describe("HttpConnectionManagerConfigurer", func() {
 	type testCase struct {
-		listenerProtocol xds.SocketAddressProtocol
-		listenerAddress  string
-		listenerPort     uint32
-		statsName        string
-		expected         string
+		listenerProtocol  xds.SocketAddressProtocol
+		listenerAddress   string
+		listenerPort      uint32
+		statsName         string
+		internalAddresses []xds.InternalAddress
+		expected          string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -24,7 +25,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, true, nil)))).
+					Configure(HttpConnectionManager(given.statsName, true, given.internalAddresses)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -39,6 +40,9 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
+			internalAddresses: []xds.InternalAddress{
+				{AddressPrefix: "192.168.0.0", PrefixLen: 16},
+			},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -60,7 +64,10 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
-`,
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 192.168.0.0
+                        prefixLen: 16`,
 		}),
 	)
 })

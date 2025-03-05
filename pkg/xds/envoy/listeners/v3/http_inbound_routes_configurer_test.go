@@ -112,7 +112,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           cluster: localhost:8080
                           timeout: 0s
                   statPrefix: localhost_8080
-`,
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128`,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter", testCase{
 			listenerAddress: "192.168.0.1",
@@ -198,6 +203,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                               maxTokens: 100
                               tokensPerFill: 100
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter with sources", testCase{
@@ -295,6 +306,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                               maxTokens: 100
                               tokensPerFill: 100
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 	)
