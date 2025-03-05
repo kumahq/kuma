@@ -24,7 +24,20 @@ New rule:
 
 Before the upgrade ensure that your resources don't use unsupported characters.
 
-Further, starting from version `2.10.x` we are deprecating the usage of non [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) characters for names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService`, `MeshMultizoneService` resources. These names will not be accepted in a future release. 
+#### Add RFC-1035-Label constraints for specific resources names
+
+Starting from version `2.10.x` we are deprecating the usage of non [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) characters for names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService`, `MeshMultizoneService` resources. These names will be rejected in the future.
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> * Characters contain at most 63 characters.
+> * Characters contain only lowercase alphanumeric characters or '-'.
+> * Characters start with an alphabetic character.
+> * Characters end with an alphanumeric character.
 
 ### MeshService on Universal is not generated for services with an invalid `kuma.io/service`
 
