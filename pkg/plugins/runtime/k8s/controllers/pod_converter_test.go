@@ -327,6 +327,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:     "update-dataplane.other-services.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
 		}),
+		Entry("Multiples services selecting single port", testCase{
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
