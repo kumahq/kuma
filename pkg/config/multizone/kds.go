@@ -122,6 +122,9 @@ type ZoneHealthCheckConfig struct {
 	// Timeout is the time after the last health check that a zone counts as
 	// no longer online
 	Timeout config_types.Duration `json:"timeout" envconfig:"kuma_multizone_global_kds_zone_health_check_timeout"`
+	// CloseStaleConn determines whether to disconnect stale connections from the same zone and tenant
+	// that were not properly closed.
+	CloseStaleConn bool `json:"closeStaleConn" envconfig:"kuma_multizone_global_kds_zone_health_check_close_stale_conn"`
 }
 
 func (c ZoneHealthCheckConfig) Validate() error {

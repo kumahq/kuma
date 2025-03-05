@@ -15,7 +15,6 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/encoding/gzip"
-	"google.golang.org/grpc/keepalive"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 
@@ -68,11 +67,11 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 		grpc.UseCompressor(gzip.Name),
 		grpc.MaxCallSendMsgSize(int(c.config.MaxMsgSize)),
 		grpc.MaxCallRecvMsgSize(int(c.config.MaxMsgSize))),
-		grpc.WithKeepaliveParams(keepalive.ClientParameters{
-			Time:                grpcKeepAliveTime,
-			Timeout:             grpcKeepAliveTime,
-			PermitWithoutStream: true,
-		}),
+	// grpc.WithKeepaliveParams(keepalive.ClientParameters{
+	// 	Time:                grpcKeepAliveTime,
+	// 	Timeout:             grpcKeepAliveTime,
+	// 	PermitWithoutStream: true,
+	// }),
 	)
 	switch u.Scheme {
 	case "grpc":
