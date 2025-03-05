@@ -18,7 +18,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/api/system/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
@@ -191,7 +190,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 
 	logger.Info("Envoy Admin RPC stream started")
 	rpc.ClientConnected(tenantZoneID.String(), stream)
-	if err := g.storeStreamConnection(stream.Context(), zone, rpcName, connectTime); err != nil {
+	if err := g.storeStreamConnection(stream.Context(), zone, streamType, connectTime); err != nil {
 		if errors.Is(err, context.Canceled) && errors.Is(stream.Context().Err(), context.Canceled) {
 			return status.Error(codes.Canceled, "stream was cancelled")
 		}
@@ -250,7 +249,7 @@ func GetStreamType(rpcName string) StreamType {
 	return StreamType("NotSupported")
 }
 
-func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, rpcName string, connectTime time.Time) error {
+func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone string, streamType StreamType, connectTime time.Time) error {
 	key := model.ResourceKey{Name: zone}
 
 	// wait for Zone to be created, only then we can create Zone Insight
@@ -274,31 +273,29 @@ func (g *GlobalKDSServiceServer) storeStreamConnection(ctx context.Context, zone
 
 	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(ctx, g.resManager, key, zoneInsight, func(resource model.Resource) error {
+		if zoneInsight.Spec.EnvoyAdminStreams == nil {
+			zoneInsight.Spec.EnvoyAdminStreams = &system_proto.EnvoyAdminStreams{}
+		}
 		if zoneInsight.Spec.KdsStreams == nil {
-			zoneInsight.Spec.KdsStreams = &v1alpha1.KDSStreams{}
+			zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{}
 		}
-		var stream *system_proto.KDSStream
-		switch rpcName {
-		case ConfigDumpRPC:
-			stream = zoneInsight.Spec.GetKdsStreams().GetConfigDump()
-		case StatsRPC:
-			stream = zoneInsight.Spec.GetKdsStreams().GetStats()
-		case ClustersRPC:
-			stream = zoneInsight.Spec.GetKdsStreams().GetClusters()
-		}
+		stream := zoneInsight.Spec.GetKDSStream(string(streamType))
 		if stream == nil {
-			stream = &v1alpha1.KDSStream{}
+			stream = &system_proto.KDSStream{}
 		}
 		if stream.GetConnectTime() == nil || proto.MustTimestampFromProto(stream.ConnectTime).Before(connectTime) {
 			stream.GlobalInstanceId = g.instanceID
 			stream.ConnectTime = proto.MustTimestampProto(connectTime)
 		}
-		switch rpcName {
-		case ConfigDumpRPC:
+		switch streamType {
+		case ConfigDump:
+			zoneInsight.Spec.EnvoyAdminStreams.ConfigDumpGlobalInstanceId = g.instanceID
 			zoneInsight.Spec.KdsStreams.ConfigDump = stream
-		case StatsRPC:
+		case Stats:
+			zoneInsight.Spec.EnvoyAdminStreams.StatsGlobalInstanceId = g.instanceID
 			zoneInsight.Spec.KdsStreams.Stats = stream
-		case ClustersRPC:
+		case Clusters:
+			zoneInsight.Spec.EnvoyAdminStreams.ClustersGlobalInstanceId = g.instanceID
 			zoneInsight.Spec.KdsStreams.Clusters = stream
 		}
 		return nil

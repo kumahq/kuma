@@ -28,15 +28,16 @@ type zoneTenant struct {
 }
 
 type ZoneWatch struct {
-	log         logr.Logger
-	poll        time.Duration
-	timeout     time.Duration
-	bus         events.EventBus
-	extensions  context.Context
-	rm          manager.ReadOnlyResourceManager
-	summary     prometheus.Summary
-	zones       map[zoneTenant]time.Time
-	zoneStreams map[zoneTenant]map[service.StreamType]time.Time
+	log            logr.Logger
+	poll           time.Duration
+	timeout        time.Duration
+	bus            events.EventBus
+	extensions     context.Context
+	rm             manager.ReadOnlyResourceManager
+	summary        prometheus.Summary
+	zones          map[zoneTenant]time.Time
+	zoneStreams    map[zoneTenant]map[service.StreamType]time.Time
+	closeStaleConn bool
 }
 
 func NewZoneWatch(
@@ -57,15 +58,16 @@ func NewZoneWatch(
 	}
 
 	return &ZoneWatch{
-		log:         log,
-		poll:        cfg.PollInterval.Duration,
-		timeout:     cfg.Timeout.Duration,
-		bus:         bus,
-		extensions:  extensions,
-		rm:          rm,
-		summary:     summary,
-		zones:       map[zoneTenant]time.Time{},
-		zoneStreams: map[zoneTenant]map[service.StreamType]time.Time{},
+		log:            log,
+		poll:           cfg.PollInterval.Duration,
+		timeout:        cfg.Timeout.Duration,
+		bus:            bus,
+		extensions:     extensions,
+		rm:             rm,
+		summary:        summary,
+		zones:          map[zoneTenant]time.Time{},
+		zoneStreams:    map[zoneTenant]map[service.StreamType]time.Time{},
+		closeStaleConn: cfg.CloseStaleConn,
 	}, nil
 }
 
@@ -118,37 +120,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 					delete(zw.zoneStreams, zone)
 				}
 				// Now we want to check individual stream
-				for stream, connOpenTime := range zw.zoneStreams[zone] {
-					var conf *system_proto.KDSStream
-					switch stream {
-					case service.Clusters:
-						conf = zoneInsight.Spec.GetKdsStreams().GetClusters()
-					case service.ConfigDump:
-						conf = zoneInsight.Spec.GetKdsStreams().GetConfigDump()
-					case service.Stats:
-						conf = zoneInsight.Spec.GetKdsStreams().GetStats()
-					case service.GlobalToZone:
-						conf = zoneInsight.Spec.GetKdsStreams().GetGlobalToZone()
-					case service.ZoneToGlobal:
-						conf = zoneInsight.Spec.GetKdsStreams().GetZoneToGlobal()
-					}
-					if conf == nil {
-						continue
-					}
-					// If we have a connection that started before the one from insight, cancel the stream.
-					// There's no need to check globalId since the connection exists in the map, meaning it is local.
-					activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
-					if connOpenTime.Before(*activeStreamConnTime) {
-						log.Info("the same zone has connected but the previous connection wasn't closed, closing",
-							"zone", zone.zone, "streamType", stream, "previouslyConnected", connOpenTime, "currentlyConnected", activeStreamConnTime)
-						zw.bus.Send(service.StreamCancelled{
-							Zone:     zone.zone,
-							TenantID: zone.tenantID,
-							Type:     stream,
-							ConnTime: connOpenTime,
-						})
-						delete(zw.zoneStreams, zone)
-					}
+				if zw.closeStaleConn {
+					zw.cleanupStaleConnections(zone, zoneInsight)
 				}
 			}
 			zw.summary.Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -158,25 +131,8 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			// There should not be two streams for the same zone, as only the leader can connect to the global control plane.
 			// Instead, we generate a unique StreamID for each stream. If we detect a second control plane
 			// connecting to the same zone with a different StreamID, we cancel the previous stream.
-			streams, found := zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}]
-			if found {
-				if prevConnTime, exist := streams[newStream.Type]; exist && prevConnTime.Before(newStream.ConnTime) {
-					ctx := multitenant.WithTenant(context.TODO(), newStream.TenantID)
-					log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
-					log.Info("the same zone has connected but the previous connection wasn't closed, closing",
-						"zone", newStream.Zone, "streamType", newStream.Type, "previouslyConnected", prevConnTime, "currentlyConnected", newStream.ConnTime)
-					zw.bus.Send(service.StreamCancelled{
-						Zone:     newStream.Zone,
-						TenantID: newStream.TenantID,
-						Type:     newStream.Type,
-						ConnTime: prevConnTime,
-					})
-					zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}][newStream.Type] = newStream.ConnTime
-				}
-			} else {
-				zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}] = map[service.StreamType]time.Time{
-					newStream.Type: newStream.ConnTime,
-				}
+			if zw.closeStaleConn {
+				zw.closeStaleConnectionOnConnect(newStream)
 			}
 
 			// We keep a record of the time we open a stream.
@@ -195,6 +151,66 @@ func (zw *ZoneWatch) Start(stop <-chan struct{}) error {
 			}] = core.Now()
 		case <-stop:
 			return nil
+		}
+	}
+}
+
+func (zw *ZoneWatch) closeStaleConnectionOnConnect(newStream service.ZoneOpenedStream) {
+	streams, found := zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}]
+	if found {
+		if prevConnTime, exist := streams[newStream.Type]; exist && prevConnTime.Before(newStream.ConnTime) {
+			ctx := multitenant.WithTenant(context.TODO(), newStream.TenantID)
+			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
+			log.Info("the same zone has connected but the previous connection wasn't closed, closing",
+				"zone", newStream.Zone, "streamType", newStream.Type, "previouslyConnected", prevConnTime, "currentlyConnected", newStream.ConnTime)
+			zw.bus.Send(service.StreamCancelled{
+				Zone:     newStream.Zone,
+				TenantID: newStream.TenantID,
+				Type:     newStream.Type,
+				ConnTime: prevConnTime,
+			})
+			zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}][newStream.Type] = newStream.ConnTime
+		}
+	} else {
+		zw.zoneStreams[zoneTenant{tenantID: newStream.TenantID, zone: newStream.Zone}] = map[service.StreamType]time.Time{
+			newStream.Type: newStream.ConnTime,
+		}
+	}
+}
+
+func (zw *ZoneWatch) cleanupStaleConnections(zone zoneTenant, zoneInsight *system.ZoneInsightResource) {
+	for stream, connOpenTime := range zw.zoneStreams[zone] {
+		var conf *system_proto.KDSStream
+		switch stream {
+		case service.Clusters:
+			conf = zoneInsight.Spec.GetKdsStreams().GetClusters()
+		case service.ConfigDump:
+			conf = zoneInsight.Spec.GetKdsStreams().GetConfigDump()
+		case service.Stats:
+			conf = zoneInsight.Spec.GetKdsStreams().GetStats()
+		case service.GlobalToZone:
+			conf = zoneInsight.Spec.GetKdsStreams().GetGlobalToZone()
+		case service.ZoneToGlobal:
+			conf = zoneInsight.Spec.GetKdsStreams().GetZoneToGlobal()
+		}
+		if conf == nil {
+			continue
+		}
+		// If we have a connection that started before the one from insight, cancel the stream.
+		// There's no need to check globalId since the connection exists in the map, meaning it is local.
+		activeStreamConnTime := proto.MustTimestampFromProto(conf.GetConnectTime())
+		if connOpenTime.Before(*activeStreamConnTime) {
+			ctx := multitenant.WithTenant(context.TODO(), zone.tenantID)
+			log := kuma_log.AddFieldsFromCtx(zw.log, ctx, zw.extensions)
+			log.Info("the same zone has connected but the previous connection wasn't closed, closing",
+				"zone", zone.zone, "streamType", stream, "previouslyConnected", connOpenTime, "currentlyConnected", activeStreamConnTime)
+			zw.bus.Send(service.StreamCancelled{
+				Zone:     zone.zone,
+				TenantID: zone.tenantID,
+				Type:     stream,
+				ConnTime: connOpenTime,
+			})
+			delete(zw.zoneStreams, zone)
 		}
 	}
 }

@@ -62,8 +62,9 @@ var _ = Describe("ZoneWatch", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		cfg := multizone.ZoneHealthCheckConfig{
-			PollInterval: types.Duration{Duration: pollInterval},
-			Timeout:      types.Duration{Duration: timeout},
+			PollInterval:   types.Duration{Duration: pollInterval},
+			Timeout:        types.Duration{Duration: timeout},
+			CloseStaleConn: true,
 		}
 
 		rm = manager.NewResourceManager(memory.NewStore())

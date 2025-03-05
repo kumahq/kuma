@@ -13,7 +13,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_store "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -227,13 +226,7 @@ func (g *KDSSyncServiceServer) storeStreamConnection(ctx context.Context, zone s
 		if zoneInsight.Spec.KdsStreams == nil {
 			zoneInsight.Spec.KdsStreams = &v1alpha1.KDSStreams{}
 		}
-		var stream *system_proto.KDSStream
-		switch typ {
-		case service.GlobalToZone:
-			stream = zoneInsight.Spec.GetKdsStreams().GetGlobalToZone()
-		case service.ZoneToGlobal:
-			stream = zoneInsight.Spec.GetKdsStreams().GetZoneToGlobal()
-		}
+		stream := zoneInsight.Spec.GetKDSStream(string(typ))
 		if stream == nil {
 			stream = &v1alpha1.KDSStream{}
 		}
