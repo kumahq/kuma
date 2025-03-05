@@ -144,7 +144,11 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 	var injectedInitContainer *kube_core.Container
 
 	if i.cfg.TransparentProxyConfigMapName != "" {
-		tproxyCfgConfigMap := i.getTransparentProxyConfig(ctx, logger, pod)
+		tproxyCfgConfigMap, err := i.getTransparentProxyConfig(ctx, logger, pod)
+		if err != nil {
+			return errors.Wrap(err, "could not retrieve transparent proxy configuration")
+		}
+
 		tproxyCfg, err := tproxy_k8s.ConfigForKubernetes(tproxyCfgConfigMap, i.cfg, pod.Annotations, logger)
 		if err != nil {
 			return err
@@ -367,19 +371,21 @@ func (i *KumaInjector) getTransparentProxyConfig(
 	ctx context.Context,
 	logger logr.Logger,
 	pod *kube_core.Pod,
-) tproxy_config.Config {
+) (tproxy_config.Config, error) {
 	if i.cfg.TransparentProxyConfigMapName == "" {
-		return tproxy_config.DefaultConfig()
+		return tproxy_config.DefaultConfig(), nil
 	}
 
 	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
 		if c, err := i.getTransparentProxyConfigMap(ctx, v, pod.Namespace, logger, "annotation"); err == nil {
-			return c
+			return c, nil
 		}
 
 		if c, err := i.getTransparentProxyConfigMap(ctx, v, i.systemNamespace, logger, "annotation"); err == nil {
-			return c
+			return c, nil
 		}
+
+		return tproxy_config.Config{}, errors.Errorf("ConfigMap %q not found in namespace %q or system namespace %q", v, pod.Namespace, i.systemNamespace)
 	}
 
 	if c, err := i.getTransparentProxyConfigMap(
@@ -389,10 +395,10 @@ func (i *KumaInjector) getTransparentProxyConfig(
 		logger,
 		"controlPlaneRuntimeConfig",
 	); err == nil {
-		return c
+		return c, nil
 	}
 
-	return tproxy_config.DefaultConfig()
+	return tproxy_config.DefaultConfig(), nil
 }
 
 func (i *KumaInjector) getTransparentProxyConfigMap(
