@@ -2,13 +2,13 @@ package xds
 
 import (
 	"fmt"
-	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"slices"
 	"strings"
 
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"

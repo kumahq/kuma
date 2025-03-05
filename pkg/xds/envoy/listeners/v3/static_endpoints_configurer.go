@@ -5,8 +5,8 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
