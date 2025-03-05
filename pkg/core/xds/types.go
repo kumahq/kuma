@@ -2,6 +2,8 @@ package xds
 
 import (
 	"fmt"
+	envoy_config_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"slices"
 	"strings"
 
@@ -297,6 +299,22 @@ type IdentitySecret struct {
 type InternalAddress struct {
 	AddressPrefix string
 	PrefixLen     uint32
+}
+
+var LocalHostAddresses = []InternalAddress{
+	{AddressPrefix: "127.0.0.1", PrefixLen: 32},
+	{AddressPrefix: "::1", PrefixLen: 128},
+}
+
+func InternalAddressToEnvoyCIDRs(internalAddresses []InternalAddress) []*envoy_config_core.CidrRange {
+	var cidrRanges []*envoy_config_core.CidrRange
+	for _, internalAddressPool := range internalAddresses {
+		cidrRanges = append(cidrRanges, &envoy_config_core.CidrRange{
+			AddressPrefix: internalAddressPool.AddressPrefix,
+			PrefixLen:     &wrapperspb.UInt32Value{Value: internalAddressPool.PrefixLen},
+		})
+	}
+	return cidrRanges
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

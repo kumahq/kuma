@@ -16,7 +16,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -111,9 +110,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
-					configurer.InternalAddresses = proxy.InternalAddresses
-				})).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,
@@ -130,9 +127,7 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
-					configurer.InternalAddresses = proxy.InternalAddresses
-				})).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,

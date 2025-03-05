@@ -66,7 +66,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, false)).
+					Configure(HttpConnectionManager(given.statsName, false, nil)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then

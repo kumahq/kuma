@@ -22,7 +22,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 		func(given testCase) {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-				Configure(HttpConnectionManager("stats", false)).
+				Configure(HttpConnectionManager("stats", false, nil)).
 				Configure(FaultInjection(given.input...)).
 				Build()
 			// then

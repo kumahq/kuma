@@ -16,7 +16,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -130,18 +129,14 @@ func FilterChainBuilder(serverSideMTLS bool, protocol core_mesh.Protocol, proxy 
 	// configuration for HTTP case
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
-				configurer.InternalAddresses = proxy.InternalAddresses
-			})).
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).
 			Configure(envoy_listeners.Tracing(xdsCtx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace), service, envoy_common.TrafficDirectionInbound, "", false)).
 			Configure(envoy_listeners.HttpInboundRoutes(service, *routes))
 	case core_mesh.ProtocolGRPC:
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
-				configurer.InternalAddresses = proxy.InternalAddresses
-			})).
+			Configure(envoy_listeners.HttpConnectionManager(localClusterName, true, proxy.InternalAddresses)).
 			Configure(envoy_listeners.GrpcStats()).
 			Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint]...)).
 			Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimitsInbound[endpoint])).

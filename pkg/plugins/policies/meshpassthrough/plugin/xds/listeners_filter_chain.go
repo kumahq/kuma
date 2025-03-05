@@ -10,7 +10,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	xds_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 	xds_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	xds_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
 )
@@ -128,9 +127,7 @@ func (c FilterChainConfigurer) configureHttpFilterChain(
 	filterChainBuilder := xds_listeners.NewFilterChainBuilder(c.APIVersion, filterChainName).
 		Configure(xds_listeners.MatchApplicationProtocols("http/1.1", "h2c")).
 		Configure(xds_listeners.MatchTransportProtocol("raw_buffer")).
-		Configure(xds_listeners.HttpConnectionManager(filterChainName, false, func(configurer *envoy_listeners_v3.HttpConnectionManagerConfigurer) {
-			configurer.InternalAddresses = c.InternalAddresses
-		})).
+		Configure(xds_listeners.HttpConnectionManager(filterChainName, false, c.InternalAddresses)).
 		Configure(xds_listeners.HttpStaticRoute(routeBuilder))
 	c.configureAddressMatch(filterChainBuilder)
 	if c.Port != 0 {

@@ -86,17 +86,13 @@ func ServerSideStaticTLS(tlsCerts core_xds.ServerSideTLSCertPaths) FilterChainBu
 	})
 }
 
-func HttpConnectionManager(statsName string, forwardClientCertDetails bool, annotators ...v3.HttpConnectionManagerConfigurerAnnotateFunc) FilterChainBuilderOpt {
+func HttpConnectionManager(statsName string, forwardClientCertDetails bool, internalAddresses []core_xds.InternalAddress) FilterChainBuilderOpt {
 	hcmConfigurer := &v3.HttpConnectionManagerConfigurer{
 		StatsName:                statsName,
 		ForwardClientCertDetails: forwardClientCertDetails,
+		InternalAddresses:        internalAddresses,
 	}
 
-	for _, annotateFunc := range annotators {
-		if annotateFunc != nil {
-			annotateFunc(hcmConfigurer)
-		}
-	}
 	return AddFilterChainConfigurer(hcmConfigurer)
 }
 

@@ -301,9 +301,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		}
 
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(esName, false, func(configurer *v3.HttpConnectionManagerConfigurer) {
-				configurer.InternalAddresses = internalAddresses
-			})).
+			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).
 			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{
