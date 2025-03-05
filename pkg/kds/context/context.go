@@ -258,7 +258,7 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMa
 func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilter {
 	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
 		// There's explicit flag to disable KDS for a resource
-		if r.Descriptor().HasKDSDisabled("", r.GetMeta().GetLabels()) {
+		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
 			return false
 		}
 		// for Config, Secret and GlobalSecret there are resources that are internal to each CP
@@ -361,7 +361,7 @@ func SkipUnsupportedHostnameGenerator(ctx context.Context, clusterID string, fea
 // ZoneProvidedFilter filters resources that should be sent from Zone to Global
 // a resource is sent from zone to global only if it was created in this zone.
 func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r core_model.Resource) bool {
-	if r.Descriptor().HasKDSDisabled(localZone, r.GetMeta().GetLabels()) {
+	if r.Descriptor().HasKDSDisabled("", r.GetMeta().GetLabels()) {
 		return false
 	}
 	return core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())

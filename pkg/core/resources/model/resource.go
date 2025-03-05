@@ -297,7 +297,7 @@ func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool
 // Cases where KDS is disabled:
 // - KDSDisabledFlag is set
 // - KDSDisabledByDefault is set for the whole resource and there's no explicit allowance
-// zone is the name of the zone (empty for global) it's potentially to be able to do more options on the flag in the future
+// zone is the name of the zone (empty when sending to global) it's potentially to be able to do more options on the flag in the future
 func (d ResourceTypeDescriptor) HasKDSDisabled(zone string, labels map[string]string) bool {
 	switch labels[mesh_proto.KDSSyncLabel] {
 	case "enabled":
