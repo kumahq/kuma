@@ -37,10 +37,12 @@ func ToValidUnixFilename(input ...string) string {
 	// Replace spaces with underscores
 	noSpaces := strings.ReplaceAll(strings.Join(input, "_"), " ", "_")
 
-	// Remove or replace characters that are problematic in Unix filenames
+	// Replace characters that are problematic in Unix filenames
 	// This includes control characters, /, and other special characters
-	reg := regexp.MustCompile(`[^\w\-|]`)
-	sanitized := reg.ReplaceAllString(noSpaces, "?")
+	// We also include a few additional characters that are problematic in GitHub Actions:
+	// Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?, Carriage return \r, Line feed \n
+	reg := regexp.MustCompile(`[^\w\-|?<>*:"\r\n]+`)
+	sanitized := reg.ReplaceAllString(noSpaces, "-")
 
 	// Trim leading/trailing periods and dashes which can cause issues
 	sanitized = strings.Trim(sanitized, ".-")
