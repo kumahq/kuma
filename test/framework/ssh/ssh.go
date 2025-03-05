@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"syscall"
 
@@ -76,9 +77,8 @@ func NewApp(containerName string, cluster string, verbose bool, port string, env
 }
 
 func (s *App) done() {
-	appUniqueName := fmt.Sprintf("%s|%s|%d", s.containerName, k8s_strings.ShortenString(files.ToValidUnixFilename(strings.Join(s.args, "_")), 64), s.cmd.Process.Pid)
-	base := path.Join(s.clusterName, "universal", appUniqueName)
-	report.AddFileToReportEntry(path.Join(base, "cmd-debug.txt"), fmt.Sprintf("cmd:%s\ncontainer:%s\n", s.cmd.String(), s.containerName))
+	base := path.Join(s.clusterName, "universal", "ssh", s.containerName, k8s_strings.ShortenString(files.ToValidUnixFilename(strings.Join(s.args, "_")), 64), strconv.Itoa(s.cmd.Process.Pid))
+	report.AddFileToReportEntry(path.Join(base, "cmd-debug.txt"), fmt.Sprintf("cmd:%s\nargs:%s\ncontainer:%s\n", s.cmd.String(), s.args, s.containerName))
 	report.AddFileToReportEntry(path.Join(base, "std-out.log"), s.Out())
 	report.AddFileToReportEntry(path.Join(base, "std-err.log"), s.Err())
 }

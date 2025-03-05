@@ -67,6 +67,10 @@ const (
 	// there is a mechanism to avoid sending it back to the original Zone (.e.g producer policies, zone origin labels...).
 	// but this is outside of the resourceType sync mechanism.
 	SyncedAcrossZonesFlag = KDSFlagType(1 << 5)
+	// KDSDisabledByDefault is a flag that indicates that this resource type is not sent using KDS by default.
+	// only resources that are explicitly marked with `kuma.io/kds-sync: enabled` are sent.
+	// this is only used for Config resources atm.
+	KDSDisabledByDefault = KDSFlagType(1 << 6)
 	// ZoneToGlobalFlag gets sent from Zone to Global
 	ZoneToGlobalFlag = ConsumedByGlobalFlag | ProvidedByZoneFlag
 	// GlobalToZonesFlag gets sent from Global to Zone
@@ -289,6 +293,22 @@ func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool
 	return (isGlobal && !d.KDSFlags.Has(ProvidedByGlobalFlag)) || (isFederated && !d.KDSFlags.Has(ProvidedByZoneFlag))
 }
 
+// HasKDSDisabled returns whether this resource type is not sent using KDS.
+// Cases where KDS is disabled:
+// - KDSDisabledFlag is set
+// - KDSDisabledByDefault is set for the whole resource and there's no explicit allowance
+// zone is the name of the zone (empty when sending to global) it's potentially to be able to do more options on the flag in the future
+func (d ResourceTypeDescriptor) HasKDSDisabled(zone string, labels map[string]string) bool {
+	switch labels[mesh_proto.KDSSyncLabel] {
+	case "enabled":
+		return false
+	case "disabled":
+		return true
+	default:
+		return d.KDSFlags.Has(KDSDisabledByDefault)
+	}
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -308,12 +328,6 @@ func SentFromGlobalToZone() TypeFilter {
 func SentFromZoneToGlobal() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.KDSFlags.Has(ZoneToGlobalFlag)
-	})
-}
-
-func HasKDSEnabled() TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags != KDSDisabledFlag
 	})
 }
 
