@@ -134,12 +134,110 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		pod.Annotations[kube_podcmd.DefaultContainerAnnotationName] = pod.Spec.Containers[0].Name
 	}
 
+<<<<<<< HEAD
 	annotations, err := i.NewAnnotations(pod, meshName, logger)
 	if err != nil {
 		return errors.Wrap(err, "could not generate annotations for pod")
 	}
 	for key, value := range annotations {
 		pod.Annotations[key] = value
+=======
+	var annotations map[string]string
+	var injectedInitContainer *kube_core.Container
+
+	if i.cfg.TransparentProxyConfigMapName != "" {
+		tproxyCfgConfigMap, err := i.getTransparentProxyConfig(ctx, logger, pod)
+		if err != nil {
+			return errors.Wrap(err, "could not retrieve transparent proxy configuration")
+		}
+
+		tproxyCfg, err := tproxy_k8s.ConfigForKubernetes(tproxyCfgConfigMap, i.cfg, pod.Annotations, logger)
+		if err != nil {
+			return err
+		}
+
+		tproxyCfgYAMLBytes, err := yaml.Marshal(tproxyCfg)
+		if err != nil {
+			return err
+		}
+		tproxyCfgYAML := string(tproxyCfgYAMLBytes)
+
+		if annotations, err = tproxy_k8s.ConfigToAnnotations(
+			tproxyCfg,
+			i.cfg,
+			pod.Annotations,
+			i.defaultAdminPort,
+		); err != nil {
+			return errors.Wrap(err, "could not generate annotations for pod")
+		}
+
+		for key, value := range annotations {
+			pod.Annotations[key] = value
+		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
+
+		switch {
+		case !tproxyCfg.CNIMode:
+			initContainer := i.NewInitContainer([]string{"--config", tproxyCfgYAML})
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		case tproxyCfg.Redirect.Inbound.Enabled:
+			ipFamilyMode := tproxyCfg.IPFamilyMode.String()
+			inboundPort := tproxyCfg.Redirect.Inbound.Port.String()
+			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+			fallthrough
+		default:
+			pod.Annotations[metadata.KumaTrafficTransparentProxyConfig] = tproxyCfgYAML
+		}
+	} else { // this is legacy and deprecated - will be removed soon
+		if annotations, err = i.NewAnnotations(pod, logger); err != nil {
+			return errors.Wrap(err, "could not generate annotations for pod")
+		}
+
+		for key, value := range annotations {
+			pod.Annotations[key] = value
+		}
+
+		if pod.Labels == nil {
+			pod.Labels = map[string]string{}
+		}
+		pod.Labels[metadata.KumaMeshLabel] = meshName
+
+		podRedirect, err := tproxy_k8s.NewPodRedirectFromAnnotations(pod.Annotations)
+		if err != nil {
+			return err
+		}
+
+		if !i.cfg.CNIEnabled {
+			initContainer := i.NewInitContainer(podRedirect.AsKumactlCommandLine())
+			injected, err := i.applyCustomPatches(logger, initContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		} else if podRedirect.RedirectInbound {
+			ipFamilyMode := podRedirect.IpFamilyMode
+			inboundPort := fmt.Sprintf("%d", podRedirect.RedirectPortInbound)
+			validationContainer := i.NewValidationContainer(ipFamilyMode, inboundPort, sidecarTmp.Name)
+			injected, err := i.applyCustomPatches(logger, validationContainer, initPatches)
+			if err != nil {
+				return err
+			}
+			injectedInitContainer = &injected
+		}
+>>>>>>> b69bcbebb (feat(kuma-cp/transparent-proxy): fail injection if custom ConfigMap missing (#13012))
 	}
 
 	if i.cfg.EBPF.Enabled {
@@ -283,6 +381,88 @@ func (i *KumaInjector) loadContainerPatches(
 	return sidecarPatches, initPatches, nil
 }
 
+<<<<<<< HEAD
+=======
+func (i *KumaInjector) getTransparentProxyConfig(
+	ctx context.Context,
+	logger logr.Logger,
+	pod *kube_core.Pod,
+) (tproxy_config.Config, error) {
+	if i.cfg.TransparentProxyConfigMapName == "" {
+		return tproxy_config.DefaultConfig(), nil
+	}
+
+	if v := pod.Annotations[metadata.KumaTrafficTransparentProxyConfigMapName]; v != "" {
+		if c, err := i.getTransparentProxyConfigMap(ctx, v, pod.Namespace, logger, "annotation"); err == nil {
+			return c, nil
+		}
+
+		if c, err := i.getTransparentProxyConfigMap(ctx, v, i.systemNamespace, logger, "annotation"); err == nil {
+			return c, nil
+		}
+
+		return tproxy_config.Config{}, errors.Errorf("ConfigMap %q not found in namespace %q or system namespace %q", v, pod.Namespace, i.systemNamespace)
+	}
+
+	if c, err := i.getTransparentProxyConfigMap(
+		ctx,
+		i.cfg.TransparentProxyConfigMapName,
+		i.systemNamespace,
+		logger,
+		"controlPlaneRuntimeConfig",
+	); err == nil {
+		return c, nil
+	}
+
+	return tproxy_config.DefaultConfig(), nil
+}
+
+func (i *KumaInjector) getTransparentProxyConfigMap(
+	ctx context.Context,
+	name string,
+	namespace string,
+	logger logr.Logger,
+	source string,
+) (tproxy_config.Config, error) {
+	var err error
+	defer func() {
+		if err != nil {
+			logger.V(1).Info(
+				"[WARNING]: unable to retrieve transparent proxy configuration from ConfigMap; applying default configuration",
+				"configMapName", name,
+				"configMapNamespace", namespace,
+				"configMapSource", source,
+				"error", err,
+			)
+		}
+	}()
+
+	cfg := tproxy_config.DefaultConfig()
+	loader := core_config.NewLoader(&cfg)
+	namespacedName := kube_types.NamespacedName{Name: name, Namespace: namespace}
+
+	var cm kube_core.ConfigMap
+	if err = i.client.Get(ctx, namespacedName, &cm); err != nil {
+		return tproxy_config.Config{}, err
+	}
+
+	if c := cm.Data[tproxy_consts.KubernetesConfigMapDataKey]; c != "" {
+		if err = loader.LoadBytes([]byte(c)); err != nil {
+			return tproxy_config.Config{}, err
+		}
+
+		return cfg, nil
+	}
+
+	err = errors.Errorf(
+		"key '%s' is missing or empty",
+		tproxy_consts.KubernetesConfigMapDataKey,
+	)
+
+	return tproxy_config.Config{}, err
+}
+
+>>>>>>> b69bcbebb (feat(kuma-cp/transparent-proxy): fail injection if custom ConfigMap missing (#13012))
 // applyCustomPatches applies the block of patches to the given container and returns a new,
 // patched container. If patch list is empty, the same unaltered container is returned.
 func (i *KumaInjector) applyCustomPatches(
