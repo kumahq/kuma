@@ -3,5 +3,6 @@
 #/meshes/new-mesh 201 method=PUT
 # Update works
 #/meshes/new-mesh 200 method=PUT
+#/meshes/aa.a 201 method=PUT
 type: Mesh
 name: default

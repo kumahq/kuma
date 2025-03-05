@@ -24,6 +24,8 @@ New rule:
 
 Before the upgrade ensure that your resources don't use unsupported characters.
 
+Further, starting from version `2.10.x` we are deprecating the usage of non [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) characters for names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService`, `MeshMultizoneService` resources. These names will not be accepted in a future release. 
+
 ### MeshService on Universal is not generated for services with an invalid `kuma.io/service`
 
 When using `MeshService`, we were automatically generating `MeshService` resources in Universal mode. However, due to stricter resource validation, we have decided not to generate `MeshService` for dataplanes with a `kuma.io/service` name that is not [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) compliant.
@@ -36,7 +38,7 @@ Old rule:
 
 New rule:
 
-> A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+> A lowercase RFC 1035 Label Names must consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character
 
 ### MeshHTTPRoute
 

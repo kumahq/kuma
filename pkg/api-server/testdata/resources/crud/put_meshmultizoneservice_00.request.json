@@ -1,0 +1,20 @@
+{
+  "type": "MeshMultiZoneService",
+  "name": "redis",
+  "mesh": "default",
+  "spec": {
+    "selector": {
+      "meshService": {
+        "matchLabels": {
+          "kuma.io/display-name": "redis"
+        }
+      }
+    },
+    "ports": [
+      {
+        "port": 6379,
+        "appProtocol": "tcp"
+      }
+    ]
+  }
+}
