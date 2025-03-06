@@ -88,8 +88,9 @@ func applyToOutboundPassthrough(
 		removeDefaultPassthroughCluster(rs)
 		if len(pointer.Deref(conf.AppendMatch)) > 0 {
 			configurer := xds.Configurer{
-				APIVersion: proxy.APIVersion,
-				Conf:       conf,
+				APIVersion:        proxy.APIVersion,
+				InternalAddresses: proxy.InternalAddresses,
+				Conf:              conf,
 			}
 			err := configurer.Configure(listeners.Ipv4Passthrough, listeners.Ipv6Passthrough, rs)
 			if err != nil {

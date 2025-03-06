@@ -104,6 +104,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
+				InternalAddresses: DummyInternalAddresses,
 			},
 			expected: "02.envoy.golden.yaml",
 		}),

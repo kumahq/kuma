@@ -4,6 +4,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -12,6 +13,7 @@ type HttpConnectionManagerConfigurer struct {
 	StatsName                string
 	ForwardClientCertDetails bool
 	NormalizePath            bool
+	InternalAddresses        []core_xds.InternalAddress
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -31,6 +33,14 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 
 	if c.NormalizePath {
 		config.NormalizePath = util_proto.Bool(true)
+	}
+
+	if len(c.InternalAddresses) == 0 {
+		c.InternalAddresses = core_xds.LocalHostAddresses
+	}
+	config.InternalAddressConfig = &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
+		UnixSockets: false,
+		CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(c.InternalAddresses),
 	}
 
 	pbst, err := util_proto.MarshalAnyDeterministic(config)

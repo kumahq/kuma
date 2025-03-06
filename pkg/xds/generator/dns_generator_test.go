@@ -65,6 +65,7 @@ var _ = Describe("DNSGenerator", func() {
 					DNSPort: 53001,
 					Version: &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
 				},
+				InternalAddresses: DummyInternalAddresses,
 			}
 
 			for _, dppOutbound := range dataplane.GetNetworking().GetOutbound() {
