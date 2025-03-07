@@ -1,0 +1,16 @@
+# Mesh
+---
+creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/origin: global
+modificationTime: "0001-01-01T00:00:00Z"
+name: default
+type: Mesh
+
+# ZoneInsight
+---
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-2
+type: ZoneInsight
+

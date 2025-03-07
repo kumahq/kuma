@@ -236,9 +236,9 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 		for inspectType, fileExtension := range map[string]string{
 			"config-dump": ".json",
 			"config":      ".json",
-			"policies":    "",
-			"stats":       "",
-			"clusters":    "",
+			"policies":    ".txt",
+			"stats":       ".txt",
+			"clusters":    ".txt",
 		} {
 			// zoneingress and zoneegress do not have policies nor config
 			if dpType != dataplaneType && slices.Contains([]string{"policies", "config"}, inspectType) {

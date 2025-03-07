@@ -1,0 +1,58 @@
+# Mesh
+---
+creationTime: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: default
+type: Mesh
+
+# MeshTimeout
+---
+creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/kds-sync: disabled
+mesh: default
+modificationTime: "0001-01-01T00:00:00Z"
+name: default-timeout-global
+spec:
+  to:
+  - default:
+      connectionTimeout: 2s
+      http:
+        requestTimeout: 2s
+      idleTimeout: 20s
+    targetRef:
+      kind: Mesh
+type: MeshTimeout
+
+# Zone
+---
+creationTime: "0001-01-01T00:00:00Z"
+enabled: true
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-1
+type: Zone
+
+---
+creationTime: "0001-01-01T00:00:00Z"
+enabled: true
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-2
+type: Zone
+
+# ZoneInsight
+---
+creationTime: "0001-01-01T00:00:00Z"
+healthCheck:
+  time: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-2
+type: ZoneInsight
+
+---
+creationTime: "0001-01-01T00:00:00Z"
+healthCheck:
+  time: "0001-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
+name: zone-1
+type: ZoneInsight
+
