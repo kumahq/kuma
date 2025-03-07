@@ -15,8 +15,8 @@ func (t *ZoneResource) Deprecations() []string {
 	name := model.GetDisplayName(t.GetMeta())
 	allErrs := apimachineryvalidation.NameIsDNS1035Label(name, false)
 	if len(allErrs) != 0 {
-		nameDeprecationMsg := fmt.Sprintf("Invalid name: '%s'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: %s",
-			name, strings.Join(allErrs, "; "))
+		nameDeprecationMsg := fmt.Sprintf("Invalid %s resource name: '%s'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: %s",
+			ZoneResourceTypeDescriptor.Name, name, strings.Join(allErrs, "; "))
 		deprecations = append(deprecations, nameDeprecationMsg)
 	}
 
