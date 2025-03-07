@@ -62,13 +62,11 @@ func MultizoneUniversal() {
 	}
 
 	killKumaDP := func(appname string) {
-		_, _, err := zoneUniversal.Exec("", "", appname, "pkill", "-9", "envoy")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(appname, "envoy")).To(Succeed())
 	}
 
 	killZone := func() {
-		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 		}, "30s", "1s").Should(ContainSubstring("Offline"))

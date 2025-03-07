@@ -20,6 +20,7 @@ type universalDeployment struct {
 	container      string
 	ip             string
 	ports          map[uint32]uint32
+	logger         *logger.Logger
 }
 
 var _ Deployment = &universalDeployment{}
@@ -36,6 +37,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		Remove:               true,
 		EnvironmentVariables: []string{"COLLECTOR_ZIPKIN_HOST_PORT=9411"},
 		OtherOptions:         append([]string{"--network", "kind"}, u.publishPortsForDocker()...),
+		Logger:               u.logger,
 	}
 	container, err := docker.RunAndGetIDE(cluster.GetTesting(), "jaegertracing/all-in-one:1.67.0", &opts)
 	if err != nil {
@@ -83,7 +85,7 @@ func (j *universalDeployment) updatePublishedPorts(t testing.TestingT) error {
 	for port := range j.ports {
 		ports = append(ports, port)
 	}
-	publishedPorts, err := framework.GetPublishedDockerPorts(t, j.container, ports)
+	publishedPorts, err := framework.GetPublishedDockerPorts(t, j.logger, j.container, ports)
 	if err != nil {
 		return err
 	}

@@ -266,8 +266,7 @@ spec:
 
 	It("should tls version for 1.3", func() {
 		// given
-		admin, err := universal.Cluster.GetApp(testServerName).GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp(testServerName).GetEnvoyAdminTunnel()
 
 		policy := fmt.Sprintf(`
 type: MeshTLS
@@ -332,8 +331,7 @@ spec:
 
 	It("should set cypher and version", func() {
 		// given
-		admin, err := universal.Cluster.GetApp(testServerName).GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp(testServerName).GetEnvoyAdminTunnel()
 
 		policy := fmt.Sprintf(`
 type: MeshTLS
