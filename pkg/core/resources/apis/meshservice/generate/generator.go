@@ -2,7 +2,6 @@ package generate
 
 import (
 	"context"
-	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"maps"
 	"reflect"
 	"slices"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"

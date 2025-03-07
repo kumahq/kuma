@@ -51,7 +51,7 @@ Old rule:
 
 New rule:
 
-> A lowercase RFC 1035 Label Names must consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character.
+> A lowercase RFC 1035 Label Names must have at most 63 characters and consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character.
 
 ### MeshHTTPRoute
 
