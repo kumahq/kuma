@@ -65,8 +65,7 @@ func ResilienceMultizoneUniversal() {
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		_, _, err := zone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zone1.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		Eventually(func() error {
 			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")

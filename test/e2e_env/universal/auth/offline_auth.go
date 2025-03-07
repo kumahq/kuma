@@ -120,9 +120,9 @@ dpServer:
 			token,
 			[]string{},
 		)
+		Expect(err).ToNot(HaveOccurred())
 
 		// then the new admin can access secrets
-		Expect(err).ToNot(HaveOccurred())
 		Expect(kumactl.RunKumactl("get", "secrets")).To(Succeed())
 	})
 
