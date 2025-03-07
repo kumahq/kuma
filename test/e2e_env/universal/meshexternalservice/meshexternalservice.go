@@ -130,12 +130,12 @@ networking:
 
 	checkSuccessfulRequest := func(url, clientName string, matcher types.GomegaMatcher) {
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				universal.Cluster, clientName, url,
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(matcher)
 		}, "30s", "500ms").WithOffset(1).Should(Succeed())
 	}

@@ -81,8 +81,7 @@ spec:
         grpc:
           numRetries: 5
 `, meshName)
-		admin, err := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
 
 		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {

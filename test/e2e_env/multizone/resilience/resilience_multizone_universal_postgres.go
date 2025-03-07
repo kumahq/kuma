@@ -91,12 +91,10 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(kumaCP).ToNot(BeNil())
 
 		// when global is killed
-		_, _, err := global.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(global.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// and zone is killed while global is down
-		_, _, err = zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// and global is restarted
 		Expect(kumaCP.ReStart()).Should(Succeed())
@@ -122,8 +120,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(kumaCP).ToNot(BeNil())
 
 		// when global is killed
-		_, _, err := global.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(global.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// and global is restarted
 		Expect(kumaCP.ReStart()).Should(Succeed())
@@ -133,8 +130,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		time.Sleep(10 * time.Second) // ZoneInsightFlushInterval
 
 		// and zone is killed
-		_, _, err = zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// then zone is offline
 		Eventually(func() (string, error) {
@@ -156,12 +152,10 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(kumaCP).ToNot(BeNil())
 
 		// when Zone CP is killed
-		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// and zone-ingress is killed while Zone CP is down
-		_, _, err = zoneUniversal.Exec("", "", AppIngress, "pkill", "-9", "envoy")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppIngress, "envoy")).To(Succeed())
 
 		// and Zone CP is restarted
 		Expect(kumaCP.ReStart()).Should(Succeed())
@@ -181,8 +175,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		// when Zone CP is killed
-		_, _, err := zoneUniversal.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// then zone is offline immediately
 		Eventually(func() (string, error) {
