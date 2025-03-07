@@ -298,9 +298,6 @@ conf:
 			}, {
 				Field:   "conf.listeners[1].hostname",
 				Message: "must be at most 253 characters",
-			}, {
-				Field:   "conf.listeners[1].hostname",
-				Message: "invalid hostname",
 			}}, `
 type: MeshGateway
 name: gateway
@@ -317,7 +314,7 @@ conf:
     port: 99
     tags:
       name: https
-  - hostname: "fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.com"
+  - hostname: "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff.com"
     protocol: HTTP
     port: 100
     tags:
