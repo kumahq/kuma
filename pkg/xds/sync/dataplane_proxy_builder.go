@@ -223,17 +223,3 @@ func (p *DataplaneProxyBuilder) matchPolicies(meshContext xds_context.MeshContex
 	}
 	return matchedPolicies, nil
 }
-
-func cidrListToInternalAddresses(cidrs []string) []core_xds.InternalAddress {
-	var internalAddresses []core_xds.InternalAddress
-	for _, cidr := range cidrs {
-		ip, ipNet, _ := net.ParseCIDR(cidr)
-
-		prefixLen, _ := ipNet.Mask.Size()
-		internalAddresses = append(internalAddresses, core_xds.InternalAddress{
-			AddressPrefix: ip.String(),
-			PrefixLen:     uint32(prefixLen),
-		})
-	}
-	return internalAddresses
-}

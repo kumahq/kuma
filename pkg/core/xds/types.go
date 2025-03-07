@@ -2,6 +2,7 @@ package xds
 
 import (
 	"fmt"
+	"net"
 	"slices"
 	"strings"
 
@@ -315,6 +316,20 @@ func InternalAddressToEnvoyCIDRs(internalAddresses []InternalAddress) []*envoy_c
 		})
 	}
 	return cidrRanges
+}
+
+func InternalAddressesFromCIDRs(cidrs []string) []InternalAddress {
+	var internalAddresses []InternalAddress
+	for _, cidr := range cidrs {
+		ip, ipNet, _ := net.ParseCIDR(cidr)
+
+		prefixLen, _ := ipNet.Mask.Size()
+		internalAddresses = append(internalAddresses, InternalAddress{
+			AddressPrefix: ip.String(),
+			PrefixLen:     uint32(prefixLen),
+		})
+	}
+	return internalAddresses
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
