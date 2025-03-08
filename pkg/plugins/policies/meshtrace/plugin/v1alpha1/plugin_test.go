@@ -71,14 +71,14 @@ var _ = Describe("MeshTrace", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
 					)).MustBuild(),
 			},
 		}
@@ -90,14 +90,14 @@ var _ = Describe("MeshTrace", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
 					)).MustBuild(),
 				ResourceOrigin: &backendMeshServiceIdentifier,
 			},

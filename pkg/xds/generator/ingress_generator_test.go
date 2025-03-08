@@ -55,6 +55,7 @@ var _ = Describe("IngressGenerator", func() {
 					ZoneIngressResource: zoneIngressRes,
 					MeshResourceList:    given.meshResourceList,
 				},
+				InternalAddresses: DummyInternalAddresses,
 			}
 
 			// when

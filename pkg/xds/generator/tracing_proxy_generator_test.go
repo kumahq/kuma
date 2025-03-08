@@ -94,6 +94,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						},
 					},
 				},
+				InternalAddresses: DummyInternalAddresses,
 			},
 			ctx: xds_context.Context{Mesh: xds_context.MeshContext{
 				Resource: &core_mesh.MeshResource{Spec: &mesh_proto.Mesh{

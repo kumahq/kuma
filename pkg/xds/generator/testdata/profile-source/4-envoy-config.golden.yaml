@@ -216,6 +216,10 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 10.8.0.0
+              prefixLen: 16
           routeConfig:
             name: inbound:backend
             requestHeadersToRemove:
@@ -299,6 +303,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:
@@ -322,6 +332,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:
@@ -385,6 +401,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:
@@ -406,6 +428,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             validateClusters: false
             virtualHosts:

@@ -150,6 +150,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -254,6 +262,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -378,6 +394,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend1
             requestHeadersToRemove:
@@ -584,6 +608,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:
@@ -616,6 +648,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:
@@ -655,6 +695,14 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 100.64.0.0
+              prefixLen: 16
+            - addressPrefix: fc00::/7
+              prefixLen: 128
+            - addressPrefix: ::1/128
+              prefixLen: 128
           routeConfig:
             name: inbound:backend3
             requestHeadersToRemove:

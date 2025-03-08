@@ -80,3 +80,8 @@ func (p *ProxyBuilder) WithID(id xds.ProxyId) *ProxyBuilder {
 	p.res.Id = id
 	return p
 }
+
+func (p *ProxyBuilder) WithInternalAddresses(addresses ...xds.InternalAddress) *ProxyBuilder {
+	p.res.InternalAddresses = append(p.res.InternalAddresses, addresses...)
+	return p
+}

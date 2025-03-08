@@ -15,6 +15,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 192.168.0.0
+              prefixLen: 16
+            - addressPrefix: ::1
+              prefixLen: 128
           normalizePath: true
           routeConfig:
             name: outbound:backend
@@ -53,6 +59,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 192.168.0.0
+              prefixLen: 16
+            - addressPrefix: ::1
+              prefixLen: 128
           normalizePath: true
           routeConfig:
             name: outbound:external-service
