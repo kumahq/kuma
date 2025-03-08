@@ -120,12 +120,12 @@ func ExternalServices() {
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				stdout, _, err := client.CollectResponse(
+				_, stderr, err := client.CollectResponse(
 					universal.Cluster, "demo-client", "external-service.mesh",
 					client.WithVerbose(),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-				g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+				g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {

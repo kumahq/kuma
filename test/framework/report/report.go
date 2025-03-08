@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/docker/docker/pkg/fileutils"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 
@@ -36,9 +37,15 @@ func AddFileToReportEntry(name string, content interface{}) {
 	}
 	defer tmp.Close()
 
+	fName := tmp.Name()
 	switch c := content.(type) {
 	case string:
-		_, err = tmp.WriteString(c)
+		if files.FileExists(c) {
+			// In this case we passed a file not the content
+			fName = c
+		} else {
+			_, err = tmp.WriteString(c)
+		}
 	case []byte:
 		_, err = tmp.Write(c)
 	default:
@@ -48,7 +55,7 @@ func AddFileToReportEntry(name string, content interface{}) {
 		logf("[WARNING]: could not write to temporary report %v", err)
 		return
 	}
-	ginkgo.AddReportEntry(name, tmp.Name(), ginkgo.ReportEntryVisibilityNever)
+	ginkgo.AddReportEntry(name, fName, ginkgo.ReportEntryVisibilityNever)
 }
 
 // DumpReport dumps the report to the disk.
@@ -74,7 +81,12 @@ func DumpReport(report ginkgo.Report) {
 		}
 		// If the value is a file that actually exists let's simply move it in
 		if files.FileExists(data) {
-			err = os.Rename(data, path)
+			if strings.Contains(os.TempDir(), data) {
+				// If the file is in the temp dir, let's copy it
+				_, err = fileutils.CopyFile(data, path)
+			} else {
+				err = os.Rename(data, path)
+			}
 		} else {
 			err = os.WriteFile(path, []byte(data), 0o600)
 		}
@@ -94,9 +106,15 @@ func DumpReport(report ginkgo.Report) {
 			_, _ = fmt.Fprintf(f, "State: %s\n", entry.State)
 			_, _ = fmt.Fprintf(f, "Duration: %s\n", entry.RunTime)
 			_, _ = fmt.Fprintf(f, "Start: %s End: %s\n", entry.StartTime, entry.EndTime)
+			if entry.Failed() {
+				_, _ = fmt.Fprintf(f, "Failure:%s\n", entry.Failure.FailureNodeLocation.String())
+				_, _ = fmt.Fprintf(f, "Location:%s\n", entry.Failure.Location.String())
+				_, _ = fmt.Fprintf(f, "---Failure--\n%v\n", entry.Failure.Message)
+				_, _ = fmt.Fprintf(f, "---StackTrace---\n%s\n", entry.Failure.Location.FullStackTrace)
+			}
 			_, _ = fmt.Fprintf(f, "SpecEvents:\n")
 			for _, e := range entry.SpecEvents {
-				_, _ = fmt.Fprintf(f, "%s\n", e.GomegaString())
+				_, _ = fmt.Fprintf(f, "\t%s\n", e.GomegaString())
 			}
 			writeEntry(path.Join(entryPath, "report.txt"), f.String())
 
