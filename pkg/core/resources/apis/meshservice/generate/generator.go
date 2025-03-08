@@ -11,6 +11,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	apimachineryvalidation "k8s.io/apimachinery/pkg/api/validation"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -78,8 +79,9 @@ func (g *Generator) meshServicesForDataplane(dataplane *core_mesh.DataplaneResou
 	portsByService := map[string][]meshservice_api.Port{}
 	for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 		serviceTagValue := inbound.GetTags()[mesh_proto.ServiceTag]
-		if !core_mesh.DomainRegexp.MatchString(serviceTagValue) {
-			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "regex", core_mesh.DomainRegexp)
+		allErrs := apimachineryvalidation.NameIsDNS1035Label(serviceTagValue, false)
+		if len(allErrs) != 0 {
+			log.Info("couldn't generate MeshService from kuma.io/service, contains invalid characters", "value", serviceTagValue, "error", allErrs)
 			continue
 		}
 		appProtocol, hasProtocol := inbound.GetTags()[mesh_proto.ProtocolTag]
