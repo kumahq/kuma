@@ -168,15 +168,27 @@ func (f *forwardingKdsEnvoyAdminClient) globalInstanceID(ctx context.Context, zo
 	if !zoneInsightRes.Spec.IsOnline() {
 		return "", &ZoneOfflineError{rpcName: rpcName}
 	}
-	streams := zoneInsightRes.Spec.GetEnvoyAdminStreams()
+	streams := zoneInsightRes.Spec.GetKdsStreams()
 	var globalInstanceID string
 	switch rpcName {
 	case service.ConfigDumpRPC:
-		globalInstanceID = streams.GetConfigDumpGlobalInstanceId()
+		if streams.GetConfigDump() != nil {
+			globalInstanceID = streams.GetConfigDump().GetGlobalInstanceId()
+		} else {
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetConfigDumpGlobalInstanceId()
+		}
 	case service.StatsRPC:
-		globalInstanceID = streams.GetStatsGlobalInstanceId()
+		if streams.GetStats() != nil {
+			globalInstanceID = streams.GetStats().GetGlobalInstanceId()
+		} else {
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetStatsGlobalInstanceId()
+		}
 	case service.ClustersRPC:
-		globalInstanceID = streams.GetClustersGlobalInstanceId()
+		if streams.GetClusters() != nil {
+			globalInstanceID = streams.GetClusters().GetGlobalInstanceId()
+		} else {
+			globalInstanceID = zoneInsightRes.Spec.GetEnvoyAdminStreams().GetClustersGlobalInstanceId()
+		}
 	default:
 		return "", errors.Errorf("invalid operation %s", rpcName)
 	}
