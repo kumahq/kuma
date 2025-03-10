@@ -102,4 +102,32 @@ var _ = Describe("Defaults Component", func() {
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
+
+	Describe("when mode is set to none", func() {
+		var component core_component.Component
+		var manager core_manager.ResourceManager
+
+		BeforeEach(func() {
+			cfg := kuma_cp.DefaultConfig()
+			cfg.Defaults.Mode = kuma_cp.ModeNone
+			store := resources_memory.NewStore()
+			manager = core_manager.NewResourceManager(store)
+			component = &defaults.DefaultComponent{
+				Extensions: context.Background(),
+				Funcs:      []defaults.EnsureDefaultFunc{defaults.EnsureDefaultMeshExists},
+				ResManager: manager,
+				CpConfig:   cfg,
+			}
+		})
+
+		It("should not create default mesh", func() {
+			// when
+			err := component.Start(nil)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			err = manager.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey("default", "default"))
+			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+		})
+	})
 })
