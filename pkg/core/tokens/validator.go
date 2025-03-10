@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
