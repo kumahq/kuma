@@ -8,6 +8,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type MeshExternalServiceBuilder struct {
@@ -23,11 +24,11 @@ func MeshExternalService() *MeshExternalServiceBuilder {
 			},
 			Spec: &v1alpha1.MeshExternalService{
 				Match: v1alpha1.Match{
-					Type:     v1alpha1.HostnameGeneratorType,
+					Type:     pointer.To(v1alpha1.HostnameGeneratorType),
 					Port:     9000,
 					Protocol: core_mesh.ProtocolHTTP,
 				},
-				Endpoints: &[]v1alpha1.Endpoint{
+				Endpoints: []v1alpha1.Endpoint{
 					{
 						Address: "192.168.0.1",
 						Port:    v1alpha1.Port(27017),

@@ -11,33 +11,6 @@ import (
 var _ = Describe("validation", func() {
 	DescribeErrorCases(
 		meshmzservice_api.NewMeshMultiZoneServiceResource,
-		ErrorCase("spec.template empty",
-			validators.Violation{
-				Field:   `spec.ports[0].name`,
-				Message: `must not be empty`,
-			}, `
-selector:
-  meshService:
-    matchLabels:
-      app: xyz
-ports:
-- port: 123
-  name: ''
-  appProtocol: tcp
-`),
-		ErrorCase("spec.template empty",
-			validators.Violation{
-				Field:   `spec.ports[0].appProtocol`,
-				Message: `appProtocol must be one of: grpc, http, http2, kafka, tcp`,
-			}, `
-selector:
-  meshService:
-    matchLabels:
-      app: xyz
-ports:
-- port: 123
-  appProtocol: not_supported
-`),
 		ErrorCases(
 			"spec errors",
 			[]validators.Violation{
@@ -64,7 +37,6 @@ selector:
       app: xyz
 ports:
 - port: 123
-  appProtocol: tcp
 `),
 	)
 })

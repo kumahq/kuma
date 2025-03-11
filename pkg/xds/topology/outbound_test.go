@@ -6,7 +6,6 @@ import (
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -50,7 +49,7 @@ var _ = Describe("TrafficRoute", func() {
 				EnabledBackend: "ca-1",
 			},
 			Routing: &mesh_proto.Routing{
-				ZoneEgress: &wrapperspb.BoolValue{Value: true},
+				ZoneEgress: true,
 			},
 		},
 	}
@@ -63,7 +62,7 @@ var _ = Describe("TrafficRoute", func() {
 				EnabledBackend: "ca-1",
 			},
 			Routing: &mesh_proto.Routing{
-				ZoneEgress: &wrapperspb.BoolValue{Value: false},
+				ZoneEgress: false,
 			},
 		},
 	}
@@ -83,7 +82,7 @@ var _ = Describe("TrafficRoute", func() {
 		},
 		Spec: &mesh_proto.Mesh{
 			Routing: &mesh_proto.Routing{
-				LocalityAwareLoadBalancing: &wrapperspb.BoolValue{Value: true},
+				LocalityAwareLoadBalancing: true,
 			},
 		},
 	}
@@ -1328,11 +1327,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: core_mesh.ProtocolHTTP,
 							},
-							Endpoints: &[]meshexternalservice_api.Endpoint{
+							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1346,7 +1345,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       meshexternalservice_api.TLSVerificationSecured,
+									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSecured),
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1381,11 +1380,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: core_mesh.ProtocolTCP,
 							},
-							Endpoints: &[]meshexternalservice_api.Endpoint{
+							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1394,7 +1393,7 @@ var _ = Describe("TrafficRoute", func() {
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       meshexternalservice_api.TLSVerificationSkipSAN,
+									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSkipSAN),
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1501,11 +1500,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     meshexternalservice_api.HostnameGeneratorType,
+								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 								Port:     10000,
 								Protocol: core_mesh.ProtocolHTTP,
 							},
-							Endpoints: &[]meshexternalservice_api.Endpoint{
+							Endpoints: []meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1519,7 +1518,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       meshexternalservice_api.TLSVerificationSecured,
+									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSecured),
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1685,11 +1684,11 @@ var _ = Describe("TrafficRoute", func() {
 							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
 							Spec: &meshexternalservice_api.MeshExternalService{
 								Match: meshexternalservice_api.Match{
-									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 									Port:     443,
 									Protocol: core_mesh.ProtocolTCP,
 								},
-								Endpoints: &[]meshexternalservice_api.Endpoint{
+								Endpoints: []meshexternalservice_api.Endpoint{
 									{
 										Address: "192.168.1.1",
 										Port:    meshexternalservice_api.Port(10000),

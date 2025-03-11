@@ -25,7 +25,7 @@ type MeshExternalService struct {
 	// Extension struct for a plugin configuration, in the presence of an extension `endpoints` and `tls` are not required anymore - it's up to the extension to validate them independently.
 	Extension *Extension `json:"extension,omitempty"`
 	// Endpoints defines a list of destinations to send traffic to.
-	Endpoints *[]Endpoint `json:"endpoints,omitempty"`
+	Endpoints []Endpoint `json:"endpoints,omitempty"`
 	// Tls provides a TLS configuration when proxy is resposible for a TLS origination
 	Tls *Tls `json:"tls,omitempty"`
 }
@@ -39,23 +39,21 @@ const (
 
 type Match struct {
 	// Type of the match, only `HostnameGenerator` is available at the moment.
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=HostnameGenerator
-	Type MatchType `json:"type"`
+	Type *MatchType `json:"type,omitempty"`
 	// Port defines a port to which a user does request.
 	Port Port `json:"port"`
 	// Protocol defines a protocol of the communication. Possible values: `tcp`, `grpc`, `http`, `http2`.
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
 	// +kubebuilder:validation:Enum=tcp;grpc;http;http2
-	Protocol core_mesh.Protocol `json:"protocol"`
+	Protocol core_mesh.Protocol `json:"protocol,omitempty"`
 }
 
 type Extension struct {
 	// Type of the extension.
 	Type string `json:"type"`
 	// Config freeform configuration for the extension.
-	Config *apiextensionsv1.JSON `json:"config,omitempty"`
+	Config *apiextensionsv1.JSON `json:"config"`
 }
 
 // +kubebuilder:validation:Minimum=1
@@ -74,16 +72,14 @@ type Endpoint struct {
 
 type Tls struct {
 	// Enabled defines if proxy should originate TLS.
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	Enabled bool `json:"enabled"`
+	Enabled bool `json:"enabled,omitempty"`
 	// Version section for providing version specification.
 	Version *common_tls.Version `json:"version,omitempty"`
 	// AllowRenegotiation defines if TLS sessions will allow renegotiation.
 	// Setting this to true is not recommended for security reasons.
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	AllowRenegotiation bool `json:"allowRenegotiation"`
+	AllowRenegotiation bool `json:"allowRenegotiation,omitempty"`
 	// Verification section for providing TLS verification details.
 	Verification *Verification `json:"verification,omitempty"`
 }
@@ -100,9 +96,8 @@ const (
 
 type Verification struct {
 	// Mode defines if proxy should skip verification, one of `SkipSAN`, `SkipCA`, `Secured`, `SkipAll`. Default `Secured`.
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=Secured
-	Mode VerificationMode `json:"mode"`
+	Mode *VerificationMode `json:"mode,omitempty"`
 	// ServerName overrides the default Server Name Indicator set by Kuma.
 	ServerName *string `json:"serverName,omitempty"`
 	// SubjectAltNames list of names to verify in the certificate.
@@ -125,9 +120,8 @@ const (
 
 type SANMatch struct {
 	// Type specifies matching type, one of `Exact`, `Prefix`. Default: `Exact`
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=Exact
-	Type SANMatchType `json:"type"`
+	Type SANMatchType `json:"type,omitempty"`
 	// Value to match.
 	Value string `json:"value"`
 }

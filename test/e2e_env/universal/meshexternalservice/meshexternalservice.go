@@ -23,6 +23,7 @@ import (
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	meshtimeout_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/envs/universal"
@@ -57,11 +58,11 @@ networking:
 			},
 			Spec: &meshexternalservice_api.MeshExternalService{
 				Match: meshexternalservice_api.Match{
-					Type:     meshexternalservice_api.HostnameGeneratorType,
+					Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
 					Port:     80,
 					Protocol: core_mesh.ProtocolHTTP,
 				},
-				Endpoints: &[]meshexternalservice_api.Endpoint{{
+				Endpoints: []meshexternalservice_api.Endpoint{{
 					Address: host,
 					Port:    meshexternalservice_api.Port(port),
 				}},
@@ -74,7 +75,6 @@ networking:
 				Enabled: true,
 				Verification: &meshexternalservice_api.Verification{
 					CaCert: &common_api.DataSource{Inline: &caCert},
-					Mode:   meshexternalservice_api.TLSVerificationSecured,
 				},
 			}
 		}

@@ -10,7 +10,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -286,7 +285,7 @@ func validateZoneEgress(routing *mesh_proto.Routing, mtls *mesh_proto.Mesh_Mtls)
 	if routing == nil {
 		return verr
 	}
-	if pointer.Deref(routing.ZoneEgress).Value {
+	if routing.ZoneEgress {
 		if mtls.GetEnabledBackend() == "" {
 			verr.AddViolation("mtls", "has to be set when zoneEgress enabled")
 		}

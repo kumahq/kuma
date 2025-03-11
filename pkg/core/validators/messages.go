@@ -29,10 +29,6 @@ var (
 	HasToBeInUintPercentageRange = fmt.Sprintf(HasToBeInRangeFormat, 0, 100)
 )
 
-func MustBeOneOf(entity string, allowedValues ...string) string {
-	return fmt.Sprintf(`%s must be one of: %s`, entity, strings.Join(allowedValues, ", "))
-}
-
 func MustHaveOnlyOne(entity string, allowedValues ...string) string {
 	return fmt.Sprintf(`%s must have only one type defined: %s`, entity, strings.Join(allowedValues, ", "))
 }

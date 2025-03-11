@@ -30,7 +30,7 @@ func (r *MeshExternalServiceResource) validate() error {
 	// when extension != nil then it's up to the extension to validate endpoints and tls
 	if r.Spec.Extension == nil {
 		if r.Spec.Endpoints != nil {
-			verr.AddErrorAt(path.Field("endpoints"), validateEndpoints(pointer.Deref(r.Spec.Endpoints)))
+			verr.AddErrorAt(path.Field("endpoints"), validateEndpoints(r.Spec.Endpoints))
 		}
 
 		if r.Spec.Tls != nil {
@@ -57,9 +57,10 @@ func validateTls(tls *Tls) validators.ValidationError {
 		if tls.Verification.ServerName != nil && !govalidator.IsDNSName(*tls.Verification.ServerName) {
 			verr.AddViolationAt(path.Field("serverName"), "must be a valid DNS name")
 		}
-		// checking "" is for backwards compatibility, should be handled by "base policy" in the future
-		if !slices.Contains(append(allVerificationModes, ""), string(tls.Verification.Mode)) {
-			verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))
+		if tls.Verification.Mode != nil {
+			if !slices.Contains(allVerificationModes, string(*tls.Verification.Mode)) {
+				verr.AddErrorAt(path.Field("mode"), validators.MakeFieldMustBeOneOfErr("mode", allVerificationModes...))
+			}
 		}
 		for i, san := range pointer.Deref(tls.Verification.SubjectAltNames) {
 			if !slices.Contains(allSANMatchTypes, string(san.Type)) {
@@ -80,8 +81,8 @@ func validateTls(tls *Tls) validators.ValidationError {
 
 func validateMatch(match Match) validators.ValidationError {
 	var verr validators.ValidationError
-	if match.Type != HostnameGeneratorType && match.Type != "" {
-		verr.AddViolation(validators.RootedAt("type").String(), fmt.Sprintf("unrecognized type '%s' - only '%s' is supported", match.Type, HostnameGeneratorType))
+	if match.Type != nil && *match.Type != HostnameGeneratorType {
+		verr.AddViolation(validators.RootedAt("type").String(), fmt.Sprintf("unrecognized type '%s' - only '%s' is supported", *match.Type, HostnameGeneratorType))
 	}
 	if match.Port == 0 || match.Port > math.MaxUint16 {
 		verr.AddViolationAt(validators.RootedAt("port"), "port must be a valid (1-65535)")
