@@ -11,7 +11,6 @@ import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -259,7 +258,7 @@ var _ = Describe("GenerateSnapshot", func() {
 				WithName("demo").
 				With(func(resource *core_mesh.MeshResource) {
 					resource.Spec.Routing = &mesh_proto.Routing{
-						LocalityAwareLoadBalancing: &wrapperspb.BoolValue{Value: true},
+						LocalityAwareLoadBalancing: true,
 					}
 				}).
 				Build(),

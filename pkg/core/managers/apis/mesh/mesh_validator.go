@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 type MeshValidator interface {
@@ -48,7 +47,7 @@ func ValidateMTLSBackends(ctx context.Context, caManagers core_ca.Managers, name
 		if !exist {
 			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
 			return verr
-		} else if !pointer.Deref(resource.Spec.GetMtls().GetSkipValidation()).Value {
+		} else if !resource.Spec.GetMtls().GetSkipValidation() {
 			if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
 				if configErr, ok := err.(*validators.ValidationError); ok {
 					verr.AddErrorAt(path.Index(idx).Field("conf"), *configErr)
