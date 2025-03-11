@@ -23,14 +23,15 @@ type MeshMultiZoneService struct {
 	Selector Selector `json:"selector"`
 	// Ports is a list of ports from selected MeshServices
 	// +kubebuilder:validation:MinItems=1
-	Ports []Port `json:"ports,omitempty"`
+	Ports []Port `json:"ports"`
 }
 
 type Port struct {
-	Name string `json:"name,omitempty"`
-	Port uint32 `json:"port"`
+	Name *string `json:"name,omitempty"`
+	Port uint32  `json:"port"`
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=tcp
-	AppProtocol core_mesh.Protocol `json:"appProtocol,omitempty"`
+	AppProtocol core_mesh.Protocol `json:"appProtocol"`
 }
 
 type Selector struct {

@@ -668,7 +668,7 @@ func createMeshExternalServiceEndpoint(
 	}
 
 	// if all ip make it static - it's done in endpoint_cluster_configurer
-	for i, endpoint := range mes.Spec.Endpoints {
+	for i, endpoint := range pointer.Deref(mes.Spec.Endpoints) {
 		if i == 0 && es.ServerName == "" && govalidator.IsDNSName(endpoint.Address) && tls != nil && tls.Enabled {
 			es.ServerName = endpoint.Address
 		}
@@ -731,24 +731,22 @@ func setTlsConfiguration(ctx context.Context, tls *meshexternalservice_api.Tls, 
 		}
 		// Server name and SNI we need to add
 		// mes.Spec.Tls.Verification.SubjectAltNames
-		if tls.Verification.Mode != nil {
-			switch *tls.Verification.Mode {
-			case meshexternalservice_api.TLSVerificationSkipSAN:
-				es.ServerName = ""
-				es.SANs = []core_xds.SAN{}
-				es.SkipHostnameVerification = true
-			case meshexternalservice_api.TLSVerificationSkipCA:
-				es.CaCert = nil
-				es.FallbackToSystemCa = false
-			case meshexternalservice_api.TLSVerificationSkipAll:
-				es.FallbackToSystemCa = false
-				es.CaCert = nil
-				es.ClientKey = nil
-				es.ClientCert = nil
-				es.ServerName = ""
-				es.SANs = []core_xds.SAN{}
-				es.SkipHostnameVerification = true
-			}
+		switch tls.Verification.Mode {
+		case meshexternalservice_api.TLSVerificationSkipSAN:
+			es.ServerName = ""
+			es.SANs = []core_xds.SAN{}
+			es.SkipHostnameVerification = true
+		case meshexternalservice_api.TLSVerificationSkipCA:
+			es.CaCert = nil
+			es.FallbackToSystemCa = false
+		case meshexternalservice_api.TLSVerificationSkipAll:
+			es.FallbackToSystemCa = false
+			es.CaCert = nil
+			es.ClientKey = nil
+			es.ClientCert = nil
+			es.ServerName = ""
+			es.SANs = []core_xds.SAN{}
+			es.SkipHostnameVerification = true
 		}
 	}
 	return nil

@@ -14560,7 +14560,6 @@ components:
                   description: Type of the extension.
                   type: string
               required:
-                - config
                 - type
               type: object
             match:
@@ -14926,6 +14925,7 @@ components:
                 - meshService
               type: object
           required:
+            - ports
             - selector
           type: object
         creationTime:

@@ -2415,7 +2415,6 @@ spec:
                     description: Type of the extension.
                     type: string
                 required:
-                - config
                 - type
                 type: object
               match:
@@ -5861,6 +5860,7 @@ spec:
                 - meshService
                 type: object
             required:
+            - ports
             - selector
             type: object
           status:
