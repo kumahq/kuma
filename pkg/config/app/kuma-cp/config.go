@@ -480,7 +480,7 @@ type IPAMConfig struct {
 	MeshMultiZoneService MeshMultiZoneServiceIPAM `json:"meshMultiZoneService"`
 	// Interval on which Kuma will allocate new IPs and generate hostnames.
 	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
-	// KnownInternalCIDRs contains a list of CIDRs which are considered internal and trusted by Envoy when sending HTTP requests
+	// KnownInternalCIDRs contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
 	KnownInternalCIDRs []string `json:"knownInternalCIDRs" envconfig:"KUMA_IPAM_KNOWN_INTERNAL_CIDRS"`
 }
 
