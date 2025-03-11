@@ -32,7 +32,7 @@ message Mesh {
     repeated CertificateAuthorityBackend backends = 2;
 
     // If enabled, skips CA validation.
-    google.protobuf.BoolValue skipValidation = 3;
+    bool skipValidation = 3;
   }
 
   // mTLS settings.
@@ -227,7 +227,7 @@ message DatadogTracingBackendConfig {
   // `backend` service that communicates with a couple of databases, you would
   // get service names like `backend_INBOUND`, `backend_OUTBOUND_db1`, and
   // `backend_OUTBOUND_db2` in Datadog. Default: false
-  google.protobuf.BoolValue splitService = 3;
+  bool splitService = 3;
 }
 
 message ZipkinTracingBackendConfig {
@@ -235,7 +235,7 @@ message ZipkinTracingBackendConfig {
   string url = 1;
 
   // Generate 128bit traces. Default: false
-  google.protobuf.BoolValue traceId128bit = 2;
+  bool traceId128bit = 2;
 
   // Version of the API. values: httpJson, httpJsonV1, httpProto. Default:
   // httpJson see
@@ -290,13 +290,13 @@ message TcpLoggingBackendConfig {
 // Routing defines configuration for the routing in the mesh
 message Routing {
   // Enable the Locality Aware Load Balancing
-  google.protobuf.BoolValue localityAwareLoadBalancing = 1;
+  bool localityAwareLoadBalancing = 1;
 
   // Enable routing traffic to services in other zone or external services
   // through ZoneEgress. Default: false
-  google.protobuf.BoolValue zoneEgress = 2;
+  bool zoneEgress = 2;
 
   // If true, blocks traffic to MeshExternalServices.
   // Default: false
-  google.protobuf.BoolValue defaultForbidMeshExternalServiceAccess = 3;
+  bool defaultForbidMeshExternalServiceAccess = 3;
 }
