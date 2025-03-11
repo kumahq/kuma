@@ -3,7 +3,6 @@ package v3_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -122,7 +121,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			expected: `
@@ -159,7 +158,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			direction: envoy_common.TrafficDirectionInbound,
@@ -197,7 +196,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			direction:   envoy_common.TrafficDirectionOutbound,
