@@ -130,7 +130,9 @@ func Validate(resource Resource) error {
 
 func Deprecations(resource Resource) []string {
 	if v, ok := interface{}(resource).(interface{ Deprecations() []string }); ok {
-		return v.Deprecations()
+		deprecations := []string{fmt.Sprintf("%s type resource '%s' has the following fields deprecations: ",
+			resource.Descriptor().Name, resource.GetMeta().GetName())}
+		return append(deprecations, v.Deprecations()...)
 	}
 	return nil
 }
