@@ -15,6 +15,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	model_labels "github.com/kumahq/kuma/pkg/core/resources/model/labels"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -540,6 +541,8 @@ func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
 	return UnsetNamespace
 }
 
+// ComputeLabels computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
+// Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func ComputeLabels(
 	rd ResourceTypeDescriptor,
 	spec ResourceSpec,
@@ -555,9 +558,16 @@ func ComputeLabels(
 		labels = maps.Clone(existingLabels)
 	}
 
+	set := func(k, v string) {
+		if _, ok := model_labels.AllComputedLabels[k]; !ok {
+			panic(fmt.Sprintf("label %q is not in the list of computed labels, update AllComputedLabels list as it is used in another project", k))
+		}
+		labels[k] = v
+	}
+
 	setIfNotExist := func(k, v string) {
 		if _, ok := labels[k]; !ok {
-			labels[k] = v
+			set(k, v)
 		}
 	}
 
@@ -597,13 +607,13 @@ func ComputeLabels(
 		if err != nil {
 			return nil, err
 		}
-		labels[mesh_proto.PolicyRoleLabel] = string(role)
+		set(mesh_proto.PolicyRoleLabel, string(role))
 	}
 
 	if rd.IsProxy {
 		proxy, ok := spec.(ProxyResource)
 		if ok {
-			labels[mesh_proto.ProxyTypeLabel] = strings.ToLower(string(proxy.GetProxyType()))
+			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
 		}
 	}
 
