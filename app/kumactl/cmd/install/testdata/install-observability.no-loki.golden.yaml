@@ -12006,14 +12006,14 @@ spec:
         runAsUser: 1472
       initContainers:
         - name: init-plugins
-          image: alpine
+          image: alpine@sha256:a8560b36e8b8210634f77d9f7f9efd7ffa463e380b75e2e74aff4511df3ef88c
           command: [ '/bin/sh', '-c', 'wget -O /tmp/kuma.zip https://github.com/kumahq/kuma-grafana-datasource/releases/download/v0.1.1/kumahq-kuma-datasource-0.1.1.zip && unzip -o /tmp/kuma.zip -d /var/lib/grafana/plugins/ && rm /tmp/kuma.zip']
           volumeMounts:
             - name: plugins-volume
               mountPath: /var/lib/grafana/plugins
       containers:
         - name: grafana
-          image: "grafana/grafana:11.4.0"
+          image: "grafana/grafana:11.4.0@sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -12111,7 +12111,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "bitnami/kube-state-metrics:2.9.2"
+          image: "bitnami/kube-state-metrics:2.9.2@sha256:150738f3e02c813a03f0f6927d7c41e21b7d16fa588484a54c9bfb74bc2b150f"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics
@@ -12149,7 +12149,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.9.0"
+          image: "jimmidyson/configmap-reload:v0.9.0@sha256:f34fe394b1dab3982025c4107df5526ca773bc245adac7dbef877ccb5f5d5df5"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -12161,7 +12161,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v3.1.0"
+          image: "prom/prometheus:v3.1.0@sha256:6559acbd5d770b15bb3c954629ce190ac3cbbdb2b7f1c30f0385c4e05104e218"
           imagePullPolicy: "IfNotPresent"
           args:
             - --config.file=/etc/config/prometheus.yml
@@ -12245,7 +12245,7 @@ items:
                     value: "9411"
                   - name: COLLECTOR_OTLP_ENABLED
                     value: "true"
-                image: jaegertracing/all-in-one:1.42.0
+                image: jaegertracing/all-in-one:1.42.0@sha256:7d32a4eddec7b9a6d8265d4320a224e06ab5fe0753869715e5852401e8e7d6eb
                 name: jaeger
                 ports:
                   - containerPort: 5775
