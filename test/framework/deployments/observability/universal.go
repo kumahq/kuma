@@ -37,7 +37,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		EnvironmentVariables: []string{"COLLECTOR_ZIPKIN_HOST_PORT=9411"},
 		OtherOptions:         append([]string{"--network", "kind"}, u.publishPortsForDocker()...),
 	}
-	container, err := docker.RunAndGetIDE(cluster.GetTesting(), "jaegertracing/all-in-one:1.24", &opts)
+	container, err := docker.RunAndGetIDE(cluster.GetTesting(), "jaegertracing/all-in-one:1.67.0", &opts)
 	if err != nil {
 		return err
 	}
