@@ -84,7 +84,7 @@ func Tracing() {
 			return obsClient.TracedServices()
 		}, "30s", "1s").Should(Equal([]string{
 			"demo-client",
-			"jaeger-all-in-one",
+			"jaeger-query",
 			"test-server",
 		}))
 	})
