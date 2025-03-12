@@ -43,6 +43,8 @@ var _ = Describe("ProbeGenerator", func() {
 					AppProbeProxyEnabled: given.appProbeProxyEnabled,
 				},
 				APIVersion: envoy_common.APIV3,
+				// internal addresses are set to "localhost" addresses to the "probe" listener
+				InternalAddresses: DummyInternalAddresses,
 			}
 
 			// when
@@ -125,3 +127,8 @@ var _ = Describe("ProbeGenerator", func() {
 		}),
 	)
 })
+
+// DummyInternalAddresses are used when the internal addresses should not be used when generating Envoy config
+var DummyInternalAddresses = []core_xds.InternalAddress{
+	{AddressPrefix: "100.64.0.0", PrefixLen: 16},
+}
