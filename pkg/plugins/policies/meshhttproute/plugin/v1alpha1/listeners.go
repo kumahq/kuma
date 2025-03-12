@@ -41,6 +41,7 @@ func generateFromService(
 			StatsName:                svc.ServiceName,
 			ForwardClientCertDetails: false,
 			NormalizePath:            true,
+			InternalAddresses:        proxy.InternalAddresses,
 		}))
 
 	var routes []xds.OutboundRoute

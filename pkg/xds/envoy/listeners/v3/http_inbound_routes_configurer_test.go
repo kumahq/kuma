@@ -58,7 +58,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy_common.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, true)).
+					Configure(HttpConnectionManager(given.statsName, true, nil)).
 					Configure(HttpInboundRoutes(given.service, given.routes)))).
 				Build()
 			// then
@@ -112,7 +112,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           cluster: localhost:8080
                           timeout: 0s
                   statPrefix: localhost_8080
-`,
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128`,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter", testCase{
 			listenerAddress: "192.168.0.1",
@@ -198,6 +203,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                               maxTokens: 100
                               tokensPerFill: 100
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 		Entry("basic http_connection_manager with a single destination cluster and rate limiter with sources", testCase{
@@ -295,6 +306,12 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                               maxTokens: 100
                               tokensPerFill: 100
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 	)

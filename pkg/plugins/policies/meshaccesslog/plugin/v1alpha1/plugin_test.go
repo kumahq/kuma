@@ -76,6 +76,7 @@ var _ = Describe("MeshAccessLog", func() {
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
+				WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 				Build()
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 
@@ -89,7 +90,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -122,6 +123,7 @@ var _ = Describe("MeshAccessLog", func() {
 					},
 				},
 			},
+<<<<<<< HEAD
 			expectedListeners: []string{
 				`
             address:
@@ -167,6 +169,95 @@ var _ = Describe("MeshAccessLog", func() {
             name: outbound:127.0.0.1:27777
             trafficDirection: OUTBOUND`,
 			},
+=======
+			expectedListeners: []string{"basic_outbound.listener.golden.yaml"},
+		}),
+		Entry("basic outbound route from real MeshService", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
+						Configure(
+							HttpOutboundRoute(
+								"backend",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("backend"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshServiceIdentifier,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+					backendMeshServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_real_meshservice.listener.golden.yaml"},
+		}),
+		Entry("basic outbound route from real MeshExternalService", sidecarTestCase{
+			resources: []core_xds.Resource{{
+				Name:   "outbound",
+				Origin: generator.OriginOutbound,
+				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
+					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
+						Configure(
+							HttpOutboundRoute(
+								"example",
+								envoy_common.Routes{{
+									Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+										envoy_common.WithService("example"),
+										envoy_common.WithWeight(100),
+									)},
+								}},
+								map[string]map[string]bool{
+									"kuma.io/service": {
+										"web": true,
+									},
+								},
+							),
+						),
+					)).MustBuild(),
+				ResourceOrigin: &backendMeshExternalServiceIdentifier,
+			}},
+			toRules: core_rules.ToRules{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+					backendMeshExternalServiceIdentifier: {
+						Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/log",
+									},
+								}},
+							},
+						},
+					},
+				},
+			},
+			expectedListeners: []string{"basic_outbound_real_meshexternalservice.listener.golden.yaml"},
+>>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 		}),
 		Entry("outbound tcpproxy with file backend and default format", sidecarTestCase{
 			resources: []core_xds.Resource{{
@@ -761,7 +852,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -842,7 +933,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",

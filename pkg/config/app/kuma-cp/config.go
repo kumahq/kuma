@@ -1,6 +1,11 @@
 package kuma_cp
 
 import (
+<<<<<<< HEAD
+=======
+	"fmt"
+	"net"
+>>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 	"time"
 
 	"github.com/pkg/errors"
@@ -277,6 +282,26 @@ var DefaultConfig = func() Config {
 		EventBus:      eventbus.Default(),
 		Policies:      policies.Default(),
 		CoreResources: apis.Default(),
+<<<<<<< HEAD
+=======
+		IPAM: IPAMConfig{
+			MeshService: MeshServiceIPAM{
+				CIDR: "241.0.0.0/8",
+			},
+			MeshExternalService: MeshExternalServiceIPAM{
+				CIDR: "242.0.0.0/8",
+			},
+			MeshMultiZoneService: MeshMultiZoneServiceIPAM{
+				CIDR: "243.0.0.0/8",
+			},
+			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+			KnownInternalCIDRs: defaultKnownInternalCIDRs,
+		},
+		MeshService: MeshServiceConfig{
+			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
+			DeletionGracePeriod: config_types.Duration{Duration: 1 * time.Hour},
+		},
+>>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 	}
 }
 
@@ -453,6 +478,74 @@ type ExperimentalKDSEventBasedWatchdog struct {
 	DelayFullResync bool `json:"delayFullResync" envconfig:"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC"`
 }
 
+<<<<<<< HEAD
+=======
+type IPAMConfig struct {
+	MeshService          MeshServiceIPAM          `json:"meshService"`
+	MeshExternalService  MeshExternalServiceIPAM  `json:"meshExternalService"`
+	MeshMultiZoneService MeshMultiZoneServiceIPAM `json:"meshMultiZoneService"`
+	// Interval on which Kuma will allocate new IPs and generate hostnames.
+	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
+	// KnownInternalCIDRs contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
+	KnownInternalCIDRs []string `json:"knownInternalCIDRs" envconfig:"KUMA_IPAM_KNOWN_INTERNAL_CIDRS"`
+}
+
+func (i IPAMConfig) Validate() error {
+	if err := i.MeshService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshServie validation failed")
+	}
+	if err := i.MeshExternalService.Validate(); err != nil {
+		return errors.Wrap(err, "MeshExternalServie validation failed")
+	}
+	for _, knownInternalCIDR := range i.KnownInternalCIDRs {
+		if _, _, err := net.ParseCIDR(knownInternalCIDR); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("entry '%s' in .KnownInternalCIDRs is invalid", knownInternalCIDR))
+		}
+	}
+	return nil
+}
+
+var defaultKnownInternalCIDRs = []string{
+	// Private Address Space defined in RFC 1918: https://datatracker.ietf.org/doc/html/rfc1918#section-3
+	"10.0.0.0/8",
+	"192.168.0.0/16",
+	"172.16.0.0/12",
+
+	// Local IPv6 address prefix defined in RFC4193: https://datatracker.ietf.org/doc/html/rfc4193#section-3.2.2
+	"fc00::/7",
+	// included in default implementation of Envoy: https://github.com/envoyproxy/envoy/blob/v1.32.2/source/common/network/utility.cc#L272
+	"fd00::/8",
+
+	// loopback
+	"127.0.0.1/32",
+	"::1/128",
+}
+
+type MeshServiceIPAM struct {
+	// CIDR for MeshService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_SERVICE_CIDR"`
+}
+
+func (i MeshServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshServiceCIDR is invalid")
+	}
+	return nil
+}
+
+type MeshExternalServiceIPAM struct {
+	// CIDR for MeshExternalService IPs
+	CIDR string `json:"cidr" envconfig:"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR"`
+}
+
+func (i MeshExternalServiceIPAM) Validate() error {
+	if _, _, err := net.ParseCIDR(i.CIDR); err != nil {
+		return errors.Wrap(err, ".MeshExternalServiceCIDR is invalid")
+	}
+	return nil
+}
+
+>>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))
 func (c Config) GetEnvoyAdminPort() uint32 {
 	if c.BootstrapServer == nil || c.BootstrapServer.Params == nil {
 		return 0

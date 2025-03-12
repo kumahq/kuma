@@ -69,3 +69,16 @@ func (p *ProxyBuilder) WithRouting(routing *RoutingBuilder) *ProxyBuilder {
 	p.res.Routing = *routing.Build()
 	return p
 }
+<<<<<<< HEAD
+=======
+
+func (p *ProxyBuilder) WithID(id xds.ProxyId) *ProxyBuilder {
+	p.res.Id = id
+	return p
+}
+
+func (p *ProxyBuilder) WithInternalAddresses(addresses ...xds.InternalAddress) *ProxyBuilder {
+	p.res.InternalAddresses = append(p.res.InternalAddresses, addresses...)
+	return p
+}
+>>>>>>> 8b3305878 (feat(xds): add internal address config onto HttpConnectionManager (#12986))

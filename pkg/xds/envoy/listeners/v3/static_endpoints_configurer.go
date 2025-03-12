@@ -6,6 +6,7 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -68,6 +69,10 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 				}},
 				ValidateClusters: util_proto.Bool(false),
 			},
+		},
+		InternalAddressConfig: &envoy_hcm.HttpConnectionManager_InternalAddressConfig{
+			UnixSockets: false,
+			CidrRanges:  core_xds.InternalAddressToEnvoyCIDRs(core_xds.LocalHostAddresses),
 		},
 	}
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
