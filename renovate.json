@@ -31,6 +31,13 @@
       "matchPackageNames": ["Kong/public-shared-actions/**"],
       "semanticCommitScope": "deps/github-actions",
       "addLabels": ["ci/skip-test"]
+    },
+    {
+      "groupName": "kumactl install demo|observability container images",
+      "groupSlug": "kumactl-install-k8s",
+      "matchFileNames": [
+        "app/kumactl/data/install/k8s/**"
+      ]
     }
   ]
 }
