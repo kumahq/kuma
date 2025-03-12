@@ -134,6 +134,42 @@ In this section we'll go into how to trigger a breakpoint both in K8S and Univer
 13. Run goland/vscode debugger with remote target on port from point 12
 14. Enjoy!
 
+## Debugging E2E tests interactively
+
+By using the JetBrains Goland IDE, you could also debug the E2E tests running in Kubernetes interactively. To do so, follow these steps:
+
+1. Prepare the images by running `make build`, `make images` and `make docker/tag`
+2. Start the Kubernetes clusters by running `make test/e2e/k8s/start`
+3. Create a run configuration by clicking the "Play" button aside the package name in a test suite file (e.g. `test/e2e_env/kubernetes/kubernetes_suite_test.go`)
+4. Quickly stop the execution to avoid running the tests, we only want the automatically generated run configuration
+5. Open the "Run/Debug configuration" dialog and locate and edit the configuration created by using the settings mentioned later in this document
+6. Locate to particular file containing the test case you want to debug, and mark the code block to `FDescribe` or `FIt` to run only that test case
+7. **Run the configuration in debug mode by clicking the bug 🪲 icon and enjoy debugging**
+8. Stop the clusters after debugging complete by executing `make test/e2e/k8s/stop`
+
+
+Required settings for the run configuration:
+
+1. Environment variables
+   1. `KUMACTLBIN=<path-to-built-kumactl>` should point to the `kumactl` of your local build, e.g. `/Users/<username>/go/src/github.com/<username>/kuma/build/artifacts-darwin-arm64/kumactl/kumactl`
+   2. `KUMA_K8S_TYPE=k3d` or `kind` if you also specified when starting the clusters 
+   3. `K3D_NETWORK_CNI=flannel` only needed if you are using the `k3d` cluster type, which is the default
+2. Go tool arguments
+   1. Prepare the values for Envoy version and Kuma product version
+      1. Envoy version: execute `ENVOY_VERSION=$(make build/info | grep Envoy | cut -d '=' -f 2)`
+      2. Kuma product version: execute `KUMA_PRODUCT_VERSION=$(./tools/releases/version.sh | awk '{print $1}')`
+   2. Set the Go tools arguments using output from this command: `echo "-ldflags='-X github.com/kumahq/kuma/pkg/version.Envoy=$ENVOY_VERSION -X github.com/kumahq/kuma/pkg/version.version=$KUMA_PRODUCT_VERSION'"` 
+
+When you need to restart the debugging:
+
+1. Rebuild the images if needed
+   1. To rebuild images, execute `make build`, `make images` and `make docker/tag`
+   2. To load the new images into the clusters, execute `make test/e2e/k8s/load/images/kuma-1` and `make test/e2e/k8s/load/images/kuma-2` 
+2. Restart the clusters if needed
+   1. To restart the clusters, execute `make test/e2e/k8s/stop` and then `make test/e2e/k8s/start`
+   2. We usually don't need to restart the clusters when the debugged cases are sharing the cluster environment (under directory `test/e2e_env`) because they clean up the cluster correctly
+   3. We need to restart the clusters when debugging the cases that do not share the cluster in normal runs or the cluster state is polluted for some reason.
+
 ## Running
 
 ### Kubernetes
