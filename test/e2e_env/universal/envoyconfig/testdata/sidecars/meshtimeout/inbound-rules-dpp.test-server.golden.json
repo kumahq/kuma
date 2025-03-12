@@ -400,6 +400,38 @@
                       }
                     }
                   ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 16
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 12
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 7
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 128
+                      }
+                    ]
+                  },
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
                     "name": "inbound:test-server",
@@ -599,6 +631,38 @@
                       }
                     }
                   ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 16
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 12
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 7
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 128
+                      }
+                    ]
+                  },
                   "normalizePath": true,
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {

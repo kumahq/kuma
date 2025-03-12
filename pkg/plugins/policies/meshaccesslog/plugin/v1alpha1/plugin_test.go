@@ -102,6 +102,7 @@ var _ = Describe("MeshAccessLog", func() {
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
+				WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 				Build()
 
 			// when
@@ -122,7 +123,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -163,7 +164,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -206,7 +207,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"example",
@@ -569,7 +570,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -615,7 +616,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",

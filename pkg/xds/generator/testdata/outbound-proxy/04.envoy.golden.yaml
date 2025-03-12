@@ -382,6 +382,12 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 9.10.11.12
+              prefixLen: 12
+            - addressPrefix: 127.0.0.6
+              prefixLen: 8
           routeConfig:
             name: outbound:api-http
             requestHeadersToAdd:
