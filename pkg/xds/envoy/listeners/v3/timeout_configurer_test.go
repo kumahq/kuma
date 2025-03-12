@@ -133,7 +133,7 @@ trafficDirection: OUTBOUND`,
 			// given
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager("localhost:8080", false)).
+					Configure(HttpConnectionManager("localhost:8080", false, nil)).
 					Configure(Timeout(given.timeout, core_mesh.ProtocolHTTP)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -164,6 +164,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -187,6 +193,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 0s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -210,6 +222,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -221,7 +239,7 @@ trafficDirection: OUTBOUND`,
 			// given
 			listener, err := NewOutboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(HttpConnectionManager("localhost:8080", false)).
+					Configure(HttpConnectionManager("localhost:8080", false, nil)).
 					Configure(Timeout(given.timeout, core_mesh.ProtocolGRPC)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
@@ -252,6 +270,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -275,6 +299,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 104s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -298,6 +328,12 @@ filterChains:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
       streamIdleTimeout: 1800s
 name: outbound:192.168.0.1:8080
 trafficDirection: OUTBOUND`,
@@ -342,7 +378,7 @@ trafficDirection: INBOUND
 		// given
 		listener, err := NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 			Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-				Configure(HttpConnectionManager("localhost:8080", false)).
+				Configure(HttpConnectionManager("localhost:8080", false, nil)).
 				Configure(Timeout(mesh.DefaultInboundTimeout(), core_mesh.ProtocolHTTP)))).
 			Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -371,6 +407,12 @@ filterChains:
           '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
       statPrefix: localhost_8080
       streamIdleTimeout: 3600s
+      internalAddressConfig:
+        cidrRanges:
+          - addressPrefix: 127.0.0.1
+            prefixLen: 32
+          - addressPrefix: ::1
+            prefixLen: 128
 name: inbound:192.168.0.1:8080
 trafficDirection: INBOUND
 `

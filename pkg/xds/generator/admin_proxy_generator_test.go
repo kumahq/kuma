@@ -147,6 +147,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			},
 			Dataplane:  core_mesh.NewDataplaneResource(),
 			APIVersion: envoy_common.APIV3,
+			// internal addresses are set to "localhost" addresses to the "admin" listener
+			// because user set x-envoy headers do not apply to this listener
+			// we are settings these values here to assert they should not be generated onto Envoy config of the listener
+			InternalAddresses: []xds.InternalAddress{
+				{AddressPrefix: "10.0.0.0", PrefixLen: 8},
+				{AddressPrefix: "127.0.0.1", PrefixLen: 32},
+			},
 		}
 
 		// when
