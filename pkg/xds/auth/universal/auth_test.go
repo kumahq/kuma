@@ -141,7 +141,7 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-1",
 			},
 			dpRes: &dpRes,
-			err:   "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error",
+			err:   "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token signature is invalid: crypto/rsa: verification error",
 		}),
 		Entry("on token with different tags", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -188,7 +188,7 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
-			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token contains an invalid number of segments"))
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token is malformed: token contains an invalid number of segments"))
 	})
 
 	It("should throw an error when signing key used for validation is different than for generation", func() {
@@ -209,7 +209,7 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
-			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error"))
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token signature is invalid: crypto/rsa: verification error"))
 	})
 
 	It("should throw an error when signing key is not found", func() {

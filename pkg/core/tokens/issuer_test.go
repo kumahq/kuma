@@ -66,14 +66,10 @@ var _ = Describe("Token issuer", func() {
 		core.Now = func() time.Time {
 			return now
 		}
-		jwt.TimeFunc = func() time.Time {
-			return now
-		}
 	})
 
 	AfterEach(func() {
 		core.Now = time.Now
-		jwt.TimeFunc = time.Now
 	})
 
 	Context("Global Scoped tokens", func() {
@@ -89,6 +85,9 @@ var _ = Describe("Token issuer", func() {
 				},
 				tokens.NewRevocations(secretManager, TokenRevocationsGlobalSecretKey),
 				store_config.MemoryStore,
+				jwt.WithTimeFunc(func() time.Time {
+					return now
+				}),
 			)
 
 			Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
@@ -190,6 +189,9 @@ var _ = Describe("Token issuer", func() {
 				},
 				tokens.NewRevocations(secretManager, TokenRevocationsSecretKey(core_model.DefaultMesh)),
 				store_config.MemoryStore,
+				jwt.WithTimeFunc(func() time.Time {
+					return now
+				}),
 			)
 
 			Expect(secretManager.Create(ctx, mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))).To(Succeed())
