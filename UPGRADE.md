@@ -10,7 +10,7 @@ does not have any particular instructions.
 
 ### API Server behaviour changes
 
-Successful `DELETE` or `PUT` requests without warnings will now include "content-type: application/json" in the response header and return an empty JSON object as the response body.
+The response of successful `DELETE` or `PUT` requests without warnings will now include "content-type: application/json" in the header and return an empty JSON object as the body.
 
 ### Stricter validation rules for resource names
 
