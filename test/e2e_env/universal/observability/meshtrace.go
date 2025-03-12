@@ -86,7 +86,7 @@ func PluginTest() {
 			return obsClient.TracedServices()
 		}, "30s", "1s").Should(ContainElements([]string{
 			"demo-client",
-			"jaeger-all-in-one",
+			"jaeger-query",
 			"test-server",
 		}))
 	})
@@ -100,7 +100,7 @@ func PluginTest() {
 				GatewayAddressPort("trace-edge-gateway", 8080), "example.kuma.io")(g)
 			g.Expect(obsClient.TracedServices()).Should(ContainElements([]string{
 				"trace-edge-gateway",
-				"jaeger-all-in-one",
+				"jaeger-query",
 				"test-server",
 			}))
 		}, "30s", "1s").Should(Succeed())

@@ -10,9 +10,12 @@ type: Mesh
 # MeshTimeout
 ---
 creationTime: "0001-01-01T00:00:00Z"
+labels:
+  kuma.io/display-name: default-timeout-global
+  kuma.io/origin: global
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
-name: default-timeout-zone-1
+name: default-timeout-global-54dbd4c66zwbcf9c
 spec:
   to:
   - default:
@@ -26,12 +29,9 @@ type: MeshTimeout
 
 ---
 creationTime: "0001-01-01T00:00:00Z"
-labels:
-  kuma.io/display-name: default-timeout-global
-  kuma.io/origin: global
 mesh: default
 modificationTime: "0001-01-01T00:00:00Z"
-name: default-timeout-global-54dbd4c66zwbcf9c
+name: default-timeout-zone-1
 spec:
   to:
   - default:
