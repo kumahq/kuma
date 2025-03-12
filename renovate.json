@@ -15,22 +15,34 @@
   "ignorePaths": [],
   "kubernetes": {
     "description": "Include Kubernetes manifests from 'kumactl install demo|observability' to let Renovate update the image versions in these resources",
-    "fileMatch": ["app/kumactl/data/install/k8s/.+\\.ya?ml$"]
+    "fileMatch": [
+      "app/kumactl/data/install/k8s/.+\\.ya?ml$"
+    ]
   },
   "semanticCommitScope": "deps/{{{manager}}}",
   "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
   "packageRules": [
     {
       "description": "Skip tests for GitHub Actions updates",
-      "matchManagers": ["github-actions"],
-      "addLabels": ["ci/skip-test"]
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "ci/skip-test"
+      ]
     },
     {
       "description": "Set commit scope to `deps/github-actions` for `Kong/public-shared-actions` GitHub Actions managed by `github>Kong/public-shared-renovate:backend`. Skip tests since these are also GitHub Actions updates but are not covered by the earlier rule",
-      "matchManagers": ["regex"],
-      "matchPackageNames": ["Kong/public-shared-actions/**"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "Kong/public-shared-actions/**"
+      ],
       "semanticCommitScope": "deps/github-actions",
-      "addLabels": ["ci/skip-test"]
+      "addLabels": [
+        "ci/skip-test"
+      ]
     },
     {
       "groupName": "kumactl install demo|observability container images",
