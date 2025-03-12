@@ -69,11 +69,19 @@ func ExtractResources(ctx context.Context, rs store.ResourceStore) (string, erro
 		if err != nil {
 			return "", err
 		}
-		if len(resList.GetItems()) > 0 {
+
+		items := slices.SortedFunc(
+			slices.Values(resList.GetItems()),
+			func(a, b model.Resource) int {
+				return cmp.Compare(a.GetMeta().GetName(), b.GetMeta().GetName())
+			},
+		)
+
+		if len(items) > 0 {
 			_, _ = fmt.Fprintf(outputs, "# %s\n", tDesc.Name)
 		}
 
-		for i, resource := range resList.GetItems() {
+		for i, resource := range items {
 			if resource.Descriptor().Name == system.ZoneInsightType {
 				zi := resource.(*system.ZoneInsightResource)
 				zi.Spec.Subscriptions = nil
