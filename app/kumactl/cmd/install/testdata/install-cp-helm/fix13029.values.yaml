@@ -1,0 +1,23 @@
+cni:
+  enabled: true
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            # These match the selector labels used on the deployment.
+            matchExpressions:
+              - key: app.kubernetes.io/name
+                operator: In
+                values:
+                  - '{{ include "kuma.name" . }}'
+              - key: app.kubernetes.io/instance
+                operator: In
+                values:
+                  - '{{ .Release.Name }}'
+              - key: app
+                operator: In
+                values:
+                  - kuma-ingress
+          topologyKey: kubernetes.io/hostname
