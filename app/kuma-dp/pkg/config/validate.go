@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/asaskevich/govalidator"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	util_files "github.com/kumahq/kuma/pkg/util/files"
