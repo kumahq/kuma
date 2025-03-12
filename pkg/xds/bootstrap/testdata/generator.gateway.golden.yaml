@@ -57,9 +57,6 @@ layeredRuntime:
     staticLayer:
       re2.max_program_size.error_level: 4294967295
       re2.max_program_size.warn_level: 1000
-  - name: gateway
-    staticLayer:
-      overload.global_downstream_max_connections: 35678
   - name: gateway.listeners
     rtdsLayer:
       name: gateway.listeners
@@ -86,6 +83,13 @@ node:
         gitTag: v0.0.1
         version: 0.0.1
     workdir: /tmp
+overloadManager:
+  refreshInterval: 0.250s
+  resourceMonitors:
+  - name: envoy.resource_monitors.global_downstream_max_connections
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.resource_monitors.downstream_connections.v3.DownstreamConnectionsConfig
+      maxActiveDownstreamConnections: "35678"
 staticResources:
   clusters:
   - connectTimeout: 1s

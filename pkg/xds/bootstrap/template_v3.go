@@ -16,10 +16,12 @@ import (
 	envoy_overload_v3 "github.com/envoyproxy/go-control-plane/envoy/config/overload/v3"
 	access_loggers_file "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/file/v3"
 	regex_engines "github.com/envoyproxy/go-control-plane/envoy/extensions/regex_engines/v3"
+	resource_monitors_downstream_connections "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/downstream_connections/v3"
 	resource_monitors_fixed_heap "github.com/envoyproxy/go-control-plane/envoy/extensions/resource_monitors/fixed_heap/v3"
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher_v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 
@@ -37,6 +39,14 @@ func RegisterBootstrapCluster(c string) string {
 	BootstrapClusters[c] = struct{}{}
 	return c
 }
+
+const (
+	downstreamMaxConnMonitor = "envoy.resource_monitors.global_downstream_max_connections"
+	fixedHeapMonitor         = "envoy.resource_monitors.fixed_heap"
+	defaultMaxConnections    = 50000
+	overloadShrinkHeap       = "envoy.overload_actions.shrink_heap"
+	overloadStopAccepting    = "envoy.overload_actions.stop_accepting_requests"
+)
 
 var (
 	adsClusterName           = RegisterBootstrapCluster(names.GetAdsClusterName())
@@ -65,20 +75,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}}
 
 	if parameters.IsGatewayDataplane {
-		connections := proxyConfig.Gateway.GlobalDownstreamMaxConnections
-		if connections == 0 {
-			connections = 50000
-		}
-
 		runtimeLayers = append(runtimeLayers,
-			&envoy_bootstrap_v3.RuntimeLayer{
-				Name: "gateway",
-				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_StaticLayer{
-					StaticLayer: util_proto.MustStruct(map[string]interface{}{
-						"overload.global_downstream_max_connections": connections,
-					}),
-				},
-			},
 			&envoy_bootstrap_v3.RuntimeLayer{
 				Name: "gateway.listeners",
 				LayerSpecifier: &envoy_bootstrap_v3.RuntimeLayer_RtdsLayer_{
@@ -238,47 +235,55 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	if parameters.IsGatewayDataplane {
+		connections := proxyConfig.Gateway.GlobalDownstreamMaxConnections
+		if connections == 0 {
+			connections = defaultMaxConnections
+		}
+
+		// Create Downstream Connections Monitor
+		downstreamConf := &resource_monitors_downstream_connections.DownstreamConnectionsConfig{
+			MaxActiveDownstreamConnections: int64(connections),
+		}
+		downstreamResMonitor, err := createResourceMonitor(downstreamMaxConnMonitor, downstreamConf)
+		if err != nil {
+			return nil, err
+		}
+		res.OverloadManager = &envoy_overload_v3.OverloadManager{
+			RefreshInterval:  util_proto.Duration(250 * time.Millisecond),
+			ResourceMonitors: []*envoy_overload_v3.ResourceMonitor{downstreamResMonitor},
+		}
 		if maxBytes := parameters.Resources.MaxHeapSizeBytes; maxBytes > 0 {
-			config := &resource_monitors_fixed_heap.FixedHeapConfig{
+			fixedHeapConf := &resource_monitors_fixed_heap.FixedHeapConfig{
 				MaxHeapSizeBytes: maxBytes,
 			}
-			marshaledConfig, err := util_proto.MarshalAnyDeterministic(config)
+			fixedHeapResMonitor, err := createResourceMonitor(fixedHeapMonitor, fixedHeapConf)
 			if err != nil {
-				return nil, errors.Wrapf(err, "could not marshall %T", config)
+				return nil, err
 			}
 
-			fixedHeap := "envoy.resource_monitors.fixed_heap"
+			res.OverloadManager.ResourceMonitors = append(res.OverloadManager.ResourceMonitors, fixedHeapResMonitor)
 
-			res.OverloadManager = &envoy_overload_v3.OverloadManager{
-				RefreshInterval: util_proto.Duration(250 * time.Millisecond),
-				ResourceMonitors: []*envoy_overload_v3.ResourceMonitor{{
-					Name: fixedHeap,
-					ConfigType: &envoy_overload_v3.ResourceMonitor_TypedConfig{
-						TypedConfig: marshaledConfig,
+			res.OverloadManager.Actions = []*envoy_overload_v3.OverloadAction{{
+				Name: "envoy.overload_actions.shrink_heap",
+				Triggers: []*envoy_overload_v3.Trigger{{
+					Name: fixedHeapMonitor,
+					TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
+						Threshold: &envoy_overload_v3.ThresholdTrigger{
+							Value: 0.95,
+						},
 					},
 				}},
-				Actions: []*envoy_overload_v3.OverloadAction{{
-					Name: "envoy.overload_actions.shrink_heap",
-					Triggers: []*envoy_overload_v3.Trigger{{
-						Name: fixedHeap,
-						TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
-							Threshold: &envoy_overload_v3.ThresholdTrigger{
-								Value: 0.95,
-							},
+			}, {
+				Name: "envoy.overload_actions.stop_accepting_requests",
+				Triggers: []*envoy_overload_v3.Trigger{{
+					Name: fixedHeapMonitor,
+					TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
+						Threshold: &envoy_overload_v3.ThresholdTrigger{
+							Value: 0.98,
 						},
-					}},
-				}, {
-					Name: "envoy.overload_actions.stop_accepting_requests",
-					Triggers: []*envoy_overload_v3.Trigger{{
-						Name: fixedHeap,
-						TriggerOneof: &envoy_overload_v3.Trigger_Threshold{
-							Threshold: &envoy_overload_v3.ThresholdTrigger{
-								Value: 0.98,
-							},
-						},
-					}},
+					},
 				}},
-			}
+			}}
 		}
 	}
 
@@ -355,6 +360,19 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 		res.Node.Metadata.Fields[core_xds.FieldDynamicMetadata] = util_proto.MustNewValueForStruct(md)
 	}
 	return res, nil
+}
+
+func createResourceMonitor(name string, config proto.Message) (*envoy_overload_v3.ResourceMonitor, error) {
+	marshaledConfig, err := util_proto.MarshalAnyDeterministic(config)
+	if err != nil {
+		return nil, errors.Wrapf(err, "could not marshal %T", config)
+	}
+	return &envoy_overload_v3.ResourceMonitor{
+		Name: name,
+		ConfigType: &envoy_overload_v3.ResourceMonitor_TypedConfig{
+			TypedConfig: marshaledConfig,
+		},
+	}, nil
 }
 
 func dnsLookupFamilyFromXdsHost(host string, lookupFn func(host string) ([]net.IP, error)) envoy_cluster_v3.Cluster_DnsLookupFamily {
