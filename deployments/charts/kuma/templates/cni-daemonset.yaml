@@ -30,6 +30,9 @@ spec:
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
       priorityClassName: system-node-critical
+      {{- with .Values.cni.affinity }}
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
       {{- with .Values.cni.nodeSelector }}
       nodeSelector:
       {{ toYaml . | nindent 8 }}

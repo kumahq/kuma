@@ -1,7 +1,7 @@
 package zone
 
 import (
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 )
