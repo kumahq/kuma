@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/docker/pkg/fileutils"
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/ginkgo/v2/types"
 
@@ -83,7 +82,7 @@ func DumpReport(report ginkgo.Report) {
 		if files.FileExists(data) {
 			if strings.Contains(os.TempDir(), data) {
 				// If the file is in the temp dir, let's copy it
-				_, err = fileutils.CopyFile(data, path)
+				err = files.CopyFile(data, path)
 			} else {
 				err = os.Rename(data, path)
 			}
