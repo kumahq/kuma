@@ -120,7 +120,7 @@ jobs:
       TARGET_BRANCH: ${{ matrix.branch }}
       USE_APP_TOKEN: ${{ secrets.APP_ID != '' }}
     steps:
-      - uses: marocchino/sticky-pull-request-comment@efaaab3fd41a9c3de579aba759d2552635e590fd # v2.8.0
+      - uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 # v2.9.1
         with:
           append: true
           message: backporting to ${{ matrix.branch }} with [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
