@@ -8,6 +8,7 @@ import (
 	"os"
 	"regexp"
 	"slices"
+	"strings"
 
 	"github.com/pkg/errors"
 	"sigs.k8s.io/yaml"
@@ -73,7 +74,7 @@ func ExtractResources(ctx context.Context, rs store.ResourceStore) (string, erro
 		items := slices.SortedFunc(
 			slices.Values(resList.GetItems()),
 			func(a, b model.Resource) int {
-				return cmp.Compare(a.GetMeta().GetName(), b.GetMeta().GetName())
+				return strings.Compare(a.GetMeta().GetName(), b.GetMeta().GetName())
 			},
 		)
 
