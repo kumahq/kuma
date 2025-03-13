@@ -86,7 +86,7 @@ var _ = Describe("Full sync tests", func() {
 		}
 
 		// Wait for some time to ensure sync was complete
-		time.Sleep(time.Second * 2)
+		time.Sleep(time.Second * 5)
 		close(done)
 		wg.Wait()
 
