@@ -27,9 +27,6 @@ rules:
     resources:
       - namespaces
       - pods
-{{- if not (and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config) }}
-      - configmaps
-{{- end }}
       - nodes
 {{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
@@ -38,13 +35,6 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
-    - ""
-    resources:
-      - secrets
-    verbs:
-    - list
-    - watch
   - apiGroups:
     - "discovery.k8s.io"
     resources:
@@ -122,9 +112,6 @@ rules:
       - ""
     resources:
       - services
-{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
-      - configmaps
-{{- end }}
     verbs:
       - get
       - delete
