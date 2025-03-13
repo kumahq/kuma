@@ -374,6 +374,8 @@ cni:
   podAnnotations: { }
   # -- Set the CNI namespace
   namespace: kube-system
+  # -- Set the CNI affinity
+  affinity: {}
 
   image:
     # -- CNI image repository
