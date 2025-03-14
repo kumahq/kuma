@@ -79,21 +79,23 @@ func LeaderElectionPostgres() {
 		}, "10s", "100ms").Should(Succeed())
 
 		// Kill the current leader
-		_, _, err := leader.Exec("", "", AppModeCP, "pkill", "kuma-cp")
-		Expect(err).ToNot(HaveOccurred())
+		Expect(leader.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// Verify that the other instance takes over as leader
-		Eventually(func() (string, error) {
-			return follower.GetKuma().GetMetrics()
-		}, "30s", "1s").Should(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 1`, follower.Name())))
+		Eventually(func(g Gomega) {
+			out, err := follower.GetKuma().GetMetrics()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 1`, follower.Name())))
+		}, "30s", "1s").Should(Succeed())
 
 		// Shut down PostgreSQL
-		err = zone1.DeleteDeployment(postgres.AppPostgres + clusterName1)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(zone1.DeleteDeployment(postgres.AppPostgres + clusterName1)).To(Succeed())
 
 		// Verify that the remaining control plane instance loses leadership
-		Eventually(func() (string, error) {
-			return follower.GetKuma().GetMetrics()
-		}, "30s", "1s").Should(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 0`, follower.Name())))
+		Eventually(func(g Gomega) {
+			out, err := follower.GetKuma().GetMetrics()
+			g.Expect(err).ToNot(HaveOccurred())
+			g.Expect(out).To(ContainSubstring(fmt.Sprintf(`leader{zone="%s"} 0`, follower.Name())))
+		}, "30s", "1s").Should(Succeed())
 	})
 }

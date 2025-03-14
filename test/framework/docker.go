@@ -6,19 +6,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 )
 
-const (
-	retries      = 5
-	retryTimeout = 500 * time.Millisecond
-)
-
 func GetPublishedDockerPorts(
 	t testing.TestingT,
+	l *logger.Logger,
 	container string,
 	ports []uint32,
 ) (map[uint32]uint32, error) {
@@ -27,22 +23,22 @@ func GetPublishedDockerPorts(
 		cmd := shell.Command{
 			Command: "docker",
 			Args:    []string{"port", container, strconv.Itoa(int(port))},
+			Logger:  l,
 		}
 		var out string
 		var err error
 		// Sometimes the port may not be available immediately, and it can take some time.
 		// Since we didn't retry, tests were failing with and an error
 		// `missing port in address` on OSX.
-		retry.DoWithRetry(t, "get port", retries, retryTimeout, func() (string, error) {
+		for i := 0; i < 10; i++ {
 			out, err = shell.RunCommandAndGetStdOutE(t, cmd)
 			if err != nil {
-				return "", err
+				time.Sleep(time.Millisecond * 500)
 			}
-			if out == "" {
-				return "", errors.New("there is no port available")
+			if out != "" {
+				break
 			}
-			return out, nil
-		})
+		}
 		if err != nil {
 			return nil, err
 		}

@@ -155,42 +155,42 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone1, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone1, "demo-client", "kuma-es-4_es-http:80",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone2, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 		}, "1m", "3s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone2, "demo-client", "kuma-es-4_es-http:80",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 		}, "1m", "3s").Should(Succeed())
 	})
@@ -219,22 +219,22 @@ routing:
 
 		// then accessing the secured external service succeeds
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone1, "demo-client", "http://kuma-es-4_es-https:443",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(ContainSubstring("es-https"))
 		}, "1m", "1s").Should(Succeed())
 
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			stdout, stderr, err := client.CollectResponse(
 				zone2, "demo-client", "http://kuma-es-4_es-https:443",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 			g.Expect(stdout).To(ContainSubstring("es-https"))
 		}, "1m", "3s").Should(Succeed())
 	})

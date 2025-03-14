@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/report"
+	"github.com/kumahq/kuma/test/framework/universal"
 )
 
 var (
@@ -44,9 +45,9 @@ func ZoneInfoForMesh(mesh string) ZoneInfo {
 }
 
 type State struct {
-	Global    UniversalNetworkingState
-	UniZone1  UniversalNetworkingState
-	UniZone2  UniversalNetworkingState
+	Global    universal.NetworkingState
+	UniZone1  universal.NetworkingState
+	UniZone2  universal.NetworkingState
 	KubeZone1 K8sNetworkingState
 	KubeZone2 K8sNetworkingState
 }
@@ -150,21 +151,9 @@ func SetupAndGetState() []byte {
 	wg.Wait()
 
 	state := State{
-		Global: UniversalNetworkingState{
-			ZoneEgress:  Global.GetZoneEgressNetworking(),
-			ZoneIngress: Global.GetZoneIngressNetworking(),
-			KumaCp:      Global.GetKuma().(*UniversalControlPlane).Networking(),
-		},
-		UniZone1: UniversalNetworkingState{
-			ZoneEgress:  UniZone1.GetZoneEgressNetworking(),
-			ZoneIngress: UniZone1.GetZoneIngressNetworking(),
-			KumaCp:      UniZone1.GetKuma().(*UniversalControlPlane).Networking(),
-		},
-		UniZone2: UniversalNetworkingState{
-			ZoneEgress:  UniZone2.GetZoneEgressNetworking(),
-			ZoneIngress: UniZone2.GetZoneIngressNetworking(),
-			KumaCp:      UniZone2.GetKuma().(*UniversalControlPlane).Networking(),
-		},
+		Global:   Global.GetUniversalNetworkingState(),
+		UniZone1: UniZone1.GetUniversalNetworkingState(),
+		UniZone2: UniZone2.GetUniversalNetworkingState(),
 		KubeZone1: K8sNetworkingState{
 			ZoneEgress:  KubeZone1.GetPortForward(Config.ZoneEgressApp),
 			ZoneIngress: KubeZone1.GetPortForward(Config.ZoneIngressApp),
@@ -178,7 +167,7 @@ func SetupAndGetState() []byte {
 			MADS:        KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 	}
-	bytes, err := json.Marshal(state)
+	bytes, err := json.Marshal(state) // nolint:govet
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }
@@ -202,7 +191,7 @@ func restoreKubeZone(clusterName string, networkingState *K8sNetworkingState) *K
 	return zone
 }
 
-func restoreUniZone(clusterName string, networkingState *UniversalNetworkingState) *UniversalCluster {
+func restoreUniZone(clusterName string, networkingState *universal.NetworkingState) *UniversalCluster {
 	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
 	E2EDeferCleanup(zone.DismissCluster) // clean up any containers if needed
 	cp, err := NewUniversalControlPlane(
@@ -210,14 +199,14 @@ func restoreUniZone(clusterName string, networkingState *UniversalNetworkingStat
 		core.Zone,
 		zone.Name(),
 		zone.Verbose(),
-		networkingState.KumaCp,
+		&networkingState.KumaCp,
 		nil, // headers were not configured in setup
 		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
 	zone.SetCp(cp)
-	Expect(zone.AddNetworking(networkingState.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
-	Expect(zone.AddNetworking(networkingState.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
+	Expect(zone.AddNetworking(&networkingState.ZoneEgress, Config.ZoneEgressApp)).To(Succeed())
+	Expect(zone.AddNetworking(&networkingState.ZoneIngress, Config.ZoneIngressApp)).To(Succeed())
 	return zone
 }
 
@@ -236,7 +225,7 @@ func RestoreState(bytes []byte) {
 		core.Global,
 		Global.Name(),
 		Global.Verbose(),
-		state.Global.KumaCp,
+		&state.Global.KumaCp,
 		nil,
 		true,
 	)
