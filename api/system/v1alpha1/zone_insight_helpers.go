@@ -40,6 +40,22 @@ func (x *ZoneInsight) IsOnline() bool {
 	return false
 }
 
+func (x *ZoneInsight) GetKDSStream(streamType string) *KDSStream {
+	switch streamType {
+	case "globalToZone":
+		return x.GetKdsStreams().GetGlobalToZone()
+	case "zoneToGlobal":
+		return x.GetKdsStreams().GetZoneToGlobal()
+	case "clusters":
+		return x.GetKdsStreams().GetClusters()
+	case "stats":
+		return x.GetKdsStreams().GetStats()
+	case "configDump":
+		return x.GetKdsStreams().GetConfigDump()
+	}
+	return nil
+}
+
 func (x *ZoneInsight) AllSubscriptions() []generic.Subscription {
 	return generic.AllSubscriptions[*KDSSubscription](x)
 }
