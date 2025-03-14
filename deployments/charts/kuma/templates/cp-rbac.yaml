@@ -31,6 +31,9 @@ rules:
 {{- if .Values.controlPlane.supportGatewaySecretsInAllNamespaces }}
       - secrets
 {{- end }}
+{{- if and .Values.transparentProxy.configMap.enabled .Values.transparentProxy.configMap.config }}
+      - configmaps
+{{- end }}
     verbs:
       - get
       - list
