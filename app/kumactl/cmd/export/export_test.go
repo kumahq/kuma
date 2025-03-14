@@ -51,6 +51,7 @@ var _ = Describe("kumactl export", func() {
 		rootCtx.Runtime.NewResourcesListClient = func(u util_http.Client) client.ResourcesListClient {
 			return staticResourcesListClient{}
 		}
+		rootCtx.InstallCpContext.Args.Namespace = "kuma-system"
 
 		rootCmd = cmd.NewRootCmd(rootCtx)
 		buf = &bytes.Buffer{}
@@ -101,6 +102,7 @@ var _ = Describe("kumactl export", func() {
 				samples.SampleSigningKeyGlobalSecret(),
 				samples.MeshAccessLogWithFileBackend(),
 				samples.Retry(),
+				samples.MeshTimeoutInCustomNamespace(),
 			},
 			args: []string{
 				"--format=kubernetes",
@@ -121,6 +123,21 @@ var _ = Describe("kumactl export", func() {
 				"--profile", "no-dataplanes",
 			},
 			goldenFile: "export-no-dp.golden.yaml",
+		}),
+		Entry("kubernetes profile=federation-with-policies but no namespaced", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.MeshAccessLogWithFileBackend(),
+				samples.Retry(),
+				samples.DataplaneBackend(),
+				samples.MeshTimeoutInCustomNamespace(),
+			},
+			args: []string{
+				"--profile", "federation-with-policies",
+				"--format=kubernetes",
+			},
+			goldenFile: "export-federation-with-policies.golden.yaml",
 		}),
 	)
 

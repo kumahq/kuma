@@ -1,0 +1,41 @@
+{
+  "apiVersion": "kuma.io/v1alpha1",
+  "kind": "MeshTimeout",
+  "metadata": {
+    "annotations": {
+      "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"kuma.io/v1alpha1\",\"kind\":\"MeshTimeout\",\"metadata\":{\"annotations\":{},\"labels\":{\"kuma.io/mesh\":\"default\"},\"name\":\"mt-in-namespace-kuma-test\",\"namespace\":\"kuma-test\"},\"spec\":{\"targetRef\":{\"kind\":\"Mesh\"},\"to\":[{\"default\":{\"idleTimeout\":\"99s\"},\"targetRef\":{\"kind\":\"Mesh\"}}]}}\n"
+    },
+    "creationTimestamp": "2024-01-24T09:52:46Z",
+    "generation": 1,
+    "labels": {
+      "kuma.io/mesh": "default"
+    },
+    "name": "mt-in-namespace-kuma-test",
+    "namespace": "kuma-test",
+    "ownerReferences": [
+      {
+        "apiVersion": "kuma.io/v1alpha1",
+        "kind": "Mesh",
+        "name": "default",
+        "uid": "9fe5aae8-97c3-481f-b4a1-9e2149f18f55"
+      }
+    ],
+    "resourceVersion": "6147",
+    "uid": "cfe6c5c8-8036-400b-ba64-87ebc691d2fd"
+  },
+  "spec": {
+    "targetRef": {
+      "kind": "Mesh"
+    },
+    "to": [
+      {
+        "default": {
+          "idleTimeout": "99s"
+        },
+        "targetRef": {
+          "kind": "Mesh"
+        }
+      }
+    ]
+  }
+}
