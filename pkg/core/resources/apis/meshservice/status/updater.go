@@ -8,6 +8,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/apimachinery/pkg/util/intstr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -195,8 +196,16 @@ func dpInboundForMeshServicePort(inbounds []*mesh_proto.Dataplane_Networking_Inb
 		if port.Name != "" && inbound.Name == port.Name {
 			return inbound
 		}
-		if port.Port == inbound.Port {
-			return inbound
+
+		switch port.TargetPort.Type {
+		case intstr.Int:
+			if uint32(port.TargetPort.IntVal) == inbound.Port {
+				return inbound
+			}
+		case intstr.String:
+			if port.TargetPort.StrVal == inbound.Name {
+				return inbound
+			}
 		}
 	}
 	return nil
