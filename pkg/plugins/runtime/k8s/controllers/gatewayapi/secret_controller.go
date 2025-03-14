@@ -24,10 +24,6 @@ type SecretController struct {
 }
 
 func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	if !r.SupportGatewaySecretsInAllNamespaces && req.Namespace != r.SystemNamespace {
-		r.Log.V(1).Info("ignoring reconcile because SupportGatewaySecretsInAllNamespaces is disabled", "req", req)
-		return kube_ctrl.Result{}, nil
-	}
 	r.Log.Info("reconcile", "req", req)
 
 	copiedSecretKey := types.NamespacedName{

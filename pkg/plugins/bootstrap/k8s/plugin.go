@@ -54,6 +54,27 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 	restClientConfig.Burst = b.Config().Runtime.Kubernetes.ClientConfig.BurstQps
 
 	systemNamespace := b.Config().Store.Kubernetes.SystemNamespace
+	cacheOpts := cache.Options{
+		ByObject: map[kube_client.Object]cache.ByObject{},
+	}
+	if b.Config().Runtime.Kubernetes.Injector.TransparentProxyConfigMapName == "" {
+		// We don't want to watch all namespaces for configuration because when
+		// transparent proxy config maps are not used, the configuration is only in the system namespace.
+		cacheOpts.ByObject[&kube_core.ConfigMap{}] = cache.ByObject{
+			Namespaces: map[string]cache.Config{
+				systemNamespace: {},
+			},
+		}
+	}
+	if !b.Config().Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces {
+		// we don't want to react on events about secrets from other namespaces
+		cacheOpts.ByObject[&kube_core.Secret{}] = cache.ByObject{
+			Namespaces: map[string]cache.Config{
+				systemNamespace: {},
+			},
+		}
+	}
+
 	mgr, err := kube_ctrl.NewManager(
 		restClientConfig,
 		kube_ctrl.Options{
@@ -75,6 +96,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, cfg core_plugins.Plugi
 			Metrics: kube_metricsserver.Options{
 				BindAddress: "0",
 			},
+			Cache: cacheOpts,
 		},
 	)
 	if err != nil {
