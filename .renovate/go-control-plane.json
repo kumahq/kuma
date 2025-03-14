@@ -27,7 +27,7 @@
         "gomod"
       ],
       "matchDepNames": [
-        "/^github.com\\/kumahq\\/go-control-plane/"
+        "github.com/kumahq/go-control-plane{/,}**"
       ],
       "matchDepTypes": [
         "replace"
@@ -46,7 +46,7 @@
         "replace"
       ],
       "matchPackageNames": [
-        "/^github.com\\/kumahq\\/go-control-plane/"
+        "github.com/kumahq/go-control-plane{/,}**"
       ],
       "semanticCommitScope": "deps/gomod",
       "commitMessageTopic": "{{{packageName}}}",
@@ -54,6 +54,19 @@
         "gomodTidy",
         "gomodUpdateImportPaths"
       ]
+    },
+    {
+      "groupName": "github.com/envoyproxy/go-control-plane*",
+      "groupSlug": "github.com-envoyproxy-go-control-plane",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchPackageNames": [
+        "github.com/{envoyproxy,kumahq}/go-control-plane{/,}**"
+      ],
+      "prBodyDefinitions": {
+        "Package": "[{{{packageName}}}]({{{sourceUrl}}}) ([source]({{{sourceUrl}}}/tree/{{#if newVersion}}{{{depName}}}/{{{newVersion}}}{{else}}main{{/if}}/{{{depName}}}))"
+      }
     }
   ]
 }

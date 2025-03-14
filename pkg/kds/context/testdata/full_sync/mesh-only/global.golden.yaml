@@ -10,14 +10,14 @@ type: Mesh
 creationTime: "0001-01-01T00:00:00Z"
 enabled: true
 modificationTime: "0001-01-01T00:00:00Z"
-name: zone-1
+name: zone-2
 type: Zone
 
 ---
 creationTime: "0001-01-01T00:00:00Z"
 enabled: true
 modificationTime: "0001-01-01T00:00:00Z"
-name: zone-2
+name: zone-1
 type: Zone
 
 # ZoneInsight
@@ -26,7 +26,7 @@ creationTime: "0001-01-01T00:00:00Z"
 healthCheck:
   time: "0001-01-01T00:00:00Z"
 modificationTime: "0001-01-01T00:00:00Z"
-name: zone-2
+name: zone-1
 type: ZoneInsight
 
 ---
@@ -34,6 +34,6 @@ creationTime: "0001-01-01T00:00:00Z"
 healthCheck:
   time: "0001-01-01T00:00:00Z"
 modificationTime: "0001-01-01T00:00:00Z"
-name: zone-1
+name: zone-2
 type: ZoneInsight
 

@@ -114,6 +114,7 @@ A Helm chart for the Kuma Control Plane
 | cni.tolerations | list | `[]` | Additional tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.namespace | string | `"kube-system"` | Set the CNI namespace |
+| cni.affinity | object | `{}` | Set the CNI affinity |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
@@ -212,7 +213,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.32.2"` | The kubectl image tag |
+| kubectl.image.tag | string | `"1.32.3@sha256:c49b008f8ac9973e2d23deff64db6b992b8bd8c76538d0e697d9318bbbf683e2"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |

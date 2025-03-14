@@ -58,11 +58,11 @@ var _ = Describe("ValidateTokenPath", func() {
 			}),
 			Entry("can't parse token", testCase{
 				token:         "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ.rdQ6l_6hzT93Kbk9kO-kZYY7BaexUH8QknvbdRy_f6s",
-				expectedError: "not valid JWT token. Can't parse it.: invalid character 'È' looking for beginning of value",
+				expectedError: "not valid JWT token. Can't parse it.: token is malformed: could not JSON decode header: invalid character 'È' looking for beginning of value",
 			}),
 			Entry("need 3 segments", testCase{
 				token:         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ",
-				expectedError: "not valid JWT token. Can't parse it.: token contains an invalid number of segments",
+				expectedError: "not valid JWT token. Can't parse it.: token is malformed: token contains an invalid number of segments",
 			}),
 			Entry("new line in the end", testCase{
 				token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ.rdQ6l_6hzT93Kbk9kO-kZYY7BaexUH8QknvbdRy_f6s\n",
