@@ -46,16 +46,6 @@ type dnsMap struct {
 	AAAARecords map[string]*dnsEntry
 }
 
-func (d *dnsMap) getEntry(qType uint16, name string) *dnsEntry {
-	switch qType {
-	case dns.TypeA:
-		return d.ARecords[name]
-	case dns.TypeAAAA:
-		return d.AAAARecords[name]
-	}
-	return nil
-}
-
 type dnsEntry struct {
 	RCode uint16
 	RR    []dns.RR
@@ -127,18 +117,14 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		err := srv.ListenAndServe()
 		done <- err
 	}()
-	shutdownCalled := false
 	select {
 	case <-stop:
-		shutdownCalled = true
 		err := srv.Shutdown()
 		if err != nil {
 			log.Error(err, "server shutdown returned an error")
 		}
-	case err := <-done:
-		if !shutdownCalled {
-			log.Info("[WARNING] server stopped with shutdown ever being called")
-		}
+	case err = <-done:
+		log.Info("[WARNING] server stopped with shutdown ever being called")
 		if err != nil {
 			return err
 		}
@@ -197,7 +183,6 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 					&dns.AAAA{Hdr: dns.RR_Header{Name: n, Ttl: uint32(configuration.TTL), Rrtype: dns.TypeAAAA, Class: dns.ClassINET}, AAAA: ip},
 				)
 			}
-
 		}
 	}
 	log.V(1).Info("DNS proxy configured", "config", res)

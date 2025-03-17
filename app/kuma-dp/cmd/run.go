@@ -249,7 +249,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
 					components = append(components, dnsServer)
 				}
-
 			}
 
 			envoyComponent, err := envoy.New(opts)

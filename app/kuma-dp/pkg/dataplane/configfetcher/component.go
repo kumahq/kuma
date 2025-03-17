@@ -66,7 +66,6 @@ func (cf *ConfigFetcher) AddHandler(h Handler) error {
 	}
 	if !strings.HasPrefix(h.Path(), "/") {
 		return fmt.Errorf("invalid path: %s, must start with '/'", h.Path())
-
 	}
 	cf.handlers = append(cf.handlers, handlerInfo{
 		handler:  h,
@@ -123,7 +122,6 @@ func (cf *ConfigFetcher) Step() {
 		h.metrics.HandlerTickCount.Add(1)
 		start := time.Now()
 		hasChanged, err := cf.stepForHandler(h)
-
 		if err != nil {
 			h.metrics.HandlerErrorCount.Add(1)
 			h.l.Error(err, "failed handle")

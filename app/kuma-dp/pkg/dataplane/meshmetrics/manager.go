@@ -7,7 +7,6 @@ import (
 	"io"
 	"time"
 
-	"github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
@@ -57,7 +56,7 @@ func (cf *Manager) OnChange(ctx context.Context, reader io.Reader) error {
 	logger.V(1).Info("updating hijacker configuration", "conf", configuration)
 	newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
 	cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
-	err := cf.configureOpenTelemetryExporter(cf.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
+	err := cf.configureOpenTelemetryExporter(cf.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends)) // nolint:contextcheck
 	if err != nil {
 		return fmt.Errorf("configuring OpenTelemetry Exporter failed %w", err)
 	}
@@ -228,14 +227,18 @@ func (cf *Manager) Shutdown(ctx context.Context) error {
 	cf.cancel()
 	ctx, cancel := context.WithTimeout(ctx, cf.drainTime)
 	defer cancel()
-	var err error
+	hasError := false
 	for backendName := range cf.runningBackends {
 		bErr := cf.shutdownBackend(ctx, backendName)
 		if bErr != nil {
-			err = multierror.Append(err, fmt.Errorf("failed shutdown of %s %w", backendName, bErr))
+			logger.Error(bErr, "Failed to shutdown backend", "backend", backendName)
+			hasError = true
 		}
 	}
-	return err
+	if hasError {
+		return errors.New("failed to shutdown some backend")
+	}
+	return nil
 }
 
 type runningBackend struct {
