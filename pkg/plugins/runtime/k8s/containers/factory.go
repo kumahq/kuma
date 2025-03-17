@@ -281,19 +281,26 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: strconv.FormatBool(i.BuiltinDNS.Logging),
 		}
 
-		envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
-			Name:  "KUMA_DNS_CORE_DNS_PORT",
-			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
-		}
+		if i.BuiltinDNS.UseEmbedded {
+			envVars["KUMA_DNS_EMBEDDED_PROXY_PORT"] = kube_core.EnvVar{
+				Name:  "KUMA_DNS_EMBEDDED_PROXY_PORT",
+				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
+			}
+		} else {
+			envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
+				Name:  "KUMA_DNS_CORE_DNS_PORT",
+				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
+			}
 
-		envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
-			Name:  "KUMA_DNS_ENVOY_DNS_PORT",
-			Value: strconv.FormatInt(int64(i.BuiltinDNS.Port+2), 10),
-		}
+			envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
+				Name:  "KUMA_DNS_ENVOY_DNS_PORT",
+				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port+2), 10),
+			}
 
-		envVars["KUMA_DNS_CORE_DNS_BINARY_PATH"] = kube_core.EnvVar{
-			Name:  "KUMA_DNS_CORE_DNS_BINARY_PATH",
-			Value: "coredns",
+			envVars["KUMA_DNS_CORE_DNS_BINARY_PATH"] = kube_core.EnvVar{
+				Name:  "KUMA_DNS_CORE_DNS_BINARY_PATH",
+				Value: "coredns",
+			}
 		}
 	} else {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{

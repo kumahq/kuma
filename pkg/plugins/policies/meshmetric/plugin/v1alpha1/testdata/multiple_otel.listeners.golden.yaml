@@ -1,5 +1,5 @@
 resources:
-- name: _kuma:dynamicconfig:observability
+- name: _kuma:dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -18,16 +18,29 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:dynamicconfig:observability
+              name: _kuma:dynamicconfig
               routes:
+              - directResponse:
+                  status: 304
+                match:
+                  headers:
+                  - name: If-None-Match
+                    stringMatch:
+                      exact: adf3db3b07e4e372945f84fd920cde870bc42f2dd21a209883f8a7d16fcda5f5
+                  path: /meshmetric
               - directResponse:
                   body:
                     inlineString: '{"observability":{"metrics":{"applications":[{"path":"/metrics","port":8080,"address":""}],"backends":[{"type":"OpenTelemetry","name":"otel-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-otel-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}},{"type":"OpenTelemetry","name":"second-collector.observability.svc-4317","openTelemetry":{"endpoint":"/tmp/kuma-otel-second-collector.observability.svc-4317.sock","refreshInterval":"1m0s"}}],"sidecar":{"includeUnused":false},"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
                   status: 200
                 match:
-                  prefix: /
-          statPrefix: _kuma_dynamicconfig_observability
-    name: _kuma:dynamicconfig:observability
+                  path: /meshmetric
+                name: _kuma:dynamicconfig:/meshmetric
+                responseHeadersToAdd:
+                - header:
+                    key: Etag
+                    value: adf3db3b07e4e372945f84fd920cde870bc42f2dd21a209883f8a7d16fcda5f5
+          statPrefix: _kuma_dynamicconfig
+    name: _kuma:dynamicconfig
 - name: _kuma:metrics:opentelemetry:otel-collector.observability.svc-4317
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

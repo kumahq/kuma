@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -19,10 +20,12 @@ import (
 	"github.com/kumahq/kuma/pkg/mads"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/dpapi"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/dynconf"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
@@ -34,9 +37,7 @@ var (
 
 const (
 	OriginOpenTelemetry          = "open-telemetry"
-	OriginDynamicConfig          = "dynamic-config"
 	PrometheusListenerName       = "_kuma:metrics:prometheus"
-	DynamicConfigListenerName    = "_kuma:dynamicconfig:observability"
 	DefaultBackendName           = "default-backend"
 	PrometheusDataplaneStatsPath = "/meshmetric"
 	OpenTelemetryGrpcPort        = 4317
@@ -184,22 +185,12 @@ func configureOpenTelemetryBackend(rs *core_xds.ResourceSet, proxy *core_xds.Pro
 }
 
 func configureDynamicDPPConfig(rs *core_xds.ResourceSet, proxy *core_xds.Proxy, resources xds_context.ResourceMap, conf api.Conf, prometheusBackends []*api.PrometheusBackend, openTelemetryBackend []*api.OpenTelemetryBackend) error {
-	configurer := &plugin_xds.DppConfigConfigurer{
-		ListenerName: DynamicConfigListenerName,
-		DpConfig:     createDynamicConfig(conf, proxy, resources, prometheusBackends, openTelemetryBackend),
-	}
-
-	listener, err := configurer.ConfigureListener(proxy)
+	dpConfig := createDynamicConfig(conf, proxy, resources, prometheusBackends, openTelemetryBackend)
+	marshal, err := json.Marshal(dpConfig)
 	if err != nil {
 		return err
 	}
-	rs.Add(&core_xds.Resource{
-		Name:     listener.GetName(),
-		Origin:   OriginDynamicConfig,
-		Resource: listener,
-	})
-
-	return nil
+	return dynconf.AddConfigRoute(proxy, rs, dpapi.PATH, marshal)
 }
 
 func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
@@ -214,10 +205,10 @@ func EnvoyMetricsFilter(sidecar *api.Sidecar) url.Values {
 	return values
 }
 
-func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_context.ResourceMap, prometheusBackends []*api.PrometheusBackend, openTelemetryBackends []*api.OpenTelemetryBackend) plugin_xds.MeshMetricDpConfig {
-	var applications []plugin_xds.Application
+func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_context.ResourceMap, prometheusBackends []*api.PrometheusBackend, openTelemetryBackends []*api.OpenTelemetryBackend) dpapi.MeshMetricDpConfig {
+	var applications []dpapi.Application
 	for _, app := range pointer.Deref(conf.Applications) {
-		applications = append(applications, plugin_xds.Application{
+		applications = append(applications, dpapi.Application{
 			Name:    app.Name,
 			Address: pointer.Deref(app.Address),
 			Port:    app.Port,
@@ -225,18 +216,18 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_con
 		})
 	}
 
-	var backends []plugin_xds.Backend
+	var backends []dpapi.Backend
 	if len(prometheusBackends) != 0 {
-		backends = append(backends, plugin_xds.Backend{
+		backends = append(backends, dpapi.Backend{
 			Type: string(api.PrometheusBackendType),
 		})
 	}
 	for _, backend := range openTelemetryBackends {
 		backendName := backendNameFrom(backend.Endpoint)
-		backends = append(backends, plugin_xds.Backend{
+		backends = append(backends, dpapi.Backend{
 			Type: string(api.OpenTelemetryBackendType),
 			Name: &backendName,
-			OpenTelemetry: &plugin_xds.OpenTelemetryBackend{
+			OpenTelemetry: &dpapi.OpenTelemetryBackend{
 				Endpoint:        core_xds.OpenTelemetrySocketName(proxy.Metadata.WorkDir, backendName),
 				RefreshInterval: pointer.DerefOr(backend.RefreshInterval, DefaultRefreshInterval),
 			},
@@ -249,9 +240,9 @@ func createDynamicConfig(conf api.Conf, proxy *core_xds.Proxy, resources xds_con
 	}
 	extraLabels := mads.DataplaneLabels(proxy.Dataplane, gateways)
 
-	return plugin_xds.MeshMetricDpConfig{
-		Observability: plugin_xds.Observability{
-			Metrics: plugin_xds.Metrics{
+	return dpapi.MeshMetricDpConfig{
+		Observability: dpapi.Observability{
+			Metrics: dpapi.Metrics{
 				Applications: applications,
 				Backends:     backends,
 				Sidecar:      conf.Sidecar,
