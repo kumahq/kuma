@@ -165,7 +165,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 func buildDataplaneProxies(
 	dpps []*core_mesh.DataplaneResource,
 	insightsByKey map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
-	ports []meshservice_api.Port,
+	meshServicePorts []meshservice_api.Port,
 ) meshservice_api.DataplaneProxies {
 	result := meshservice_api.DataplaneProxies{}
 	for _, dpp := range dpps {
@@ -176,15 +176,15 @@ func buildDataplaneProxies(
 			}
 		}
 		healthyInbounds := 0
-		for _, port := range ports {
-			for _, inbound := range dpp.Spec.GetNetworking().Inbound {
-				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready &&
-					meshservice.MatchInboundWithMeshServicePort(inbound, port) {
+		for _, meshServicePort := range meshServicePorts {
+			for _, dpInbound := range dpp.Spec.GetNetworking().Inbound {
+				if dpInbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready &&
+					meshservice.MatchInboundWithMeshServicePort(dpInbound, meshServicePort) {
 					healthyInbounds++
 				}
 			}
 		}
-		if healthyInbounds == len(ports) {
+		if healthyInbounds == len(meshServicePorts) {
 			result.Healthy++
 		}
 	}

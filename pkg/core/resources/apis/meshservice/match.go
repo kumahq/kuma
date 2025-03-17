@@ -143,12 +143,12 @@ func matchByTags(
 	return dpps
 }
 
-func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, port meshservice_api.Port) bool {
-	switch port.TargetPort.Type {
+func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, meshServicePort meshservice_api.Port) bool {
+	switch meshServicePort.TargetPort.Type {
 	case intstr.Int:
-		return uint32(port.TargetPort.IntVal) == inbound.Port
+		return uint32(meshServicePort.TargetPort.IntVal) == inbound.Port
 	case intstr.String:
-		return port.TargetPort.StrVal == inbound.Name
+		return meshServicePort.TargetPort.StrVal == inbound.Name
 	}
 	return false
 }

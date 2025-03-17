@@ -107,7 +107,7 @@ Authentication between the control plane and dataplanes is now only checked at c
 
 ### MeshService
 
-There are two changes on collecting endpoints for MeshServices when matching data plane inbound ports with ports on MeshServices. 
+There are two changes to collecting endpoints for MeshServices when matching data plane inbound ports with ports on MeshServices. 
 
 Only name/number of targetPort on MeshServices will be used to match data plane inbound ports when collecting endpoints for MeshServices. On Kubernetes, this means you should use targetPort on Service ports to match the port defined on Pods, which is a correct and common usage on Kubernetes.
 
