@@ -1,41 +1,43 @@
 resources:
-- name: kuma:dns
+- name: _kuma:dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
-      socketAddress:
-        address: 127.0.0.1
-        portValue: 53001
-        protocol: UDP
-    enableReusePort: true
-    listenerFilters:
-    - name: envoy.filters.udp.dns_filter
-      typedConfig:
-        '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3.DnsFilterConfig
-        serverConfig:
-          inlineDnsTable:
-            virtualDomains:
-            - answerTtl: 30s
-              endpoint:
-                addressList:
-                  address:
-                  - 240.0.0.0
-                  - ::ffff:f000:0
-              name: backend.test-ns.svc.8080.mesh
-            - answerTtl: 30s
-              endpoint:
-                addressList:
-                  address:
-                  - 240.0.0.0
-                  - ::ffff:f000:0
-              name: backend_test-ns_svc_8080.mesh
-            - answerTtl: 30s
-              endpoint:
-                addressList:
-                  address:
-                  - 240.0.0.1
-                  - ::ffff:f000:1
-              name: httpbin.mesh
-        statPrefix: kuma_dns
-    name: kuma:dns
-    trafficDirection: INBOUND
+      pipe:
+        path: kuma-mesh-metric-config.sock
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          routeConfig:
+            virtualHosts:
+            - domains:
+              - '*'
+              name: _kuma:dynamicconfig
+              routes:
+              - directResponse:
+                  status: 304
+                match:
+                  headers:
+                  - name: If-None-Match
+                    stringMatch:
+                      exact: 7d77b5386801c163b81e1930089565cb36213e9ee344ae8d3a0b7bc231ee55e7
+                  path: /dns
+              - directResponse:
+                  body:
+                    inlineString: '{"records":[{"name":"backend.test-ns.svc.8080.mesh","ip":["240.0.0.0","::ffff:f000:0"]},{"name":"backend_test-ns_svc_8080.mesh","ip":["240.0.0.0","::ffff:f000:0"]},{"name":"httpbin.mesh","ip":["240.0.0.1","::ffff:f000:1"]}],"ttl":3600}'
+                  status: 200
+                match:
+                  path: /dns
+                name: _kuma:dynamicconfig:/dns
+                responseHeadersToAdd:
+                - header:
+                    key: Etag
+                    value: 7d77b5386801c163b81e1930089565cb36213e9ee344ae8d3a0b7bc231ee55e7
+          statPrefix: _kuma_dynamicconfig
+    name: _kuma:dynamicconfig

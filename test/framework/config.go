@@ -61,6 +61,7 @@ type E2eConfig struct {
 	KumaCpConfig                      KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
 	VersionsYamlPath                  string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
+	KumaExperimentalEmbeddedDNS       bool              `json:"kumaExperimentalEmbeddedDNS,omitempty" envconfig:"KUMA_EXPERIMENTAL_EMBEDDEDNS"`
 	Debug                             bool              `json:"debug" envconfig:"KUMA_DEBUG"`
 	DumpDir                           string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
 	DumpOnSuccess                     bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`

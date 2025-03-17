@@ -82,6 +82,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
+					Metadata:       &model.DataplaneMetadata{},
 					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 					APIVersion:     envoy_common.APIV3,
 				},
