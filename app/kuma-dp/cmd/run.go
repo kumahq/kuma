@@ -13,6 +13,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/certificate"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/configfetcher"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsproxy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
@@ -27,6 +29,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
+	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/dpapi"
 	"github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -84,7 +88,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "failed to read policy", "proxyType", cfg.Dataplane.ProxyType)
+				runLog.Error(err, "failed to read dataplane", "proxyType", cfg.Dataplane.ProxyType)
 
 				return err
 			}
@@ -205,6 +209,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
+			confFetcher := configfetcher.NewConfigFetcher(
+				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
+			)
+
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -216,20 +226,30 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
+				if dnsOpts.Config.DNS.EmbeddedProxyPort != 0 {
+					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.EmbeddedProxyPort)
+					// Using embedded DNS
+					dnsproxyServer := dnsproxy.NewServer("localhost", dnsOpts.Config.DNS.EmbeddedProxyPort)
+					err := confFetcher.AddHandler(configfetcher.NewSimpleHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap, nil))
+					if err != nil {
+						return err
+					}
+					components = append(components, dnsproxyServer)
+				} else {
+					dnsServer, err := dnsserver.New(dnsOpts)
+					if err != nil {
+						return err
+					}
 
-				dnsServer, err := dnsserver.New(dnsOpts)
-				if err != nil {
-					return err
+					version, err := dnsServer.GetVersion()
+					if err != nil {
+						return err
+					}
+
+					rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+					components = append(components, dnsServer)
 				}
 
-				version, err := dnsServer.GetVersion()
-				if err != nil {
-					return err
-				}
-
-				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-
-				components = append(components, dnsServer)
 			}
 
 			envoyComponent, err := envoy.New(opts)
@@ -237,8 +257,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 			components = append(components, envoyComponent)
+			components = append(components, component.NewResilientComponent(
+				runLog.WithName("configfetcher"),
+				confFetcher,
+				time.Second*5,
+				time.Minute,
+			))
 
-			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
+			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
+			if err != nil {
+				return err
+			}
 			components = append(components, observabilityComponents...)
 
 			var readinessReporter *readiness.Reporter
@@ -382,7 +411,7 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config) []component.Component {
+func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
 	resilientComponentBaseBackoff := 5 * time.Second
 	resilientComponentMaxBackoff := 1 * time.Minute
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
@@ -410,21 +439,18 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		openTelemetryProducer,
 	)
 
-	meshMetricsConfigFetcher := component.NewResilientComponent(
-		runLog.WithName("mesh-metric-config-fetcher"),
-		meshmetrics.NewMeshMetricConfigFetcher(
-			core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
-			time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
-			metricsServer,
-			openTelemetryProducer,
-			kumaSidecarConfiguration.Networking.Address,
-			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-			cfg.Dataplane.DrainTime.Duration,
-		),
-		resilientComponentBaseBackoff,
-		resilientComponentMaxBackoff,
+	mm := meshmetrics.NewManager(
+		ctx,
+		metricsServer,
+		openTelemetryProducer,
+		kumaSidecarConfiguration.Networking.Address,
+		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		cfg.Dataplane.DrainTime.Duration,
 	)
-
-	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}
+	err := fetcher.AddHandler(configfetcher.NewSimpleHandler(meshmetric_dpapi.PATH, mm.OnChange, mm.Shutdown))
+	if err != nil {
+		return nil, err
+	}
+	return []component.Component{accessLogStreamer, metricsServer}, nil
 }
