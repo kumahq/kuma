@@ -6,6 +6,7 @@ import (
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type dppsByNameByTagKey struct {
@@ -139,4 +140,14 @@ func matchByTags(
 		}
 	}
 	return dpps
+}
+
+func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, port meshservice_api.Port) bool {
+	switch port.TargetPort.Type {
+	case intstr.Int:
+		return uint32(port.TargetPort.IntVal) == inbound.Port
+	case intstr.String:
+		return port.TargetPort.StrVal == inbound.Name
+	}
+	return false
 }

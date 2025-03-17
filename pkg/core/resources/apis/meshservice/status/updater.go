@@ -6,10 +6,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	"github.com/prometheus/client_golang/prometheus"
-	"k8s.io/apimachinery/pkg/util/intstr"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
@@ -22,6 +18,8 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/maps"
 	util_time "github.com/kumahq/kuma/pkg/util/time"
+	"github.com/pkg/errors"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 type StatusUpdater struct {
@@ -178,8 +176,9 @@ func buildDataplaneProxies(
 		}
 		healthyInbounds := 0
 		for _, port := range ports {
-			if inbound := dpInboundForMeshServicePort(dpp.Spec.GetNetworking().Inbound, port); inbound != nil {
-				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready {
+			for _, inbound := range dpp.Spec.GetNetworking().Inbound {
+				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready &&
+					meshservice.MatchInboundWithMeshServicePort(inbound, port) {
 					healthyInbounds++
 				}
 			}
@@ -189,26 +188,6 @@ func buildDataplaneProxies(
 		}
 	}
 	return result
-}
-
-func dpInboundForMeshServicePort(inbounds []*mesh_proto.Dataplane_Networking_Inbound, port meshservice_api.Port) *mesh_proto.Dataplane_Networking_Inbound {
-	for _, inbound := range inbounds {
-		if port.Name != "" && inbound.Name == port.Name {
-			return inbound
-		}
-
-		switch port.TargetPort.Type {
-		case intstr.Int:
-			if uint32(port.TargetPort.IntVal) == inbound.Port {
-				return inbound
-			}
-		case intstr.String:
-			if port.TargetPort.StrVal == inbound.Name {
-				return inbound
-			}
-		}
-	}
-	return nil
 }
 
 func buildTLS(
