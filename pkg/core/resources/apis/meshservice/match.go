@@ -1,12 +1,13 @@
 package meshservice
 
 import (
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/maps"
-	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
 type dppsByNameByTagKey struct {

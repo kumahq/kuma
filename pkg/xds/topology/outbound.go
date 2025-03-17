@@ -7,6 +7,8 @@ import (
 	"strconv"
 
 	"github.com/asaskevich/govalidator"
+	"github.com/pkg/errors"
+
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -23,7 +25,6 @@ import (
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
-	"github.com/pkg/errors"
 )
 
 var outboundLog = core.Log.WithName("xds").WithName("outbound")
