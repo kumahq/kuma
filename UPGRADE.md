@@ -101,9 +101,23 @@ is not a correct value, we have decided to deprecate it. If you are using `Sourc
 
 The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
 
-### Changes on revoking dataplane tokens
+### Changes to revoking dataplane tokens
 
 Authentication between the control plane and dataplanes is now only checked at connection start. This means if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to restart either the control plane or the concerned dataplanes.
+
+### MeshService
+
+There are two changes on collecting endpoints for MeshServices when matching data plane inbound ports with ports on MeshServices. 
+
+Only name/number of targetPort on MeshServices will be used to match data plane inbound ports when collecting endpoints for MeshServices. On Kubernetes, this means you should use targetPort on Service ports to match the port defined on Pods, which is a correct and common usage on Kubernetes.
+
+#### Removal of endpoint generating based on port naming matching
+
+A data plane was treated as an endpoint when it has an inbound whose name matches one of the port names on the MeshService. This has been removed since it was an incorrect implementation. We no longer match port names of Services to container ports on Pods, please use name/number of targetPort on the MeshService to match the port defined on the data plane.
+
+#### Changes to endpoint generating based on port matching
+
+A data plane was treated as an endpoint when it has an inbound whose port matches one of the port on the MeshService using the `port` field. This has been changed to match `targetPort` on the MeshService since the previous implementation was incorrect. Please use name/number of targetPort on the MeshService to match the port defined on the data plane.
 
 ## Upgrade to `2.9.x`
 
