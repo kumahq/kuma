@@ -181,6 +181,7 @@ func buildDataplaneProxies(
 				if dpInbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready &&
 					meshservice.MatchInboundWithMeshServicePort(dpInbound, meshServicePort) {
 					healthyInbounds++
+					break
 				}
 			}
 		}
