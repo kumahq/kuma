@@ -4,7 +4,9 @@ import (
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zone"
@@ -15,7 +17,7 @@ var log = core.Log.WithName("tokens-validator")
 func NewDataplaneTokenIssuer(resManager manager.ResourceManager) issuer.DataplaneTokenIssuer {
 	return issuer.NewDataplaneTokenIssuer(func(meshName string) tokens.Issuer {
 		return tokens.NewTokenIssuer(
-			tokens.NewMeshedSigningKeyManager(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName),
+			tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey(meshName), meshName),
 		)
 	})
 }
@@ -23,7 +25,7 @@ func NewDataplaneTokenIssuer(resManager manager.ResourceManager) issuer.Dataplan
 func NewZoneTokenIssuer(resManager manager.ResourceManager) zone.TokenIssuer {
 	return zone.NewTokenIssuer(
 		tokens.NewTokenIssuer(
-			tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix),
+			tokens.NewSigningKeyManager(resManager, system.ZoneTokenSigningKeyPrefix),
 		),
 	)
 }
@@ -45,12 +47,12 @@ func NewDataplaneTokenValidator(resManager manager.ReadOnlyResourceManager, stor
 		}
 		accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
 		if cfg.UseSecrets {
-			accessors = append(accessors, tokens.NewMeshedSigningKeyAccessor(resManager, issuer.DataplaneTokenSigningKeyPrefix(meshName), meshName))
+			accessors = append(accessors, tokens.NewMeshedSigningKeyAccessor(resManager, system.DataplaneTokenSigningKey(meshName), meshName))
 		}
 		return tokens.NewValidator(
 			log.WithName("dataplane-token"),
 			accessors,
-			tokens.NewRevocations(resManager, issuer.DataplaneTokenRevocationsSecretKey(meshName)),
+			tokens.NewRevocations(resManager, model.ResourceKey{Name: system.DataplaneTokenRevocations(meshName)}),
 			storeType,
 		), nil
 	}), nil
@@ -68,9 +70,9 @@ func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederat
 	accessors := []tokens.SigningKeyAccessor{staticSigningKeyAccessor}
 	if cfg.UseSecrets {
 		if isFederatedZone {
-			accessors = append(accessors, tokens.NewSigningKeyFromPublicKeyAccessor(resManager, zone.SigningPublicKeyPrefix))
+			accessors = append(accessors, tokens.NewSigningKeyFromPublicKeyAccessor(resManager, system.ZoneTokenSigningPublicKeyPrefix))
 		} else {
-			accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, zone.SigningKeyPrefix))
+			accessors = append(accessors, tokens.NewSigningKeyAccessor(resManager, system.ZoneTokenSigningKeyPrefix))
 		}
 	}
 
@@ -78,7 +80,7 @@ func NewZoneTokenValidator(resManager manager.ReadOnlyResourceManager, isFederat
 		tokens.NewValidator(
 			log.WithName("zone-token"),
 			accessors,
-			tokens.NewRevocations(resManager, zone.TokenRevocationsGlobalSecretKey),
+			tokens.NewRevocations(resManager, model.ResourceKey{Name: system.ZoneTokenRevocations}),
 			storeType,
 		),
 	), nil

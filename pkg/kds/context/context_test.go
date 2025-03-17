@@ -27,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -250,9 +249,6 @@ var _ = Describe("Context", func() {
 		var predicate reconcile_v2.ResourceFilter
 
 		clusterID := "cluster-id"
-		configs := map[string]bool{
-			config_manager.ClusterIdConfigKey: true,
-		}
 
 		type testCase struct {
 			resource model.Resource
@@ -265,10 +261,10 @@ var _ = Describe("Context", func() {
 
 		BeforeEach(func() {
 			rm = manager.NewResourceManager(memory.NewStore())
-			predicate = context.GlobalProvidedFilter(rm, configs)
+			predicate = context.GlobalProvidedFilter(rm)
 		})
 
-		It("should filter out configs if not in provided argument", func() {
+		It("should filter out configs other than cluster id", func() {
 			ctx := stdcontext.Background()
 			// given
 			config1 := &core_system.ConfigResource{
@@ -309,18 +305,18 @@ var _ = Describe("Context", func() {
 			Entry("should not filter out zone token signing key", testCase{
 				resource: &core_system.GlobalSecretResource{
 					Meta: &test_model.ResourceMeta{
-						Name: zone_tokens.SigningKeyPrefix + "-1",
+						Name: core_system.ZoneTokenSigningKeyPrefix + "-1",
 					},
 				},
 				expect: true,
 			}),
-			Entry("should filter out when not signing key", testCase{
+			Entry("should not filter out when not signing key", testCase{
 				resource: &core_system.GlobalSecretResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "some-non-signing-key-global-secret",
 					},
 				},
-				expect: false,
+				expect: true,
 			}),
 		)
 
@@ -421,7 +417,7 @@ var _ = Describe("Context", func() {
 				name := descriptor.Name
 				_, ignoreType := ignoreTypes[name]
 
-				if descriptor.KDSFlags.Has(model.GlobalToAllZonesFlag) && !ignoreType {
+				if descriptor.KDSFlags.Has(model.GlobalToZonesFlag) && !ignoreType {
 					resource := descriptor.NewObject()
 					resource.SetMeta(&test_model.ResourceMeta{
 						Name: string(name),

@@ -304,7 +304,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
 		for _, route := range httpRoutes {
-			if core_model.IsReferenced(p.GetMeta(), policyWithTo.GetTargetRef().Name, route.GetMeta()) {
+			if core_model.IsReferenced(p.GetMeta(), pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
 				if r, ok := route.(*v1alpha1.MeshHTTPRouteResource); ok {
 					mhr = r
 				}
@@ -318,7 +318,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 	}
 
 	rv := []core_model.PolicyItem{}
-	for _, mhrRules := range mhr.Spec.To {
+	for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
 		for _, mhrRule := range mhrRules.Rules {
 			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
@@ -327,7 +327,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 				case common_api.Mesh, common_api.MeshSubset:
 					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshSubset,
-						Tags: map[string]string{
+						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
@@ -335,7 +335,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 					targetRef = common_api.TargetRef{
 						Kind: common_api.MeshServiceSubset,
 						Name: mhrRules.TargetRef.Name,
-						Tags: map[string]string{
+						Tags: &map[string]string{
 							RuleMatchesHashTag: string(matchesHash),
 						},
 					}
@@ -546,15 +546,15 @@ func asSubset(tr common_api.TargetRef) (subsetutils.Subset, error) {
 		return subsetutils.Subset{}, nil
 	case common_api.MeshSubset:
 		ss := subsetutils.Subset{}
-		for k, v := range tr.Tags {
+		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}
 		return ss, nil
 	case common_api.MeshService:
-		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}, nil
+		return subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}, nil
 	case common_api.MeshServiceSubset:
-		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: tr.Name}}
-		for k, v := range tr.Tags {
+		ss := subsetutils.Subset{{Key: mesh_proto.ServiceTag, Value: pointer.Deref(tr.Name)}}
+		for k, v := range pointer.Deref(tr.Tags) {
 			ss = append(ss, subsetutils.Tag{Key: k, Value: v})
 		}
 		return ss, nil

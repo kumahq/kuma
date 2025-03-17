@@ -1,0 +1,72 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Custom Renovate configuration for managing updates to 'github.com/kumahq/go-control-plane' dependencies in Go modules",
+  "customManagers": [
+    {
+      "description": "Custom regex manager for updating 'github.com/kumahq/go-control-plane' dependencies in go.mod files. It captures both direct and subpackage dependencies and replaces them with the latest version",
+      "customType": "regex",
+      "fileMatch": [
+        "(^|/)go\\.mod$"
+      ],
+      "matchStrings": [
+        "(?<packageName>github.com\\/kumahq\\/(?<depName>go-control-plane)) (?<currentValue>[^\\s]+)",
+        "(?<packageName>github.com\\/kumahq\\/go-control-plane\\/(?<depName>.+)) (?<currentValue>[^\\s]+)"
+      ],
+      "datasourceTemplate": "go",
+      "depTypeTemplate": "replace",
+      "extractVersionTemplate": "^(?:{{{depName}}}\\/)?(?<version>v(?<major>\\d+)\\.(?<minor>\\d+)\\.(?<patch>\\d+)-(?<build>.+))",
+      "autoReplaceStringTemplate": "{{{packageName}}} {{{newVersion}}}",
+      "versioningTemplate": "loose"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "Disable updates for 'github.com/kumahq/go-control-plane' dependencies managed by the default Go module manager when they are marked as 'replace'",
+      "groupName": "github.com/kumahq/go-control-plane*",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchDepNames": [
+        "github.com/kumahq/go-control-plane{/,}**"
+      ],
+      "matchDepTypes": [
+        "replace"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Ensure updates to 'github.com/kumahq/go-control-plane' dependencies use the custom regex manager. Set commit scope to 'deps/gomod', update import paths when needed, and run 'go mod tidy' after updates",
+      "matchManagers": [
+        "regex"
+      ],
+      "matchDatasources": [
+        "go"
+      ],
+      "matchDepTypes": [
+        "replace"
+      ],
+      "matchPackageNames": [
+        "github.com/kumahq/go-control-plane{/,}**"
+      ],
+      "semanticCommitScope": "deps/gomod",
+      "commitMessageTopic": "{{{packageName}}}",
+      "postUpdateOptions": [
+        "gomodTidy",
+        "gomodUpdateImportPaths"
+      ]
+    },
+    {
+      "groupName": "github.com/envoyproxy/go-control-plane*",
+      "groupSlug": "github.com-envoyproxy-go-control-plane",
+      "matchDatasources": [
+        "go"
+      ],
+      "matchPackageNames": [
+        "github.com/{envoyproxy,kumahq}/go-control-plane{/,}**"
+      ],
+      "prBodyDefinitions": {
+        "Package": "[{{{packageName}}}]({{{sourceUrl}}}) ([source]({{{sourceUrl}}}/tree/{{#if newVersion}}{{{depName}}}/{{{newVersion}}}{{else}}main{{/if}}/{{{depName}}}))"
+      }
+    }
+  ]
+}

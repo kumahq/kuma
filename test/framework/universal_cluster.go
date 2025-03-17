@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -30,6 +31,8 @@ type UniversalNetworking struct {
 	IP            string `json:"ip"` // IP inside a docker network
 	ApiServerPort string `json:"apiServerPort"`
 	SshPort       string `json:"sshPort"`
+	StdOutFile    string `json:"stdOutFile"`
+	StdErrFile    string `json:"stdErrFile"`
 }
 
 func (u UniversalNetworking) BootstrapAddress() string {
@@ -161,12 +164,8 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
 	}
 
-	verboseOutToStd := true
 	cmd := []string{"kuma-cp", "run", "--config-file", "/kuma/kuma-cp.conf"}
 	if Config.Debug {
-		// in debug mode, we will enable debug level logs on CP, and they'll be dump logs into files
-		// so don't need to print onto stdout/stderr, otherwise the test output will be too verbose
-		verboseOutToStd = false
 		cmd = append(cmd, "--log-level", "debug")
 	}
 	if mode == core.Zone {
@@ -174,7 +173,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, verboseOutToStd, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -197,6 +196,8 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		IP:            app.ip,
 		ApiServerPort: app.ports["5681"],
 		SshPort:       app.ports["22"],
+		StdOutFile:    app.mainApp.StdOutFile(),
+		StdErrFile:    app.mainApp.StdErrFile(),
 	}
 	c.controlplane, err = NewUniversalControlPlane(c.t, mode, c.name, c.verbose, pf, c.opts.apiHeaders, c.opts.setupKumactl)
 	if err != nil {
@@ -229,8 +230,29 @@ func (c *UniversalCluster) GetKuma() ControlPlane {
 	return c.controlplane
 }
 
-func (c *UniversalCluster) GetKumaCPLogs() (string, error) {
-	return "stdout:\n" + c.GetApp(AppModeCP).mainApp.Out() + "\nstderr:\n" + c.GetApp(AppModeCP).mainApp.Err(), nil
+func (c *UniversalCluster) GetKumaCPLogs() map[string]string {
+	net := c.controlplane.Networking()
+	if net.IP == "" {
+		return map[string]string{
+			"failed": "control plane app not found",
+		}
+	}
+	out := make(map[string]string)
+
+	bytes, err := os.ReadFile(net.StdErrFile)
+	if err != nil {
+		out["stderr"] = fmt.Sprintf("error reading kuma stderr: %s", err)
+	} else {
+		out["stderr"] = string(bytes)
+	}
+
+	bytes, err = os.ReadFile(net.StdOutFile)
+	if err != nil {
+		out["stdout"] = fmt.Sprintf("error reading kuma stdout: %v", err)
+	} else {
+		out["stdout"] = string(bytes)
+	}
+	return out
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
@@ -238,6 +260,7 @@ func (c *UniversalCluster) VerifyKuma() error {
 }
 
 func (c *UniversalCluster) DeleteKuma() error {
+	Logf("Deleting Kuma cluster %q", c.Name())
 	if err := c.DeleteApp(AppModeCP); err != nil {
 		return err
 	}
@@ -401,7 +424,7 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars map[string]string) error
 		return errors.New("missing public port: 22")
 	}
 
-	app := ssh.NewApp(kumaCP.containerName, "", kumaCP.verbose, sshPort, envVars, args)
+	app := ssh.NewApp(kumaCP.containerName, kumaCP.clusterName, kumaCP.verbose, sshPort, envVars, args)
 	if err := app.Run(); err != nil {
 		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
 	}
@@ -467,7 +490,7 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 	if app == nil {
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
-	sshApp := ssh.NewApp(app.containerName, "", c.verbose, app.ports[sshPort], nil, cmd)
+	sshApp := ssh.NewApp(app.containerName, app.clusterName, c.verbose, app.ports[sshPort], nil, cmd)
 	err := sshApp.Run()
 	return sshApp.Out(), sshApp.Err(), err
 }
@@ -526,6 +549,8 @@ func (c *UniversalCluster) addEgressEnvoyTunnel() error {
 		IP:            "localhost",
 		ApiServerPort: app.GetPublicPort(sshPort),
 		SshPort:       sshPort,
+		StdErrFile:    app.mainApp.StdErrFile(),
+		StdOutFile:    app.mainApp.StdOutFile(),
 	}
 
 	err := c.createEnvoyTunnel(Config.ZoneEgressApp)
@@ -541,6 +566,8 @@ func (c *UniversalCluster) addIngressEnvoyTunnel(appName string) error {
 		IP:            "localhost",
 		ApiServerPort: app.GetPublicPort(sshPort),
 		SshPort:       sshPort,
+		StdErrFile:    app.mainApp.StdErrFile(),
+		StdOutFile:    app.mainApp.StdOutFile(),
 	}
 
 	err := c.createEnvoyTunnel(Config.ZoneIngressApp)

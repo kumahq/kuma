@@ -69,7 +69,6 @@ properties:
                 - Sidecar
                 - Gateway
               type: string
-            minItems: 1
             type: array
           sectionName:
             description: |-
@@ -83,6 +82,8 @@ properties:
               Tags used to select a subset of proxies by tags. Can only be used with kinds
               `MeshSubset` and `MeshServiceSubset`
             type: object
+        required:
+          - kind
         type: object
       to:
         description: |-
@@ -151,7 +152,6 @@ properties:
                                   - Sidecar
                                   - Gateway
                                 type: string
-                              minItems: 1
                               type: array
                             sectionName:
                               description: |-
@@ -169,11 +169,10 @@ properties:
                               default: 1
                               minimum: 0
                               type: integer
+                          required:
+                            - kind
                           type: object
-                        minItems: 1
                         type: array
-                    required:
-                      - backendRefs
                     type: object
                 required:
                   - default
@@ -227,7 +226,6 @@ properties:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: |-
@@ -241,8 +239,11 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           required:
+            - rules
             - targetRef
           type: object
         minItems: 1

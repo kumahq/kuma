@@ -17,7 +17,7 @@ type MeshHealthCheck struct {
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 
 	// To list makes a match between the consumed services and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 }
 
 type To struct {
@@ -31,17 +31,17 @@ type To struct {
 
 type Conf struct {
 	// Interval between consecutive health checks.
-	// +kubebuilder:default="1m"
+	// If not specified then the default value is 1m
 	Interval *k8s.Duration `json:"interval,omitempty"`
 	// Maximum time to wait for a health check response.
-	// +kubebuilder:default="15s"
+	// If not specified then the default value is 15s
 	Timeout *k8s.Duration `json:"timeout,omitempty"`
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
-	// +kubebuilder:default=5
+	// If not specified then the default value is 5
 	UnhealthyThreshold *int32 `json:"unhealthyThreshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
-	// +kubebuilder:default=1
+	// If not specified then the default value is 1
 	HealthyThreshold *int32 `json:"healthyThreshold,omitempty"`
 	// If specified, Envoy will start health checking after a random time in
 	// ms between 0 and initialJitter. This only applies to the first health
@@ -58,6 +58,8 @@ type Conf struct {
 	// Allows to configure panic threshold for Envoy cluster. If not specified,
 	// the default is 50%. To disable panic mode, set to 0%.
 	// Either int or decimal represented as string.
+	// Deprecated: the setting has been moved to MeshCircuitBreaker policy,
+	// please use MeshCircuitBreaker policy instead.
 	HealthyPanicThreshold *intstr.IntOrString `json:"healthyPanicThreshold,omitempty"`
 	// If set to true, Envoy will not consider any hosts when the cluster is in
 	// 'panic mode'. Instead, the cluster will fail all requests as if all hosts
@@ -108,7 +110,7 @@ type HttpHealthCheck struct {
 	Disabled *bool `json:"disabled,omitempty"`
 	// The HTTP path which will be requested during the health check
 	// (ie. /health)
-	// +kubebuilder:default="/"
+	// If not specified then the default value is "/"
 	Path *string `json:"path,omitempty"`
 	// The list of HTTP headers which should be added to each health check
 	// request
@@ -140,9 +142,9 @@ type HeaderModifier struct {
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Set []HeaderKeyValue `json:"set,omitempty"`
+	Set *[]HeaderKeyValue `json:"set,omitempty"`
 	// +listType=map
 	// +listMapKey=name
 	// +kubebuilder:validation:MaxItems=16
-	Add []HeaderKeyValue `json:"add,omitempty"`
+	Add *[]HeaderKeyValue `json:"add,omitempty"`
 }

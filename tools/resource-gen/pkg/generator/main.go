@@ -88,9 +88,9 @@ type {{.ResourceType}} struct {
 
 // +kubebuilder:object:root=true
 {{- if .ScopeNamespace }}
-// +kubebuilder:resource:scope=Cluster
-{{- else }}
 // +kubebuilder:resource:scope=Namespaced
+{{- else }}
+// +kubebuilder:resource:scope=Cluster
 {{- end}}
 type {{.ResourceType}}List struct {
 	metav1.TypeMeta {{ $tk }}json:",inline"{{ $tk }}
@@ -352,6 +352,9 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		Scope: {{if .Global}}model.ScopeGlobal{{else}}model.ScopeMesh{{end}},
 		{{- if ne .KdsDirection ""}}
 		KDSFlags: {{.KdsDirection}},
+		{{- end}}
+		{{- if .SkipKDSHash }}
+		SkipKDSHash: true,
 		{{- end}}
 		WsPath: "{{.WsPath}}",
 		KumactlArg: "{{.KumactlSingular}}",

@@ -7,7 +7,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -19,18 +19,26 @@ type Validator interface {
 }
 
 type jwtTokenValidator struct {
-	keyAccessors []SigningKeyAccessor
-	revocations  Revocations
-	storeType    store_config.StoreType
-	log          logr.Logger
+	keyAccessors  []SigningKeyAccessor
+	revocations   Revocations
+	storeType     store_config.StoreType
+	log           logr.Logger
+	parserOptions []jwt.ParserOption
 }
 
-func NewValidator(log logr.Logger, keyAccessors []SigningKeyAccessor, revocations Revocations, storeType store_config.StoreType) Validator {
+func NewValidator(
+	log logr.Logger,
+	keyAccessors []SigningKeyAccessor,
+	revocations Revocations,
+	storeType store_config.StoreType,
+	parserOptions ...jwt.ParserOption,
+) Validator {
 	return &jwtTokenValidator{
-		log:          log,
-		keyAccessors: keyAccessors,
-		revocations:  revocations,
-		storeType:    storeType,
+		log:           log,
+		keyAccessors:  keyAccessors,
+		revocations:   revocations,
+		storeType:     storeType,
+		parserOptions: parserOptions,
 	}
 }
 
@@ -69,7 +77,7 @@ func (j *jwtTokenValidator) ParseWithValidation(ctx context.Context, rawToken To
 		default:
 			return nil, fmt.Errorf("unsupported token alg %s. Allowed algorithms are %s and %s", token.Method.Alg(), jwt.SigningMethodRS256.Name, jwt.SigningMethodHS256)
 		}
-	})
+	}, j.parserOptions...)
 	if err != nil {
 		signingKeyError := &SigningKeyNotFound{}
 		if errors2.As(err, &signingKeyError) {

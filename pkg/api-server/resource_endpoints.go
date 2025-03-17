@@ -59,18 +59,19 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode               config_core.CpMode
-	federatedZone      bool
-	zoneName           string
-	resManager         manager.ResourceManager
-	descriptor         model.ResourceTypeDescriptor
-	resourceAccess     access.ResourceAccess
-	k8sMapper          k8s.ResourceMapperFunc
-	filter             func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder xds_context.MeshContextBuilder
-	xdsHooks           []xds_hooks.ResourceSetHook
-	systemNamespace    string
-	isK8s              bool
+	mode                   config_core.CpMode
+	federatedZone          bool
+	zoneName               string
+	resManager             manager.ResourceManager
+	descriptor             model.ResourceTypeDescriptor
+	resourceAccess         access.ResourceAccess
+	k8sMapper              k8s.ResourceMapperFunc
+	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder     xds_context.MeshContextBuilder
+	xdsHooks               []xds_hooks.ResourceSetHook
+	systemNamespace        string
+	isK8s                  bool
+	knownInternalAddresses []string
 
 	disableOriginLabelValidation bool
 }
@@ -776,7 +777,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.xdsHooks...)
+		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return
@@ -788,7 +789,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		out := &api_types.InspectDataplanesConfig{
+		out := &api_types.GetDataplaneXDSConfigResponse{
 			Xds: config,
 		}
 
@@ -812,10 +813,10 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 	}
 }
 
-func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetMeshesMeshDataplanesNameConfigParams, error) {
-	params := &api_types.GetMeshesMeshDataplanesNameConfigParams{
+func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetDataplanesXdsConfigParams, error) {
+	params := &api_types.GetDataplanesXdsConfigParams{
 		Shadow:  pointer.To(false),
-		Include: &[]api_types.GetMeshesMeshDataplanesNameConfigParamsInclude{},
+		Include: &[]api_types.GetDataplanesXdsConfigParamsInclude{},
 	}
 
 	if shadow := request.QueryParameter("shadow"); shadow != "" {
@@ -828,12 +829,12 @@ func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api
 
 	if include := request.QueryParameter("include"); include != "" {
 		for _, v := range strings.Split(include, ",") {
-			switch api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v) {
+			switch api_types.GetDataplanesXdsConfigParamsInclude(v) {
 			case api_types.Diff:
 			default:
 				return nil, rest_errors.NewBadRequestError("unsupported value for query parameter 'include'")
 			}
-			*params.Include = append(*params.Include, api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v))
+			*params.Include = append(*params.Include, api_types.GetDataplanesXdsConfigParamsInclude(v))
 		}
 	}
 
@@ -944,6 +945,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
+			getInboundPortName := func(port uint32) *string {
+				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+					return &name
+				}
+				return nil
+			}
+
 			fromRules := []api_common.FromRule{}
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
@@ -966,13 +974,49 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
+							Name: getInboundPortName(inbound.Port),
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
 						Rules: fromRulesForInbound,
 					})
 				}
+				sort.SliceStable(fromRules, func(i, j int) bool {
+					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
+				})
 			}
+
+			inboundRules := []api_common.InboundRulesEntry{}
+			for inbound, rulesForInbound := range res.FromRules.InboundRules {
+				if len(rulesForInbound) == 0 {
+					continue
+				}
+				rs := make([]api_common.InboundRule, len(rulesForInbound))
+				for i := range rulesForInbound {
+					rs[i] = api_common.InboundRule{
+						Conf:   rulesForInbound[i].Conf,
+						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, rulesForInbound[i].Origin),
+					}
+				}
+				var tags map[string]string
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					tags = dp.Spec.Networking.Gateway.Tags
+				} else {
+					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				}
+				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
+					Inbound: api_common.Inbound{
+						Name: getInboundPortName(inbound.Port),
+						Port: int(inbound.Port),
+						Tags: tags,
+					},
+					Rules: rs,
+				})
+			}
+			sort.SliceStable(inboundRules, func(i, j int) bool {
+				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
+			})
+
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
@@ -986,7 +1030,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -999,6 +1043,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
 				FromRules:       &fromRules,
+				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,
 			})

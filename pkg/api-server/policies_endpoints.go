@@ -10,7 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
-func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
+func addPoliciesWsEndpoints(ws *restful.WebService, isGlobal bool, isFederatedZone bool, readOnly bool, defs []model.ResourceTypeDescriptor) {
 	ws.Route(ws.GET("/policies").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.PoliciesResponse{}
 		for _, def := range defs {
@@ -19,7 +19,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly
 			}
 			response.Policies = append(response.Policies, types.PolicyEntry{
 				Name:                string(def.Name),
-				ReadOnly:            readOnly || federatedZone || def.ReadOnly,
+				ReadOnly:            readOnly || def.IsReadOnly(isGlobal, isFederatedZone),
 				Path:                def.WsPath,
 				SingularDisplayName: def.SingularDisplayName,
 				PluralDisplayName:   def.PluralDisplayName,
@@ -38,7 +38,7 @@ func addPoliciesWsEndpoints(ws *restful.WebService, federatedZone bool, readOnly
 		}
 	}))
 	ws.Route(ws.GET("/_resources").To(func(req *restful.Request, resp *restful.Response) {
-		response := mappers.MapResourceTypeDescription(defs, readOnly, federatedZone)
+		response := mappers.MapResourceTypeDescription(defs, readOnly, isFederatedZone)
 		if err := resp.WriteAsJson(response); err != nil {
 			log.Error(err, "Could not write the response")
 		}

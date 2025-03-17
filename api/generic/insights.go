@@ -26,6 +26,7 @@ func GetSubscription[S Subscription, T interface{ GetSubscriptions() []S }](t T,
 type Insight interface {
 	proto.Message
 	IsOnline() bool
+	GetLastSubscription() Subscription
 	GetSubscription(id string) Subscription
 	AllSubscriptions() []Subscription
 	UpdateSubscription(Subscription) error

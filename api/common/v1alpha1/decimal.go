@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	"errors"
+	"fmt"
 
 	"github.com/shopspring/decimal"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -14,6 +14,6 @@ func NewDecimalFromIntOrString(intOrString intstr.IntOrString) (decimal.Decimal,
 	case intstr.String:
 		return decimal.NewFromString(intOrString.String())
 	default:
-		return decimal.Zero, errors.New("invalid IntOrString")
+		return decimal.Zero, fmt.Errorf("invalid IntOrString '%s'", intOrString.String())
 	}
 }

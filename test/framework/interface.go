@@ -95,6 +95,7 @@ type appDeploymentOptions struct {
 	name                  string
 	appYaml               string
 	appArgs               []string
+	appLabel              string
 	token                 string
 	transparent           *bool
 	builtindns            *bool // true by default
@@ -424,6 +425,12 @@ func WithServiceName(name string) AppDeploymentOption {
 	})
 }
 
+func WithAppLabel(app string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.appLabel = app
+	})
+}
+
 func WithAppendDataplaneYaml(config string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.appendDataplaneConfig = config
@@ -567,7 +574,8 @@ type Cluster interface {
 	// Generic
 	DeployKuma(mode core.CpMode, opts ...KumaDeploymentOption) error
 	GetKuma() ControlPlane
-	GetKumaCPLogs() (string, error)
+	// GetKumaCPLogs returns a set of logs (depending on env it can be stdout, stderr or current and previous)...
+	GetKumaCPLogs() map[string]string
 	VerifyKuma() error
 	DeleteKuma() error
 	GetKumactlOptions() *kumactl.KumactlOptions

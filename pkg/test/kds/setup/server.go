@@ -33,6 +33,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/multitenant"
 	"github.com/kumahq/kuma/pkg/plugins/resources/postgres/config"
+	runtime2 "github.com/kumahq/kuma/pkg/test/runtime"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_runtime "github.com/kumahq/kuma/pkg/xds/runtime"
@@ -42,6 +43,7 @@ import (
 type testRuntimeContext struct {
 	runtime.RuntimeInfo
 	rom                      manager.ReadOnlyResourceManager
+	rs                       store.ResourceStore
 	rm                       manager.ResourceManager
 	cfg                      kuma_cp.Config
 	components               []component.Component
@@ -49,6 +51,9 @@ type testRuntimeContext struct {
 	pgxConfigCustomizationFn config.PgxConfigCustomization
 	tenants                  multitenant.Tenants
 	eventBus                 events.EventBus
+	kdsContext               *kds_context.Context
+	ctx                      context.Context
+	envoyAdminClient         admin.EnvoyAdminClient
 }
 
 func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
@@ -56,7 +61,7 @@ func (t *testRuntimeContext) DataSourceLoader() datasource.Loader {
 }
 
 func (t *testRuntimeContext) ResourceStore() store.ResourceStore {
-	panic("implement me")
+	return t.rs
 }
 
 func (t *testRuntimeContext) SecretStore() secret_store.SecretStore {
@@ -88,7 +93,7 @@ func (t *testRuntimeContext) LookupIP() lookup.LookupIPFunc {
 }
 
 func (t *testRuntimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
-	panic("implement me")
+	return t.envoyAdminClient
 }
 
 func (t *testRuntimeContext) APIInstaller() customization.APIInstaller {
@@ -108,7 +113,7 @@ func (t *testRuntimeContext) DpServer() *server.DpServer {
 }
 
 func (t *testRuntimeContext) KDSContext() *kds_context.Context {
-	panic("implement me")
+	return t.kdsContext
 }
 
 func (t *testRuntimeContext) APIServerAuthenticator() authn.Authenticator {
@@ -124,7 +129,7 @@ func (t *testRuntimeContext) Access() runtime.Access {
 }
 
 func (t *testRuntimeContext) AppContext() context.Context {
-	panic("implement me")
+	return t.ctx
 }
 
 func (t *testRuntimeContext) ExtraReportsFn() runtime.ExtraReportsFn {
@@ -144,7 +149,15 @@ func (t *testRuntimeContext) InterCPClientPool() *client.Pool {
 }
 
 func (t *testRuntimeContext) Start(i <-chan struct{}) error {
-	panic("implement me")
+	if len(t.components) != 1 {
+		panic("only one component is supported")
+	}
+	for _, v := range t.components {
+		if err := v.Start(i); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -208,8 +221,12 @@ type KdsServerBuilder struct {
 	providedTypes  []model.ResourceType
 }
 
-func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
-	metrics, err := core_metrics.NewMetrics("Global")
+func NewTestRuntime(ctx context.Context, cfg kuma_cp.Config, store store.ResourceStore) *testRuntimeContext {
+	instanceName := cfg.Multizone.Zone.Name
+	if instanceName == "" {
+		instanceName = "Global"
+	}
+	metrics, err := core_metrics.NewMetrics(instanceName)
 	if err != nil {
 		panic(err)
 	}
@@ -218,24 +235,31 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 	if err != nil {
 		panic(err)
 	}
-	cfg := kuma_cp.DefaultConfig()
-	cfg.Mode = config_core.Global
-	runtimeInfo := runtime.NewRuntimeInfo("global-cp", cfg.Mode)
+	runtimeInfo := runtime.NewRuntimeInfo(instanceName+"-cp", cfg.Mode)
 	runtimeInfo.SetClusterInfo("my-cluster", time.Now())
-	rt := &testRuntimeContext{
+	return &testRuntimeContext{
+		ctx:                      ctx,
 		RuntimeInfo:              runtimeInfo,
 		rom:                      rm,
 		rm:                       rm,
+		rs:                       store,
 		cfg:                      cfg,
 		metrics:                  metrics,
 		tenants:                  multitenant.SingleTenant,
 		pgxConfigCustomizationFn: config.NoopPgxConfigCustomizationFn,
 		eventBus:                 eventBus,
+		kdsContext:               kds_context.DefaultContext(ctx, rm, cfg),
+		envoyAdminClient:         &runtime2.DummyEnvoyAdminClient{},
 	}
+}
+
+func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
+	cfg := kuma_cp.DefaultConfig()
+	cfg.Mode = config_core.Global
 	return &KdsServerBuilder{
-		rt:             rt,
+		rt:             NewTestRuntime(context.Background(), cfg, store),
 		providedMapper: reconcile_v2.NoopResourceMapper,
-		providedTypes:  registry.Global().ObjectTypes(model.HasKdsEnabled()),
+		providedTypes:  registry.Global().ObjectTypes(model.SentFromGlobalToZone()),
 		providedFilter: reconcile_v2.Any,
 	}
 }
@@ -243,6 +267,7 @@ func NewKdsServerBuilder(store store.ResourceStore) *KdsServerBuilder {
 func (b *KdsServerBuilder) AsZone(name string) *KdsServerBuilder {
 	b.rt.cfg.Multizone.Zone.Name = name
 	b.rt.cfg.Mode = config_core.Zone
+	b.providedTypes = registry.Global().ObjectTypes(model.SentFromZoneToGlobal())
 	b.rt.RuntimeInfo = runtime.NewRuntimeInfo("zone-cp", b.rt.cfg.Mode)
 	return b
 }

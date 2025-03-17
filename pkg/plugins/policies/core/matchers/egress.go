@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -227,11 +228,11 @@ func serviceSelectedByTargetRef(tr common_api.TargetRef, tags map[string]string)
 	case common_api.Mesh:
 		return true
 	case common_api.MeshSubset:
-		return mesh_proto.TagSelector(tr.Tags).Matches(tags)
+		return mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	case common_api.MeshService:
-		return tr.Name == tags[mesh_proto.ServiceTag]
+		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag]
 	case common_api.MeshServiceSubset:
-		return tr.Name == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(tr.Tags).Matches(tags)
+		return pointer.Deref(tr.Name) == tags[mesh_proto.ServiceTag] && mesh_proto.TagSelector(pointer.Deref(tr.Tags)).Matches(tags)
 	}
 	return false
 }

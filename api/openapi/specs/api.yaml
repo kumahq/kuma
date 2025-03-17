@@ -81,9 +81,9 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
-      operationId: get-meshes-mesh-dataplanes-name-config
-      summary: Get a proxy XDS config on a CP
-      description: Returns the configuration of the proxy ([xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration).
+      operationId: get-dataplanes-xds-config
+      summary: Get a proxy XDS config on a CP, this endpoint is only available on zone CPs.
+      description: Returns the [xds](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) configuration of the proxy.
       parameters:
         - in: path
           name: mesh
@@ -100,7 +100,7 @@ paths:
         - in: query
           name: shadow
           description: |
-            When computing XDS config the CP takes into account policies with 'kuma.io/effect: shadow' label
+            When computing XDS config the CP take into account policies with 'kuma.io/effect: shadow' label
           schema:
             type: boolean
             default: false
@@ -116,7 +116,7 @@ paths:
               enum: [diff]
       responses:
         '200':
-          $ref: '#/components/responses/InspectDataplanesConfigResponse'
+          $ref: '#/components/responses/GetDataplaneXDSConfigResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -265,9 +265,9 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
-    InspectDataplanesConfig:
+    DataplaneXDSConfig:
       type: object
-      title: InspectDataplanesConfig
+      title: DataplaneXDSConfig
       required: [ xds ]
       properties:
         xds:
@@ -543,12 +543,12 @@ components:
           examples:
             ResponseForDataplane:
               $ref: '#/components/examples/InspectDataplanesForPolicyExample'
-    InspectDataplanesConfigResponse:
+    GetDataplaneXDSConfigResponse:
       description: Successfully retrieved proxy XDS config.
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/InspectDataplanesConfig'
+            $ref: '#/components/schemas/DataplaneXDSConfig'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:
@@ -562,8 +562,8 @@ components:
           schema:
             $ref: '#/components/schemas/InspectHostnames'
           examples:
-            ResponseForDataplane:
-              $ref: '#/components/examples/InspectDataplanesForPolicyExample'
+            ResponseForHostnames:
+              $ref: '#/components/examples/InspectHostnamesExample'
     BadRequest:
       description: Bad Request
       content:

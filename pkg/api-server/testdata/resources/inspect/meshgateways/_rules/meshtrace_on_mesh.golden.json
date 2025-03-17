@@ -12,13 +12,17 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "proxyRule": {
     "conf": {
      "backends": [
       {
        "type": "Zipkin",
        "zipkin": {
-        "url": "http://jaeger-collector:9411/api/v2/spans"
+        "url": "http://jaeger-collector:9411/api/v2/spans",
+        "traceId128bit": false,
+        "apiVersion": "httpJson",
+        "sharedSpanContext": true
        }
       }
      ]

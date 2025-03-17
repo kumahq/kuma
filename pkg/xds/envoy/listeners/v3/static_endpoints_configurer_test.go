@@ -81,6 +81,12 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
                           cluster: kuma:envoy:admin
                           prefixRewrite: /stats/prometheus
                   statPrefix: kuma_metrics_prometheus
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 	)

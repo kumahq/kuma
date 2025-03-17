@@ -57,6 +57,7 @@ properties:
           - meshService
         type: object
     required:
+      - ports
       - selector
     type: object
   creationTime:

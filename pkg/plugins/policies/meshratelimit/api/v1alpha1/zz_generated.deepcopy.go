@@ -65,13 +65,21 @@ func (in *HeaderModifier) DeepCopyInto(out *HeaderModifier) {
 	*out = *in
 	if in.Set != nil {
 		in, out := &in.Set, &out.Set
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Add != nil {
 		in, out := &in.Add, &out.Add
-		*out = make([]HeaderKeyValue, len(*in))
-		copy(*out, *in)
+		*out = new([]HeaderKeyValue)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]HeaderKeyValue, len(*in))
+			copy(*out, *in)
+		}
 	}
 }
 
@@ -175,23 +183,35 @@ func (in *MeshRateLimit) DeepCopyInto(out *MeshRateLimit) {
 	}
 	if in.From != nil {
 		in, out := &in.From, &out.From
-		*out = make([]From, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]From)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]From, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 	if in.To != nil {
 		in, out := &in.To, &out.To
-		*out = make([]To, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]To)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]To, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = make([]Rule, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Rule)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Rule, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

@@ -19,8 +19,12 @@ func (in *Conf) DeepCopyInto(out *Conf) {
 	}
 	if in.TlsCiphers != nil {
 		in, out := &in.TlsCiphers, &out.TlsCiphers
-		*out = make(tls.TlsCiphers, len(*in))
-		copy(*out, *in)
+		*out = new([]tls.TlsCipher)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]tls.TlsCipher, len(*in))
+			copy(*out, *in)
+		}
 	}
 	if in.Mode != nil {
 		in, out := &in.Mode, &out.Mode
@@ -66,16 +70,24 @@ func (in *MeshTLS) DeepCopyInto(out *MeshTLS) {
 	}
 	if in.From != nil {
 		in, out := &in.From, &out.From
-		*out = make([]From, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]From)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]From, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 	if in.Rules != nil {
 		in, out := &in.Rules, &out.Rules
-		*out = make([]Rule, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]Rule)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]Rule, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

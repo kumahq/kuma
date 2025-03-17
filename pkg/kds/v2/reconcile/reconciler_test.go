@@ -44,7 +44,9 @@ var _ = Describe("Reconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		statsCallbacks, err := util_xds.NewStatsCallbacks(metrics, "kds_delta", util_xds.NoopVersionExtractor)
 		Expect(err).ToNot(HaveOccurred())
-		reconciler = reconcile.NewReconciler(hasher, snapshotCache, generator, config_core.Zone, statsCallbacks, multitenant.SingleTenant)
+		reconciler = reconcile.NewReconciler(hasher, snapshotCache, generator, config_core.Zone, statsCallbacks, multitenant.SingleTenant, []core_model.ResourceType{
+			core_mesh.MeshType,
+		})
 	})
 
 	It("should reconcile snapshot in snapshot cache", func() {

@@ -109,7 +109,7 @@ var _ = Describe("MeshTLS", func() {
 								WithService("frontend"),
 						),
 				).
-				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(policy.Spec.From))).
+				WithPolicies(xds_builders.MatchedPolicies().WithFromPolicy(api.MeshTLSType, getFromRules(pointer.Deref(policy.Spec.From)))).
 				Build()
 
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
@@ -209,7 +209,7 @@ var _ = Describe("MeshTLS", func() {
 				WithDataplane(samples.GatewayDataplaneBuilder()).
 				WithSecretsTracker(secretsTracker).
 				WithPolicies(xds_builders.MatchedPolicies().
-					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(policy.Spec.From)).
+					WithGatewayPolicy(api.MeshTLSType, getGatewayRules(pointer.Deref(policy.Spec.From))).
 					WithGatewayPolicy(meshhttproute_api.MeshHTTPRouteType, core_rules.GatewayRules{
 						ToRules: core_rules.GatewayToRules{
 							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
@@ -282,7 +282,7 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 			Origin: generator.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false)).
+					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
 							"backend",
@@ -334,7 +334,7 @@ func getResources(secretsTracker core_xds.SecretsTracker, mesh *builders.MeshBui
 			Origin: generator.OriginInbound,
 			Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false)).
+					Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 					Configure(
 						listeners.HttpInboundRoutes(
 							"backend",

@@ -9,6 +9,7 @@ import (
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	graph_backends "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/backends"
 	graph_services "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph/services"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -33,7 +34,7 @@ func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) b
 	if rule == nil {
 		return false
 	}
-	action := rule.Conf.(mtp_api.Conf).Action
+	action := pointer.Deref(rule.Conf.(mtp_api.Conf).Action)
 	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 
@@ -49,7 +50,7 @@ func (r *Graph) CanReachBackend(fromTags map[string]string, backendIdentifier co
 	if rule == nil {
 		return false
 	}
-	action := rule.Conf.(mtp_api.Conf).Action
+	action := pointer.Deref(rule.Conf.(mtp_api.Conf).Action)
 	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 

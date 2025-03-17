@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/test/framework/report"
 	"github.com/kumahq/kuma/test/framework/versions"
 )
 
@@ -57,12 +59,11 @@ type E2eConfig struct {
 	Arch                              string            `json:"arch,omitempty" envconfig:"ARCH"`
 	OS                                string            `json:"os,omitempty" envconfig:"OS"`
 	KumaCpConfig                      KumaCpConfig      `json:"kumaCpConfig,omitempty" envconfig:"KUMA_CP_CONFIG"`
-	UniversalE2ELogsPath              string            `json:"universalE2ELogsPath,omitempty" envconfig:"UNIVERSAL_E2E_LOGS_PATH"`
-	CleanupLogsOnSuccess              bool              `json:"cleanupLogsOnSuccess,omitempty" envconfig:"CLEANUP_LOGS_ON_SUCCESS"`
 	VersionsYamlPath                  string            `json:"versionsYamlPath,omitempty" envconfig:"VERSIONS_YAML_PATH"`
 	KumaExperimentalSidecarContainers bool              `json:"kumaSidecarContainers,omitempty" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
 	Debug                             bool              `json:"debug" envconfig:"KUMA_DEBUG"`
-	DebugDir                          string            `json:"debugDir" envconfig:"KUMA_DEBUG_DIR"`
+	DumpDir                           string            `json:"dumpDir" envconfig:"KUMA_DUMP_DIR"`
+	DumpOnSuccess                     bool              `json:"dumpOnSuccess,omitempty" envconfig:"DUMP_ON_SUCCESS"`
 
 	SuiteConfig SuiteConfig `json:"suites,omitempty"`
 }
@@ -153,6 +154,9 @@ func (c E2eConfig) AutoConfigure() error {
 	Config.Arch = runtime.GOARCH
 	Config.OS = runtime.GOOS
 
+	if Config.Debug {
+		Config.DumpOnSuccess = true
+	}
 	return nil
 }
 
@@ -254,10 +258,9 @@ var defaultConf = E2eConfig{
 	},
 	ZoneEgressApp:                     "kuma-egress",
 	ZoneIngressApp:                    "kuma-ingress",
-	UniversalE2ELogsPath:              path.Join(os.TempDir(), "e2e"),
-	CleanupLogsOnSuccess:              false,
 	KumaExperimentalSidecarContainers: false,
-	DebugDir:                          path.Join(os.TempDir(), "e2e-debug"),
+	DumpDir:                           path.Join("..", "..", "..", "build", "reports", "e2e-debug"),
+	DumpOnSuccess:                     false,
 }
 
 func init() {
@@ -269,6 +272,8 @@ func init() {
 	if err := Config.AutoConfigure(); err != nil {
 		panic(err)
 	}
+	report.BaseDir, _ = filepath.Abs(Config.DumpDir)
+	report.DumpOnSuccess = Config.DumpOnSuccess
 }
 
 func KumaDeploymentOptionsFromConfig(config ControlPlaneConfig) []KumaDeploymentOption {

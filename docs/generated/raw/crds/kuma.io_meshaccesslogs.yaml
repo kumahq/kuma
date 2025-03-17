@@ -83,6 +83,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -124,6 +127,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -173,6 +179,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -251,7 +260,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -265,8 +273,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - default
                   - targetRef
                   type: object
                 type: array
@@ -304,6 +315,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -345,6 +359,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -394,6 +411,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -424,6 +444,8 @@ spec:
                             type: object
                           type: array
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -475,7 +497,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -489,6 +510,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -524,6 +547,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -565,6 +591,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -614,6 +643,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -692,7 +724,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -706,8 +737,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - default
                   - targetRef
                   type: object
                 type: array

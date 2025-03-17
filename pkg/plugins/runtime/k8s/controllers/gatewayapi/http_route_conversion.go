@@ -65,7 +65,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 	// consumer route
 	targetRef := common_api.TargetRef{
 		Kind: common_api.MeshSubset,
-		Tags: map[string]string{
+		Tags: &map[string]string{
 			mesh_proto.KubeNamespaceTag: routeNamespace,
 		},
 	}
@@ -97,7 +97,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 		tos = append(tos, v1alpha1.To{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: serviceName,
+				Name: pointer.To(serviceName),
 			},
 			Rules: rules,
 		})
@@ -105,7 +105,7 @@ func (r *HTTPRouteReconciler) gapiServiceToMeshRoute(
 
 	return &v1alpha1.MeshHTTPRoute{
 		TargetRef: &targetRef,
-		To:        tos,
+		To:        &tos,
 	}
 }
 
@@ -210,7 +210,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 			Name:  common_api.HeaderName(strings.ToLower(string(gapiHeader.Name))),
 			Value: common_api.HeaderValue(gapiHeader.Value),
 		}
-		match.Headers = append(match.Headers, header)
+		match.Headers = pointer.To(append(pointer.Deref(match.Headers), header))
 	}
 
 	for _, gapiParam := range gapiMatch.QueryParams {
@@ -231,7 +231,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshMatch(gapiMatch gatewayapi.HTTPRoute
 		default:
 			return v1alpha1.Match{}, false
 		}
-		match.QueryParams = append(match.QueryParams, param)
+		match.QueryParams = pointer.To(append(pointer.Deref(match.QueryParams), param))
 	}
 
 	if gapiMatch.Method != nil {
@@ -282,9 +282,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.RequestHeaderModifierType,
 			RequestHeaderModifier: &v1alpha1.HeaderModifier{
-				Add:    fromGAPIHeaders(modifier.Add),
-				Set:    fromGAPIHeaders(modifier.Set),
-				Remove: modifier.Remove,
+				Add:    pointer.To(fromGAPIHeaders(modifier.Add)),
+				Set:    pointer.To(fromGAPIHeaders(modifier.Set)),
+				Remove: pointer.To(modifier.Remove),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterResponseHeaderModifier:
@@ -292,9 +292,9 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 		return v1alpha1.Filter{
 			Type: v1alpha1.ResponseHeaderModifierType,
 			ResponseHeaderModifier: &v1alpha1.HeaderModifier{
-				Add:    fromGAPIHeaders(modifier.Add),
-				Set:    fromGAPIHeaders(modifier.Set),
-				Remove: modifier.Remove,
+				Add:    pointer.To(fromGAPIHeaders(modifier.Add)),
+				Set:    pointer.To(fromGAPIHeaders(modifier.Set)),
+				Remove: pointer.To(modifier.Remove),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterRequestRedirect:
@@ -329,7 +329,7 @@ func (r *HTTPRouteReconciler) gapiToKumaMeshFilter(
 				Hostname:   (*v1alpha1.PreciseHostname)(redirect.Hostname),
 				Path:       path,
 				Port:       port,
-				StatusCode: redirect.StatusCode,
+				StatusCode: pointer.Deref(redirect.StatusCode),
 			},
 		}, nil, true
 	case gatewayapi_v1.HTTPRouteFilterURLRewrite:
@@ -397,7 +397,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 ) (common_api.TargetRef, *ResolvedRefsConditionFalse, error) {
 	unresolvedTargetRef := common_api.TargetRef{
 		Kind: common_api.MeshService,
-		Name: metadata.UnresolvedBackendServiceTag,
+		Name: pointer.To(metadata.UnresolvedBackendServiceTag),
 	}
 
 	policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)
@@ -433,8 +433,8 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		//     services across multiple zones.
 		return common_api.TargetRef{
 			Kind: common_api.MeshServiceSubset,
-			Name: k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port),
-			Tags: map[string]string{
+			Name: pointer.To(k8s_util.ServiceTag(kube_client.ObjectKeyFromObject(svc), &port)),
+			Tags: &map[string]string{
 				mesh_proto.ZoneTag: r.Zone,
 			},
 		}, nil, nil
@@ -454,7 +454,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 
 		return common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: resource.Spec.GetService(),
+			Name: pointer.To(resource.Spec.GetService()),
 		}, nil, nil
 	}
 
@@ -480,7 +480,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRef(
 	if refAttachmentKind != attachment.Service {
 		unresolvedTargetRef := common_api.TargetRef{
 			Kind: common_api.MeshService,
-			Name: metadata.UnresolvedBackendServiceTag,
+			Name: pointer.To(metadata.UnresolvedBackendServiceTag),
 		}
 
 		policyRef := referencegrants.PolicyReferenceBackend(referencegrants.FromHTTPRouteIn(objectNamespace), ref)

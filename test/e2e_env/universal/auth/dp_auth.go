@@ -49,20 +49,27 @@ func DpAuth() {
 	It("should be able to override old Dataplane of same service", func() {
 		// given
 		dp := builders.Dataplane().
-			WithName("dp-01").
+			WithName("dp-02").
 			WithMesh(meshName).
+			WithLabels(map[string]string{"app": "not-test-server"}).
 			WithAddress("192.168.0.2").
 			WithServices("test-server").
 			Build()
 		Expect(universal.Cluster.Install(ResourceUniversal(dp))).To(Succeed())
 
 		// when
-		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"))(universal.Cluster)
+		err := TestServerUniversal("dp-02", meshName, WithServiceName("test-server"), WithAppLabel("test-server"))(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
 		Eventually(func() (string, error) {
-			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "-oyaml")
-		}, "30s", "1s").ShouldNot(ContainSubstring("192.168.0.2"))
+			return universal.Cluster.GetKumactlOptions().RunKumactlAndGetOutput("get", "dataplanes", "--mesh", meshName, "-oyaml")
+		}, "30s", "1s").Should(
+			And(
+				Not(ContainSubstring("192.168.0.2")),
+				Not(ContainSubstring("not-test-server")),
+				ContainSubstring("test-server"),
+			),
+		)
 	})
 }

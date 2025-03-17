@@ -162,6 +162,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						}},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
+					WithInternalAddresses(xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
 					Build(),
 			}
 		}()),
@@ -347,7 +348,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Zone:       "zone-1",
 				APIVersion: envoy.APIV3,
 			}
-			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, *mc)
+			proxy, err := builder.Build(context.Background(), core_model.ResourceKey{Name: dp.GetMeta().GetName(), Mesh: dp.GetMeta().GetMesh()}, &core_xds.DataplaneMetadata{}, *mc)
 			Expect(err).ToNot(HaveOccurred())
 
 			proxy.Outbounds = xds_types.Outbounds{{
@@ -366,11 +367,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -398,11 +399,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -439,11 +440,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "http-route", Mesh: "default"},
 				Spec: &api.MeshHTTPRoute{
 					TargetRef: builders.TargetRefMeshGateway("sample-gateway"),
-					To: []api.To{
+					To: &[]api.To{
 						{
 							TargetRef: common_api.TargetRef{
 								Kind: common_api.MeshExternalService,
-								Name: "example",
+								Name: pointer.To("example"),
 							},
 							Rules: []api.Rule{
 								{
@@ -457,7 +458,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										BackendRefs: &[]common_api.BackendRef{{
 											TargetRef: common_api.TargetRef{
 												Kind: common_api.MeshExternalService,
-												Name: "external",
+												Name: pointer.To("external"),
 											},
 											Port:   pointer.To(uint32(9090)),
 											Weight: pointer.To(uint(100)),
@@ -484,11 +485,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -555,11 +556,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -590,11 +591,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -603,7 +604,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					Tls: &meshexternalservice_api.Tls{
 						Enabled: true,
 						Verification: &meshexternalservice_api.Verification{
-							Mode: pointer.To(meshexternalservice_api.TLSVerificationSkipAll),
+							Mode: meshexternalservice_api.TLSVerificationSkipAll,
 						},
 					},
 				},
@@ -628,11 +629,11 @@ var _ = Describe("MeshHTTPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolHTTP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -723,7 +724,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v2"}},
 											{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v3"}},
 										}): 0,
-										api.HashMatches([]api.Match{{QueryParams: []api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
+										api.HashMatches([]api.Match{{QueryParams: &[]api.QueryParamsMatch{{Type: api.ExactQueryMatch, Name: "v1", Value: "true"}}}}): 0,
 									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
@@ -759,7 +760,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										}, {
 											Matches: []api.Match{{
-												QueryParams: []api.QueryParamsMatch{{
+												QueryParams: &[]api.QueryParamsMatch{{
 													Type:  api.ExactQueryMatch,
 													Name:  "v1",
 													Value: "true",
@@ -1056,7 +1057,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "first",
 																	},
@@ -1077,7 +1078,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 															BackendRefs: &[]common_api.BackendRef{{
 																TargetRef: common_api.TargetRef{
 																	Kind: common_api.MeshService,
-																	Labels: map[string]string{
+																	Labels: &map[string]string{
 																		"app":     "backend",
 																		"version": "second",
 																	},
@@ -1275,18 +1276,18 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Filters: &[]api.Filter{{
 														Type: api.RequestHeaderModifierType,
 														RequestHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
+															Add: &[]api.HeaderKeyValue{{
 																Name:  "request-add-header",
 																Value: "add-value",
 															}},
-															Set: []api.HeaderKeyValue{{
+															Set: &[]api.HeaderKeyValue{{
 																Name:  "request-set-header",
 																Value: "set-value",
 															}, {
 																Name:  "request-set-header-multiple",
 																Value: "one-value,second-value",
 															}},
-															Remove: []string{
+															Remove: &[]string{
 																"request-header-to-remove",
 															},
 														},
@@ -1344,15 +1345,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 													Filters: &[]api.Filter{{
 														Type: api.ResponseHeaderModifierType,
 														ResponseHeaderModifier: &api.HeaderModifier{
-															Add: []api.HeaderKeyValue{{
+															Add: &[]api.HeaderKeyValue{{
 																Name:  "response-add-header",
 																Value: "add-value",
 															}},
-															Set: []api.HeaderKeyValue{{
+															Set: &[]api.HeaderKeyValue{{
 																Name:  "response-set-header",
 																Value: "set-value",
 															}},
-															Remove: []string{
+															Remove: &[]string{
 																"response-header-to-remove",
 															},
 														},
@@ -1515,7 +1516,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
-													Headers: []common_api.HeaderMatch{{
+													Headers: &[]common_api.HeaderMatch{{
 														Type:  pointer.To(common_api.HeaderMatchExact),
 														Name:  "foo-exact",
 														Value: "bar",
@@ -1652,8 +1653,8 @@ var _ = Describe("MeshHTTPRoute", func() {
 																BackendRef: common_api.BackendRef{
 																	TargetRef: common_api.TargetRef{
 																		Kind: common_api.MeshServiceSubset,
-																		Name: "payments",
-																		Tags: map[string]string{
+																		Name: pointer.To("payments"),
+																		Tags: &map[string]string{
 																			"version": "v1",
 																			"region":  "us",
 																			"env":     "dev",
@@ -1668,7 +1669,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 																BackendRef: common_api.BackendRef{
 																	TargetRef: common_api.TargetRef{
 																		Kind: common_api.MeshService,
-																		Name: "backend",
+																		Name: pointer.To("backend"),
 																	},
 																},
 															},
@@ -1923,7 +1924,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 									BackendRefs: &[]common_api.BackendRef{{
 										TargetRef: common_api.TargetRef{
 											Kind: common_api.MeshService,
-											Name: "backend",
+											Name: pointer.To("backend"),
 										},
 										Port:   pointer.To(uint32(80)),
 										Weight: pointer.To(uint(100)),

@@ -65,13 +65,15 @@ spec:
                         protocol:
                           default: tcp
                           description: 'Protocol defines the communication protocol.
-                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`,
+                            `mysql`.'
                           enum:
                           - tcp
                           - tls
                           - grpc
                           - http
                           - http2
+                          - mysql
                           type: string
                         type:
                           description: Type of the match, one of `Domain`, `IP` or
@@ -84,13 +86,16 @@ spec:
                         value:
                           description: Value for the specified Type.
                           type: string
+                      required:
+                      - type
+                      - value
                       type: object
                     type: array
                   passthroughMode:
-                    default: None
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
+                      If not specified then the default value is "Matched".
                     enum:
                     - All
                     - Matched
@@ -146,7 +151,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -160,6 +164,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object

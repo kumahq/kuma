@@ -14,11 +14,11 @@ func (r *MeshLoadBalancingStrategyResource) validate() error {
 	var verr validators.ValidationError
 	path := validators.RootedAt("spec")
 	verr.AddErrorAt(path.Field("targetRef"), r.validateTop(r.Spec.TargetRef))
-	if len(r.Spec.To) == 0 {
+	if len(pointer.Deref(r.Spec.To)) == 0 {
 		verr.AddViolationAt(path.Field("to"), "needs at least one item")
 	}
 	topLevel := pointer.DerefOr(r.Spec.TargetRef, common_api.TargetRef{Kind: common_api.Mesh})
-	verr.AddErrorAt(path, validateTo(topLevel, r.Spec.To))
+	verr.AddErrorAt(path, validateTo(topLevel, pointer.Deref(r.Spec.To)))
 	return verr.OrNil()
 }
 
@@ -126,11 +126,11 @@ func validateCrossZone(crossZone *CrossZone, to To) validators.ValidationError {
 	if crossZone == nil {
 		return verr
 	}
-	if to.TargetRef.Kind == common_api.MeshService && (to.TargetRef.SectionName != "" || len(to.TargetRef.Labels) > 0) {
+	if to.TargetRef.Kind == common_api.MeshService && (pointer.Deref(to.TargetRef.SectionName) != "" || len(pointer.Deref(to.TargetRef.Labels)) > 0) {
 		verr.AddViolationAt(validators.Root(), fmt.Sprintf("%s: MeshService traffic is local", validators.MustNotBeSet))
 	}
 
-	for idx, failover := range crossZone.Failover {
+	for idx, failover := range pointer.Deref(crossZone.Failover) {
 		path := validators.RootedAt("failover").Index(idx)
 		if failover.From != nil {
 			if len(failover.From.Zones) == 0 {

@@ -23,14 +23,35 @@ type HttpMatch struct {
 
 // Inbound defines model for Inbound.
 type Inbound struct {
+	Name *string           `json:"name,omitempty"`
 	Port int               `json:"port"`
 	Tags map[string]string `json:"tags"`
+}
+
+// InboundRule defines model for InboundRule.
+type InboundRule struct {
+	// Conf The final computed configuration for the data plane proxy, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
+	Conf []interface{} `json:"conf"`
+
+	// Origin The list of policies that contributed to the 'conf'. The order is important as it reflects in what order confs were merged to get the resulting 'conf'.
+	Origin []ResourceRuleOrigin `json:"origin"`
+}
+
+// InboundRulesEntry defines model for InboundRulesEntry.
+type InboundRulesEntry struct {
+	Inbound Inbound `json:"inbound"`
+
+	// Rules The 'rules' field is an array to allow for future expansion when 'matches' conditions are added. Currently, it contains a single item.
+	Rules []InboundRule `json:"rules"`
 }
 
 // InspectRule defines model for InspectRule.
 type InspectRule struct {
 	// FromRules a set of rules for each inbound of this proxy
 	FromRules *[]FromRule `json:"fromRules,omitempty"`
+
+	// InboundRules a set of rules for each inbound port of the proxy. When the policy descriptor has 'isFromAsRules' set to true, this field supersedes 'fromRules' and should be used instead.
+	InboundRules *[]InboundRulesEntry `json:"inboundRules,omitempty"`
 
 	// ProxyRule a rule that affects the entire proxy
 	ProxyRule *ProxyRule `json:"proxyRule,omitempty"`
@@ -70,6 +91,9 @@ type PolicyDescription struct {
 
 	// HasToTargetRef indicates that this policy can be used as an outbound policy
 	HasToTargetRef bool `json:"hasToTargetRef"`
+
+	// IsFromAsRules If set to `true`, performs a backward compatibility conversion from the deprecated 'from' array to the new 'rules' array. This ensures older policies remain functional under the updated schema.
+	IsFromAsRules bool `json:"isFromAsRules"`
 
 	// IsTargetRef whether this policy uses targetRef matching
 	IsTargetRef bool `json:"isTargetRef"`

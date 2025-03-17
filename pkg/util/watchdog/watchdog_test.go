@@ -225,7 +225,9 @@ var _ = Describe("SimpleWatchdog", func() {
 		Eventually(func(g Gomega) {
 			g.Expect(watchdog.HasTicked(false)).To(BeTrue())
 		}, "100ms", "10ms").Should(Succeed())
-		Expect(hasTicked).Should(BeClosed())
+		Eventually(func(g Gomega) {
+			g.Expect(hasTicked).Should(BeClosed())
+		}, "50ms", "10ms").Should(Succeed())
 
 		By("simulating 1st tick")
 		// when

@@ -114,6 +114,7 @@ Listeners:
           typedConfig:
             '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
             cluster: external-no-protocol-httpbin-6a3325e78573377c
+            idleTimeout: 300s
             maxConnectAttempts: 5
             statPrefix: gateway-default
       listenerFilters:

@@ -15,6 +15,7 @@
   "xds": {
     "type.googleapis.com/envoy.config.cluster.v3.Cluster": {
       "envoyconfig-builtingateway_echo-service__kuma-3_msvc_80-3e607e0fbdf6b9a2": {
+        "connectTimeout": "5s",
         "edsClusterConfig": {
           "edsConfig": {
             "ads": {},
@@ -74,6 +75,11 @@
         "typedExtensionProtocolOptions": {
           "envoy.extensions.upstreams.http.v3.HttpProtocolOptions": {
             "@type": "type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions",
+            "commonHttpProtocolOptions": {
+              "idleTimeout": "3600s",
+              "maxConnectionDuration": "0s",
+              "maxStreamDuration": "0s"
+            },
             "explicitHttpConfig": {
               "httpProtocolOptions": {}
             }
@@ -180,6 +186,38 @@
                       }
                     }
                   ],
+                  "internalAddressConfig": {
+                    "cidrRanges": [
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 16
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 12
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 7
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 8
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 32
+                      },
+                      {
+                        "addressPrefix": "IP_REDACTED",
+                        "prefixLen": 128
+                      }
+                    ]
+                  },
                   "mergeSlashes": true,
                   "normalizePath": true,
                   "pathWithEscapedSlashesAction": "UNESCAPE_AND_REDIRECT",

@@ -120,7 +120,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("Matched")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -223,7 +223,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("IP"),
 									Value:    "192.168.0.0",
@@ -268,7 +268,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -319,7 +319,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("CIDR"),
 									Value:    "10.10.0.0/16",
@@ -375,7 +375,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "example1.com",
@@ -436,7 +436,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "www.example.com",
@@ -486,7 +486,7 @@ var _ = Describe("MeshPassthrough", func() {
 					{
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "www.gmail.com",
@@ -505,6 +505,57 @@ var _ = Describe("MeshPassthrough", func() {
 			},
 			listenersGolden: "same-protocol.listener.golden.yaml",
 			clustersGolden:  "same-protocol.clusters.golden.yaml",
+		}),
+		Entry("mysql protocol", testCase{
+			resources: []*core_xds.Resource{
+				{
+					Name:   "outbound:passthrough:ipv4",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv4").
+						Configure(OutboundListener("0.0.0.0", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv4", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv4").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+				{
+					Name:   "outbound:passthrough:ipv6",
+					Origin: generator.OriginTransparent,
+					Resource: NewListenerBuilder(envoy_common.APIV3, "outbound:passthrough:ipv6").
+						Configure(OutboundListener("::", 15001, core_xds.SocketAddressProtocolTCP)).
+						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(TCPProxy("outbound_passthrough_ipv6", []envoy_common.Split{
+								plugins_xds.NewSplitBuilder().WithClusterName("outbound:passthrough:ipv6").WithWeight(100).Build(),
+							}...)),
+						)).MustBuild(),
+				},
+			},
+			singleItemRules: core_rules.SingleItemRules{
+				Rules: []*core_rules.Rule{
+					{
+						Subset: []subsetutils.Tag{},
+						Conf: api.Conf{
+							AppendMatch: &[]api.Match{
+								{
+									Type:     api.MatchType("IP"),
+									Value:    "172.12.2.2",
+									Port:     pointer.To[uint32](3306),
+									Protocol: api.ProtocolType("mysql"),
+								},
+								{
+									Type:     api.MatchType("CIDR"),
+									Value:    "172.12.2.2/24",
+									Port:     pointer.To[uint32](3307),
+									Protocol: api.ProtocolType("mysql"),
+								},
+							},
+						},
+					},
+				},
+			},
+			listenersGolden: "mysql-protocol.listener.golden.yaml",
+			clustersGolden:  "mysql-protocol.clusters.golden.yaml",
 		}),
 		Entry("disabled on policy but enabled on mesh", testCase{
 			resources: []*core_xds.Resource{
@@ -558,7 +609,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",
@@ -599,7 +650,7 @@ var _ = Describe("MeshPassthrough", func() {
 						Subset: []subsetutils.Tag{},
 						Conf: api.Conf{
 							PassthroughMode: pointer.To[api.PassthroughMode](api.PassthroughMode("All")),
-							AppendMatch: []api.Match{
+							AppendMatch: &[]api.Match{
 								{
 									Type:     api.MatchType("Domain"),
 									Value:    "api.example.com",

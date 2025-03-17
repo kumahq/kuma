@@ -349,7 +349,6 @@ spec:
                     description: Type of the extension.
                     type: string
                 required:
-                - config
                 - type
                 type: object
               match:
@@ -787,7 +786,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -801,6 +799,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -855,7 +855,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -869,6 +868,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between clients and corresponding
@@ -1003,7 +1004,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -1017,6 +1017,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -1812,7 +1814,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -1826,6 +1827,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -1881,11 +1884,13 @@ spec:
                             Allows to configure panic threshold for Envoy cluster. If not specified,
                             the default is 50%. To disable panic mode, set to 0%.
                             Either int or decimal represented as string.
+                            Deprecated: the setting has been moved to MeshCircuitBreaker policy,
+                            please use MeshCircuitBreaker policy instead.
                           x-kubernetes-int-or-string: true
                         healthyThreshold:
-                          default: 1
-                          description: Number of consecutive healthy checks before
-                            considering a host healthy.
+                          description: |-
+                            Number of consecutive healthy checks before considering a host healthy.
+                            If not specified then the default value is 1
                           format: int32
                           type: integer
                         http:
@@ -1904,10 +1909,10 @@ spec:
                                 type: integer
                               type: array
                             path:
-                              default: /
                               description: |-
                                 The HTTP path which will be requested during the health check
                                 (ie. /health)
+                                If not specified then the default value is "/"
                               type: string
                             requestHeadersToAdd:
                               description: |-
@@ -1961,8 +1966,9 @@ spec:
                             check.
                           type: string
                         interval:
-                          default: 1m
-                          description: Interval between consecutive health checks.
+                          description: |-
+                            Interval between consecutive health checks.
+                            If not specified then the default value is 1m
                           type: string
                         intervalJitter:
                           description: |-
@@ -2015,14 +2021,15 @@ spec:
                               type: string
                           type: object
                         timeout:
-                          default: 15s
-                          description: Maximum time to wait for a health check response.
+                          description: |-
+                            Maximum time to wait for a health check response.
+                            If not specified then the default value is 15s
                           type: string
                         unhealthyThreshold:
-                          default: 5
                           description: |-
                             Number of consecutive unhealthy checks before considering a host
                             unhealthy.
+                            If not specified then the default value is 5
                           format: int32
                           type: integer
                       type: object
@@ -2074,7 +2081,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -2088,6 +2094,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -2198,7 +2206,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -2212,6 +2219,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To matches destination services of requests and holds
@@ -2291,7 +2300,6 @@ spec:
                                         - Sidecar
                                         - Gateway
                                         type: string
-                                      minItems: 1
                                       type: array
                                     sectionName:
                                       description: |-
@@ -2309,6 +2317,8 @@ spec:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                  - kind
                                   type: object
                                 type: array
                               filters:
@@ -2420,7 +2430,6 @@ spec:
                                                 - Sidecar
                                                 - Gateway
                                                 type: string
-                                              minItems: 1
                                               type: array
                                             sectionName:
                                               description: |-
@@ -2438,6 +2447,8 @@ spec:
                                               default: 1
                                               minimum: 0
                                               type: integer
+                                          required:
+                                          - kind
                                           type: object
                                         percentage:
                                           anyOf:
@@ -2750,7 +2761,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -2764,7 +2774,12 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
+                  required:
+                  - rules
+                  - targetRef
                   type: object
                 type: array
             type: object
@@ -2973,7 +2988,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -2987,6 +3001,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -3426,7 +3442,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -3440,6 +3455,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -3516,7 +3533,7 @@ spec:
                           description: Name of the application to scrape
                           type: string
                         path:
-                          default: /metrics/prometheus
+                          default: /metrics
                           description: Path on which an application expose HTTP endpoint
                             with metrics.
                           type: string
@@ -3576,12 +3593,7 @@ spec:
                                   - ProvidedTLS
                                   - ActiveMTLSBackend
                                   type: string
-                              required:
-                              - mode
                               type: object
-                          required:
-                          - path
-                          - port
                           type: object
                         type:
                           description: Type of the backend that will be used to collect
@@ -3598,11 +3610,11 @@ spec:
                     description: Sidecar metrics collection configuration
                     properties:
                       includeUnused:
-                        default: false
                         description: |-
                           IncludeUnused if false will scrape only metrics that has been by sidecar (counters incremented
                           at least once, gauges changed at least once, and histograms added to at
                           least once). If true will scrape all metrics (even the ones with zeros).
+                          If not specified then the default value is false.
                         type: boolean
                       profiles:
                         description: Profiles allows to customize which metrics are
@@ -3725,7 +3737,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -3739,6 +3750,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object
@@ -3831,6 +3844,7 @@ spec:
                 - meshService
                 type: object
             required:
+            - ports
             - selector
             type: object
           status:
@@ -4013,13 +4027,15 @@ spec:
                         protocol:
                           default: tcp
                           description: 'Protocol defines the communication protocol.
-                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`.'
+                            Possible values: `tcp`, `tls`, `grpc`, `http`, `http2`,
+                            `mysql`.'
                           enum:
                           - tcp
                           - tls
                           - grpc
                           - http
                           - http2
+                          - mysql
                           type: string
                         type:
                           description: Type of the match, one of `Domain`, `IP` or
@@ -4032,13 +4048,16 @@ spec:
                         value:
                           description: Value for the specified Type.
                           type: string
+                      required:
+                      - type
+                      - value
                       type: object
                     type: array
                   passthroughMode:
-                    default: None
                     description: |-
                       Defines the passthrough behavior. Possible values: `All`, `None`, `Matched`
                       When `All` or `None` `appendMatch` has no effect.
+                      If not specified then the default value is "Matched".
                     enum:
                     - All
                     - Matched
@@ -4094,7 +4113,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -4108,6 +4126,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object
@@ -4593,8 +4613,6 @@ spec:
                           type: object
                       type: object
                     type: array
-                required:
-                - appendModifications
                 type: object
               targetRef:
                 description: |-
@@ -4645,7 +4663,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -4659,6 +4676,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             required:
             - default
@@ -4891,7 +4910,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -4905,6 +4923,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -5086,7 +5106,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -5100,6 +5119,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between clients and corresponding
@@ -5274,7 +5295,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -5288,6 +5308,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -5398,7 +5420,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -5412,6 +5433,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -5433,10 +5456,10 @@ spec:
                                 backoff strategy between retries.
                               properties:
                                 baseInterval:
-                                  default: 25ms
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                                    If not specified then the default value is "25ms".
                                   type: string
                                 maxInterval:
                                   description: |-
@@ -5462,9 +5485,9 @@ spec:
                                 the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
-                                  description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries.
+                                  description: |-
+                                    MaxInterval is a maximal amount of time which will be taken between retries.
+                                    If not specified then the default value is "300s".
                                   type: string
                                 resetHeaders:
                                   description: |-
@@ -5521,10 +5544,10 @@ spec:
                                 backoff strategy between retries.
                               properties:
                                 baseInterval:
-                                  default: 25ms
                                   description: |-
                                     BaseInterval is an amount of time which should be taken between retries.
                                     Must be greater than zero. Values less than 1 ms are rounded up to 1 ms.
+                                    If not specified then the default value is "25ms".
                                   type: string
                                 maxInterval:
                                   description: |-
@@ -5590,9 +5613,9 @@ spec:
                                 when the upstream returns one of the headers configured.
                               properties:
                                 maxInterval:
-                                  default: 300s
-                                  description: MaxInterval is a maximal amount of
-                                    time which will be taken between retries.
+                                  description: |-
+                                    MaxInterval is a maximal amount of time which will be taken between retries.
+                                    If not specified then the default value is "300s".
                                   type: string
                                 resetHeaders:
                                   description: |-
@@ -5785,7 +5808,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -5799,6 +5821,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -5909,6 +5933,7 @@ spec:
                     type: object
                 type: object
               state:
+                default: Unavailable
                 description: |-
                   State of MeshService. Available if there is at least one healthy endpoint. Otherwise, Unavailable.
                   It's used for cross zone communication to check if we should send traffic to it, when MeshService is aggregated into MeshMultiZoneService.
@@ -6129,7 +6154,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -6143,6 +6167,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: |-
@@ -6214,7 +6240,6 @@ spec:
                                         - Sidecar
                                         - Gateway
                                         type: string
-                                      minItems: 1
                                       type: array
                                     sectionName:
                                       description: |-
@@ -6232,11 +6257,10 @@ spec:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                  - kind
                                   type: object
-                                minItems: 1
                                 type: array
-                            required:
-                            - backendRefs
                             type: object
                         required:
                         - default
@@ -6291,7 +6315,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -6305,8 +6328,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1
@@ -6472,7 +6498,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -6486,6 +6511,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -6598,7 +6625,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -6612,6 +6638,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -6718,7 +6746,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -6732,6 +6759,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -6969,7 +6998,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -6983,6 +7011,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -7094,7 +7124,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -7108,6 +7137,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object
@@ -7260,18 +7291,17 @@ spec:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests that will be force traced if the
                           'x-client-trace-id' header is set. Mirror of client_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L127-L133
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                       overall:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests will be traced
                           after all other sampling checks have been applied (client, force tracing,
@@ -7282,18 +7312,19 @@ spec:
                           overall_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L142-L150
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                       random:
                         anyOf:
                         - type: integer
                         - type: string
-                        default: 100
                         description: |-
                           Target percentage of requests that will be randomly selected for trace
                           generation, if not requested by the client or not forced.
                           Mirror of random_sampling in Envoy
                           https://github.com/envoyproxy/envoy/blob/v1.22.0/api/envoy/config/filter/network/http_connection_manager/v2/http_connection_manager.proto#L135-L140
                           Either int or decimal represented as string.
+                          If not specified then the default value is 100.
                         x-kubernetes-int-or-string: true
                     type: object
                   tags:
@@ -7380,7 +7411,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -7394,6 +7424,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object
@@ -7519,7 +7551,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -7533,6 +7564,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -7587,7 +7620,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -7601,6 +7633,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             type: object
         type: object
@@ -8733,6 +8767,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8774,6 +8811,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -8823,6 +8863,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8901,7 +8944,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -8915,8 +8957,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - default
                   - targetRef
                   type: object
                 type: array
@@ -8954,6 +8999,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -8995,6 +9043,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -9044,6 +9095,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -9074,6 +9128,8 @@ spec:
                             type: object
                           type: array
                       type: object
+                  required:
+                  - default
                   type: object
                 type: array
               targetRef:
@@ -9125,7 +9181,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -9139,6 +9194,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: To list makes a match between the consumed services and
@@ -9174,6 +9231,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -9215,6 +9275,9 @@ spec:
                                           type: string
                                         value:
                                           type: string
+                                      required:
+                                      - key
+                                      - value
                                       type: object
                                     type: array
                                   body:
@@ -9264,6 +9327,9 @@ spec:
                                               type: string
                                             value:
                                               type: string
+                                          required:
+                                          - key
+                                          - value
                                           type: object
                                         type: array
                                       omitEmptyValues:
@@ -9342,7 +9408,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -9356,8 +9421,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - default
                   - targetRef
                   type: object
                 type: array
@@ -9642,6 +9710,15 @@ spec:
                               description: When set to true, outlierDetection configuration
                                 won't take any effect
                               type: boolean
+                            healthyPanicThreshold:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                Allows to configure panic threshold for Envoy cluster. If not specified,
+                                the default is 50%. To disable panic mode, set to 0%.
+                                Either int or decimal represented as string.
+                              x-kubernetes-int-or-string: true
                             interval:
                               description: |-
                                 The time interval between ejection analysis sweeps. This can result in
@@ -9710,7 +9787,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -9724,9 +9800,266 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
+                  type: object
+                type: array
+              rules:
+                description: |-
+                  Rules defines inbound circuit breaker configurations. Currently limited to
+                  selecting all inbound traffic, as L7 matching is not yet implemented.
+                items:
+                  properties:
+                    default:
+                      description: Default contains configuration of the inbound circuit
+                        breaker
+                      properties:
+                        connectionLimits:
+                          description: |-
+                            ConnectionLimits contains configuration of each circuit breaking limit,
+                            which when exceeded makes the circuit breaker to become open (no traffic
+                            is allowed like no current is allowed in the circuits when physical
+                            circuit breaker ir open)
+                          properties:
+                            maxConnectionPools:
+                              description: |-
+                                The maximum number of connection pools per cluster that are concurrently
+                                supported at once. Set this for clusters which create a large number of
+                                connection pools.
+                              format: int32
+                              type: integer
+                            maxConnections:
+                              description: |-
+                                The maximum number of connections allowed to be made to the upstream
+                                cluster.
+                              format: int32
+                              type: integer
+                            maxPendingRequests:
+                              description: |-
+                                The maximum number of pending requests that are allowed to the upstream
+                                cluster. This limit is applied as a connection limit for non-HTTP
+                                traffic.
+                              format: int32
+                              type: integer
+                            maxRequests:
+                              description: |-
+                                The maximum number of parallel requests that are allowed to be made
+                                to the upstream cluster. This limit does not apply to non-HTTP traffic.
+                              format: int32
+                              type: integer
+                            maxRetries:
+                              description: |-
+                                The maximum number of parallel retries that will be allowed to
+                                the upstream cluster.
+                              format: int32
+                              type: integer
+                          type: object
+                        outlierDetection:
+                          description: |-
+                            OutlierDetection contains the configuration of the process of dynamically
+                            determining whether some number of hosts in an upstream cluster are
+                            performing unlike the others and removing them from the healthy load
+                            balancing set. Performance might be along different axes such as
+                            consecutive failures, temporal success rate, temporal latency, etc.
+                            Outlier detection is a form of passive health checking.
+                          properties:
+                            baseEjectionTime:
+                              description: |-
+                                The base time that a host is ejected for. The real time is equal to
+                                the base time multiplied by the number of times the host has been
+                                ejected.
+                              type: string
+                            detectors:
+                              description: Contains configuration for supported outlier
+                                detectors
+                              properties:
+                                failurePercentage:
+                                  description: |-
+                                    Failure Percentage based outlier detection functions similarly to success
+                                    rate detection, in that it relies on success rate data from each host in
+                                    a cluster. However, rather than compare those values to the mean success
+                                    rate of the cluster as a whole, they are compared to a flat
+                                    user-configured threshold. This threshold is configured via the
+                                    outlierDetection.failurePercentageThreshold field.
+                                    The other configuration fields for failure percentage based detection are
+                                    similar to the fields for success rate detection. As with success rate
+                                    detection, detection will not be performed for a host if its request
+                                    volume over the aggregation interval is less than the
+                                    outlierDetection.detectors.failurePercentage.requestVolume value.
+                                    Detection also will not be performed for a cluster if the number of hosts
+                                    with the minimum required request volume in an interval is less than the
+                                    outlierDetection.detectors.failurePercentage.minimumHosts value.
+                                  properties:
+                                    minimumHosts:
+                                      description: |-
+                                        The minimum number of hosts in a cluster in order to perform failure
+                                        percentage-based ejection. If the total number of hosts in the cluster is
+                                        less than this value, failure percentage-based ejection will not be
+                                        performed.
+                                      format: int32
+                                      type: integer
+                                    requestVolume:
+                                      description: |-
+                                        The minimum number of total requests that must be collected in one
+                                        interval (as defined by the interval duration above) to perform failure
+                                        percentage-based ejection for this host. If the volume is lower than this
+                                        setting, failure percentage-based ejection will not be performed for this
+                                        host.
+                                      format: int32
+                                      type: integer
+                                    threshold:
+                                      description: |-
+                                        The failure percentage to use when determining failure percentage-based
+                                        outlier detection. If the failure percentage of a given host is greater
+                                        than or equal to this value, it will be ejected.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                gatewayFailures:
+                                  description: |-
+                                    In the default mode (outlierDetection.splitExternalLocalOriginErrors is
+                                    false) this detection type takes into account a subset of 5xx errors,
+                                    called "gateway errors" (502, 503 or 504 status code) and local origin
+                                    failures, such as timeout, TCP reset etc.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true)
+                                    this detection type takes into account a subset of 5xx errors, called
+                                    "gateway errors" (502, 503 or 504 status code) and is supported only by
+                                    the http router.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive gateway failures (502, 503, 504 status codes)
+                                        before a consecutive gateway failure ejection occurs.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                localOriginFailures:
+                                  description: |-
+                                    This detection type is enabled only when
+                                    outlierDetection.splitExternalLocalOriginErrors is true and takes into
+                                    account only locally originated errors (timeout, reset, etc).
+                                    If Envoy repeatedly cannot connect to an upstream host or communication
+                                    with the upstream host is repeatedly interrupted, it will be ejected.
+                                    Various locally originated problems are detected: timeout, TCP reset,
+                                    ICMP errors, etc. This detection type is supported by http router and
+                                    tcp proxy.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive locally originated failures before ejection
+                                        occurs. Parameter takes effect only when splitExternalAndLocalErrors
+                                        is set to true.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                                successRate:
+                                  description: |-
+                                    Success Rate based outlier detection aggregates success rate data from
+                                    every host in a cluster. Then at given intervals ejects hosts based on
+                                    statistical outlier detection. Success Rate outlier detection will not be
+                                    calculated for a host if its request volume over the aggregation interval
+                                    is less than the outlierDetection.detectors.successRate.requestVolume
+                                    value.
+                                    Moreover, detection will not be performed for a cluster if the number of
+                                    hosts with the minimum required request volume in an interval is less
+                                    than the outlierDetection.detectors.successRate.minimumHosts value.
+                                    In the default configuration mode
+                                    (outlierDetection.splitExternalLocalOriginErrors is false) this detection
+                                    type takes into account all types of errors: locally and externally
+                                    originated.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true),
+                                    locally originated errors and externally originated (transaction) errors
+                                    are counted and treated separately.
+                                  properties:
+                                    minimumHosts:
+                                      description: |-
+                                        The number of hosts in a cluster that must have enough request volume to
+                                        detect success rate outliers. If the number of hosts is less than this
+                                        setting, outlier detection via success rate statistics is not performed
+                                        for any host in the cluster.
+                                      format: int32
+                                      type: integer
+                                    requestVolume:
+                                      description: |-
+                                        The minimum number of total requests that must be collected in one
+                                        interval (as defined by the interval duration configured in
+                                        outlierDetection section) to include this host in success rate based
+                                        outlier detection. If the volume is lower than this setting, outlier
+                                        detection via success rate statistics is not performed for that host.
+                                      format: int32
+                                      type: integer
+                                    standardDeviationFactor:
+                                      anyOf:
+                                      - type: integer
+                                      - type: string
+                                      description: |-
+                                        This factor is used to determine the ejection threshold for success rate
+                                        outlier ejection. The ejection threshold is the difference between
+                                        the mean success rate, and the product of this factor and the standard
+                                        deviation of the mean success rate: mean - (standard_deviation *
+                                        success_rate_standard_deviation_factor).
+                                        Either int or decimal represented as string.
+                                      x-kubernetes-int-or-string: true
+                                  type: object
+                                totalFailures:
+                                  description: |-
+                                    In the default mode (outlierDetection.splitExternalAndLocalErrors is
+                                    false) this detection type takes into account all generated errors:
+                                    locally originated and externally originated (transaction) errors.
+                                    In split mode (outlierDetection.splitExternalLocalOriginErrors is true)
+                                    this detection type takes into account only externally originated
+                                    (transaction) errors, ignoring locally originated errors.
+                                    If an upstream host is an HTTP-server, only 5xx types of error are taken
+                                    into account (see Consecutive Gateway Failure for exceptions).
+                                    Properly formatted responses, even when they carry an operational error
+                                    (like index not found, access denied) are not taken into account.
+                                  properties:
+                                    consecutive:
+                                      description: |-
+                                        The number of consecutive server-side error responses (for HTTP traffic,
+                                        5xx responses; for TCP traffic, connection failures; for Redis, failure
+                                        to respond PONG; etc.) before a consecutive total failure ejection
+                                        occurs.
+                                      format: int32
+                                      type: integer
+                                  type: object
+                              type: object
+                            disabled:
+                              description: When set to true, outlierDetection configuration
+                                won't take any effect
+                              type: boolean
+                            healthyPanicThreshold:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                Allows to configure panic threshold for Envoy cluster. If not specified,
+                                the default is 50%. To disable panic mode, set to 0%.
+                                Either int or decimal represented as string.
+                              x-kubernetes-int-or-string: true
+                            interval:
+                              description: |-
+                                The time interval between ejection analysis sweeps. This can result in
+                                both new ejections and hosts being returned to service.
+                              type: string
+                            maxEjectionPercent:
+                              description: |-
+                                The maximum % of an upstream cluster that can be ejected due to outlier
+                                detection. Defaults to 10% but will eject at least one host regardless of
+                                the value.
+                              format: int32
+                              type: integer
+                            splitExternalAndLocalErrors:
+                              description: |-
+                                Determines whether to distinguish local origin failures from external
+                                errors. If set to true the following configuration parameters are taken
+                                into account: detectors.localOriginFailures.consecutive
+                              type: boolean
+                          type: object
+                      type: object
                   type: object
                 type: array
               targetRef:
@@ -9778,7 +10111,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -9792,6 +10124,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: |-
@@ -10018,6 +10352,15 @@ spec:
                               description: When set to true, outlierDetection configuration
                                 won't take any effect
                               type: boolean
+                            healthyPanicThreshold:
+                              anyOf:
+                              - type: integer
+                              - type: string
+                              description: |-
+                                Allows to configure panic threshold for Envoy cluster. If not specified,
+                                the default is 50%. To disable panic mode, set to 0%.
+                                Either int or decimal represented as string.
+                              x-kubernetes-int-or-string: true
                             interval:
                               description: |-
                                 The time interval between ejection analysis sweeps. This can result in
@@ -10086,7 +10429,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -10100,6 +10442,8 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
                   - targetRef
@@ -10749,6 +11093,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10002
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"
@@ -10880,6 +11225,7 @@ spec:
             - --log-level=info
           ports:
             - containerPort: 10001
+            - containerPort: 9901
           livenessProbe:
             httpGet:
               path: "/ready"

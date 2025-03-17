@@ -926,6 +926,8 @@ func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 type: Dataplane
 mesh: %s
 name: {{ name }}
+labels:
+  app: %s
 networking:
   address:  {{ address }}
   inbound:
@@ -942,7 +944,7 @@ networking:
 %s
 %s
 %s
-`, mesh, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, additionalTags, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
+`, mesh, opts.appLabel, "80", "8080", serviceAddress, opts.serviceName, opts.protocol, opts.serviceVersion, opts.serviceInstance, additionalTags, serviceProbe, transparentProxy, opts.appendDataplaneConfig)
 
 		opt = append(opt,
 			WithName(name),

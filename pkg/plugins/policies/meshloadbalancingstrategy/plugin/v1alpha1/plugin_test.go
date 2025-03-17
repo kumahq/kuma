@@ -261,7 +261,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
-							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"eds-cluster",
@@ -276,7 +276,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(MatchTransportProtocol("tls")).
 						Configure(MatchServerNames("static-cluster{mesh=mesh-2}")).
-						Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"static-cluster",
@@ -307,7 +307,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	From: &v1alpha1.FromZone{Zones: []string{"zone-1"}},
 																	To: v1alpha1.ToZone{
@@ -343,7 +343,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
 														Disabled: pointer.To(false),
 														CrossZone: &v1alpha1.CrossZone{
-															Failover: []v1alpha1.Failover{
+															Failover: &[]v1alpha1.Failover{
 																{
 																	To: v1alpha1.ToZone{
 																		Type: v1alpha1.Any,
@@ -398,7 +398,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames("eds-cluster{mesh=mesh-1}")).
-							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"eds-cluster",
@@ -413,7 +413,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						)).Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
 						Configure(MatchTransportProtocol("tls")).
 						Configure(MatchServerNames("static-cluster{mesh=mesh-2}")).
-						Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+						Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"static-cluster",
@@ -501,7 +501,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mesh-1_external___extsvc_9000").
 							Configure(MatchTransportProtocol("tls")).
 							Configure(MatchServerNames(tls.SNIForResource("external", "mesh-1", meshexternalservice_api.MeshExternalServiceType, 9000, nil))).
-							Configure(HttpConnectionManager("127.0.0.1:10002", false)).
+							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"external",
@@ -690,7 +690,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 											CrossZone: &v1alpha1.CrossZone{
 												FailoverThreshold: &v1alpha1.FailoverThreshold{Percentage: intstr.FromString("99")},
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -762,7 +762,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -871,7 +871,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -943,7 +943,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.Only,
@@ -1169,7 +1169,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 										},
 										LocalityAwareness: &v1alpha1.LocalityAwareness{
 											CrossZone: &v1alpha1.CrossZone{
-												Failover: []v1alpha1.Failover{
+												Failover: &[]v1alpha1.Failover{
 													{
 														To: v1alpha1.ToZone{
 															Type:  v1alpha1.AnyExcept,
@@ -1286,7 +1286,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 					Origin: generator.OriginOutbound,
 					Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+							Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 							Configure(
 								HttpOutboundRoute(
 									"backend",
@@ -1363,7 +1363,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1582,7 +1582,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 											},
 										},
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type:  v1alpha1.AnyExcept,
@@ -1637,7 +1637,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 								Conf: v1alpha1.Conf{
 									LocalityAwareness: &v1alpha1.LocalityAwareness{
 										CrossZone: &v1alpha1.CrossZone{
-											Failover: []v1alpha1.Failover{
+											Failover: &[]v1alpha1.Failover{
 												{
 													To: v1alpha1.ToZone{
 														Type: v1alpha1.None,
@@ -1754,7 +1754,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 													},
 												},
 												CrossZone: &v1alpha1.CrossZone{
-													Failover: []v1alpha1.Failover{
+													Failover: &[]v1alpha1.Failover{
 														{
 															To: v1alpha1.ToZone{
 																Type:  v1alpha1.AnyExcept,
@@ -1823,7 +1823,7 @@ func paymentsAndBackendRouting() *xds_builders.RoutingBuilder {
 func paymentsListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27778, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager("127.0.0.1:27778", false)).
+			Configure(HttpConnectionManager("127.0.0.1:27778", false, nil)).
 			Configure(
 				HttpOutboundRoute(
 					"backend",
@@ -1846,7 +1846,7 @@ func paymentsListener() envoy_common.NamedResource {
 func backendListener() envoy_common.NamedResource {
 	return NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 		Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-			Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+			Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 			Configure(
 				HttpOutboundRoute(
 					"backend",

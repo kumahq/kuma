@@ -35,6 +35,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [
     {
      "conf": [
@@ -56,7 +57,8 @@
             "name": "backend_kuma-demo_svc_3001",
             "tags": {
              "version": "1.0"
-            }
+            },
+            "weight": 1
            }
           ]
          }
@@ -77,14 +79,16 @@
             "name": "other-svc",
             "tags": {
              "version": "1.0"
-            }
+            },
+            "weight": 1
            },
            {
             "kind": "MeshServiceSubset",
             "name": "other-svc-2",
             "tags": {
              "version": "1.0"
-            }
+            },
+            "weight": 1
            }
           ]
          }
@@ -147,7 +151,8 @@
            "name": "backend_kuma-demo_svc_3001",
            "tags": {
             "version": "1.0"
-           }
+           },
+           "weight": 1
           }
          ]
         }
@@ -168,14 +173,16 @@
            "name": "other-svc",
            "tags": {
             "version": "1.0"
-           }
+           },
+           "weight": 1
           },
           {
            "kind": "MeshServiceSubset",
            "name": "other-svc-2",
            "tags": {
             "version": "1.0"
-           }
+           },
+           "weight": 1
           }
          ]
         }
@@ -210,6 +217,7 @@
   },
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [],
    "toRules": [
     {

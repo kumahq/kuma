@@ -1,23 +1,55 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>Kong/public-shared-renovate:backend#1.0.0"
-  ],
-  "baseBranches": [
-    "master"
+    "github>Kong/public-shared-renovate:backend#1.2.0",
+    "local>kumahq/kuma//.renovate/go-control-plane"
   ],
   "enabledManagers": [
     "custom.regex",
     "dockerfile",
     "github-actions",
-    "gomod"
+    "gomod",
+    "helm-values",
+    "kubernetes"
   ],
   "ignorePaths": [],
+  "kubernetes": {
+    "description": "Include Kubernetes manifests from 'kumactl install demo|observability' to let Renovate update the image versions in these resources",
+    "fileMatch": [
+      "app/kumactl/data/install/k8s/.+\\.ya?ml$"
+    ]
+  },
+  "semanticCommitScope": "deps/{{{manager}}}",
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
   "packageRules": [
     {
-      "description": "Skip tests for GitHub Actions updates. We match by depType because there isn’t an idiomatic way to target custom manager from Kong/public-shared-renovate:backend preset, which handles Kong/public-shared-actions",
-      "matchDepTypes": ["action"],
-      "addLabels": ["ci/skip-test"]
+      "description": "Skip tests for GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "addLabels": [
+        "ci/skip-test"
+      ]
+    },
+    {
+      "description": "Set commit scope to `deps/github-actions` for `Kong/public-shared-actions` GitHub Actions managed by `github>Kong/public-shared-renovate:backend`. Skip tests since these are also GitHub Actions updates but are not covered by the earlier rule",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "Kong/public-shared-actions/**"
+      ],
+      "semanticCommitScope": "deps/github-actions",
+      "addLabels": [
+        "ci/skip-test"
+      ]
+    },
+    {
+      "groupName": "kumactl install demo|observability container images",
+      "groupSlug": "kumactl-install-k8s",
+      "matchFileNames": [
+        "app/kumactl/data/install/k8s/**"
+      ]
     }
   ]
 }

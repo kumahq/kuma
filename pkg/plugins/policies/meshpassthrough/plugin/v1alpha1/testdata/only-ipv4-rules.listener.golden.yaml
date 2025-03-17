@@ -21,6 +21,9 @@ resources:
           statPrefix: meshpassthrough_tcp_192_168_0_0_80
       name: meshpassthrough_tcp_192.168.0.0_80
     listenerFilters:
+    - name: envoy.filters.listener.original_dst
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.filters.listener.original_dst.v3.OriginalDst
     - name: envoy.filters.listener.tls_inspector
       typedConfig:
         '@type': type.googleapis.com/envoy.extensions.filters.listener.tls_inspector.v3.TlsInspector

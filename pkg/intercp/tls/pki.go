@@ -3,7 +3,7 @@ package tls
 import (
 	"context"
 	"crypto/rsa"
-	tls "crypto/tls"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -17,8 +17,8 @@ import (
 	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
-var GlobalSecretKey = model.ResourceKey{
-	Name: "inter-cp-ca",
+var globalSecretKey = model.ResourceKey{
+	Name: system.InterCpCA,
 }
 
 func GenerateCA() (*util_tls.KeyPair, error) {
@@ -32,7 +32,7 @@ func GenerateCA() (*util_tls.KeyPair, error) {
 
 func LoadCA(ctx context.Context, resManager manager.ReadOnlyResourceManager) (tls.Certificate, error) {
 	globalSecret := system.NewGlobalSecretResource()
-	if err := resManager.Get(ctx, globalSecret, store.GetBy(GlobalSecretKey)); err != nil {
+	if err := resManager.Get(ctx, globalSecret, store.GetBy(globalSecretKey)); err != nil {
 		return tls.Certificate{}, err
 	}
 	bytes := globalSecret.Spec.GetData().GetValue()
@@ -47,7 +47,7 @@ func CreateCA(ctx context.Context, keyPair util_tls.KeyPair, resManager manager.
 	globalSecret.Spec.Data = &wrapperspb.BytesValue{
 		Value: bytes,
 	}
-	return resManager.Create(ctx, globalSecret, store.CreateBy(GlobalSecretKey))
+	return resManager.Create(ctx, globalSecret, store.CreateBy(globalSecretKey))
 }
 
 func GenerateClientCert(ca tls.Certificate, ip string) (tls.Certificate, error) {

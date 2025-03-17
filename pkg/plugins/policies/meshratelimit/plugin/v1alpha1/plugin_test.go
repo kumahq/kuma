@@ -102,7 +102,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Origin: generator.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"backend",
@@ -138,7 +138,7 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
@@ -148,7 +148,7 @@ var _ = Describe("MeshRateLimit", func() {
 													Value: "other-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header-set",
 													Value: "test-value",
@@ -184,7 +184,7 @@ var _ = Describe("MeshRateLimit", func() {
 										OnRateLimit: &api.OnRateLimit{
 											Status: pointer.To(uint32(444)),
 											Headers: &api.HeaderModifier{
-												Add: []api.HeaderKeyValue{
+												Add: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header",
 														Value: "test-value",
@@ -194,7 +194,7 @@ var _ = Describe("MeshRateLimit", func() {
 														Value: "other-value",
 													},
 												},
-												Set: []api.HeaderKeyValue{
+												Set: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header-set",
 														Value: "test-value",
@@ -233,7 +233,7 @@ var _ = Describe("MeshRateLimit", func() {
 					Origin: generator.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"backend",
@@ -279,13 +279,13 @@ var _ = Describe("MeshRateLimit", func() {
 									OnRateLimit: &api.OnRateLimit{
 										Status: pointer.To(uint32(444)),
 										Headers: &api.HeaderModifier{
-											Add: []api.HeaderKeyValue{
+											Add: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit-header",
 													Value: "test-value",
 												},
 											},
-											Set: []api.HeaderKeyValue{
+											Set: &[]api.HeaderKeyValue{
 												{
 													Name:  "x-kuma-rate-limit",
 													Value: "other-value",
@@ -317,13 +317,13 @@ var _ = Describe("MeshRateLimit", func() {
 										OnRateLimit: &api.OnRateLimit{
 											Status: pointer.To(uint32(444)),
 											Headers: &api.HeaderModifier{
-												Add: []api.HeaderKeyValue{
+												Add: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit-header",
 														Value: "test-value",
 													},
 												},
-												Set: []api.HeaderKeyValue{
+												Set: &[]api.HeaderKeyValue{
 													{
 														Name:  "x-kuma-rate-limit",
 														Value: "other-value",
@@ -420,7 +420,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",
@@ -513,7 +513,7 @@ var _ = Describe("MeshRateLimit", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",
@@ -572,7 +572,7 @@ var _ = Describe("MeshRateLimit", func() {
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
 					MatchTransportProtocol("tls"),
 					MatchServerNames("external-service-1{mesh=mesh-1}"),
-					HttpConnectionManager("external-service-1", false),
+					HttpConnectionManager("external-service-1", false, nil),
 					AddFilterChainConfigurer(httpOutboundRoute("external-service-1")),
 				)),
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-1").Configure(
@@ -592,7 +592,7 @@ var _ = Describe("MeshRateLimit", func() {
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-2").Configure(
 					MatchTransportProtocol("tls"),
 					MatchServerNames("external-service-2{mesh=mesh-2}"),
-					HttpConnectionManager("external-service-2", false),
+					HttpConnectionManager("external-service-2", false, nil),
 					AddFilterChainConfigurer(httpOutboundRoute("external-service-2")),
 				)),
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "internal-service-1_mesh-1").Configure(
@@ -878,7 +878,7 @@ var _ = Describe("MeshRateLimit", func() {
 												OnRateLimit: &api.OnRateLimit{
 													Status: pointer.To(uint32(444)),
 													Headers: &api.HeaderModifier{
-														Add: []api.HeaderKeyValue{
+														Add: &[]api.HeaderKeyValue{
 															{
 																Name:  "x-kuma-rate-limit-header",
 																Value: "test-value",
@@ -968,7 +968,7 @@ var _ = Describe("MeshRateLimit", func() {
 											OnRateLimit: &api.OnRateLimit{
 												Status: pointer.To(uint32(444)),
 												Headers: &api.HeaderModifier{
-													Add: []api.HeaderKeyValue{
+													Add: &[]api.HeaderKeyValue{
 														{
 															Name:  "x-kuma-rate-limit-header",
 															Value: "test-value",

@@ -175,6 +175,7 @@ func (g *GetOptions) HashCode() string {
 }
 
 type (
+	// ListFilterFunc returns true if the item passes the filtering criteria
 	ListFilterFunc func(rs core_model.Resource) bool
 )
 

@@ -55,6 +55,7 @@
  "rules": [
   {
    "fromRules": [],
+   "inboundRules": [],
    "toResourceRules": [
     {
      "conf": [
@@ -79,7 +80,8 @@
             "name": "backend_kuma-demo_svc_3001",
             "tags": {
              "version": "v0"
-            }
+            },
+            "weight": 1
            }
           ]
          }
@@ -110,7 +112,8 @@
             "name": "backend_kuma-demo_svc_3001",
             "tags": {
              "version": "v0"
-            }
+            },
+            "weight": 1
            }
           ]
          }
@@ -134,7 +137,8 @@
             "name": "backend_kuma-demo_svc_3001",
             "tags": {
              "version": "v0"
-            }
+            },
+            "weight": 1
            }
           ]
          }
@@ -212,7 +216,8 @@
            "name": "backend_kuma-demo_svc_3001",
            "tags": {
             "version": "v0"
-           }
+           },
+           "weight": 1
           }
          ]
         }
@@ -236,7 +241,8 @@
            "name": "backend_kuma-demo_svc_3001",
            "tags": {
             "version": "v0"
-           }
+           },
+           "weight": 1
           }
          ]
         }
@@ -296,7 +302,8 @@
            "name": "backend_kuma-demo_svc_3001",
            "tags": {
             "version": "v0"
-           }
+           },
+           "weight": 1
           }
          ]
         }

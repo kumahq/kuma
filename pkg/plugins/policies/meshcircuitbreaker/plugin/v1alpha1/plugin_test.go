@@ -21,6 +21,7 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
@@ -124,6 +125,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 					Threshold:     pointer.To(uint32(80)),
 				},
 			},
+			HealthyPanicThreshold: pointer.To(intstr.FromString("30.2")),
 		}
 	}
 
@@ -296,10 +298,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    builders.FirstInboundPort,
-					}: []*core_rules.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
 						{
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
@@ -307,6 +306,13 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: []interface{}{
+							api.Conf{ConnectionLimits: genConnectionLimits()},
+						},
+					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits.golden.yaml"},
@@ -321,17 +327,19 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    builders.FirstInboundPort,
-					}: []*core_rules.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
 						{
 							Subset: subsetutils.Subset{},
-							Conf: api.Conf{
-								OutlierDetection: genOutlierDetection(false),
-							},
+							Conf:   api.Conf{OutlierDetection: genOutlierDetection(false)},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: []interface{}{
+							api.Conf{OutlierDetection: genOutlierDetection(false)},
+						},
+					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_outlier_detection.golden.yaml"},
@@ -346,10 +354,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    builders.FirstInboundPort,
-					}: []*core_rules.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
 						{
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
@@ -357,6 +362,15 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: []interface{}{
+							api.Conf{
+								OutlierDetection: genOutlierDetection(true),
+							},
+						},
+					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_outlier_detection_disabled.golden.yaml"},
@@ -371,10 +385,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    builders.FirstInboundPort,
-					}: []*core_rules.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
 						{
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
@@ -383,6 +394,16 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(false),
+							},
+						},
+					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits_outlier_detection.golden.yaml"},
@@ -397,10 +418,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 			},
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
-					{
-						Address: "127.0.0.1",
-						Port:    builders.FirstInboundPort,
-					}: []*core_rules.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: []*core_rules.Rule{
 						{
 							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
@@ -409,6 +427,16 @@ var _ = Describe("MeshCircuitBreaker", func() {
 							},
 						},
 					},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: builders.FirstInboundPort}: {{
+						Conf: []interface{}{
+							api.Conf{
+								ConnectionLimits: genConnectionLimits(),
+								OutlierDetection: genOutlierDetection(true),
+							},
+						},
+					}},
 				},
 			},
 			expectedCluster: []string{"inbound_cluster_connection_limits_outlier_detection_disabled.golden.yaml"},

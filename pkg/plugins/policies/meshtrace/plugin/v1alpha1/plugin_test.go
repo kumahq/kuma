@@ -71,14 +71,14 @@ var _ = Describe("MeshTrace", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
 					)).MustBuild(),
 			},
 		}
@@ -90,14 +90,14 @@ var _ = Describe("MeshTrace", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)),
 					)).MustBuild(),
 			}, {
 				Name:   "outbound",
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)),
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)),
 					)).MustBuild(),
 				ResourceOrigin: &backendMeshServiceIdentifier,
 			},
@@ -163,9 +163,9 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									ApiVersion:        pointer.To("httpProto"),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -202,9 +202,9 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									ApiVersion:        pointer.To("httpProto"),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									ApiVersion:        "httpProto",
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -270,7 +270,7 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Datadog: &api.DatadogBackend{
 									Url:          "http://ingest.datadog.eu:8126",
-									SplitService: pointer.To(true),
+									SplitService: true,
 								},
 							}},
 						},
@@ -297,8 +297,8 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									TraceId128Bit:     true,
 								},
 							}},
 						},
@@ -375,8 +375,8 @@ var _ = Describe("MeshTrace", func() {
 							Backends: &[]api.Backend{{
 								Zipkin: &api.ZipkinBackend{
 									Url:               "http://jaeger-collector.mesh-observability:9411/api/v2/spans",
-									SharedSpanContext: pointer.To(true),
-									TraceId128Bit:     pointer.To(true),
+									SharedSpanContext: true,
+									TraceId128Bit:     true,
 								},
 							}},
 						},

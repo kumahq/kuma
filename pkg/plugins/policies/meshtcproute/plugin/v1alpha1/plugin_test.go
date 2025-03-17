@@ -112,7 +112,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								},
 								Spec: &api.MeshTCPRoute{
 									TargetRef: pointer.To(builders.TargetRefMesh()),
-									To: []api.To{
+									To: &[]api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
 										},
@@ -126,13 +126,13 @@ var _ = Describe("MeshTCPRoute", func() {
 								},
 								Spec: &api.MeshTCPRoute{
 									TargetRef: pointer.To(builders.TargetRefService("web")),
-									To: []api.To{
+									To: &[]api.To{
 										{
 											TargetRef: builders.TargetRefService("backend"),
 											Rules: []api.Rule{
 												{
 													Default: api.RuleConf{
-														BackendRefs: []common_api.BackendRef{
+														BackendRefs: &[]common_api.BackendRef{
 															{
 																TargetRef: builders.TargetRefServiceSubset(
 																	"backend",
@@ -165,7 +165,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefServiceSubset(
 											"backend",
@@ -287,7 +287,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefServiceSubset(
 											"backend",
@@ -371,11 +371,11 @@ var _ = Describe("MeshTCPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolTCP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -410,11 +410,11 @@ var _ = Describe("MeshTCPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolTCP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -438,11 +438,11 @@ var _ = Describe("MeshTCPRoute", func() {
 				Meta: &test_model.ResourceMeta{Name: "example2", Mesh: "default"},
 				Spec: &meshexternalservice_api.MeshExternalService{
 					Match: meshexternalservice_api.Match{
-						Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+						Type:     meshexternalservice_api.HostnameGeneratorType,
 						Port:     9090,
 						Protocol: core_mesh.ProtocolTCP,
 					},
-					Endpoints: []meshexternalservice_api.Endpoint{
+					Endpoints: &[]meshexternalservice_api.Endpoint{
 						{
 							Address: "example.com",
 							Port:    meshexternalservice_api.Port(10000),
@@ -484,7 +484,7 @@ var _ = Describe("MeshTCPRoute", func() {
 							Conf: []interface{}{
 								api.Rule{
 									Default: api.RuleConf{
-										BackendRefs: []common_api.BackendRef{
+										BackendRefs: &[]common_api.BackendRef{
 											{
 												TargetRef: builders.TargetRefMeshExternalService("example2"),
 												Weight:    pointer.To(uint(100)),
@@ -627,7 +627,7 @@ var _ = Describe("MeshTCPRoute", func() {
 										Conf: []interface{}{
 											api.Rule{
 												Default: api.RuleConf{
-													BackendRefs: []common_api.BackendRef{
+													BackendRefs: &[]common_api.BackendRef{
 														{
 															TargetRef: builders.TargetRefService("backend"),
 															Weight:    pointer.To(uint(100)),
@@ -669,7 +669,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefService(
 											"tcp-backend",
@@ -738,7 +738,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefService(
 											"tcp-backend",
@@ -854,7 +854,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefService(
 											"tcp-backend",
@@ -965,7 +965,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						Subset: subsetutils.MeshService("backend"),
 						Conf: api.Rule{
 							Default: api.RuleConf{
-								BackendRefs: []common_api.BackendRef{
+								BackendRefs: &[]common_api.BackendRef{
 									{
 										TargetRef: builders.TargetRefServiceSubset(
 											"backend",
@@ -1090,7 +1090,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
-						BackendRefs: []common_api.BackendRef{{
+						BackendRefs: &[]common_api.BackendRef{{
 							TargetRef: builders.TargetRefService("backend"),
 							Weight:    pointer.To(uint(100)),
 						}},
@@ -1101,7 +1101,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
-						BackendRefs: []common_api.BackendRef{{
+						BackendRefs: &[]common_api.BackendRef{{
 							TargetRef: builders.TargetRefService("go-backend-1"),
 							Weight:    pointer.To(uint(50)),
 						}, {
@@ -1115,7 +1115,7 @@ var _ = Describe("MeshTCPRoute", func() {
 				Subset: subsetutils.MeshSubset(),
 				Conf: api.Rule{
 					Default: api.RuleConf{
-						BackendRefs: []common_api.BackendRef{{
+						BackendRefs: &[]common_api.BackendRef{{
 							TargetRef: builders.TargetRefService("other-backend"),
 							Weight:    pointer.To(uint(100)),
 						}},
