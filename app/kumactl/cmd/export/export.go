@@ -24,9 +24,10 @@ type exportContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		profile      string
-		format       string
-		includeAdmin bool
+		profile         string
+		format          string
+		systemNamespace string
+		includeAdmin    bool
 	}
 }
 
@@ -173,6 +174,9 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					if err != nil {
 						return err
 					}
+					if shouldSkipKubeObject(obj, ctx) {
+						continue
+					}
 					cleanKubeObject(obj)
 					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
 						return err
@@ -185,8 +189,25 @@ $ kumactl export --profile federation --format universal > policies.yaml
 	}
 	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: %s`, strings.Join(allProfiles, ",")))
 	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: %q, %q`, formatUniversal, formatKubernetes))
+	cmd.Flags().StringVarP(&ctx.args.systemNamespace, "system-namespace", "n", ctx.InstallCpContext.Args.Namespace, "Define namespace in which control-plane was installed")
 	cmd.Flags().BoolVarP(&ctx.args.includeAdmin, "include-admin", "a", false, "Include admin resource types (like secrets), this flag is ignored on migration profiles like federation as these entities are required")
 	return cmd
+}
+
+func shouldSkipKubeObject(obj map[string]interface{}, ectx *exportContext) bool {
+	if ectx.args.profile == profileAll {
+		return false
+	}
+	metadata, ok := obj["metadata"]
+	if !ok {
+		return false
+	}
+	meta := metadata.(map[string]interface{})
+	if ns, found := meta["namespace"]; found {
+		// we can't apply non system namespace resource on global
+		return ns != ectx.args.systemNamespace
+	}
+	return false
 }
 
 // cleans kubernetes object, so it can be applied on any other cluster
