@@ -269,7 +269,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 	}
 	app.universalNetworking.IP, err = app.getIP(Config.IPV6)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to get Container IP %w", err)
+		return nil, fmt.Errorf("unable to get Container IP %w", err)
 	}
 
 	Logf("Node IP %s", app.universalNetworking.IP)

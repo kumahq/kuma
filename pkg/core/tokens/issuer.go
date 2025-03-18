@@ -37,12 +37,12 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor t
 		return "", err
 	}
 
-	now := core.Now().Add(-5 * time.Minute) // todo(jakubdyszkiewicz) parametrize via config and go through all clock skews in the project
+	now := core.Now().Add(-5 * time.Second) // todo(jakubdyszkiewicz) parametrize via config and go through all clock skews in the project
 	claims.SetRegisteredClaims(jwt.RegisteredClaims{
 		ID:        core.NewUUID(),
 		IssuedAt:  jwt.NewNumericDate(now),
 		NotBefore: jwt.NewNumericDate(now),
-		ExpiresAt: jwt.NewNumericDate(now.Add(validFor).Add(time.Minute)),
+		ExpiresAt: jwt.NewNumericDate(now.Add(validFor).Add(5 * time.Second)),
 	})
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

@@ -16,6 +16,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+	"golang.org/x/crypto/ssh"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -462,7 +463,25 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 // Kill a process running in this app
 func (c *UniversalCluster) Kill(appname, cmd string) error {
 	_, _, err := c.Exec("", "", appname, fmt.Sprintf("pkill -9 -f %q", cmd))
-	return err
+	if err != nil {
+		return err
+	}
+	for i := 0; i < 10; i++ {
+		out, _, err := c.Exec("", "", appname, fmt.Sprintf("pgrep -f %q", cmd))
+		var exitError *ssh.ExitError
+		if errors.As(err, &exitError) {
+			if exitError.ExitStatus() == 1 {
+				return nil
+			}
+		}
+		if err != nil {
+			Logf("Failed to check for process %q: %v", appname, err)
+			continue
+		}
+		Logf("Process %q still running output %q", appname, out)
+		time.Sleep(500 * time.Millisecond)
+	}
+	return errors.New("process killed timed out")
 }
 
 func (c *UniversalCluster) GetTesting() testing.TestingT {
