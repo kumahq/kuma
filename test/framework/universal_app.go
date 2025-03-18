@@ -492,18 +492,16 @@ done
 		return "", errors.Wrapf(err, "cmd failed with %s stderr:%q stdout:%q", err, stderr, stdout)
 	}
 	// get the first line of the output
-	ip := strings.TrimSpace(strings.Split(stdout, "\n")[0])
-	if isipv6 {
-		if govalidator.IsIPv6(ip) {
+	for _, ipStr := range strings.Split(stdout, "\n") {
+		ip := strings.TrimSpace(ipStr)
+		if isipv6 && govalidator.IsIPv6(ip) {
 			return ip, nil
 		}
-		return "", errors.Errorf("output %q is not a valid IPv6 address", ip)
-	} else {
-		if govalidator.IsIPv4(ip) {
+		if !isipv6 && govalidator.IsIPv4(ip) {
 			return ip, nil
 		}
-		return "", errors.Errorf("output %q is not a valid IPv4 address", ip)
 	}
+	return "", errors.Errorf("couldn't find a valid IP address usingV6=%v output=%q", isipv6, stdout)
 }
 
 func (s *UniversalApp) newSession(name string, cmd string) (*kssh.Session, error) {

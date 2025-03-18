@@ -213,6 +213,9 @@ func (c *UniversalCluster) GetKuma() ControlPlane {
 }
 
 func (c *UniversalCluster) GetKumaCPLogs() map[string]string {
+	if c.controlplane == nil { // This is required if the cp never succeeded to start
+		return map[string]string{}
+	}
 	net := c.controlplane.Networking()
 	if net.IP == "" {
 		return map[string]string{

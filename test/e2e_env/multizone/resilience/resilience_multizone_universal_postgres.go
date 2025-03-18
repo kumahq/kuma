@@ -155,7 +155,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(zoneUniversal.(*UniversalCluster).Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
 		// and zone-ingress is killed while Zone CP is down
-		Expect(zoneUniversal.(*UniversalCluster).Kill(AppIngress, "envoy")).To(Succeed())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(AppIngress, "kuma-dp")).To(Succeed())
 
 		// and Zone CP is restarted
 		Expect(kumaCP.ReStart()).Should(Succeed())

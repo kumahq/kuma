@@ -62,7 +62,7 @@ func MultizoneUniversal() {
 	}
 
 	killKumaDP := func(appname string) {
-		Expect(zoneUniversal.(*UniversalCluster).Kill(appname, "envoy")).To(Succeed())
+		Expect(zoneUniversal.(*UniversalCluster).Kill(appname, "kuma-dp")).To(Succeed())
 	}
 
 	killZone := func() {
