@@ -81,19 +81,11 @@ rules:
     resources:
       - namespaces
       - pods
-      - configmaps
       - nodes
     verbs:
       - get
       - list
       - watch
-  - apiGroups:
-    - ""
-    resources:
-      - secrets
-    verbs:
-    - list
-    - watch
   - apiGroups:
     - "discovery.k8s.io"
     resources:

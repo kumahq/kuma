@@ -48,7 +48,6 @@
       "matchPackageNames": [
         "github.com/kumahq/go-control-plane{/,}**"
       ],
-      "semanticCommitScope": "deps/gomod",
       "commitMessageTopic": "{{{packageName}}}",
       "postUpdateOptions": [
         "gomodTidy",
