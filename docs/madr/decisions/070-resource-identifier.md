@@ -145,43 +145,43 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 
 ##### Sidecar
 
-|                   | Name                                                                                                                                                                                                    | Correlated Resources                           |
-|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
-| Inbound Listener  | `inbound:10.43.205.116:8080`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:8080`                                                                                                                | Dataplane (with sectionName to select port)    |
-| Outbound Listener | `outbound:10.43.205.116:8080`<br>`outbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:8080`                                                                                                              | Mesh*Service (with sectionName to select port) |
-| VirtualHost       | legacy listeners - `<kuma.io/service>`<br>new outbounds - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                                                                        | Mesh*Service (with sectionName to select port) |
-| Inbound Cluster   | `localhost:<port>`                                                                                                                                                                                      | Dataplane (with sectionName to select port)    |
-| Outbound Cluster  | legacy clusters - `<kuma.io/service>-hash(dst.tags)`<br>legacy clusters cross-mesh - `<kuma.io/service>-hash(dst.tags)_<mesh>`<br>new clusters - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>` | Mesh*Service (with sectionName to select port) |
-| Route             | Routes are set on Listener on VirtualHost.<br>On inbound - `inbound:<kuma.io/service>`<br>On outbound - `<hash_sha256([]Match{...})>`                                                                   | Correlates with a set of MeshHTTPRoutes        |
-| Secret            | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>`                                         | TODO                                           |
+|                   | Name                                                                                                                                                                                                    | Correlated Resources                                                                                                                     | ResourceIdentifer                                           |
+|-------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------------|
+| Inbound Listener  | `inbound:10.43.205.116:8080`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:8080`                                                                                                                | Dataplane (with sectionName to select port)                                                                                              | kri_dataplane_mesh-1_us-east-2_kuma-demo_backend-app_8080   |
+| Outbound Listener | `outbound:10.43.205.116:8080`<br>`outbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:8080`                                                                                                              | Mesh*Service (with sectionName to select port)                                                                                           | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httpport |
+| VirtualHost       | legacy listeners - `<kuma.io/service>`<br>new outbounds - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                                                                        | Mesh*Service (with sectionName to select port)                                                                                           | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httpport |
+| Inbound Cluster   | `localhost:<port>`                                                                                                                                                                                      | Dataplane (with sectionName to select port)                                                                                              | kri_dataplane_mesh-1_us-east-2_kuma-demo_backend-app_8080   |
+| Outbound Cluster  | legacy clusters - `<kuma.io/service>-hash(dst.tags)`<br>legacy clusters cross-mesh - `<kuma.io/service>-hash(dst.tags)_<mesh>`<br>new clusters - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>` | Mesh*Service (with sectionName to select port)                                                                                           | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httpport |
+| Route             | Routes are set on Listener on VirtualHost.<br>On inbound - `inbound:<kuma.io/service>`<br>On outbound - `<hash_sha256([]Match{...})>`                                                                   | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route | kri_meshhttproute_mesh-1_us-east-2_kuma-demo_route-1        |
+| Secret            | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>`                                         | See [Secrets naming in Envoy](#secrets-naming-in-envoy)                                                                                  | –                                                           |
 
 ##### Builtin Gateway
 
-|             | Name                                                                                                                                                                                                                           | Correlated Resources                                  |
-|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|-------------------------------------------------------|
-| Listener    | `<gateway-name>:<protocol>:<port>` where `gateway-name` is `MeshGatewayResource.Meta.Name`                                                                                                                                     | MeshGateway (with sectionName to select the listener) |
-| VirtualHost | `<hostname>`                                                                                                                                                                                                                   |                                                       |
-| Cluster     | `<kuma.io/service>-hash(merge(dpp.tags, gateway.tags, listener.tags))`                                                                                                                                                         | Pair of MeshGateway and Mesh*Service                  |
-| Route       | Dynamic routes using RDS. <br/>Listener name + `:*`, i.e. `gateway-proxy:HTTP:8080:*` or<br>listener name + `:<hostname>`                                                                                                      | Correlates with a set of MeshHTTPRoutes               |
-| Secret      | `name     = <category>:<scope>:<identifier>`<br>`category = "cert." \| "cert.ecdsa" \| "cert.rsa"`<br>`scope    = "file" \| "inline" \| "inlineString"`<br>`identifier = <file-name> \| <secret-name> \| join(hostnames, ":")` |                                                       |
+|             | Name                                                                                                                                                                                                                           | Correlated Resources                                                                                                                           | ResourceIdentifier                                   |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------|
+| Listener    | `<gateway-name>:<protocol>:<port>` where `gateway-name` is `MeshGatewayResource.Meta.Name`                                                                                                                                     | MeshGateway (with sectionName to select the listener)                                                                                          | kri_meshgateway_mesh-1_us-east-2__gw-1               |
+| VirtualHost | `<hostname>`                                                                                                                                                                                                                   |                                                                                                                                                |                                                      |
+| Cluster     | `<kuma.io/service>-hash(merge(dpp.tags, gateway.tags, listener.tags))`                                                                                                                                                         | Pair of MeshGateway and Mesh*Service, can be only Mesh*Service once we resolve the [Issue #13129](https://github.com/kumahq/kuma/issues/13129) |                                                      |
+| Route       | Dynamic routes using RDS. <br/>Listener name + `:*`, i.e. `gateway-proxy:HTTP:8080:*` or<br>listener name + `:<hostname>`                                                                                                      | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route       | kri_meshhttproute_mesh-1_us-east-2_kuma-demo_route-1 |
+| Secret      | `name     = <category>:<scope>:<identifier>`<br>`category = "cert." \| "cert.ecdsa" \| "cert.rsa"`<br>`scope    = "file" \| "inline" \| "inlineString"`<br>`identifier = <file-name> \| <secret-name> \| join(hostnames, ":")` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)                                                                                        | –                                                    |
 
 
 ##### Zone Ingress
 
-|          | Name                                                                                                                        | Correlated Resources                           |
-|----------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
-| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    |
-| Cluster  | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`  | Mesh*Service (with sectionName to select port) |
+|          | Name                                                                                                                        | Correlated Resources                           | ResourceIdentifier                                         |
+|----------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|------------------------------------------------------------|
+| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    | kri_zoneingress__us-east-2_kuma-system_zi1                 |
+| Cluster  | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`  | Mesh*Service (with sectionName to select port) | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httppor |
 
 ##### Zone Egress
 
-|             | Name                                                                                                                                                            | Correlated Resources                           |
-|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
-| Listener    | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                                                      | ZoneEgress                                     |
-| Cluster     | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                      | Mesh*Service (with sectionName to select port) |
-| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                            |
-| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                            |
-| Secret      | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>` | TODO                                           |
+|             | Name                                                                                                                                                            | Correlated Resources                                     | ResourceIdentifier                                          |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|-------------------------------------------------------------|
+| Listener    | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                                                      | ZoneEgress                                               | kri_zoneegress__us-east-2_kuma-system_ze1                   |
+| Cluster     | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                      | Mesh*Service (with sectionName to select port)           | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httpport |
+| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                                      | kri_meshexternalservice_mesh-1___es1                        |
+| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                                      | kri_meshexternalservice_mesh-1___es1                        |
+| Secret      | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)  | –                                                           |
 
 ##### MeshPassthrough
 
@@ -243,6 +243,8 @@ In Envoy stats fields we can use any character except `:` to avoid on the fly co
 
 OpenTelemetry defines "Attribute", it's a key-value pair similar to Prometheus labels.
 There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common/?utm_source=chatgpt.com#attribute).
+SDK [provides a way](https://opentelemetry.io/docs/specs/otel/common/#attribute-limits) to configure attribute length limit,
+but it's set to `Infinity` by default.  
 
 This leaves us with the following charset:
 
@@ -277,9 +279,11 @@ As a delimiter we can use only characters that can't be present in resource iden
   * end with an alphanumeric character
 * `resourceType`
   * only alphanumeric
-* `sectionName`
-  * contain at most 15 characters
+* `sectionName` (even though [ContainerPort's name](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#containerport-v1-core) is limited by 15 characters, [ServicePort's name](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#serviceport-v1-core) can contain upto 63 character)
+  * contain at most 63 characters
   * contain only lowercase alphanumeric characters or '-'
+  * start with an alphanumeric character
+  * end with an alphanumeric character
 
 This leaves us with the following charset:
 
@@ -321,7 +325,7 @@ We need to pick a delimiter that's present in the `delimiter` charset we've spec
 There is an identifier format from Amazon called [ARN](https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html). We can adopt a similar approach, but using `_`:
 
 ```
-kri_<mesh>_<zone>_<namespace>_<resource-type>_<resource-name>_<section-name>
+kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
 ```
 
 `resource-type` is a lowercased singular resource type, i.e. `meshservice`, `meshtimeout`, etc. 
@@ -329,9 +333,9 @@ We use this name in [kumactl](https://github.com/kumahq/kuma/blob/d7ec0a2b1ac192
 
 For example:
 ```
-kri_mesh-1_us-east-2_kuma-demo_meshservice_backend
-kri_mesh-1_us-east-2_kuma-demo_meshservice_backend_http-port
-kri_mesh-1___meshtimeout_global-timeouts
+kri_meshservice_mesh-1_us-east-2_kuma-demo_backend
+kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_http-port
+kri_meshtimeout_mesh-1___global-timeouts
 ```
 
 Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
@@ -339,13 +343,21 @@ Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
 * It acts as an implicit version. If we need to update the format, we can use a different prefix (e.g., `uri` or `ri`).
 * It's also ensure no overlap between internal entities (prefixed by `_kuma`) and the rest
 
+#### Secrets naming in Envoy
+
+Renaming secrets in Envoy is out of the scope of this MADR. 
+Only `mesh_ca` secret in `builtin` mode has a corresponding Secret resource in the store.
+In all other cases, secrets are either stored in memory, or obtained using DataSource or fetched from external systems,
+so it's not straightforward how to apply `kri` concept.  
+Also, it's not clear what problems and limitations do we have when it comes to naming secrets in Envoy.
+
 **Pros:**
 - Shorter
 - Resembles existing formats from Amazon
 - Still possible to use in URL query
 
 **Cons:**
-- Hard to read when names are poorly chosen, e.g., `kri_default_default_default_meshservice_backend`
+- Hard to read when names are poorly chosen, e.g., `kri_meshservice_default_default_default_backend`
 
 ### Option 2 - Field names in the identifier
 
