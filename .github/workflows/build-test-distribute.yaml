@@ -54,8 +54,7 @@ jobs:
       - uses: golangci/golangci-lint-action@55c2c1448f86e01eaae002a5a3a9624417608d84 # v6.5.2
         with:
           args: --fix=false --verbose
-          verify: false # workaround https://github.com/golangci/golangci-lint-action/issues/1179
-          version: v1.64.5
+          version: v1.64.8
       - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4.2.2
         with:
           path: |
