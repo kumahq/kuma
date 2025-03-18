@@ -105,7 +105,7 @@ Any maintainer can become Emeritus maintainer in two ways:
   from the steering committee.
 
 ### Changes in Maintainership
-A new maintainer can be proposed by opening a PR (with title `Maintainer Nomination`) to the repository containing the following information:
+A new maintainer can be proposed by opening a PR (with title `docs(maintainer): maintainer nomination`) to the repository containing the following information:
 
 * nominee's first and last name,
 * nominee's email address and GitHub user name,
@@ -118,6 +118,17 @@ If issues can't be resolved, there's a simple majority vote among steering commi
 
 Maintainers and reviewers can be removed if 2 maintainers approve and none disapprove. 
 Maintainers and reviewers can leave by just submitting a PR to the repository's OWNERS.md (no vote required in this case).
+
+### Changes in CNCF foundation
+
+Kuma is a CNCF Sandbox project. As such, it is subject to the CNCF governance model. A new maintainer should update the corresponding CNCF informations:
+
+- Update [CNCF project maintainers list](https://github.com/cncf/foundation/blob/main/project-maintainers.csv) like the [PR](https://github.com/cncf/foundation/pull/906)
+- Follow the [CNCF ServiceDesk README](https://github.com/cncf/servicedesk) to send an email to apply for **Service Desk** and **Maintainer's email list group**
+  * Apply for CNCF [Service Desk](http://servicedesk.cncf.io/) account.
+  * Join [cncf-kuma-maintainers](https://lists.cncf.io/groups) mailing list group.
+
+The [Steps](https://github.com/kumahq/kuma/issues/11920#issuecomment-2510493702) is a record that we've gone through before.
 
 ## Organization members
 
