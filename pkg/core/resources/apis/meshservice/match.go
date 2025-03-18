@@ -1,6 +1,8 @@
 package meshservice
 
 import (
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -139,4 +141,14 @@ func matchByTags(
 		}
 	}
 	return dpps
+}
+
+func MatchInboundWithMeshServicePort(inbound *mesh_proto.Dataplane_Networking_Inbound, meshServicePort meshservice_api.Port) bool {
+	switch meshServicePort.TargetPort.Type {
+	case intstr.Int:
+		return uint32(meshServicePort.TargetPort.IntVal) == inbound.Port
+	case intstr.String:
+		return meshServicePort.TargetPort.StrVal == inbound.Name
+	}
+	return false
 }
