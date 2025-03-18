@@ -227,6 +227,9 @@ so there is no reason to replace `:` with `_`.
 If Envoy tried to support StatsD format then there are still a question, why `stat_prefix` emits metrics with `:` but `alt_stat_name` replaces `:` with `_`.
 Also, StatsD format doesn't seem to be supported out-of-the-box by Envoy and requires configuring `stats_sinks` in the static config.
 
+As the goal of this MADR is to have unified names in Envoy, Metrics, and API, we want `stat_prefix/alt_stat_name` to always be the same as `name`.
+This makes the use of `stat_prefix/alt_stat_name` unnecessary and once the migration to new naming is completed Kuma won't set these fields anymore.
+
 ### Constraints
 
 #### What characters we can use in the identifier?
