@@ -83,7 +83,10 @@ func TestConformance(t *testing.T) {
 
 	g.Expect(cluster.Install(GatewayAPICRDs)).To(Succeed())
 	g.Eventually(func() error {
-		return NewClusterSetup().Install(Kuma(config_core.Zone)).Setup(cluster)
+		return NewClusterSetup().Install(
+			Kuma(config_core.Zone,
+				WithCtlOpts(map[string]string{"--set": "controlPlane.supportGatewaySecretsInAllNamespaces=true"}),
+			)).Setup(cluster)
 	}, "90s", "3s").Should(Succeed())
 
 	configPath, err := opts.GetConfigPath(t)
