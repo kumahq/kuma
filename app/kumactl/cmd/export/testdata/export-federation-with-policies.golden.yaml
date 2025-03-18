@@ -1,0 +1,73 @@
+# Product: Kuma, Version: 0.0.0-testversion, Hostname: localhost, ClusterId: test-cluster, InstanceId: test-instance
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  annotations:
+    k8s.kuma.io/mesh-defaults-generated: "true"
+  creationTimestamp: "2024-01-08T17:25:45Z"
+  name: default
+spec: {}
+---
+apiVersion: kuma.io/v1alpha1
+kind: MeshAccessLog
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kuma.io/v1alpha1","kind":"MeshAccessLog","metadata":{"annotations":{},"labels":{"kuma.io/mesh":"default"},"name":"default","namespace":"kuma-system"},"spec":{"from":[{"default":{"backends":[{"file":{"path":"/tmp/access.log"},"type":"File"}]},"targetRef":{"kind":"Mesh"}}],"targetRef":{"kind":"Mesh"},"to":[{"default":{"backends":[{"file":{"path":"/tmp/access.log"},"type":"File"}]},"targetRef":{"kind":"Mesh"}}]}}
+  creationTimestamp: "2024-01-24T09:52:46Z"
+  labels:
+    kuma.io/mesh: default
+  name: default
+  namespace: kuma-system
+spec:
+  from:
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+  targetRef:
+    kind: Mesh
+  to:
+  - default:
+      backends:
+      - file:
+          path: /tmp/access.logs
+        type: File
+    targetRef:
+      kind: Mesh
+---
+apiVersion: kuma.io/v1alpha1
+kind: Retry
+mesh: default
+metadata:
+  creationTimestamp: "2024-01-24T09:32:02Z"
+  name: retry-all-default
+spec:
+  conf:
+    http:
+      backOff:
+        baseInterval: 0.025s
+        maxInterval: 0.250s
+      numRetries: 5
+      perTryTimeout: 16s
+    tcp:
+      maxConnectAttempts: 5
+  destinations:
+  - match:
+      kuma.io/service: '*'
+  sources:
+  - match:
+      kuma.io/service: '*'
+---
+apiVersion: v1
+data:
+  value: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb2dJQkFBS0NBUUVBdGNYWFdySUpjVVpxLzkyOUFMeUNFRWRaM1ZacDQreGVTWlFiMkRFNDEyK1VLMTV1CllUbFNXZDIvZExlSHJMVzQ0b2dUbjNhaUlEQTJiSHBmZUhNNDZtZ3cxWFM4V2JQMlR3UlA4eHVCWmdNTVY4RUYKdUxXQ1UwdTdNYXBNUTBFY05ySU9jeStHYWxkSGlBQTRsN1JkbkNWWnVDaFJsTHhUeDNkcGdiVDEyZGJuWWkwMwp4cmUvQ3MxOTFHZ2FYWWt3ZHI3dFZUdmx6QlVZQkk1U3BQSjlMR0pFVGVUTmNtTkhSS3dWVXpjZGhHdTB4djhICjZpeG05Si9PQ0xUdlZITDlYVlZKZGJXWEFnbTV4NWh4M1pHcHBjdFl2WkFXVWhYeWNNZEk2SmxJamhRSUtZVFEKSlRBcGRFK21RQTIwZER6ZUxiMDZNcTVqNHlVTjV4SE1xVE0yWlFJREFRQUJBb0lCQUdROWh5WkgyamN5ZXgxQQovZEtqSWlLeUJsZXVLTlQ5YTMydUJMRHpiQUk2VVA2ZG84ZFA0aDhXejFjaFF0dTJsdyt0dFF5U1VwUG5vb3V0CjdHb3pPR2JrTUZIMmYwd0VsMGM1L0pEM1VTT2RlTGdJQlF5NFkvZGxZd1RmZ2hEd25ndDNvOHBYb2d1UXVDekMKMm5LbWo1emxhQlhMZmpuRXBYcnhXaWlpVDVYaUk0UGxNY2lBQUJPbDlxT1BJRjNKV2toRXhEM2pwMDZTcDdnNQpzaWlUTXNZMVhVSkljZlRtWVREQW5QVDVBSk9LdmtPaGNyVkNhWjl3QnZKK1E1ZlJta2plcGtjUTE5MWVlM3NhCm1jZzNGZXJaVnlqbDlFd0FSUDRCUDlvejAxNkFPWXdCTEdyRnhoTm51WDltUUpIOUdocm5HeEV0QTczZkdtd24KNUlqZW56MENnWUVBNjBnSTRsMW10b0F4NGJha2JDbTY0MDJnME1xbHZlamg0QUVhTExWN2xiZWUxSS8yVm0wbAp0aUJSSzUvSm45Zm85d0N0NzFoYUljaURiQkw4VmdwRGRJQTAxWHMwRXN3M05RYnFuSHRKZEdwZGdzYXArRGZQCkFmYUk0ZC9wdFBPZ0pOMXFEb2tyTmdkSm50cUNTcVhLVXJGUFNUUk02Tkw1TUx0Mlh2RWJyU2NDZ1lFQXhjZVAKR29CTnVLb3ZhcHRlU2loUmtlU3A0a3daQ25mNnVoUkNkS1RVNGo4NEliVDY3K0dzS29ESmtrSjRNbk9rcHBoaQpGL29IOFJSaVVqUG5pL2NqamxDTEs0WllUSCtBUms4Qks0KzhxaWFTNDRxa21pV2JRb1BnSEJUa2pJMlZ5QTJUCkZCYXNjQzFJSDk1cXZPbjBXTS9GVitDcVhMREVQVUVmeW1SNmo1TUNnWUFRNkw1cXRsZTVhZ0VydlpxWGczQkIKQWNVNi9EVnBMcUY5SGRjcHUybEVXMHY0N3RlL1lsekJlQlVkVTRDRUVscFYxaUNxQU9tSllBWEI4S05kODZMaApibzFkZ2xzOXRwdUpIaFFpWnVIaWtmcGllYkNoZkRGT2JNOXRuRkFKaHpETk5YUjMwdmZlREN3SVZKL2tpWUcrCjY2dE5FWXN0ZUd3Y1NueTVXZzZwSlFLQmdCUkNPYlZVT1NIV1JOOGRwUTNoaldGdFU3MTdZQUZEZ3VvMmt3d1IKcWtDMml4QmcwbWRwN1ZHNU9XeUM1SDcrZTNvWkY4c3U4RXRRZERYSlhVbG4ranRrb3F6RnFSdkUzNlhVQitHbgphb0xmU3FLR0hCQXlFL0kvUWVCK2YxNnFUaEpjMlpqd0xaK2I4OHhYNHdVUXpkZWZDSzdVczM2bEdLVFJtK2tHClc4dURBb0dBWVZnOWp5a3IrNlpYMkU1V0Y1MHl4NTNERGsxNk54elFSVEhVYWlxS0hDYmZzWkxtdHBvT09QckwKTFE1ZGZGZTZrQ3AxVUpHZlB5R3dNZWg1aVYwbEdkdExLODg0SHVnUWszSFA1a2VVZHhnU0FoVzRJcy9OVHFuLwpybjhQcXY4ZkRWTDdJOG1RRXoxYVBSK05KQkVYdEpsS0pwU3hwS2QrVWx3a1hmcGtnZDg9Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCg==
+kind: Secret
+metadata:
+  creationTimestamp: "2024-01-08T17:25:39Z"
+  name: user-token-signing-key-1
+  namespace: kuma-system
+type: system.kuma.io/global-secret

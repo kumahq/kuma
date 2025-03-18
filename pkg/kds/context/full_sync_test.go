@@ -36,7 +36,7 @@ var _ = Describe("Full sync tests", func() {
 		for _, file := range files {
 			if strings.HasSuffix(file.Name(), ".input.yaml") {
 				zoneName := strings.TrimSuffix(file.Name(), ".input.yaml")
-				resourceStore := memory.NewStore()
+				resourceStore := store.NewPaginationStore(memory.NewStore())
 				fullPath := path.Join(folder, file.Name())
 				Expect(test_store.LoadResourcesFromFile(ctx, resourceStore, fullPath)).To(Succeed())
 				zones[zoneName] = resourceStore
@@ -94,7 +94,7 @@ var _ = Describe("Full sync tests", func() {
 		for zoneName, zoneStore := range zones {
 			out, err := test_store.ExtractResources(ctx, zoneStore)
 			Expect(err).To(Succeed())
-			Expect(out).To(matchers.MatchGoldenYAML(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
+			Expect(out).To(matchers.MatchGoldenEqual(folder, zoneName+".golden.yaml"), "zone %s", zoneName)
 		}
 	}, test.EntriesAsFolder("full_sync"))
 })
