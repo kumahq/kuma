@@ -140,7 +140,7 @@ Discoveries in this work helped me to fill the tables.
 
 There are no restriction on the name format from the Envoy's side.
 Some Envoy resources could be directly correlated with Kuma resources and that's why we should consider renaming them using the resource identifier.
-There are tables below for all Kuma proxies. Resources in `Internal` table exist in all proxies. 
+The tables below are an inventory of resource usage for all Kuma proxies. Resources in `Internal` table exist in all proxies. 
 Column "Correlated Resources" provides the Kuma resources that could be used for naming. 
 
 ##### Sidecar
@@ -239,10 +239,10 @@ ALPHA / DIGIT / "-" / "." / "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" 
 
 In Envoy resource names we can use any character except `:` if we want to solve [Issue #2363](https://github.com/kumahq/kuma/issues/2363) without workaround.
 
-In Envoy stats fields we can use any character except `:` to avoid on the fly conversion of `:` to `_` for Cluster names in Prometheus labels.
+In Envoy stats fields we can use any character except `:` to avoid on the fly conversion of `:` to `_` for Cluster names in Prometheus label values.
 
 OpenTelemetry defines "Attribute", it's a key-value pair similar to Prometheus labels.
-There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common/?utm_source=chatgpt.com#attribute).
+There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common).
 SDK [provides a way](https://opentelemetry.io/docs/specs/otel/common/#attribute-limits) to configure attribute length limit,
 but it's set to `Infinity` by default.  
 
