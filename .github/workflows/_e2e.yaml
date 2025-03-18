@@ -102,7 +102,7 @@ jobs:
           if [[ "${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}" != "" ]]; then
             export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
           fi
-          if [[ "${{ env.E2E_PARAM_EMBEDDED_DNS }}" != "" ]; then
+          if [[ "${{ env.E2E_PARAM_EMBEDDED_DNS }}" != "" ]]; then
             export KUMA_EXPERIMENTAL_EMBEDDEDNS=true
           fi
 
