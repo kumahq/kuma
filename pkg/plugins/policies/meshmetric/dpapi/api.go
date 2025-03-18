@@ -8,6 +8,8 @@ import (
 
 const PATH = "/meshmetric"
 
+// MeshMetricDpConfig is a configuration that is used to send configuration from the CP to the DP using
+// Envoy with the dyncconf feature.
 type MeshMetricDpConfig struct {
 	Observability Observability `json:"observability"`
 }

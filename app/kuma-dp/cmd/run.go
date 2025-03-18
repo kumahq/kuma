@@ -30,7 +30,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
-	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/dpapi"
+	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
 	"github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"

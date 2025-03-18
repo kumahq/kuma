@@ -13,8 +13,8 @@ import (
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/dpapi"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
 	utilnet "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
