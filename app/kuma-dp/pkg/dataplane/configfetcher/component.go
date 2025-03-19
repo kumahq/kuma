@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -52,26 +53,30 @@ func NewConfigFetcher(socketPath string, ticker *time.Ticker, perHandlerTimeout 
 }
 
 type handlerInfo struct {
+	path     string
+	onChange OnHandlerChange
 	lastEtag string
-	handler  Handler
 	metrics  *handlerMetrics
 	l        logr.Logger
 }
 
+type OnHandlerChange func(ctx context.Context, reader io.Reader) error
+
 // AddHandler add a Handler that will be polled for config change.
 // this returns an error if the Handler.Path() doesn't have `/` prefix or if ConfigFetcher.Start was already called.
-func (cf *ConfigFetcher) AddHandler(h Handler) error {
+func (cf *ConfigFetcher) AddHandler(path string, onChange OnHandlerChange) error {
 	if cf.started.Load() {
 		return errors.New("can't add handler to config handler after startup")
 	}
-	if !strings.HasPrefix(h.Path(), "/") {
-		return fmt.Errorf("invalid path: %s, must start with '/'", h.Path())
+	if !strings.HasPrefix(path, "/") {
+		return fmt.Errorf("invalid path: %s, must start with '/'", path)
 	}
 	cf.handlers = append(cf.handlers, handlerInfo{
-		handler:  h,
+		path:     path,
+		onChange: onChange,
 		lastEtag: "",
-		metrics:  newHandlerMetrics(h.Path()),
-		l:        logger.WithValues("path", h.Path()),
+		metrics:  newHandlerMetrics(path),
+		l:        logger.WithValues("path", path),
 	})
 	return nil
 }
@@ -80,10 +85,10 @@ func (cf *ConfigFetcher) AddHandler(h Handler) error {
 // This expects the http server to return ETag headers and respect `If-None-Match` to avoid calling the Handler each time.
 func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 	cf.started.Store(true)
-	logger.Info("starting configuration scraper",
+	logger.Info("start",
 		"socketPath", fmt.Sprintf("unix://%s", cf.socketPath),
 	)
-	defer logger.Info("configuration scraper stopped")
+	defer logger.Info("stopped")
 
 	// Step first to ensure we load conf ASAP
 	cf.Step()
@@ -92,17 +97,6 @@ func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
 		case <-cf.ticker.C:
 			cf.Step()
 		case <-stop:
-			logger.Info("starting shutdown")
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-			defer cancel()
-			for _, h := range cf.handlers {
-				h.metrics.HandlerShutdownCount.Add(1)
-				err := h.handler.Shutdown(ctx)
-				if err != nil {
-					logger.WithValues("path", h.handler.Path()).Error(err, "failed to shutdown")
-					h.metrics.HandlerErrorCount.Add(1)
-				}
-			}
 			return nil
 		}
 	}
@@ -135,7 +129,7 @@ func (cf *ConfigFetcher) Step() {
 func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), cf.perHandlerTimeout)
 	defer cancel()
-	r, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost%s", h.handler.Path()), nil)
+	r, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("http://localhost%s", h.path), nil)
 	if err != nil {
 		return false, fmt.Errorf("failed to build request: %w", err)
 	}
@@ -160,7 +154,7 @@ func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 		etag := response.Header.Get("ETag")
 		h.l.Info("scraped config from Envoy changed", "etag", etag, "lastEtag", prevEtag)
 		h.lastEtag = etag
-		err = h.handler.OnChange(ctx, response.Body)
+		err = h.onChange(ctx, response.Body)
 		if err != nil {
 			h.lastEtag = "" // reset ETag to force refetch when errors happen
 		}

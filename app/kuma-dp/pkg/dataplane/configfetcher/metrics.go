@@ -5,10 +5,9 @@ import (
 )
 
 type handlerMetrics struct {
-	HandlerTickDuration  prometheus.Summary
-	HandlerShutdownCount prometheus.Counter
-	HandlerErrorCount    prometheus.Counter
-	HandlerTickCount     prometheus.Counter
+	HandlerTickDuration prometheus.Summary
+	HandlerErrorCount   prometheus.Counter
+	HandlerTickCount    prometheus.Counter
 }
 
 func newHandlerMetrics(path string) *handlerMetrics {
@@ -24,13 +23,6 @@ func newHandlerMetrics(path string) *handlerMetrics {
 		Help:        "Time is seconds for the envoy configuration to be fetched and processed by the handler, This is not computed when no change happened",
 		ConstLabels: labels,
 	})
-	prometheus.MustRegister(handlerTickDuration)
-	handlerShutdownCount := prometheus.NewCounter(prometheus.CounterOpts{
-		Name:        "kuma_dp_envoyconfigfetcher_handler_shutdown_duration_seconds",
-		Help:        "Time is seconds for the envoy configuration fetcher handler to shutdown",
-		ConstLabels: labels,
-	})
-	prometheus.MustRegister(handlerShutdownCount)
 	handlerErrorCount := prometheus.NewCounter(prometheus.CounterOpts{
 		Name:        "kuma_dp_envoyconfigfetcher_handler_error_count",
 		Help:        "Number of times the handler encountered an error",
@@ -38,9 +30,8 @@ func newHandlerMetrics(path string) *handlerMetrics {
 	})
 
 	return &handlerMetrics{
-		HandlerTickDuration:  handlerTickDuration,
-		HandlerShutdownCount: handlerShutdownCount,
-		HandlerErrorCount:    handlerErrorCount,
-		HandlerTickCount:     handlerTickCount,
+		HandlerTickDuration: handlerTickDuration,
+		HandlerErrorCount:   handlerErrorCount,
+		HandlerTickCount:    handlerTickCount,
 	}
 }

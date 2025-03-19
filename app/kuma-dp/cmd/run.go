@@ -230,7 +230,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.EmbeddedProxyPort)
 					// Using embedded DNS
 					dnsproxyServer := dnsproxy.NewServer("localhost", dnsOpts.Config.DNS.EmbeddedProxyPort)
-					err := confFetcher.AddHandler(configfetcher.NewSimpleHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap, nil))
+					err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap)
 					if err != nil {
 						return err
 					}
@@ -447,9 +447,9 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
 		cfg.Dataplane.DrainTime.Duration,
 	)
-	err := fetcher.AddHandler(configfetcher.NewSimpleHandler(meshmetric_dpapi.PATH, mm.OnChange, mm.Shutdown))
+	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
 	if err != nil {
 		return nil, err
 	}
-	return []component.Component{accessLogStreamer, metricsServer}, nil
+	return []component.Component{accessLogStreamer, metricsServer, mm}, nil
 }
