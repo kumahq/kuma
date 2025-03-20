@@ -200,7 +200,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList)
+		rules, err := BuildRules(fromList, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -224,7 +224,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader common.Resourc
 		return ToRules{}, err
 	}
 
-	rules, err := BuildRules(toList)
+	rules, err := BuildRules(toList, false)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -392,7 +392,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items)
+	rules, err := BuildRules(items, false)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -405,7 +405,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
@@ -425,6 +425,25 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			return nil, err
 		}
 		subsets = append(subsets, ss)
+	}
+
+	if !withNegations {
+		// deduplicate subsets
+		subsets = subsetutils.Deduplicate(subsets)
+
+		for _, ss := range subsets {
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
+			}
+		}
+
+		sort.SliceStable(rules, func(i, j int) bool {
+			return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
+		})
+
+		return rules, nil
 	}
 
 	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
@@ -477,46 +496,92 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
-			// 5. For each combination determine a configuration
-			confs := []interface{}{}
-			var relevant []PolicyItemWithMeta
-			for i := 0; i < len(oldKindsItems); i++ {
-				item := oldKindsItems[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
-				if err != nil {
-					return nil, err
-				}
-				if itemSubset.IsSubset(ss) {
-					confs = append(confs, item.GetDefault())
-					relevant = append(relevant, item)
-				}
-			}
 
-			if len(relevant) > 0 {
-				merged, err := merge.Confs(confs)
-				if err != nil {
-					return nil, err
-				}
-				ruleOrigins, originIndex := common.Origins(relevant, false)
-				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
-				for _, o := range ruleOrigins {
-					resourceMetas = append(resourceMetas, o.Resource)
-				}
-				for _, mergedRule := range merged {
-					rules = append(rules, &Rule{
-						Subset:                ss,
-						Conf:                  mergedRule,
-						Origin:                resourceMetas,
-						BackendRefOriginIndex: originIndex,
-					})
-				}
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
 			}
+			//// 5. For each combination determine a configuration
+			//confs := []interface{}{}
+			//var relevant []PolicyItemWithMeta
+			//for i := 0; i < len(oldKindsItems); i++ {
+			//	item := oldKindsItems[i]
+			//	itemSubset, err := asSubset(item.GetTargetRef())
+			//	if err != nil {
+			//		return nil, err
+			//	}
+			//	if itemSubset.IsSubset(ss) {
+			//		confs = append(confs, item.GetDefault())
+			//		relevant = append(relevant, item)
+			//	}
+			//}
+			//
+			//if len(relevant) > 0 {
+			//	merged, err := merge.Confs(confs)
+			//	if err != nil {
+			//		return nil, err
+			//	}
+			//	ruleOrigins, originIndex := common.Origins(relevant, false)
+			//	resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+			//	for _, o := range ruleOrigins {
+			//		resourceMetas = append(resourceMetas, o.Resource)
+			//	}
+			//	for _, mergedRule := range merged {
+			//		rules = append(rules, &Rule{
+			//			Subset:                ss,
+			//			Conf:                  mergedRule,
+			//			Origin:                resourceMetas,
+			//			BackendRefOriginIndex: originIndex,
+			//		})
+			//	}
+			//}
 		}
 	}
 
 	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
+
+	return rules, nil
+}
+
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+	// 5. For each combination determine a configuration
+	rules := []*Rule{}
+	confs := []interface{}{}
+	var relevant []PolicyItemWithMeta
+	for i := 0; i < len(items); i++ {
+		item := items[i]
+		itemSubset, err := asSubset(item.GetTargetRef())
+		if err != nil {
+			return nil, err
+		}
+		if itemSubset.IsSubset(ss) {
+			confs = append(confs, item.GetDefault())
+			relevant = append(relevant, item)
+		}
+	}
+
+	if len(relevant) > 0 {
+		merged, err := merge.Confs(confs)
+		if err != nil {
+			return nil, err
+		}
+		ruleOrigins, originIndex := common.Origins(relevant, false)
+		resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+		for _, o := range ruleOrigins {
+			resourceMetas = append(resourceMetas, o.Resource)
+		}
+		for _, mergedRule := range merged {
+			rules = append(rules, &Rule{
+				Subset:                ss,
+				Conf:                  mergedRule,
+				Origin:                resourceMetas,
+				BackendRefOriginIndex: originIndex,
+			})
+		}
+	}
 
 	return rules, nil
 }

@@ -3,8 +3,11 @@ package subsetutils
 import (
 	"maps"
 
+	"fmt"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
+	"sort"
+	"strings"
 )
 
 // Tag is a key-value pair. If Not is true then Key != Value
@@ -336,4 +339,31 @@ func (c *SubsetIter) simplified() Subset {
 	}
 
 	return result
+}
+
+// Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
+func Deduplicate(subsets []Subset) []Subset {
+	seen := make(map[string]struct{})
+	var result []Subset
+	for _, s := range subsets {
+		key := canonicalSubset(s)
+		if _, ok := seen[key]; !ok {
+			seen[key] = struct{}{}
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// canonicalSubset returns a canonical string representation for a subset.
+// It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
+func canonicalSubset(s Subset) string {
+	var tags []string
+	for _, t := range s {
+		// Format each tag as "Key:Value:Not"
+		tags = append(tags, fmt.Sprintf("%s:%s:%t", t.Key, t.Value, t.Not))
+	}
+	// Sort the tag strings to ensure order doesn't affect equality.
+	sort.Strings(tags)
+	return strings.Join(tags, "|")
 }
