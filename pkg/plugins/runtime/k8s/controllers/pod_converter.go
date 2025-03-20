@@ -48,11 +48,12 @@ func (p *PodConverter) PodToDataplane(
 	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
+	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
 	dataplane.Mesh = util_k8s.MeshOfByLabelOrAnnotation(logger, pod, ns)
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, msMode)
 	if err != nil {
 		return err
 	}
@@ -169,6 +170,7 @@ func (p *PodConverter) dataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
+	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -270,9 +272,20 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
-		ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
-		if err != nil {
-			return nil, err
+		var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+		var err error
+		// deduplicate inbounds only when MeshService mode is exclusive. Without MeshServices we need duplicated inbounds
+		// for identity and traffic routing
+		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+			ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, services)
+			if err != nil {
+				return nil, err
+			}
 		}
 		dataplane.Networking.Inbound = ifaces
 	}

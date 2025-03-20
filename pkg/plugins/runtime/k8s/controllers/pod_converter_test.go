@@ -144,7 +144,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes, mesh_proto.Mesh_MeshServices_Exclusive)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

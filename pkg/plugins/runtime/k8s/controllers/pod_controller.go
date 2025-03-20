@@ -22,6 +22,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -317,6 +318,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
+	k8sMesh := v1alpha1.Mesh{}
+	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
+		return err
+	}
+	mesh := core_mesh.NewMeshResource()
+	if err := r.ResourceConverter.ToCoreResource(&k8sMesh, mesh); err != nil {
+		return err
+	}
+
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
@@ -324,7 +335,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others, mesh.Spec.MeshServicesMode()); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
