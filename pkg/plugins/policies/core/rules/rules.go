@@ -218,13 +218,13 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader) (ToRules, error) {
+func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader, withNegations bool) (ToRules, error) {
 	toList, err := buildToList(matchedPolicies.GetItems(), reader)
 	if err != nil {
 		return ToRules{}, err
 	}
 
-	rules, err := BuildRules(toList, false)
+	rules, err := BuildRules(toList, withNegations)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -265,14 +265,14 @@ func BuildGatewayRules(
 	toRulesByInbound := map[InboundListener]ToRules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, reader)
+		toRules, err := BuildToRules(policies, reader, true)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, reader)
+		toRules, err := BuildToRules(policies, reader, true)
 		if err != nil {
 			return GatewayRules{}, err
 		}

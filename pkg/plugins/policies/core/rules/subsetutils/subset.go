@@ -1,7 +1,6 @@
 package subsetutils
 
 import (
-	"fmt"
 	"maps"
 	"sort"
 	"strings"
@@ -254,6 +253,19 @@ func (ss Subset) NumPositive() int {
 	return pos
 }
 
+// NumPositive returns a number of tags without negation
+func (ss Subset) Sorted() {
+	sort.SliceStable(ss, func(i, j int) bool {
+		if ss[i].Key != ss[j].Key {
+			return ss[i].Key < ss[j].Key
+		}
+		if ss[i].Value != ss[j].Value {
+			return ss[i].Value < ss[j].Value
+		}
+		return !ss[i].Not && ss[j].Not
+	})
+}
+
 func (ss Subset) IndexOfPositive() int {
 	for i, t := range ss {
 		if !t.Not {
@@ -344,10 +356,13 @@ func (c *SubsetIter) simplified() Subset {
 // Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
 func Deduplicate(subsets []Subset) []Subset {
 	seen := make(map[string]struct{})
-	var result []Subset
+	result := make([]Subset, 0, len(subsets))
+
 	for _, s := range subsets {
 		key := canonicalSubset(s)
-		if _, ok := seen[key]; !ok {
+		// sort them
+		s.Sorted()
+		if _, exists := seen[key]; !exists {
 			seen[key] = struct{}{}
 			result = append(result, s)
 		}
@@ -358,12 +373,26 @@ func Deduplicate(subsets []Subset) []Subset {
 // canonicalSubset returns a canonical string representation for a subset.
 // It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
 func canonicalSubset(s Subset) string {
-	var tags []string
-	for _, t := range s {
-		// Format each tag as "Key:Value:Not"
-		tags = append(tags, fmt.Sprintf("%s:%s:%t", t.Key, t.Value, t.Not))
+	if len(s) == 0 {
+		return ""
 	}
-	// Sort the tag strings to ensure order doesn't affect equality.
-	sort.Strings(tags)
-	return strings.Join(tags, "|")
+	// sort values by key, value, not
+	s.Sorted()
+
+	var sb strings.Builder
+	for i, t := range s {
+		if i > 0 {
+			sb.WriteByte('|') // Separator
+		}
+		sb.WriteString(t.Key)
+		sb.WriteByte(':')
+		sb.WriteString(t.Value)
+		sb.WriteByte(':')
+		if t.Not {
+			sb.WriteByte('1')
+		} else {
+			sb.WriteByte('0')
+		}
+	}
+	return sb.String()
 }
