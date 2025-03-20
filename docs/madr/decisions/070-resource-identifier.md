@@ -168,10 +168,10 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 
 ##### Zone Ingress
 
-|          | Name                                                                                                                        | Correlated Resources                           | ResourceIdentifier                                         |
-|----------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|------------------------------------------------------------|
-| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    | kri_zoneingress__us-east-2_kuma-system_zi1                 |
-| Cluster  | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`  | Mesh*Service (with sectionName to select port) | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httppor |
+|          | Name                                                                                                                        | Correlated Resources                           | ResourceIdentifier                                          |
+|----------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|-------------------------------------------------------------|
+| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    | kri_zoneingress__us-east-2_kuma-system_zi1                  |
+| Cluster  | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`  | Mesh*Service (with sectionName to select port) | kri_meshservice_mesh-1_us-east-2_kuma-demo_backend_httpport |
 
 ##### Zone Egress
 
