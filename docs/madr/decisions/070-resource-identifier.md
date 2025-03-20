@@ -350,7 +350,7 @@ Also, it's not clear what problems and limitations do we have when it comes to n
 
 **Pros:**
 - Shorter
-- Resembles existing formats from Amazon
+- Resembles existing formats from Amazon and Konnect KRN 
 - Still possible to use in URL query
 
 **Cons:**
@@ -370,3 +370,4 @@ kri;meshservice;mesh=mesh-1;zone=zone-1;namespace=kuma-demo;name=backend;section
 **Cons:**
 - Longer
 - The order of fields still matters if we want to compare identifiers with `==`
+- Very hard to write good prom regexps to select all matching labels.
