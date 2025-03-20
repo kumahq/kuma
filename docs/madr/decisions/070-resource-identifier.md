@@ -270,12 +270,7 @@ As a delimiter we can use only characters that can't be present in resource iden
   * contain only lowercase alphanumeric characters, '-' or '.'
   * start with an alphanumeric character
   * end with an alphanumeric character
-* `mesh`
-  * contain no more than 63 characters
-  * contain only lowercase alphanumeric characters, '-' or '.'
-  * start with an alphanumeric character
-  * end with an alphanumeric character
-* `namespace`
+* `mesh` and `namespace`
   * contain at most 63 characters
   * contain only lowercase alphanumeric characters or '-'
   * start with an alphanumeric character
