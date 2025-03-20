@@ -324,6 +324,9 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		return err
 	}
 	mesh := core_mesh.NewMeshResource()
+	if k8sMesh.Spec != nil {
+		r.Log.Info("GOT MESH", "mesh", string(k8sMesh.Spec.Raw))
+	}
 	if err := r.ResourceConverter.ToCoreResource(&k8sMesh, mesh); err != nil {
 		return err
 	}
