@@ -52,9 +52,6 @@ func ResilienceUniversal() {
 		// when Kuma CP is killed
 		Expect(g.Kill(AppModeCP, "kuma-cp run")).To(Succeed())
 
-		out, _, err := g.Exec("", "", AppModeDemoClient, "ps", "aux")
-		Logf("ps aux: %q", out)
-		Expect(err).ToNot(HaveOccurred())
 		// and DPP is killed while Kuma CP is down
 		Expect(g.Kill(AppModeDemoClient, "kuma-dp")).To(Succeed())
 

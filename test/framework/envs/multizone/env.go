@@ -167,7 +167,7 @@ func SetupAndGetState() []byte {
 			MADS:        KubeZone2.GetKuma().(*K8sControlPlane).MadsPortFwd(),
 		},
 	}
-	bytes, err := json.Marshal(state) // nolint:govet
+	bytes, err := json.Marshal(state) // nolint:govet complains of marshalling with mutex, we know what we're doing here
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }
