@@ -1,0 +1,9 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Preset for reuse with github-actions manager or custom managers updating GitHub Actions. Adds 'ci/skip-test' label, custom PR body, and footer marking changelog as skippable",
+  "addLabels": [
+    "ci/skip-test"
+  ],
+  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}{{{footer}}}",
+  "prFooter": "> Changelog: skip"
+}
