@@ -3,12 +3,12 @@ package controllers_test
 import (
 	"context"
 	"encoding/json"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
