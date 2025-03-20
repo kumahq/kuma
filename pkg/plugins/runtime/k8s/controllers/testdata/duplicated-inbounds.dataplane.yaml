@@ -19,10 +19,10 @@ spec:
       tags:
         app: example
         k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: sample
-        k8s.kuma.io/service-port: "6001"
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "6000"
         kuma.io/protocol: tcp
-        kuma.io/service: sample_playground_svc_6001
+        kuma.io/service: example_demo_svc_6000
         kuma.io/zone: zone-1
         version: "0.1"
     - health:
@@ -32,9 +32,9 @@ spec:
       tags:
         app: example
         k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: sample
-        k8s.kuma.io/service-port: "7001"
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "7000"
         kuma.io/protocol: tcp
-        kuma.io/service: sample_playground_svc_7001
+        kuma.io/service: example_demo_svc_7000
         kuma.io/zone: zone-1
         version: "0.1"
