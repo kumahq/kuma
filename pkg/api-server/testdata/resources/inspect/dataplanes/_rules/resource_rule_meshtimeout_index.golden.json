@@ -46,17 +46,17 @@
    "toRules": [
     {
      "conf": {
-      "connectionTimeout": "7s",
-      "idleTimeout": "7s",
+      "connectionTimeout": "5s",
+      "idleTimeout": "5s",
       "http": {
-       "requestTimeout": "7s"
+       "requestTimeout": "5s"
       }
      },
      "matchers": [
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": "backend-4"
+       "value": ""
       }
      ],
      "origin": [
@@ -70,17 +70,17 @@
     },
     {
      "conf": {
-      "connectionTimeout": "5s",
-      "idleTimeout": "5s",
+      "connectionTimeout": "7s",
+      "idleTimeout": "7s",
       "http": {
-       "requestTimeout": "5s"
+       "requestTimeout": "7s"
       }
      },
      "matchers": [
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": ""
+       "value": "backend-4"
       }
      ],
      "origin": [

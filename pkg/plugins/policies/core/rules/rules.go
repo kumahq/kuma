@@ -403,6 +403,8 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
 // If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
+// In case of `to` policies we don't need to check negations since only possible value for `to` is either Mesh
+// which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
 func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
@@ -427,6 +429,7 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		subsets = append(subsets, ss)
 	}
 
+	// we don't need to generate all permutations when there is no negations
 	if !withNegations {
 		// deduplicate subsets
 		subsets = subsetutils.Deduplicate(subsets)
@@ -497,45 +500,12 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 				break
 			}
 
+			// 5. For each combination determine a configuration
 			if r, err := createRule(ss, oldKindsItems); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
 			}
-			//// 5. For each combination determine a configuration
-			//confs := []interface{}{}
-			//var relevant []PolicyItemWithMeta
-			//for i := 0; i < len(oldKindsItems); i++ {
-			//	item := oldKindsItems[i]
-			//	itemSubset, err := asSubset(item.GetTargetRef())
-			//	if err != nil {
-			//		return nil, err
-			//	}
-			//	if itemSubset.IsSubset(ss) {
-			//		confs = append(confs, item.GetDefault())
-			//		relevant = append(relevant, item)
-			//	}
-			//}
-			//
-			//if len(relevant) > 0 {
-			//	merged, err := merge.Confs(confs)
-			//	if err != nil {
-			//		return nil, err
-			//	}
-			//	ruleOrigins, originIndex := common.Origins(relevant, false)
-			//	resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
-			//	for _, o := range ruleOrigins {
-			//		resourceMetas = append(resourceMetas, o.Resource)
-			//	}
-			//	for _, mergedRule := range merged {
-			//		rules = append(rules, &Rule{
-			//			Subset:                ss,
-			//			Conf:                  mergedRule,
-			//			Origin:                resourceMetas,
-			//			BackendRefOriginIndex: originIndex,
-			//		})
-			//	}
-			//}
 		}
 	}
 
