@@ -76,8 +76,8 @@ linters-settings:
         - github.com/ghodss/yaml:
             recommendations:
               - sigs.k8s.io/yaml
-        - github.com/hashicorp/go-multierror:
-            recommandations:
+        - github.com/hashicorp/multierror:
+            recommendations:
               - errors
         - gopkg.in/yaml.v2:
             recommendations:
@@ -86,7 +86,7 @@ linters-settings:
             recommendations:
               - sigs.k8s.io/yaml
         - io/ioutil:
-            recommandations:
+            recommendations:
               - io
               - os
   depguard:

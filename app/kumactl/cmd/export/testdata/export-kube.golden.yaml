@@ -40,6 +40,26 @@ spec:
       kind: Mesh
 ---
 apiVersion: kuma.io/v1alpha1
+kind: MeshTimeout
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"kuma.io/v1alpha1","kind":"MeshTimeout","metadata":{"annotations":{},"labels":{"kuma.io/mesh":"default"},"name":"mt-in-namespace-kuma-test","namespace":"kuma-test"},"spec":{"targetRef":{"kind":"Mesh"},"to":[{"default":{"idleTimeout":"99s"},"targetRef":{"kind":"Mesh"}}]}}
+  creationTimestamp: "2024-01-24T09:52:46Z"
+  labels:
+    kuma.io/mesh: default
+  name: mt-in-namespace-kuma-test
+  namespace: kuma-test
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+  - default:
+      idleTimeout: 99s
+    targetRef:
+      kind: Mesh
+---
+apiVersion: kuma.io/v1alpha1
 kind: Retry
 mesh: default
 metadata:
