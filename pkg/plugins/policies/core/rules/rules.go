@@ -261,18 +261,19 @@ func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
 	reader common.ResourceReader,
+	withNegations bool,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]ToRules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, reader, true)
+		toRules, err := BuildToRules(policies, reader, withNegations)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, reader, true)
+		toRules, err := BuildToRules(policies, reader, withNegations)
 		if err != nil {
 			return GatewayRules{}, err
 		}

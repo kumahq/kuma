@@ -16,12 +16,12 @@ Rules:
     name: mtp-1
     type: MeshTimeout
   Subset:
-  - Key: kuma.io/service
-    Not: false
-    Value: test-server
   - Key: __rule-matches-hash__
     Not: false
     Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+  - Key: kuma.io/service
+    Not: false
+    Value: test-server
 - BackendRefOriginIndex: {}
   Conf:
     http:
