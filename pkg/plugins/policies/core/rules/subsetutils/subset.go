@@ -325,10 +325,8 @@ func (c *SubsetIter) next() bool {
 // If tags are contradicted (same keys have different positive value) then the function
 // returns nil.
 func (c *SubsetIter) simplified() Subset {
-	result := Subset{}
-
-	ssByKey := map[string]Subset{}
-	keyOrder := []string{}
+	ssByKey := make(map[string]Subset, len(c.current))
+	keyOrder := make([]string, 0, len(c.current))
 	for _, t := range c.current {
 		if _, ok := ssByKey[t.Key]; !ok {
 			keyOrder = append(keyOrder, t.Key)
@@ -336,6 +334,7 @@ func (c *SubsetIter) simplified() Subset {
 		ssByKey[t.Key] = append(ssByKey[t.Key], Tag{Key: t.Key, Value: t.Value, Not: t.Not})
 	}
 
+	result := make(Subset, 0, len(c.current))
 	for _, key := range keyOrder {
 		ss := ssByKey[key]
 		positive := ss.NumPositive()
@@ -360,8 +359,6 @@ func Deduplicate(subsets []Subset) []Subset {
 
 	for _, s := range subsets {
 		key := canonicalSubset(s)
-		// sort them
-		s.Sorted()
 		if _, exists := seen[key]; !exists {
 			seen[key] = struct{}{}
 			result = append(result, s)
