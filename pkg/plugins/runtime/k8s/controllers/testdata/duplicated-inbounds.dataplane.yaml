@@ -6,44 +6,35 @@ metadata:
     k8s.kuma.io/namespace: demo
     kuma.io/mesh: default
     kuma.io/proxy-type: sidecar
+    kuma.io/sidecar-injection: enabled
     version: "0.1"
 spec:
   networking:
     address: 192.168.0.1
     inbound:
-    - health: {}
+    - health:
+        ready: true
+      name: metrics
+      port: 6060
+      tags:
+        app: example
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "6000"
+        kuma.io/protocol: tcp
+        kuma.io/service: example_demo_svc_6000
+        kuma.io/zone: zone-1
+        version: "0.1"
+    - health:
+        ready: true
+      name: main-port
       port: 7070
-      state: NotReady
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: sample
-        k8s.kuma.io/service-port: "7071"
-        kuma.io/protocol: tcp
-        kuma.io/service: sample_playground_svc_7071
-        kuma.io/zone: zone-1
-        version: "0.1"
-    - health:
-        ready: true
-      port: 8080
       tags:
         app: example
         k8s.kuma.io/namespace: demo
         k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "80"
-        kuma.io/protocol: http
-        kuma.io/service: example_demo_svc_80
-        kuma.io/zone: zone-1
-        version: "0.1"
-    - health:
-        ready: true
-      port: 8443
-      tags:
-        app: example
-        k8s.kuma.io/namespace: demo
-        k8s.kuma.io/service-name: example
-        k8s.kuma.io/service-port: "443"
+        k8s.kuma.io/service-port: "7000"
         kuma.io/protocol: tcp
-        kuma.io/service: example_demo_svc_443
+        kuma.io/service: example_demo_svc_7000
         kuma.io/zone: zone-1
         version: "0.1"

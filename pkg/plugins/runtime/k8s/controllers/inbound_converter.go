@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -131,6 +132,43 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	}
 }
 
+// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway and Mesh without MeshService exclusive
+// to not change order of inbounds.
+// For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
+// For Dataplanes when MeshService is disabled we base identity and routing
+// TODO: We should revisit this when we rework identity
+func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
+	if err != nil {
+		return nil, err
+	}
+
+	var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+	for _, svc := range services {
+		// Services of ExternalName type should not have any selectors.
+		// Kubernetes does not validate this, so in rare cases, a service of
+		// ExternalName type could point to a workload inside the mesh. If this
+		// happens, we would incorrectly generate inbounds including
+		// ExternalName service. We do not currently support ExternalName
+		// services, so we can safely skip them from processing.
+		if svc.Spec.Type != kube_core.ServiceTypeExternalName {
+			ifaces = append(ifaces, inboundForService(zone, pod, svc, nodeLabels)...)
+		}
+	}
+
+	if len(ifaces) == 0 {
+		name, _, err := i.NameExtractor.Name(ctx, pod)
+		if err != nil {
+			return nil, err
+		}
+
+		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
+	}
+
+	return ifaces, nil
+}
+
+// Should be used when MeshService mode is Exclusive
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 	if err != nil {
@@ -158,7 +196,32 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 
 		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
 	}
-	return ifaces, nil
+
+	// Right now we will build multiple inbounds for each service selecting port, but later on
+	// we will only create one listener for last inbound. Ignoring other inbounds from dataplane.
+	// Because of this we can safely deduplicate them here. This needs to change when we get rid of kuma.io/service
+	return deduplicateInboundsByAddressAndPort(ifaces), nil
+}
+
+func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
+	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
+		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
+	}
+
+	inboundsPerName := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	for _, iface := range ifaces {
+		if inboundsPerName[inboundKey(iface)] == nil {
+			inboundsPerName[inboundKey(iface)] = iface
+		}
+	}
+	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
+	for _, v := range inboundsPerName {
+		deduplicatedInbounds = append(deduplicatedInbounds, v)
+	}
+	sort.Slice(deduplicatedInbounds, func(i, j int) bool {
+		return inboundKey(deduplicatedInbounds[i]) < inboundKey(deduplicatedInbounds[j])
+	})
+	return deduplicatedInbounds
 }
 
 func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {
