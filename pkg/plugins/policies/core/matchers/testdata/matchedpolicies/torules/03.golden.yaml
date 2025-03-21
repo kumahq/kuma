@@ -32,4 +32,44 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mtp-2
     type: MeshTimeout
-  Subset: []
+  Subset:
+  - Key: __rule-matches-hash__
+    Not: true
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+  - Key: kuma.io/service
+    Not: false
+    Value: test-server
+- BackendRefOriginIndex: {}
+  Conf:
+    http:
+      requestTimeout: 3s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-2
+    type: MeshTimeout
+  Subset:
+  - Key: __rule-matches-hash__
+    Not: false
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+  - Key: kuma.io/service
+    Not: true
+    Value: test-server
+- BackendRefOriginIndex: {}
+  Conf:
+    http:
+      requestTimeout: 3s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-2
+    type: MeshTimeout
+  Subset:
+  - Key: __rule-matches-hash__
+    Not: true
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+  - Key: kuma.io/service
+    Not: true
+    Value: test-server

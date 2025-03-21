@@ -485,7 +485,7 @@ var _ = Describe("Rules", func() {
 					}
 					return core_rules.BuildToRules(actualPolicies, context.Resources{MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 						v1alpha1.MeshHTTPRouteType: &v1alpha1.MeshHTTPRouteResourceList{Items: httpRoutes},
-					}}, true)
+					}})
 				})
 			},
 			test.EntriesForFolder("rules/to"),

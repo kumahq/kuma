@@ -113,12 +113,7 @@ func MatchedPolicies(
 		warnings = append(warnings, fmt.Sprintf("couldn't create From rules: %s", err.Error()))
 	}
 
-	withNegations := false
-	if rType == meshhttproute_api.MeshHTTPRouteType {
-		withNegations = true
-	}
-
-	tr, err := core_rules.BuildToRules(dpPolicies, resources, withNegations)
+	tr, err := core_rules.BuildToRules(dpPolicies, resources)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create To rules: %s", err.Error()))
 	}
@@ -127,7 +122,6 @@ func MatchedPolicies(
 		matchedPoliciesByInbound,
 		matchedPoliciesByGatewayListener,
 		resources,
-		withNegations,
 	)
 	if err != nil {
 		warnings = append(warnings, fmt.Sprintf("couldn't create Gateway rules: %s", err.Error()))

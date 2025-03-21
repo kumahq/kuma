@@ -218,13 +218,13 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader, withNegations bool) (ToRules, error) {
+func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader) (ToRules, error) {
 	toList, err := buildToList(matchedPolicies.GetItems(), reader)
 	if err != nil {
 		return ToRules{}, err
 	}
 
-	rules, err := BuildRules(toList, withNegations)
+	rules, err := BuildRules(toList, false)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -261,19 +261,18 @@ func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
 	reader common.ResourceReader,
-	withNegations bool,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]ToRules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
 	for listener, policies := range matchedPoliciesByListener {
-		toRules, err := BuildToRules(policies, reader, withNegations)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
 		toRulesByListenerHostname[listener] = toRules
 	}
 	for inbound, policies := range matchedPoliciesByInbound {
-		toRules, err := BuildToRules(policies, reader, withNegations)
+		toRules, err := BuildToRules(policies, reader)
 		if err != nil {
 			return GatewayRules{}, err
 		}
@@ -420,6 +419,7 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		return rules, nil
 	}
 
+	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets
 	var subsets []subsetutils.Subset
 	for _, item := range oldKindsItems {
@@ -427,11 +427,14 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tag := range ss {
+			uniqueKeys[tag.Key] = struct{}{}
+		}
 		subsets = append(subsets, ss)
 	}
 
 	// we don't need to generate all permutations when there is no negations
-	if !withNegations {
+	if !withNegations && len(uniqueKeys) <= 1 {
 		// deduplicate subsets
 		subsets = subsetutils.Deduplicate(subsets)
 
