@@ -223,55 +223,11 @@
     {
      "conf": {
       "http": {
-       "requestTimeout": "15s"
-      }
-     },
-     "matchers": [
-      {
-       "key": "__rule-matches-hash__",
-       "not": false,
-       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
-      },
-      {
-       "key": "kuma.io/service",
-       "not": false,
-       "value": "backend_kuma-demo_svc_3001"
-      }
-     ],
-     "origin": [
-      {
-       "labels": {
-        "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "on-service"
-       },
-       "mesh": "default",
-       "name": "on-service",
-       "type": "MeshTimeout"
-      },
-      {
-       "labels": {
-        "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "on-route"
-       },
-       "mesh": "default",
-       "name": "on-route",
-       "type": "MeshTimeout"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "http": {
        "requestTimeout": "20s"
       }
      },
      "matchers": [
       {
-       "key": "__rule-matches-hash__",
-       "not": true,
-       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
-      },
-      {
        "key": "kuma.io/service",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"
@@ -300,11 +256,6 @@
        "key": "__rule-matches-hash__",
        "not": false,
        "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
-      },
-      {
-       "key": "kuma.io/service",
-       "not": true,
-       "value": "backend_kuma-demo_svc_3001"
       }
      ],
      "origin": [

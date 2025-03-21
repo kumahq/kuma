@@ -168,11 +168,6 @@
      },
      "matchers": [
       {
-       "key": "__rule-matches-hash__",
-       "not": true,
-       "value": "waFsoIISmZDTfFWYqxvY265/GASHYEWvHQTwMh/bpuU="
-      },
-      {
        "key": "kuma.io/service",
        "not": false,
        "value": "backend_kuma-demo_svc_3001"

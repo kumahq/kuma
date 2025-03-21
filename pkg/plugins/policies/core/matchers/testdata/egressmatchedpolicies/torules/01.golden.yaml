@@ -37,6 +37,3 @@ Rules:
     - Key: kuma.io/service
       Not: false
       Value: backend
-    - Key: version
-      Not: true
-      Value: v2
