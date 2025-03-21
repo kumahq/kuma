@@ -430,8 +430,6 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	}
 
 	// we don't need to generate all permutations when there is no negations
-	// and we have only 0 or one tag, in other cases we need to generate.
-	// in case of `to` policies it can happen when using MeshHTTPRoute
 	if !withNegations {
 		// deduplicate subsets
 		subsets = subsetutils.Deduplicate(subsets)
