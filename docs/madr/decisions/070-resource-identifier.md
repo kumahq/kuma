@@ -256,7 +256,7 @@ In Envoy stats fields we can use any character except `:` to avoid on the fly co
 OpenTelemetry defines "Attribute", it's a key-value pair similar to Prometheus labels.
 There are [no charset limitation on attribute's key or value](https://opentelemetry.io/docs/specs/otel/common).
 SDK [provides a way](https://opentelemetry.io/docs/specs/otel/common/#attribute-limits) to configure attribute length limit,
-but it's set to `Infinity` by default.  
+but it's set to `Infinity` by default.
 
 This leaves us with the following charset:
 
@@ -292,13 +292,7 @@ As a delimiter we can use only characters that can't be present in resource iden
   * start with an alphanumeric character
   * end with an alphanumeric character
 
-This leaves us with the following charset:
-
-```
-delimiter = "_" / "~" / "!" / "$" / "&" / "'" / "(" / ")" / "*" / "+" / "," / ";" / "=" / "@"
-```
-
-_Note: if we'd like to use resource identifier in URL query the delimiter charset is significantly smaller:_
+Since we want to use resource identifier in URL query as well, this leaves us with the following charset:
 
 ```
 delimiter = "_" / "~" 
