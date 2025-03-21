@@ -3,7 +3,7 @@
 set -e
 
 OUTPUT_DIR=$1/bin
-VERSION="5.6.0"
+VERSION="5.7.4"
 
 if [[ $2 == "get-version" ]]; then
   echo ${VERSION}
