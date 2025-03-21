@@ -18,12 +18,12 @@ func ApplicationOnUniversalClientOnK8s() {
 	meshName := "healthcheck-app-on-universal"
 
 	BeforeAll(func() {
-		err := NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
-			Setup(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
 		NewClusterSetup().
