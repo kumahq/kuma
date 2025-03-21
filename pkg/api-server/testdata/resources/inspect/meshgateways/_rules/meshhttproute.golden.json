@@ -223,31 +223,6 @@
     {
      "conf": {
       "http": {
-       "requestTimeout": "15s"
-      }
-     },
-     "matchers": [
-      {
-       "key": "__rule-matches-hash__",
-       "not": false,
-       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
-      }
-     ],
-     "origin": [
-      {
-       "labels": {
-        "k8s.kuma.io/namespace": "kuma-demo",
-        "kuma.io/display-name": "on-route"
-       },
-       "mesh": "default",
-       "name": "on-route",
-       "type": "MeshTimeout"
-      }
-     ]
-    },
-    {
-     "conf": {
-      "http": {
        "requestTimeout": "20s"
       }
      },
@@ -266,6 +241,31 @@
        },
        "mesh": "default",
        "name": "on-service",
+       "type": "MeshTimeout"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "http": {
+       "requestTimeout": "15s"
+      }
+     },
+     "matchers": [
+      {
+       "key": "__rule-matches-hash__",
+       "not": false,
+       "value": "P6k5V5Y/QDNzTnF1vr7gY33PAAoDt+H+DtspboMfNMs="
+      }
+     ],
+     "origin": [
+      {
+       "labels": {
+        "k8s.kuma.io/namespace": "kuma-demo",
+        "kuma.io/display-name": "on-route"
+       },
+       "mesh": "default",
+       "name": "on-route",
        "type": "MeshTimeout"
       }
      ]

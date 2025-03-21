@@ -8,6 +8,23 @@ Rules:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
+    name: mtp-1
+    type: MeshTimeout
+  Subset:
+  - Key: __rule-matches-hash__
+    Not: false
+    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
+  - Key: kuma.io/service
+    Not: false
+    Value: another-test-server
+- BackendRefOriginIndex: {}
+  Conf:
+    http:
+      requestTimeout: 1s
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
     name: mtp-2
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
@@ -22,20 +39,3 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: test-server
-- BackendRefOriginIndex: {}
-  Conf:
-    http:
-      requestTimeout: 1s
-  Origin:
-  - creationTime: "0001-01-01T00:00:00Z"
-    mesh: mesh-1
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: mtp-1
-    type: MeshTimeout
-  Subset:
-  - Key: __rule-matches-hash__
-    Not: false
-    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
-  - Key: kuma.io/service
-    Not: false
-    Value: another-test-server

@@ -366,7 +366,7 @@ func Deduplicate(subsets []Subset) []Subset {
 		}
 	}
 	sort.SliceStable(result, func(i, j int) bool {
-		return canonicalSubset(result[i]) < canonicalSubset(result[j])
+		return canonicalSubset(result[i]) > canonicalSubset(result[j])
 	})
 	return result
 }

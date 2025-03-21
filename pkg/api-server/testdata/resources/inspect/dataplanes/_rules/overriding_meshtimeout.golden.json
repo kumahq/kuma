@@ -124,14 +124,14 @@
       "connectionTimeout": "2s",
       "idleTimeout": "20s",
       "http": {
-       "requestTimeout": "20s"
+       "requestTimeout": "15s"
       }
      },
      "matchers": [
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": "bar"
+       "value": "foo"
       }
      ],
      "origin": [
@@ -154,14 +154,14 @@
       "connectionTimeout": "2s",
       "idleTimeout": "20s",
       "http": {
-       "requestTimeout": "15s"
+       "requestTimeout": "20s"
       }
      },
      "matchers": [
       {
        "key": "kuma.io/service",
        "not": false,
-       "value": "foo"
+       "value": "bar"
       }
      ],
      "origin": [
