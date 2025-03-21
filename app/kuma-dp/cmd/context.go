@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/log"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 )
@@ -24,8 +23,6 @@ type RootContext struct {
 	Config                   *kumadp.Config
 	LogLevel                 log.LogLevel
 }
-
-var features = []string{core_xds.FeatureTCPAccessLogViaNamedPipe}
 
 // defaultDataplaneTokenGenerator uses only given tokens or paths from the
 // config.
@@ -54,7 +51,7 @@ func DefaultRootContext() *RootContext {
 	config := kumadp.DefaultConfig()
 	return &RootContext{
 		ComponentManager:         component.NewManager(leader_memory.NewNeverLeaderElector()),
-		BootstrapGenerator:       envoy.NewRemoteBootstrapGenerator(runtime.GOOS, features),
+		BootstrapGenerator:       envoy.NewRemoteBootstrapGenerator(runtime.GOOS),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
 		DataplaneTokenGenerator:  defaultDataplaneTokenGenerator,

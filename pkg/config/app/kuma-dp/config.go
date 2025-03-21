@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
 var DefaultConfig = func() Config {
@@ -35,7 +36,7 @@ var DefaultConfig = func() Config {
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
-				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
+				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
 		},
 		DNS: DNS{
@@ -65,6 +66,16 @@ type Config struct {
 	// DNS defines a configuration for builtin DNS in Kuma DP
 	DNS                         DNS                         `json:"dns,omitempty"`
 	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
+}
+
+func (c *Config) Features() []string {
+	base := []string{
+		xds.FeatureTCPAccessLogViaNamedPipe,
+	}
+	if c.DNS.EmbeddedProxyPort != 0 {
+		base = append(base, xds.FeatureEmbeddedDNS)
+	}
+	return base
 }
 
 func (c *Config) Sanitize() {
@@ -361,6 +372,9 @@ type DNS struct {
 
 	// If true then builtin DNS functionality is enabled and CoreDNS server is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
+
+	// EmbeddedProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
+	EmbeddedProxyPort uint32 `json:"embeddedDNSProxyPort,omitempty" envconfig:"kuma_dns_embedded_proxy_port"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.

@@ -5,10 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net"
-	"net/http"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -19,15 +15,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
 	utilnet "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
-type ConfigFetcher struct {
-	httpClient            http.Client
-	socketPath            string
-	ticker                *time.Ticker
+type Manager struct {
 	hijacker              *metrics.Hijacker
 	defaultAddress        string
 	envoyAdminAddress     string
@@ -35,26 +28,21 @@ type ConfigFetcher struct {
 	openTelemetryProducer *metrics.AggregatedProducer
 	runningBackends       map[string]*runningBackend
 	drainTime             time.Duration
+	ctx                   context.Context
+	cancel                context.CancelFunc
+	done                  chan struct{}
+	newConfig             chan dpapi.MeshMetricDpConfig
 }
-
-const unixDomainSocket = "unix"
-
-var _ component.Component = &ConfigFetcher{}
 
 var logger = core.Log.WithName("mesh-metric-config-fetcher")
 
-func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) component.Component {
-	return &ConfigFetcher{
-		httpClient: http.Client{
-			Timeout: 5 * time.Second,
-			Transport: &http.Transport{
-				DialContext: func(_ context.Context, _, _ string) (net.Conn, error) {
-					return net.Dial(unixDomainSocket, socketPath)
-				},
-			},
-		},
-		socketPath:            socketPath,
-		ticker:                ticker,
+var _ component.GracefulComponent = &Manager{}
+
+func NewManager(ctx context.Context, hijacker *metrics.Hijacker, openTelemetryProducer *metrics.AggregatedProducer, address string, envoyAdminPort uint32, envoyAdminAddress string, drainTime time.Duration) *Manager {
+	ctx, cancel := context.WithCancel(ctx)
+	return &Manager{
+		ctx:                   ctx,
+		cancel:                cancel,
 		hijacker:              hijacker,
 		openTelemetryProducer: openTelemetryProducer,
 		defaultAddress:        address,
@@ -62,125 +50,91 @@ func NewMeshMetricConfigFetcher(socketPath string, ticker *time.Ticker, hijacker
 		envoyAdminPort:        envoyAdminPort,
 		runningBackends:       map[string]*runningBackend{},
 		drainTime:             drainTime,
+		newConfig:             make(chan dpapi.MeshMetricDpConfig),
+		done:                  make(chan struct{}),
 	}
 }
 
-func (cf *ConfigFetcher) Start(stop <-chan struct{}) error {
-	logger.Info("starting Dynamic Mesh Metrics Configuration Scraper",
-		"socketPath", fmt.Sprintf("unix://%s", cf.socketPath),
-	)
-
-	ctx, ctxCancel := context.WithCancel(context.Background())
-	go func() {
-		<-stop
-		ctxCancel()
-	}()
-
+func (m *Manager) Start(stop <-chan struct{}) error {
+	defer close(m.done)
 	for {
 		select {
-		case <-cf.ticker.C:
-			if _, err := os.Stat(cf.socketPath); errors.Is(err, os.ErrNotExist) {
-				logger.V(1).Info("skipping /meshmetric endpoint scrape since socket does not exist", "err", err)
-				continue
-			}
-
-			configuration, err := cf.scrapeConfig()
+		case configuration := <-m.newConfig:
+			logger.Info("updating hijacker configuration", "conf", configuration)
+			err := m.Step(configuration)
 			if err != nil {
-				continue
-			}
-			logger.V(1).Info("updating hijacker configuration", "conf", configuration)
-			newApplicationsToScrape := cf.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
-			cf.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
-			err = cf.configureOpenTelemetryExporter(ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends))
-			if err != nil {
-				logger.Error(err, "Configuring OpenTelemetry Exporter failed")
-				continue
+				logger.Error(err, "failed to update hijacker configuration")
 			}
 		case <-stop:
-			logger.Info("stopping Dynamic Mesh Metrics Configuration Scraper")
-			cf.shutDownMetricsExporters()
-			return nil
+			return m.Shutdown()
 		}
 	}
 }
 
-func (cf *ConfigFetcher) NeedLeaderElection() bool {
+func (m *Manager) NeedLeaderElection() bool {
 	return false
 }
 
-func (cf *ConfigFetcher) scrapeConfig() (*xds.MeshMetricDpConfig, error) {
-	conf := xds.MeshMetricDpConfig{}
-	// since we use socket for communication "localhost" is ignored but this is needed for this
-	// http call to work
-	configuration, err := cf.httpClient.Get("http://localhost/meshmetric")
-	if err != nil {
-		// this error can only occur when we configured policy once and then remove it. Listener is removed but socket file
-		// is still present since Envoy does not clean it.
-		if strings.Contains(err.Error(), "connection refused") {
-			logger.V(1).Info("Failed to scrape config, Envoy not listening on socket")
-			return &conf, nil
-		}
-		logger.Info("failed to scrape /meshmetric endpoint", "err", err)
-		return nil, errors.Wrap(err, "failed to scrape /meshmetric endpoint")
-	}
-
-	defer configuration.Body.Close()
-	respBytes, err := io.ReadAll(configuration.Body)
-	if err != nil {
-		logger.Info("failed to read bytes of the response", "err", err)
-		return nil, errors.Wrap(err, "failed to read bytes of the response")
-	}
-	if err = json.Unmarshal(respBytes, &conf); err != nil {
-		logger.Info("failed to unmarshall the response", "err", err)
-		return nil, errors.Wrap(err, "failed to unmarshall the response")
-	}
-
-	return &conf, nil
+func (m *Manager) WaitForDone() {
+	<-m.done
 }
 
-func (cf *ConfigFetcher) configurePrometheus(applicationsToScrape []metrics.ApplicationToScrape, prometheusBackends []xds.Backend) {
-	if len(prometheusBackends) == 0 {
-		return
+func (m *Manager) OnChange(ctx context.Context, reader io.Reader) error {
+	configuration := dpapi.MeshMetricDpConfig{}
+	if err := json.NewDecoder(reader).Decode(&configuration); err != nil {
+		return fmt.Errorf("mesh metric configuration decoding error: %w", err)
 	}
-	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
-}
-
-func (cf *ConfigFetcher) configureOpenTelemetryExporter(ctx context.Context, applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
-	err := cf.reconfigureBackends(ctx, openTelemetryBackends)
-	if err != nil {
-		return err
+	select {
+	case m.newConfig <- configuration:
+	case <-ctx.Done():
+		return ctx.Err()
 	}
-	err = cf.shutdownBackendsRemovedFromConfig(ctx, openTelemetryBackends)
-	if err != nil {
-		return err
-	}
-	cf.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
 	return nil
 }
 
-func (cf *ConfigFetcher) reconfigureBackends(ctx context.Context, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+func (m *Manager) configurePrometheus(applicationsToScrape []metrics.ApplicationToScrape, prometheusBackends []dpapi.Backend) {
+	if len(prometheusBackends) == 0 {
+		return
+	}
+	m.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
+}
+
+func (m *Manager) configureOpenTelemetryExporter(ctx context.Context, applicationsToScrape []metrics.ApplicationToScrape, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
+	err := m.reconfigureBackends(ctx, openTelemetryBackends)
+	if err != nil {
+		return err
+	}
+	err = m.shutdownBackendsRemovedFromConfig(ctx, openTelemetryBackends)
+	if err != nil {
+		return err
+	}
+	m.openTelemetryProducer.SetApplicationsToScrape(applicationsToScrape)
+	return nil
+}
+
+func (m *Manager) reconfigureBackends(ctx context.Context, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
 	for backendName, backend := range openTelemetryBackends {
 		// backend already running, in the future we can reconfigure it here
-		if cf.runningBackends[backendName] != nil {
-			err := cf.reconfigureBackendIfNeeded(ctx, backendName, backend)
+		if m.runningBackends[backendName] != nil {
+			err := m.reconfigureBackend(ctx, backendName, backend)
 			if err != nil {
 				return err
 			}
 			continue
 		}
 		// start backend as it is not running yet
-		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
+		exporter, err := startExporter(ctx, backend, m.openTelemetryProducer, backendName)
 		if err != nil {
 			return err
 		}
-		cf.runningBackends[backendName] = exporter
+		m.runningBackends[backendName] = exporter
 	}
 	return nil
 }
 
-func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, openTelemetryBackends map[string]*xds.OpenTelemetryBackend) error {
+func (m *Manager) shutdownBackendsRemovedFromConfig(ctx context.Context, openTelemetryBackends map[string]*dpapi.OpenTelemetryBackend) error {
 	var backendsToRemove []string
-	for backendName := range cf.runningBackends {
+	for backendName := range m.runningBackends {
 		// backend still configured in policy
 		if openTelemetryBackends[backendName] != nil {
 			continue
@@ -189,7 +143,7 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, 
 	}
 	for _, backendName := range backendsToRemove {
 		logger.Info("Shutting down OpenTelemetry exporter", "backend", backendName)
-		err := cf.shutdownBackend(ctx, backendName)
+		err := m.shutdownBackend(ctx, backendName)
 		if err != nil {
 			return err
 		}
@@ -197,16 +151,16 @@ func (cf *ConfigFetcher) shutdownBackendsRemovedFromConfig(ctx context.Context, 
 	return nil
 }
 
-func (cf *ConfigFetcher) shutdownBackend(ctx context.Context, backendName string) error {
-	err := cf.runningBackends[backendName].exporter.Shutdown(ctx)
+func (m *Manager) shutdownBackend(ctx context.Context, backendName string) error {
+	err := m.runningBackends[backendName].exporter.Shutdown(ctx)
 	if err != nil && !errors.Is(err, sdkmetric.ErrReaderShutdown) {
 		return err
 	}
-	delete(cf.runningBackends, backendName)
+	delete(m.runningBackends, backendName)
 	return nil
 }
 
-func startExporter(ctx context.Context, backend *xds.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
+func startExporter(ctx context.Context, backend *dpapi.OpenTelemetryBackend, producer *metrics.AggregatedProducer, backendName string) (*runningBackend, error) {
 	if backend == nil {
 		return nil, nil
 	}
@@ -231,8 +185,8 @@ func startExporter(ctx context.Context, backend *xds.OpenTelemetryBackend, produ
 	}, nil
 }
 
-func getOpenTelemetryBackends(allBackends []xds.Backend) map[string]*xds.OpenTelemetryBackend {
-	openTelemetryBackends := map[string]*xds.OpenTelemetryBackend{}
+func getOpenTelemetryBackends(allBackends []dpapi.Backend) map[string]*dpapi.OpenTelemetryBackend {
+	openTelemetryBackends := map[string]*dpapi.OpenTelemetryBackend{}
 	for _, backend := range allBackends {
 		if backend.Type == string(v1alpha1.OpenTelemetryBackendType) {
 			openTelemetryBackends[pointer.Deref(backend.Name)] = backend.OpenTelemetry
@@ -241,8 +195,8 @@ func getOpenTelemetryBackends(allBackends []xds.Backend) map[string]*xds.OpenTel
 	return openTelemetryBackends
 }
 
-func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
-	var prometheusBackends []xds.Backend
+func getPrometheusBackends(allBackends []dpapi.Backend) []dpapi.Backend {
+	var prometheusBackends []dpapi.Backend
 	for _, backend := range allBackends {
 		if backend.Type == string(v1alpha1.PrometheusBackendType) {
 			prometheusBackends = append(prometheusBackends, backend)
@@ -251,11 +205,11 @@ func getPrometheusBackends(allBackends []xds.Backend) []xds.Backend {
 	return prometheusBackends
 }
 
-func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
+func (m *Manager) mapApplicationToApplicationToScrape(applications []dpapi.Application, sidecar *v1alpha1.Sidecar, extraLabels map[string]string) []metrics.ApplicationToScrape {
 	var applicationsToScrape []metrics.ApplicationToScrape
 
 	for _, application := range applications {
-		address := cf.defaultAddress
+		address := m.defaultAddress
 		if application.Address != "" {
 			address = application.Address
 		}
@@ -274,8 +228,8 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 	applicationsToScrape = append(applicationsToScrape, metrics.ApplicationToScrape{
 		Name:              "envoy",
 		Path:              "/stats",
-		Address:           cf.envoyAdminAddress,
-		Port:              cf.envoyAdminPort,
+		Address:           m.envoyAdminAddress,
+		Port:              m.envoyAdminPort,
 		IsIPv6:            false,
 		ExtraLabels:       extraLabels,
 		QueryModifier:     metrics.AggregatedQueryParametersModifier(metrics.AddPrometheusFormat, metrics.AddSidecarParameters(sidecar)),
@@ -285,37 +239,44 @@ func (cf *ConfigFetcher) mapApplicationToApplicationToScrape(applications []xds.
 	return applicationsToScrape
 }
 
-func (cf *ConfigFetcher) reconfigureBackendIfNeeded(ctx context.Context, backendName string, backend *xds.OpenTelemetryBackend) error {
-	if configChanged(cf.runningBackends[backendName].appliedConfig, backend) {
-		err := cf.shutdownBackend(ctx, backendName)
-		if err != nil {
-			return err
+func (m *Manager) reconfigureBackend(ctx context.Context, backendName string, backend *dpapi.OpenTelemetryBackend) error {
+	err := m.shutdownBackend(ctx, backendName)
+	if err != nil {
+		return err
+	}
+	exporter, err := startExporter(ctx, backend, m.openTelemetryProducer, backendName)
+	if err != nil {
+		return err
+	}
+	m.runningBackends[backendName] = exporter
+	return nil
+}
+
+func (m *Manager) Step(configuration dpapi.MeshMetricDpConfig) error {
+	newApplicationsToScrape := m.mapApplicationToApplicationToScrape(configuration.Observability.Metrics.Applications, configuration.Observability.Metrics.Sidecar, configuration.Observability.Metrics.ExtraLabels)
+	m.configurePrometheus(newApplicationsToScrape, getPrometheusBackends(configuration.Observability.Metrics.Backends))
+	return m.configureOpenTelemetryExporter(m.ctx, newApplicationsToScrape, getOpenTelemetryBackends(configuration.Observability.Metrics.Backends)) // nolint:contextcheck
+}
+
+func (m *Manager) Shutdown() error {
+	m.cancel()
+	ctx, cancel := context.WithTimeout(context.Background(), m.drainTime)
+	defer cancel()
+	hasError := false
+	for backendName := range m.runningBackends {
+		bErr := m.shutdownBackend(ctx, backendName)
+		if bErr != nil {
+			logger.Error(bErr, "Failed to shutdown backend", "backend", backendName)
+			hasError = true
 		}
-		exporter, err := startExporter(ctx, backend, cf.openTelemetryProducer, backendName)
-		if err != nil {
-			return err
-		}
-		cf.runningBackends[backendName] = exporter
+	}
+	if hasError {
+		return errors.New("failed to shutdown some backend")
 	}
 	return nil
 }
 
-func (cf *ConfigFetcher) shutDownMetricsExporters() {
-	ctx, cancel := context.WithTimeout(context.Background(), cf.drainTime)
-	defer cancel()
-	for backendName := range cf.runningBackends {
-		err := cf.shutdownBackend(ctx, backendName)
-		if err != nil {
-			logger.Error(err, "Failed shutting down metric exporter")
-		}
-	}
-}
-
-func configChanged(appliedConfig xds.OpenTelemetryBackend, newConfig *xds.OpenTelemetryBackend) bool {
-	return appliedConfig.RefreshInterval.Duration != newConfig.RefreshInterval.Duration
-}
-
 type runningBackend struct {
 	exporter      *sdkmetric.MeterProvider
-	appliedConfig xds.OpenTelemetryBackend
+	appliedConfig dpapi.OpenTelemetryBackend
 }

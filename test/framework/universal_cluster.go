@@ -394,6 +394,12 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 			opts.mesh = "default"
 		}
 		app.dpEnv = opts.dpEnvs
+		if Config.KumaExperimentalEmbeddedDNS {
+			if app.dpEnv == nil {
+				app.dpEnv = map[string]string{}
+			}
+			app.dpEnv["KUMA_DNS_EMBEDDED_PROXY_PORT"] = "15053"
+		}
 		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, token, builtindns, opts.concurrency); err != nil {
 			return err
 		}

@@ -13,7 +13,7 @@ dataplane:
 dataplaneRuntime:
   binaryPath: envoy
   dynamicConfiguration:
-    refreshInterval: 10s
+    refreshInterval: 1s
   metrics: {}
   resources: {}
 dns:
