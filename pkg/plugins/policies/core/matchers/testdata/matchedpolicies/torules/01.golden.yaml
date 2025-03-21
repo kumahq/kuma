@@ -13,10 +13,10 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: false
-    Value: another-test-server
+    Value: test-server
 - BackendRefOriginIndex: {}
   Conf:
     http:
@@ -30,7 +30,7 @@ Rules:
   Subset:
   - Key: __rule-matches-hash__
     Not: false
-    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
+    Value: OTqJZOueoDIMeYnpSETLYoaD2htefPQ7CcHHRBgrODk=
   - Key: kuma.io/service
     Not: false
-    Value: test-server
+    Value: another-test-server

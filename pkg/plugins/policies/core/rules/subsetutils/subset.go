@@ -358,16 +358,11 @@ func Deduplicate(subsets []Subset) []Subset {
 
 	for _, s := range subsets {
 		key := canonicalSubset(s)
-		// sort values by key, value, not
-		s.Sorted()
 		if _, exists := seen[key]; !exists {
 			seen[key] = struct{}{}
 			result = append(result, s)
 		}
 	}
-	sort.SliceStable(result, func(i, j int) bool {
-		return canonicalSubset(result[i]) > canonicalSubset(result[j])
-	})
 	return result
 }
 
@@ -377,7 +372,7 @@ func canonicalSubset(s Subset) string {
 	if len(s) == 0 {
 		return ""
 	}
-
+	s.Sorted()
 	var sb strings.Builder
 	for i, t := range s {
 		if i > 0 {
