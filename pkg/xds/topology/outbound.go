@@ -8,7 +8,6 @@ import (
 
 	"github.com/asaskevich/govalidator"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -339,15 +338,8 @@ func fillLocalMeshServices(
 			dpNetworking := dpp.Spec.GetNetworking()
 			for _, inbound := range dpNetworking.GetHealthyInbounds() {
 				for _, port := range meshSvc.Spec.Ports {
-					switch port.TargetPort.Type {
-					case intstr.Int:
-						if uint32(port.TargetPort.IntVal) != inbound.Port {
-							continue
-						}
-					case intstr.String:
-						if port.TargetPort.StrVal != inbound.Name {
-							continue
-						}
+					if !meshservice.MatchInboundWithMeshServicePort(inbound, port) {
+						continue
 					}
 
 					inboundTags := maps.Clone(inbound.GetTags())

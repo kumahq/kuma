@@ -88,12 +88,12 @@ networking:
 
 		// then should reach external service
 		Eventually(func(g Gomega) {
-			stdout, _, err := client.CollectResponse(
+			_, stderr, err := client.CollectResponse(
 				cluster, "demo-client", "external-service-1.mesh",
 				client.WithVerbose(),
 			)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}, "30s", "1s").Should(Succeed())
 
 		// and increase stats at egress

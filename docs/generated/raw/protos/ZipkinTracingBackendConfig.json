@@ -9,7 +9,6 @@
                     "description": "Address of Zipkin collector."
                 },
                 "traceId128bit": {
-                    "additionalProperties": true,
                     "type": "boolean",
                     "description": "Generate 128bit traces. Default: false"
                 },

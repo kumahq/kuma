@@ -24,7 +24,7 @@ CI_TOOLS_BIN_DIR=$(CI_TOOLS_DIR)/bin
 K8S_MIN_VERSION = v1.25.16-k3s4
 K8S_MAX_VERSION = v1.31.1-k3s1
 export GO_VERSION=$(shell go mod edit -json | jq -r .Go)
-export GOLANGCI_LINT_VERSION=v1.64.5
+export GOLANGCI_LINT_VERSION=v1.64.8
 GOOS := $(shell go env GOOS)
 GOARCH := $(shell go env GOARCH)
 

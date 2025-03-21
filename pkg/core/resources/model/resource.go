@@ -15,6 +15,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
+	model_labels "github.com/kumahq/kuma/pkg/core/resources/model/labels"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -67,6 +68,10 @@ const (
 	// there is a mechanism to avoid sending it back to the original Zone (.e.g producer policies, zone origin labels...).
 	// but this is outside of the resourceType sync mechanism.
 	SyncedAcrossZonesFlag = KDSFlagType(1 << 5)
+	// KDSDisabledByDefault is a flag that indicates that this resource type is not sent using KDS by default.
+	// only resources that are explicitly marked with `kuma.io/kds-sync: enabled` are sent.
+	// this is only used for Config resources atm.
+	KDSDisabledByDefault = KDSFlagType(1 << 6)
 	// ZoneToGlobalFlag gets sent from Zone to Global
 	ZoneToGlobalFlag = ConsumedByGlobalFlag | ProvidedByZoneFlag
 	// GlobalToZonesFlag gets sent from Global to Zone
@@ -289,6 +294,22 @@ func (d ResourceTypeDescriptor) IsReadOnly(isGlobal bool, isFederated bool) bool
 	return (isGlobal && !d.KDSFlags.Has(ProvidedByGlobalFlag)) || (isFederated && !d.KDSFlags.Has(ProvidedByZoneFlag))
 }
 
+// HasKDSDisabled returns whether this resource type is not sent using KDS.
+// Cases where KDS is disabled:
+// - KDSDisabledFlag is set
+// - KDSDisabledByDefault is set for the whole resource and there's no explicit allowance
+// zone is the name of the zone (empty when sending to global) it's potentially to be able to do more options on the flag in the future
+func (d ResourceTypeDescriptor) HasKDSDisabled(zone string, labels map[string]string) bool {
+	switch labels[mesh_proto.KDSSyncLabel] {
+	case "enabled":
+		return false
+	case "disabled":
+		return true
+	default:
+		return d.KDSFlags.Has(KDSDisabledByDefault)
+	}
+}
+
 type TypeFilter interface {
 	Apply(descriptor ResourceTypeDescriptor) bool
 }
@@ -308,12 +329,6 @@ func SentFromGlobalToZone() TypeFilter {
 func SentFromZoneToGlobal() TypeFilter {
 	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
 		return descriptor.KDSFlags.Has(ZoneToGlobalFlag)
-	})
-}
-
-func HasKDSEnabled() TypeFilter {
-	return TypeFilterFn(func(descriptor ResourceTypeDescriptor) bool {
-		return descriptor.KDSFlags != KDSDisabledFlag
 	})
 }
 
@@ -526,6 +541,8 @@ func GetNamespace(rm ResourceMeta, systemNamespace string) Namespace {
 	return UnsetNamespace
 }
 
+// ComputeLabels computes labels for a resource based on its type, spec, existing labels, namespace, mesh, mode, k8s and localZone.
+// Only use set / setIfNotExist to set labels as it makes sure the label is on the list of computed labels (that is used in another project).
 func ComputeLabels(
 	rd ResourceTypeDescriptor,
 	spec ResourceSpec,
@@ -541,9 +558,16 @@ func ComputeLabels(
 		labels = maps.Clone(existingLabels)
 	}
 
+	set := func(k, v string) {
+		if _, ok := model_labels.AllComputedLabels[k]; !ok {
+			panic(fmt.Sprintf("label %q is not in the list of computed labels, update AllComputedLabels list as it is used in another project", k))
+		}
+		labels[k] = v
+	}
+
 	setIfNotExist := func(k, v string) {
 		if _, ok := labels[k]; !ok {
-			labels[k] = v
+			set(k, v)
 		}
 	}
 
@@ -583,13 +607,13 @@ func ComputeLabels(
 		if err != nil {
 			return nil, err
 		}
-		labels[mesh_proto.PolicyRoleLabel] = string(role)
+		set(mesh_proto.PolicyRoleLabel, string(role))
 	}
 
 	if rd.IsProxy {
 		proxy, ok := spec.(ProxyResource)
 		if ok {
-			labels[mesh_proto.ProxyTypeLabel] = strings.ToLower(string(proxy.GetProxyType()))
+			set(mesh_proto.ProxyTypeLabel, strings.ToLower(string(proxy.GetProxyType())))
 		}
 	}
 

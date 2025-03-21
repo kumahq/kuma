@@ -66,7 +66,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			// when
 			listener, err := NewOutboundListenerBuilder(envoy.APIV3, given.listenerAddress, given.listenerPort, given.listenerProtocol).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(HttpConnectionManager(given.statsName, false)).
+					Configure(HttpConnectionManager(given.statsName, false, nil)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
@@ -100,6 +100,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             trafficDirection: OUTBOUND
 `,
 		}),
@@ -139,6 +145,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND`,
 		}),
@@ -183,6 +195,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: backend
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
             name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND`,
 		}),

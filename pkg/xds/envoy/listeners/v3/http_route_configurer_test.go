@@ -17,7 +17,7 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
-					HttpConnectionManager("inbound", false),
+					HttpConnectionManager("inbound", false, nil),
 					HttpDynamicRoute("routes/inbound"),
 				)),
 			).Build()
@@ -47,6 +47,12 @@ var _ = Describe("HttpDynamicRouteConfigurer", func() {
                 resourceApiVersion: V3
               routeConfigName: routes/inbound
             statPrefix: inbound
+            internalAddressConfig:
+              cidrRanges:
+                - addressPrefix: 127.0.0.1
+                  prefixLen: 32
+                - addressPrefix: ::1
+                  prefixLen: 128
       name: inbound
       trafficDirection: INBOUND
 `))
@@ -59,7 +65,7 @@ var _ = Describe("HttpScopedRouteConfigurer", func() {
 			WithOverwriteName("inbound").
 			Configure(
 				FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).Configure(
-					HttpConnectionManager("inbound", false),
+					HttpConnectionManager("inbound", false, nil),
 					AddFilterChainConfigurer(&HttpScopedRouteConfigurer{}),
 				)),
 			).Build()

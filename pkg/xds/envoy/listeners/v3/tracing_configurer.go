@@ -13,7 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -101,7 +100,7 @@ func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tra
 	zipkinConfig := envoy_trace.ZipkinConfig{
 		CollectorCluster:         names.GetTracingClusterName(backendName),
 		CollectorEndpoint:        url.Path,
-		TraceId_128Bit:           pointer.Deref(cfg.TraceId128Bit).Value,
+		TraceId_128Bit:           cfg.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(&cfg, url),
 		SharedSpanContext:        cfg.SharedSpanContext,
 		CollectorHostname:        url.Host,
@@ -136,7 +135,7 @@ func apiVersion(zipkin *mesh_proto.ZipkinTracingBackendConfig, url *net_url.URL)
 }
 
 func createDatadogServiceName(datadog *mesh_proto.DatadogTracingBackendConfig, serviceName string, direction envoy_common.TrafficDirection, destination string) string {
-	if pointer.Deref(datadog.SplitService).Value {
+	if datadog.SplitService {
 		var datadogServiceName []string
 		switch direction {
 		case envoy_common.TrafficDirectionInbound:

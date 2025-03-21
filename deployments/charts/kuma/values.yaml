@@ -374,6 +374,8 @@ cni:
   podAnnotations: { }
   # -- Set the CNI namespace
   namespace: kube-system
+  # -- Set the CNI affinity
+  affinity: {}
 
   image:
     # -- CNI image repository
@@ -710,7 +712,7 @@ kubectl:
     # -- The kubectl image repository
     repository: bitnami/kubectl
     # -- The kubectl image tag
-    tag: "1.32.2"
+    tag: "1.32.3@sha256:c49b008f8ac9973e2d23deff64db6b992b8bd8c76538d0e697d9318bbbf683e2"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

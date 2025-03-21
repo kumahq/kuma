@@ -1,0 +1,18 @@
+{
+  "type": "MeshExternalService",
+  "name": "mes-tcp",
+  "mesh": "default",
+  "spec": {
+    "match": {
+      "type": "HostnameGenerator",
+      "port": 4242,
+      "protocol": "tcp"
+    },
+    "endpoints": [
+      {
+        "address": "tcpbin.com",
+        "port": 4242
+      }
+    ]
+  }
+}
