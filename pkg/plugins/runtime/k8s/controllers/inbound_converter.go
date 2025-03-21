@@ -132,8 +132,10 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	}
 }
 
-// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway to not change order of inbounds
-// generated for gateway, as we pick first to take tags from. Delegated gateway identity relies on this.
+// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway and Mesh without MeshService exclusive
+// to not change order of inbounds.
+// For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
+// For Dataplanes when MeshService is disabled we base identity and routing
 // TODO: We should revisit this when we rework identity
 func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
@@ -166,6 +168,7 @@ func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone 
 	return ifaces, nil
 }
 
+// Should be used when MeshService mode is Exclusive
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 	if err != nil {
