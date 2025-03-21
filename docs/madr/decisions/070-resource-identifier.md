@@ -2,6 +2,15 @@
 
 * Status: accepted
 
+## Out of Scope
+
+This document defines the format of the resource identifier only. 
+It does not cover the rollout strategy for adopting the identifier across Envoy configurations, 
+nor does it define the shape or behavior of HTTP APIs for retrieving resources by resource identifier. 
+Although we reference potential usages such as Envoy naming or future Inspect APIs, 
+these are mentioned solely to illustrate the motivation. 
+Renaming secrets in Envoy is also out of scope.
+
 ## Context and Problem Statement
 
 Kuma multizone mode allows synchronizing state between multiple clusters. Zone Control Planes connect to the Global Control Plane, forming a tree with the Global CP as the root.
