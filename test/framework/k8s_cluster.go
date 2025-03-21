@@ -899,7 +899,10 @@ func (c *K8sCluster) GetKuma() ControlPlane {
 }
 
 func (c *K8sCluster) GetKumaCPLogs() map[string]string {
-	pods := c.GetKuma().(*K8sControlPlane).GetKumaCPPods()
+	if c.controlplane == nil { // This is required if the cp never succeeded to start
+		return map[string]string{}
+	}
+	pods := c.controlplane.GetKumaCPPods()
 	if len(pods) < 1 {
 		return map[string]string{"failed": "no kuma-cp pods found for logs"}
 	}

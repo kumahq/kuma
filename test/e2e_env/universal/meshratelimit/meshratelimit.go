@@ -105,8 +105,7 @@ spec:
 	})
 
 	It("should limit tcp connections", func() {
-		admin, err := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
 		// should have no ratelimited connections
 		Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
 
