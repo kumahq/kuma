@@ -161,35 +161,35 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 | VirtualHost       | legacy listeners - `<kuma.io/service>`<br>new outbounds - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                                                                        | Mesh*Service (with sectionName to select port)                                                                                           | kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport |
 | Inbound Cluster   | `localhost:<port>`                                                                                                                                                                                      | Dataplane (with sectionName to select port)                                                                                              | kri_dp_mesh-1_us-east-2_kuma-demo_backend-app_8080   |
 | Outbound Cluster  | legacy clusters - `<kuma.io/service>-hash(dst.tags)`<br>legacy clusters cross-mesh - `<kuma.io/service>-hash(dst.tags)_<mesh>`<br>new clusters - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>` | Mesh*Service (with sectionName to select port)                                                                                           | kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport |
-| Route             | Routes are set on Listener on VirtualHost.<br>On inbound - `inbound:<kuma.io/service>`<br>On outbound - `<hash_sha256([]Match{...})>`                                                                   | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route | kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1        |
+| Route             | Routes are set on Listener on VirtualHost.<br>On inbound - `inbound:<kuma.io/service>`<br>On outbound - `<hash_sha256([]Match{...})>`                                                                   | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route | kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1_       |
 | Secret            | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>`                                         | See [Secrets naming in Envoy](#secrets-naming-in-envoy)                                                                                  | –                                                    |
 
 ##### Builtin Gateway
 
-|             | Name                                                                                                                                                                                                                           | Correlated Resources                                                                                                                           | ResourceIdentifier                            |
-|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------|
-| Listener    | `<gateway-name>:<protocol>:<port>` where `gateway-name` is `MeshGatewayResource.Meta.Name`                                                                                                                                     | MeshGateway (with sectionName to select the listener)                                                                                          | kri_mgw_mesh-1_us-east-2__gw-1                |
-| VirtualHost | `<hostname>`                                                                                                                                                                                                                   |                                                                                                                                                |                                               |
-| Cluster     | `<kuma.io/service>-hash(merge(dpp.tags, gateway.tags, listener.tags))`                                                                                                                                                         | Pair of MeshGateway and Mesh*Service, can be only Mesh*Service once we resolve the [Issue #13129](https://github.com/kumahq/kuma/issues/13129) |                                               |
-| Route       | Dynamic routes using RDS. <br/>Listener name + `:*`, i.e. `gateway-proxy:HTTP:8080:*` or<br>listener name + `:<hostname>`                                                                                                      | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route       | kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1 |
-| Secret      | `name     = <category>:<scope>:<identifier>`<br>`category = "cert." \| "cert.ecdsa" \| "cert.rsa"`<br>`scope    = "file" \| "inline" \| "inlineString"`<br>`identifier = <file-name> \| <secret-name> \| join(hostnames, ":")` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)                                                                                        | –                                             |
+|             | Name                                                                                                                                                                                                                           | Correlated Resources                                                                                                                           | ResourceIdentifier                             |
+|-------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|
+| Listener    | `<gateway-name>:<protocol>:<port>` where `gateway-name` is `MeshGatewayResource.Meta.Name`                                                                                                                                     | MeshGateway (with sectionName to select the listener)                                                                                          | kri_mgw_mesh-1_us-east-2__gw-1_                |
+| VirtualHost | `<hostname>`                                                                                                                                                                                                                   |                                                                                                                                                |                                                |
+| Cluster     | `<kuma.io/service>-hash(merge(dpp.tags, gateway.tags, listener.tags))`                                                                                                                                                         | Pair of MeshGateway and Mesh*Service, can be only Mesh*Service once we resolve the [Issue #13129](https://github.com/kumahq/kuma/issues/13129) |                                                |
+| Route       | Dynamic routes using RDS. <br/>Listener name + `:*`, i.e. `gateway-proxy:HTTP:8080:*` or<br>listener name + `:<hostname>`                                                                                                      | Envoy Route is a merge product of multiple MeshHTTPRoutes.<br/> We can use only the most specific MeshHTTPRoute policy to name the route       | kri_mhttpr_mesh-1_us-east-2_kuma-demo_route-1_ |
+| Secret      | `name     = <category>:<scope>:<identifier>`<br>`category = "cert." \| "cert.ecdsa" \| "cert.rsa"`<br>`scope    = "file" \| "inline" \| "inlineString"`<br>`identifier = <file-name> \| <secret-name> \| join(hostnames, ":")` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)                                                                                        | –                                              |
 
 
 ##### Zone Ingress
 
 |          | Name                                                                                                                        | Correlated Resources                           | ResourceIdentifier                                   |
 |----------|-----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------|------------------------------------------------------|
-| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    | kri_zi__us-east-2_kuma-system_zi1                    |
+| Listener | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                  | ZoneIngress                                    | kri_zi__us-east-2_kuma-system_zi1_                   |
 | Cluster  | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`  | Mesh*Service (with sectionName to select port) | kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport |
 
 ##### Zone Egress
 
 |             | Name                                                                                                                                                            | Correlated Resources                                     | ResourceIdentifier                                   |
 |-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|------------------------------------------------------|
-| Listener    | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                                                      | ZoneEgress                                               | kri_ze__us-east-2_kuma-system_ze1                    |
+| Listener    | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                                                      | ZoneEgress                                               | kri_ze__us-east-2_kuma-system_ze1_                   |
 | Cluster     | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                      | Mesh*Service (with sectionName to select port)           | kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport |
-| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                                      | kri_extsvc_mesh-1___es1                              |
-| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                                      | kri_extsvc_mesh-1___es1                              |
+| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                                      | kri_extsvc_mesh-1___es1_                             |
+| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                                      | kri_extsvc_mesh-1___es1_                             |
 | Secret      | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)  | –                                                    |
 
 ##### MeshPassthrough
@@ -229,7 +229,7 @@ func SanitizeMetric(metric string) string {
 As the goal of this MADR is to have unified names in Envoy, Metrics, and API,
 we want `stat_prefix` and `alt_stat_name` to always be the same as `name`.
 This makes the use of `stat_prefix` and `alt_stat_name` unnecessary.
-Once the migration to the new naming is complete, Kuma won’t set these fields anymore.
+Once the migration to the new naming is complete, Kuma won't set these fields anymore.
 
 ### Constraints
 
@@ -323,11 +323,14 @@ kri_<resource-type>_<mesh>_<zone>_<namespace>_<resource-name>_<section-name>
 
 `resource-type` is a short name of the resource type, it's already part of the [ResourceTypeDescriptor](https://github.com/kumahq/kuma/blob/d7ec0a2b1ac19208fb7dd9726309e3cf8cdc5848/pkg/core/resources/apis/meshservice/api/v1alpha1/zz_generated.resource.go#L168)
 
+When a field is not present, it must be represented as an empty string between underscores, even if this results in consecutive underscores or trailing underscores. 
+This ensures the format remains consistent and field positions are preserved.
+
 For example:
 ```
-kri_msvc_mesh-1_us-east-2_kuma-demo_backend
+kri_msvc_mesh-1_us-east-2_kuma-demo_backend_
 kri_msvc_mesh-1_us-east-2_kuma-demo_backend_http-port
-kri_msvc_mesh-1___global-timeouts
+kri_msvc_mesh-1___global-timeouts_
 ```
 
 Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
@@ -349,7 +352,7 @@ Also, it's not clear what problems and limitations do we have when it comes to n
 - Still possible to use in URL query
 
 **Cons:**
-- Hard to read when names are poorly chosen, e.g., `kri_msvc_default_default_default_backend`
+- Hard to read when names are poorly chosen, e.g., `kri_msvc_default_default_default_backend_`
 
 ### Option 2 - Field names in the identifier
 
