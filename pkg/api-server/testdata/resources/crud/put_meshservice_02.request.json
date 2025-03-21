@@ -1,0 +1,26 @@
+{
+  "type": "MeshService",
+  "name": "aa.a",
+  "mesh": "default",
+  "spec": {
+    "selector": {
+      "dataplaneTags": {
+        "app": "httpbin"
+      }
+    },
+    "ports": [
+      {
+        "port": 8081,
+        "targetPort": 80,
+        "protocol": "tcp"
+      }
+    ]
+  },
+  "status": {
+    "vips": [
+      {
+        "ip": "10.0.0.2"
+      }
+    ]
+  }
+}

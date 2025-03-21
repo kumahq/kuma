@@ -3,7 +3,6 @@ package v3_test
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -26,7 +25,7 @@ var _ = Describe("TracingConfigurer", func() {
 			// when
 			listener, err := NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8080, xds.SocketAddressProtocolTCP).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(HttpConnectionManager("localhost:8080", false)).
+					Configure(HttpConnectionManager("localhost:8080", false, nil)).
 					Configure(Tracing(given.backend, "service", given.direction, given.destination, false)))).
 				Build()
 			// then
@@ -63,6 +62,12 @@ var _ = Describe("TracingConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
                   tracing:
                     spawnUpstreamSpan: false
                     overallSampling:
@@ -102,6 +107,12 @@ var _ = Describe("TracingConfigurer", func() {
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
                   statPrefix: localhost_8080
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
                   tracing:
                     spawnUpstreamSpan: false
                     provider:
@@ -122,7 +133,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			expected: `
@@ -141,6 +152,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -159,7 +176,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			direction: envoy_common.TrafficDirectionInbound,
@@ -179,6 +196,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -197,7 +220,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
 					Address:      "1.1.1.1",
 					Port:         1111,
-					SplitService: &wrapperspb.BoolValue{Value: true},
+					SplitService: true,
 				}),
 			},
 			direction:   envoy_common.TrafficDirectionOutbound,
@@ -218,6 +241,12 @@ var _ = Describe("TracingConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
               statPrefix: localhost_8080
+              internalAddressConfig:
+                cidrRanges:
+                  - addressPrefix: 127.0.0.1
+                    prefixLen: 32
+                  - addressPrefix: ::1
+                    prefixLen: 128
               tracing:
                 spawnUpstreamSpan: false
                 provider:
@@ -249,6 +278,12 @@ var _ = Describe("TracingConfigurer", func() {
                   - name: envoy.filters.http.router
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+                  internalAddressConfig:
+                    cidrRanges:
+                      - addressPrefix: 127.0.0.1
+                        prefixLen: 32
+                      - addressPrefix: ::1
+                        prefixLen: 128
 `,
 		}),
 	)

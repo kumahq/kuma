@@ -6,7 +6,6 @@ import (
 	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	common_tls "github.com/kumahq/kuma/api/common/v1alpha1/tls"
@@ -50,7 +49,7 @@ var _ = Describe("TrafficRoute", func() {
 				EnabledBackend: "ca-1",
 			},
 			Routing: &mesh_proto.Routing{
-				ZoneEgress: &wrapperspb.BoolValue{Value: true},
+				ZoneEgress: true,
 			},
 		},
 	}
@@ -63,7 +62,7 @@ var _ = Describe("TrafficRoute", func() {
 				EnabledBackend: "ca-1",
 			},
 			Routing: &mesh_proto.Routing{
-				ZoneEgress: &wrapperspb.BoolValue{Value: false},
+				ZoneEgress: false,
 			},
 		},
 	}
@@ -83,7 +82,7 @@ var _ = Describe("TrafficRoute", func() {
 		},
 		Spec: &mesh_proto.Mesh{
 			Routing: &mesh_proto.Routing{
-				LocalityAwareLoadBalancing: &wrapperspb.BoolValue{Value: true},
+				LocalityAwareLoadBalancing: true,
 			},
 		},
 	}

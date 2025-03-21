@@ -1,0 +1,5 @@
+#/meshes/default/meshmultizoneservices/redis 201 method=PUT
+#/meshes/default/meshmultizoneservices/redis 200
+#/meshes/default/meshmultizoneservices/http.bin 201 method=PUT
+type: Mesh
+name: default

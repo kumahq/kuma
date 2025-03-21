@@ -85,3 +85,28 @@ func EntriesForFolder(folder string, pathPrefix ...string) []ginkgo.TableEntry {
 	}
 	return entries
 }
+
+// EntriesAsFolder returns all folders in the folder as gingko table entries this makes it easier to add test by only adding input and golden files
+func EntriesAsFolder(folder string) []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
+	var entries []ginkgo.TableEntry
+	testDir := path.Join("testdata", folder)
+	files, err := os.ReadDir(testDir)
+	if err != nil {
+		panic(err)
+	}
+	for _, f := range files {
+		if f.IsDir() {
+			input := path.Join(testDir, f.Name())
+			switch {
+			case strings.HasPrefix(f.Name(), "F"):
+				entries = append(entries, ginkgo.FEntry(input, input))
+			case strings.HasPrefix(f.Name(), "P"):
+				entries = append(entries, ginkgo.PEntry(input, input))
+			default:
+				entries = append(entries, ginkgo.Entry(input, input))
+			}
+		}
+	}
+	return entries
+}

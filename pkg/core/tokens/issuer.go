@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -37,12 +37,12 @@ func (j *jwtTokenIssuer) Generate(ctx context.Context, claims Claims, validFor t
 		return "", err
 	}
 
-	now := core.Now()
+	now := core.Now().Add(-5 * time.Second) // todo(jakubdyszkiewicz) parametrize via config and go through all clock skews in the project
 	claims.SetRegisteredClaims(jwt.RegisteredClaims{
 		ID:        core.NewUUID(),
 		IssuedAt:  jwt.NewNumericDate(now),
-		NotBefore: jwt.NewNumericDate(now.Add(time.Minute * -5)), // todo(jakubdyszkiewicz) parametrize via config and go through all clock skews in the project
-		ExpiresAt: jwt.NewNumericDate(now.Add(validFor)),
+		NotBefore: jwt.NewNumericDate(now),
+		ExpiresAt: jwt.NewNumericDate(now.Add(validFor).Add(5 * time.Second)),
 	})
 
 	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)

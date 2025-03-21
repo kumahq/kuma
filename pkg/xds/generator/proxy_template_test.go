@@ -160,6 +160,9 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					SecretsTracker: envoy_common.NewSecretsTracker("demo", []string{"demo"}),
 					APIVersion:     envoy_common.APIV3,
 					Metadata:       &model.DataplaneMetadata{},
+					InternalAddresses: []model.InternalAddress{
+						{AddressPrefix: "172.16.0.0", PrefixLen: 12},
+					},
 				}
 
 				// when

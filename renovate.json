@@ -1,23 +1,53 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>Kong/public-shared-renovate:backend#1.0.0"
-  ],
-  "baseBranches": [
-    "master"
+    "github>Kong/public-shared-renovate:backend#1.4.0",
+    "local>kumahq/kuma//.renovate/go-control-plane"
   ],
   "enabledManagers": [
     "custom.regex",
     "dockerfile",
     "github-actions",
-    "gomod"
+    "gomod",
+    "helm-values",
+    "kubernetes"
   ],
   "ignorePaths": [],
+  "kubernetes": {
+    "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
+    "fileMatch": [
+      "app/kumactl/data/install/k8s/.+\\.ya?ml$"
+    ]
+  },
   "packageRules": [
     {
-      "description": "Skip tests for GitHub Actions updates. We match by depType because there isn’t an idiomatic way to target custom manager from Kong/public-shared-renovate:backend preset, which handles Kong/public-shared-actions",
-      "matchDepTypes": ["action"],
-      "addLabels": ["ci/skip-test"]
+      "description": "Skip tests and apply preset config for GitHub Actions updates",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "extends": [
+        "local>kumahq/kuma//.renovate/github-actions"
+      ]
+    },
+    {
+      "description": "Skip tests and apply GitHub Actions preset for 'Kong/public-shared-actions' managed by custom regex manager",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchPackageNames": [
+        "Kong/public-shared-actions/**"
+      ],
+      "extends": [
+        "local>kumahq/kuma//.renovate/github-actions"
+      ]
+    },
+    {
+      "description": "Group container image updates for 'kumactl install demo|observability' Kubernetes manifests",
+      "groupName": "kumactl install demo|observability container images",
+      "groupSlug": "kumactl-install-k8s",
+      "matchFileNames": [
+        "app/kumactl/data/install/k8s/**"
+      ]
     }
   ]
 }

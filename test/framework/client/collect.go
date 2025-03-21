@@ -230,6 +230,7 @@ func collectCommand(opts CollectResponsesOpts, arg0 string, args ...string) []st
 	}
 
 	cmd = append(cmd, "--max-time", strconv.Itoa(int(opts.maxTime)))
+	cmd = append(cmd, "--no-progress-meter")
 	cmd = append(cmd, opts.Flags...)
 	cmd = append(cmd, args...)
 

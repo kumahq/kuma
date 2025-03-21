@@ -423,7 +423,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.9.0"
+          image: "jimmidyson/configmap-reload:v0.9.0@sha256:f34fe394b1dab3982025c4107df5526ca773bc245adac7dbef877ccb5f5d5df5"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -435,7 +435,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v3.1.0"
+          image: "prom/prometheus:v3.2.1@sha256:6927e0919a144aa7616fd0137d4816816d42f6b816de3af269ab065250859a62"
           imagePullPolicy: "IfNotPresent"
           args:
             - --config.file=/etc/config/prometheus.yml
