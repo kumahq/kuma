@@ -186,7 +186,7 @@ func (c E2eConfig) GetUniversalImage() string {
 	}
 }
 
-var defaultConf = E2eConfig{
+var DefaultConf = E2eConfig{
 	HelmChartName:                 "kuma/kuma",
 	HelmChartPath:                 "../../../deployments/charts/kuma",
 	VersionsYamlPath:              "../../../versions.yml",
@@ -264,7 +264,7 @@ var defaultConf = E2eConfig{
 }
 
 func init() {
-	Config = defaultConf
+	Config = DefaultConf
 	if err := config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
 		panic(err)
 	}
