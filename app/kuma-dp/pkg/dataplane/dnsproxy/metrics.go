@@ -12,17 +12,17 @@ type metrics struct {
 
 func newMetrics() *metrics {
 	upstreamRequestDuration := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name: "kuma_dp_embeddeddns_proxy_upstream_request_duration_seconds",
+		Name: "kuma_dp_dns_upstream_request_duration_seconds",
 		Help: "The duration of the proxied requests.",
 	})
 	prometheus.MustRegister(upstreamRequestDuration)
 	requestDuration := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name: "kuma_dp_embeddeddns_proxy_request_duration_seconds",
+		Name: "kuma_dp_dns_request_duration_seconds",
 		Help: "The duration of the request (inclusive of request that use internal DNS map).",
 	})
 	prometheus.MustRegister(requestDuration)
 	upstreamRequestFailureCount := prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "kuma_dp_embeddeddns_proxy_upstream_request_failure_count",
+		Name: "kuma_dp_dns_upstream_request_failure_count",
 		Help: "The total number of failed upstream requests.",
 	})
 

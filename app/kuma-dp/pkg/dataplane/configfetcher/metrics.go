@@ -20,7 +20,7 @@ func newHandlerMetrics(path string) *handlerMetrics {
 	prometheus.MustRegister(handlerTickCount)
 	handlerTickDuration := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:        "kuma_dp_envoyconfigfetcher_handler_call_duration_seconds",
-		Help:        "Time is seconds for the envoy configuration to be fetched and processed by the handler, This is not computed when no change happened",
+		Help:        "The duration for the envoy configuration to be fetched and processed by the handler. This is not computed when no change happened",
 		ConstLabels: labels,
 	})
 	handlerErrorCount := prometheus.NewCounter(prometheus.CounterOpts{

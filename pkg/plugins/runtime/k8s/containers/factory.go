@@ -281,9 +281,9 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: strconv.FormatBool(i.BuiltinDNS.Logging),
 		}
 
-		if i.BuiltinDNS.UseEmbedded {
-			envVars["KUMA_DNS_EMBEDDED_PROXY_PORT"] = kube_core.EnvVar{
-				Name:  "KUMA_DNS_EMBEDDED_PROXY_PORT",
+		if i.BuiltinDNS.ExperimentalProxy {
+			envVars["KUMA_DNS_PROXY_PORT"] = kube_core.EnvVar{
+				Name:  "KUMA_DNS_PROXY_PORT",
 				Value: strconv.FormatInt(int64(i.BuiltinDNS.Port), 10),
 			}
 		} else {

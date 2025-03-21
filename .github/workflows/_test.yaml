@@ -69,8 +69,8 @@ jobs:
                   {"target":"universal", "k8sVersion":"${{ env.K8S_MAX_VERSION }}"}
                 ],
                 "include":[
-                  {"embeddedDNS": "true", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
-                  {"embeddedDNS": "true", "k8sVersion": "kind", "target": "universal", "arch": "amd64"},
+                  {"dpDNS": "true", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
+                  {"dpDNS": "true", "k8sVersion": "kind", "target": "universal", "arch": "amd64"},
                   {"sidecarContainers": "sidecarContainers", "k8sVersion": "${{ env.K8S_MAX_VERSION }}", "target": "kubernetes", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "multizone", "arch": "amd64"},
                   {"k8sVersion": "${{ env.K8S_MIN_VERSION }}", "target": "kubernetes", "arch": "amd64"},

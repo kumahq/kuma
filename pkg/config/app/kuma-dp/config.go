@@ -26,11 +26,13 @@ var DefaultConfig = func() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:          "",
-			Name:          "", // Dataplane name must be set explicitly
-			DrainTime:     config_types.Duration{Duration: 30 * time.Second},
-			ProxyType:     "dataplane",
-			ReadinessPort: 9902,
+			Mesh:                          "",
+			Name:                          "", // Dataplane name must be set explicitly
+			DrainTime:                     config_types.Duration{Duration: 30 * time.Second},
+			ProxyType:                     "dataplane",
+			ReadinessPort:                 9902,
+			ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
+			ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
@@ -72,7 +74,7 @@ func (c *Config) Features() []string {
 	base := []string{
 		xds.FeatureTCPAccessLogViaNamedPipe,
 	}
-	if c.DNS.EmbeddedProxyPort != 0 {
+	if c.DNS.ProxyPort != 0 {
 		base = append(base, xds.FeatureEmbeddedDNS)
 	}
 	return base
@@ -150,6 +152,10 @@ type Dataplane struct {
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
+	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
+	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
+	// ResilientComponentMaxBackoff defines the max backoff between restarts of resilient components
+	ResilientComponentMaxBackoff config_types.Duration `json:"ResilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
 }
 
 func (d *Dataplane) PostProcess() error {
@@ -373,8 +379,8 @@ type DNS struct {
 	// If true then builtin DNS functionality is enabled and CoreDNS server is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
 
-	// EmbeddedProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
-	EmbeddedProxyPort uint32 `json:"embeddedDNSProxyPort,omitempty" envconfig:"kuma_dns_embedded_proxy_port"`
+	// ProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
+	ProxyPort uint32 `json:"proxyPort,omitempty" envconfig:"kuma_dns_proxy_port"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.

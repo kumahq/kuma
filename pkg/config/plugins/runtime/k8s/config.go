@@ -390,7 +390,7 @@ type BuiltinDNS struct {
 	// Turn on query logging for DNS
 	Logging bool `json:"logging,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_logging"`
 	// Use the embedded DNS instead (This is an experimental feature)
-	UseEmbedded bool `json:"embedded,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_embedded"`
+	ExperimentalProxy bool `json:"embedded,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_experimental_proxy"`
 }
 
 // EBPF defines configuration for the ebpf, when transparent proxy is marked to be

@@ -226,10 +226,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
-				if dnsOpts.Config.DNS.EmbeddedProxyPort != 0 {
-					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.EmbeddedProxyPort)
+				if dnsOpts.Config.DNS.ProxyPort != 0 {
+					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
 					// Using embedded DNS
-					dnsproxyServer := dnsproxy.NewServer("localhost", dnsOpts.Config.DNS.EmbeddedProxyPort)
+					dnsproxyServer := dnsproxy.NewServer("localhost", dnsOpts.Config.DNS.ProxyPort)
 					err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap)
 					if err != nil {
 						return err
@@ -259,8 +259,8 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components = append(components, component.NewResilientComponent(
 				runLog.WithName("configfetcher"),
 				confFetcher,
-				time.Second*5,
-				time.Minute,
+				cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+				cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
 			))
 
 			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
@@ -411,8 +411,6 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 }
 
 func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
-	resilientComponentBaseBackoff := 5 * time.Second
-	resilientComponentMaxBackoff := 1 * time.Minute
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 	accessLogStreamer := component.NewResilientComponent(
@@ -420,8 +418,8 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		accesslogs.NewAccessLogStreamer(
 			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
-		resilientComponentBaseBackoff,
-		resilientComponentMaxBackoff,
+		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
 	)
 
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
