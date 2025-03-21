@@ -54,4 +54,10 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: default
     type: MeshTimeout
-  Subset: []
+  Subset:
+  - Key: kuma.io/service
+    Not: true
+    Value: bar
+  - Key: kuma.io/service
+    Not: true
+    Value: foo

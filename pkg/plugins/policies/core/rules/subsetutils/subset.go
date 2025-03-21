@@ -253,7 +253,6 @@ func (ss Subset) NumPositive() int {
 	return pos
 }
 
-// NumPositive returns a number of tags without negation
 func (ss Subset) Sorted() {
 	sort.SliceStable(ss, func(i, j int) bool {
 		if ss[i].Key != ss[j].Key {

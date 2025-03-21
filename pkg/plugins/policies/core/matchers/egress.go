@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -190,7 +191,12 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 		}
 	}
 
-	rules, err := core_rules.BuildRules(toList, false)
+	withNegations := false
+	if policies.GetItemType() == meshhttproute_api.MeshHTTPRouteType {
+		withNegations = true
+	}
+
+	rules, err := core_rules.BuildRules(toList, withNegations)
 	if err != nil {
 		return core_rules.FromRules{}, err
 	}
