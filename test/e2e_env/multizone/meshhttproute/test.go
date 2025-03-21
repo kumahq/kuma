@@ -26,8 +26,6 @@ func Test() {
 }
 
 func test(meshName string, meshBuilder *builders.MeshBuilder) {
-	GinkgoHelper()
-
 	BeforeAll(func() {
 		// Global
 		err := NewClusterSetup().
