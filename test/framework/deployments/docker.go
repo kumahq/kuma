@@ -23,6 +23,7 @@ type DockerContainer struct {
 	image      string
 	args       map[string][]string
 	dockerOpts *docker.RunOptions
+	logger     *logger.Logger
 }
 
 type DockerContainerOptFn func(d *DockerContainer) error
@@ -36,6 +37,7 @@ func NewDockerContainer(fs ...DockerContainerOptFn) (*DockerContainer, error) {
 			Detach: true,
 			Remove: true,
 		},
+		logger: logger.Discard,
 	}
 
 	for _, f := range fs {
@@ -47,6 +49,7 @@ func NewDockerContainer(fs ...DockerContainerOptFn) (*DockerContainer, error) {
 	d.dockerOpts.Name = d.name
 	d.dockerOpts.EnvironmentVariables = envVarsForDocker(d.envVars)
 	d.dockerOpts.OtherOptions = buildArgsForDocker(d.args, d.ports)
+	d.dockerOpts.Logger = d.logger
 
 	return d, nil
 }
@@ -159,7 +162,7 @@ func (d *DockerContainer) GetIP() (string, error) {
 	cmd := shell.Command{
 		Command: "docker",
 		Args:    args,
-		Logger:  logger.Discard,
+		Logger:  d.logger,
 	}
 
 	return shell.RunCommandAndGetStdOutE(d.t, cmd)
@@ -177,7 +180,7 @@ func (d *DockerContainer) GetName() (string, error) {
 	cmd := shell.Command{
 		Command: "docker",
 		Args:    args,
-		Logger:  logger.Discard,
+		Logger:  d.logger,
 	}
 
 	out, err := shell.RunCommandAndGetStdOutE(d.t, cmd)
@@ -217,7 +220,7 @@ func (d *DockerContainer) updatePorts() error {
 	for port := range d.ports {
 		ports = append(ports, port)
 	}
-	publishedPorts, err := framework.GetPublishedDockerPorts(d.t, d.id, ports)
+	publishedPorts, err := framework.GetPublishedDockerPorts(d.t, d.logger, d.id, ports)
 	if err != nil {
 		return err
 	}
@@ -228,7 +231,7 @@ func (d *DockerContainer) updatePorts() error {
 func (d *DockerContainer) Stop() error {
 	retry.DoWithRetry(d.t, "stop "+d.id, 30, 3*time.Second,
 		func() (string, error) {
-			_, err := docker.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1})
+			_, err := docker.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1, Logger: d.logger})
 			if err != nil {
 				return "Container still running", err
 			}
