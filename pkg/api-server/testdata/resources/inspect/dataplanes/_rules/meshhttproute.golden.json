@@ -38,6 +38,7 @@
          "backendRefs": [
           {
            "kind": "MeshServiceSubset",
+<<<<<<< HEAD
            "name": "backend_kuma-demo_svc_3001",
            "tags": {
             "version": "1.0"
@@ -80,6 +81,8 @@
          "backendRefs": [
           {
            "kind": "MeshServiceSubset",
+=======
+>>>>>>> c3781d4fe (perf(rules): add `withNegation` flag to simplify `to` policy flow (#13151))
            "name": "other-svc",
            "tags": {
             "version": "1.0"
@@ -109,6 +112,49 @@
        "labels": {},
        "mesh": "default",
        "name": "the-other-http-route",
+       "type": "MeshHTTPRoute"
+      }
+     ]
+    },
+    {
+     "conf": {
+      "rules": [
+       {
+        "matches": [
+         {
+          "path": {
+           "value": "/api",
+           "type": "PathPrefix"
+          }
+         }
+        ],
+        "default": {
+         "backendRefs": [
+          {
+           "kind": "MeshServiceSubset",
+           "name": "backend_kuma-demo_svc_3001",
+           "tags": {
+            "version": "1.0"
+           },
+           "weight": 1
+          }
+         ]
+        }
+       }
+      ]
+     },
+     "matchers": [
+      {
+       "key": "kuma.io/service",
+       "not": false,
+       "value": "backend_kuma-demo_svc_3001"
+      }
+     ],
+     "origin": [
+      {
+       "labels": {},
+       "mesh": "default",
+       "name": "the-http-route",
        "type": "MeshHTTPRoute"
       }
      ]

@@ -6,6 +6,14 @@ Rules:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
+<<<<<<< HEAD
+=======
+    name: mtp-3
+    type: MeshTimeout
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+>>>>>>> c3781d4fe (perf(rules): add `withNegation` flag to simplify `to` policy flow (#13151))
     name: mtp-1
     type: MeshTimeout
   - creationTime: "0001-01-01T00:00:00Z"
@@ -22,12 +30,12 @@ Rules:
     Value: test-server
 - Conf:
     http:
-      requestTimeout: 3s
+      requestTimeout: 2s
   Origin:
   - creationTime: "0001-01-01T00:00:00Z"
     mesh: mesh-1
     modificationTime: "0001-01-01T00:00:00Z"
-    name: mtp-2
+    name: mtp-3
     type: MeshTimeout
   Subset:
   - Key: __rule-matches-hash__
@@ -36,6 +44,7 @@ Rules:
   - Key: kuma.io/service
     Not: false
     Value: test-server
+<<<<<<< HEAD
 - Conf:
     http:
       requestTimeout: 3s
@@ -68,3 +77,5 @@ Rules:
   - Key: kuma.io/service
     Not: true
     Value: test-server
+=======
+>>>>>>> c3781d4fe (perf(rules): add `withNegation` flag to simplify `to` policy flow (#13151))
