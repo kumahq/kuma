@@ -25,13 +25,6 @@ type: Zone
 creationTime: "0001-01-01T00:00:00Z"
 healthCheck:
   time: "0001-01-01T00:00:00Z"
-kdsStreams:
-  globalToZone:
-    connectTime: "0001-01-01T00:00:00Z"
-    globalInstanceId: default-cp
-  zoneToGlobal:
-    connectTime: "0001-01-01T00:00:00Z"
-    globalInstanceId: default-cp
 modificationTime: "0001-01-01T00:00:00Z"
 name: zone-1
 type: ZoneInsight
@@ -40,13 +33,6 @@ type: ZoneInsight
 creationTime: "0001-01-01T00:00:00Z"
 healthCheck:
   time: "0001-01-01T00:00:00Z"
-kdsStreams:
-  configDump:
-    connectTime: "0001-01-01T00:00:00Z"
-    globalInstanceId: default-cp
-  zoneToGlobal:
-    connectTime: "0001-01-01T00:00:00Z"
-    globalInstanceId: default-cp
 modificationTime: "0001-01-01T00:00:00Z"
 name: zone-2
 type: ZoneInsight
