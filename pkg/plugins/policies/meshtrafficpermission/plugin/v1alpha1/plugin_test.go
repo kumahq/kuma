@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	meshtrafficpermission "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -18,6 +19,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -39,7 +41,7 @@ var _ = Describe("RBAC", func() {
 				WithOverwriteName("test_listener").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
-					Configure(listeners.HttpConnectionManager("test_listener", false)))).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -53,7 +55,7 @@ var _ = Describe("RBAC", func() {
 				WithOverwriteName("test_listener2").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
-					Configure(listeners.HttpConnectionManager("test_listener2", false)))).
+					Configure(listeners.HttpConnectionManager("test_listener2", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -67,7 +69,7 @@ var _ = Describe("RBAC", func() {
 				WithOverwriteName("test_listener3").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
 					Configure(listeners.ServerSideMTLS(ctx.Mesh.Resource, envoy.NewSecretsTracker(ctx.Mesh.Resource.Meta.GetName(), nil), nil, nil)).
-					Configure(listeners.HttpConnectionManager("test_listener3", false)))).
+					Configure(listeners.HttpConnectionManager("test_listener3", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -80,7 +82,7 @@ var _ = Describe("RBAC", func() {
 			listener4, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 8083, core_xds.SocketAddressProtocolTCP).
 				WithOverwriteName("test_listener4").
 				Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, envoy.AnonymousResource).
-					Configure(listeners.HttpConnectionManager("test_listener", false)))).
+					Configure(listeners.HttpConnectionManager("test_listener", false, nil)))).
 				Build()
 			Expect(err).ToNot(HaveOccurred())
 			rs.Add(&core_xds.Resource{
@@ -104,11 +106,11 @@ var _ = Describe("RBAC", func() {
 									Address: "192.168.0.1", Port: 8080,
 								}: {
 									{
-										Subset: []core_rules.Tag{
+										Subset: []subsetutils.Tag{
 											{Key: mesh_proto.ServiceTag, Value: "frontend"},
 										},
 										Conf: policies_api.Conf{
-											Action: "Allow",
+											Action: pointer.To[policies_api.Action]("Allow"),
 										},
 									},
 								},
@@ -142,7 +144,7 @@ var _ = Describe("RBAC", func() {
 					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
 						listeners.MatchTransportProtocol("tls"),
 						listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
-						listeners.HttpConnectionManager("external-service-1", false),
+						listeners.HttpConnectionManager("external-service-1", false, nil),
 					)),
 					listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-1").Configure(
 						listeners.MatchTransportProtocol("tls"),
@@ -218,8 +220,8 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshService("frontend"),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Subset: subsetutils.MeshService("frontend"),
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -234,8 +236,8 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Subset: subsetutils.MeshSubset(),
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},
@@ -271,8 +273,8 @@ var _ = Describe("RBAC", func() {
 													Address: "192.168.0.1", Port: 10002,
 												}: {
 													{
-														Subset: core_rules.MeshSubset(),
-														Conf:   policies_api.Conf{Action: policies_api.Allow},
+														Subset: subsetutils.MeshSubset(),
+														Conf:   policies_api.Conf{Action: pointer.To(policies_api.Allow)},
 													},
 												},
 											},

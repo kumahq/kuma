@@ -79,16 +79,6 @@ func (d *DataplaneLifecycle) OnProxyConnected(streamID core_xds.StreamID, proxyK
 	return d.register(ctx, streamID, proxyKey, md)
 }
 
-func (d *DataplaneLifecycle) OnProxyReconnected(streamID core_xds.StreamID, proxyKey core_model.ResourceKey, ctx context.Context, md core_xds.DataplaneMetadata) error {
-	if md.Resource == nil {
-		return nil
-	}
-	if err := d.validateProxyKey(proxyKey, md.Resource); err != nil {
-		return err
-	}
-	return d.register(ctx, streamID, proxyKey, md)
-}
-
 func (d *DataplaneLifecycle) OnProxyDisconnected(ctx context.Context, streamID core_xds.StreamID, proxyKey core_model.ResourceKey) {
 	// OnStreamClosed method could be called either in case data plane proxy is down or
 	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
@@ -135,7 +125,7 @@ func (d *DataplaneLifecycle) register(
 			return errors.Wrap(err, "you are trying to override existing proxy to which you don't have an access.")
 		}
 		return existing.SetSpec(md.Resource.GetSpec())
-	})
+	}, manager.UpsertWithLabels(md.Resource.GetMeta().GetLabels()))
 	if err != nil {
 		log.Info("cannot register proxy", "reason", err.Error())
 		if !loaded {

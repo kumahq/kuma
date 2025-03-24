@@ -9,8 +9,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -32,13 +30,12 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	}
 	zone := rt.Config().Multizone.Zone.Name
-	reg := registry.Global()
 	kdsCtx := rt.KDSContext()
 
 	kdsServerV2, err := kds_server_v2.New(
 		kdsZoneLog,
 		rt,
-		reg.ObjectTypes(model.HasKDSFlag(model.ZoneToGlobalFlag)),
+		kdsCtx.TypesSentByZone,
 		zone,
 		rt.Config().Multizone.Zone.KDS.RefreshInterval.Duration,
 		kdsCtx.ZoneProvidedFilter,
@@ -54,11 +51,7 @@ func Setup(rt core_runtime.Runtime) error {
 	}
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	cfg := rt.Config()
-	cfgForDisplay, err := config.ConfigForDisplay(&cfg)
-	if err != nil {
-		return errors.Wrap(err, "could not construct config for display")
-	}
-	cfgJson, err := config.ToJson(cfgForDisplay)
+	cfgJson, err := config.ConfigForDisplay(&cfg)
 	if err != nil {
 		return errors.Wrap(err, "could not marshall config to json")
 	}
@@ -67,14 +60,12 @@ func Setup(rt core_runtime.Runtime) error {
 		log := kdsDeltaZoneLog.WithValues("kds-version", "v2")
 		syncClient := kds_client_v2.NewKDSSyncClient(
 			log,
-			reg.ObjectTypes(model.HasKDSFlag(model.GlobalToZoneSelector)),
-			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, string(cfgJson)),
+			kdsCtx.TypesSentByGlobal,
+			kds_client_v2.NewDeltaKDSStream(stream, zone, rt, cfgJson),
 			kds_sync_store_v2.ZoneSyncCallback(
 				stream.Context(),
-				rt.KDSContext().Configs,
 				resourceSyncerV2,
 				rt.Config().Store.Type == store.KubernetesStore,
-				zone,
 				kubeFactory,
 				rt.Config().Store.Kubernetes.SystemNamespace,
 			),

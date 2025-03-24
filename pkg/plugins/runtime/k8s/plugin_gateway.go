@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/discovery"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -21,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	gatewayapi_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers/gatewayapi"
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 )
 
 var requiredGatewayCRDs = map[string]string{
@@ -139,7 +139,7 @@ func addGatewayAPIReconcilers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, pr
 			log.Error(
 				errors.New("only subset of required GatewayAPI CRDs registered"),
 				"disabling support for GatewayAPI",
-				"required", maps.Values(requiredGatewayCRDs),
+				"required", util_maps.AllValues(requiredGatewayCRDs),
 				"missing", missingGatewayCRDs,
 			)
 		} else {

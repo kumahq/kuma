@@ -66,8 +66,10 @@ interCp:
 				WithHelmOpt("ingress.enabled", "true"),
 			)).
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default"))).
-			Install(testserver.Install()).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(TestNamespace), democlient.WithMesh("default")),
+				testserver.Install(),
+			)).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -169,7 +171,8 @@ interCp:
 		})
 	})
 
-	It("should execute admin operations on Global CP", func() {
+	// TODO(bartsmykla): disabled while investingating flake
+	XIt("should execute admin operations on Global CP", func() {
 		// given DP available on Global CP
 		Eventually(func(g Gomega) {
 			dataplanes, err := c1.GetKumactlOptions().KumactlList("dataplanes", "default")

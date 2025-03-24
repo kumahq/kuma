@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
@@ -49,4 +50,10 @@ func (c *tenancyCallbacks) OnStreamDeltaRequest(streamID int64, request *envoy_s
 	}
 	util.FillTenantMetadata(tenantID, request.Node)
 	return nil
+}
+
+func (c *tenancyCallbacks) OnDeltaStreamClosed(streamID int64, _ *envoy_core.Node) {
+	c.Lock()
+	delete(c.streamToCtx, streamID)
+	c.Unlock()
 }

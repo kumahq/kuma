@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.4
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshtcproutes.kuma.io
 spec:
   group: kuma.io
@@ -13,6 +13,8 @@ spec:
     kind: MeshTCPRoute
     listKind: MeshTCPRouteList
     plural: meshtcproutes
+    shortNames:
+    - mtcpr
     singular: meshtcproute
   scope: Namespaced
   versions:
@@ -64,6 +66,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                     type: string
                   labels:
                     additionalProperties:
@@ -95,7 +98,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -109,6 +111,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
               to:
                 description: |-
@@ -143,6 +147,7 @@ spec:
                                       - MeshMultiZoneService
                                       - MeshServiceSubset
                                       - MeshHTTPRoute
+                                      - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
@@ -179,7 +184,6 @@ spec:
                                         - Sidecar
                                         - Gateway
                                         type: string
-                                      minItems: 1
                                       type: array
                                     sectionName:
                                       description: |-
@@ -197,11 +201,10 @@ spec:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                  - kind
                                   type: object
-                                minItems: 1
                                 type: array
-                            required:
-                            - backendRefs
                             type: object
                         required:
                         - default
@@ -224,6 +227,7 @@ spec:
                           - MeshMultiZoneService
                           - MeshServiceSubset
                           - MeshHTTPRoute
+                          - Dataplane
                           type: string
                         labels:
                           additionalProperties:
@@ -255,7 +259,6 @@ spec:
                             - Sidecar
                             - Gateway
                             type: string
-                          minItems: 1
                           type: array
                         sectionName:
                           description: |-
@@ -269,8 +272,11 @@ spec:
                             Tags used to select a subset of proxies by tags. Can only be used with kinds
                             `MeshSubset` and `MeshServiceSubset`
                           type: object
+                      required:
+                      - kind
                       type: object
                   required:
+                  - rules
                   - targetRef
                   type: object
                 minItems: 1

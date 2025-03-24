@@ -15,7 +15,7 @@ message FaultInjection {
   option (kuma.mesh.resource).name = "FaultInjectionResource";
   option (kuma.mesh.resource).type = "FaultInjection";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "fault-injection";
   option (kuma.mesh.resource).allow_to_inspect = true;
 

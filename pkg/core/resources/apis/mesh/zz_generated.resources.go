@@ -123,7 +123,7 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "circuit-breakers",
 	KumactlArg:          "circuit-breaker",
 	KumactlListArg:      "circuit-breakers",
@@ -132,6 +132,7 @@ var CircuitBreakerResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Circuit Breaker",
 	PluralDisplayName:   "Circuit Breakers",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -248,7 +249,9 @@ var DataplaneResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Dataplane",
 	PluralDisplayName:   "Dataplanes",
+	ShortName:           "dp",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewDataplaneInsightResource(),
 	Overview:            NewDataplaneOverviewResource(),
 }
@@ -368,6 +371,7 @@ var DataplaneInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane Insight",
 	PluralDisplayName:   "Dataplane Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -499,6 +503,7 @@ var DataplaneOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Dataplane Overview",
 	PluralDisplayName:   "Dataplane Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -603,7 +608,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "external-services",
 	KumactlArg:          "external-service",
 	KumactlListArg:      "external-services",
@@ -612,6 +617,7 @@ var ExternalServiceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "External Service",
 	PluralDisplayName:   "External Services",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -728,7 +734,7 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "fault-injections",
 	KumactlArg:          "fault-injection",
 	KumactlListArg:      "fault-injections",
@@ -737,6 +743,7 @@ var FaultInjectionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Fault Injection",
 	PluralDisplayName:   "Fault Injections",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -853,7 +860,7 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "health-checks",
 	KumactlArg:          "healthcheck",
 	KumactlListArg:      "healthchecks",
@@ -862,6 +869,7 @@ var HealthCheckResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Health Check",
 	PluralDisplayName:   "Health Checks",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -970,7 +978,8 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
+	SkipKDSHash:         true,
 	WsPath:              "meshes",
 	KumactlArg:          "mesh",
 	KumactlListArg:      "meshes",
@@ -978,7 +987,9 @@ var MeshResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh",
 	PluralDisplayName:   "Meshes",
+	ShortName:           "m",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1091,7 +1102,7 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:              "meshgateways",
 	KumactlArg:          "meshgateway",
 	KumactlListArg:      "meshgateways",
@@ -1099,7 +1110,9 @@ var MeshGatewayResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Mesh Gateway",
 	PluralDisplayName:   "Mesh Gateways",
+	ShortName:           "mgw",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1212,7 +1225,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "meshgatewayroutes",
 	KumactlArg:          "meshgatewayroute",
 	KumactlListArg:      "meshgatewayroutes",
@@ -1221,6 +1234,7 @@ var MeshGatewayRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Gateway Route",
 	PluralDisplayName:   "Mesh Gateway Routes",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1329,6 +1343,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
+	KDSFlags:            model.ProvidedByGlobalFlag,
 	WsPath:              "mesh-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -1337,6 +1352,7 @@ var MeshInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Mesh Insight",
 	PluralDisplayName:   "Mesh Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1449,7 +1465,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "proxytemplates",
 	KumactlArg:          "proxytemplate",
 	KumactlListArg:      "proxytemplates",
@@ -1458,6 +1474,7 @@ var ProxyTemplateResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Proxy Template",
 	PluralDisplayName:   "Proxy Templates",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1574,7 +1591,7 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "rate-limits",
 	KumactlArg:          "rate-limit",
 	KumactlListArg:      "rate-limits",
@@ -1583,6 +1600,7 @@ var RateLimitResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Rate Limit",
 	PluralDisplayName:   "Rate Limits",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1699,7 +1717,7 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "retries",
 	KumactlArg:          "retry",
 	KumactlListArg:      "retries",
@@ -1708,6 +1726,7 @@ var RetryResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Retry",
 	PluralDisplayName:   "Retries",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1816,7 +1835,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            true,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "service-insights",
 	KumactlArg:          "",
 	KumactlListArg:      "",
@@ -1825,6 +1844,7 @@ var ServiceInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Service Insight",
 	PluralDisplayName:   "Service Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -1941,6 +1961,7 @@ var ServiceOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Service Overview",
 	PluralDisplayName:   "Service Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -2053,7 +2074,7 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "timeouts",
 	KumactlArg:          "timeout",
 	KumactlListArg:      "timeouts",
@@ -2062,6 +2083,7 @@ var TimeoutResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Timeout",
 	PluralDisplayName:   "Timeouts",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2178,7 +2200,7 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "traffic-logs",
 	KumactlArg:          "traffic-log",
 	KumactlListArg:      "traffic-logs",
@@ -2187,6 +2209,7 @@ var TrafficLogResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Log",
 	PluralDisplayName:   "Traffic Logs",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2303,7 +2326,7 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "traffic-permissions",
 	KumactlArg:          "traffic-permission",
 	KumactlListArg:      "traffic-permissions",
@@ -2312,6 +2335,7 @@ var TrafficPermissionResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Permission",
 	PluralDisplayName:   "Traffic Permissions",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2428,7 +2452,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "traffic-routes",
 	KumactlArg:          "traffic-route",
 	KumactlListArg:      "traffic-routes",
@@ -2437,6 +2461,7 @@ var TrafficRouteResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Route",
 	PluralDisplayName:   "Traffic Routes",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2549,7 +2574,7 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "traffic-traces",
 	KumactlArg:          "traffic-trace",
 	KumactlListArg:      "traffic-traces",
@@ -2558,6 +2583,7 @@ var TrafficTraceResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Traffic Trace",
 	PluralDisplayName:   "Traffic Traces",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2670,7 +2696,7 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeMesh,
-	KDSFlags:            model.GlobalToAllZonesFlag,
+	KDSFlags:            model.GlobalToZonesFlag,
 	WsPath:              "virtual-outbounds",
 	KumactlArg:          "virtual-outbound",
 	KumactlListArg:      "virtual-outbounds",
@@ -2679,6 +2705,7 @@ var VirtualOutboundResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Virtual Outbound",
 	PluralDisplayName:   "Virtual Outbounds",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -2795,7 +2822,9 @@ var ZoneEgressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Egress",
 	PluralDisplayName:   "Zone Egresses",
+	ShortName:           "ze",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewZoneEgressInsightResource(),
 	Overview:            NewZoneEgressOverviewResource(),
 }
@@ -2915,6 +2944,7 @@ var ZoneEgressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress Insight",
 	PluralDisplayName:   "Zone Egress Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -3046,6 +3076,7 @@ var ZoneEgressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Egress Overview",
 	PluralDisplayName:   "Zone Egress Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 const (
@@ -3150,7 +3181,7 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	ReadOnly:            false,
 	AdminOnly:           false,
 	Scope:               model.ScopeGlobal,
-	KDSFlags:            model.ZoneToGlobalFlag | model.GlobalToAllButOriginalZoneFlag,
+	KDSFlags:            model.ZoneToGlobalFlag | model.SyncedAcrossZonesFlag,
 	WsPath:              "zone-ingresses",
 	KumactlArg:          "zone-ingress",
 	KumactlListArg:      "zone-ingresses",
@@ -3158,7 +3189,9 @@ var ZoneIngressResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsPolicy:            false,
 	SingularDisplayName: "Zone Ingress",
 	PluralDisplayName:   "Zone Ingresses",
+	ShortName:           "zi",
 	IsExperimental:      false,
+	IsProxy:             true,
 	Insight:             NewZoneIngressInsightResource(),
 	Overview:            NewZoneIngressOverviewResource(),
 }
@@ -3278,6 +3311,7 @@ var ZoneIngressInsightResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress Insight",
 	PluralDisplayName:   "Zone Ingress Insights",
 	IsExperimental:      false,
+	IsProxy:             false,
 }
 
 func init() {
@@ -3409,4 +3443,5 @@ var ZoneIngressOverviewResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	SingularDisplayName: "Zone Ingress Overview",
 	PluralDisplayName:   "Zone Ingress Overviews",
 	IsExperimental:      false,
+	IsProxy:             false,
 }

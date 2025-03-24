@@ -4,7 +4,6 @@ import (
 	"slices"
 	"strings"
 
-	"golang.org/x/exp/maps"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -19,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -52,7 +52,7 @@ func sortRulesToHosts(
 	// under the same route config
 	var observedHostnames []string
 
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(sublistenersByHostname)) {
+	for _, hostname := range match.SortHostnamesByExactnessDec(util_maps.AllKeys(sublistenersByHostname)) {
 		hostnameTag := sublistenersByHostname[hostname]
 		inboundListener := rules.NewInboundListenerHostname(
 			address,
@@ -278,7 +278,7 @@ func makeHttpRouteEntry(
 	for _, f := range pointer.Deref(rule.Default.Filters) {
 		if r := f.RequestRedirect; r != nil {
 			redirection := &route.Redirection{
-				Status:     uint32(pointer.DerefOr(r.StatusCode, 302)),
+				Status:     uint32(r.StatusCode),
 				Scheme:     pointer.Deref(r.Scheme),
 				Host:       string(pointer.Deref(r.Hostname)),
 				Port:       uint32(pointer.Deref(r.Port)),
@@ -317,35 +317,35 @@ func makeHttpRouteEntry(
 				entry.RequestHeaders = &route.Headers{}
 			}
 
-			for _, s := range h.Set {
+			for _, s := range pointer.Deref(h.Set) {
 				entry.RequestHeaders.Replace = append(
 					entry.RequestHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
 			}
 
-			for _, s := range h.Add {
+			for _, s := range pointer.Deref(h.Add) {
 				entry.RequestHeaders.Append = append(
 					entry.RequestHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			entry.RequestHeaders.Delete = append(
-				entry.RequestHeaders.Delete, h.Remove...)
+				entry.RequestHeaders.Delete, pointer.Deref(h.Remove)...)
 		} else if h := f.ResponseHeaderModifier; h != nil {
 			if entry.ResponseHeaders == nil {
 				entry.ResponseHeaders = &route.Headers{}
 			}
 
-			for _, s := range h.Set {
+			for _, s := range pointer.Deref(h.Set) {
 				entry.ResponseHeaders.Replace = append(
 					entry.ResponseHeaders.Replace, route.Pair(string(s.Name), string(s.Value)))
 			}
 
-			for _, s := range h.Add {
+			for _, s := range pointer.Deref(h.Add) {
 				entry.ResponseHeaders.Append = append(
 					entry.ResponseHeaders.Append, route.Pair(string(s.Name), string(s.Value)))
 			}
 
 			entry.ResponseHeaders.Delete = append(
-				entry.ResponseHeaders.Delete, h.Remove...)
+				entry.ResponseHeaders.Delete, pointer.Deref(h.Remove)...)
 		} else if r := f.URLRewrite; r != nil {
 			rewrite := route.Rewrite{}
 
@@ -362,7 +362,7 @@ func makeHttpRouteEntry(
 				rewrite.ReplaceHostname = pointer.To(string(*r.Hostname))
 			}
 
-			if r.HostToBackendHostname {
+			if pointer.Deref(r.HostToBackendHostname) {
 				rewrite.HostToBackendHostname = true
 			}
 
@@ -395,7 +395,7 @@ func makeRouteMatch(ruleMatch api.Match) route.Match {
 		match.Method = string(*m)
 	}
 
-	for _, h := range ruleMatch.Headers {
+	for _, h := range pointer.Deref(ruleMatch.Headers) {
 		typ := pointer.DerefOr(h.Type, common_api.HeaderMatchExact)
 		switch typ {
 		case common_api.HeaderMatchExact:
@@ -417,7 +417,7 @@ func makeRouteMatch(ruleMatch api.Match) route.Match {
 		}
 	}
 
-	for _, q := range ruleMatch.QueryParams {
+	for _, q := range pointer.Deref(ruleMatch.QueryParams) {
 		switch q.Type {
 		case api.ExactQueryMatch:
 			match.ExactQuery = append(

@@ -2,7 +2,6 @@ package meshretry
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -29,8 +28,6 @@ func GrpcRetry() {
 				WithProtocol("grpc"),
 				WithTransparentProxy(true),
 			)).
-			// remove default policies after https://github.com/kumahq/kuma/issues/3325
-			Install(TrafficRouteUniversal(meshName)).
 			Setup(universal.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -46,23 +43,27 @@ func GrpcRetry() {
 
 	E2EAfterAll(func() {
 		Expect(universal.Cluster.DeleteMeshApps(meshName)).To(Succeed())
-		Expect(universal.Cluster.GetKumactlOptions().RunKumactl("delete", "dataplane", "fake-echo-server", "-m", meshName)).To(Succeed())
 		Expect(universal.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should retry on GRPC connection failure", func() {
-		echoServerDataplane := fmt.Sprintf(`
-type: Dataplane
+		faultInjection := fmt.Sprintf(`
+type: MeshFaultInjection
 mesh: "%s"
-name: fake-echo-server
-networking:
-  address:  241.0.0.1
-  inbound:
-  - port: 7777
-    servicePort: 7777
-    tags:
-      kuma.io/service: test-server
-      kuma.io/protocol: grpc
+name: mesh-fault-injecton-500-grpc
+spec:
+  targetRef:
+    kind: MeshService
+    name: test-server
+  from:
+    - targetRef:
+        kind: MeshService
+        name: test-client
+      default:
+        http:
+          - abort:
+              httpStatus: 503
+              percentage: "50.0"
 `, meshName)
 		meshRetryPolicy := fmt.Sprintf(`
 type: MeshRetry
@@ -80,8 +81,7 @@ spec:
         grpc:
           numRetries: 5
 `, meshName)
-		admin, err := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp("test-client").GetEnvoyAdminTunnel()
 
 		lastFailureStats := stats.StatItem{Name: "", Value: float64(0)}
 		grpcFailureStats := func(g Gomega) *stats.Stats {
@@ -101,44 +101,33 @@ spec:
 			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
 		}, "30s", "1s").Should(Succeed())
 
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			if len(failureStats.Stats) != 0 {
-				defer func() { lastFailureStats = failureStats.Stats[0] }()
-				g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-			}
-		}).Should(Succeed())
+		By("Adding a fault injection")
+		Expect(universal.Cluster.Install(YamlUniversal(faultInjection))).To(Succeed())
 
-		By("Adding a faulty dataplane")
-		Expect(universal.Cluster.Install(YamlUniversal(echoServerDataplane))).To(Succeed())
+		By("Clean counters")
+		Expect(admin.ResetCounters()).To(Succeed())
 
 		By("Check some errors happen")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
-			g.Expect(grpcFailureStats(g)).To(stats.BeGreaterThanZero())
-		}, "90s", "10s").Should(Succeed())
-		time.Sleep(10 * time.Second)
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(stats.BeGreaterThanZero())
 			g.Expect(failureStats).To(stats.BeGreaterThan(lastFailureStats))
-		}, "40s", "10s").Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 
 		By("Apply a MeshRetry policy")
 		Expect(universal.Cluster.Install(YamlUniversal(meshRetryPolicy))).To(Succeed())
+
+		By("Clean counters")
+		Expect(admin.ResetCounters()).To(Succeed())
+		lastFailureStats = stats.StatItem{Name: "", Value: float64(0)}
 
 		By("Eventually all requests succeed consistently")
 		Eventually(func(g Gomega) {
 			failureStats := grpcFailureStats(g)
 			defer func() { lastFailureStats = failureStats.Stats[0] }()
 			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-		}, "50s", "10s").Should(Succeed())
-		Consistently(func(g Gomega) {
-			failureStats := grpcFailureStats(g)
-			defer func() { lastFailureStats = failureStats.Stats[0] }()
-			g.Expect(failureStats).To(Not(stats.BeGreaterThan(lastFailureStats)))
-		}, "60s", "10s").Should(Succeed())
+			g.Expect(grpcSuccessStats(g)).To(stats.BeGreaterThanZero())
+		}, "30s", "5s").Should(Succeed())
 	})
 }

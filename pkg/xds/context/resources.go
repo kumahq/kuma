@@ -12,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	meshfaultinjection_api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/maps"
 )
 
@@ -144,6 +145,10 @@ func (r Resources) MeshGateways() *core_mesh.MeshGatewayResourceList {
 
 func (r Resources) VirtualOutbounds() *core_mesh.VirtualOutboundResourceList {
 	return r.ListOrEmpty(core_mesh.VirtualOutboundType).(*core_mesh.VirtualOutboundResourceList)
+}
+
+func (r Resources) MeshFaultInjections() *meshfaultinjection_api.MeshFaultInjectionResourceList {
+	return r.ListOrEmpty(meshfaultinjection_api.MeshFaultInjectionType).(*meshfaultinjection_api.MeshFaultInjectionResourceList)
 }
 
 func (r Resources) Meshes() *core_mesh.MeshResourceList {

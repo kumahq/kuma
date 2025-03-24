@@ -1,5 +1,6 @@
 CI_K3S_VERSION ?= $(K8S_MIN_VERSION)
 METALLB_VERSION ?= v0.13.9
+K3D_VERSION ?= $(shell $(TOP)/$(KUMA_DIR)/mk/dependencies/k3d.sh - get-version)
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
@@ -53,8 +54,7 @@ K3D_CLUSTER_CREATE_OPTS ?= -i rancher/k3s:$(CI_K3S_VERSION) \
 	--timeout 120s
 
 ifeq ($(K3D_NETWORK_CNI),calico)
-	K3D_CLUSTER_CREATE_OPTS += --volume "$(TOP)/$(KUMA_DIR)/test/k3d/calico.yaml.kubelint-excluded:/var/lib/rancher/k3s/server/manifests/calico.yaml" \
-		--k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
+	K3D_CLUSTER_CREATE_OPTS += --k3s-arg '--flannel-backend=none@server:*' --k3s-arg '--disable-network-policy@server:*'
 endif
 
 ifdef CI
@@ -104,12 +104,23 @@ ifdef K3D_HELM_DEPLOY_ADDITIONAL_OPTS
 	K3D_HELM_DEPLOY_OPTS += $(K3D_HELM_DEPLOY_ADDITIONAL_OPTS)
 endif
 
+define maybe_with_flock
+  if which flock >/dev/null 2>&1; then \
+    SHELL=bash flock -x $(BUILD_DIR)/k3d_network.lock -c $(1); \
+  else \
+    bash -c $(1); \
+  fi
+endef
+
 .PHONY: k3d/network/create
 k3d/network/create:
 	@touch $(BUILD_DIR)/k3d_network.lock && \
-		if [ `which flock` ]; then flock -x $(BUILD_DIR)/k3d_network.lock -c 'docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true'; \
-		else docker network create -d=bridge $(KIND_NETWORK_OPTS) kind || true; fi && \
-		rm -f $(BUILD_DIR)/k3d_network.lock
+		$(call maybe_with_flock,"if ! docker network inspect kind >/dev/null 2>&1; then \
+		  docker network create -d=bridge $(KIND_NETWORK_OPTS) kind >/dev/null; \
+		fi; \
+		echo 'Using docker network: '; \
+		docker network inspect kind --format='{{ .Id }}'")
+	@rm -f $(BUILD_DIR)/k3d_network.lock
 
 DOCKERHUB_PULL_CREDENTIAL ?=
 .PHONY: k3d/setup-docker-credentials
@@ -131,6 +142,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	@echo "PORT_PREFIX=$(PORT_PREFIX)"
 	@KUBECONFIG=$(KIND_KUBECONFIG) \
 		$(K3D_BIN) cluster create "$(KIND_CLUSTER_NAME)" $(K3D_CLUSTER_CREATE_OPTS)
+	$(MAKE) k3d/configure/calico
 	$(MAKE) k3d/wait
 	@echo
 	@echo '>>> You need to manually run the following command in your shell: >>>'
@@ -141,6 +153,13 @@ k3d/start: ${KIND_KUBECONFIG_DIR} k3d/network/create k3d/setup-docker-credential
 	@echo
 	$(MAKE) k3d/configure/ebpf
 	$(MAKE) k3d/configure/metallb
+
+.PHONY: k3d/configure/calico
+k3d/configure/calico:
+ifeq ($(K3D_NETWORK_CNI),calico)
+    # https://docs.tigera.io/calico/latest/getting-started/kubernetes/k3s/quickstart
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) apply -f https://raw.githubusercontent.com/projectcalico/calico/v3.29.2/manifests/calico.yaml
+endif
 
 .PHONY: k3d/configure/ebpf
 k3d/configure/ebpf:

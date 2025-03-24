@@ -32,7 +32,6 @@ on:
         value: ${{ jobs.digest-images.outputs.DIGESTS }}
 permissions:
   contents: read
-  id-token: write # Required for image signing
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   FULL_MATRIX: ${{ inputs.FULL_MATRIX }}
@@ -44,17 +43,17 @@ env:
 jobs:
   build-binaries:
     timeout-minutes: 40
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       BINARY_ARTIFACT_DIGEST_BASE64: ${{ steps.inspect-binary-output.outputs.binary_artifact_digest_base64 }}
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -63,6 +62,10 @@ jobs:
             ${{ runner.os }}-${{ runner.arch }}-devtools
       - run: |
           make build
+      - id: annotate-image-tag
+        name: Image tag
+        run: |
+          echo "::notice title=Image tag::$(make build/info/version)"
       - run: |
           make -j build/distributions
       - id: inspect-binary-output
@@ -71,7 +74,7 @@ jobs:
           echo "Artifact digest:"
           cat ./build/distributions/artifact_digest_file.text
           echo "binary_artifact_digest_base64=$(cat ./build/distributions/artifact_digest_file.text)" > $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         id: binary-artifacts
         with:
           name: ${{ inputs.BINARY_ARTIFACT_NAME }}
@@ -79,7 +82,7 @@ jobs:
             ./build/distributions/out/*.tar.gz
             ./build/distributions/out/*.sha256
             !./build/distributions/out/*.tar.gz.sha256
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - name: publish binaries
         env:
           PULP_USERNAME: ${{ vars.PULP_USERNAME }}
@@ -88,24 +91,27 @@ jobs:
         run: |
           make publish/pulp
   build-images:
-    runs-on: ubuntu-22.04 # pining to this version until https://github.com/actions/runner-images/issues/10636#issuecomment-2397720931 has a better solution
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write # Required for image signing
+      contents: read
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         image: ${{ fromJSON(inputs.images) }}
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -128,7 +134,7 @@ jobs:
           make test/container-structure/${{ matrix.image }}
       - name: scan amd64 image
         id: scan_image-amd64
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.3
         with:
           asset_prefix: image_${{ matrix.image }}-amd64
           image: ./build/docker/${{ matrix.image }}-amd64.tar
@@ -137,7 +143,7 @@ jobs:
       - name: scan arm64 image
         id: scan_image-arm64
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
-        uses: Kong/public-shared-actions/security-actions/scan-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
+        uses: Kong/public-shared-actions/security-actions/scan-docker-image@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.3
         with:
           asset_prefix: image_${{ matrix.image }}-arm64
           image: ./build/docker/${{ matrix.image }}-arm64.tar
@@ -159,7 +165,7 @@ jobs:
           make docker/push/${{ matrix.image }}
           make docker/manifest/${{ matrix.image }}
       - name: Install regctl
-        uses: regclient/actions/regctl-installer@d8097ee5dd5cdf150516315919b58509fc7f4cfa
+        uses: regclient/actions/regctl-installer@ce5fd131e371ffcdd7508b478cb223b3511a9183
       - name: image digest
         id: image_digest
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
@@ -169,24 +175,24 @@ jobs:
           echo "Got digest: $digest"
           echo "digest=${digest}" >> $GITHUB_OUTPUT
           echo "{\"${{matrix.image}}\": \"${digest}\"}" > ./build/docker/${{ matrix.image }}.digest.json
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         id: image-artifacts
         with:
           name: image_${{ matrix.image }}
           path: |
             ./build/docker/*.tar
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
-      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         id: image-digest-artifacts
         with:
           name: image_${{ matrix.image }}.digest.json
           path: |
             ./build/docker/${{ matrix.image }}.digest.json
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       - name: sign image
         if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
         id: sign
-        uses: Kong/public-shared-actions/security-actions/sign-docker-image@28d20a1f492927f35b00b317acd78f669c45f88b # v2.7.3
+        uses: Kong/public-shared-actions/security-actions/sign-docker-image@a18abf762d6e2444bcbfd20de70451ea1e3bc1b1 # v4.1.1
         with:
           image_digest: ${{ steps.image_digest.outputs.digest }}
           tags: ${{ steps.image_meta.outputs.image }}
@@ -195,11 +201,12 @@ jobs:
           registry_password: ${{ secrets.DOCKER_API_KEY }}
   digest-images:
     needs: [build-images]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    if: ${{ fromJSON(inputs.ALLOW_PUSH) }}
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
         with:
           pattern: "image_*.digest.json"
           path: ./digests
@@ -213,21 +220,21 @@ jobs:
   publish-helm:
     needs: [build-images]
     timeout-minutes: 10
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
       - name: Install dependencies for cross builds
         if: ${{ fromJSON(inputs.FULL_MATRIX) }}
         run: |
           sudo apt-get update; sudo apt-get install -y qemu-user-static binfmt-support
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
           cache-dependency-path: |
             go.sum
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -255,17 +262,17 @@ jobs:
           PKG_FILENAME=$(find .cr-release-packages -type f -printf "%f\n")
           echo "filename=${PKG_FILENAME}" >> $GITHUB_OUTPUT
       - name: Upload packaged chart
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.package-helm.outputs.filename }}
           path: .cr-release-packages/${{ steps.package-helm.outputs.filename }}
-          retention-days: ${{ github.event_name == 'pull_request' && 1 || 30 }}
+          retention-days: ${{ github.event_name == 'pull_request' && 1 || 10 }}
       # Everything from here is only running on releases.
       # Ideally we'd finish the workflow early, but this isn't possible: https://github.com/actions/runner/issues/662
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
+        uses: actions/create-github-app-token@af35edadc00be37caa72ed9f3e6d5f7801bfdf09 # v1.11.7
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

@@ -38,6 +38,7 @@ properties:
               - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
+              - Dataplane
             type: string
           labels:
             additionalProperties:
@@ -68,7 +69,6 @@ properties:
                 - Sidecar
                 - Gateway
               type: string
-            minItems: 1
             type: array
           sectionName:
             description: |-
@@ -82,6 +82,8 @@ properties:
               Tags used to select a subset of proxies by tags. Can only be used with kinds
               `MeshSubset` and `MeshServiceSubset`
             type: object
+        required:
+          - kind
         type: object
       to:
         description: To matches destination services of requests and holds configuration.
@@ -122,6 +124,7 @@ properties:
                                 - MeshMultiZoneService
                                 - MeshServiceSubset
                                 - MeshHTTPRoute
+                                - Dataplane
                               type: string
                             labels:
                               additionalProperties:
@@ -156,7 +159,6 @@ properties:
                                   - Sidecar
                                   - Gateway
                                 type: string
-                              minItems: 1
                               type: array
                             sectionName:
                               description: |-
@@ -174,6 +176,8 @@ properties:
                               default: 1
                               minimum: 0
                               type: integer
+                          required:
+                            - kind
                           type: object
                         type: array
                       filters:
@@ -245,6 +249,7 @@ properties:
                                         - MeshMultiZoneService
                                         - MeshServiceSubset
                                         - MeshHTTPRoute
+                                        - Dataplane
                                       type: string
                                     labels:
                                       additionalProperties:
@@ -279,7 +284,6 @@ properties:
                                           - Sidecar
                                           - Gateway
                                         type: string
-                                      minItems: 1
                                       type: array
                                     sectionName:
                                       description: |-
@@ -297,6 +301,8 @@ properties:
                                       default: 1
                                       minimum: 0
                                       type: integer
+                                  required:
+                                    - kind
                                   type: object
                                 percentage:
                                   anyOf:
@@ -572,6 +578,7 @@ properties:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                   type: string
                 labels:
                   additionalProperties:
@@ -602,7 +609,6 @@ properties:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: |-
@@ -616,7 +622,24 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
+          required:
+            - rules
+            - targetRef
           type: object
         type: array
     type: object
+  creationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

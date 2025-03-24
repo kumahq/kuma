@@ -23,10 +23,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         local:
           http:
             requestRate:
@@ -46,10 +44,8 @@ spec:
   targetRef:
     kind: MeshService
     name: test-server-tcp
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         local:
           tcp:
             connectionRate: 
@@ -109,8 +105,7 @@ spec:
 	})
 
 	It("should limit tcp connections", func() {
-		admin, err := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
-		Expect(err).ToNot(HaveOccurred())
+		admin := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
 		// should have no ratelimited connections
 		Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
 

@@ -24,14 +24,16 @@ func HeadlessServices() {
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(
-				democlient.WithNamespace(namespace),
-				democlient.WithMesh(meshName)),
-			).
-			Install(testserver.Install(
-				testserver.WithName("test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
+			Install(Parallel(
+				democlient.Install(
+					democlient.WithNamespace(namespace),
+					democlient.WithMesh(meshName),
+				),
+				testserver.Install(
+					testserver.WithName("test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

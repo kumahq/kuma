@@ -40,6 +40,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | controlPlane.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["{{ include \"kuma.name\" . }}-control-plane"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Control Plane pods. This is rendered as a template, so you can reference other helm variables or includes. |
 | controlPlane.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Control Plane pods. This is rendered as a template, so you can use variables to generate match labels. |
+| controlPlane.priorityClassName | string | `""` | Priority Class Name of the Kuma Control Plane |
 | controlPlane.injectorFailurePolicy | string | `"Fail"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
 | controlPlane.service.apiServer.http.nodePort | int | `30681` | Port on which Http api server Service is exposed on Node for service of type NodePort |
 | controlPlane.service.apiServer.https.nodePort | int | `30682` | Port on which Https api server Service is exposed on Node for service of type NodePort |
@@ -54,6 +55,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.ingress.path | string | `"/"` | Ingress path. |
 | controlPlane.ingress.pathType | string | `"ImplementationSpecific"` | Each path in an Ingress is required to have a corresponding path type. (ImplementationSpecific/Exact/Prefix) |
 | controlPlane.ingress.servicePort | int | `5681` | Port from kuma-cp to use to expose API and GUI. Switch to 5682 to expose TLS port |
+| controlPlane.serviceMonitor.enabled | bool | `false` | Install CoreOS ServiceMonitor custom resource that configures metrics scraping. |
+| controlPlane.serviceMonitor.annotations | object | `{}` | Map of serviceMonitor annotations. |
 | controlPlane.globalZoneSyncService.enabled | bool | `true` | Whether to create a k8s service for the global zone sync service. It will only be created when enabled and deploying the global control plane. |
 | controlPlane.globalZoneSyncService.type | string | `"LoadBalancer"` | Service type of the Global-zone sync |
 | controlPlane.globalZoneSyncService.loadBalancerIP | string | `nil` | Optionally specify IP to be used by cloud provider when configuring load balancer |
@@ -108,9 +111,10 @@ A Helm chart for the Kuma Control Plane
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
 | cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
-| cni.tolerations | list | `[]` | Tolerations for the CNI pods |
+| cni.tolerations | list | `[]` | Additional tolerations for the CNI pods |
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.namespace | string | `"kube-system"` | Set the CNI namespace |
+| cni.affinity | object | `{}` | Set the CNI affinity |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |
@@ -157,6 +161,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | ingress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-ingress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Ingress pods This is rendered as a template, so you can reference other helm variables or includes. |
 | ingress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Mesh Ingress pods. This is rendered as a template, so you can use variables to generate match labels. |
+| ingress.priorityClassName | string | `""` | Priority Class Name of the ingress |
 | ingress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for ingress |
 | ingress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for ingress |
 | ingress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
@@ -194,6 +199,7 @@ A Helm chart for the Kuma Control Plane
 | egress.podDisruptionBudget.maxUnavailable | int | `1` | The maximum number of unavailable pods allowed by the budget |
 | egress.affinity | object | `{"podAntiAffinity":{"preferredDuringSchedulingIgnoredDuringExecution":[{"podAffinityTerm":{"labelSelector":{"matchExpressions":[{"key":"app.kubernetes.io/name","operator":"In","values":["{{ include \"kuma.name\" . }}"]},{"key":"app.kubernetes.io/instance","operator":"In","values":["{{ .Release.Name }}"]},{"key":"app","operator":"In","values":["kuma-egress"]}]},"topologyKey":"kubernetes.io/hostname"},"weight":100}]}}` | Affinity placement rule for the Kuma Egress pods. This is rendered as a template, so you can reference other helm variables or includes. |
 | egress.topologySpreadConstraints | string | `nil` | Topology spread constraints rule for the Kuma Egress pods. This is rendered as a template, so you can use variables to generate match labels. |
+| egress.priorityClassName | string | `""` | Priority Class Name of the egress |
 | egress.podSecurityContext | object | `{"runAsGroup":5678,"runAsNonRoot":true,"runAsUser":5678}` | Security context at the pod level for egress |
 | egress.containerSecurityContext | object | `{"readOnlyRootFilesystem":true}` | Security context at the container level for egress |
 | egress.serviceAccountAnnotations | object | `{}` | Annotations to add for Control Plane's Service Account |
@@ -207,7 +213,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.27.5"` | The kubectl image tag |
+| kubectl.image.tag | string | `"1.32.3@sha256:c49b008f8ac9973e2d23deff64db6b992b8bd8c76538d0e697d9318bbbf683e2"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |

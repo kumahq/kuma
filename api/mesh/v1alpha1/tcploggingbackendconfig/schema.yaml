@@ -1,0 +1,11 @@
+components:
+  schemas:
+    TcpLoggingBackendConfig:
+      properties:
+        address:
+          description: Address to TCP service that will receive logs
+          type: string
+      type: object
+info:
+  x-ref-schema-name: TcpLoggingBackendConfig
+openapi: 3.0.3

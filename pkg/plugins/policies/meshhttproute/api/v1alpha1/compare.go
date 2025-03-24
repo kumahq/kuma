@@ -80,11 +80,11 @@ func CompareMatch(a Match, b Match) int {
 		return p
 	}
 
-	if p := compareHeaders(a.Headers, b.Headers); p != 0 {
+	if p := compareHeaders(pointer.Deref(a.Headers), pointer.Deref(b.Headers)); p != 0 {
 		return p
 	}
 
-	if p := compareQueryParams(a.QueryParams, b.QueryParams); p != 0 {
+	if p := compareQueryParams(pointer.Deref(a.QueryParams), pointer.Deref(b.QueryParams)); p != 0 {
 		return p
 	}
 

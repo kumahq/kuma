@@ -7,6 +7,7 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -21,19 +22,39 @@ func Sync() {
 	meshName := "sync"
 
 	BeforeAll(func() {
-		Expect(multizone.Global.Install(MTLSMeshUniversal(meshName))).To(Succeed())
+		Expect(
+			multizone.Global.Install(MTLSMeshUniversal(meshName)),
+		).To(Succeed())
+		Expect(
+			multizone.Global.Install(YamlUniversal(fmt.Sprintf(`
+type: MeshTrafficPermission
+name: allow-to-client
+mesh: %s
+labels:
+  argocd.argoproj.io/instance: something
+spec:
+  targetRef:
+    kind: Mesh
+  from:
+    - targetRef:
+        kind: MeshService
+        name: client-server_kuma-test_svc_80 # this is just something to sync
+      default:
+        action: Allow
+`, meshName)),
+			)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
+		group := errgroup.Group{}
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.UniZone1, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -104,6 +125,43 @@ func Sync() {
 				g.Expect(strings.Count(out, "Online")).To(Equal(2))
 			}, "30s", "1s").Should(Succeed())
 		})
+
+		It("should drop unwanted labels", func() {
+			Eventually(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrafficpermissions", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "argocd.argoproj.io")).To(Equal(1))
+				out, err = multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "meshtrafficpermissions", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "argocd.argoproj.io")).To(Equal(0))
+			}, "30s", "1s").Should(Succeed())
+		})
+
+		It("should not sync secret from zone to global", func() {
+			zoneSecret := fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: zone-k8s-secret
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+data:
+  value: dGVzdAo=
+type: system.kuma.io/secret `, Config.KumaNamespace, meshName)
+			Expect(multizone.KubeZone1.Install(YamlK8s(zoneSecret))).To(Succeed())
+			Eventually(func(g Gomega) {
+				out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "kuma.io/display-name: zone-k8s-secret")).To(Equal(1))
+			}, "30s", "1s").Should(Succeed())
+			// should not be synced to global
+			Consistently(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "zone-k8s-secret")).To(Equal(0))
+			}, "10s", "1s").Should(Succeed())
+		})
 	})
 
 	Context("from Global to Zone", func() {
@@ -154,6 +212,84 @@ spec:
 				return multizone.UniZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "traffic-routes", "-m", meshName)
 			}, "30s", "1s").Should(ContainSubstring(name))
 		}
+
+		It("should not sync secret from zone to global", func() {
+			secretName := "global-and-zone-secret"
+			zoneSecret := fmt.Sprintf(`
+apiVersion: v1
+kind: Secret
+metadata:
+  name: %s
+  namespace: %s
+  labels:
+    kuma.io/mesh: %s
+data:
+  value: dGVzdAo=
+type: system.kuma.io/secret `, secretName, Config.KumaNamespace, meshName)
+			globalSecret := fmt.Sprintf(`
+type: Secret
+name: %s
+mesh: %s
+data: Z2xvYmFsCg==`, secretName, meshName)
+			newGlobalSecret := fmt.Sprintf(`
+type: Secret
+name: new-global-secret
+mesh: %s
+data: bmV3Z2xvYmFsCg==`, meshName)
+			Expect(multizone.KubeZone1.Install(YamlK8s(zoneSecret))).To(Succeed())
+			Eventually(func(g Gomega) {
+				out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
+			}, "30s", "1s").Should(Succeed())
+			// should not be synced to global
+			Consistently(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(0))
+			}, "10s", "1s").Should(Succeed())
+
+			Expect(multizone.Global.Install(YamlUniversal(globalSecret))).To(Succeed())
+			// should not override existing in zone
+			Eventually(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, secretName)).To(Equal(1))
+				g.Expect(strings.Count(out, "Z2xvYmFsCg==")).To(Equal(1))
+			}, "30s", "1s").Should(Succeed())
+			Consistently(func(g Gomega) {
+				out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
+				g.Expect(strings.Count(out, "Z2xvYmFsCg==")).To(Equal(0))
+			}, "10s", "1s").Should(Succeed())
+
+			Expect(multizone.Global.Install(YamlUniversal(newGlobalSecret))).To(Succeed())
+			// should create a new one
+			Eventually(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "new-global-secret")).To(Equal(1))
+			}, "30s", "1s").Should(Succeed())
+			// should sync resource to the zone even if one is invalid
+			Eventually(func(g Gomega) {
+				out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, "kuma.io/display-name: new-global-secret")).To(Equal(1))
+			}, "30s", "1s").Should(Succeed())
+			Expect(multizone.Global.GetKumactlOptions().RunKumactl("delete", "secret", secretName, "--mesh", meshName)).To(Succeed())
+			Eventually(func(g Gomega) {
+				out, err := multizone.Global.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, secretName)).To(Equal(0))
+			}, "30s", "1s").Should(Succeed())
+			// should not remove zone secret with the same name
+			Consistently(func(g Gomega) {
+				out, err := multizone.KubeZone1.GetKumactlOptions().RunKumactlAndGetOutput("get", "secrets", "--mesh", meshName, "-o", "yaml")
+				g.Expect(err).ToNot(HaveOccurred())
+				g.Expect(strings.Count(out, fmt.Sprintf("kuma.io/display-name: %s", secretName))).To(Equal(1))
+			}, "10s", "1s").Should(Succeed())
+		})
 
 		It("should sync policy creation", func() {
 			// given

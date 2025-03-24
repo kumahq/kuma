@@ -13,10 +13,13 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_inbound "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
-	gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -88,17 +91,14 @@ func applyToInbounds(
 			Port:    iface.DataplanePort,
 		}
 
-		rules, ok := fromRules.Rules[listenerKey]
-		if !ok {
-			continue
-		}
-
 		cluster, ok := inboundClusters[envoy_names.GetLocalClusterName(iface.DataplanePort)]
 		if !ok {
 			continue
 		}
 
-		if err := configure(rules, core_rules.MeshSubset(), cluster); err != nil {
+		conf := rules_inbound.MatchesAllIncomingTraffic[api.Conf](fromRules.InboundRules[listenerKey])
+		err := plugin_xds.NewConfigurer(conf).ConfigureCluster(cluster)
+		if err != nil {
 			return err
 		}
 	}
@@ -119,7 +119,7 @@ func applyToOutbounds(
 	)
 
 	for cluster, serviceName := range targetedClusters {
-		if err := configure(rules.Rules, core_rules.MeshService(serviceName), cluster); err != nil {
+		if err := configure(rules.Rules, subsetutils.MeshServiceElement(serviceName), cluster); err != nil {
 			return err
 		}
 	}
@@ -161,7 +161,7 @@ func applyToGateways(
 
 					if err := configure(
 						rules.Rules,
-						core_rules.MeshService(serviceName),
+						subsetutils.MeshServiceElement(serviceName),
 						cluster,
 					); err != nil {
 						return err
@@ -192,10 +192,10 @@ func applyToGateways(
 
 func configure(
 	rules core_rules.Rules,
-	subset core_rules.Subset,
+	element subsetutils.Element,
 	cluster *envoy_cluster.Cluster,
 ) error {
-	if computed := rules.Compute(subset); computed != nil {
+	if computed := rules.Compute(element); computed != nil {
 		return plugin_xds.NewConfigurer(computed.Conf.(api.Conf)).ConfigureCluster(cluster)
 	}
 
@@ -239,7 +239,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 
 func applyToRealResource(
 	meshCtx xds_context.MeshContext,
-	rules core_rules.ResourceRules,
+	rules outbound.ResourceRules,
 	uri core_model.TypedResourceIdentifier,
 	resourcesByType core_xds.ResourcesByType,
 ) error {
@@ -263,7 +263,7 @@ func applyToRealResource(
 func applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
-	rules core_rules.ResourceRules,
+	rules outbound.ResourceRules,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
 		if err := applyToRealResource(meshCtx, rules, uri, resType); err != nil {

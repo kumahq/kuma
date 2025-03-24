@@ -1,0 +1,13 @@
+{
+ "items": [
+  {
+   "hostname": "test-server.svc.mesh.local",
+   "zones": [
+    {
+     "name": "east"
+    }
+   ]
+  }
+ ],
+ "total": 1
+}

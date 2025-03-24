@@ -1,0 +1,18 @@
+type: MeshTimeout
+name: mt-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        idleTimeout: 50s
+        connectionTimeout: 51s
+        http:
+          requestTimeout: 52s
+          streamIdleTimeout: 53s
+          maxStreamDuration: 54s
+          maxConnectionDuration: 55s

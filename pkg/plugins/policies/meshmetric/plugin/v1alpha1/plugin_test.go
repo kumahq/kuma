@@ -12,6 +12,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
@@ -20,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/test/framework/utils"
 )
 
 func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
@@ -41,10 +41,9 @@ var _ = Describe("MeshMetric", func() {
 	DescribeTable("Apply to sidecar Dataplane", func(given testCase) {
 		resources := core_xds.NewResourceSet()
 		plugin := v1alpha1.NewPlugin().(core_plugins.PolicyPlugin)
+		name := CurrentSpecReport().LeafNodeText
 
 		Expect(plugin.Apply(resources, given.context, given.proxy)).To(Succeed())
-
-		name := utils.TestCaseName(GinkgoT())
 
 		Expect(getResource(resources, envoy_resource.ListenerType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".listeners.golden.yaml")))
 		Expect(getResource(resources, envoy_resource.ClusterType)).To(matchers.MatchGoldenYAML(filepath.Join("testdata", name+".clusters.golden.yaml")))
@@ -58,12 +57,12 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Applications: &[]api.Application{
 										{
 											Name: pointer.To("test-app"),
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -92,14 +91,14 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -128,14 +127,14 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -173,11 +172,11 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -210,7 +209,7 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Backends: &[]api.Backend{
 										{
@@ -240,14 +239,14 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},
@@ -281,14 +280,14 @@ var _ = Describe("MeshMetric", func() {
 					WithSingleItemPolicy(api.MeshMetricType, core_rules.SingleItemRules{
 						Rules: []*core_rules.Rule{
 							{
-								Subset: []core_rules.Tag{},
+								Subset: []subsetutils.Tag{},
 								Conf: api.Conf{
 									Sidecar: &api.Sidecar{
 										IncludeUnused: pointer.To(false),
 									},
 									Applications: &[]api.Application{
 										{
-											Path: pointer.To("/metrics"),
+											Path: "/metrics",
 											Port: 8080,
 										},
 									},

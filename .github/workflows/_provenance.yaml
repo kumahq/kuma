@@ -22,15 +22,15 @@ on:
         required: true
         type: string
         description: notary repository
-permissions:
-  contents: write
-  id-token: write # needed for signing the images
-  actions: read # For getting workflow run info to build provenance
-  packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
+permissions: {}
 jobs:
   artifact-provenance:
+    permissions:
+      contents: write # To add assets to a release
+      actions: read # For getting workflow run info to build provenance
+      id-token: write # needed for signing the images
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.1.0
     with:
       base64-subjects: ${{ inputs.BINARY_ARTIFACTS_HASH_AS_FILE }}
       upload-assets: ${{ github.ref_type == 'tag' }}
@@ -47,12 +47,17 @@ jobs:
   # TODO:
   #   Split provenance jobs for internal / official releases when repositories are split
   images-provenance:
+    permissions:
+      contents: read
+      actions: read # For getting workflow run info to build provenance
+      id-token: write # needed for signing the images
+      packages: write # Required for publishing provenance. Issue: https://github.com/slsa-framework/slsa-github-generator/tree/main/internal/builders/container#known-issues
     strategy:
       fail-fast: true
       matrix:
         IMAGE: ${{ fromJSON(inputs.IMAGES) }}
     # need to use non hash version because of: https://github.com/slsa-framework/slsa-github-generator/issues/3498
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ${{ inputs.REGISTRY }}/${{ matrix.IMAGE }}
       digest: ${{ fromJSON(inputs.IMAGE_DIGESTS)[matrix.IMAGE] }}

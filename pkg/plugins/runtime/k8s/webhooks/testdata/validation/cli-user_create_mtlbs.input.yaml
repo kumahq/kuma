@@ -1,0 +1,23 @@
+# user=cli-user,operation=CREATE,namespace=kuma-system
+apiVersion: kuma.io/v1alpha1
+kind: MeshLoadBalancingStrategy
+metadata:
+  name: mlbs-deprecated
+  labels:
+    kuma.io/mesh: default
+spec:
+  targetRef:
+    kind: MeshService
+    name: frontend
+  to:
+  - targetRef:
+      kind: MeshService
+      name: backend
+    default:
+      loadBalancer:
+        type: RingHash
+        ringHash:
+          hashPolicies:
+          - type: SourceIP
+            connection:
+              sourceIP: true

@@ -4,6 +4,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
@@ -16,10 +18,10 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	var tcpConf *api.Rule
 	var origin core_model.ResourceMeta
 
-	ruleTCP := toRules.Rules.Compute(core_xds.MeshService(svc.ServiceName))
+	ruleTCP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
-		if o, ok := ruleTCP.GetBackendRefOrigin(core_xds.EmptyMatches); ok {
+		if o, ok := ruleTCP.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
 			origin = o
 		}
 	}
@@ -28,7 +30,7 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			tcpConf = pointer.To(resourceConf.Conf[0].(api.Rule))
-			if o, ok := resourceConf.GetBackendRefOrigin(core_xds.EmptyMatches); ok {
+			if o, ok := resourceConf.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
 				origin = o
 			}
 		}
@@ -62,7 +64,7 @@ func getBackendRefs(
 
 	var backendRefs []core_model.ResolvedBackendRef
 	if tcpConf != nil {
-		for _, br := range tcpConf.Default.BackendRefs {
+		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
 			if backendRefOrigin != nil {
 				if resolved := core_model.ResolveBackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)

@@ -9,15 +9,24 @@ import (
 
 // MeshAccessLog defines access log policies between different data plane
 // proxies entities.
+// +kuma:policy:is_from_as_rules=true
 type MeshAccessLog struct {
 	// TargetRef is a reference to the resource the policy takes an effect on.
 	// The resource could be either a real store object or virtual resource
 	// defined in-place.
 	TargetRef *common_api.TargetRef `json:"targetRef,omitempty"`
 	// To list makes a match between the consumed services and corresponding configurations
-	To []To `json:"to,omitempty"`
+	To *[]To `json:"to,omitempty"`
 	// From list makes a match between clients and corresponding configurations
-	From []From `json:"from,omitempty"`
+	From *[]From `json:"from,omitempty"`
+	// Rules defines inbound access log configurations. Currently limited to
+	// selecting all inbound traffic, as L7 matching is not yet implemented.
+	Rules *[]Rule `json:"rules,omitempty"`
+}
+
+type Rule struct {
+	// Default contains configuration of the inbound access logging
+	Default Conf `json:"default"`
 }
 
 type To struct {
@@ -26,7 +35,7 @@ type To struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of destinations referenced in
 	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
+	Default Conf `json:"default"`
 }
 
 type From struct {
@@ -35,7 +44,7 @@ type From struct {
 	TargetRef common_api.TargetRef `json:"targetRef"`
 	// Default is a configuration specific to the group of clients referenced in
 	// 'targetRef'
-	Default Conf `json:"default,omitempty"`
+	Default Conf `json:"default"`
 }
 
 type Conf struct {
@@ -74,7 +83,7 @@ type OtelBackend struct {
 	// Attributes can contain placeholders available on
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/observability/access_log/usage#command-operators
 	// +kubebuilder:example={{key: "mesh", value: "%KUMA_MESH%"}}
-	Attributes []JsonValue `json:"attributes,omitempty"`
+	Attributes *[]JsonValue `json:"attributes,omitempty"`
 	// Body is a raw string or an OTLP any value as described at
 	// https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-body
 	// It can contain placeholders available on
@@ -112,11 +121,12 @@ type Format struct {
 	Plain *string `json:"plain,omitempty"`
 	// +kubebuilder:example={{key: "start_time", value: "%START_TIME%"},{key: "bytes_received", value: "%BYTES_RECEIVED%"}}
 	Json *[]JsonValue `json:"json,omitempty"`
+	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=false
-	OmitEmptyValues *bool `json:"omitEmptyValues,omitempty"`
+	OmitEmptyValues bool `json:"omitEmptyValues"`
 }
 
 type JsonValue struct {
-	Key   string `json:"key,omitempty"`
-	Value string `json:"value,omitempty"`
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }

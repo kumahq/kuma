@@ -21,6 +21,7 @@ type IngressProxyBuilder struct {
 	LookupIP   lookup.LookupIPFunc
 
 	apiVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
 	zone              string
 	ingressTagFilters []string
 }
@@ -28,6 +29,7 @@ type IngressProxyBuilder struct {
 func (p *IngressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	meta *core_xds.DataplaneMetadata,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
 	zoneIngress, err := p.getZoneIngress(ctx, key)
@@ -41,10 +43,12 @@ func (p *IngressProxyBuilder) Build(
 	}
 
 	proxy := &core_xds.Proxy{
-		Id:               core_xds.FromResourceKey(key),
-		APIVersion:       p.apiVersion,
-		Zone:             p.zone,
-		ZoneIngressProxy: p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.apiVersion,
+		InternalAddresses: p.InternalAddresses,
+		Zone:              p.zone,
+		ZoneIngressProxy:  p.buildZoneIngressProxy(zoneIngress, aggregatedMeshCtxs),
+		Metadata:          meta,
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies

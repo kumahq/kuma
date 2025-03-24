@@ -17,7 +17,6 @@ import (
 	meshretry "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtimeout "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 var _ = Describe("EnsureDefaultMeshResources", func() {
@@ -39,7 +38,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and default TrafficPermission for the mesh doesn't exists
@@ -85,7 +84,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -111,7 +110,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -137,7 +136,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})
@@ -173,7 +172,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -199,7 +198,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 			err = resManager.Get(context.Background(), meshcircuitbreaker.NewMeshCircuitBreakerResource(), core_store.GetByKey("mesh-circuit-breaker-all-default", model.DefaultMesh))
 			Expect(err).ToNot(HaveOccurred())
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -233,7 +232,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -267,7 +266,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Dataplane Token Signing Key for the mesh exists
-			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(issuer.DataplaneTokenSigningKeyPrefix(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
+			err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(tokens.SigningKeyResourceKey(system.DataplaneTokenSigningKey(model.DefaultMesh), tokens.DefaultKeyID, model.DefaultMesh)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 	})

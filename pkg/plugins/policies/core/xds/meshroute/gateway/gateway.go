@@ -4,8 +4,6 @@ import (
 	"context"
 	"slices"
 
-	"golang.org/x/exp/maps"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -159,7 +158,7 @@ func SortByHostname(listenersByHostname map[string]plugin_gateway.GatewayListene
 	}
 
 	var listenerHostnames []plugin_gateway.GatewayListenerHostname
-	for _, hostname := range match.SortHostnamesByExactnessDec(maps.Keys(listenersByHostname)) {
+	for _, hostname := range match.SortHostnamesByExactnessDec(util_maps.AllKeys(listenersByHostname)) {
 		listenerHostnames = append(listenerHostnames, listenersByHostname[hostname])
 	}
 

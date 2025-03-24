@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -21,11 +22,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	hostnamegenerator_api "github.com/kumahq/kuma/pkg/core/resources/apis/hostnamegenerator/api/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds"
 	"github.com/kumahq/kuma/pkg/kds/hash"
@@ -33,7 +34,7 @@ import (
 	"github.com/kumahq/kuma/pkg/kds/service"
 	"github.com/kumahq/kuma/pkg/kds/util"
 	reconcile_v2 "github.com/kumahq/kuma/pkg/kds/v2/reconcile"
-	zone_tokens "github.com/kumahq/kuma/pkg/tokens/builtin/zone"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/rsa"
 	"github.com/kumahq/kuma/pkg/version"
 )
@@ -44,11 +45,11 @@ var log = core.Log.WithName("kds")
 
 type Context struct {
 	ZoneClientCtx         context.Context
+	TypesSentByZone       []core_model.ResourceType
+	TypesSentByGlobal     []core_model.ResourceType
 	GlobalProvidedFilter  reconcile_v2.ResourceFilter
 	ZoneProvidedFilter    reconcile_v2.ResourceFilter
 	GlobalServerFiltersV2 []mux.FilterV2
-	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
-	Configs map[string]bool
 
 	GlobalResourceMapper reconcile_v2.ResourceMapper
 	ZoneResourceMapper   reconcile_v2.ResourceMapper
@@ -59,21 +60,25 @@ type Context struct {
 	CreateZoneOnFirstConnect bool
 }
 
+// KDSSyncedConfigs A select set of keys that are synced from global to zones
+var KDSSyncedConfigs = map[string]struct{}{
+	config_manager.ClusterIdConfigKey: {},
+}
+
 func DefaultContext(
 	ctx context.Context,
 	manager manager.ResourceManager,
 	cfg kuma_cp.Config,
 ) *Context {
-	configs := map[string]bool{
-		config_manager.ClusterIdConfigKey: true,
-	}
-
 	globalMappers := []reconcile_v2.ResourceMapper{
-		UpdateResourceMeta(util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin))),
+		UpdateResourceMeta(
+			util.WithLabel(mesh_proto.ResourceOriginLabel, string(mesh_proto.GlobalResourceOrigin)),
+			util.WithoutLabelPrefixes(cfg.Multizone.Global.KDS.Labels.SkipPrefixes...),
+		),
 		reconcile_v2.If(
 			reconcile_v2.And(
 				reconcile_v2.TypeIs(system.GlobalSecretType),
-				reconcile_v2.NameHasPrefix(zone_tokens.SigningKeyPrefix),
+				reconcile_v2.NameHasPrefix(system.ZoneTokenSigningKeyPrefix),
 			),
 			MapZoneTokenSigningKeyGlobalToPublicKey),
 		reconcile_v2.If(
@@ -82,20 +87,10 @@ func DefaultContext(
 		reconcile_v2.If(
 			reconcile_v2.TypeIs(meshservice_api.MeshServiceType),
 			RemoveStatus()),
-		reconcile_v2.If(
-			reconcile_v2.And(
-				// secrets already named with mesh prefix for uniqueness on k8s, also Zone CP expects secret names to be in
-				// particular format to be able to reference them
-				reconcile_v2.Not(reconcile_v2.TypeIs(system.SecretType)),
-				// Zone CP expects secret names to be in particular format to be able to reference them
-				reconcile_v2.Not(reconcile_v2.TypeIs(system.GlobalSecretType)),
-				// Zone CP expects secret names to be in particular format to be able to reference them
-				reconcile_v2.Not(reconcile_v2.TypeIs(system.ConfigType)),
-				// Mesh name has to be the same. In multizone deployments it can only be applied on Global CP,
-				// so we won't hit conflicts.
-				reconcile_v2.Not(reconcile_v2.TypeIs(core_mesh.MeshType)),
-			),
-			HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
+		reconcile_v2.If(func(resource core_model.Resource) bool {
+			// There's a handful of resource types for which we keep the name unchanged
+			return !resource.Descriptor().SkipKDSHash
+		}, HashSuffixMapper(true, mesh_proto.ZoneTag, mesh_proto.KubeNamespaceTag)),
 	}
 
 	zoneMappers := []reconcile_v2.ResourceMapper{
@@ -104,6 +99,7 @@ func DefaultContext(
 			util.WithLabel(mesh_proto.ZoneTag, cfg.Multizone.Zone.Name),
 			util.WithoutLabel(mesh_proto.DeletionGracePeriodStartedLabel),
 			util.If(util.IsKubernetes(cfg.Store.Type), util.PopulateNamespaceLabelFromNameExtension()),
+			util.WithoutLabelPrefixes(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes...),
 		),
 		MapInsightResourcesZeroGeneration,
 		reconcile_v2.If(
@@ -113,14 +109,16 @@ func DefaultContext(
 	}
 	ctx = metadata.AppendToOutgoingContext(ctx, VersionHeader, version.Build.Version)
 
+	reg := registry.Global()
 	return &Context{
-		ZoneClientCtx: ctx,
+		ZoneClientCtx:     ctx,
+		TypesSentByZone:   reg.ObjectTypes(core_model.SentFromZoneToGlobal()),
+		TypesSentByGlobal: reg.ObjectTypes(core_model.SentFromGlobalToZone()),
 		GlobalProvidedFilter: CompositeResourceFilters(
-			GlobalProvidedFilter(manager, configs),
+			GlobalProvidedFilter(manager),
 			SkipUnsupportedHostnameGenerator,
 		),
 		ZoneProvidedFilter:       ZoneProvidedFilter,
-		Configs:                  configs,
 		GlobalResourceMapper:     CompositeResourceMapper(globalMappers...),
 		ZoneResourceMapper:       CompositeResourceMapper(zoneMappers...),
 		EnvoyAdminRPCs:           service.NewEnvoyAdminRPCs(),
@@ -199,8 +197,8 @@ func MapZoneTokenSigningKeyGlobalToPublicKey(_ kds.Features, r core_model.Resour
 	publicSigningKeyResource := system.NewGlobalSecretResource()
 	newResName := strings.ReplaceAll(
 		r.GetMeta().GetName(),
-		zone_tokens.SigningKeyPrefix,
-		zone_tokens.SigningPublicKeyPrefix,
+		system.ZoneTokenSigningKeyPrefix,
+		system.ZoneTokenSigningPublicKeyPrefix,
 	)
 	publicSigningKeyResource.SetMeta(util.CloneResourceMeta(r.GetMeta(), util.WithName(newResName)))
 
@@ -257,23 +255,33 @@ func UpdateResourceMeta(fs ...util.CloneResourceMetaOpt) reconcile_v2.ResourceMa
 	}
 }
 
-func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile_v2.ResourceFilter {
-	return func(ctx context.Context, clusterID string, features kds.Features, r core_model.Resource) bool {
-		resName := r.GetMeta().GetName()
-
-		switch {
-		case r.Descriptor().Name == system.ConfigType:
-			return configs[resName]
-		case r.Descriptor().Name == system.GlobalSecretType:
-			return util.ResourceNameHasAtLeastOneOfPrefixes(resName, []string{
-				zone_tokens.SigningKeyPrefix,
-			}...)
+func GlobalProvidedFilter(rm manager.ResourceManager) reconcile_v2.ResourceFilter {
+	return func(ctx context.Context, zoneName string, features kds.Features, r core_model.Resource) bool {
+		// There's explicit flag to disable KDS for a resource
+		if r.Descriptor().HasKDSDisabled(zoneName, r.GetMeta().GetLabels()) {
+			return false
+		}
+		// for Config, Secret and GlobalSecret there are resources that are internal to each CP
+		// we filter them out to not send them to other CPs
+		// We could instead leverage the KDSDisabled label, but this would be complex for backward compatibility
+		switch r.Descriptor().Name {
+		case system.ConfigType:
+			// We only sync specific entries for configs.
+			_, exists := KDSSyncedConfigs[r.GetMeta().GetName()]
+			return exists
+		case system.GlobalSecretType:
+			if slices.Contains([]string{system.EnvoyAdminCA, system.AdminUserToken, system.InterCpCA, system.UserTokenRevocations}, r.GetMeta().GetName()) {
+				return false
+			}
+			if strings.HasPrefix(r.GetMeta().GetName(), system.UserTokenSigningKeyPrefix) {
+				return false
+			}
 		}
 
 		isGlobal := core_model.IsLocallyOriginated(config_core.Global, r.GetMeta().GetLabels())
 
 		switch {
-		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllZonesFlag):
+		case isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToZonesFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
 				policy := r.GetSpec().(core_model.Policy)
 				if policy.GetTargetRef().UsesSyntacticSugar && !features.HasFeature(kds.FeatureOptionalTopLevelTargetRef) {
@@ -281,7 +289,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				}
 			}
 			return true
-		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.GlobalToAllButOriginalZoneFlag):
+		case !isGlobal && r.Descriptor().KDSFlags.Has(core_model.SyncedAcrossZonesFlag):
 			if r.Descriptor().IsPluginOriginated && r.Descriptor().IsPolicy {
 				if !features.HasFeature(kds.FeatureProducerPolicyFlow) {
 					return false
@@ -307,7 +315,7 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 				}
 				if policy.GetTargetRef().Kind == common_api.MeshSubset {
 					// if top-level targetRef has 'kuma.io/zone' then we can sync it only to required zone
-					if targetZone, ok := policy.GetTargetRef().Tags[mesh_proto.ZoneTag]; ok && targetZone != clusterID {
+					if targetZone, ok := pointer.Deref(policy.GetTargetRef().Tags)[mesh_proto.ZoneTag]; ok && targetZone != zoneName {
 						return false
 					}
 				}
@@ -317,14 +325,16 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 			// Reference: https://github.com/kumahq/kuma/issues/10952
 			zoneTag := util.ZoneTag(r)
 
-			if clusterID == zoneTag {
-				// don't need to sync resource to the zone where resource is originated from
+			// don't need to sync resource to the zone where resource is originating from
+			if zoneName == zoneTag {
 				return false
 			}
 
 			zone := system.NewZoneResource()
 			if err := rm.Get(ctx, zone, store.GetByKey(zoneTag, core_model.NoMesh)); err != nil {
-				log.Error(err, "failed to get zone", "zone", zoneTag)
+				if !errors.Is(err, context.Canceled) {
+					log.Error(err, "failed to get zone", "zone", zoneTag)
+				}
 				// since there is no explicit 'enabled: false' then we don't
 				// make any strong decisions which might affect connectivity
 				return true
@@ -348,14 +358,11 @@ func SkipUnsupportedHostnameGenerator(ctx context.Context, clusterID string, fea
 	return true
 }
 
+// ZoneProvidedFilter filters resources that should be sent from Zone to Global
+// a resource is sent from zone to global only if it was created in this zone.
 func ZoneProvidedFilter(_ context.Context, localZone string, _ kds.Features, r core_model.Resource) bool {
-	if zi, ok := r.(*core_mesh.ZoneIngressResource); ok {
-		// Old zones don't have a 'kuma.io/zone' label on ZoneIngress, when upgrading to the new 2.6 version
-		// we don't want Zone CP to sync ZoneIngresses without 'kuma.io/zone' label to Global pretending
-		// they're originating here. That's why upgrade from 2.5 to 2.6 (and 2.7) requires casting resource
-		// to *core_mesh.ZoneIngressResource and checking its 'spec.zone' field.
-		// todo: remove in 2 releases after 2.6.x
-		return !zi.IsRemoteIngress(localZone)
+	if r.Descriptor().HasKDSDisabled("", r.GetMeta().GetLabels()) {
+		return false
 	}
-	return core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels()) || r.Descriptor().KDSFlags == core_model.ZoneToGlobalFlag
+	return core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
 }

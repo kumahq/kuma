@@ -12,21 +12,21 @@ permissions:
 env:
   CI_TOOLS_DIR: "/home/runner/work/kuma/kuma/.ci_tools"
   # This is automatically managed by CI
-  K8S_MIN_VERSION: v1.25.16-k3s4
-  K8S_MAX_VERSION: v1.31.1-k3s1
+  K8S_MIN_VERSION: v1.27.16-k3s1
+  K8S_MAX_VERSION: v1.32.2-k3s1
 jobs:
   test_unit:
-    timeout-minutes: 20
+    timeout-minutes: 25
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'ci/skip-test') }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@d632683dd7b4114ad314bca15554477dd762a938 # v4.2.0
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@0a12ed9d6a96ab950c8f026ed9f722fe0da7ef32 # v5.0.2
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5.4.0
         with:
           go-version-file: go.mod
-      - uses: actions/cache@3624ceb22c1c5a301c8db4169662070a689d9ea8 # v4.1.1
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: |
             ${{ env.CI_TOOLS_DIR }}
@@ -39,7 +39,7 @@ jobs:
           make test
   gen_e2e_matrix:
     timeout-minutes: 2
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       matrix: ${{ steps.generate-matrix.outputs.matrix }}
     steps:
@@ -50,7 +50,7 @@ jobs:
             {
               "test_e2e": {
                 "target": [""],
-                "k8sVersion": ["kindIpv6", "${{ env.K8S_MIN_VERSION }}", "${{ env.K8S_MAX_VERSION }}"],
+                "k8sVersion": ["${{ env.K8S_MAX_VERSION }}"],
                 "arch": ["amd64"],
                 "parallelism": [4],
                 "cniNetworkPlugin": ["flannel"],

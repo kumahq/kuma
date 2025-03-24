@@ -57,12 +57,14 @@ spec:
 			Install(YamlK8s(tlsExternalService)).
 			Install(Namespace(namespace)).
 			Install(NamespaceWithSidecarInjection(clientNamespace)).
-			Install(democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName))).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithEchoArgs("--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key"),
-				testserver.WithName("perm-tls-external-service"),
-				testserver.WithoutProbes(), // not compatible with TLS
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(clientNamespace), democlient.WithMesh(meshName)),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithEchoArgs("--tls", "--crt=/kuma/server.crt", "--key=/kuma/server.key"),
+					testserver.WithName("perm-tls-external-service"),
+					testserver.WithoutProbes(), // not compatible with TLS
+				),
 			)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Setup(kubernetes.Cluster)

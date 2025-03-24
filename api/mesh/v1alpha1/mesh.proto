@@ -17,9 +17,10 @@ message Mesh {
   option (kuma.mesh.resource).type = "Mesh";
   option (kuma.mesh.resource).global = true;
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "mesh";
   option (kuma.mesh.resource).ws.plural = "meshes";
+  option (kuma.mesh.resource).short_name = "m";
 
   // mTLS settings of a Mesh.
   message Mtls {

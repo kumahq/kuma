@@ -147,9 +147,10 @@ func NewApiServer(
 		meshContextBuilder,
 		xdsHooks,
 	)
-	addPoliciesWsEndpoints(ws, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
+	addPoliciesWsEndpoints(ws, cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP(), cfg.ApiServer.ReadOnly, defs)
 	addInspectEndpoints(ws, cfg, meshContextBuilder, rt.ResourceManager())
 	addInspectEnvoyAdminEndpoints(ws, cfg, rt.ResourceManager(), rt.Access().EnvoyAdminAccess, rt.EnvoyAdminClient())
+	addInspectMeshServiceEndpoints(ws, rt.ResourceManager(), rt.Access().ResourceAccess)
 	addZoneEndpoints(ws, rt.ResourceManager())
 	guiUrl := ""
 	if cfg.ApiServer.GUI.Enabled && !cfg.IsFederatedZoneCP() {
@@ -275,8 +276,12 @@ func addResourcesEndpoints(
 	}
 	for _, definition := range defs {
 		defType := definition.Name
-		if ShouldBeReadOnly(definition.KDSFlags, cfg) {
+
+		switch {
+		case cfg.ApiServer.ReadOnly:
 			definition.ReadOnly = true
+		default:
+			definition.ReadOnly = definition.IsReadOnly(cfg.Mode == config_core.Global, cfg.IsFederatedZoneCP())
 		}
 		endpoints := resourceEndpoints{
 			k8sMapper:                    k8sMapper,
@@ -291,6 +296,7 @@ func addResourcesEndpoints(
 			xdsHooks:                     xdsHooks,
 			systemNamespace:              cfg.Store.Kubernetes.SystemNamespace,
 			isK8s:                        cfg.Environment == config_core.KubernetesEnvironment,
+			knownInternalAddresses:       cfg.IPAM.KnownInternalCIDRs,
 		}
 		if cfg.Mode == config_core.Zone && cfg.Multizone != nil && cfg.Multizone.Zone != nil {
 			endpoints.zoneName = cfg.Multizone.Zone.Name
@@ -328,22 +334,6 @@ func addResourcesEndpoints(
 			}
 		}
 	}
-}
-
-func ShouldBeReadOnly(kdsFlag model.KDSFlagType, cfg *kuma_cp.Config) bool {
-	if cfg.ApiServer.ReadOnly {
-		return true
-	}
-	if kdsFlag == model.KDSDisabledFlag {
-		return false
-	}
-	if cfg.Mode == config_core.Global && !kdsFlag.Has(model.GlobalToAllZonesFlag) {
-		return true
-	}
-	if cfg.IsFederatedZoneCP() && !kdsFlag.Has(model.ZoneToGlobalFlag) {
-		return true
-	}
-	return false
 }
 
 func (a *ApiServer) Ready() bool {

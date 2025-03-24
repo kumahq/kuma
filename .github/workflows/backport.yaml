@@ -1,15 +1,189 @@
 name: backport
+run-name: "${{ format( 'backport #{0} to {1}', inputs.PR, ( inputs.branches || 'active branches' )) }}"
 on:
-  pull_request_target:
-    types: [labeled, closed]
+  workflow_dispatch:
+    inputs:
+      PR:
+        description: "number of the PR to be backported"
+        type: string
+        default: ""
+        required: true
+      branches:
+        description: "target branches to backport to (use comma to separate multi-values, leave empty to target all active branches that applies)"
+        type: string
+        default: ""
+        required: false
 permissions:
   contents: read
+  pull-requests: write
+env:
+  GH_USER: kumahq[bot]
+  GH_EMAIL: <110050114+kumahq[bot]@users.noreply.github.com>
+  GH_REPO: ${{ github.repository }}
+  BRANCH_FILE_PATH: active-branches.json
 jobs:
-  maybe-backport:
-    uses: kumahq/.github/.github/workflows/wfc_backport.yml@main
-    permissions:
-      contents: read
-      pull-requests: write
-    secrets:
-      app_id: ${{ secrets.APP_ID }}
-      private_key: ${{ secrets.APP_PRIVATE_KEY }}
+  collect-info:
+    outputs:
+      pr_title: ${{ steps.get-pr-info.outputs.pr_title }}
+      pr_change_log: ${{ steps.get-pr-info.outputs.pr_change_log }}
+      pr_state: ${{ steps.get-pr-info.outputs.pr_state }}
+      pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
+      pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
+      branches: ${{ steps.generate-matrix.outputs.branches }}
+    runs-on: ubuntu-latest
+    steps:
+      - id: get-pr-info
+        name: get-pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
+        run: |
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            set -x
+          fi
+
+          function get_change_log() {
+            awk '
+            BEGIN { in_comment = 0; changelog = "" }
+            
+            # Process each line of input
+            {
+              if (match($0, /<!--/)) {
+                in_comment = 1
+              }
+              if (in_comment && match($0, /-->/)) {
+                in_comment = 0
+              }
+              if (!in_comment && match($0, /^> Changelog: /)) {
+                changelog = $0
+              }
+            }
+            
+            # After processing all lines, print the changelog
+            END { print changelog }
+            ' <<< "$1"
+          }
+          
+          PR_INFO_JSON=$(gh pr view ${{ inputs.PR }} --json 'number,title,mergedAt,state,mergeCommit,baseRefName' || echo '{}')
+          PR_INFO_BODY=$(gh pr view ${{ inputs.PR }} --json 'body' -q '.body' || echo '')
+          
+          TITLE=$(echo -n "$PR_INFO_JSON" | jq -r '.title //empty')
+          CHANGE_LOG=$(get_change_log "$PR_INFO_BODY")
+          STATE=$(echo -n "$PR_INFO_JSON" | jq -r '.state //empty')
+          BASE_REF=$(echo -n "$PR_INFO_JSON" | jq -r '.baseRefName //empty')
+          COMMIT=$(echo -n "$PR_INFO_JSON" | jq -r '.mergeCommit.oid //empty')
+          
+          echo "pr_title=${TITLE}" >> $GITHUB_OUTPUT
+          echo "pr_state=${STATE}" >> $GITHUB_OUTPUT
+          echo "pr_base_ref=${BASE_REF}" >> $GITHUB_OUTPUT
+          echo "pr_merge_commit_sha=${COMMIT}" >> $GITHUB_OUTPUT
+          echo "pr_change_log<<EOF" >> $GITHUB_OUTPUT
+          echo "${CHANGE_LOG}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      - name: ensure-pr-merged
+        run: |
+          if [[ "${{ steps.get-pr-info.outputs.pr_state }}" != "MERGED" ]]; then
+            echo "PR #${{ inputs.PR }} is not merged, current state: '$PR_STATE'"
+            exit 1
+          fi
+      - id: generate-matrix
+        name: generate-matrix
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_DEBUG: ${{ runner.debug == '1' }}
+        run: |
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            set -x
+          fi
+          
+          # target_branches
+          if [[ "${{ inputs.branches }}" != "" ]]; then
+            TARGET_BRANCHES=$(echo "[\"${{ inputs.branches }}\"]" | sed 's/ //g' | sed 's/,/","/g')
+            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
+          else
+            # The head -1 is because GITHUB_OUTPUT is easier to work with single line output
+            TARGET_BRANCHES=$(gh api /repos/${{ github.repository }}/contents/${{ env.BRANCH_FILE_PATH }} --jq '.content | @base64d' | jq  -cM '.[:index("${{ steps.get-pr-info.outputs.pr_base_ref }}")]')
+            echo "branches=${TARGET_BRANCHES}" >> $GITHUB_OUTPUT
+          fi
+  open-prs:
+    needs:
+      - collect-info
+    strategy:
+      fail-fast: false
+      matrix:
+        branch: ${{ fromJSON(needs.collect-info.outputs.branches) }}
+    runs-on: ubuntu-latest
+    env:
+      PR_NUMBER: ${{ inputs.PR }}
+      PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}
+      SHA: ${{ needs.collect-info.outputs.pr_merge_commit_sha }}
+      TARGET_BRANCH: ${{ matrix.branch }}
+      USE_APP_TOKEN: ${{ secrets.APP_ID != '' }}
+    steps:
+      - uses: marocchino/sticky-pull-request-comment@52423e01640425a022ef5fd42c6fb5f633a02728 # v2.9.1
+        with:
+          append: true
+          message: backporting to ${{ matrix.branch }} with [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+      - id: github-app-token
+        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        if: ${{ env.USE_APP_TOKEN == 'true' }}
+        with:
+          app_id: ${{ secrets.APP_ID }}
+          private_key: ${{ secrets.APP_PRIVATE_KEY }}
+      - id: github-context-token
+        if: ${{ env.USE_APP_TOKEN != 'true' }}
+        run: |
+          echo "token=${{ github.token }}" >> $GITHUB_OUTPUT
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.TARGET_BRANCH }}
+          fetch-depth: 0
+      - name: git-config
+        run: |
+          git config user.name "${GH_USER}"
+          git config user.email "${GH_EMAIL}"
+      - name: cherry-pick
+        run: |
+          if [[ "${{ runner.debug }}" == "1" ]]; then
+            set -x
+          fi
+          
+          echo LABELS=${{ matrix.branch }} >> $GITHUB_ENV
+          if git cherry-pick ${{ env.SHA }}; then
+            echo "Cherry-picked without conflicts!"
+          else
+            echo LABELS=${{ matrix.branch }},conflict >> $GITHUB_ENV
+            echo "DIFF<<EOF" >> $GITHUB_ENV
+            echo ":warning: :warning: :warning: Conflicts happened when cherry-picking! :warning: :warning: :warning:" >> $GITHUB_ENV
+            echo '```' >> $GITHUB_ENV
+            git status >> $GITHUB_ENV
+            echo '```' >> $GITHUB_ENV
+            echo "EOF" >> $GITHUB_ENV
+            git add .
+            git cherry-pick --continue
+          fi
+      - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          title: "${{ env.PR_TITLE }} (backport of #${{ env.PR_NUMBER }})"
+          signoff: true
+          branch: chore/backport-${{ env.TARGET_BRANCH }}-${{ env.PR_NUMBER }}
+          body: |
+            Automatic cherry-pick of #${{ env.PR_NUMBER }} for branch ${{ env.TARGET_BRANCH }}
+            
+            Generated by [action](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            
+            cherry-picked commit ${{ env.SHA }}
+            
+            ${{ env.DIFF }}
+            
+            ${{ needs.collect-info.outputs.pr_change_log }}
+          commit-message: |
+            Automatic cherry-pick of PR ${{ env.PR_NUMBER }} for branch ${{ env.TARGET_BRANCH }}
+            
+            cherry-picked commit ${{ env.SHA }}
+          delete-branch: true
+          draft: ${{ contains(env.LABELS, 'conflict') }}
+          labels: ${{ env.LABELS }}
+          token: ${{ secrets.APP_ID != '' && steps.github-app-token.outputs.token || steps.github-context-token.outputs.token }}
+          committer: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}
+          author: ${{ env.GH_USER }} ${{ env.GH_EMAIL }}

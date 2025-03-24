@@ -16,20 +16,17 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	admin_tls "github.com/kumahq/kuma/pkg/envoy/admin/tls"
-	intercp_tls "github.com/kumahq/kuma/pkg/intercp/tls"
-	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
 )
 
 type exportContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		profile      string
-		format       string
-		includeAdmin bool
+		profile         string
+		format          string
+		systemNamespace string
+		includeAdmin    bool
 	}
 }
 
@@ -94,6 +91,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			var meshSecrets []model.Resource
 			var otherResources []model.Resource
+			var meshesResources []model.Resource
 			for _, resDesc := range resTypes {
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
@@ -104,8 +102,10 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						if res.Descriptor().Name == core_mesh.MeshType {
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
+							meshesResources = append(meshesResources, res)
+						} else {
+							otherResources = append(otherResources, res)
 						}
-						otherResources = append(otherResources, res)
 					}
 				} else {
 					for _, mesh := range meshes.Items {
@@ -129,9 +129,9 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			var userTokenSigningKeys []model.Resource
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
 			for _, res := range allResources {
-				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), issuer.UserTokenSigningKeyPrefix)
-				if res.GetMeta().GetName() != admin_tls.GlobalSecretKey.Name &&
-					res.GetMeta().GetName() != intercp_tls.GlobalSecretKey.Name &&
+				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
+				if res.GetMeta().GetName() != core_system.EnvoyAdminCA &&
+					res.GetMeta().GetName() != core_system.InterCpCA &&
 					!isUserTokenSigningKey {
 					resources = append(resources, res)
 				}
@@ -144,20 +144,16 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
-				var meshDeclarations []model.Resource
-				for _, res := range resources {
-					if res.Descriptor().Name == core_mesh.MeshType {
-						meshDeclaration := core_mesh.NewMeshResource()
-						meshDeclaration.SetMeta(
-							v1alpha1.ResourceMeta{
-								Type: string(core_mesh.MeshType),
-								Name: res.GetMeta().GetName(),
-							},
-						)
-						meshDeclarations = append(meshDeclarations, meshDeclaration)
+				for _, res := range meshesResources {
+					// print mesh first since you cannot create other resources if there is no mesh
+					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
+						return err
+					}
+					if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
+						return err
 					}
 				}
-				for _, res := range append(meshDeclarations, resources...) {
+				for _, res := range resources {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -171,10 +167,13 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					return err
 				}
 				yamlPrinter := yaml.NewPrinter()
-				for _, res := range resources {
+				for _, res := range append(meshesResources, resources...) {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
 						return err
+					}
+					if shouldSkipKubeObject(obj, ctx) {
+						continue
 					}
 					cleanKubeObject(obj)
 					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
@@ -188,8 +187,25 @@ $ kumactl export --profile federation --format universal > policies.yaml
 	}
 	cmd.Flags().StringVarP(&ctx.args.profile, "profile", "p", profileFederation, fmt.Sprintf(`Profile. Available values: %s`, strings.Join(allProfiles, ",")))
 	cmd.Flags().StringVarP(&ctx.args.format, "format", "f", formatUniversal, fmt.Sprintf(`Policy format output. Available values: %q, %q`, formatUniversal, formatKubernetes))
+	cmd.Flags().StringVarP(&ctx.args.systemNamespace, "system-namespace", "n", ctx.InstallCpContext.Args.Namespace, "Define namespace in which control-plane was installed")
 	cmd.Flags().BoolVarP(&ctx.args.includeAdmin, "include-admin", "a", false, "Include admin resource types (like secrets), this flag is ignored on migration profiles like federation as these entities are required")
 	return cmd
+}
+
+func shouldSkipKubeObject(obj map[string]interface{}, ectx *exportContext) bool {
+	if ectx.args.profile == profileAll {
+		return false
+	}
+	metadata, ok := obj["metadata"]
+	if !ok {
+		return false
+	}
+	meta := metadata.(map[string]interface{})
+	if ns, found := meta["namespace"]; found {
+		// we can't apply non system namespace resource on global
+		return ns != ectx.args.systemNamespace
+	}
+	return false
 }
 
 // cleans kubernetes object, so it can be applied on any other cluster

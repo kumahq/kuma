@@ -30,12 +30,11 @@ spec:
       # priority scheduling and that its resources are reserved
       # if it ever gets evicted.
       priorityClassName: system-node-critical
+      {{- with .Values.cni.affinity }}
+      affinity: {{ tpl (toYaml . | nindent 8) $ }}
+      {{- end }}
       {{- with .Values.cni.nodeSelector }}
       nodeSelector:
-      {{ toYaml . | nindent 8 }}
-      {{- end }}
-      {{- with .Values.cni.tolerations }}
-      tolerations:
       {{ toYaml . | nindent 8 }}
       {{- end }}
       tolerations:
@@ -47,6 +46,9 @@ spec:
           operator: Exists
         - effect: NoExecute
           operator: Exists
+      {{- with .Values.cni.tolerations }}
+      {{- toYaml . | nindent 8}}
+      {{- end }}
       serviceAccountName: {{ include "kuma.name" . }}-cni
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.

@@ -3,6 +3,7 @@ package topology_test
 import (
 	"context"
 
+	tlsv3 "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -213,7 +214,7 @@ var _ = Describe("TrafficRoute", func() {
 
 			// when
 			targets := BuildEdsEndpointMap(
-				defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items,
+				context.Background(), defaultMeshWithMTLS, "zone-1", nil, nil, nil, dataplanes.Items, nil, nil, externalServices.Items, dataSourceLoader,
 			)
 
 			Expect(targets).To(HaveLen(4))
@@ -309,6 +310,7 @@ var _ = Describe("TrafficRoute", func() {
 					meshServiceByName[core_model.NewResourceIdentifier(ms)] = ms
 				}
 				endpoints := BuildEdsEndpointMap(
+					context.Background(),
 					given.mesh,
 					"zone-1",
 					meshServiceByName,
@@ -318,6 +320,7 @@ var _ = Describe("TrafficRoute", func() {
 					given.zoneIngresses,
 					given.zoneEgresses,
 					given.externalServices,
+					dataSourceLoader,
 				)
 				esEndpoints := BuildExternalServicesEndpointMap(
 					context.Background(), given.mesh, given.externalServices, dataSourceLoader, "zone-1",
@@ -1324,11 +1327,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
 								Protocol: core_mesh.ProtocolHTTP,
 							},
-							Endpoints: []meshexternalservice_api.Endpoint{
+							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1342,7 +1345,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSecured),
+									Mode:       meshexternalservice_api.TLSVerificationSecured,
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1377,11 +1380,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
 								Protocol: core_mesh.ProtocolTCP,
 							},
-							Endpoints: []meshexternalservice_api.Endpoint{
+							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1390,7 +1393,7 @@ var _ = Describe("TrafficRoute", func() {
 							Tls: &meshexternalservice_api.Tls{
 								Enabled: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSkipSAN),
+									Mode:       meshexternalservice_api.TLSVerificationSkipSAN,
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1433,8 +1436,11 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolTCP,
-								TLSEnabled: false,
+								Protocol:                 core_mesh.ProtocolTCP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								SkipHostnameVerification: true,
+								SANs:                     []core_xds.SAN{},
 								OwnerResource: &core_model.TypedResourceIdentifier{
 									ResourceIdentifier: core_model.ResourceIdentifier{
 										Name: "another-mes",
@@ -1452,8 +1458,27 @@ var _ = Describe("TrafficRoute", func() {
 							Locality: nil,
 							Weight:   1,
 							ExternalService: &core_xds.ExternalService{
-								Protocol:   core_mesh.ProtocolHTTP,
-								TLSEnabled: false,
+								Protocol:                 core_mesh.ProtocolHTTP,
+								TLSEnabled:               true,
+								FallbackToSystemCa:       true,
+								CaCert:                   []byte("ca"),
+								ClientCert:               []byte("cert"),
+								ClientKey:                []byte("key"),
+								AllowRenegotiation:       true,
+								SkipHostnameVerification: false,
+								ServerName:               "example.com",
+								SANs: []core_xds.SAN{
+									{
+										MatchType: core_xds.SANMatchPrefix,
+										Value:     "test.com",
+									},
+									{
+										MatchType: core_xds.SANMatchExact,
+										Value:     "test.com",
+									},
+								},
+								MinTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_2),
+								MaxTlsVersion: pointer.To(tlsv3.TlsParameters_TLSv1_3),
 								OwnerResource: &core_model.TypedResourceIdentifier{
 									ResourceIdentifier: core_model.ResourceIdentifier{
 										Name: "example-mes",
@@ -1475,11 +1500,11 @@ var _ = Describe("TrafficRoute", func() {
 						},
 						Spec: &meshexternalservice_api.MeshExternalService{
 							Match: meshexternalservice_api.Match{
-								Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+								Type:     meshexternalservice_api.HostnameGeneratorType,
 								Port:     10000,
 								Protocol: core_mesh.ProtocolHTTP,
 							},
-							Endpoints: []meshexternalservice_api.Endpoint{
+							Endpoints: &[]meshexternalservice_api.Endpoint{
 								{
 									Address: "example.com",
 									Port:    meshexternalservice_api.Port(443),
@@ -1493,7 +1518,7 @@ var _ = Describe("TrafficRoute", func() {
 								},
 								AllowRenegotiation: true,
 								Verification: &meshexternalservice_api.Verification{
-									Mode:       pointer.To(meshexternalservice_api.TLSVerificationSecured),
+									Mode:       meshexternalservice_api.TLSVerificationSecured,
 									ServerName: pointer.To("example.com"),
 									SubjectAltNames: &[]meshexternalservice_api.SANMatch{
 										{
@@ -1659,11 +1684,11 @@ var _ = Describe("TrafficRoute", func() {
 							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
 							Spec: &meshexternalservice_api.MeshExternalService{
 								Match: meshexternalservice_api.Match{
-									Type:     pointer.To(meshexternalservice_api.HostnameGeneratorType),
+									Type:     meshexternalservice_api.HostnameGeneratorType,
 									Port:     443,
 									Protocol: core_mesh.ProtocolTCP,
 								},
-								Endpoints: []meshexternalservice_api.Endpoint{
+								Endpoints: &[]meshexternalservice_api.Endpoint{
 									{
 										Address: "192.168.1.1",
 										Port:    meshexternalservice_api.Port(10000),
@@ -1701,6 +1726,78 @@ var _ = Describe("TrafficRoute", func() {
 								ExternalService: &core_xds.ExternalService{TLSEnabled: false},
 							},
 						},
+						"default_example___extsvc_443": []core_xds.Endpoint{
+							{
+								Target: "192.168.1.1",
+								Port:   10000,
+								Tags: map[string]string{
+									"mesh": "default",
+								},
+								Weight: 1,
+								ExternalService: &core_xds.ExternalService{
+									TLSEnabled: false,
+									Protocol:   core_mesh.ProtocolTCP,
+									OwnerResource: &core_model.TypedResourceIdentifier{
+										ResourceType: "MeshExternalService",
+										ResourceIdentifier: core_model.ResourceIdentifier{
+											Name: "example",
+											Mesh: "default",
+										},
+									},
+								},
+							},
+						},
+					},
+				}),
+				Entry("generate map for zone egress when one mes is invalid", testCase{
+					meshExternalServices: []*meshexternalservice_api.MeshExternalServiceResource{
+						{
+							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "example"},
+							Spec: &meshexternalservice_api.MeshExternalService{
+								Match: meshexternalservice_api.Match{
+									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Port:     443,
+									Protocol: core_mesh.ProtocolTCP,
+								},
+								Endpoints: &[]meshexternalservice_api.Endpoint{
+									{
+										Address: "192.168.1.1",
+										Port:    meshexternalservice_api.Port(10000),
+									},
+								},
+							},
+						},
+						{
+							Meta: &test_model.ResourceMeta{Mesh: defaultMeshName, Name: "invalid"},
+							Spec: &meshexternalservice_api.MeshExternalService{
+								Match: meshexternalservice_api.Match{
+									Type:     meshexternalservice_api.HostnameGeneratorType,
+									Port:     443,
+									Protocol: core_mesh.ProtocolTCP,
+								},
+								Endpoints: &[]meshexternalservice_api.Endpoint{
+									{
+										Address: "192.168.1.1",
+										Port:    meshexternalservice_api.Port(10000),
+									},
+								},
+								Tls: &meshexternalservice_api.Tls{
+									Enabled: true,
+									Verification: &meshexternalservice_api.Verification{
+										Mode: meshexternalservice_api.TLSVerificationSecured,
+										ClientKey: &common_api.DataSource{
+											Secret: pointer.To("not-existing"),
+										},
+										ClientCert: &common_api.DataSource{
+											Secret: pointer.To("not-existing"),
+										},
+									},
+								},
+							},
+						},
+					},
+					mesh: defaultMeshWithMTLSAndZoneEgress,
+					expected: core_xds.EndpointMap{
 						"default_example___extsvc_443": []core_xds.Endpoint{
 							{
 								Target: "192.168.1.1",

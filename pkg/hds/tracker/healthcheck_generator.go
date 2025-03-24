@@ -6,6 +6,8 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
@@ -16,7 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/hds/cache"
+	v3 "github.com/kumahq/kuma/pkg/hds/v3"
 	"github.com/kumahq/kuma/pkg/util/net"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -42,7 +44,7 @@ func NewSnapshotGenerator(
 	}
 }
 
-func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
+func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_core.Node) (envoy_cache.ResourceSnapshot, error) {
 	ctx = user.Ctx(ctx, user.ControlPlane)
 	proxyId, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
@@ -138,7 +140,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 		Interval:            util_proto.Duration(g.config.Interval.Duration),
 	}
 
-	return cache.NewSnapshot(core.NewUUID(), hcs), nil
+	return util_xds_v3.NewSingleTypeSnapshot(core.NewUUID(), v3.HealthCheckSpecifierType, []types.Resource{hcs}), nil
 }
 
 // envoyHealthCheck builds a HC for Envoy itself so when Envoy is in draining state HDS can report that DP is offline

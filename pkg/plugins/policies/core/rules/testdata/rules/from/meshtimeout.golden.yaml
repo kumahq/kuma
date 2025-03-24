@@ -1,3 +1,25 @@
+InboundRules:
+  127.0.0.1:80:
+  - conf:
+    - connectionTimeout: 20s
+      http:
+        requestTimeout: 5s
+      idleTimeout: 20s
+    origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: default
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: default
+        type: MeshTimeout
+      RuleIndex: 0
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: default
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: override
+        type: MeshTimeout
+      RuleIndex: 0
 Rules:
   127.0.0.1:80:
   - BackendRefOriginIndex: {}

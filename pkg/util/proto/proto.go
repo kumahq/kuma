@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/golang/protobuf/jsonpb"
-	protov1 "github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/jsonpb" // nolint: depguard
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/protoadapt"
 	"google.golang.org/protobuf/types/known/structpb"
 	"sigs.k8s.io/yaml"
 )
@@ -25,7 +25,7 @@ func FromYAML(content []byte, pb proto.Message) error {
 
 func ToYAML(pb proto.Message) ([]byte, error) {
 	marshaler := &jsonpb.Marshaler{}
-	json, err := marshaler.MarshalToString(protov1.MessageV1(pb))
+	json, err := marshaler.MarshalToString(protoadapt.MessageV1Of(pb))
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func ToYAML(pb proto.Message) ([]byte, error) {
 func ToJSON(pb proto.Message) ([]byte, error) {
 	var buf bytes.Buffer
 	marshaler := &jsonpb.Marshaler{}
-	if err := marshaler.Marshal(&buf, protov1.MessageV1(pb)); err != nil {
+	if err := marshaler.Marshal(&buf, protoadapt.MessageV1Of(pb)); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil
@@ -52,7 +52,7 @@ func MustMarshalJSON(in proto.Message) []byte {
 
 func FromJSON(content []byte, out proto.Message) error {
 	unmarshaler := &jsonpb.Unmarshaler{AllowUnknownFields: true}
-	return unmarshaler.Unmarshal(bytes.NewReader(content), protov1.MessageV1(out))
+	return unmarshaler.Unmarshal(bytes.NewReader(content), protoadapt.MessageV1Of(out))
 }
 
 // Converts loosely typed Struct to strongly typed Message

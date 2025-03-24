@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_policy "github.com/kumahq/kuma/pkg/core/policy"
 	"github.com/kumahq/kuma/pkg/util/maps"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const TagsHeaderName = "x-kuma-tags"
@@ -118,15 +119,15 @@ func FromLegacyTargetRef(targetRef common_api.TargetRef) (Tags, bool) {
 
 	switch targetRef.Kind {
 	case common_api.MeshService:
-		service = targetRef.Name
+		service = pointer.Deref(targetRef.Name)
 	case common_api.MeshServiceSubset:
-		service = targetRef.Name
-		tags = targetRef.Tags
+		service = pointer.Deref(targetRef.Name)
+		tags = pointer.Deref(targetRef.Tags)
 	case common_api.Mesh:
 		service = mesh_proto.MatchAllTag
 	case common_api.MeshSubset:
 		service = mesh_proto.MatchAllTag
-		tags = targetRef.Tags
+		tags = pointer.Deref(targetRef.Tags)
 	default:
 		return nil, false
 	}

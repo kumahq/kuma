@@ -11,7 +11,9 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/access"
@@ -57,13 +59,13 @@ func (c *plugin) NewAuthenticator(context plugins.PluginContext) (authn.Authenti
 	}
 	accessors := []core_tokens.SigningKeyAccessor{staticSigningKeyAccessor}
 	if context.Config().ApiServer.Authn.Tokens.Validator.UseSecrets {
-		accessors = append(accessors, core_tokens.NewSigningKeyAccessor(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix))
+		accessors = append(accessors, core_tokens.NewSigningKeyAccessor(context.ResourceManager(), system.UserTokenSigningKeyPrefix))
 	}
 	validator := issuer.NewUserTokenValidator(
 		core_tokens.NewValidator(
 			core.Log.WithName("tokens"),
 			accessors,
-			core_tokens.NewRevocations(context.ResourceManager(), issuer.UserTokenRevocationsGlobalSecretKey),
+			core_tokens.NewRevocations(context.ResourceManager(), core_model.ResourceKey{Name: system.UserTokenRevocations}),
 			context.Config().Store.Type,
 		),
 	)
@@ -86,7 +88,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 	if !ok {
 		return errors.Errorf("no Access strategy for type %q", context.Config().Access.Type)
 	}
-	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), issuer.UserTokenSigningKeyPrefix)
+	signingKeyManager := core_tokens.NewSigningKeyManager(context.ResourceManager(), system.UserTokenSigningKeyPrefix)
 	tokenIssuer := NewUserTokenIssuer(signingKeyManager)
 	if !context.Config().ApiServer.Authn.Tokens.EnableIssuer {
 		tokenIssuer = issuer.DisabledIssuer{}
@@ -102,7 +104,7 @@ func (c *plugin) AfterBootstrap(context *plugins.MutablePluginContext, config pl
 }
 
 func EnsureUserTokenSigningKeyExists(ctx context.Context, resManager core_manager.ResourceManager, logger logr.Logger, cfg kuma_cp.Config) error {
-	return core_tokens.EnsureDefaultSigningKeyExist(issuer.UserTokenSigningKeyPrefix, ctx, resManager, logger)
+	return core_tokens.EnsureDefaultSigningKeyExist(system.UserTokenSigningKeyPrefix, ctx, resManager, logger)
 }
 
 func (c *plugin) Name() plugins.PluginName {

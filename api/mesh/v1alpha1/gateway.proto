@@ -23,8 +23,13 @@ message MeshGateway {
   option (kuma.mesh.resource).type = "MeshGateway";
   option (kuma.mesh.resource).package = "mesh";
 
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  // Meshgateway is a little special as we want to sync gateways from global but
+  // we also want to be able to define a gateway locally.
+  // however, we don't want gateway synced between zones.
+  option (kuma.mesh.resource).kds =
+      "model.GlobalToZonesFlag | model.ZoneToGlobalFlag";
   option (kuma.mesh.resource).ws.name = "meshgateway";
+  option (kuma.mesh.resource).short_name = "mgw";
 
   // TLSConfig describes a TLS configuration.
   message TLS {

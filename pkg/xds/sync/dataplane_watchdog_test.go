@@ -28,16 +28,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/sync"
 )
 
-type staticMetadataTracker struct {
-	metadata *core_xds.DataplaneMetadata
-}
-
-var _ sync.DataplaneMetadataTracker = &staticMetadataTracker{}
-
-func (s *staticMetadataTracker) Metadata(dpKey core_model.ResourceKey) *core_xds.DataplaneMetadata {
-	return s.metadata
-}
-
 type staticSnapshotReconciler struct {
 	proxy *core_xds.Proxy
 }
@@ -59,12 +49,10 @@ var _ = Describe("Dataplane Watchdog", func() {
 
 	var resManager manager.ResourceManager
 	var snapshotReconciler *staticSnapshotReconciler
-	var metadataTracker *staticMetadataTracker
 	var deps sync.DataplaneWatchdogDependencies
 
 	BeforeEach(func() {
 		snapshotReconciler = &staticSnapshotReconciler{}
-		metadataTracker = &staticMetadataTracker{}
 
 		store := memory.NewStore()
 		resManager = manager.NewResourceManager(store)
@@ -96,9 +84,8 @@ var _ = Describe("Dataplane Watchdog", func() {
 				Secrets: secrets,
 				Zone:    zone,
 			},
-			MeshCache:       cache,
-			MetadataTracker: metadataTracker,
-			ResManager:      resManager,
+			MeshCache:  cache,
+			ResManager: resManager,
 		}
 
 		pair, err := envoy_admin_tls.GenerateCA()
@@ -110,16 +97,17 @@ var _ = Describe("Dataplane Watchdog", func() {
 		var resKey core_model.ResourceKey
 		var watchdog *sync.DataplaneWatchdog
 		var ctx context.Context
+		var metadata *core_xds.DataplaneMetadata
 
 		BeforeEach(func() {
 			Expect(samples.MeshDefaultBuilder().Create(resManager)).To(Succeed())
 			Expect(samples.DataplaneBackendBuilder().Create(resManager)).To(Succeed())
 			resKey = core_model.MetaToResourceKey(samples.DataplaneBackend().GetMeta())
 
-			metadataTracker.metadata = &core_xds.DataplaneMetadata{
+			metadata = &core_xds.DataplaneMetadata{
 				ProxyType: mesh_proto.DataplaneProxyType,
 			}
-			watchdog = sync.NewDataplaneWatchdog(deps, resKey)
+			watchdog = sync.NewDataplaneWatchdog(deps, metadata, resKey)
 			ctx = context.Background()
 		})
 

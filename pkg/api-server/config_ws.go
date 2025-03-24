@@ -14,10 +14,6 @@ func addConfigEndpoints(ws *restful.WebService, access access.ControlPlaneMetada
 	if err != nil {
 		return err
 	}
-	json, err := config.ToJson(cfgForDisplay)
-	if err != nil {
-		return err
-	}
 	ws.Route(ws.GET("/config").To(func(req *restful.Request, resp *restful.Response) {
 		ctx := req.Request.Context()
 		if err := access.ValidateView(ctx, user.FromCtx(ctx)); err != nil {
@@ -25,7 +21,7 @@ func addConfigEndpoints(ws *restful.WebService, access access.ControlPlaneMetada
 			return
 		}
 		resp.AddHeader("content-type", "application/json")
-		if _, err := resp.Write(json); err != nil {
+		if _, err := resp.Write([]byte(cfgForDisplay)); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
 	}))

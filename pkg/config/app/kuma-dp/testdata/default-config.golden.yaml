@@ -1,5 +1,4 @@
-applicationProbeProxyServer:
-  port: 9001
+applicationProbeProxyServer: {}
 controlPlane:
   caCert: ""
   caCertFile: ""

@@ -49,18 +49,20 @@ spec:
 			Install(YamlK8s(containerPatch(Config.KumaNamespace))).
 			Install(YamlK8s(containerPatch2(Config.KumaNamespace))).
 			Install(MeshKubernetes(mesh)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName(appNameWithPatch),
-				testserver.WithPodAnnotations(
-					map[string]string{"kuma.io/container-patches": "container-patch-1,container-patch-2"},
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName(appNameWithPatch),
+					testserver.WithPodAnnotations(
+						map[string]string{"kuma.io/container-patches": "container-patch-1,container-patch-2"},
+					),
 				),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName(appName),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName(appName),
+				),
 			)).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())

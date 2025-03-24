@@ -230,10 +230,10 @@ var _ = Describe("Updater", func() {
 				Total:     3,
 			},
 		}),
-		Entry("should count healthy DPPs", dpProxiesTestCase{
+		Entry("should count healthy DPPs and use MeshService.ports[].targetPort to select DP inbound", dpProxiesTestCase{
 			meshService: samples.MeshServiceBackendBuilder().
 				WithDataplaneTagsSelectorKV("app", "backend").
-				AddIntPort(builders.FirstInboundPort+1, builders.FirstInboundServicePort+1, core_mesh.ProtocolHTTP),
+				AddIntPort(builders.FirstInboundServicePort+1, builders.FirstInboundPort+1, core_mesh.ProtocolHTTP),
 			dpps: []*builders.DataplaneBuilder{
 				builders.Dataplane().
 					WithName("dp-all-inbounds-healthy").

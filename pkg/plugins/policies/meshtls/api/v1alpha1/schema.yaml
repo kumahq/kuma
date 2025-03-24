@@ -89,6 +89,7 @@ properties:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                   type: string
                 labels:
                   additionalProperties:
@@ -119,7 +120,6 @@ properties:
                       - Sidecar
                       - Gateway
                     type: string
-                  minItems: 1
                   type: array
                 sectionName:
                   description: |-
@@ -133,9 +133,65 @@ properties:
                     Tags used to select a subset of proxies by tags. Can only be used with kinds
                     `MeshSubset` and `MeshServiceSubset`
                   type: object
+              required:
+                - kind
               type: object
           required:
             - targetRef
+          type: object
+        type: array
+      rules:
+        description: |-
+          Rules defines inbound tls configurations. Currently limited to
+          selecting all inbound traffic, as L7 matching is not yet implemented.
+        items:
+          properties:
+            default:
+              description: Default contains configuration of the inbound tls
+              properties:
+                mode:
+                  description: Mode defines the behavior of inbound listeners with regard to traffic encryption.
+                  enum:
+                    - Permissive
+                    - Strict
+                  type: string
+                tlsCiphers:
+                  description: TlsCiphers section for providing ciphers specification.
+                  items:
+                    enum:
+                      - ECDHE-ECDSA-AES128-GCM-SHA256
+                      - ECDHE-ECDSA-AES256-GCM-SHA384
+                      - ECDHE-ECDSA-CHACHA20-POLY1305
+                      - ECDHE-RSA-AES128-GCM-SHA256
+                      - ECDHE-RSA-AES256-GCM-SHA384
+                      - ECDHE-RSA-CHACHA20-POLY1305
+                    type: string
+                  type: array
+                tlsVersion:
+                  description: Version section for providing version specification.
+                  properties:
+                    max:
+                      default: TLSAuto
+                      description: Max defines maximum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                      enum:
+                        - TLSAuto
+                        - TLS10
+                        - TLS11
+                        - TLS12
+                        - TLS13
+                      type: string
+                    min:
+                      default: TLSAuto
+                      description: Min defines minimum supported version. One of `TLSAuto`, `TLS10`, `TLS11`, `TLS12`, `TLS13`.
+                      enum:
+                        - TLSAuto
+                        - TLS10
+                        - TLS11
+                        - TLS12
+                        - TLS13
+                      type: string
+                  type: object
+              type: object
           type: object
         type: array
       targetRef:
@@ -155,6 +211,7 @@ properties:
               - MeshMultiZoneService
               - MeshServiceSubset
               - MeshHTTPRoute
+              - Dataplane
             type: string
           labels:
             additionalProperties:
@@ -185,7 +242,6 @@ properties:
                 - Sidecar
                 - Gateway
               type: string
-            minItems: 1
             type: array
           sectionName:
             description: |-
@@ -199,5 +255,19 @@ properties:
               Tags used to select a subset of proxies by tags. Can only be used with kinds
               `MeshSubset` and `MeshServiceSubset`
             type: object
+        required:
+          - kind
         type: object
     type: object
+  creationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was created'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'
+  modificationTime:
+    readOnly: true
+    type: string
+    description: 'Time at which the resource was updated'
+    format: date-time
+    example: '0001-01-01T00:00:00Z'

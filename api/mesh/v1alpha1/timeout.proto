@@ -13,7 +13,7 @@ message Timeout {
   option (kuma.mesh.resource).name = "TimeoutResource";
   option (kuma.mesh.resource).type = "Timeout";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_zone = true;
+  option (kuma.mesh.resource).kds = "model.GlobalToZonesFlag";
   option (kuma.mesh.resource).ws.name = "timeout";
   option (kuma.mesh.resource).allow_to_inspect = true;
 

@@ -20,9 +20,6 @@ resources:
               - matcher:
                   exact: spiffe://default/backend
                 sanType: URI
-              - matcher:
-                  exact: spiffe://default/other-backend
-                sanType: URI
             validationContextSdsSecretConfig:
               name: mesh_ca:secret:default
               sdsConfig:

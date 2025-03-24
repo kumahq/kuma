@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/golang-jwt/jwt/v4"
+	"github.com/golang-jwt/jwt/v5"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
@@ -71,11 +71,11 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			Expect(buf.String()).To(Equal(given.result))
 		},
 		Entry("for default mesh when it is not specified", testCase{
-			args:   []string{"generate", "dataplane-token", "--name=example"},
+			args:   []string{"generate", "dataplane-token", "--name=example", "--valid-for", "30s"},
 			result: "token-for-example-default--",
 		}),
 		Entry("for all arguments", testCase{
-			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--proxy-type=dataplane", "--tag", "kuma.io/service=web"},
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--proxy-type=dataplane", "--tag", "kuma.io/service=web", "--valid-for", "30s"},
 			result: "token-for-example-demo-kuma.io/service=web-dataplane",
 		}),
 	)
@@ -111,7 +111,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator.err = errors.New("could not connect to API")
 
 		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--name=example"})
+		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--name=example", "--valid-for", "30s"})
 		err := rootCmd.Execute()
 
 		// then

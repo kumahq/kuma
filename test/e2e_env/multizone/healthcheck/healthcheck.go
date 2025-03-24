@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -17,34 +18,37 @@ func ApplicationOnUniversalClientOnK8s() {
 	meshName := "healthcheck-app-on-universal"
 
 	BeforeAll(func() {
-		err := NewClusterSetup().
+		Expect(NewClusterSetup().
 			Install(MTLSMeshUniversal(meshName)).
 			Install(TrafficRouteUniversal(meshName)).
 			Install(TrafficPermissionUniversal(meshName)).
-			Setup(multizone.Global)
-		Expect(err).ToNot(HaveOccurred())
+			Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err = NewClusterSetup().
+		group := errgroup.Group{}
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		err = NewClusterSetup().
-			Install(TestServerUniversal("test-server-1", meshName,
-				WithArgs([]string{"echo", "--instance", "dp-universal-1"}),
-				WithProtocol("tcp"))).
-			// This instance doesn't actually start the app
-			Install(TestServerUniversal("test-server-2", meshName,
-				WithArgs([]string{"echo", "--instance", "dp-universal-2"}),
-				WithProtocol("tcp"),
-				ProxyOnly(),
-				ServiceProbe())).
-			Install(TestServerUniversal("test-server-3", meshName,
-				WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
-				WithProtocol("tcp"))).
-			Setup(multizone.UniZone2)
-		Expect(err).ToNot(HaveOccurred())
+		NewClusterSetup().
+			Install(Parallel(
+				TestServerUniversal("test-server-1", meshName,
+					WithArgs([]string{"echo", "--instance", "dp-universal-1"}),
+					WithProtocol("tcp")),
+				// This instance doesn't actually start the app
+				TestServerUniversal("test-server-2", meshName,
+					WithArgs([]string{"echo", "--instance", "dp-universal-2"}),
+					WithProtocol("tcp"),
+					ProxyOnly(),
+					ServiceProbe()),
+				TestServerUniversal("test-server-3", meshName,
+					WithArgs([]string{"echo", "--instance", "dp-universal-3"}),
+					WithProtocol("tcp")),
+			)).
+			SetupInGroup(multizone.UniZone2, &group)
+
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

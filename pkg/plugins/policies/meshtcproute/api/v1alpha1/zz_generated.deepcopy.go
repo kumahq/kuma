@@ -18,9 +18,13 @@ func (in *MeshTCPRoute) DeepCopyInto(out *MeshTCPRoute) {
 	}
 	if in.To != nil {
 		in, out := &in.To, &out.To
-		*out = make([]To, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]To)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]To, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }
@@ -56,9 +60,13 @@ func (in *RuleConf) DeepCopyInto(out *RuleConf) {
 	*out = *in
 	if in.BackendRefs != nil {
 		in, out := &in.BackendRefs, &out.BackendRefs
-		*out = make([]commonv1alpha1.BackendRef, len(*in))
-		for i := range *in {
-			(*in)[i].DeepCopyInto(&(*out)[i])
+		*out = new([]commonv1alpha1.BackendRef)
+		if **in != nil {
+			in, out := *in, *out
+			*out = make([]commonv1alpha1.BackendRef, len(*in))
+			for i := range *in {
+				(*in)[i].DeepCopyInto(&(*out)[i])
+			}
 		}
 	}
 }

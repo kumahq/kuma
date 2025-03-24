@@ -9,7 +9,11 @@ import (
 	"errors"
 	"fmt"
 
-	"k8s.io/kube-openapi/pkg/validation/spec"
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"k8s.io/apiextensions-apiserver/pkg/apiserver/schema"
+	"k8s.io/kube-openapi/pkg/validation/strfmt"
+	"k8s.io/kube-openapi/pkg/validation/validate"
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -19,14 +23,28 @@ import (
 var rawSchema []byte
 
 func init() {
-	var schema spec.Schema
+	var structuralSchema *schema.Structural
+	var v1JsonSchemaProps *apiextensionsv1.JSONSchemaProps
+	var validator *validate.SchemaValidator
 	if rawSchema != nil {
-		if err := yaml.Unmarshal(rawSchema, &schema); err != nil {
+		if err := yaml.Unmarshal(rawSchema, &v1JsonSchemaProps); err != nil {
 			panic(err)
 		}
+		var jsonSchemaProps apiextensions.JSONSchemaProps
+		err := apiextensionsv1.Convert_v1_JSONSchemaProps_To_apiextensions_JSONSchemaProps(v1JsonSchemaProps, &jsonSchemaProps, nil)
+		if err != nil {
+			panic(err)
+		}
+		structuralSchema, err = schema.NewStructural(&jsonSchemaProps)
+		if err != nil {
+			panic(err)
+		}
+		schemaObject := structuralSchema.ToKubeOpenAPI()
+		validator = validate.NewSchemaValidator(schemaObject, nil, "", strfmt.Default)
 	}
 	rawSchema = nil
-	HostnameGeneratorResourceTypeDescriptor.Schema = &schema
+	HostnameGeneratorResourceTypeDescriptor.Validator = validator
+	HostnameGeneratorResourceTypeDescriptor.StructuralSchema = structuralSchema
 }
 
 const (
@@ -137,7 +155,7 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	Resource:                     NewHostnameGeneratorResource(),
 	ResourceList:                 &HostnameGeneratorResourceList{},
 	Scope:                        model.ScopeGlobal,
-	KDSFlags:                     model.GlobalToAllZonesFlag | model.ZoneToGlobalFlag,
+	KDSFlags:                     model.GlobalToZonesFlag | model.ZoneToGlobalFlag,
 	WsPath:                       "hostnamegenerators",
 	KumactlArg:                   "hostnamegenerator",
 	KumactlListArg:               "hostnamegenerators",
@@ -150,7 +168,10 @@ var HostnameGeneratorResourceTypeDescriptor = model.ResourceTypeDescriptor{
 	IsTargetRefBased:             false,
 	HasToTargetRef:               false,
 	HasFromTargetRef:             false,
+	HasRulesTargetRef:            false,
 	HasStatus:                    false,
 	AllowedOnSystemNamespaceOnly: true,
 	IsReferenceableInTo:          false,
+	ShortName:                    "hg",
+	IsFromAsRules:                false,
 }

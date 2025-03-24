@@ -1,0 +1,9 @@
+type: MeshTLS
+name: mtls-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  rules:
+    - default:
+        mode: Permissive

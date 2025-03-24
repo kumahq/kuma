@@ -28,7 +28,7 @@ func doIfNoSkipCleanup(fn func()) func() {
 }
 
 func AfterEachFailure(fn func()) bool {
-	return ginkgo.AfterEach(func() {
+	return ginkgo.JustAfterEach(func() {
 		if !ginkgo.CurrentSpecReport().Failed() {
 			return
 		}
@@ -100,6 +100,7 @@ func E2EDeferCleanup(args ...interface{}) {
 }
 
 func SupportedVersionEntries() []ginkgo.TableEntry {
+	ginkgo.GinkgoHelper()
 	var res []ginkgo.TableEntry
 	for _, v := range versions.UpgradableVersionsFromBuild(Config.SupportedVersions()) {
 		res = append(res, ginkgo.Entry(nil, v))

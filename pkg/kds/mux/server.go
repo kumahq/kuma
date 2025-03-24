@@ -110,8 +110,11 @@ func (s *server) Start(stop <-chan struct{}) error {
 	grpcOptions = append(
 		grpcOptions,
 		grpc.ChainUnaryInterceptor(s.unaryInterceptors...),
-		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
+	if s.config.Tracing.Enabled {
+		grpcOptions = append(grpcOptions, grpc.StatsHandler(otelgrpc.NewServerHandler()))
+	}
+
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	mesh_proto.RegisterGlobalKDSServiceServer(grpcServer, s.serviceServer)

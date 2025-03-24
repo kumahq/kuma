@@ -6,6 +6,105 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.10.x`
+
+### API Server behaviour changes
+
+The response of successful `DELETE` or `PUT` requests without warnings will now include "content-type: application/json" in the header and return an empty JSON object as the body.
+
+### Stricter validation rules for resource names
+
+In Kuma 2.7.x we deprecated usage of non [RFC 1123](https://www.rfc-editor.org/rfc/rfc1123.html) characters, and start from 2.10.x it's no longer possible to create or update non RFC compliant resource names. In order to be compatible with Kubernetes naming policy we updated the validation rules. 
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1123 subdomain must consist of lower case alphanumeric characters, '-' or '.', and must start and end with an alphanumeric character
+
+Before the upgrade ensure that your resources don't use unsupported characters.
+
+#### Add RFC-1035-Label constraints for specific resources names
+
+Starting from version 2.10.x, we are deprecating the usage of non [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) characters for names of `Mesh`, `Zone`, `MeshService`, `MeshExternalService`, `MeshMultizoneService` resources. These names will be rejected in the future.
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> * Characters contain at most 63 characters.
+> * Characters contain only lowercase alphanumeric characters or '-'.
+> * Characters start with an alphabetic character.
+> * Characters end with an alphanumeric character.
+
+### On Universal, a MeshService is no longer generated for any dataplane that has an invalid `kuma.io/service` tag
+
+When using `MeshService`, we were automatically generating `MeshService` resources in Universal mode. However, due to stricter resource validation, we have decided not to generate the `MeshService` resource when a dataplane has a `kuma.io/service` that is not [RFC 1035](https://www.rfc-editor.org/rfc/rfc1035.html) compliant.
+
+If you want the control plane on Universal to autogenerate `MeshService` resources, update the `kuma.io/service` tags to valid names. Otherwise, you must create them manually.
+
+Old rule:
+
+> Valid characters are numbers, lowercase latin letters and '-', '_' symbols.
+
+New rule:
+
+> A lowercase RFC 1035 Label Names must have at most 63 characters and consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character.
+
+### MeshHTTPRoute
+
+#### Unifying defaults for `statusCode`
+
+Due to misconfiguration, a default for `statusCode` for http route on Universal could have been missing.
+If you're using Universal mode, and you did not specify `default.filters[].requestRedirect.statusCode` value in your `MeshHTTPRoute` resource, you have to explicitly set it to 302.
+
+### MeshTrace
+
+#### Unifying defaults for `apiVersion`
+
+Due to misconfiguration, a default for `apiVersion` for traces on Universal could have been missing.
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.apiVersion` value in your `MeshTrace` resource, you have to explicitly set it to "httpJson".
+
+#### Unifying defaults for `sharedSpanContext`
+
+Due to misconfiguration, a default `sharedSpanContext` for traces on Universal ("false") was different from on Kubernetes ("true").
+If you're using Universal mode, and you did not specify `tracing.backends[].conf.sharedSpanContext` value in your `MeshTrace` resource, you have to explicitly set it to "false" to continue using that value.
+
+### MeshMetric
+
+#### Unifying defaults for `path`
+
+Due to misconfiguration, a default `path` for metrics on Universal ("/metrics") was different from on Kubernetes ("/metrics/prometheus").
+If you're using Universal mode, and you did not specify `default.applications[].path` value in your `MeshMetric` resource, you have to explicitly set it to "/metrics" to continue using that value.
+
+### MeshPassthrough
+
+#### Unifying defaults for `passthroughMode`
+
+Due to misconfiguration, a default `passthroughMode` for `MeshPasstrhough` on Universal ("Matched") was different from on Kubernetes ("None").
+If you're using Kubernetes mode, and you did not specify `default.passthroughMode` value in your `MeshPasstrhough` resource, you have to explicitly set it to "None" to continue using that value.
+
+### MeshLoadBalancingStrategy
+
+#### Deprecation of `hashPolicies.type: SourceIP` and `maglev.type: SourceIP`
+
+The documentation did not mention the `SourceIP` type, but it was possible to create a policy using it instead of `Connection`. Since `SourceIP` 
+is not a correct value, we have decided to deprecate it. If you are using `SourceIP` in your policy, please update it to use `Connection` instead.
+
+### MeshHealthCheck
+
+#### Deprecation of `healthyPanicThreshold` for `MeshHealthCheck`
+
+The `healthyPanicThreshold` field in the `MeshHealthCheck` policy is deprecated and will be removed in a future release. It has been moved to the `MeshCircuitBreaker` policy.
+
+### Changes on revoking dataplane tokens
+
+Authentication between the control plane and dataplanes is now only checked at connection start. This means if a token expires or is revoked after the dataplane connects, the connection won't stop. The recommended action on token revocation is to restart either the control plane or the concerned dataplanes.
+
 ## Upgrade to `2.9.x`
 
 ### MeshAccessLog
@@ -994,8 +1093,7 @@ Every item in the `items` array now has a `kind` property of either:
 * `MeshGatewayDataplane`: a `MeshGateway`-configured `Dataplane` with a new
   structure representing the `MeshGateway` it serves.
 
-Some examples can be found in the [Inspect API
-docs](https://kuma.io/docs/1.6.x/reference/http-api/#inspect-api).
+Some examples can be found in the Inspect API docs.
 
 ## Upgrade to `1.5.x`
 
@@ -1027,9 +1125,6 @@ tokens. In order to continue using client certificates (the previous default
 method), you'll need to explicitly set the authentication method to client
 certificates. This can be done by setting the `KUMA_API_SERVER_AUTHN_TYPE` variable to
 `"clientCerts"`.
-
-See [Configuration - Control plane](https://kuma.io/docs/1.3.1/documentation/configuration/#control-plane)
-for how to set this variable.
 
 ## Upgrade to `1.3.0`
 

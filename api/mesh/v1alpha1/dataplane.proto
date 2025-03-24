@@ -15,12 +15,14 @@ import "validate/validate.proto";
 message Dataplane {
 
   option (kuma.mesh.resource).name = "DataplaneResource";
+  option (kuma.mesh.resource).short_name = "dp";
   option (kuma.mesh.resource).type = "Dataplane";
   option (kuma.mesh.resource).package = "mesh";
-  option (kuma.mesh.resource).kds.send_to_global = true;
+  option (kuma.mesh.resource).kds = "model.ZoneToGlobalFlag";
   option (kuma.mesh.resource).ws.name = "dataplane";
   option (kuma.mesh.resource).scope_namespace = true;
   option (kuma.mesh.resource).has_insights = true;
+  option (kuma.mesh.resource).is_proxy = true;
   option (kuma.mesh.resource).additional_printer_columns =
       "description=\"Service tag of the first "
       "inbound\",JSONPath=`.spec.networking.inbound[0].tags[\'kuma\\.io/"

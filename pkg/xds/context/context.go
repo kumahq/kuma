@@ -160,8 +160,8 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 			key := core_model.TypedResourceIdentifier{
 				ResourceType: core_model.ResourceType(reachableBackend.Kind),
 				ResourceIdentifier: core_model.TargetRefToResourceIdentifier(dataplane.GetMeta(), common_api.TargetRef{
-					Name:      reachableBackend.Name,
-					Namespace: reachableBackend.Namespace,
+					Name:      &reachableBackend.Name,
+					Namespace: &reachableBackend.Namespace,
 				}),
 			}
 			if port := reachableBackend.Port; port != nil {
@@ -293,6 +293,10 @@ func (mc *MeshContext) GetTLSReadiness() map[string]bool {
 		}
 	}
 	return tlsReady
+}
+
+func (mc *MeshContext) IsXKumaTagsUsed() bool {
+	return len(mc.Resources.RateLimits().Items) > 0 || len(mc.Resources.FaultInjections().Items) > 0 || len(mc.Resources.MeshFaultInjections().Items) > 0
 }
 
 // AggregatedMeshContexts is an aggregate of all MeshContext across all meshes

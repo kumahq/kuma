@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 func FederateKubeZoneCPToUniversalGlobal() {
@@ -42,8 +43,10 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			Install(NamespaceWithSidecarInjection(TestNamespace)).
 			Install(MTLSMeshKubernetes("default")).
 			Install(MeshTrafficPermissionAllowAllKubernetes("default")).
-			Install(democlient.Install()).
-			Install(testserver.Install()).
+			Install(Parallel(
+				democlient.Install(),
+				testserver.Install(),
+			)).
 			Setup(zone)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -68,6 +71,8 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			out, err := zone.GetKumactlOptions().RunKumactlAndGetOutput("export", "--profile", "federation", "--format", "universal")
 			Expect(err).ToNot(HaveOccurred())
 
+			report.AddFileToReportEntry("kumactl-export-federation-output.yaml", out)
+
 			tmpfile, err := os.CreateTemp("", "export-uni")
 			Expect(err).ToNot(HaveOccurred())
 			_, err = tmpfile.WriteString(out)
@@ -90,7 +95,7 @@ func FederateKubeZoneCPToUniversalGlobal() {
 			}, "30s", "1s").Should(Succeed())
 		})
 
-		It("should sync data policies to global cp", func() {
+		It("should sync policies to global cp", func() {
 			Eventually(func(g Gomega) {
 				out, _, err := global.GetKuma().Exec("curl", "--fail", "--show-error", "http://localhost:5681/meshcircuitbreakers")
 				g.Expect(err).ToNot(HaveOccurred())

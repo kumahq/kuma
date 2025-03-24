@@ -6,13 +6,13 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -77,7 +77,7 @@ var _ = Describe("Config loader", func() {
 					testEnvs[key] = struct{}{}
 				}
 
-				Expect(maps.Keys(testEnvs)).To(ConsistOf(maps.Keys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
+				Expect(util_maps.AllKeys(testEnvs)).To(ConsistOf(util_maps.AllKeys(configEnvs)), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
 			}
 
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
@@ -236,6 +236,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.SupportGatewaySecretsInAllNamespaces).To(BeTrue())
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
+			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -266,6 +267,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.ResponseBackoff.Duration).To(Equal(time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.PollInterval.Duration).To(Equal(11 * time.Second))
 			Expect(cfg.Multizone.Global.KDS.ZoneHealthCheck.Timeout.Duration).To(Equal(110 * time.Second))
+			Expect(cfg.Multizone.Global.KDS.Tracing.Enabled).To(BeFalse())
+			Expect(cfg.Multizone.Global.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
 			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
@@ -275,6 +278,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Zone.KDS.NackBackoff.Duration).To(Equal(21 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.ResponseBackoff.Duration).To(Equal(2 * time.Second))
 			Expect(cfg.Multizone.Zone.KDS.TlsSkipVerify).To(BeTrue())
+			Expect(cfg.Multizone.Zone.KDS.Labels.SkipPrefixes).To(Equal([]string{"argocd.argoproj.io"}))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 			Expect(cfg.Defaults.SkipTenantResources).To(BeTrue())
@@ -369,8 +373,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Experimental.KDSEventBasedWatchdog.DelayFullResync).To(BeTrue())
 			Expect(cfg.Experimental.AutoReachableServices).To(BeTrue())
 			Expect(cfg.Experimental.SidecarContainers).To(BeTrue())
-			Expect(cfg.Experimental.SkipPersistedVIPs).To(BeTrue())
-			Expect(cfg.Experimental.GenerateMeshServices).To(BeTrue())
 
 			Expect(cfg.Proxy.Gateway.GlobalDownstreamMaxConnections).To(BeNumerically("==", 1))
 			Expect(cfg.EventBus.BufferSize).To(Equal(uint(30)))
@@ -379,6 +381,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.IPAM.MeshExternalService.CIDR).To(Equal("252.0.0.0/8"))
 			Expect(cfg.IPAM.MeshMultiZoneService.CIDR).To(Equal("253.0.0.0/8"))
 			Expect(cfg.IPAM.AllocationInterval.Duration).To(Equal(7 * time.Second))
+			Expect(cfg.IPAM.KnownInternalCIDRs).To(Equal([]string{"10.8.0.0/16", "127.0.0.6/32"}))
 			Expect(cfg.MeshService.GenerationInterval.Duration).To(Equal(8 * time.Second))
 			Expect(cfg.MeshService.DeletionGracePeriod.Duration).To(Equal(11 * time.Second))
 
@@ -488,6 +491,7 @@ monitoringAssignmentServer:
 runtime:
   universal:
     dataplaneCleanupAge: 1h
+    zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
   kubernetes:
     serviceAccountName: custom-sa
@@ -621,6 +625,10 @@ multizone:
       zoneHealthCheck:
         pollInterval: 11s
         timeout: 110s
+      tracing:
+        enabled: false
+      labels:
+        skipPrefixes: ["argocd.argoproj.io"]
   zone:
     globalAddress: "grpc://1.1.1.1:5685"
     name: "zone-1"
@@ -632,6 +640,8 @@ multizone:
       nackBackoff: 21s
       responseBackoff: 2s
       tlsSkipVerify: true
+      labels:
+        skipPrefixes: ["argocd.argoproj.io"]
     disableOriginLabelValidation: true
     ingressUpdateInterval: 2s
 dnsServer:
@@ -783,6 +793,9 @@ ipam:
   meshMultiZoneService:
     cidr: 253.0.0.0/8
   allocationInterval: 7s
+  knownInternalCIDRs:
+  - 10.8.0.0/16
+  - 127.0.0.6/32
 meshService:
   generationInterval: 8s
   deletionGracePeriod: 11s
@@ -934,6 +947,7 @@ meshService:
 				"KUMA_RUNTIME_KUBERNETES_SKIP_MESH_OWNER_REFERENCE":                                        "true",
 				"KUMA_RUNTIME_KUBERNETES_SUPPORT_GATEWAY_SECRETS_IN_ALL_NAMESPACES":                        "true",
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
+				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
@@ -964,6 +978,8 @@ meshService:
 				"KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF":                                               "1s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_POLL_INTERVAL":                                "11s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_HEALTH_CHECK_TIMEOUT":                                      "110s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED":                                                "false",
+				"KUMA_MULTIZONE_GLOBAL_KDS_LABELS_SKIP_PREFIXES":                                           "argocd.argoproj.io",
 				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
 				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
 				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
@@ -975,6 +991,7 @@ meshService:
 				"KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY":                                                  "true",
 				"KUMA_MULTIZONE_ZONE_DISABLE_ORIGIN_LABEL_VALIDATION":                                      "true",
 				"KUMA_MULTIZONE_ZONE_INGRESS_UPDATE_INTERVAL":                                              "2s",
+				"KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES":                                             "argocd.argoproj.io",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DEFAULTS_SKIP_HOSTNAME_GENERATORS":                                                   "true",
@@ -1059,8 +1076,6 @@ meshService:
 				"KUMA_EXPERIMENTAL_KDS_EVENT_BASED_WATCHDOG_DELAY_FULL_RESYNC":                             "true",
 				"KUMA_EXPERIMENTAL_AUTO_REACHABLE_SERVICES":                                                "true",
 				"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS":                                                     "true",
-				"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES":                                                 "true",
-				"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS":                                                    "true",
 				"KUMA_PROXY_GATEWAY_GLOBAL_DOWNSTREAM_MAX_CONNECTIONS":                                     "1",
 				"KUMA_TRACING_OPENTELEMETRY_ENDPOINT":                                                      "otel-collector:4317",
 				"KUMA_TRACING_OPENTELEMETRY_ENABLED":                                                       "true",
@@ -1073,6 +1088,7 @@ meshService:
 				"KUMA_IPAM_MESH_EXTERNAL_SERVICE_CIDR":                                                     "252.0.0.0/8",
 				"KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR":                                                   "253.0.0.0/8",
 				"KUMA_IPAM_ALLOCATION_INTERVAL":                                                            "7s",
+				"KUMA_IPAM_KNOWN_INTERNAL_CIDRS":                                                           "10.8.0.0/16,127.0.0.6/32",
 				"KUMA_MESH_SERVICE_GENERATION_INTERVAL":                                                    "8s",
 				"KUMA_MESH_SERVICE_DELETION_GRACE_PERIOD":                                                  "11s",
 			},

@@ -101,12 +101,16 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 	if timeoutPolicy := proxy.Policies.Timeouts[oface]; timeoutPolicy != nil {
 		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
 	}
+	var dpTags mesh_proto.MultiValueTagSet
+	if ctx.Mesh.IsXKumaTagsUsed() {
+		dpTags = proxy.Dataplane.Spec.TagSet()
+	}
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource)
 		switch protocol {
 		case core_mesh.ProtocolGRPC:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,
@@ -116,14 +120,14 @@ func (OutboundProxyGenerator) generateLDS(ctx xds_context.Context, proxy *model.
 				)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName,
 					ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[serviceName]), proxy)).
-				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.HttpOutboundRoute(serviceName, routes, dpTags)).
 				// backwards compatibility to support RateLimit for ExternalServices without ZoneEgress
 				ConfigureIf(!ctx.Mesh.Resource.ZoneEgressEnabled(), envoy_listeners.RateLimit(rateLimits)).
 				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false, proxy.InternalAddresses)).
 				Configure(envoy_listeners.Tracing(
 					ctx.Mesh.GetTracingBackend(proxy.Policies.TrafficTrace),
 					sourceService,

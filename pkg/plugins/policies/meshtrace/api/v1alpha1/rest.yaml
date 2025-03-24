@@ -8,6 +8,7 @@ info:
 paths:
   /meshes/{mesh}/meshtraces/{name}:
     get:
+      operationId: getMeshTrace
       summary: Returns MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -26,8 +27,11 @@ paths:
       responses:
         '200':
           $ref: "#/components/responses/MeshTraceItem"
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
     put:
+      operationId: putMeshTrace
       summary: Creates or Updates MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -65,6 +69,7 @@ paths:
                 $ref: '#/components/schemas/MeshTraceCreateOrUpdateSuccessResponse'
 
     delete:
+      operationId: deleteMeshTrace
       summary: Deletes MeshTrace entity
       tags: [ "MeshTrace" ]
       parameters:
@@ -82,13 +87,49 @@ paths:
           description: name of the MeshTrace
       responses:
         '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeshTraceDeleteSuccessResponse'
           description: Successful response
+        '404':
+          $ref: "/specs/base/specs/common/error_schema.yaml#/components/responses/NotFound"
 
   /meshes/{mesh}/meshtraces:
     get:
+      operationId: getMeshTraceList
       summary: Returns a list of MeshTrace in the mesh.
       tags: [ "MeshTrace" ]
       parameters:
+        - in: query
+          name: offset
+          description: offset in the list of entities
+          required: false
+          schema:
+            type: integer
+          example: 0
+        - in: query
+          name: size
+          description: the number of items per page
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 1000
+            minimum: 1
+        - in: query
+          name: filter
+          description: filter by labels when multiple filters are present, they are ANDed
+          required: false
+          schema:
+            type: object
+            properties:
+              key:
+                type: string
+              value:
+                type: string
+          example:
+            label.k8s.kuma.io/namespace: my-ns
         - in: path
           name: mesh
           schema:
@@ -108,11 +149,15 @@ components:
       properties:
         warnings:
           type: array
+          readOnly: true
           description: |
             warnings is a list of warning messages to return to the requesting Kuma API clients.
             Warning messages describe a problem the client making the API request should correct or be aware of.
           items:
             type: string
+    MeshTraceDeleteSuccessResponse:
+      type: object
+      properties: {}
 
   responses:
     MeshTraceItem:

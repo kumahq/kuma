@@ -57,9 +57,9 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err).ToNot(HaveOccurred())
 		authenticator = universal.NewAuthenticator(dataplaneValidator, zoneTokenValidator, "zone-1")
 
-		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
-		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("demo"), "demo")
+		signingKeyManager = tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("demo"), "demo")
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
 		err = resStore.Create(ctx, &dpRes, core_store.CreateByKey("dp-1", "default"))
@@ -141,7 +141,7 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-1",
 			},
 			dpRes: &dpRes,
-			err:   "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error",
+			err:   "could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts. Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token signature is invalid: crypto/rsa: verification error",
 		}),
 		Entry("on token with different tags", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -188,7 +188,7 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
-			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token contains an invalid number of segments"))
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token is malformed: token contains an invalid number of segments"))
 	})
 
 	It("should throw an error when signing key used for validation is different than for generation", func() {
@@ -200,7 +200,7 @@ var _ = Describe("Authentication flow", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and new signing key
-		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, builtin_issuer.DataplaneTokenSigningKeyPrefix("default"), "default")
+		signingKeyManager := tokens.NewMeshedSigningKeyManager(resManager, system.DataplaneTokenSigningKey("default"), "default")
 		Expect(resManager.DeleteAll(ctx, &system.SecretResourceList{})).To(Succeed())
 		Expect(signingKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 
@@ -209,7 +209,7 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err.Error()).To(ContainSubstring("could not parse token. kuma-cp runs with an in-memory database and its state isn't preserved between restarts." +
-			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: crypto/rsa: verification error"))
+			" Keep in mind that an in-memory database cannot be used with multiple instances of the control plane: token signature is invalid: crypto/rsa: verification error"))
 	})
 
 	It("should throw an error when signing key is not found", func() {
@@ -240,7 +240,7 @@ var _ = Describe("Authentication flow", func() {
 			err := resStore.Create(ctx, &ziRes, core_store.CreateByKey("zi-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
-			zoneKeyManager := tokens.NewSigningKeyManager(resManager, zone.SigningKeyPrefix)
+			zoneKeyManager := tokens.NewSigningKeyManager(resManager, system.ZoneTokenSigningKeyPrefix)
 			Expect(zoneKeyManager.CreateDefaultSigningKey(ctx)).To(Succeed())
 			zoneTokenIssuer = builtin.NewZoneTokenIssuer(resManager)
 		})

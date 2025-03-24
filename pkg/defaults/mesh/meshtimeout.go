@@ -17,13 +17,13 @@ var defaultMeshTimeoutResource = func() model.Resource {
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
-				ProxyTypes: []common_api.TargetRefProxyType{
+				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Sidecar,
 				},
 			},
 
 			// bigger than outbound side timeouts or disabled.
-			From: []v1alpha1.From{
+			From: &[]v1alpha1.From{
 				{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.Mesh,
@@ -49,7 +49,7 @@ var defaultMeshTimeoutResource = func() model.Resource {
 					},
 				},
 			},
-			To: []v1alpha1.To{
+			To: &[]v1alpha1.To{
 				{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.Mesh,
@@ -81,11 +81,11 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
-				ProxyTypes: []common_api.TargetRefProxyType{
+				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Gateway,
 				},
 			},
-			From: []v1alpha1.From{
+			From: &[]v1alpha1.From{
 				{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.Mesh,
@@ -105,7 +105,7 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 					},
 				},
 			},
-			To: []v1alpha1.To{
+			To: &[]v1alpha1.To{
 				{
 					TargetRef: common_api.TargetRef{
 						Kind: common_api.Mesh,

@@ -8,8 +8,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/universal_logs"
-	"github.com/kumahq/kuma/test/framework/utils"
+	"github.com/kumahq/kuma/test/framework/report"
+	"github.com/kumahq/kuma/test/framework/universal"
 )
 
 var Cluster *framework.UniversalCluster
@@ -26,11 +26,7 @@ func SetupAndGetState() []byte {
 	Expect(Cluster.Install(framework.EgressUniversal(func(zone string) (string, error) {
 		return Cluster.GetKuma().GenerateZoneEgressToken("")
 	}))).To(Succeed())
-	state := framework.UniversalNetworkingState{
-		ZoneEgress: Cluster.GetZoneEgressNetworking(),
-		KumaCp:     Cluster.GetKuma().(*framework.UniversalControlPlane).Networking(),
-	}
-	bytes, err := json.Marshal(state)
+	bytes, err := json.Marshal(Cluster.GetUniversalNetworkingState())
 	Expect(err).ToNot(HaveOccurred())
 	return bytes
 }
@@ -40,7 +36,7 @@ func RestoreState(bytes []byte) {
 	if Cluster != nil {
 		return // cluster was already initiated with first function
 	}
-	state := framework.UniversalNetworkingState{}
+	state := universal.NetworkingState{}
 	Expect(json.Unmarshal(bytes, &state)).To(Succeed())
 	Cluster = framework.NewUniversalCluster(framework.NewTestingT(), framework.Kuma3, framework.Silent)
 	framework.E2EDeferCleanup(Cluster.DismissCluster) // clean up any containers if needed
@@ -49,36 +45,20 @@ func RestoreState(bytes []byte) {
 		core.Zone,
 		Cluster.Name(),
 		Cluster.Verbose(),
-		state.KumaCp,
+		&state.KumaCp,
 		nil, // headers were not configured in setup
 		true,
 	)
 	Expect(err).ToNot(HaveOccurred())
-	Expect(Cluster.AddNetworking(state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
+	Expect(Cluster.AddNetworking(&state.ZoneEgress, framework.Config.ZoneEgressApp)).To(Succeed())
 	Cluster.SetCp(cp)
 }
 
-func ExpectCpToNotPanic() {
-	logs, err := Cluster.GetKumaCPLogs()
-	if err != nil {
-		framework.Logf("could not retrieve cp logs")
-	} else {
-		Expect(utils.HasPanicInCpLogs(logs)).To(BeFalse())
-	}
-}
-
 func SynchronizedAfterSuite() {
-	ExpectCpToNotPanic()
-	Expect(framework.CpRestarted(Cluster)).To(BeFalse(), "CP restarted in this suite, this should not happen.")
+	framework.ControlPlaneAssertions(Cluster)
 	Expect(Cluster.DismissCluster()).To(Succeed())
 }
 
-func AfterSuite(report ginkgo.Report) {
-	if framework.Config.CleanupLogsOnSuccess {
-		universal_logs.CleanupIfSuccess(framework.Config.UniversalE2ELogsPath, report)
-	}
-	if !report.SuiteSucceeded {
-		framework.Logf("Please see full CP logs by downloading the debug artifacts")
-		framework.DebugUniversalCPLogs(Cluster)
-	}
+func AfterSuite(r ginkgo.Report) {
+	report.DumpReport(r)
 }

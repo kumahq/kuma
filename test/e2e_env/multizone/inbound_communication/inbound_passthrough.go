@@ -3,6 +3,7 @@ package inbound_communication
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -30,68 +31,73 @@ func InboundPassthrough() {
 		Expect(WaitForMesh(mesh, multizone.Zones())).To(Succeed())
 
 		// Universal Zone 4
-		Expect(NewClusterSetup().
-			Install(DemoClientUniversal(
-				"uni-demo-client",
-				mesh,
-				WithTransparentProxy(true),
+		group := errgroup.Group{}
+		NewClusterSetup().
+			Install(Parallel(
+				DemoClientUniversal(
+					"uni-demo-client",
+					mesh,
+					WithTransparentProxy(true),
+				),
+				TestServerUniversal("uni-test-server-localhost", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", localhostAddress}),
+					ServiceProbe(),
+					WithServiceName("uni-test-server-localhost"),
+				),
+				TestServerUniversal("uni-test-server-localhost-exposed", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-localhost-exposed", "--ip", localhostAddress}),
+					ServiceProbe(),
+					WithServiceAddress(localhostAddress),
+					WithServiceName("uni-test-server-localhost-exposed"),
+				),
+				TestServerUniversal("uni-test-server-wildcard", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", wildcardAddress}),
+					ServiceProbe(),
+					WithServiceName("uni-test-server-wildcard"),
+				),
+				TestServerUniversal("uni-test-server-wildcard-no-tp", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", wildcardAddress}),
+					ServiceProbe(),
+					WithTransparentProxy(false),
+					WithServiceName("uni-test-server-wildcard-no-tp"),
+				),
+				TestServerUniversal("uni-test-server-containerip", mesh,
+					WithArgs([]string{"echo", "--instance", "uni-bound-containerip"}),
+					ServiceProbe(),
+					BoundToContainerIp(),
+					WithServiceName("uni-test-server-containerip"),
+				),
 			)).
-			Install(TestServerUniversal("uni-test-server-localhost", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-localhost", "--ip", localhostAddress}),
-				ServiceProbe(),
-				WithServiceName("uni-test-server-localhost"),
-			)).
-			Install(TestServerUniversal("uni-test-server-localhost-exposed", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-localhost-exposed", "--ip", localhostAddress}),
-				ServiceProbe(),
-				WithServiceAddress(localhostAddress),
-				WithServiceName("uni-test-server-localhost-exposed"),
-			)).
-			Install(TestServerUniversal("uni-test-server-wildcard", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard", "--ip", wildcardAddress}),
-				ServiceProbe(),
-				WithServiceName("uni-test-server-wildcard"),
-			)).
-			Install(TestServerUniversal("uni-test-server-wildcard-no-tp", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-wildcard-no-tp", "--ip", wildcardAddress}),
-				ServiceProbe(),
-				WithTransparentProxy(false),
-				WithServiceName("uni-test-server-wildcard-no-tp"),
-			)).
-			Install(TestServerUniversal("uni-test-server-containerip", mesh,
-				WithArgs([]string{"echo", "--instance", "uni-bound-containerip"}),
-				ServiceProbe(),
-				BoundToContainerIp(),
-				WithServiceName("uni-test-server-containerip"),
-			)).
-			Setup(multizone.UniZone1),
-		).To(Succeed())
+			SetupInGroup(multizone.UniZone1, &group)
 
 		// Kubernetes Zone 1
-		Expect(NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("k8s-test-server-localhost"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", localhostAddress),
-				testserver.WithoutProbes(),
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("k8s-test-server-localhost"),
+					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-localhost", "--ip", localhostAddress),
+					testserver.WithoutProbes(),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("k8s-test-server-wildcard"),
+					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespace),
+					testserver.WithMesh(mesh),
+					testserver.WithName("k8s-test-server-pod"),
+					testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
+				),
 			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("k8s-test-server-wildcard"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-wildcard", "--ip", wildcardAddress),
-			)).
-			Install(testserver.Install(
-				testserver.WithNamespace(namespace),
-				testserver.WithMesh(mesh),
-				testserver.WithName("k8s-test-server-pod"),
-				testserver.WithEchoArgs("echo", "--instance", "k8s-bound-pod", "--ip", "$(POD_IP)"),
-			)).
-			Setup(multizone.KubeZone1),
-		).To(Succeed())
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

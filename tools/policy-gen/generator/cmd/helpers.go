@@ -38,6 +38,7 @@ func newHelpers(rootArgs *args) *cobra.Command {
 				"version":               pconfig.Package,
 				"generateTo":            pconfig.HasTo,
 				"generateFrom":          pconfig.HasFrom,
+				"generateRules":         pconfig.HasRules,
 				"skipGetDefault":        pconfig.SkipGetDefault,
 				"generateGetPolicyItem": !pconfig.HasFrom && !pconfig.HasTo,
 			}, outPath)
@@ -57,7 +58,8 @@ package {{.version}}
 
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"{{ if .generateRules }}
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"{{ end }}
     "github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -79,8 +81,8 @@ func (x *From) GetDefault() interface{} {
 
 func (x *{{.name}}) GetFromList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i  := range x.From {
-		item := x.From[i]
+	for _, itm := range pointer.Deref(x.From) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result
@@ -100,8 +102,23 @@ func (x *To) GetDefault() interface{} {
 
 func (x *{{.name}}) GetToList() []core_model.PolicyItem {
 	var result []core_model.PolicyItem
-	for i := range(x.To) {
-		item := x.To[i]
+	for _, itm := range pointer.Deref(x.To) {
+		item := itm
+		result = append(result, &item)
+	}
+	return result
+}
+{{- end }}
+
+{{ if .generateRules }}
+func (x *Rule) GetDefault() interface{} {
+	return x.Default
+}
+
+func (x *{{.name}}) GetRules() []inbound.RuleEntry {
+	var result []inbound.RuleEntry
+	for _, itm := range pointer.Deref(x.Rules) {
+		item := itm
 		result = append(result, &item)
 	}
 	return result

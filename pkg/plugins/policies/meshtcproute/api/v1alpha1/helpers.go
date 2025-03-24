@@ -9,7 +9,7 @@ func (x *To) GetDefault() interface{} {
 	if len(x.Rules) == 0 {
 		return Rule{
 			Default: RuleConf{
-				BackendRefs: []common_api.BackendRef{{
+				BackendRefs: &[]common_api.BackendRef{{
 					TargetRef: x.TargetRef,
 					Weight:    pointer.To(uint(1)),
 				}},

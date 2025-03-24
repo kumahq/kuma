@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -51,24 +52,27 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
+		group := errgroup.Group{}
 		// Zone Kube1
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(testserver.Install(
-				testserver.WithName("client-without-reachable"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("client-with-reachable-backends-only"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
-				testserver.WithReachableBackends(reachableBackends),
-			)).
-			Install(testserver.Install(
-				testserver.WithName("local-test-server"),
-				testserver.WithMesh(meshName),
-				testserver.WithNamespace(namespace),
+			Install(Parallel(
+				testserver.Install(
+					testserver.WithName("client-without-reachable"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("client-with-reachable-backends-only"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+					testserver.WithReachableBackends(reachableBackends),
+				),
+				testserver.Install(
+					testserver.WithName("local-test-server"),
+					testserver.WithMesh(meshName),
+					testserver.WithNamespace(namespace),
+				),
 			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
@@ -86,10 +90,9 @@ spec:
         kuma.io/origin: zone
         kuma.io/env: kubernetes
 `, Config.KumaNamespace))).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone1, &group)
 
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithName("other-zone-test-server"),
@@ -97,8 +100,8 @@ spec:
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "other-zone-test-server"),
 			)).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone2, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

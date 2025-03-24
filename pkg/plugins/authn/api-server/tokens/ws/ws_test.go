@@ -17,7 +17,9 @@ import (
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_tokens "github.com/kumahq/kuma/pkg/core/tokens"
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/plugins/authn/api-server/tokens/issuer"
@@ -41,15 +43,15 @@ var _ = Describe("Auth Tokens WS", func() {
 
 	BeforeEach(func() {
 		resManager := manager.NewResourceManager(memory.NewStore())
-		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, issuer.UserTokenSigningKeyPrefix)
+		signingKeyManager := core_tokens.NewSigningKeyManager(resManager, system.UserTokenSigningKeyPrefix)
 		tokenIssuer := issuer.NewUserTokenIssuer(core_tokens.NewTokenIssuer(signingKeyManager))
 		userTokenValidator = issuer.NewUserTokenValidator(
 			core_tokens.NewValidator(
 				core.Log.WithName("test"),
 				[]core_tokens.SigningKeyAccessor{
-					core_tokens.NewSigningKeyAccessor(resManager, issuer.UserTokenSigningKeyPrefix),
+					core_tokens.NewSigningKeyAccessor(resManager, system.UserTokenSigningKeyPrefix),
 				},
-				core_tokens.NewRevocations(resManager, issuer.UserTokenRevocationsGlobalSecretKey),
+				core_tokens.NewRevocations(resManager, core_model.ResourceKey{Name: system.UserTokenRevocations}),
 				store_config.MemoryStore,
 			),
 		)

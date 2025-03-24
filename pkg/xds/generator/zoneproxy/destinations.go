@@ -2,8 +2,7 @@ package zoneproxy
 
 import (
 	"reflect"
-
-	"golang.org/x/exp/slices"
+	"slices"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -244,7 +243,7 @@ func addMeshHTTPRouteDestinations(
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
 	for _, policy := range policies {
-		for _, to := range policy.Spec.To {
+		for _, to := range pointer.Deref(policy.Spec.To) {
 			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
@@ -265,7 +264,7 @@ func addMeshTCPRouteDestinations(
 	// set of destinations after merging is a subset of the set we get here by
 	// iterating through them.
 	for _, policy := range policies {
-		for _, to := range policy.Spec.To {
+		for _, to := range pointer.Deref(policy.Spec.To) {
 			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
 				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
 			}
@@ -303,7 +302,7 @@ func addMeshTCPRouteToDestinations(
 			continue
 		}
 
-		for _, backendRef := range rule.Default.BackendRefs {
+		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
 			if tags, ok := tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}

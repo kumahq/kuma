@@ -59,18 +59,19 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode               config_core.CpMode
-	federatedZone      bool
-	zoneName           string
-	resManager         manager.ResourceManager
-	descriptor         model.ResourceTypeDescriptor
-	resourceAccess     access.ResourceAccess
-	k8sMapper          k8s.ResourceMapperFunc
-	filter             func(request *restful.Request) (store.ListFilterFunc, error)
-	meshContextBuilder xds_context.MeshContextBuilder
-	xdsHooks           []xds_hooks.ResourceSetHook
-	systemNamespace    string
-	isK8s              bool
+	mode                   config_core.CpMode
+	federatedZone          bool
+	zoneName               string
+	resManager             manager.ResourceManager
+	descriptor             model.ResourceTypeDescriptor
+	resourceAccess         access.ResourceAccess
+	k8sMapper              k8s.ResourceMapperFunc
+	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
+	meshContextBuilder     xds_context.MeshContextBuilder
+	xdsHooks               []xds_hooks.ResourceSetHook
+	systemNamespace        string
+	isK8s                  bool
+	knownInternalAddresses []string
 
 	disableOriginLabelValidation bool
 }
@@ -209,7 +210,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 			rest_errors.HandleError(request.Request.Context(), response, err.OrNil(), "invalid format")
 		}
 		if err := response.WriteAsJson(res); err != nil {
-			log.Error(err, "Could not write the response")
+			log.Error(err, "Could not write the find response")
 		}
 	}
 }
@@ -362,7 +363,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not find a resource")
 	}
 
-	if err := r.validateResourceRequest(name, meshName, resourceRest, create); err != nil {
+	if err := r.validateResourceRequest(name, meshName, resourceRest); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not process a resource")
 		return
 	}
@@ -370,7 +371,7 @@ func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, res
 	if create {
 		r.createResource(request.Request.Context(), name, meshName, resourceRest, response)
 	} else {
-		r.updateResource(request.Request.Context(), resource, resourceRest, response)
+		r.updateResource(request.Request.Context(), resource, resourceRest, response, meshName)
 	}
 }
 
@@ -419,12 +420,9 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	if warnings := model.Deprecations(res); len(warnings) > 0 {
-		if err := response.WriteHeaderAndJson(201, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
-			log.Error(err, "Could not write the response")
-		}
-	} else {
-		response.WriteHeader(201)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(res)}
+	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
+		log.Error(err, "Could not write the create response")
 	}
 }
 
@@ -433,6 +431,7 @@ func (r *resourceEndpoints) updateResource(
 	currentRes model.Resource,
 	newResRest rest.Resource,
 	response *restful.Response,
+	meshName string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
@@ -450,18 +449,29 @@ func (r *resourceEndpoints) updateResource(
 	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
 		_ = currentRes.SetStatus(newResRest.GetStatus())
 	}
+	labels, err := model.ComputeLabels(
+		currentRes.Descriptor(),
+		currentRes.GetSpec(),
+		newResRest.GetMeta().GetLabels(),
+		model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
+		meshName,
+		r.mode,
+		r.isK8s,
+		r.zoneName,
+	)
+	if err != nil {
+		rest_errors.HandleError(ctx, response, err, "Could not compute labels for a resource")
+		return
+	}
 
-	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(newResRest.GetMeta().GetLabels())); err != nil {
+	if err := r.resManager.Update(ctx, currentRes, store.UpdateWithLabels(labels)); err != nil {
 		rest_errors.HandleError(ctx, response, err, "Could not update a resource")
 		return
 	}
 
-	if warnings := model.Deprecations(currentRes); len(warnings) > 0 {
-		if err := response.WriteHeaderAndJson(200, api_server_types.CreateOrUpdateSuccessResponse{Warnings: warnings}, "application/json"); err != nil {
-			log.Error(err, "Could not write the response")
-		}
-	} else {
-		response.WriteHeader(200)
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(currentRes)}
+	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
+		log.Error(err, "Could not write the update response")
 	}
 }
 
@@ -506,10 +516,16 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(request.Request.Context(), response, err, "Could not delete a resource")
+		return
+	}
+
+	resp := api_server_types.DeleteSuccessResponse{}
+	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
+		log.Error(err, "Could not write the delete response")
 	}
 }
 
-func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource, create bool) error {
+func (r *resourceEndpoints) validateResourceRequest(name string, meshName string, resource rest.Resource) error {
 	var err validators.ValidationError
 	if name != resource.GetMeta().Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
@@ -525,16 +541,8 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	}
 
 	err.AddError("labels", r.validateLabels(resource))
+	err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
 
-	if create {
-		err.AddError("", core_mesh.ValidateMeta(resource.GetMeta(), r.descriptor.Scope))
-	} else {
-		if verr, msg := core_mesh.ValidateMetaBackwardsCompatible(resource.GetMeta(), r.descriptor.Scope); verr.HasViolations() {
-			err.AddError("", verr)
-		} else if msg != "" {
-			log.Info(msg, "type", r.descriptor.Name, "mesh", resource.GetMeta().Mesh, "name", resource.GetMeta().Name)
-		}
-	}
 	return err.OrNil()
 }
 
@@ -628,31 +636,9 @@ func (r *resourceEndpoints) readOnlyMessage() string {
 
 func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction {
 	return func(request *restful.Request, response *restful.Response) {
-		policyName := request.PathParameter("name")
-		page, err := pagination(request)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
-			return
-		}
-		nameContains := request.QueryParameter("name")
 		meshName, err := r.meshFromRequest(request)
 		if err != nil {
 			rest_errors.HandleError(request.Request.Context(), response, err, "Failed to retrieve Mesh")
-			return
-		}
-
-		if err := r.resourceAccess.ValidateGet(
-			request.Request.Context(),
-			model.ResourceKey{Mesh: meshName, Name: policyName},
-			r.descriptor,
-			user.FromCtx(request.Request.Context()),
-		); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
-			return
-		}
-		policyResource := r.descriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
 			return
 		}
 
@@ -675,54 +661,97 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			}
 			dependentResources.MeshLocalResources[dependentType] = hl
 		}
-		filter := func(rs model.Resource) bool {
-			dpp := rs.(*core_mesh.DataplaneResource)
-			if r.descriptor.IsTargetRefBased {
-				res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
-				return res
-			} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
-				for _, s := range dpPolicy.Selectors() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
+		matchingDataplanesForFilter(
+			request,
+			response,
+			r.descriptor,
+			r.resManager,
+			r.resourceAccess,
+			func(policyResource core_model.Resource) store.ListFilterFunc {
+				return func(rs core_model.Resource) bool {
+					dpp := rs.(*core_mesh.DataplaneResource)
+					if r.descriptor.IsTargetRefBased {
+						res, _ := matchers.PolicyMatches(policyResource, dpp, dependentResources)
+						return res
+					} else if dpPolicy, ok := policyResource.(policy.DataplanePolicy); ok {
+						for _, s := range dpPolicy.Selectors() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
+					} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
+						for _, s := range connPolicy.Sources() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
+						for _, s := range connPolicy.Destinations() {
+							if dpp.Spec.Matches(s.GetMatch()) {
+								return true
+							}
+						}
 					}
+					return false
 				}
-			} else if connPolicy, ok := policyResource.(policy.ConnectionPolicy); ok {
-				for _, s := range connPolicy.Sources() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
-					}
-				}
-				for _, s := range connPolicy.Destinations() {
-					if dpp.Spec.Matches(s.GetMatch()) {
-						return true
-					}
-				}
-			}
-			return false
-		}
-		dppList := registry.Global().MustNewList(core_mesh.DataplaneType)
-		err = r.resManager.List(request.Request.Context(), dppList,
-			store.ListByMesh(meshName),
-			store.ListByNameContains(nameContains),
-			store.ListByFilterFunc(filter),
-			store.ListByPage(page.size, page.offset),
+			},
 		)
-		if err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
-			return
-		}
-		items := make([]api_common.Meta, len(dppList.GetItems()))
-		for i, elt := range dppList.GetItems() {
-			items[i] = oapi_helpers.ResourceToMeta(elt)
-		}
-		out := api_types.InspectDataplanesForPolicyResponse{
-			Total: int(dppList.GetPagination().Total),
-			Items: items,
-			Next:  nextLink(request, dppList.GetPagination().NextOffset),
-		}
-		if err := response.WriteAsJson(out); err != nil {
-			rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
-		}
+	}
+}
+
+func matchingDataplanesForFilter(
+	request *restful.Request,
+	response *restful.Response,
+	descriptor core_model.ResourceTypeDescriptor,
+	resManager manager.ResourceManager,
+	resourceAccess access.ResourceAccess,
+	dpFilterForResource func(resource model.Resource) store.ListFilterFunc,
+) {
+	policyName := request.PathParameter("name")
+	page, err := pagination(request)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+		return
+	}
+	nameContains := request.QueryParameter("name")
+	meshName := request.PathParameter("mesh")
+
+	if err := resourceAccess.ValidateGet(
+		request.Request.Context(),
+		model.ResourceKey{Mesh: meshName, Name: policyName},
+		descriptor,
+		user.FromCtx(request.Request.Context()),
+	); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Access Denied")
+		return
+	}
+	policyResource := descriptor.NewObject()
+	if err := resManager.Get(request.Request.Context(), policyResource, store.GetByKey(policyName, meshName)); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve policy")
+		return
+	}
+
+	dppList := registry.Global().MustNewList(core_mesh.DataplaneType)
+	err = resManager.List(request.Request.Context(), dppList,
+		store.ListByMesh(meshName),
+		store.ListByNameContains(nameContains),
+		store.ListByFilterFunc(dpFilterForResource(policyResource)),
+		store.ListByPage(page.size, page.offset),
+	)
+	if err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "failed inspect")
+		return
+	}
+	items := make([]api_common.Meta, len(dppList.GetItems()))
+	for i, elt := range dppList.GetItems() {
+		items[i] = oapi_helpers.ResourceToMeta(elt)
+	}
+	out := api_types.InspectDataplanesForPolicyResponse{
+		Total: int(dppList.GetPagination().Total),
+		Items: items,
+		Next:  nextLink(request, dppList.GetPagination().NextOffset),
+	}
+	if err := response.WriteAsJson(out); err != nil {
+		rest_errors.HandleError(request.Request.Context(), response, err, "Failed writing response")
 	}
 }
 
@@ -748,7 +777,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.xdsHooks...)
+		inspector, err := inspect.NewProxyConfigInspector(mc, r.zoneName, r.knownInternalAddresses, r.xdsHooks...)
 		if err != nil {
 			rest_errors.HandleError(ctx, response, err, "Failed to create proxy config inspector")
 			return
@@ -760,7 +789,7 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 			return
 		}
 
-		out := &api_types.InspectDataplanesConfig{
+		out := &api_types.GetDataplaneXDSConfigResponse{
 			Xds: config,
 		}
 
@@ -784,10 +813,10 @@ func (r *resourceEndpoints) configForProxy() restful.RouteFunction {
 	}
 }
 
-func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetMeshesMeshDataplanesNameConfigParams, error) {
-	params := &api_types.GetMeshesMeshDataplanesNameConfigParams{
+func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api_types.GetDataplanesXdsConfigParams, error) {
+	params := &api_types.GetDataplanesXdsConfigParams{
 		Shadow:  pointer.To(false),
-		Include: &[]api_types.GetMeshesMeshDataplanesNameConfigParamsInclude{},
+		Include: &[]api_types.GetDataplanesXdsConfigParamsInclude{},
 	}
 
 	if shadow := request.QueryParameter("shadow"); shadow != "" {
@@ -800,12 +829,12 @@ func (r *resourceEndpoints) configForProxyParams(request *restful.Request) (*api
 
 	if include := request.QueryParameter("include"); include != "" {
 		for _, v := range strings.Split(include, ",") {
-			switch api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v) {
+			switch api_types.GetDataplanesXdsConfigParamsInclude(v) {
 			case api_types.Diff:
 			default:
 				return nil, rest_errors.NewBadRequestError("unsupported value for query parameter 'include'")
 			}
-			*params.Include = append(*params.Include, api_types.GetMeshesMeshDataplanesNameConfigParamsInclude(v))
+			*params.Include = append(*params.Include, api_types.GetDataplanesXdsConfigParamsInclude(v))
 		}
 	}
 
@@ -916,6 +945,13 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				}
 			}
 
+			getInboundPortName := func(port uint32) *string {
+				if name := dp.Spec.GetNetworking().GetInboundForPort(port).GetName(); name != "" {
+					return &name
+				}
+				return nil
+			}
+
 			fromRules := []api_common.FromRule{}
 			if len(res.FromRules.Rules) > 0 {
 				for inbound, rulesForInbound := range res.FromRules.Rules {
@@ -938,13 +974,49 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 					}
 					fromRules = append(fromRules, api_common.FromRule{
 						Inbound: api_common.Inbound{
+							Name: getInboundPortName(inbound.Port),
 							Tags: tags,
 							Port: int(inbound.Port),
 						},
 						Rules: fromRulesForInbound,
 					})
 				}
+				sort.SliceStable(fromRules, func(i, j int) bool {
+					return fromRules[i].Inbound.Port < fromRules[j].Inbound.Port
+				})
 			}
+
+			inboundRules := []api_common.InboundRulesEntry{}
+			for inbound, rulesForInbound := range res.FromRules.InboundRules {
+				if len(rulesForInbound) == 0 {
+					continue
+				}
+				rs := make([]api_common.InboundRule, len(rulesForInbound))
+				for i := range rulesForInbound {
+					rs[i] = api_common.InboundRule{
+						Conf:   rulesForInbound[i].Conf,
+						Origin: oapi_helpers.OriginListToResourceRuleOrigin(res.Type, rulesForInbound[i].Origin),
+					}
+				}
+				var tags map[string]string
+				if dp.Spec.IsBuiltinGateway() || dp.Spec.IsDelegatedGateway() {
+					tags = dp.Spec.Networking.Gateway.Tags
+				} else {
+					tags = dp.Spec.GetNetworking().GetInboundForPort(inbound.Port).Tags
+				}
+				inboundRules = append(inboundRules, api_common.InboundRulesEntry{
+					Inbound: api_common.Inbound{
+						Name: getInboundPortName(inbound.Port),
+						Port: int(inbound.Port),
+						Tags: tags,
+					},
+					Rules: rs,
+				})
+			}
+			sort.SliceStable(inboundRules, func(i, j int) bool {
+				return inboundRules[i].Inbound.Port < inboundRules[j].Inbound.Port
+			})
+
 			toResourceRules := []api_common.ResourceRule{}
 			for itemIdentifier, resourceRuleItem := range res.ToRules.ResourceRules {
 				toResourceRules = append(toResourceRules, api_common.ResourceRule{
@@ -958,7 +1030,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				return toResourceRules[i].ResourceMeta.Name < toResourceRules[j].ResourceMeta.Name
 			})
 
-			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 {
+			if proxyRule == nil && len(fromRules) == 0 && len(toRules) == 0 && len(toResourceRules) == 0 && len(inboundRules) == 0 {
 				// No matches for this policy, keep going...
 				continue
 			}
@@ -971,6 +1043,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 				ToRules:         &toRules,
 				ToResourceRules: &toResourceRules,
 				FromRules:       &fromRules,
+				InboundRules:    &inboundRules,
 				ProxyRule:       proxyRule,
 				Warnings:        &warnings,
 			})

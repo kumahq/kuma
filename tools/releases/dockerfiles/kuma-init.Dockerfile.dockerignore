@@ -1,8 +1,6 @@
 *
 !build/artifacts-linux-amd64/kumactl/kumactl
 !build/artifacts-linux-arm64/kumactl/kumactl
-!build/artifacts-darwin-amd64/kumactl/kumactl
-!build/artifacts-darwin-arm64/kumactl/kumactl
 !tools/releases/templates/LICENSE
 !tools/releases/templates/NOTICE
 !tools/releases/templates/README

@@ -61,12 +61,11 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			kumadp.PrintDeprecations(cfg, cmd.OutOrStdout())
 
-			if conf, err := config.ToJson(cfg); err == nil {
-				runLog.Info("effective configuration", "config", string(conf))
-			} else {
-				runLog.Error(err, "unable to format effective configuration", "config", cfg)
-				return err
+			cfgForDisplay, err := config.ConfigForDisplay(cfg)
+			if err != nil {
+				runLog.Error(err, "unable to format effective configuration")
 			}
+			runLog.Info("starting Data Plane", "version", kuma_version.Build.Version, "config", cfgForDisplay)
 
 			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
 			proxyTypeMap := map[string]model.ResourceType{

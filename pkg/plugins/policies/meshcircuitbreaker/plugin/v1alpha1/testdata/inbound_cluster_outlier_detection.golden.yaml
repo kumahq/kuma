@@ -1,3 +1,6 @@
+commonLbConfig:
+  healthyPanicThreshold:
+    value: 30.2
 name: localhost:80
 outlierDetection:
   baseEjectionTime: 8s

@@ -1,62 +1,419 @@
-- Port: 443
+- MatchType: 6
+  Port: 9091
   Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 6
+  Port: 9001
+  Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 6
+  Port: 9000
+  Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 6
+  Port: 8080
+  Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 6
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 6
+  Port: 0
+  Protocol: tls
+  Routes: []
+  Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
+- MatchType: 5
+  Port: 9091
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 5
+  Port: 9001
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 5
+  Port: 9000
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 5
+  Port: 8080
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 5
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 5
+  Port: 0
+  Protocol: tls
+  Routes: []
+  Value: 192.168.19.1
+- MatchType: 2
+  Port: 9091
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 9001
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 9000
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 8080
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 2
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: example.com
+- MatchType: 2
+  Port: 0
+  Protocol: tls
+  Routes: []
+  Value: api.example.com
+- MatchType: 1
+  Port: 9091
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 9001
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 9000
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 8080
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 443
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 1
+  Port: 0
+  Protocol: tls
+  Routes: []
+  Value: '*.example.com'
+- MatchType: 6
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
+- MatchType: 5
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1
+- MatchType: 4
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 4
+  Port: 9001
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 9001
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 4
+  Port: 9000
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 9000
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 4
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 4
+  Port: 443
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 443
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 4
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
+- MatchType: 4
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
+- MatchType: 3
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 9091
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 9001
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 9001
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 9000
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 9000
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 8080
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 443
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 443
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 3
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/30
+- MatchType: 3
+  Port: 0
+  Protocol: tcp
+  Routes: []
+  Value: 192.168.0.1/24
+- MatchType: 5
+  Port: 9091
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 5
+  Port: 9001
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 5
+  Port: 9000
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 5
+  Port: 8080
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 5
+  Port: 443
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 5
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 10.42.0.8
+- MatchType: 3
+  Port: 9091
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 9091
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 3
+  Port: 9001
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 9001
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 3
+  Port: 9000
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 9000
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 3
+  Port: 8080
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 8080
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 3
+  Port: 443
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 443
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 3
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 172.18.0.0/16
+- MatchType: 3
+  Port: 0
+  Protocol: http
+  Routes: []
+  Value: 240.0.0.0/4
+- MatchType: 2
+  Port: 9091
+  Protocol: http
   Routes:
+  - MatchType: 2
+    Value: otherexample.com
   - MatchType: 1
-    Value: api.example.com
+    Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 9001
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: otherexample.com
   - MatchType: 1
+    Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 9000
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: otherexample.com
+  - MatchType: 1
+    Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 8080
+  Protocol: http
+  Routes:
+  - MatchType: 2
+    Value: anotherhttp.com
+  - MatchType: 2
     Value: example.com
   - MatchType: 2
-    Value: '*.example.com'
-- Port: 0
-  Protocol: tls
-  Routes:
-  - MatchType: 1
-    Value: api.example.com
+    Value: other.com
   - MatchType: 2
+    Value: otherexample.com
+  - MatchType: 1
     Value: '*.example.com'
-  - MatchType: 3
-    Value: 192.168.19.1
-  - MatchType: 4
-    Value: b6e5:a45e:70ae:e77f:d24e:5023:375d:20a6
-- Port: 9091
-  Protocol: tcp
+  Value: ""
+- MatchType: 2
+  Port: 443
+  Protocol: http
   Routes:
-  - MatchType: 3
-    Value: 192.168.0.1
-  - MatchType: 4
-    Value: 9942:9abf:d0e0:f2da:2290:333b:e590:f497
-- Port: 0
-  Protocol: tcp
+  - MatchType: 2
+    Value: otherexample.com
+  - MatchType: 1
+    Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 0
+  Protocol: http
   Routes:
-  - MatchType: 5
-    Value: 192.168.0.1/30
-  - MatchType: 5
-    Value: 192.168.0.1/24
-  - MatchType: 6
-    Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/96
-  - MatchType: 6
-    Value: b0ce:f616:4e74:28f7:427c:b969:8016:6344/64
-- Port: 9000
+  - MatchType: 2
+    Value: otherexample.com
+  - MatchType: 1
+    Value: '*.example.com'
+  Value: ""
+- MatchType: 2
+  Port: 9000
   Protocol: http2
   Routes:
-  - MatchType: 1
+  - MatchType: 2
     Value: http2.com
-- Port: 8080
-  Protocol: http
-  Routes:
-  - MatchType: 1
-    Value: anotherhttp.com
-  - MatchType: 1
-    Value: example.com
-  - MatchType: 1
-    Value: other.com
-- Port: 0
-  Protocol: http
-  Routes:
-  - MatchType: 1
-    Value: otherexample.com
-- Port: 9001
+  Value: ""
+- MatchType: 2
+  Port: 9001
   Protocol: grpc
   Routes:
-  - MatchType: 1
+  - MatchType: 2
     Value: grpc.com
+  Value: ""

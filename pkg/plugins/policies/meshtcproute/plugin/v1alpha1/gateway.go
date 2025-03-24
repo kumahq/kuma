@@ -13,10 +13,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/route"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -88,7 +90,7 @@ func generateEnvoyRouteEntries(
 
 		backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
 		for hash := range rule.BackendRefOriginIndex {
-			if origin, ok := rule.GetBackendRefOrigin(rules.EmptyMatches); ok {
+			if origin, ok := rule.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
 				backendRefOrigin[hash] = origin
 			}
 		}
@@ -112,10 +114,10 @@ func makeTcpRouteEntry(
 		Route: name,
 	}
 
-	for _, b := range rule.Default.BackendRefs {
+	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
 		var ref *model.ResolvedBackendRef
-		if origin, ok := backendRefToOrigin[rules.EmptyMatches]; ok {
+		if origin, ok := backendRefToOrigin[rules_common.EmptyMatches]; ok {
 			ref = model.ResolveBackendRef(origin, b, resolver)
 			if ref.ReferencesRealResource() {
 				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())

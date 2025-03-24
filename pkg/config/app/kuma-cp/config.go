@@ -1,6 +1,7 @@
 package kuma_cp
 
 import (
+	"fmt"
 	"net"
 	"time"
 
@@ -294,6 +295,7 @@ var DefaultConfig = func() Config {
 				CIDR: "243.0.0.0/8",
 			},
 			AllocationInterval: config_types.Duration{Duration: 5 * time.Second},
+			KnownInternalCIDRs: defaultKnownInternalCIDRs,
 		},
 		MeshService: MeshServiceConfig{
 			GenerationInterval:  config_types.Duration{Duration: 2 * time.Second},
@@ -459,11 +461,6 @@ type ExperimentalConfig struct {
 	// Enables sidecar containers in Kubernetes if supported by the Kubernetes
 	// environment.
 	SidecarContainers bool `json:"sidecarContainers" envconfig:"KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS"`
-	// If true then it generates MeshServices from Kubernetes Service.
-	GenerateMeshServices bool `json:"generateMeshServices" envconfig:"KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES"`
-	// If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
-	// Do not enable on production.
-	SkipPersistedVIPs bool `json:"skipPersistedVIPs" envconfig:"KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS"`
 }
 
 type ExperimentalKDSEventBasedWatchdog struct {
@@ -483,6 +480,8 @@ type IPAMConfig struct {
 	MeshMultiZoneService MeshMultiZoneServiceIPAM `json:"meshMultiZoneService"`
 	// Interval on which Kuma will allocate new IPs and generate hostnames.
 	AllocationInterval config_types.Duration `json:"allocationInterval" envconfig:"KUMA_IPAM_ALLOCATION_INTERVAL"`
+	// KnownInternalCIDRs contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
+	KnownInternalCIDRs []string `json:"knownInternalCIDRs" envconfig:"KUMA_IPAM_KNOWN_INTERNAL_CIDRS"`
 }
 
 func (i IPAMConfig) Validate() error {
@@ -492,7 +491,28 @@ func (i IPAMConfig) Validate() error {
 	if err := i.MeshExternalService.Validate(); err != nil {
 		return errors.Wrap(err, "MeshExternalServie validation failed")
 	}
+	for _, knownInternalCIDR := range i.KnownInternalCIDRs {
+		if _, _, err := net.ParseCIDR(knownInternalCIDR); err != nil {
+			return errors.Wrap(err, fmt.Sprintf("entry '%s' in .KnownInternalCIDRs is invalid", knownInternalCIDR))
+		}
+	}
 	return nil
+}
+
+var defaultKnownInternalCIDRs = []string{
+	// Private Address Space defined in RFC 1918: https://datatracker.ietf.org/doc/html/rfc1918#section-3
+	"10.0.0.0/8",
+	"192.168.0.0/16",
+	"172.16.0.0/12",
+
+	// Local IPv6 address prefix defined in RFC4193: https://datatracker.ietf.org/doc/html/rfc4193#section-3.2.2
+	"fc00::/7",
+	// included in default implementation of Envoy: https://github.com/envoyproxy/envoy/blob/v1.32.2/source/common/network/utility.cc#L272
+	"fd00::/8",
+
+	// loopback
+	"127.0.0.1/32",
+	"::1/128",
 }
 
 type MeshServiceIPAM struct {

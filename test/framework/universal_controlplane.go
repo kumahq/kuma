@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/test/framework/kumactl"
-	"github.com/kumahq/kuma/test/framework/ssh"
+	"github.com/kumahq/kuma/test/framework/universal"
 )
 
 var _ ControlPlane = &UniversalControlPlane{}
@@ -23,7 +23,7 @@ type UniversalControlPlane struct {
 	name         string
 	kumactl      *kumactl.KumactlOptions
 	verbose      bool
-	cpNetworking UniversalNetworking
+	cpNetworking *universal.Networking
 	setupKumactl bool
 }
 
@@ -32,7 +32,7 @@ func NewUniversalControlPlane(
 	mode core.CpMode,
 	clusterName string,
 	verbose bool,
-	networking UniversalNetworking,
+	networking *universal.Networking,
 	apiHeaders []string,
 	setupKumactl bool,
 ) (*UniversalControlPlane, error) {
@@ -58,7 +58,7 @@ func NewUniversalControlPlane(
 	return ucp, nil
 }
 
-func (c *UniversalControlPlane) Networking() UniversalNetworking {
+func (c *UniversalControlPlane) Networking() *universal.Networking {
 	return c.cpNetworking
 }
 
@@ -96,20 +96,18 @@ func (c *UniversalControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *UniversalControlPlane) GetMetrics() (string, error) {
-	return retry.DoWithRetryE(c.t, "fetching CP metrics", DefaultRetries, DefaultTimeout, func() (string, error) {
-		sshApp := ssh.NewApp(c.name, "", c.verbose, c.cpNetworking.SshPort, nil, []string{
-			"curl",
-			"--fail", "--show-error",
-			"http://localhost:5680/metrics",
-		})
-		if err := sshApp.Run(); err != nil {
-			return "", err
-		}
-		if sshApp.Err() != "" {
-			return "", errors.New(sshApp.Err())
-		}
-		return sshApp.Out(), nil
-	})
+	stdout, stderr, err := c.Exec(
+		"curl", "--no-progress-meter",
+		"--fail", "--show-error",
+		"http://localhost:5680/metrics",
+	)
+	if err != nil {
+		return "", err
+	}
+	if stderr != "" {
+		return "", fmt.Errorf("got on stderr: %q", stderr)
+	}
+	return stdout, nil
 }
 
 func (c *UniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
@@ -128,30 +126,20 @@ func (c *UniversalControlPlane) generateToken(
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			sshApp := ssh.NewApp(
-				c.name,
-				"",
-				c.verbose,
-				c.cpNetworking.SshPort,
-				nil,
-				[]string{
-					"curl",
-					"--fail", "--show-error",
-					"-H", "\"Content-Type: application/json\"",
-					"--data", data,
-					"http://localhost:5681/tokens" + tokenPath,
-				},
+			stdout, stderr, err := c.Exec(
+				"curl", "-s",
+				"--fail", "--show-error",
+				"-H", "\"Content-Type: application/json\"",
+				"--data", data,
+				"http://localhost:5681/tokens"+tokenPath,
 			)
-
-			if err := sshApp.Run(); err != nil {
+			if err != nil {
 				return "", err
 			}
-
-			if sshApp.Err() != "" {
-				return "", errors.New(sshApp.Err())
+			if stderr != "" {
+				return "", fmt.Errorf("got stderr %q", stderr)
 			}
-
-			return sshApp.Out(), nil
+			return stdout, nil
 		},
 	)
 }
@@ -166,12 +154,12 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
-			out, stderr, err := c.Exec("curl", "--fail", "--show-error", "http://localhost:5681/global-secrets/admin-user-token")
+			out, stderr, err := c.Exec("curl", "-s", "--fail", "--show-error", "http://localhost:5681/global-secrets/admin-user-token")
 			if err != nil {
 				return "", err
 			}
 			if stderr != "" {
-				return "", errors.New(stderr)
+				return "", fmt.Errorf("got content on stderr: %q", stderr)
 			}
 			return ExtractSecretDataFromResponse(out)
 		},
@@ -179,15 +167,7 @@ func (c *UniversalControlPlane) retrieveAdminToken() (string, error) {
 }
 
 func (c *UniversalControlPlane) Exec(cmd ...string) (string, string, error) {
-	sshApp := ssh.NewApp(
-		c.name,
-		"",
-		c.verbose, c.cpNetworking.SshPort, nil, cmd,
-	)
-	if err := sshApp.Run(); err != nil {
-		return "", sshApp.Err(), err
-	}
-	return sshApp.Out(), sshApp.Err(), nil
+	return c.cpNetworking.RunCommand(strings.Join(cmd, " "))
 }
 
 func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {

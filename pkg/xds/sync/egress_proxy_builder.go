@@ -21,13 +21,15 @@ import (
 )
 
 type EgressProxyBuilder struct {
-	zone       string
-	apiVersion core_xds.APIVersion
+	zone              string
+	apiVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
 }
 
 func (p *EgressProxyBuilder) Build(
 	ctx context.Context,
 	key core_model.ResourceKey,
+	xdsMeta *core_xds.DataplaneMetadata,
 	aggregatedMeshCtxs xds_context.AggregatedMeshContexts,
 ) (*core_xds.Proxy, error) {
 	zoneEgress, ok := aggregatedMeshCtxs.ZoneEgressByName[key.Name]
@@ -117,14 +119,16 @@ func (p *EgressProxyBuilder) Build(
 	}
 
 	proxy := &core_xds.Proxy{
-		Id:         core_xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
-		Zone:       p.zone,
+		Id:                core_xds.FromResourceKey(key),
+		APIVersion:        p.apiVersion,
+		InternalAddresses: p.InternalAddresses,
+		Zone:              p.zone,
 		ZoneEgressProxy: &core_xds.ZoneEgressProxy{
 			ZoneEgressResource: zoneEgress,
 			ZoneIngresses:      zoneIngresses,
 			MeshResourcesList:  meshResourcesList,
 		},
+		Metadata: xdsMeta,
 	}
 	for k, pl := range core_plugins.Plugins().ProxyPlugins() {
 		err := pl.Apply(ctx, xds_context.MeshContext{}, proxy) // No mesh context for zone proxies

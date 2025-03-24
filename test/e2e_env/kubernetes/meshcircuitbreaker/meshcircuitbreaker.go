@@ -31,8 +31,10 @@ func MeshCircuitBreaker() {
 				),
 			).
 			Install(NamespaceWithSidecarInjection(namespace)).
-			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh))).
-			Install(testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace))).
+			Install(Parallel(
+				democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(mesh)),
+				testserver.Install(testserver.WithMesh(mesh), testserver.WithNamespace(namespace)),
+			)).
 			Install(YamlK8s(fmt.Sprintf(`
 apiVersion: kuma.io/v1alpha1
 kind: HostnameGenerator
@@ -153,10 +155,8 @@ metadata:
 spec:
   targetRef:
     kind: Mesh
-  from:
-    - targetRef:
-        kind: Mesh
-      default:
+  rules:
+    - default:
         connectionLimits:
           maxConnectionPools: 1
           maxConnections: 1
@@ -190,7 +190,7 @@ spec:
 apiVersion: kuma.io/v1alpha1
 kind: MeshCircuitBreaker
 metadata:
-  name: mcb-outbound
+  name: mcb-outbound-ms
   namespace: %s
   labels:
     kuma.io/mesh: %s
@@ -206,7 +206,15 @@ spec:
           maxConnections: 1
           maxPendingRequests: 1
           maxRequests: 1
-          maxRetries: 1`, namespace, mesh, namespace)))).To(Succeed())
+          maxRetries: 1
+        outlierDetection:
+          interval: 1s
+          baseEjectionTime: 30s
+          maxEjectionPercent: 100
+          detectors:
+            totalFailures:
+              consecutive: 1
+          healthyPanicThreshold: 0`, namespace, mesh, namespace)))).To(Succeed())
 
 		// then
 		Eventually(func(g Gomega) ([]client.FailureResponse, error) {
@@ -224,5 +232,20 @@ spec:
 			HaveLen(10),
 			ContainElement(HaveField("ResponseCode", 503)),
 		))
+
+		// then
+		// with the above 10 times 503, we're in panic mode.
+		Consistently(func(g Gomega) ([]client.FailureResponse, error) {
+			return client.CollectResponsesAndFailures(
+				kubernetes.Cluster,
+				"demo-client",
+				fmt.Sprintf("test-server.%s.default.meshcircuitbreaker", namespace),
+				// errors returned by circuit breaker don't count for outlier detection
+				// only upstream returned errors
+				client.WithHeader("x-set-response-code", "500"),
+				client.FromKubernetesPod(namespace, "demo-client"),
+			)
+			// we expect 503 because we are in the panic mode
+		}, "10s", "1s").Should(ContainElement(HaveField("ResponseCode", 503)))
 	})
 }

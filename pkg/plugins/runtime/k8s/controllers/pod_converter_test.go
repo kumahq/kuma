@@ -120,6 +120,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
+			// existing dataplane
+			existingDataplane := &mesh_k8s.Dataplane{}
+			if given.existingDataplane != "" {
+				bytes, err := os.ReadFile(filepath.Join("testdata", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, existingDataplane)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
 			converter := PodConverter{
 				ServiceGetter: serviceGetter,
 				InboundConverter: InboundConverter{
@@ -135,13 +144,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(context.Background(), dataplane, pod, &namespace, services, otherDataplanes)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			actual, err := yaml.Marshal(dataplane)
+			actual, err := yaml.Marshal(existingDataplane)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchGoldenYAML("testdata", given.dataplane))
 		},
@@ -312,6 +320,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "30.services-for-pod.yaml",
 			dataplane:      "30.dataplane.yaml",
 		}),
+		Entry("Update existing dataplane with pod labels", testCase{
+			pod:               "update-dataplane.pod.yaml",
+			servicesForPod:    "update-dataplane.services-for-pod.yaml",
+			existingDataplane: "update-dataplane.existing-dataplane.yaml",
+			otherServices:     "update-dataplane.other-services.yaml",
+			dataplane:         "update-dataplane.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
@@ -404,6 +419,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "ingress-exists.existing-dataplane.yaml",
 			dataplane:         "ingress-exists.dataplane.yaml",
 		}),
+		Entry("Existing ZoneIngress with load balancer and ip should not be updated when no change", testCase{
+			pod:               "ingress-exists.pod.yaml",
+			servicesForPod:    "ingress-exists.services-for-pod.yaml",
+			existingDataplane: "ingress-exists.existing-dataplane.yaml",
+			dataplane:         "ingress-exists.dataplane.yaml",
+		}),
+		Entry("Existing ZoneIngress should be updated when pod labels changes", testCase{
+			pod:               "ingress-exists-labels.pod.yaml",
+			servicesForPod:    "ingress-exists-labels.services-for-pod.yaml",
+			existingDataplane: "ingress-exists-labels.existing-dataplane.yaml",
+			dataplane:         "ingress-exists-labels.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Egress Pod into an Egress Dataplane YAML version",
@@ -442,8 +469,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 				},
 			}
 
-			// when
 			egress := &mesh_k8s.ZoneEgress{}
+			if given.existingDataplane != "" {
+				bytes, err = os.ReadFile(filepath.Join("testdata", "egress", given.existingDataplane))
+				Expect(err).ToNot(HaveOccurred())
+				err = yaml.Unmarshal(bytes, egress)
+				Expect(err).ToNot(HaveOccurred())
+			}
+
+			// when
 			err = converter.PodToEgress(ctx, egress, pod, services)
 
 			// then
@@ -479,6 +513,13 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "05.services-for-pod.yaml",
 			dataplane:      "05.dataplane.yaml",
 			node:           "05.node.yaml",
+		}),
+		Entry("Existing ZoneEgress should be updated when pod labels changes", testCase{ // KIND / Minikube use case
+			pod:               "egress-exists-labels.pod.yaml",
+			servicesForPod:    "egress-exists-labels.services-for-pod.yaml",
+			dataplane:         "egress-exists-labels.dataplane.yaml",
+			node:              "egress-exists-labels.node.yaml",
+			existingDataplane: "egress-exists-labels.existing-dataplane.yaml",
 		}),
 	)
 })

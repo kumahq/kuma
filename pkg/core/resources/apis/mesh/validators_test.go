@@ -164,6 +164,52 @@ name: backend
 				},
 			},
 		}),
+		Entry("Dataplane", testCase{
+			inputYaml: `
+kind: Dataplane
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+		}),
+		Entry("Dataplane by name", testCase{
+			inputYaml: `
+kind: Dataplane
+name: backend-asb3210d
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+		}),
+		Entry("Dataplane by labels", testCase{
+			inputYaml: `
+kind: Dataplane
+labels:
+  app: demo-app
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+		}),
+		Entry("Dataplane with sectionName", testCase{
+			inputYaml: `
+kind: Dataplane
+name: backend-asb3210d
+sectionName: http-port
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+				IsInboundPolicy: true,
+			},
+		}),
 		Entry("MeshGateway", testCase{
 			inputYaml: `
 kind: MeshGateway
@@ -187,6 +233,20 @@ name: gateway.namespace
 				SupportedKinds: []common_api.TargetRefKind{
 					common_api.MeshGateway,
 				},
+			},
+		}),
+		Entry("MeshGateway with slash in tags", testCase{
+			inputYaml: `
+kind: MeshGateway
+name: gateway.namespace
+tags:
+  port: http/443
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.MeshGateway,
+				},
+				GatewayListenerTagsAllowed: true,
 			},
 		}),
 		Entry("MeshHTTPRoute", testCase{
@@ -580,6 +640,45 @@ violations:
     message: must not be set with kind MeshGateway
 `,
 		}),
+		Entry("Mesh with empty proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: []
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: `
+violations:
+  - field: targetRef.proxyTypes
+    message: must be undefined or have at least one element
+`,
+		}),
+		Entry("Mesh with one proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
+		Entry("Mesh with no proxyTypes", testCase{
+			inputYaml: `
+kind: Mesh
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Mesh,
+				},
+			},
+			expected: "violations: null",
+		}),
 		Entry("MeshGateway when it's not supported", testCase{
 			inputYaml: `
 kind: MeshGateway
@@ -814,24 +913,6 @@ violations:
     message: must be set with kind MeshService
 `,
 		}),
-		Entry("MeshService should not have sectionName when labels are set", testCase{
-			inputYaml: `
-kind: MeshService
-sectionName: http-port
-labels:
-  kuma.io/zone: east
-`,
-			opts: &ValidateTargetRefOpts{
-				SupportedKinds: []common_api.TargetRefKind{
-					common_api.MeshService,
-				},
-			},
-			expected: `
-violations:
-  - field: targetRef.sectionName
-    message: sectionName should not be combined with labels
-`,
-		}),
 		Entry("Mesh should not be used with namespace or labels or sectionName", testCase{
 			inputYaml: `
 kind: Mesh
@@ -900,6 +981,82 @@ violations:
   message: must not be set with kind MeshServiceSubset
 - field: targetRef.sectionName
   message: must not be set with kind MeshServiceSubset
+`,
+		}),
+		Entry("Dataplane both labels and name", testCase{
+			inputYaml: `
+kind: Dataplane
+name: test
+namespace: test-ns
+labels:
+  kuma.io/zone: east
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+			expected: `
+violations:
+- field: targetRef.labels
+  message: either labels or name and namespace must be specified
+`,
+		}),
+		Entry("Dataplane with tags and mesh", testCase{
+			inputYaml: `
+kind: Dataplane
+name: test
+namespace: test-ns
+mesh: mesh-1
+tags:
+  app: demo
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+			expected: `
+violations:
+- field: targetRef.tags
+  message: must not be set with kind Dataplane
+- field: targetRef.mesh
+  message: must not be set with kind Dataplane
+`,
+		}),
+		Entry("Dataplane with proxyTypes", testCase{
+			inputYaml: `
+kind: Dataplane
+name: test
+namespace: test-ns
+proxyTypes: ["Sidecar"]
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+			expected: `
+violations:
+- field: targetRef.proxyTypes
+  message: must not be set with kind Dataplane
+`,
+		}),
+		Entry("Dataplane with proxyTypes", testCase{
+			inputYaml: `
+kind: Dataplane
+name: test
+sectionName: http-port
+`,
+			opts: &ValidateTargetRefOpts{
+				SupportedKinds: []common_api.TargetRefKind{
+					common_api.Dataplane,
+				},
+			},
+			expected: `
+violations:
+- field: targetRef.sectionName
+  message: can only be used with inbound policies
 `,
 		}),
 	)

@@ -9,6 +9,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -40,7 +42,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -62,7 +64,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefService("web")),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -100,7 +102,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{
@@ -147,7 +149,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{},
+		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
 	},
 }), Entry("tie-breaking", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -161,7 +163,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -186,7 +188,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -211,7 +213,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{
@@ -243,7 +245,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{},
+		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
 	},
 }), Entry("ordering", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -257,7 +259,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -334,7 +336,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 					},
 					Spec: &api.MeshHTTPRoute{
 						TargetRef: pointer.To(builders.TargetRefMesh()),
-						To: []api.To{{
+						To: &[]api.To{{
 							TargetRef: builders.TargetRefService("backend"),
 							Rules: []api.Rule{{
 								Matches: []api.Match{{
@@ -398,7 +400,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 	expectedRoutes: core_rules.ToRules{
 		Rules: core_rules.Rules{
 			{
-				Subset: core_rules.MeshService("backend"),
+				Subset: subsetutils.MeshService("backend"),
 				Conf: api.PolicyDefault{
 					Rules: []api.Rule{{
 						Matches: []api.Match{{
@@ -500,7 +502,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{},
+		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
 	},
 }),
 )

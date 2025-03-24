@@ -1,0 +1,33 @@
+type: MeshCircuitBreaker
+name: mcb-1
+mesh: envoyconfig
+labels:
+  kuma.io/effect: shadow
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        outlierDetection:
+          disabled: false
+          interval: 5s
+          baseEjectionTime: 30s
+          maxEjectionPercent: 20
+          splitExternalAndLocalErrors: true
+          detectors:
+            totalFailures:
+              consecutive: 10
+            gatewayFailures:
+              consecutive: 10
+            localOriginFailures:
+              consecutive: 10
+            successRate:
+              minimumHosts: 5
+              requestVolume: 10
+              standardDeviationFactor: 1900
+            failurePercentage:
+              requestVolume: 10
+              minimumHosts: 5
+              threshold: 85
+          healthyPanicThreshold: 20

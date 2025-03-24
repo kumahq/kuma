@@ -344,39 +344,42 @@ func MeshMetric() {
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(Namespace(observabilityNamespace)).
 			Install(Namespace(secondaryOpenTelemetryCollectorNamespace)).
-			Install(otelcollector.Install(
-				otelcollector.WithName(primaryOtelCollectorName),
-				otelcollector.WithNamespace(observabilityNamespace),
-				otelcollector.WithIPv6(Config.IPV6),
-			)).
-			Install(democlient.Install(democlient.WithNamespace(observabilityNamespace))).
-			Install(otelcollector.Install(
-				otelcollector.WithName(secondaryOtelCollectorName),
-				otelcollector.WithNamespace(secondaryOpenTelemetryCollectorNamespace),
-				otelcollector.WithIPv6(Config.IPV6),
-			)).
-			Install(democlient.Install(democlient.WithNamespace(secondaryOpenTelemetryCollectorNamespace))).
-			Setup(kubernetes.Cluster)
-		Expect(err).To(Succeed())
-
-		for i := 0; i < 2; i++ {
-			Expect(
-				kubernetes.Cluster.Install(testserver.Install(
-					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
+			Install(Parallel(
+				otelcollector.Install(
+					otelcollector.WithName(primaryOtelCollectorName),
+					otelcollector.WithNamespace(observabilityNamespace),
+					otelcollector.WithIPv6(Config.IPV6),
+				),
+				democlient.Install(democlient.WithNamespace(observabilityNamespace)),
+				otelcollector.Install(
+					otelcollector.WithName(secondaryOtelCollectorName),
+					otelcollector.WithNamespace(secondaryOpenTelemetryCollectorNamespace),
+					otelcollector.WithIPv6(Config.IPV6),
+				),
+				democlient.Install(democlient.WithNamespace(secondaryOpenTelemetryCollectorNamespace)),
+				testserver.Install(
+					testserver.WithName("test-server-0"),
 					testserver.WithMesh(mainMesh),
 					testserver.WithNamespace(namespace),
-				)),
-			).To(Succeed())
-		}
-		for i := 2; i < 4; i++ {
-			Expect(
-				kubernetes.Cluster.Install(testserver.Install(
-					testserver.WithName(fmt.Sprintf("test-server-%d", i)),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-1"),
+					testserver.WithMesh(mainMesh),
+					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithName("test-server-2"),
 					testserver.WithMesh(secondaryMesh),
 					testserver.WithNamespace(namespace),
-				)),
-			).To(Succeed())
-		}
+				),
+				testserver.Install(
+					testserver.WithName("test-server-3"),
+					testserver.WithMesh(secondaryMesh),
+					testserver.WithNamespace(namespace),
+				),
+			)).
+			Setup(kubernetes.Cluster)
+		Expect(err).To(Succeed())
 	})
 
 	AfterEachFailure(func() {

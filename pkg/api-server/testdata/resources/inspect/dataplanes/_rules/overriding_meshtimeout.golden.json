@@ -44,6 +44,49 @@
      ]
     }
    ],
+   "inboundRules": [
+    {
+     "inbound": {
+      "port": 8080,
+      "tags": {
+       "kuma.io/service": "foo"
+      }
+     },
+     "rules": [
+      {
+       "conf": [
+        {
+         "connectionTimeout": "20s",
+         "idleTimeout": "20s",
+         "http": {
+          "requestTimeout": "5s"
+         }
+        }
+       ],
+       "origin": [
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "default",
+          "name": "default",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        },
+        {
+         "resourceMeta": {
+          "labels": {},
+          "mesh": "default",
+          "name": "override",
+          "type": "MeshTimeout"
+         },
+         "ruleIndex": 0
+        }
+       ]
+      }
+     ]
+    }
+   ],
    "toResourceRules": [
     {
      "conf": [

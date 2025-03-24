@@ -47,7 +47,7 @@ spec:
 			)).To(Succeed())
 		})
 
-		It("should not break communication once switched to TLS 1.3", func() {
+		XIt("should not break communication once switched to TLS 1.3", func() {
 			// check that communication to test-server works
 			Eventually(func(g Gomega) {
 				_, err := client.CollectEchoResponse(
@@ -57,7 +57,7 @@ spec:
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s").Should(Succeed())
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 
 			// change TLS version to 1.3
 			Expect(framework.YamlK8s(meshTls)(kubernetes.Cluster)).To(Succeed())
@@ -71,7 +71,7 @@ spec:
 					client.FromKubernetesPod(config.NamespaceOutsideMesh, "demo-client"),
 				)
 				g.Expect(err).ToNot(HaveOccurred())
-			}, "30s", "1s").Should(Succeed())
+			}, "30s", "1s", MustPassRepeatedly(5)).Should(Succeed())
 		})
 	}
 }

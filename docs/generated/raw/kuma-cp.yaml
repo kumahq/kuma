@@ -407,6 +407,8 @@ runtime:
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
     dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
+    # ZoneResourceCleanupAge defines how long ZoneIngress and ZoneEgress should be offline to be cleaned up by GC
+    zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
 # Default Kuma entities configuration
@@ -516,6 +518,10 @@ multizone:
       # Response backoff is a time Global CP waits before sending ACK/NACK.
       # This is a way to slow down Zone CP from sending resources too often.
       responseBackoff: 0s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_RESPONSE_BACKOFF
+      tracing:
+        # Defines whether tracing is enabled for all gRPC methods
+        # of GlobalKDSServer and KDSSyncService or completely disabled
+        enabled: true # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TRACING_ENABLED
   zone:
     # Kuma Zone name used to mark the zone dataplane resources
     name: "default" # ENV: KUMA_MULTIZONE_ZONE_NAME
@@ -762,11 +768,6 @@ experimental:
   # Enables sidecar containers in Kubernetes if supported by the Kubernetes
   # environment.
   sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
-  # If true then it generates MeshServices from Kubernetes Service.
-  generateMeshServices: false # ENV: KUMA_EXPERIMENTAL_GENERATE_MESH_SERVICES
-  # If true skips persisted VIPs. Change to true only if generateMeshServices is enabled.
-  # Do not enable on production.
-  skipPersistedVIPs: false # ENV: KUMA_EXPERIMENTAL_SKIP_PERSISTED_VIPS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming
@@ -824,6 +825,15 @@ ipam:
     cidr: 243.0.0.0/8 # ENV: KUMA_IPAM_MESH_MULTI_ZONE_SERVICE_CIDR
   # Interval on which Kuma will allocate new IPs for MeshServices and MeshExternalServices
   allocationInterval: 5s # ENV: KUMA_IPAM_ALLOCATION_INTERVAL
+  # Contains a list of CIDRs which are considered internal and trusted, Envoy attaches internal only headers to requests from these clients when forwarding HTTP requests
+  knownInternalCIDRs: # ENV: KUMA_IPAM_KNOWN_INTERNAL_CIDRS
+    - 10.0.0.0/8
+    - 192.168.0.0/16
+    - 172.16.0.0/12
+    - fc00::/7
+    - fd00::/8
+    - 127.0.0.1/32
+    - ::1/128
 meshService:
   # How often we check whether MeshServices need to be generated from Dataplanes
   generationInterval: 2s # ENV: KUMA_MESH_SERVICE_GENERATION_INTERVAL

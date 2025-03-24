@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -62,28 +61,21 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				runLog.Info(`[WARNING] "standalone" mode is deprecated. Changing it to "zone". Set KUMA_MODE to "zone" as "standalone" will be removed in the future.`)
 				cfg.Mode = config_core.Zone
 			}
-
 			kuma_cp.PrintDeprecations(&cfg, cmd.OutOrStdout())
 
 			gracefulCtx, ctx, _ := opts.SetupSignalHandler()
+			// this needs to be done before we log the config as bootstrap may change it.
 			rt, err := bootstrap.Bootstrap(gracefulCtx, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
 			}
+
 			cfgForDisplay, err := config.ConfigForDisplay(&cfg)
 			if err != nil {
-				runLog.Error(err, "unable to prepare config for display")
-				return err
+				runLog.Error(err, "unable to prepare config for display, log config will be empty")
 			}
-			cfgBytes, err := config.ToJson(cfgForDisplay)
-			if err != nil {
-				runLog.Error(err, "unable to convert config to json")
-				return err
-			}
-			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
-
+			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version, "mode", cfg.Mode, "config", cfgForDisplay)
 			if err := os.RaiseFileLimit(); err != nil {
 				runLog.Error(err, "unable to raise the open file limit")
 			}
@@ -166,7 +158,7 @@ func newRunCmdWithOpts(opts kuma_cmd.RunCmdOpts) *cobra.Command {
 				return err
 			}
 
-			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
+			runLog.Info("starting Control Plane runtime")
 			if err := rt.Start(gracefulCtx.Done()); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err

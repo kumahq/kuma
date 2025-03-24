@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.16.4
+    controller-gen.kubebuilder.io/version: v0.17.2
   name: meshproxypatches.kuma.io
 spec:
   group: kuma.io
@@ -13,6 +13,8 @@ spec:
     kind: MeshProxyPatch
     listKind: MeshProxyPatchList
     plural: meshproxypatches
+    shortNames:
+    - mpp
     singular: meshproxypatch
   scope: Namespaced
   versions:
@@ -475,8 +477,6 @@ spec:
                           type: object
                       type: object
                     type: array
-                required:
-                - appendModifications
                 type: object
               targetRef:
                 description: |-
@@ -495,6 +495,7 @@ spec:
                     - MeshMultiZoneService
                     - MeshServiceSubset
                     - MeshHTTPRoute
+                    - Dataplane
                     type: string
                   labels:
                     additionalProperties:
@@ -526,7 +527,6 @@ spec:
                       - Sidecar
                       - Gateway
                       type: string
-                    minItems: 1
                     type: array
                   sectionName:
                     description: |-
@@ -540,6 +540,8 @@ spec:
                       Tags used to select a subset of proxies by tags. Can only be used with kinds
                       `MeshSubset` and `MeshServiceSubset`
                     type: object
+                required:
+                - kind
                 type: object
             required:
             - default

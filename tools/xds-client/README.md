@@ -6,7 +6,7 @@ Client allows emulating xDS connections without actual running of Envoy proxies.
 Run Kuma CP without Dataplane tokens, debug endpoint probably also will be useful:
 
 ```shell script
-KUMA_DP_SERVER_AUTH_TYPE=none KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS=true ./build/artifacts-darwin-amd64/kuma-cp/kuma-cp run
+KUMA_DP_SERVER_AUTHN_DP_PROXY_TYPE=none KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS=true ./build/artifacts-darwin-amd64/kuma-cp/kuma-cp run
 ```
 
 Run XDS Test Client:

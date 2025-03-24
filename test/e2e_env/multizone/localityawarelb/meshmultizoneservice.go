@@ -3,6 +3,7 @@ package localityawarelb
 import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sync/errgroup"
 
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
@@ -30,7 +31,6 @@ spec:
     meshService:
       matchLabels:
         kuma.io/display-name: test-server
-        k8s.kuma.io/namespace: mlb-mzms
   ports:
   - name: "80"
     port: 80
@@ -39,45 +39,27 @@ spec:
 			Setup(multizone.Global)).To(Succeed())
 		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
-		err := NewClusterSetup().
+		group := errgroup.Group{}
+
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(testserver.Install(
 				testserver.WithNamespace(namespace),
 				testserver.WithMesh(meshName),
 				testserver.WithEchoArgs("echo", "--instance", "kube-test-server-1"),
 			)).
-			Setup(multizone.KubeZone1)
-		Expect(err).ToNot(HaveOccurred())
-		err = NewClusterSetup().
+			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
+			SetupInGroup(multizone.KubeZone1, &group)
+
+		NewClusterSetup().
 			Install(NamespaceWithSidecarInjection(namespace)).
 			Install(democlient.Install(democlient.WithNamespace(namespace), democlient.WithMesh(meshName))).
-			Setup(multizone.KubeZone2)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.KubeZone2, &group)
 
-		uniServiceYAML := `
-type: MeshService
-name: test-server
-mesh: mlb-mzms
-labels:
-  kuma.io/origin: zone
-  kuma.io/env: universal
-  k8s.kuma.io/namespace: mlb-mzms # add a label to aggregate kube and uni service
-  kuma.io/display-name: test-server # add a label to aggregate kube and uni service
-spec:
-  selector:
-    dataplaneTags:
-      kuma.io/service: test-server
-  ports:
-  - port: 80
-    targetPort: 80
-    appProtocol: http
-`
-
-		err = NewClusterSetup().
+		NewClusterSetup().
 			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo", "--instance", "uni-test-server"}))).
-			Install(YamlUniversal(uniServiceYAML)).
-			Setup(multizone.UniZone1)
-		Expect(err).ToNot(HaveOccurred())
+			SetupInGroup(multizone.UniZone1, &group)
+		Expect(group.Wait()).To(Succeed())
 	})
 
 	AfterEachFailure(func() {
@@ -113,7 +95,9 @@ spec:
 	It("should fallback only to first zone", func() {
 		// given traffic to other zones
 		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
-			MustPassRepeatedly(5).Should(Or(Equal("kube-test-server-1"), Equal("uni-test-server")))
+			Should(Equal("kube-test-server-1"))
+		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
+			Should(Equal("uni-test-server"))
 
 		// when
 		policy := `
@@ -127,7 +111,7 @@ spec:
   - targetRef:
       kind: MeshMultiZoneService
       labels:
-        kuma.io/display-name: test-server 
+        kuma.io/display-name: test-server
     default:
       localityAwareness:
         crossZone:
@@ -148,5 +132,36 @@ spec:
 
 		Eventually(responseFromInstance(multizone.KubeZone2), "30s", "1s").
 			MustPassRepeatedly(5).Should(Equal("kube-test-server-1"))
+	})
+
+	It("should be locality aware unless disabled", func() {
+		// given traffic only to the local zone
+		Eventually(responseFromInstance(multizone.KubeZone1), "30s", "1s").
+			MustPassRepeatedly(5).Should(Equal("kube-test-server-1"))
+
+		// when
+		policy := `
+type: MeshLoadBalancingStrategy
+name: mlb-mzms
+mesh: mlb-mzms
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+  - targetRef:
+      kind: MeshMultiZoneService
+      labels:
+        kuma.io/display-name: test-server
+    default:
+      localityAwareness:
+        disabled: true
+`
+		err := multizone.Global.Install(YamlUniversal(policy))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(responseFromInstance(multizone.KubeZone1), "30s", "1s").
+			Should(Equal("uni-test-server"))
 	})
 }

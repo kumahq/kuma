@@ -73,8 +73,8 @@ func (ds *DestinationService) DefaultBackendRef() *core_model.ResolvedBackendRef
 		return core_model.NewResolvedBackendRef(&core_model.LegacyBackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
-				Name: ds.Outbound.LegacyOutbound.GetService(),
-				Tags: ds.Outbound.LegacyOutbound.GetTags(),
+				Name: pointer.To(ds.Outbound.LegacyOutbound.GetService()),
+				Tags: pointer.To(ds.Outbound.LegacyOutbound.GetTags()),
 			},
 			Weight: pointer.To(uint(100)),
 		})
@@ -198,7 +198,7 @@ func GetServiceProtocolPortFromRef(
 		}
 		port := uint32(mes.Spec.Match.Port)
 		service := mes.DestinationName(port)
-		protocol := meshCtx.GetServiceProtocol(service)
+		protocol := mes.Spec.Match.Protocol
 		return service, protocol, port, true
 	case common_api.MeshMultiZoneService:
 		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
@@ -325,19 +325,19 @@ func handleLegacyBackendRef(
 		return nil
 	}
 
-	service := ref.Name
+	service := pointer.Deref(ref.Name)
 	protocol := meshCtx.GetServiceProtocol(service)
 	if _, ok := protocols[protocol]; !ok {
 		return nil
 	}
-	clusterName, _ := envoy_tags.Tags(ref.Tags).
+	clusterName, _ := envoy_tags.Tags(pointer.Deref(ref.Tags)).
 		WithTags(mesh_proto.ServiceTag, service).
 		DestinationClusterName(nil)
 
 	// The mesh tag is present here if this destination is generated
 	// from a cross-mesh MeshGateway listener virtual outbound.
 	// It is not part of the service tags.
-	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
 		// The name should be distinct to the service & mesh combination
 		clusterName = fmt.Sprintf("%s_%s", clusterName, mesh)
 	}
@@ -365,12 +365,12 @@ func handleLegacyBackendRef(
 	clusterBuilder := plugins_xds.NewClusterBuilder().
 		WithService(service).
 		WithName(clusterName).
-		WithTags(envoy_tags.Tags(ref.Tags).
-			WithTags(mesh_proto.ServiceTag, ref.Name).
+		WithTags(envoy_tags.Tags(pointer.Deref(ref.Tags)).
+			WithTags(mesh_proto.ServiceTag, pointer.Deref(ref.Name)).
 			WithoutTags(mesh_proto.MeshTag)).
 		WithExternalService(isExternalService)
 
-	if mesh, ok := ref.Tags[mesh_proto.MeshTag]; ok {
+	if mesh, ok := pointer.Deref(ref.Tags)[mesh_proto.MeshTag]; ok {
 		clusterBuilder.WithMesh(mesh)
 	}
 

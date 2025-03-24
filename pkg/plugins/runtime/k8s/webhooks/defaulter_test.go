@@ -257,7 +257,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -282,7 +284,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -300,7 +304,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -325,7 +331,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -346,7 +354,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -367,7 +377,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -385,7 +397,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -410,7 +424,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -456,6 +472,7 @@ var _ = Describe("Defaulter", func() {
                   "kuma.io/mesh": "demo",
                   "kuma.io/env": "kubernetes",
                   "kuma.io/origin": "zone",
+                  "kuma.io/proxy-type": "sidecar",
                   "kuma.io/zone": "zone-1"
                 },
                 "annotations": {
@@ -490,7 +507,9 @@ var _ = Describe("Defaulter", func() {
                 "creationTimestamp": null
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -512,7 +531,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -535,7 +556,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,
@@ -557,7 +580,9 @@ var _ = Describe("Defaulter", func() {
                 }
               },
               "spec": {
-                "targetRef": {}
+                "targetRef": {
+                  "kind": "Mesh"
+                }
               }
             }
 `,

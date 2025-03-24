@@ -17,7 +17,7 @@ import (
 )
 
 // +kubebuilder:object:root=true
-// +kubebuilder:resource:categories=kuma,scope=Namespaced
+// +kubebuilder:resource:categories=kuma,scope=Namespaced,shortName=dnp
 // +kubebuilder:printcolumn:name="TargetRef Kind",type="string",JSONPath=".spec.targetRef.kind"
 // +kubebuilder:printcolumn:name="TargetRef Name",type="string",JSONPath=".spec.targetRef.name"
 type DoNothingPolicy struct {

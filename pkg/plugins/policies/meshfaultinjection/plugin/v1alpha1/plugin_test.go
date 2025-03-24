@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -90,7 +91,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					Origin: generator.OriginInbound,
 					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
 								HttpInboundRoutes(
 									"backend",
@@ -119,7 +120,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {
 						{
-							Subset: core_rules.Subset{
+							Subset: subsetutils.Subset{
 								{
 									Key:   "kuma.io/service",
 									Value: "demo-client",
@@ -145,7 +146,7 @@ var _ = Describe("MeshFaultInjection", func() {
 							},
 						},
 						{
-							Subset: core_rules.Subset{
+							Subset: subsetutils.Subset{
 								{
 									Key:   "kuma.io/service",
 									Value: "demo-client",
@@ -173,7 +174,7 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 					},
 					{Address: "127.0.0.1", Port: 17778}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Http: &[]api.FaultInjectionConf{
 								{
@@ -210,7 +211,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
-					listeners.HttpConnectionManager("external-service-1", false),
+					listeners.HttpConnectionManager("external-service-1", false, nil),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
@@ -225,7 +226,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-2").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-2{mesh=mesh-2}"),
-					listeners.HttpConnectionManager("external-service-2", false),
+					listeners.HttpConnectionManager("external-service-2", false, nil),
 				)),
 				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "internal-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
@@ -292,7 +293,7 @@ var _ = Describe("MeshFaultInjection", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshService("frontend"),
+													Subset: subsetutils.MeshService("frontend"),
 													Conf: api.Conf{
 														Http: &[]api.FaultInjectionConf{
 															{
@@ -361,7 +362,7 @@ var _ = Describe("MeshFaultInjection", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.Conf{
 														Http: &[]api.FaultInjectionConf{
 															{
@@ -394,7 +395,7 @@ var _ = Describe("MeshFaultInjection", func() {
 												Address: "192.168.0.1", Port: 10002,
 											}: {
 												{
-													Subset: core_rules.MeshSubset(),
+													Subset: subsetutils.MeshSubset(),
 													Conf: api.Conf{
 														Http: &[]api.FaultInjectionConf{
 															{
@@ -445,7 +446,7 @@ var _ = Describe("MeshFaultInjection", func() {
 				ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 					{Address: "192.168.0.1", Port: 8080}: {
 						Rules: core_rules.Rules{{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								Http: &[]api.FaultInjectionConf{
 									{

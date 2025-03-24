@@ -35,6 +35,19 @@ var _ = Describe("Resource", func() {
 		Expect(reflect.TypeOf(obj.GetSpec()).String()).To(Equal("*v1alpha1.MeshAccessLog"))
 		Expect(reflect.ValueOf(obj.GetSpec()).IsNil()).To(BeFalse())
 	})
+
+	DescribeTable("KDS flags",
+		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) {
+			Expect(flags.Has(against)).To(Equal(expected))
+		},
+		func(flags core_model.KDSFlagType, against core_model.KDSFlagType, expected bool) string {
+			return fmt.Sprintf("%v.Has(%v) = %v", flags, against, expected)
+		},
+		Entry(nil, core_model.ProvidedByGlobalFlag, core_model.GlobalToZonesFlag, false),
+		Entry(nil, core_model.GlobalToZonesFlag, core_model.ProvidedByGlobalFlag, true),
+		Entry(nil, core_model.GlobalToZonesFlag, core_model.ZoneToGlobalFlag, false),
+		Entry(nil, core_model.KDSDisabledFlag, core_model.ProvidedByGlobalFlag, false),
+	)
 })
 
 var _ = Describe("IsReferenced", func() {
@@ -391,6 +404,53 @@ var _ = Describe("ComputeLabels", func() {
 				"kuma.io/origin":        "zone",
 				"kuma.io/zone":          "zone-1",
 				"kuma.io/env":           "kubernetes",
+			},
+		}),
+		Entry("gateway dataplane proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithMesh("mesh-1").
+				WithBuiltInGateway("test-gateway").
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":       "mesh-1",
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "gateway",
+			},
+		}),
+		Entry("dataplane proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.Dataplane().
+				WithName("backend-1").
+				WithServices("backend").
+				WithMesh("mesh-1").
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/mesh":       "mesh-1",
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "sidecar",
+			},
+		}),
+		Entry("zone egress proxy", testCase{
+			mode:      core.Zone,
+			isK8s:     true,
+			localZone: "zone-1",
+			r: builders.ZoneEgress().
+				WithPort(1001).
+				Build(),
+			expectedLabels: map[string]string{
+				"kuma.io/origin":     "zone",
+				"kuma.io/zone":       "zone-1",
+				"kuma.io/env":        "kubernetes",
+				"kuma.io/proxy-type": "zoneegress",
 			},
 		}),
 	)

@@ -18,6 +18,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	policies_defaults "github.com/kumahq/kuma/pkg/plugins/policies/core/defaults"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -31,7 +32,7 @@ import (
 type DeprecatedListenerConfigurer struct {
 	Rules    rules.Rules
 	Protocol core_mesh.Protocol
-	Subset   rules.Subset
+	Element  subsetutils.Element
 }
 
 func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listener.Listener) error {
@@ -51,7 +52,7 @@ func (c *DeprecatedListenerConfigurer) ConfigureListener(listener *envoy_listene
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf := c.getConf(c.Subset); conf != nil {
+		if conf := c.getConf(c.Element); conf != nil {
 			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultIdleTimeout)
 		}
 		return nil
@@ -76,9 +77,9 @@ func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguratio
 	if routeConfiguration != nil {
 		for _, vh := range routeConfiguration.VirtualHosts {
 			for _, route := range vh.Routes {
-				conf := c.getConf(c.Subset.WithTag(rules.RuleMatchesHashTag, route.Name, false))
+				conf := c.getConf(c.Element.WithKeyValue(rules.RuleMatchesHashTag, route.Name))
 				if conf == nil {
-					conf = c.getConf(c.Subset)
+					conf = c.getConf(c.Element)
 				}
 				if conf == nil {
 					continue
@@ -94,7 +95,7 @@ func (c *DeprecatedListenerConfigurer) configureRequestTimeout(routeConfiguratio
 }
 
 func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy_hcm.HttpConnectionManager) {
-	if conf := c.getConf(c.Subset); conf != nil {
+	if conf := c.getConf(c.Element); conf != nil {
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
 			pointer.Deref(conf.Http).RequestHeadersTimeout,
 			policies_defaults.DefaultRequestHeadersTimeout,
@@ -102,11 +103,11 @@ func (c *DeprecatedListenerConfigurer) configureRequestHeadersTimeout(hcm *envoy
 	}
 }
 
-func (c *DeprecatedListenerConfigurer) getConf(subset rules.Subset) *api.Conf {
+func (c *DeprecatedListenerConfigurer) getConf(element subsetutils.Element) *api.Conf {
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
-	return rules.ComputeConf[api.Conf](c.Rules, subset)
+	return rules.ComputeConf[api.Conf](c.Rules, element)
 }
 
 type ClusterConfigurer struct {
@@ -163,12 +164,8 @@ func ConfigureRouteAction(
 	}
 }
 
-func ConfigureGatewayListener(
-	conf *api.Conf,
-	protocol mesh_proto.MeshGateway_Listener_Protocol,
-	listener *envoy_listener.Listener,
-) error {
-	if listener == nil || conf == nil {
+func ConfigureGatewayListener(conf api.Conf, protocol mesh_proto.MeshGateway_Listener_Protocol, listener *envoy_listener.Listener) error {
+	if listener == nil {
 		return nil
 	}
 
@@ -177,7 +174,7 @@ func ConfigureGatewayListener(
 			hcm.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{}
 		}
 		hcm.CommonHttpProtocolOptions.IdleTimeout = toProtoDurationOrDefault(
-			pointer.Deref(conf).IdleTimeout,
+			conf.IdleTimeout,
 			policies_defaults.DefaultGatewayIdleTimeout,
 		)
 		hcm.RequestHeadersTimeout = toProtoDurationOrDefault(
@@ -194,9 +191,7 @@ func ConfigureGatewayListener(
 		return nil
 	}
 	tcpTimeouts := func(proxy *envoy_tcp.TcpProxy) error {
-		if conf != nil {
-			proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
-		}
+		proxy.IdleTimeout = toProtoDurationOrDefault(conf.IdleTimeout, policies_defaults.DefaultGatewayIdleTimeout)
 		return nil
 	}
 	for _, filterChain := range listener.FilterChains {
@@ -220,18 +215,6 @@ func toProtoDurationOrDefault(d *kube_meta.Duration, defaultDuration time.Durati
 		return util_proto.Duration(defaultDuration)
 	}
 	return util_proto.Duration(d.Duration)
-}
-
-var DefaultTimeoutConf = api.Conf{
-	ConnectionTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
-	IdleTimeout:       &kube_meta.Duration{Duration: policies_defaults.DefaultIdleTimeout},
-	Http: &api.Http{
-		RequestTimeout:        &kube_meta.Duration{Duration: policies_defaults.DefaultRequestTimeout},
-		StreamIdleTimeout:     &kube_meta.Duration{Duration: policies_defaults.DefaultGatewayStreamIdleTimeout},
-		MaxStreamDuration:     &kube_meta.Duration{Duration: policies_defaults.DefaultMaxStreamDuration},
-		MaxConnectionDuration: &kube_meta.Duration{Duration: policies_defaults.DefaultConnectTimeout},
-		RequestHeadersTimeout: &kube_meta.Duration{Duration: policies_defaults.DefaultRequestHeadersTimeout},
-	},
 }
 
 type ListenerConfigurer struct {

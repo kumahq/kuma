@@ -3,12 +3,12 @@ package server
 import (
 	"context"
 	"errors"
+	"maps"
 	"strings"
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	"github.com/go-logr/logr"
-	"golang.org/x/exp/maps"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"

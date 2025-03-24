@@ -8,6 +8,7 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshproxypatch/plugin/v1alpha1"
@@ -57,9 +58,9 @@ var _ = Describe("MeshProxyPatch", func() {
 			rules: core_rules.SingleItemRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
-							AppendModifications: []api.Modification{
+							AppendModifications: &[]api.Modification{
 								{
 									Cluster: &api.ClusterMod{
 										Operation: api.ModOpAdd,

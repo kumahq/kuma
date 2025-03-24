@@ -36,6 +36,13 @@ rules:
       - list
       - watch
   - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - list
+      - watch
+  - apiGroups:
       - extensions
     resources:
       - daemonsets
@@ -97,6 +104,7 @@ rules:
       - networking.k8s.io
     resources:
       - networkpolicies
+      - ingresses
     verbs:
       - list
       - watch
@@ -174,7 +182,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "bitnami/kube-state-metrics:2.9.2"
+          image: "bitnami/kube-state-metrics:2.15.0@sha256:929ee8c6bb15788412becb9de354098121517771f3ecf5dc94a3148854243c3c"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics

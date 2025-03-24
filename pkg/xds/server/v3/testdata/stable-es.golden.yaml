@@ -134,7 +134,9 @@ resources:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
-          idleTimeout: 0s
+          idleTimeout: 3600s
+          maxConnectionDuration: 0s
+          maxStreamDuration: 0s
         explicitHttpConfig:
           httpProtocolOptions: {}
 - name: inbound:passthrough:ipv4
@@ -153,7 +155,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: localhost:8080
       endpoints:
@@ -173,7 +175,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8443
-    connectTimeout: 10s
+    connectTimeout: 5s
     loadAssignment:
       clusterName: localhost:8443
       endpoints:
@@ -223,7 +225,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 7200s
+          idleTimeout: 3600s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -279,7 +281,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8080
-          idleTimeout: 7200s
+          idleTimeout: 3600s
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -335,7 +337,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
-          idleTimeout: 7200s
+          idleTimeout: 3600s
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -391,7 +393,7 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8080
-          idleTimeout: 7200s
+          idleTimeout: 3600s
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -458,6 +460,22 @@ resources:
           - name: envoy.filters.http.router
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
+          internalAddressConfig:
+            cidrRanges:
+            - addressPrefix: 10.0.0.0
+              prefixLen: 8
+            - addressPrefix: 192.168.0.0
+              prefixLen: 16
+            - addressPrefix: 172.16.0.0
+              prefixLen: 12
+            - addressPrefix: 'fc00::'
+              prefixLen: 7
+            - addressPrefix: 'fd00::'
+              prefixLen: 8
+            - addressPrefix: 127.0.0.1
+              prefixLen: 32
+            - addressPrefix: ::1
+              prefixLen: 128
           routeConfig:
             name: outbound:es-with-tls
             requestHeadersToAdd:

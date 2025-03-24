@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshratelimit/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -28,14 +29,14 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 
 	onRateLimit := &envoy_routes_v3.OnRateLimit{}
 	if rl.OnRateLimit != nil {
-		for _, h := range pointer.Deref(rl.OnRateLimit.Headers).Add {
+		for _, h := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Add) {
 			onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 				Key:    string(h.Name),
 				Value:  string(h.Value),
 				Append: true,
 			})
 		}
-		for _, header := range pointer.Deref(rl.OnRateLimit.Headers).Set {
+		for _, header := range pointer.Deref(pointer.Deref(rl.OnRateLimit.Headers).Set) {
 			for _, val := range strings.Split(string(header.Value), ",") {
 				onRateLimit.Headers = append(onRateLimit.Headers, &envoy_routes_v3.Headers{
 					Key:    string(header.Name),
@@ -55,12 +56,13 @@ func RateLimitConfigurationFromPolicy(rl *api.LocalHTTP) *envoy_routes_v3.RateLi
 }
 
 type Configurer struct {
-	Subset core_rules.Subset
-	Rules  core_rules.Rules
+	Element subsetutils.Element
+	Rules   core_rules.Rules
+	Conf    *api.Conf
 }
 
 func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChain) error {
-	conf := c.getConf(c.Subset)
+	conf := c.getConf(c.Element)
 	if conf == nil || conf.Local == nil {
 		return nil
 	}
@@ -79,7 +81,7 @@ func (c *Configurer) ConfigureFilterChain(filterChain *envoy_listener.FilterChai
 }
 
 func (c *Configurer) ConfigureRoute(route *envoy_route.RouteConfiguration) error {
-	conf := c.getConf(c.Subset)
+	conf := c.getConf(c.Element)
 	if route == nil || conf == nil || conf.Local == nil {
 		return nil
 	}
@@ -108,7 +110,7 @@ func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration
 		return nil
 	}
 
-	conf := c.getConf(c.Subset)
+	conf := c.getConf(c.Element)
 	var defaultConf *envoy_routes_v3.RateLimitConfiguration
 	if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
 		defaultConf = RateLimitConfigurationFromPolicy(conf.Local.HTTP)
@@ -125,7 +127,7 @@ func (c *Configurer) ConfigureGatewayRoute(route *envoy_route.RouteConfiguration
 
 	for _, vh := range route.VirtualHosts {
 		for _, r := range vh.Routes {
-			conf := c.getConf(c.Subset.WithTag(core_rules.RuleMatchesHashTag, r.Name, false))
+			conf := c.getConf(c.Element.WithKeyValue(core_rules.RuleMatchesHashTag, r.Name))
 			var routeConf *envoy_routes_v3.RateLimitConfiguration
 			var rateLimit *anypb.Any
 			if conf != nil && conf.Local != nil && conf.Local.HTTP != nil {
@@ -244,9 +246,12 @@ func (c *Configurer) addRateLimitToRoute(route *envoy_route.Route, rateLimit *an
 	route.TypedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
 }
 
-func (c *Configurer) getConf(subset core_rules.Subset) *api.Conf {
+func (c *Configurer) getConf(element subsetutils.Element) *api.Conf {
+	if c.Conf != nil {
+		return c.Conf
+	}
 	if c.Rules == nil {
 		return &api.Conf{}
 	}
-	return core_rules.ComputeConf[api.Conf](c.Rules, subset)
+	return core_rules.ComputeConf[api.Conf](c.Rules, element)
 }

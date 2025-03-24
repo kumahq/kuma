@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"slices"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,24 +16,25 @@ const (
 )
 
 type Configurer struct {
-	APIVersion core_xds.APIVersion
-	Conf       api.Conf
+	APIVersion        core_xds.APIVersion
+	InternalAddresses []core_xds.InternalAddress
+	Conf              api.Conf
 }
 
 func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listener.Listener, rs *core_xds.ResourceSet) error {
 	clustersAccumulator := map[string]core_mesh.Protocol{}
-	orderedMatchers, err := GetOrderedMatchers(c.Conf)
+	filterChainMatches, err := GetOrderedMatchers(c.Conf)
 	if err != nil {
 		return err
 	}
 
-	if hasIPv4Matches(orderedMatchers) {
-		if err := c.configureListener(orderedMatchers, ipv4, clustersAccumulator, false); err != nil {
+	if hasIPv4Matches(filterChainMatches) {
+		if err := c.configureListener(filterChainMatches, ipv4, clustersAccumulator, false); err != nil {
 			return err
 		}
 	}
-	if hasIPv6Matches(orderedMatchers) {
-		if err := c.configureListener(orderedMatchers, ipv6, clustersAccumulator, true); err != nil {
+	if hasIPv6Matches(filterChainMatches) {
+		if err := c.configureListener(filterChainMatches, ipv6, clustersAccumulator, true); err != nil {
 			return err
 		}
 	}
@@ -51,7 +54,7 @@ func (c Configurer) Configure(ipv4 *envoy_listener.Listener, ipv6 *envoy_listene
 }
 
 func (c Configurer) configureListener(
-	orderedMatchers []FilterChainMatcher,
+	orderedFilterChainMatches []FilterChainMatch,
 	listener *envoy_listener.Listener,
 	clustersAccumulator map[string]core_mesh.Protocol,
 	isIPv6 bool,
@@ -59,28 +62,35 @@ func (c Configurer) configureListener(
 	if listener == nil {
 		return nil
 	}
+	listenerFiltersExcludedOnPorts := []uint32{}
 	// remove default filter chain provided by `transparent_proxy_generator`
 	listener.FilterChains = []*envoy_listener.FilterChain{}
-	for _, matcher := range orderedMatchers {
+	for _, matcher := range orderedFilterChainMatches {
 		configurer := FilterChainConfigurer{
-			APIVersion: c.APIVersion,
-			Protocol:   matcher.Protocol,
-			Port:       matcher.Port,
-			Routes:     matcher.Routes,
-			IsIPv6:     isIPv6,
+			APIVersion:        c.APIVersion,
+			InternalAddresses: c.InternalAddresses,
+			Protocol:          matcher.Protocol,
+			Port:              matcher.Port,
+			MatchType:         matcher.MatchType,
+			MatchValue:        matcher.Value,
+			Routes:            matcher.Routes,
+			IsIPv6:            isIPv6,
+		}
+		if matcher.Protocol == core_mesh.Protocol(api.MysqlProtocol) {
+			listenerFiltersExcludedOnPorts = append(listenerFiltersExcludedOnPorts, matcher.Port)
 		}
 		err := configurer.Configure(listener, clustersAccumulator)
 		if err != nil {
 			return err
 		}
 	}
-	if err := c.configureListenerFilter(listener); err != nil {
+	if err := c.configureListenerFilter(listener, listenerFiltersExcludedOnPorts); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) error {
+func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener, listenerFiltersExcludedOnPorts []uint32) error {
 	hasTlsInspector := false
 	hasHttpInspector := false
 	for _, filter := range listener.ListenerFilters {
@@ -91,44 +101,43 @@ func (c Configurer) configureListenerFilter(listener *envoy_listener.Listener) e
 			hasHttpInspector = true
 		}
 	}
-	var err error
+
+	originalDstConfigurer := xds_listeners_v3.OriginalDstFilterConfigurer{}
+	err := originalDstConfigurer.Configure(listener)
+	if err != nil {
+		return err
+	}
 	if !hasTlsInspector {
-		configurer := xds_listeners_v3.TLSInspectorConfigurer{}
+		configurer := xds_listeners_v3.TLSInspectorConfigurer{
+			DisabledPorts: listenerFiltersExcludedOnPorts,
+		}
 		err = configurer.Configure(listener)
 	}
 	if err != nil {
 		return err
 	}
 	if !hasHttpInspector {
-		configurer := xds_listeners_v3.HTTPInspectorConfigurer{}
+		configurer := xds_listeners_v3.HTTPInspectorConfigurer{
+			DisabledPorts: listenerFiltersExcludedOnPorts,
+		}
 		err = configurer.Configure(listener)
 	}
 	return err
 }
 
-func hasIPv4Matches(orderedMatchers []FilterChainMatcher) bool {
+func hasIPv4Matches(orderedMatchers []FilterChainMatch) bool {
 	for _, matcher := range orderedMatchers {
-		for _, route := range matcher.Routes {
-			if route.MatchType == Domain ||
-				route.MatchType == WildcardDomain ||
-				route.MatchType == CIDR ||
-				route.MatchType == IP {
-				return true
-			}
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDR, IP}, matcher.MatchType) {
+			return true
 		}
 	}
 	return false
 }
 
-func hasIPv6Matches(orderedMatchers []FilterChainMatcher) bool {
+func hasIPv6Matches(orderedMatchers []FilterChainMatch) bool {
 	for _, matcher := range orderedMatchers {
-		for _, route := range matcher.Routes {
-			if route.MatchType == Domain ||
-				route.MatchType == WildcardDomain ||
-				route.MatchType == CIDRV6 ||
-				route.MatchType == IPV6 {
-				return true
-			}
+		if slices.Contains([]MatchType{Domain, WildcardDomain, CIDRV6, IPV6}, matcher.MatchType) {
+			return true
 		}
 	}
 	return false

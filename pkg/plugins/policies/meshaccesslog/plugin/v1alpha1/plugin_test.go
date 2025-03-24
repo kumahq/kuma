@@ -18,6 +18,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/api/v1alpha1"
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshaccesslog/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
@@ -99,6 +102,7 @@ var _ = Describe("MeshAccessLog", func() {
 				WithPolicies(
 					xds_builders.MatchedPolicies().WithPolicy(api.MeshAccessLogType, given.toRules, given.fromRules),
 				).
+				WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "172.16.0.0", PrefixLen: 12}, core_xds.InternalAddress{AddressPrefix: "fc00::", PrefixLen: 7}).
 				Build()
 
 			// when
@@ -119,7 +123,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -141,7 +145,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -160,7 +164,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -181,7 +185,7 @@ var _ = Describe("MeshAccessLog", func() {
 				ResourceOrigin: &backendMeshServiceIdentifier,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -203,7 +207,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"example",
@@ -224,7 +228,7 @@ var _ = Describe("MeshAccessLog", func() {
 				ResourceOrigin: &backendMeshExternalServiceIdentifier,
 			}},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]core_rules.ResourceRule{
+				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -258,7 +262,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -289,7 +293,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -323,7 +327,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -360,7 +364,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -427,7 +431,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{{
+						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other-service",
 						}},
@@ -440,7 +444,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{{
+						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "foo-service",
 						}},
@@ -456,7 +460,7 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 					{
-						Subset: core_rules.Subset{{
+						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "bar-service",
 						}},
@@ -507,7 +511,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -541,7 +545,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								Tcp: &api.TCPBackend{
@@ -566,7 +570,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginOutbound,
 				Resource: NewOutboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 27777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:27777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:27777", false, nil)).
 						Configure(
 							HttpOutboundRoute(
 								"backend",
@@ -590,7 +594,7 @@ var _ = Describe("MeshAccessLog", func() {
 			toRules: core_rules.ToRules{
 				Rules: []*core_rules.Rule{
 					{
-						Subset: core_rules.Subset{{
+						Subset: subsetutils.Subset{{
 							Key:   mesh_proto.ServiceTag,
 							Value: "other",
 						}},
@@ -612,7 +616,7 @@ var _ = Describe("MeshAccessLog", func() {
 				Origin: generator.OriginInbound,
 				Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
 					Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-						Configure(HttpConnectionManager("127.0.0.1:17777", false)).
+						Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
 						Configure(
 							HttpInboundRoutes(
 								"backend",
@@ -631,7 +635,7 @@ var _ = Describe("MeshAccessLog", func() {
 			fromRules: core_rules.FromRules{
 				Rules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 17777}: {{
-						Subset: core_rules.Subset{},
+						Subset: subsetutils.Subset{},
 						Conf: api.Conf{
 							Backends: &[]api.Backend{{
 								File: &api.FileBackend{
@@ -639,6 +643,17 @@ var _ = Describe("MeshAccessLog", func() {
 								},
 							}},
 						},
+					}},
+				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 17777}: {{
+						Conf: []interface{}{api.Conf{
+							Backends: &[]api.Backend{{
+								File: &api.FileBackend{
+									Path: "/tmp/log",
+								},
+							}},
+						}},
 					}},
 				},
 			},
@@ -725,7 +740,7 @@ var _ = Describe("MeshAccessLog", func() {
 				FromRules: map[core_rules.InboundListener]core_rules.Rules{
 					{Address: "127.0.0.1", Port: 8080}: {
 						{
-							Subset: core_rules.Subset{},
+							Subset: subsetutils.Subset{},
 							Conf: api.Conf{
 								Backends: &[]api.Backend{{
 									File: &api.FileBackend{
@@ -736,11 +751,24 @@ var _ = Describe("MeshAccessLog", func() {
 						},
 					},
 				},
+				InboundRules: map[core_rules.InboundListener][]*inbound.Rule{
+					{Address: "127.0.0.1", Port: 8080}: {
+						{Conf: []interface{}{
+							api.Conf{
+								Backends: &[]api.Backend{{
+									File: &api.FileBackend{
+										Path: "/tmp/from-log",
+									},
+								}},
+							},
+						}},
+					},
+				},
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "127.0.0.1", Port: 8080}: {
 							Rules: core_rules.Rules{{
-								Subset: core_rules.Subset{},
+								Subset: subsetutils.Subset{},
 								Conf: api.Conf{
 									Backends: &[]api.Backend{{
 										File: &api.FileBackend{

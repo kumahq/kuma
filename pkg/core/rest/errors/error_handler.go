@@ -153,6 +153,12 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
+	case errors.Is(err, context.Canceled):
+		kumaErr = &types.Error{
+			Status: 499,
+			Title:  title,
+			Detail: err.Error(),
+		}
 	case errors.As(err, &kumaErr):
 	default:
 		log.Error(err, title)

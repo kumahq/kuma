@@ -1,0 +1,40 @@
+#/meshes/default/dataplanes?filter[labels.k8s.kuma.io/namespace]=ns1 200
+type: Mesh
+name: default
+---
+type: Dataplane
+mesh: default
+name: dp-1
+labels:
+    k8s.kuma.io/namespace: ns1
+networking:
+  address: 10.1.2.1
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: Dataplane
+mesh: default
+name: dp-2
+labels:
+  k8s.kuma.io/namespace: ns2
+networking:
+  address: 10.1.2.2
+  inbound:
+    - port: 1232
+      tags:
+        kuma.io/service: other-svc
+    - port: 1234
+      tags:
+        kuma.io/service: my-svc
+---
+type: Dataplane
+mesh: default
+name: dp-3
+networking:
+  address: 10.1.2.3
+  inbound:
+    - port: 1234
+      tags:
+        kuma.io/service: other-svc

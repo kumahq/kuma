@@ -45,6 +45,7 @@ func (g *ExternalServicesGenerator) Generate(
 
 	g.addFilterChains(
 		apiVersion,
+		proxy.InternalAddresses,
 		destinations,
 		endpointMap,
 		meshResources,
@@ -59,7 +60,7 @@ func (g *ExternalServicesGenerator) Generate(
 		services,
 		endpointMap,
 		proxy.ZoneEgressProxy.ZoneEgressResource.IsIPv6(),
-		proxy.Metadata.GetDynamicMetadata(core_xds.FieldSystemCaPath),
+		proxy.Metadata.GetSystemCaPath(),
 	)
 	if err != nil {
 		return nil, err
@@ -156,6 +157,7 @@ func (*ExternalServicesGenerator) buildServices(
 
 func (g *ExternalServicesGenerator) addFilterChains(
 	apiVersion core_xds.APIVersion,
+	internalAddresses []core_xds.InternalAddress,
 	meshDestinations zoneproxy.MeshDestinations,
 	endpointMap core_xds.EndpointMap,
 	meshResources *core_xds.MeshResources,
@@ -190,6 +192,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 			sniUsed[sni] = true
 			g.configureFilterChain(
 				apiVersion,
+				internalAddresses,
 				esName,
 				sni,
 				meshName,
@@ -214,6 +217,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 		relevantTags := tags.Tags{}
 		g.configureFilterChain(
 			apiVersion,
+			internalAddresses,
 			mes.DestinationName,
 			mes.SNI,
 			meshName,
@@ -228,6 +232,7 @@ func (g *ExternalServicesGenerator) addFilterChains(
 
 func (*ExternalServicesGenerator) configureFilterChain(
 	apiVersion core_xds.APIVersion,
+	internalAddresses []core_xds.InternalAddress,
 	esName string,
 	sni string,
 	meshName string,
@@ -296,7 +301,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		}
 
 		filterChainBuilder.
-			Configure(envoy_listeners.HttpConnectionManager(esName, false)).
+			Configure(envoy_listeners.HttpConnectionManager(esName, false, internalAddresses)).
 			Configure(envoy_listeners.FaultInjection(meshResources.ExternalServiceFaultInjections[esName]...)).
 			Configure(envoy_listeners.RateLimit(meshResources.ExternalServiceRateLimits[esName])).
 			Configure(envoy_listeners.AddFilterChainConfigurer(&v3.HttpOutboundRouteConfigurer{

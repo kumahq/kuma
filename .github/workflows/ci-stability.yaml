@@ -2,32 +2,33 @@ name: Check CI stability for PRs with "ci/verify-stability" or "ci/verify-stabil
 
 on:
   schedule:
-    # Monday to Friday: Every 2 hours from 7 PM to 7 AM CEST
-    - cron: "0 17 * * 1-5"
-    - cron: "0 19 * * 1-5"
-    - cron: "0 21 * * 1-5"
-    - cron: "0 23 * * 1-5"
-    - cron: "0 1 * * 2-6"
-    - cron: "0 3 * * 2-6"
-    - cron: "0 5 * * 2-6"
+    # Monday to Friday: Every 2 hours from 8 PM to 8 AM CEST
+    - cron: "0 18 * * 1-5"
+    - cron: "0 20 * * 1-5"
+    - cron: "0 22 * * 1-5"
+    - cron: "0 0 * * 1-5"
+    - cron: "0 2 * * 2-6"
+    - cron: "0 4 * * 2-6"
+    - cron: "0 6 * * 2-6"
     # Saturday and Sunday: Every 2 hours all day
     - cron: "0 */2 * * 6,0"
   workflow_dispatch:  # Allows manual trigger from GitHub Actions UI
 env:
   GH_USER: "github-actions[bot]"
   GH_EMAIL: "<41898282+github-actions[bot]@users.noreply.github.com>"
+permissions: {}
 jobs:
   trigger-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@5d869da34e18e7287c1daad50e0b8ea0f506ce69 # v1.11.0
+        uses: actions/create-github-app-token@af35edadc00be37caa72ed9f3e6d5f7801bfdf09 # v1.11.7
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
           token: ${{ steps.github-app-token.outputs.token }}
@@ -40,8 +41,8 @@ jobs:
         id: process_prs
         run: |
           cat open_prs.json
-          pr_numbers_with_verify_stability=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json)
-          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json)
+          pr_numbers_with_verify_stability=$(jq -r -c '.[] | select(.labels[]?.name == "ci/verify-stability") | .number' open_prs.json | tr '\n' ' ')
+          pr_numbers_with_verify_stability_merge_master=$(jq -r '.[] | select(.labels[]?.name == "ci/verify-stability-merge-master") | .number' open_prs.json | tr '\n' ' ')
           echo "PRs with 'ci/verify-stability' label: $pr_numbers_with_verify_stability"
           echo "PRs with 'ci/verify-stability-merge-master' label: $pr_numbers_with_verify_stability_merge_master"
           echo "pr_numbers_with_verify_stability=$pr_numbers_with_verify_stability" >> $GITHUB_OUTPUT
@@ -51,7 +52,8 @@ jobs:
       - name: Merge master branch (if applicable) and push a single commit
         if: steps.process_prs.outputs.pr_numbers_with_verify_stability != ''
         run: |
-          for pr_number in ${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }}; do
+          eval "pr_numbers=(${{ steps.process_prs.outputs.pr_numbers_with_verify_stability }})"
+          for pr_number in $pr_numbers; do
             current_datetime=$(date +"%Y-%m-%d %H:%M:%S")
             echo "Processing PR #$pr_number"
 

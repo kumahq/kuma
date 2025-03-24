@@ -165,7 +165,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 func buildDataplaneProxies(
 	dpps []*core_mesh.DataplaneResource,
 	insightsByKey map[core_model.ResourceKey]*core_mesh.DataplaneInsightResource,
-	ports []meshservice_api.Port,
+	meshServicePorts []meshservice_api.Port,
 ) meshservice_api.DataplaneProxies {
 	result := meshservice_api.DataplaneProxies{}
 	for _, dpp := range dpps {
@@ -176,30 +176,20 @@ func buildDataplaneProxies(
 			}
 		}
 		healthyInbounds := 0
-		for _, port := range ports {
-			if inbound := dpInboundForMeshServicePort(dpp.Spec.GetNetworking().Inbound, port); inbound != nil {
-				if inbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready {
+		for _, meshServicePort := range meshServicePorts {
+			for _, dpInbound := range dpp.Spec.GetNetworking().Inbound {
+				if dpInbound.State == mesh_proto.Dataplane_Networking_Inbound_Ready &&
+					meshservice.MatchInboundWithMeshServicePort(dpInbound, meshServicePort) {
 					healthyInbounds++
+					break
 				}
 			}
 		}
-		if healthyInbounds == len(ports) {
+		if healthyInbounds == len(meshServicePorts) {
 			result.Healthy++
 		}
 	}
 	return result
-}
-
-func dpInboundForMeshServicePort(inbounds []*mesh_proto.Dataplane_Networking_Inbound, port meshservice_api.Port) *mesh_proto.Dataplane_Networking_Inbound {
-	for _, inbound := range inbounds {
-		if port.Name != "" && inbound.Name == port.Name {
-			return inbound
-		}
-		if port.Port == inbound.Port {
-			return inbound
-		}
-	}
-	return nil
 }
 
 func buildTLS(

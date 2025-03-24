@@ -8,7 +8,6 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/pkg/errors"
-	"golang.org/x/exp/maps"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
@@ -19,11 +18,14 @@ import (
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshloadbalancingstrategy/plugin/xds"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -96,7 +98,7 @@ func (p plugin) configureDPP(
 		oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound.LegacyOutbound)
 		serviceName := outbound.LegacyOutbound.GetService()
 
-		computed := toRules.Rules.Compute(core_rules.MeshService(serviceName))
+		computed := toRules.Rules.Compute(subsetutils.MeshServiceElement(serviceName))
 		if computed == nil {
 			continue
 		}
@@ -144,7 +146,7 @@ func (p plugin) applyToRealResources(
 	meshCtx xds_context.MeshContext,
 	rs *core_xds.ResourceSet,
 	proxy *core_xds.Proxy,
-	rules core_rules.ResourceRules,
+	rules outbound.ResourceRules,
 	endpoints policies_xds.EndpointMap,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(core_xds.NonMeshExternalService) {
@@ -158,7 +160,7 @@ func (p plugin) applyToRealResources(
 func (p plugin) applyToRealResource(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
-	rules core_rules.ResourceRules,
+	rules outbound.ResourceRules,
 	uri core_model.TypedResourceIdentifier,
 	rs *core_xds.ResourceSet,
 	resourcesByType core_xds.ResourcesByType,
@@ -233,6 +235,15 @@ func configureEndpoints(
 			}
 		}
 	}
+	if conf.LocalityAwareness != nil && pointer.Deref(conf.LocalityAwareness.Disabled) {
+		for _, cla := range endpoints {
+			for _, localityLbEndpoints := range cla.Endpoints {
+				if localityLbEndpoints.Locality != nil && localityLbEndpoints.Locality.Zone != localZone {
+					localityLbEndpoints.Priority = 0
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -285,7 +296,7 @@ func (p plugin) configureGateway(
 					}
 
 					serviceName := dest.Destination[mesh_proto.ServiceTag]
-					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, core_rules.MeshService(serviceName)); localityConf != nil {
+					if localityConf := core_rules.ComputeConf[api.Conf](rules.Rules, subsetutils.MeshServiceElement(serviceName)); localityConf != nil {
 						perServiceConfiguration[serviceName] = localityConf
 
 						if err := p.configureCluster(cluster, *localityConf); err != nil {
@@ -399,11 +410,11 @@ func (p plugin) configureEgress(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 // Zone egress is a single point for multiple clients. At this moment we don't support different
 // configurations based on the client. That's why we are computing rules for MeshSubset
 func (p plugin) computeFrom(fr core_rules.FromRules) *core_rules.Rule {
-	rules := maps.Values(fr.Rules)
+	rules := util_maps.AllValues(fr.Rules)
 	if len(rules) == 0 {
 		return nil
 	}
-	return rules[0].Compute(core_rules.MeshSubset())
+	return rules[0].Compute(subsetutils.MeshElement())
 }
 
 func (p plugin) configureListener(

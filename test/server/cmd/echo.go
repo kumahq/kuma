@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"html"
@@ -19,6 +20,8 @@ import (
 	"github.com/kumahq/kuma/test/server/types"
 )
 
+const secondaryInboundPort = 9090
+
 func newEchoHTTPCmd() *cobra.Command {
 	counters := newCounters()
 
@@ -27,6 +30,7 @@ func newEchoHTTPCmd() *cobra.Command {
 		port     uint32
 		instance string
 		tls      bool
+		tls13    bool
 		crtFile  string
 		keyFile  string
 		probes   bool
@@ -36,16 +40,10 @@ func newEchoHTTPCmd() *cobra.Command {
 		Short: "Run Test Server with generic echo response",
 		Long:  `Run Test Server with generic echo response.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			promExporter, err := prometheus.New(prometheus.WithoutCounterSuffixes())
-			if err != nil {
-				return err
-			}
-			sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
-			promHandler := promhttp.Handler()
-
-			http.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
+			handleEcho := func(writer http.ResponseWriter, request *http.Request) {
 				headers := request.Header
 				handleDelay(headers)
+				responseCode := getResponseCode(headers)
 				headers.Add("host", request.Host)
 
 				if n, id, ok := parseSucceedAfterNHeaders(headers); ok {
@@ -70,11 +68,20 @@ func newEchoHTTPCmd() *cobra.Command {
 					}
 					writer.WriteHeader(500)
 				}
-				writer.WriteHeader(http.StatusOK)
+				writer.WriteHeader(responseCode)
 				if _, err := writer.Write(respBody); err != nil {
 					panic(err)
 				}
-			})
+			}
+
+			promExporter, err := prometheus.New(prometheus.WithoutCounterSuffixes())
+			if err != nil {
+				return err
+			}
+			sdkmetric.NewMeterProvider(sdkmetric.WithReader(promExporter))
+			promHandler := promhttp.Handler()
+
+			http.HandleFunc("/", handleEcho)
 			http.HandleFunc("/metrics", func(writer http.ResponseWriter, request *http.Request) {
 				promHandler.ServeHTTP(writer, request)
 			})
@@ -111,9 +118,20 @@ func newEchoHTTPCmd() *cobra.Command {
 				Addr:              net.JoinHostPort(args.ip, strconv.Itoa(int(args.port))),
 				ReadHeaderTimeout: time.Second,
 			}
+			if args.tls && args.tls13 {
+				srv.TLSConfig = &tls.Config{
+					MinVersion: tls.VersionTLS13,
+					MaxVersion: tls.VersionTLS13,
+				}
+			}
 			if args.tls {
 				return srv.ListenAndServeTLS(args.crtFile, args.keyFile)
 			}
+			secondInboundMux := http.NewServeMux()
+			secondInboundMux.HandleFunc("/", handleEcho)
+			go func() {
+				_ = http.ListenAndServe(net.JoinHostPort(args.ip, strconv.Itoa(secondaryInboundPort)), secondInboundMux) // nolint: gosec
+			}()
 			return srv.ListenAndServe()
 		},
 	}
@@ -125,6 +143,7 @@ func newEchoHTTPCmd() *cobra.Command {
 	}
 	cmd.PersistentFlags().StringVar(&args.instance, "instance", r, "will be included in response")
 	cmd.PersistentFlags().BoolVar(&args.tls, "tls", false, "run the server with TLS enabled")
+	cmd.PersistentFlags().BoolVar(&args.tls13, "tls13", false, "run the server with TLS 1.3, requires enabled tls")
 	cmd.PersistentFlags().StringVar(&args.crtFile, "crt", "./test/server/certs/server.crt", "path to the server's TLS cert")
 	cmd.PersistentFlags().StringVar(&args.keyFile, "key", "./test/server/certs/server.key", "path to the server's TLS key")
 	cmd.PersistentFlags().BoolVar(&args.probes, "probes", false, "generate readiness and liveness endpoints")
@@ -169,4 +188,16 @@ func handleDelay(headers http.Header) {
 		return
 	}
 	time.Sleep(time.Duration(delay) * time.Millisecond)
+}
+
+func getResponseCode(headers http.Header) int {
+	respCodeHeader := headers.Get("x-set-response-code")
+	if respCodeHeader == "" {
+		return http.StatusOK
+	}
+	responseCode, err := strconv.Atoi(respCodeHeader)
+	if err != nil {
+		return 500
+	}
+	return responseCode
 }

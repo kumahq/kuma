@@ -16,7 +16,7 @@ else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif
 
-CI_KUBERNETES_VERSION ?= v1.23.17@sha256:59c989ff8a517a93127d4a536e7014d28e235fb3529d9fba91b3951d461edfdb
+CI_KUBERNETES_VERSION ?= v1.27.16@sha256:3fd82731af34efe19cd54ea5c25e882985bafa2c9baefe14f8deab1737d9fabe
 
 KUMA_MODE ?= zone
 KUMA_NAMESPACE ?= kuma-system
@@ -65,7 +65,7 @@ kind/wait:
 
 .PHONY: kind/stop
 kind/stop: kind/cleanup-docker-credentials
-	@$(KIND) delete cluster --name $(KIND_CLUSTER_NAME)
+	@$(KIND) delete cluster --kubeconfig $(KIND_KUBECONFIG) --name $(KIND_CLUSTER_NAME)
 	@rm -f $(KUBECONFIG_DIR)/$(KIND_KUBECONFIG)
 
 .PHONY: kind/stop/all

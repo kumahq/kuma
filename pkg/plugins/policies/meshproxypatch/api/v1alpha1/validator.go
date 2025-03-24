@@ -16,6 +16,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	jsonpatch_validators "github.com/kumahq/kuma/pkg/plugins/policies/core/jsonpatch/validators"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const (
@@ -44,6 +45,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 				common_api.MeshGateway,
+				common_api.Dataplane,
 			},
 			GatewayListenerTagsAllowed: false,
 		})
@@ -52,6 +54,7 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 			SupportedKinds: []common_api.TargetRefKind{
 				common_api.Mesh,
 				common_api.MeshSubset,
+				common_api.Dataplane,
 				common_api.MeshService,
 				common_api.MeshServiceSubset,
 			},
@@ -62,12 +65,11 @@ func (r *MeshProxyPatchResource) validateTop(targetRef *common_api.TargetRef) va
 func validateDefault(conf Conf) validators.ValidationError {
 	var verr validators.ValidationError
 	path := validators.RootedAt("appendModifications")
-
-	if len(conf.AppendModifications) == 0 {
+	if len(pointer.Deref(conf.AppendModifications)) == 0 {
 		verr.AddViolationAt(path, validators.MustNotBeEmpty)
 	}
 
-	for i, modification := range conf.AppendModifications {
+	for i, modification := range pointer.Deref(conf.AppendModifications) {
 		path := path.Index(i)
 
 		var modificationsAmount int
@@ -118,7 +120,7 @@ func validateClusterMod(mod ClusterMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_cluster_v3.Cluster{}))
 	case ModOpPatch:
-		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_cluster_v3.Cluster{}))
+		verr.Add(validatePatch(path, mod.Value, pointer.Deref(mod.JsonPatches), &envoy_cluster_v3.Cluster{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -139,7 +141,7 @@ func validateListenerMod(mod ListenerMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_listener_v3.Listener{}))
 	case ModOpPatch:
-		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_listener_v3.Listener{}))
+		verr.Add(validatePatch(path, mod.Value, pointer.Deref(mod.JsonPatches), &envoy_listener_v3.Listener{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -160,7 +162,7 @@ func validateVirtualHostMod(mod VirtualHostMod) validators.ValidationError {
 		}
 		verr.Add(validateResourceValue(path.Field("value"), mod.Value, &envoy_route_v3.VirtualHost{}))
 	case ModOpPatch:
-		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_route_v3.VirtualHost{}))
+		verr.Add(validatePatch(path, mod.Value, pointer.Deref(mod.JsonPatches), &envoy_route_v3.VirtualHost{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -191,7 +193,7 @@ func validateHTTPFilterMod(mod HTTPFilterMod) validators.ValidationError {
 		if mod.Match == nil || mod.Match.Name == nil {
 			verr.AddViolationAt(path.Field("match").Field("name"), validators.MustBeDefined)
 		}
-		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_hcm_v3.HttpFilter{}))
+		verr.Add(validatePatch(path, mod.Value, pointer.Deref(mod.JsonPatches), &envoy_hcm_v3.HttpFilter{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
@@ -222,7 +224,7 @@ func validateNetworkFilterMod(mod NetworkFilterMod) validators.ValidationError {
 		if mod.Match == nil || mod.Match.Name == nil {
 			verr.AddViolationAt(path.Field("match").Field("name"), validators.MustBeDefined)
 		}
-		verr.Add(validatePatch(path, mod.Value, mod.JsonPatches, &envoy_listener_v3.Filter{}))
+		verr.Add(validatePatch(path, mod.Value, pointer.Deref(mod.JsonPatches), &envoy_listener_v3.Filter{}))
 	case ModOpRemove:
 		if mod.Value != nil {
 			verr.AddViolationAt(path.Field("value"), validators.MustNotBeDefined)
