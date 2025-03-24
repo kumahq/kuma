@@ -346,6 +346,13 @@ In all other cases, secrets are either stored in memory, or obtained using DataS
 so it's not straightforward how to apply `kri` concept.  
 Also, it's not clear what problems and limitations do we have when it comes to naming secrets in Envoy.
 
+#### ResourceIdentifier format is open for extension in the future MADRs
+
+Today when generating clusters for Builtin Gateway, we use the hash suffix to support a MeshService cluster per MeshGateway listener.
+If we want cluster name to follow `kri` format, we need to extend the format with a new MADR.
+
+#### Pros and Cons of the Option 1
+
 **Pros:**
 - Shorter
 - Resembles existing formats from Amazon and Konnect KRN 
@@ -361,6 +368,8 @@ We need to pick two delimiters: one to separate keys from values and another to 
 ```yaml
 kri;meshservice;mesh=mesh-1;zone=zone-1;namespace=kuma-demo;name=backend;section=http-port
 ```
+
+#### Pros and Cons of the Option 2
 
 **Pros:**
 - Better handling of gaps; no need for `;;` when a value is not defined
