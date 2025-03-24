@@ -24,12 +24,12 @@ endif
 
 # We don't use `go list` here because Ginkgo requires disk path names,
 # not Go packages names.
-TEST_NAMES = $(shell find test/e2e -mindepth 1 -maxdepth 1 -type d)
+TEST_NAMES = $(shell find ./test/e2e -mindepth 1 -maxdepth 1 -type d)
 ALL_TESTS = $(addsuffix /..., $(TEST_NAMES))
 E2E_PKG_LIST ?= $(ALL_TESTS)
-KUBE_E2E_PKG_LIST ?= test/e2e_env/kubernetes
-UNIVERSAL_E2E_PKG_LIST ?= test/e2e_env/universal
-MULTIZONE_E2E_PKG_LIST ?= test/e2e_env/multizone
+KUBE_E2E_PKG_LIST ?= ./test/e2e_env/kubernetes
+UNIVERSAL_E2E_PKG_LIST ?= ./test/e2e_env/universal
+MULTIZONE_E2E_PKG_LIST ?= ./test/e2e_env/multizone
 GINKGO_E2E_TEST_FLAGS ?=
 GINKGO_E2E_LABEL_FILTERS ?=
 
@@ -159,6 +159,7 @@ test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e
 
 .PHONY: test/e2e/skipped
 test/e2e/skipped: TEMP_FILE := $(shell mktemp)
+test/e2e/skipped: NO_COLOR := $(if $(NO_COLOR),--no-color,)
 test/e2e/skipped:
 	@$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --json-report $(TEMP_FILE) --dry-run $(E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST) $(UNIVERSAL_E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST)
-	@$(KUMA_DIR)/tools/ci/list-disabled-tests.sh --input-file $(TEMP_FILE)
+	@go run $(KUMA_DIR)/tools/ci/list-disabled-tests.go --input-file $(TEMP_FILE) $(NO_COLOR)
