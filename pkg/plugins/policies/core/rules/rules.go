@@ -434,7 +434,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList)
+		rules, err := BuildRules(fromList, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -456,7 +456,7 @@ func BuildToRules(matchedPolicies []core_model.Resource, reader ResourceReader) 
 		return ToRules{}, err
 	}
 
-	rules, err := BuildRules(toList)
+	rules, err := BuildRules(toList, false)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -618,7 +618,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items)
+	rules, err := BuildRules(items, false)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -629,9 +629,11 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
 // If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
+// In case of `to` policies we don't need to check negations since only possible value for `to` is either Mesh
+// which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
@@ -643,6 +645,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		return rules, nil
 	}
 
+	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
 	for _, item := range oldKindsItems {
@@ -650,7 +653,34 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tag := range ss {
+			uniqueKeys[tag.Key] = struct{}{}
+		}
 		subsets = append(subsets, ss)
+	}
+
+	// we don't need to generate all permutations when there is no negations
+	// and we have only 0 or one tag, in other cases we need to generate.
+	// in case of `to` policies it can happen when using top target ref MeshGateway,
+	// for policy MeshHTTPRoute.
+	if !withNegations && len(uniqueKeys) <= 1 {
+		// deduplicate subsets
+		subsets = subsetutils.Deduplicate(subsets)
+
+		for _, ss := range subsets {
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
+			}
+		}
+
+		sort.SliceStable(rules, func(i, j int) bool {
+			// resource with more tags should be first
+			return len(rules[i].Subset) > len(rules[j].Subset)
+		})
+
+		return rules, nil
 	}
 
 	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
@@ -703,21 +733,8 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
-			// 5. For each combination determine a configuration
-			confs := []interface{}{}
-			var relevant []PolicyItemWithMeta
-			for i := 0; i < len(oldKindsItems); i++ {
-				item := oldKindsItems[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
-				if err != nil {
-					return nil, err
-				}
-				if itemSubset.IsSubset(ss) {
-					confs = append(confs, item.GetDefault())
-					relevant = append(relevant, item)
-				}
-			}
 
+<<<<<<< HEAD
 			if len(relevant) > 0 {
 				merged, err := MergeConfs(confs)
 				if err != nil {
@@ -736,6 +753,13 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 						BackendRefOriginIndex: originIndex,
 					})
 				}
+=======
+			// 5. For each combination determine a configuration
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
+>>>>>>> c3781d4fe (perf(rules): add `withNegation` flag to simplify `to` policy flow (#13151))
 			}
 		}
 	}
@@ -743,6 +767,45 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
+
+	return rules, nil
+}
+
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+	rules := []*Rule{}
+	confs := []interface{}{}
+	var relevant []PolicyItemWithMeta
+	for i := 0; i < len(items); i++ {
+		item := items[i]
+		itemSubset, err := asSubset(item.GetTargetRef())
+		if err != nil {
+			return nil, err
+		}
+		if itemSubset.IsSubset(ss) {
+			confs = append(confs, item.GetDefault())
+			relevant = append(relevant, item)
+		}
+	}
+
+	if len(relevant) > 0 {
+		merged, err := merge.Confs(confs)
+		if err != nil {
+			return nil, err
+		}
+		ruleOrigins, originIndex := common.Origins(relevant, false)
+		resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+		for _, o := range ruleOrigins {
+			resourceMetas = append(resourceMetas, o.Resource)
+		}
+		for _, mergedRule := range merged {
+			rules = append(rules, &Rule{
+				Subset:                ss,
+				Conf:                  mergedRule,
+				Origin:                resourceMetas,
+				BackendRefOriginIndex: originIndex,
+			})
+		}
+	}
 
 	return rules, nil
 }
