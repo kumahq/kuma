@@ -23,7 +23,7 @@ require (
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/zapr v1.3.0
 	github.com/goburrow/cache v0.1.4
-	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/golang-migrate/migrate/v4 v4.18.2
 	github.com/golang/protobuf v1.5.4
 	github.com/google/go-cmp v0.7.0
@@ -31,15 +31,15 @@ require (
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.48.2
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/jackc/pgx/v5 v5.7.2
+	github.com/jackc/pgx/v5 v5.7.3
 	github.com/josephburnett/jd/v2 v2.0.0-20240818191833-6125a15c637a
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lib/pq v1.10.9 // indirect
 	github.com/miekg/dns v1.1.64
 	github.com/moby/sys/mountinfo v0.7.2
 	github.com/natefinch/atomic v1.0.1
-	github.com/onsi/ginkgo/v2 v2.23.2
-	github.com/onsi/gomega v1.36.2
+	github.com/onsi/ginkgo/v2 v2.23.3
+	github.com/onsi/gomega v1.36.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.21.1
