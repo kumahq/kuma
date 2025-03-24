@@ -188,8 +188,8 @@ Column "Correlated Resources" provides the Kuma resources that could be used for
 |-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------|------------------------------------------------------|
 | Listener    | `inbound:10.43.205.116:10001`<br>`inbound:[2001:0db8:85a3:0000:0000:8a2e:0370:7334]:10001`                                                                      | ZoneEgress                                               | kri_ze__us-east-2_kuma-system_ze1_                   |
 | Cluster     | legacy services - `<mesh>:<kuma.io/service>`<br>new Mesh*Services - `<mesh>_<name>_<namespace>_<zone>_<short-name>_<port>`                                      | Mesh*Service (with sectionName to select port)           | kri_msvc_mesh-1_us-east-2_kuma-demo_backend_httpport |
-| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                                      | kri_extsvc_mesh-1___es1_                             |
-| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                                      | kri_extsvc_mesh-1___es1_                             |
+| FilterChain | for external services - `<kuma.io/service>_<mesh>`                                                                                                              | MeshExternalService                                      | kri_extsvc_mesh-1__kuma-system_es1_                  |
+| Route       | for external services - `outbound:<kuma.io/service>`                                                                                                            | MeshExternalService                                      | kri_extsvc_mesh-1__kuma-system_es1_                  |
 | Secret      | `name       = <category>:<scope>:<identifier>`<br>`category   = "mesh_ca" \| "identity_cert"`<br>`scope      = "secret"`<br>`identifier = "all" \| <mesh_name>` | See [Secrets naming in Envoy](#secrets-naming-in-envoy)  | –                                                    |
 
 ##### MeshPassthrough
@@ -330,7 +330,7 @@ For example:
 ```
 kri_msvc_mesh-1_us-east-2_kuma-demo_backend_
 kri_msvc_mesh-1_us-east-2_kuma-demo_backend_http-port
-kri_msvc_mesh-1___global-timeouts_
+kri_mt_mesh-1__kuma-system_global-timeouts_
 ```
 
 Having a prefix like `kri` (Kuma Resource Identifier) is useful for two reasons:
