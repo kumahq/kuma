@@ -657,7 +657,7 @@ func universalZoneProxyRelatedResource(
 			return err
 		}
 
-		app.CreateMainApp(nil, []string{})
+		app.CreateMainApp("")
 
 		err = app.mainApp.Start()
 		if err != nil {
@@ -665,7 +665,7 @@ func universalZoneProxyRelatedResource(
 		}
 
 		uniCluster.apps[dpName] = app
-		publicAddress := app.ip
+		publicAddress := app.GetIP()
 		dpYAML := resourceManifestFunc(publicAddress, UniversalZoneIngressPort)
 
 		token, err := tokenProvider(uniCluster.name)

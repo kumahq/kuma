@@ -1,6 +1,8 @@
 package files
 
 import (
+	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -48,4 +50,19 @@ func ToValidUnixFilename(input ...string) string {
 	sanitized = strings.Trim(sanitized, ".-")
 
 	return sanitized
+}
+
+// CopyFile copies the file content to a new path.
+// This should be used with caution as it was first written for tests
+func CopyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open src file:%s %w", src, err)
+	}
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create dest file:%s %w", dst, err)
+	}
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
