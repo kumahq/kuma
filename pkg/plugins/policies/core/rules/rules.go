@@ -419,6 +419,7 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		return rules, nil
 	}
 
+	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets
 	var subsets []subsetutils.Subset
 	for _, item := range oldKindsItems {
@@ -426,11 +427,17 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tag := range ss {
+			uniqueKeys[tag.Key] = struct{}{}
+		}
 		subsets = append(subsets, ss)
 	}
 
 	// we don't need to generate all permutations when there is no negations
-	if !withNegations {
+	// and we have only 0 or one tag, in other cases we need to generate.
+	// in case of `to` policies it can happen when using top target ref MeshGateway,
+	// for policy MeshHTTPRoute.
+	if !withNegations && len(uniqueKeys) <= 1 {
 		// deduplicate subsets
 		subsets = subsetutils.Deduplicate(subsets)
 

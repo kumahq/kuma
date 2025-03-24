@@ -33,6 +33,9 @@ Rules:
     name: mtp-3
     type: MeshTimeout
   Subset:
+  - Key: __rule-matches-hash__
+    Not: true
+    Value: JNNc6//C3P17nUsOJm5f4kqG+U3v8pXhS0od9C3+oss=
   - Key: kuma.io/service
     Not: false
     Value: test-server
