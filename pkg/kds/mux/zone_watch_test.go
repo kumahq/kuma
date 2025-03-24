@@ -62,8 +62,9 @@ var _ = Describe("ZoneWatch", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		cfg := multizone.ZoneHealthCheckConfig{
-			PollInterval: types.Duration{Duration: pollInterval},
-			Timeout:      types.Duration{Duration: timeout},
+			PollInterval:   types.Duration{Duration: pollInterval},
+			Timeout:        types.Duration{Duration: timeout},
+			CloseStaleConn: true,
 		}
 
 		rm = manager.NewResourceManager(memory.NewStore())
@@ -98,8 +99,14 @@ var _ = Describe("ZoneWatch", func() {
 		stop = make(chan struct{})
 
 		timeouts = eventBus.Subscribe(func(event events.Event) bool {
-			_, ok := event.(service.ZoneWentOffline)
-			return ok
+			switch event.(type) {
+			case service.ZoneWentOffline:
+				return true
+			case service.StreamCancelled:
+				return true
+			default:
+				return false
+			}
 		})
 
 		errCh = make(chan error, 1)
@@ -223,5 +230,107 @@ var _ = Describe("ZoneWatch", func() {
 			TenantID: "",
 			Zone:     zone,
 		})))
+	})
+	It("should disconnect current stream when the same zone connects", func() {
+		zoneInsight := system.NewZoneInsightResource()
+		Expect(rm.Get(
+			context.Background(),
+			zoneInsight,
+			store.GetByKey(zone, core_model.NoMesh),
+		)).To(Succeed())
+		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
+			Time: timestamppb.New(time.Now()),
+		}
+		Expect(rm.Update(
+			context.Background(),
+			zoneInsight,
+		)).To(Succeed())
+
+		firstConnectTime := time.Now()
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
+			Type:     service.GlobalToZone,
+			ConnTime: firstConnectTime,
+		})
+
+		// wait for opened stream to be registered
+		// in real conditions the interval will be large enough
+		// that these events will almost certainly be handled
+		// by the ZoneWatch loop between polls and before the timeout
+		time.Sleep(1 * pollInterval)
+
+		Expect(timeouts.Recv()).NotTo(Receive())
+
+		// try to connect the same zone but on the 2nd stream
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
+			Type:     service.GlobalToZone,
+			ConnTime: time.Now(),
+		})
+		time.Sleep(1 * pollInterval)
+
+		Eventually(timeouts.Recv(), 2*pollInterval).Should(Receive(Equal(service.StreamCancelled{
+			TenantID: "",
+			Zone:     zone,
+			Type:     service.GlobalToZone,
+			ConnTime: firstConnectTime,
+		})))
+	})
+	It("should disconnect current stream when newer connection exists", func() {
+		stopPing := make(chan struct{})
+		oldConnection := time.Now()
+		zoneInsight := system.NewZoneInsightResource()
+		Expect(rm.Get(
+			context.Background(),
+			zoneInsight,
+			store.GetByKey(zone, core_model.NoMesh),
+		)).To(Succeed())
+		zoneInsight.Spec.HealthCheck = &system_proto.HealthCheck{
+			Time: timestamppb.New(time.Now()),
+		}
+		zoneInsight.Spec.KdsStreams = &system_proto.KDSStreams{
+			GlobalToZone: &system_proto.KDSStream{
+				GlobalInstanceId: "1",
+				ConnectTime:      timestamppb.New(time.Now()),
+			},
+		}
+		Expect(rm.Update(
+			context.Background(),
+			zoneInsight,
+		)).To(Succeed())
+
+		// Start a Goroutine for periodic health check pings
+		go func() {
+			for {
+				select {
+				case <-stopPing:
+					return
+				default:
+					sendHealthCheckPing(rm, zone)
+					time.Sleep(50 * time.Millisecond)
+				}
+			}
+		}()
+
+		// create a new connection which has time older than previous connection
+
+		eventBus.Send(service.ZoneOpenedStream{
+			TenantID: "",
+			Zone:     zone,
+			Type:     service.GlobalToZone,
+			ConnTime: oldConnection,
+		})
+
+		// expect to cancel previous stream
+		Eventually(timeouts.Recv(), zoneWentOfflineCheckTimeout).Should(Receive(Equal(service.StreamCancelled{
+			TenantID: "",
+			Zone:     zone,
+			Type:     service.GlobalToZone,
+			ConnTime: oldConnection,
+		})))
+
+		close(stopPing)
 	})
 })

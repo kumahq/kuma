@@ -86,6 +86,7 @@ func ExtractResources(ctx context.Context, rs store.ResourceStore) (string, erro
 				zi := resource.(*system.ZoneInsightResource)
 				zi.Spec.Subscriptions = nil
 				zi.Spec.EnvoyAdminStreams = nil
+				zi.Spec.KdsStreams = nil
 			}
 			entry := rest.From.Resource(resource)
 			y, err := yaml.Marshal(entry)
