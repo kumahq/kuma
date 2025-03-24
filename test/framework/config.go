@@ -264,11 +264,8 @@ var defaultConf = E2eConfig{
 	DumpOnSuccess:                     false,
 }
 
-func init() {
+func Init() {
 	Config = defaultConf
-	if err := config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
-		panic(err)
-	}
 
 	if err := Config.AutoConfigure(); err != nil {
 		panic(err)
