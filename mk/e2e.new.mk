@@ -162,4 +162,4 @@ test/e2e/skipped: TEMP_FILE := $(shell mktemp)
 test/e2e/skipped: NO_COLOR := $(if $(NO_COLOR),--no-color,)
 test/e2e/skipped:
 	@$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --json-report $(TEMP_FILE) --dry-run $(E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST) $(UNIVERSAL_E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST)
-	@go run $(KUMA_DIR)/tools/ci/list-disabled-tests.go --input-file $(TEMP_FILE) $(NO_COLOR)
+	@go run $(KUMA_DIR)/tools/ci/list-disabled-tests/main.go --input-file $(TEMP_FILE) $(NO_COLOR)

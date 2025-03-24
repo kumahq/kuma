@@ -23,9 +23,9 @@ func parseInput(input *os.File) map[string][]Spec {
 		SuiteDescription string
 		SuitePath        string
 		SpecReports      []struct {
-			State                        string
-			ContainerHierarchyTexts       []string
-			LeafNodeText                 string
+			State                       string
+			ContainerHierarchyTexts     []string
+			LeafNodeText                string
 			ContainerHierarchyLocations []struct {
 				FileName   string
 				LineNumber int
