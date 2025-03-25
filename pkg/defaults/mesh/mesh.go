@@ -61,10 +61,12 @@ func EnsureDefaultMeshResources(
 	}
 
 	defaultResourceBuilders := map[string]func() model.Resource{
-		"mesh-gateways-timeout-all": defaulMeshGatewaysTimeoutResource,
-		"mesh-timeout-all":          defaultMeshTimeoutResource,
-		"mesh-circuit-breaker-all":  defaultMeshCircuitBreakerResource,
-		"mesh-retry-all":            defaultMeshRetryResource,
+		"mesh-gateways-timeout-all-outbounds": defaultOutboundMeshGatewaysTimeoutResource,
+		"mesh-gateways-timeout-all-inbounds":  defaultInboundMeshGatewaysTimeoutResource,
+		"mesh-timeout-all-outbounds":          defaultOutboundMeshTimeoutResource,
+		"mesh-timeout-all-inbounds":           defaultInboundMeshTimeoutResource,
+		"mesh-circuit-breaker-all":            defaultMeshCircuitBreakerResource,
+		"mesh-retry-all":                      defaultMeshRetryResource,
 	}
 	if createMeshDefaultRoutingResources {
 		defaultResourceBuilders["allow-all"] = defaultTrafficPermissionResource

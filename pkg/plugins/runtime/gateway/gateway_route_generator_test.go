@@ -774,12 +774,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -1098,12 +1108,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -1748,12 +1768,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -1827,12 +1857,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -2013,12 +2053,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -2119,12 +2169,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
@@ -2211,12 +2271,22 @@ conf:
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-timeout-all-default",
+					Name:     "mesh-timeout-all-outbounds-default",
 				},
 				{
 					Resource: meshtimeout_api.MeshTimeoutType,
 					Mesh:     "default",
-					Name:     "mesh-gateways-timeout-all-default",
+					Name:     "mesh-timeout-all-inbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-outbounds-default",
+				},
+				{
+					Resource: meshtimeout_api.MeshTimeoutType,
+					Mesh:     "default",
+					Name:     "mesh-gateways-timeout-all-inbounds-default",
 				},
 			},
 		),
