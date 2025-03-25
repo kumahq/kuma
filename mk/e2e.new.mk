@@ -156,10 +156,3 @@ test/e2e-multizone: $(E2E_DEPS_TARGETS) $(E2E_K8S_BIN_DEPS) ## Run multizone e2e
 	$(MAKE) test/e2e/k8s/start
 	$(E2E_ENV_VARS) $(GINKGO_TEST_E2E) $(MULTIZONE_E2E_PKG_LIST) || (ret=$$?; $(MAKE) test/e2e/k8s/stop && exit $$ret)
 	$(MAKE) test/e2e/k8s/stop
-
-.PHONY: test/e2e/skipped
-test/e2e/skipped: TEMP_FILE := $(shell mktemp)
-test/e2e/skipped: NO_COLOR := $(if $(NO_COLOR),--no-color,)
-test/e2e/skipped:
-	@$(GINKGO) $(GOFLAGS) $(call LD_FLAGS,$(GOOS),$(GOARCH)) --json-report $(TEMP_FILE) --dry-run $(E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST) $(UNIVERSAL_E2E_PKG_LIST) $(MULTIZONE_E2E_PKG_LIST)
-	@go run $(KUMA_DIR)/tools/ci/list-disabled-tests/main.go --input-file $(TEMP_FILE) $(NO_COLOR)
