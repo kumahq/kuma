@@ -1,8 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>Kong/public-shared-renovate:backend#1.4.0",
-    "local>kumahq/kuma//.renovate/go-control-plane"
+    "Kong/public-shared-renovate:backend",
+    "kumahq/kuma//.renovate/go-control-plane"
   ],
   "enabledManagers": [
     "custom.regex",

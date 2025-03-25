@@ -190,7 +190,7 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 		}
 	}
 
-	rules, err := core_rules.BuildRules(toList)
+	rules, err := core_rules.BuildRules(toList, false)
 	if err != nil {
 		return core_rules.FromRules{}, err
 	}
