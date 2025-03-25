@@ -3,7 +3,7 @@
 set -e
 
 OUTPUT_DIR=$1/bin
-VERSION="1.27.16"
+VERSION="1.23.5"
 KUBECTL=${OUTPUT_DIR}/kubectl
 if [ -e "${KUBECTL}" ] && [ "$(${KUBECTL} version -o yaml --client=true | grep gitVersion | cut -f4 -d ' ')" == "v${VERSION}" ]; then
   echo "kubectl version ${VERSION} is already installed at ${OUTPUT_DIR}"
