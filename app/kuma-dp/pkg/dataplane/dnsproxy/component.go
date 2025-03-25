@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/dpapi"
 )
 
-var log = core.Log.WithName("embeededdns")
+var log = core.Log.WithName("dnsproxy")
 
 type Server struct {
 	// HostPort or unix domain socket for tests
