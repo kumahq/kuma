@@ -2,6 +2,8 @@ package subsetutils
 
 import (
 	"maps"
+	"sort"
+	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
@@ -251,6 +253,18 @@ func (ss Subset) NumPositive() int {
 	return pos
 }
 
+func (ss Subset) Sorted() {
+	sort.SliceStable(ss, func(i, j int) bool {
+		if ss[i].Key != ss[j].Key {
+			return ss[i].Key < ss[j].Key
+		}
+		if ss[i].Value != ss[j].Value {
+			return ss[i].Value < ss[j].Value
+		}
+		return !ss[i].Not && ss[j].Not
+	})
+}
+
 func (ss Subset) IndexOfPositive() int {
 	for i, t := range ss {
 		if !t.Not {
@@ -310,10 +324,8 @@ func (c *SubsetIter) next() bool {
 // If tags are contradicted (same keys have different positive value) then the function
 // returns nil.
 func (c *SubsetIter) simplified() Subset {
-	result := Subset{}
-
-	ssByKey := map[string]Subset{}
-	keyOrder := []string{}
+	ssByKey := make(map[string]Subset, len(c.current))
+	keyOrder := make([]string, 0, len(c.current))
 	for _, t := range c.current {
 		if _, ok := ssByKey[t.Key]; !ok {
 			keyOrder = append(keyOrder, t.Key)
@@ -321,6 +333,7 @@ func (c *SubsetIter) simplified() Subset {
 		ssByKey[t.Key] = append(ssByKey[t.Key], Tag{Key: t.Key, Value: t.Value, Not: t.Not})
 	}
 
+	result := make(Subset, 0, len(c.current))
 	for _, key := range keyOrder {
 		ss := ssByKey[key]
 		positive := ss.NumPositive()
@@ -336,4 +349,44 @@ func (c *SubsetIter) simplified() Subset {
 	}
 
 	return result
+}
+
+// Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
+func Deduplicate(subsets []Subset) []Subset {
+	seen := make(map[string]struct{})
+	result := make([]Subset, 0, len(subsets))
+
+	for _, s := range subsets {
+		key := canonicalSubset(s)
+		if _, exists := seen[key]; !exists {
+			seen[key] = struct{}{}
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// canonicalSubset returns a canonical string representation for a subset.
+// It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
+func canonicalSubset(s Subset) string {
+	if len(s) == 0 {
+		return ""
+	}
+	s.Sorted()
+	var sb strings.Builder
+	for i, t := range s {
+		if i > 0 {
+			sb.WriteByte('|') // Separator
+		}
+		sb.WriteString(t.Key)
+		sb.WriteByte(':')
+		sb.WriteString(t.Value)
+		sb.WriteByte(':')
+		if t.Not {
+			sb.WriteByte('1')
+		} else {
+			sb.WriteByte('0')
+		}
+	}
+	return sb.String()
 }
