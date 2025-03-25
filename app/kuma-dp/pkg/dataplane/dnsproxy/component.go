@@ -58,7 +58,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	defer func() {
 		s.metrics.RequestDuration.Observe(time.Since(start).Seconds())
 	}()
-	response := &dns.Msg{}
+	var response *dns.Msg
 	// In case it was never loaded
 	s.dnsMap.CompareAndSwap(nil, &dnsMap{
 		ARecords:    make(map[string]*dnsEntry),
@@ -89,7 +89,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		if err != nil {
 			s.metrics.UpstreamRequestFailureCount.Inc()
 			log.Error(err, "Failed to write message to upstream")
-			response = &dns.Msg{}
+			response = new(dns.Msg)
 			response.SetRcode(req, dns.RcodeServerFailure)
 		} else {
 			response = resp
@@ -155,7 +155,7 @@ func (s *Server) ReloadMap(ctx context.Context, reader io.Reader) error {
 		AAAARecords: make(map[string]*dnsEntry),
 	}
 	for _, record := range configuration.Records {
-		if ctx.Err() != nil {
+		if ctx.Err() != nil { // context was cancelled no need to keep reloading the map
 			return ctx.Err()
 		}
 		n := record.Name + "."
