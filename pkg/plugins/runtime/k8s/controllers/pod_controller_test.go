@@ -858,6 +858,17 @@ spec:
         address: 192.168.0.1
         inbound:
             - health: {}
+              port: 8080
+              state: NotReady
+              tags:
+                app: sample-ms
+                k8s.kuma.io/namespace: demo
+                k8s.kuma.io/service-name: example-ms-1
+                k8s.kuma.io/service-port: "80"
+                kuma.io/protocol: http
+                kuma.io/service: example-ms-1_demo_svc_80
+                kuma.io/zone: zone-1
+            - health: {}
               name: metrics
               port: 6060
               state: NotReady
@@ -868,17 +879,6 @@ spec:
                 k8s.kuma.io/service-port: "6061"
                 kuma.io/protocol: tcp
                 kuma.io/service: example-ms-1_demo_svc_6061
-                kuma.io/zone: zone-1
-            - health: {}
-              port: 8080
-              state: NotReady
-              tags:
-                app: sample-ms
-                k8s.kuma.io/namespace: demo
-                k8s.kuma.io/service-name: example-ms-1
-                k8s.kuma.io/service-port: "80"
-                kuma.io/protocol: http
-                kuma.io/service: example-ms-1_demo_svc_80
                 kuma.io/zone: zone-1
 `))
 	})
