@@ -263,9 +263,9 @@ var defaultConf = E2eConfig{
 	DumpOnSuccess:                     false,
 }
 
-func Init() {
+func init() {
 	Config = defaultConf
-	if err := config.Load("", &Config); err != nil {
+	if err := config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
 		panic(err)
 	}
 

@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_apis "github.com/kumahq/kuma/pkg/core/resources/apis"
 	"github.com/kumahq/kuma/pkg/plugins/policies"
-	"github.com/kumahq/kuma/test/framework"
 )
 
 // RunSpecs wraps ginkgo+gomega test suite initialization.
@@ -33,7 +32,6 @@ func RunSpecs(t *testing.T, description string) {
 }
 
 func RunE2ESpecs(t *testing.T, description string) {
-	framework.Init()
 	plugins.InitAll(core_apis.NameToModule)
 	plugins.InitAll(policies.NameToModule)
 	gomega.SetDefaultConsistentlyDuration(time.Second * 5)
