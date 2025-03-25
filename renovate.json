@@ -1,8 +1,8 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "github>Kong/public-shared-renovate:backend#1.3.0",
-    "local>kumahq/kuma//.renovate/go-control-plane"
+    "Kong/public-shared-renovate:backend",
+    "kumahq/kuma//.renovate/go-control-plane"
   ],
   "enabledManagers": [
     "custom.regex",
@@ -14,35 +14,35 @@
   ],
   "ignorePaths": [],
   "kubernetes": {
-    "description": "Include Kubernetes manifests from 'kumactl install demo|observability' to let Renovate update the image versions in these resources",
+    "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
     "fileMatch": [
       "app/kumactl/data/install/k8s/.+\\.ya?ml$"
     ]
   },
-  "prBodyTemplate": "{{{header}}}{{{table}}}{{{warnings}}}{{{notes}}}{{{changelogs}}}{{{controls}}}",
   "packageRules": [
     {
-      "description": "Skip tests for GitHub Actions updates",
+      "description": "Skip tests and apply preset config for GitHub Actions updates",
       "matchManagers": [
         "github-actions"
       ],
-      "addLabels": [
-        "ci/skip-test"
+      "extends": [
+        "local>kumahq/kuma//.renovate/github-actions"
       ]
     },
     {
-      "description": "Set commit scope to `deps/github-actions` for `Kong/public-shared-actions` GitHub Actions managed by `github>Kong/public-shared-renovate:backend`. Skip tests since these are also GitHub Actions updates but are not covered by the earlier rule",
+      "description": "Skip tests and apply GitHub Actions preset for 'Kong/public-shared-actions' managed by custom regex manager",
       "matchManagers": [
         "custom.regex"
       ],
       "matchPackageNames": [
         "Kong/public-shared-actions/**"
       ],
-      "addLabels": [
-        "ci/skip-test"
+      "extends": [
+        "local>kumahq/kuma//.renovate/github-actions"
       ]
     },
     {
+      "description": "Group container image updates for 'kumactl install demo|observability' Kubernetes manifests",
       "groupName": "kumactl install demo|observability container images",
       "groupSlug": "kumactl-install-k8s",
       "matchFileNames": [

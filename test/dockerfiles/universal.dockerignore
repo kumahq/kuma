@@ -11,12 +11,6 @@
 !build/artifacts-linux-arm64/kumactl/kumactl
 !build/artifacts-linux-arm64/coredns/coredns
 !build/artifacts-linux-arm64/test-server/test-server
-!build/artifacts-darwin-arm64/kuma-cp/kuma-cp
-!build/artifacts-darwin-arm64/kuma-dp/kuma-dp
-!build/artifacts-darwin-arm64/envoy/*
-!build/artifacts-darwin-arm64/kumactl/kumactl
-!build/artifacts-darwin-arm64/coredns/coredns
-!build/artifacts-darwin-arm64/test-server/test-server
 !pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 !tools/releases/templates/LICENSE
 !tools/releases/templates/NOTICE

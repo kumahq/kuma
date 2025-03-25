@@ -1,6 +1,7 @@
 package observability
 
 import (
+	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -71,6 +72,7 @@ func Install(name string, optFns ...deployOptionsFunc) framework.InstallFunc {
 			deployment = &universalDeployment{
 				deploymentName: name,
 				ports:          map[uint32]uint32{},
+				logger:         logger.Discard,
 			}
 		default:
 			return errors.New("invalid cluster")

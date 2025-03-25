@@ -1,7 +1,5 @@
 *
 !build/artifacts-linux-arm64/kuma-cni/kuma-cni
 !build/artifacts-linux-arm64/install-cni/install-cni
-!build/artifacts-darwin-arm64/kuma-cni/kuma-cni
-!build/artifacts-darwin-arm64/install-cni/install-cni
 !build/artifacts-linux-amd64/kuma-cni/kuma-cni
 !build/artifacts-linux-amd64/install-cni/install-cni
