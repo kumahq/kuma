@@ -16,6 +16,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -91,7 +92,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			var meshSecrets []model.Resource
 			var otherResources []model.Resource
-			var meshesResources []model.Resource
 			for _, resDesc := range resTypes {
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
@@ -102,10 +102,8 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						if res.Descriptor().Name == core_mesh.MeshType {
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
-							meshesResources = append(meshesResources, res)
-						} else {
-							otherResources = append(otherResources, res)
 						}
+						otherResources = append(otherResources, res)
 					}
 				} else {
 					for _, mesh := range meshes.Items {
@@ -144,16 +142,20 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
-				for _, res := range meshesResources {
-					// print mesh first since you cannot create other resources if there is no mesh
-					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
-						return err
-					}
-					if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
-						return err
+				var meshDeclarations []model.Resource
+				for _, res := range resources {
+					if res.Descriptor().Name == core_mesh.MeshType {
+						meshDeclaration := core_mesh.NewMeshResource()
+						meshDeclaration.SetMeta(
+							v1alpha1.ResourceMeta{
+								Type: string(core_mesh.MeshType),
+								Name: res.GetMeta().GetName(),
+							},
+						)
+						meshDeclarations = append(meshDeclarations, meshDeclaration)
 					}
 				}
-				for _, res := range resources {
+				for _, res := range append(meshDeclarations, resources...) {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -167,7 +169,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					return err
 				}
 				yamlPrinter := yaml.NewPrinter()
-				for _, res := range append(meshesResources, resources...) {
+				for _, res := range resources {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
 						return err
