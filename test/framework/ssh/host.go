@@ -1,10 +1,10 @@
 package ssh
 
 type Host struct {
-	Address string
-	Port    int
-	User    string
+	Address string `json:"address"`
+	Port    int    `json:"port"`
+	User    string `json:"user"`
 
-	PrivateKeyData []byte
-	PrivateKeyFile string
+	PrivateKeyData []byte `json:"privateKeyData,omitempty"`
+	PrivateKeyFile string `json:"privateKeyFile,omitempty"`
 }

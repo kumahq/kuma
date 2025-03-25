@@ -30,7 +30,8 @@ type Networking struct {
 	sshClient     *ssh.Client
 	id            int
 
-	RemoteHost *kssh.Host `json:"-"` // RemoteHost is a remote SSH target that can be directly connected to
+	// RemoteHost is a remote SSH target that can be directly connected to
+	RemoteHost *kssh.Host `json:"remoteHost,omitempty"`
 	sync.Mutex
 }
 
