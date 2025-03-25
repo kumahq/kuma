@@ -177,6 +177,7 @@ func (ss Subset) ContainsElement(other Element) bool {
 
 	return hasOverlapKey
 }
+
 func (ss Subset) Sorted() {
 	sort.SliceStable(ss, func(i, j int) bool {
 		if ss[i].Key != ss[j].Key {
