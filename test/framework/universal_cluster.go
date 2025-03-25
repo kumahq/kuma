@@ -41,7 +41,7 @@ type UniversalCluster struct {
 	dataplanes     []string
 	defaultTimeout time.Duration
 	defaultRetries int
-	opts           kumaDeploymentOptions
+	opts           KumaDeploymentOptions
 	mutex          sync.RWMutex
 
 	envoyTunnels map[string]envoy_admin.Tunnel
@@ -315,7 +315,7 @@ func (c *UniversalCluster) CreateZoneEgress(
 }
 
 func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
-	var opts appDeploymentOptions
+	var opts AppDeploymentOptions
 	opts.apply(opt...)
 	appname := opts.appname
 	token := opts.token
