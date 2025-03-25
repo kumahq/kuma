@@ -665,7 +665,7 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	// for policy MeshHTTPRoute.
 	if !withNegations && len(uniqueKeys) <= 1 {
 		// deduplicate subsets
-		subsets = subsetutils.Deduplicate(subsets)
+		subsets = Deduplicate(subsets)
 
 		for _, ss := range subsets {
 			if r, err := createRule(ss, oldKindsItems); err != nil {
@@ -734,32 +734,11 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 				break
 			}
 
-<<<<<<< HEAD
-			if len(relevant) > 0 {
-				merged, err := MergeConfs(confs)
-				if err != nil {
-					return nil, err
-				}
-				ruleOrigins, originIndex := origins(relevant, false)
-				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
-				for _, o := range ruleOrigins {
-					resourceMetas = append(resourceMetas, o.Resource)
-				}
-				for _, mergedRule := range merged {
-					rules = append(rules, &Rule{
-						Subset:                ss,
-						Conf:                  mergedRule,
-						Origin:                resourceMetas,
-						BackendRefOriginIndex: originIndex,
-					})
-				}
-=======
 			// 5. For each combination determine a configuration
 			if r, err := createRule(ss, oldKindsItems); err != nil {
 				return nil, err
 			} else {
 				rules = append(rules, r...)
->>>>>>> c3781d4fe (perf(rules): add `withNegation` flag to simplify `to` policy flow (#13151))
 			}
 		}
 	}
@@ -771,8 +750,8 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	return rules, nil
 }
 
-func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
-	rules := []*Rule{}
+func createRule(ss Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+	rules := Rules{}
 	confs := []interface{}{}
 	var relevant []PolicyItemWithMeta
 	for i := 0; i < len(items); i++ {
@@ -788,11 +767,11 @@ func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, err
 	}
 
 	if len(relevant) > 0 {
-		merged, err := merge.Confs(confs)
+		merged, err := MergeConfs(confs)
 		if err != nil {
 			return nil, err
 		}
-		ruleOrigins, originIndex := common.Origins(relevant, false)
+		ruleOrigins, originIndex := origins(relevant, false)
 		resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
 		for _, o := range ruleOrigins {
 			resourceMetas = append(resourceMetas, o.Resource)
@@ -863,6 +842,18 @@ func NewSubsetIter(tags []Tag) *SubsetIter {
 	}
 }
 
+func (ss Subset) Sorted() {
+	sort.SliceStable(ss, func(i, j int) bool {
+		if ss[i].Key != ss[j].Key {
+			return ss[i].Key < ss[j].Key
+		}
+		if ss[i].Value != ss[j].Value {
+			return ss[i].Value < ss[j].Value
+		}
+		return !ss[i].Not && ss[j].Not
+	})
+}
+
 // Next returns the next subset of the partition. When reaches the end Next returns 'nil'
 func (c *SubsetIter) Next() Subset {
 	if c.finished {
@@ -928,4 +919,44 @@ func (c *SubsetIter) simplified() Subset {
 	}
 
 	return result
+}
+
+// Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
+func Deduplicate(subsets []Subset) []Subset {
+	seen := make(map[string]struct{})
+	result := make([]Subset, 0, len(subsets))
+
+	for _, s := range subsets {
+		key := canonicalSubset(s)
+		if _, exists := seen[key]; !exists {
+			seen[key] = struct{}{}
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// canonicalSubset returns a canonical string representation for a subset.
+// It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
+func canonicalSubset(s Subset) string {
+	if len(s) == 0 {
+		return ""
+	}
+	s.Sorted()
+	var sb strings.Builder
+	for i, t := range s {
+		if i > 0 {
+			sb.WriteByte('|') // Separator
+		}
+		sb.WriteString(t.Key)
+		sb.WriteByte(':')
+		sb.WriteString(t.Value)
+		sb.WriteByte(':')
+		if t.Not {
+			sb.WriteByte('1')
+		} else {
+			sb.WriteByte('0')
+		}
+	}
+	return sb.String()
 }
