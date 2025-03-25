@@ -7,7 +7,7 @@ const PATH = "/dns"
 
 type DNSRecord struct {
 	Name string   `json:"name"`
-	IPs  []string `json:"ip"`
+	IPs  []string `json:"ips"`
 }
 
 type DNSProxyConfig struct {

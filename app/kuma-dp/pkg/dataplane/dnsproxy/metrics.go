@@ -10,7 +10,12 @@ type metrics struct {
 	UpstreamRequestFailureCount prometheus.Counter
 }
 
+var m *metrics
+
 func newMetrics() *metrics {
+	if m != nil {
+		return m
+	}
 	upstreamRequestDuration := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name: "kuma_dp_dns_upstream_request_duration_seconds",
 		Help: "The duration of the proxied requests.",
@@ -25,10 +30,10 @@ func newMetrics() *metrics {
 		Name: "kuma_dp_dns_upstream_request_failure_count",
 		Help: "The total number of failed upstream requests.",
 	})
-
-	return &metrics{
+	m = &metrics{
 		RequestDuration:             requestDuration,
 		UpstreamRequestDuration:     upstreamRequestDuration,
 		UpstreamRequestFailureCount: upstreamRequestFailureCount,
 	}
+	return m
 }

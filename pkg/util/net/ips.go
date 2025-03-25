@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"sort"
+	"strconv"
 
 	"github.com/pkg/errors"
 )
@@ -59,4 +60,8 @@ func IsAddressIPv6(address string) bool {
 	}
 
 	return ip.To4() == nil
+}
+
+func JoinHostPort(h string, p uint32) string {
+	return net.JoinHostPort(h, strconv.Itoa(int(p)))
 }

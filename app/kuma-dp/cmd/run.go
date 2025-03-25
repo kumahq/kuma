@@ -229,7 +229,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
 					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
 					// Using embedded DNS
-					dnsproxyServer := dnsproxy.NewServer("localhost", dnsOpts.Config.DNS.ProxyPort)
+					dnsproxyServer := dnsproxy.NewServer(net.JoinHostPort("localhost", dnsOpts.Config.DNS.ProxyPort))
 					err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap)
 					if err != nil {
 						return err

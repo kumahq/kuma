@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"strconv"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -21,20 +20,23 @@ import (
 var log = core.Log.WithName("embeededdns")
 
 type Server struct {
+	// HostPort or unix domain socket for tests
 	address          string
-	port             uint32
 	done             chan struct{}
 	dnsMap           atomic.Pointer[dnsMap]
 	metrics          *metrics
 	upstreamHostPort string
+	// upstreamHandler is used for testing purposes
+	upstreamHandler func(msg *dns.Msg) (*dns.Msg, error)
+	ready           chan struct{}
 }
 
-func NewServer(address string, port uint32) *Server {
+func NewServer(address string) *Server {
 	s := Server{
 		address: address,
-		port:    port,
 		done:    make(chan struct{}),
 		dnsMap:  atomic.Pointer[dnsMap]{},
+		ready:   make(chan struct{}),
 		metrics: newMetrics(),
 	}
 	s.dnsMap.Store(&dnsMap{ARecords: make(map[string]*dnsEntry), AAAARecords: make(map[string]*dnsEntry)})
@@ -53,10 +55,20 @@ type dnsEntry struct {
 
 var _ component.GracefulComponent = &Server{}
 
+func (s *Server) MockDNS(h func(msg *dns.Msg) (*dns.Msg, error)) {
+	s.upstreamHandler = h
+}
+
 func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	start := time.Now()
 	defer func() {
 		s.metrics.RequestDuration.Observe(time.Since(start).Seconds())
+		if err := recover(); err != nil {
+			log.Error(fmt.Errorf("handler panic %v", err), "panic in DNS handler")
+			response := new(dns.Msg)
+			response.SetRcode(req, dns.RcodeServerFailure)
+			_ = res.WriteMsg(response)
+		}
 	}()
 	var response *dns.Msg
 	// In case it was never loaded
@@ -65,7 +77,10 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		AAAARecords: make(map[string]*dnsEntry),
 	})
 	var dnsEntry *dnsEntry
-	if len(req.Question) > 0 { // Apparently most DNS doesn't support multiple questions so let's just support the first one
+	if len(req.Question) > 0 { // Apparently most DNS don't support multiple questions so let's just support the first one
+		if len(req.Question) > 1 {
+			log.Info("[WARNING] multiple questions in a single request, this is not supported", "questions", req.Question)
+		}
 		switch req.Question[0].Qtype {
 		case dns.TypeA:
 			// lookup in our DNS map
@@ -84,8 +99,14 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		response.Answer = append(response.Answer, dnsEntry.RR...)
 	} else {
 		proxyStart := time.Now()
-		c := new(dns.Client)
-		resp, _, err := c.Exchange(req, s.upstreamHostPort)
+		var resp *dns.Msg
+		var err error
+		if s.upstreamHandler != nil {
+			resp, err = s.upstreamHandler(req)
+		} else {
+			c := new(dns.Client)
+			resp, _, err = c.Exchange(req, s.upstreamHostPort)
+		}
 		if err != nil {
 			s.metrics.UpstreamRequestFailureCount.Inc()
 			log.Error(err, "Failed to write message to upstream")
@@ -104,16 +125,18 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.done)
-	srv := &dns.Server{Addr: net.JoinHostPort(s.address, strconv.Itoa(int(s.port))), Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
+	srv := &dns.Server{Addr: s.address, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
 	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
 		return fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
 	}
 	s.upstreamHostPort = net.JoinHostPort(config.Servers[0], config.Port)
 
-	done := make(chan error, 1)
+	done := make(chan error)
+	srv.NotifyStartedFunc = func() {
+		close(s.ready)
+	}
 	go func() {
-		defer close(done)
 		err := srv.ListenAndServe()
 		done <- err
 	}()
@@ -140,6 +163,10 @@ func (s *Server) NeedLeaderElection() bool {
 
 func (s *Server) WaitForDone() {
 	<-s.done
+}
+
+func (s *Server) WaitForReady() {
+	<-s.ready
 }
 
 // ReloadMap replaces the current map in memory so that future calls to the proxy.
