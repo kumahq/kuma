@@ -37,7 +37,7 @@ for dep in $(osv-scanner "${OSV_FLAGS[@]}" | jq -c '.results[].packages[] | .pac
     if [[ "$package" == "stdlib" ]]; then
       go mod edit -go="$fixVersion"
     else
-      go get -u "$package"@v"$fixVersion"
+      go get "$package"@v"$fixVersion"
     fi
   fi
 done
