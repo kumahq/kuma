@@ -30,7 +30,7 @@ jobs:
       pr_base_ref: ${{ steps.get-pr-info.outputs.pr_base_ref }}
       pr_merge_commit_sha: ${{ steps.get-pr-info.outputs.pr_merge_commit_sha }}
       branches: ${{ steps.generate-matrix.outputs.branches }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - id: get-pr-info
         name: get-pr-info
@@ -112,7 +112,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: ${{ fromJSON(needs.collect-info.outputs.branches) }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env:
       PR_NUMBER: ${{ inputs.PR }}
       PR_TITLE: ${{ needs.collect-info.outputs.pr_title }}
