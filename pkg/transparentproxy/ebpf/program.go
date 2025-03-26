@@ -60,7 +60,6 @@ func (p Program) LoadAndAttach(cfg config.InitializedConfigIPvX, programs embed.
 func run(cmdToExec string, args, envVars []string, stdout, stderr io.Writer) error {
 	_, _ = fmt.Fprintf(stdout, "Running: %s %s %s\n", strings.Join(envVars, " "), cmdToExec, strings.Join(args, " "))
 
-
 	cmd := exec.Command(cmdToExec, args...)
 	cmd.Env = append(os.Environ(), envVars...)
 	cmd.Stdout = stdout
