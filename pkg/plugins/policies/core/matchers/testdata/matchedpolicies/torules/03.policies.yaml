@@ -43,3 +43,16 @@ spec:
       default:
         http:
           requestTimeout: 3s
+type: MeshTimeout
+mesh: mesh-1
+name: mtp-3
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshService
+        name: test-server
+      default:
+        http:
+          requestTimeout: 2s
