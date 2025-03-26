@@ -141,7 +141,7 @@ func Setup(cfg config.InitializedConfigIPvX) (string, error) {
 		)
 	}
 
-	_, _ = cfg.RuntimeStdout.Write([]byte(fmt.Sprintf("local_pod_ips map was updated with current instance IP: %s\n\n", cfg.Ebpf.InstanceIP)))
+	_, _ = fmt.Fprintf(cfg.RuntimeStdout, "local_pod_ips map was updated with current instance IP: %s\n\n", cfg.Ebpf.InstanceIP)
 
 	return "", nil
 }
