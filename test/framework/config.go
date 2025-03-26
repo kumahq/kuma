@@ -176,7 +176,7 @@ type CniConf struct {
 	ConfName string
 }
 
-var Config E2eConfig
+var Config *E2eConfig
 
 func (c E2eConfig) GetUniversalImage() string {
 	if c.KumaImageTag != "" {
@@ -263,15 +263,20 @@ var defaultConf = E2eConfig{
 	DumpOnSuccess:                     false,
 }
 
-func init() {
-	Config = defaultConf
-	if err := config.Load(os.Getenv("E2E_CONFIG_FILE"), &Config); err != nil {
+func Init(configModificationFunctions ...func(*E2eConfig)) {
+	Config = &defaultConf
+	if err := config.Load("", Config); err != nil {
 		panic(err)
 	}
 
 	if err := Config.AutoConfigure(); err != nil {
 		panic(err)
 	}
+
+	for _, confModificationFn := range configModificationFunctions {
+		confModificationFn(Config)
+	}
+
 	report.BaseDir, _ = filepath.Abs(Config.DumpDir)
 	report.DumpOnSuccess = Config.DumpOnSuccess
 }
