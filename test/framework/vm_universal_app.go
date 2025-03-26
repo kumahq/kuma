@@ -34,7 +34,7 @@ type VmUniversalApp struct {
 	logger              *logger.Logger
 }
 
-func NewVmUniversalApp(t testing.TestingT, appName, mesh string, controlPlaneAPIServerLocalPort int, host *VmClusterHost, verbose bool) (*VmUniversalApp, error) {
+func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmClusterHost, verbose bool) (*VmUniversalApp, error) {
 	app := &VmUniversalApp{
 		t:       t,
 		verbose: verbose,
@@ -45,9 +45,6 @@ func NewVmUniversalApp(t testing.TestingT, appName, mesh string, controlPlaneAPI
 	app.universalNetworking = &universal.Networking{
 		IP:         host.InternalIPAddress,
 		RemoteHost: &host.Host,
-	}
-	if controlPlaneAPIServerLocalPort > 0 {
-		app.universalNetworking.ApiServerPort = strconv.Itoa(controlPlaneAPIServerLocalPort)
 	}
 
 	Logf("App %s running on Node IP %s", appName, app.universalNetworking.IP)

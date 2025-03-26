@@ -7,6 +7,7 @@ import (
 	"path"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -194,15 +195,17 @@ func (c *VmUniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentO
 	}
 	_, _ = fmt.Fprintf(cmd, "%s\n", runCp)
 
-	localApiServerPort, err := c.PortForward(AppModeCP, "api-server", "localhost:5681")
-	if err != nil {
-		return fmt.Errorf("could not establish port-forward for the control plane API Server: %w", err)
-	}
-	app, err := NewVmUniversalApp(c.t, AppModeCP, "", localApiServerPort, c.hosts[AppModeCP], false)
+	app, err := NewVmUniversalApp(c.t, AppModeCP, "", c.hosts[AppModeCP], false)
 	if err != nil {
 		return err
 	}
 	c.apps[AppModeCP] = app
+
+	localApiServerPort, err := c.PortForward(AppModeCP, "api-server", "localhost:5681")
+	if err != nil {
+		return fmt.Errorf("could not establish port-forward for the control plane API Server: %w", err)
+	}
+	app.universalNetworking.ApiServerPort = strconv.Itoa(localApiServerPort)
 
 	app.CreateMainApp(cmd.String())
 
@@ -368,7 +371,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		return errors.Errorf("there is no host to deploy app %q", opts.name)
 	}
 
-	app, err := NewVmUniversalApp(c.t, opts.name, opts.mesh, 0, host, false)
+	app, err := NewVmUniversalApp(c.t, opts.name, opts.mesh, host, false)
 	if err != nil {
 		return err
 	}
