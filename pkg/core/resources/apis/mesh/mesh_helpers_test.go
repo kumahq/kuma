@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
-	"github.com/kumahq/kuma/pkg/util/proto"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -88,14 +87,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -115,7 +114,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -135,14 +134,14 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
 								{
 									Name: "zipkin-eu",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.eu:8080/v1/spans",
 									}),
 								},
@@ -161,7 +160,7 @@ var _ = Describe("MeshResource", func() {
 								{
 									Name: "zipkin-us",
 									Type: mesh_proto.TracingZipkinType,
-									Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+									Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 										Url: "http://zipkin.us:8080/v1/spans",
 									}),
 								},
@@ -219,14 +218,14 @@ var _ = Describe("MeshResource", func() {
 							{
 								Name: "zipkin-us",
 								Type: mesh_proto.TracingZipkinType,
-								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.us:8080/v1/spans",
 								}),
 							},
 							{
 								Name: "zipkin-eu",
 								Type: mesh_proto.TracingZipkinType,
-								Conf: proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+								Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 									Url: "http://zipkin.eu:8080/v1/spans",
 								}),
 							},

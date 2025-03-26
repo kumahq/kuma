@@ -241,7 +241,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			_, err := caManager.GetRootCert(context.Background(), mesh, backend)
 
 			// then
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": Resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))
+			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))
 		})
 	})
 
@@ -302,7 +302,7 @@ var _ = Describe("Builtin CA Manager", func() {
 			_, err := caManager.GenerateDataplaneCert(context.Background(), mesh, backend, mesh_proto.MultiValueTagSet{})
 
 			// then
-			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": Resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))
+			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "builtin-non-existent": resource not found: type="Secret" name="default.ca-builtin-cert-builtin-non-existent" mesh="default"`))
 		})
 	})
 })

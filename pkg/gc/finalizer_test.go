@@ -11,7 +11,6 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -111,16 +110,16 @@ var _ = Describe("Subscription Finalizer", func() {
 	incGeneration := func(id string) {
 		zoneInsight := system.NewZoneInsightResource()
 		key := core_model.ResourceKey{Name: "zone-1"}
-		Expect(manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
+		Expect(core_manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
 			zoneInsight.Spec.GetSubscription(id).(*system_proto.KDSSubscription).Generation++
 			return nil
-		}, manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
+		}, core_manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
 	}
 
 	disconnectAndAddNewSubscription := func() {
 		zoneInsight := system.NewZoneInsightResource()
 		key := core_model.ResourceKey{Name: "zone-1"}
-		Expect(manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
+		Expect(core_manager.Upsert(context.Background(), rm, key, zoneInsight, func(r core_model.Resource) error {
 			zoneInsight.Spec.GetSubscription(onlineSub).SetDisconnectTime(sampleTime.Add(2 * time.Hour))
 			zoneInsight.Spec.Subscriptions = append(zoneInsight.Spec.Subscriptions, &system_proto.KDSSubscription{
 				Id:               "stream-id-3",
@@ -130,7 +129,7 @@ var _ = Describe("Subscription Finalizer", func() {
 				Generation:       0,
 			})
 			return nil
-		}, manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
+		}, core_manager.WithConflictRetry(5*time.Millisecond, 5, 10))).To(Succeed())
 	}
 
 	listCalled := func(times uint32) func() bool {

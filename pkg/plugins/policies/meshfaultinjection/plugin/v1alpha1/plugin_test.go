@@ -12,7 +12,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -21,7 +20,6 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshfaultinjection/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -30,10 +28,8 @@ import (
 	xds_samples "github.com/kumahq/kuma/pkg/test/xds/samples"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -89,11 +85,11 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17777",
 					Origin: generator.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(HttpConnectionManager("127.0.0.1:17777", false, nil)).
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17777, core_xds.SocketAddressProtocolTCP).
+						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(listeners.HttpConnectionManager("127.0.0.1:17777", false, nil)).
 							Configure(
-								HttpInboundRoutes(
+								listeners.HttpInboundRoutes(
 									"backend",
 									envoy_common.Routes{
 										{
@@ -110,9 +106,9 @@ var _ = Describe("MeshFaultInjection", func() {
 				{
 					Name:   "inbound:127.0.0.1:17778",
 					Origin: generator.OriginInbound,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
-							Configure(TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
+					Resource: listeners.NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 17778, core_xds.SocketAddressProtocolTCP).
+						Configure(listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, envoy_common.AnonymousResource).
+							Configure(listeners.TcpProxyDeprecated("127.0.0.1:17778", envoy_common.NewCluster(envoy_common.WithName("frontend")))),
 						)).MustBuild(),
 				},
 			},
@@ -205,30 +201,30 @@ var _ = Describe("MeshFaultInjection", func() {
 		rs := core_xds.NewResourceSet()
 
 		// listener that matches
-		listener, err := listeners.NewInboundListenerBuilder(envoy.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
+		listener, err := listeners.NewInboundListenerBuilder(envoy_common.APIV3, "192.168.0.1", 10002, core_xds.SocketAddressProtocolTCP).
 			WithOverwriteName("test_listener").
 			Configure(
-				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-1").Configure(
+				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-1{mesh=mesh-1}"),
 					listeners.HttpConnectionManager("external-service-1", false, nil),
 				)),
-				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-1").Configure(
+				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-2{mesh=mesh-1}"),
 					listeners.TCPProxy("external-service-2"),
 				)),
-				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-1_mesh-2").Configure(
+				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-1_mesh-2").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-1{mesh=mesh-2}"),
 					listeners.TCPProxy("external-service-1"),
 				)),
-				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "external-service-2_mesh-2").Configure(
+				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "external-service-2_mesh-2").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("external-service-2{mesh=mesh-2}"),
 					listeners.HttpConnectionManager("external-service-2", false, nil),
 				)),
-				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy.APIV3, "internal-service-1_mesh-1").Configure(
+				listeners.FilterChain(listeners.NewFilterChainBuilder(envoy_common.APIV3, "internal-service-1_mesh-1").Configure(
 					listeners.MatchTransportProtocol("tls"),
 					listeners.MatchServerNames("internal-service-1{mesh=mesh-1}"),
 					listeners.TCPProxy("internal-service-1"),
@@ -252,9 +248,9 @@ var _ = Describe("MeshFaultInjection", func() {
 			Build()
 
 		proxy := &core_xds.Proxy{
-			APIVersion: envoy.APIV3,
+			APIVersion: envoy_common.APIV3,
 			ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-				ZoneEgressResource: &mesh.ZoneEgressResource{
+				ZoneEgressResource: &core_mesh.ZoneEgressResource{
 					Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "mesh-1"},
 					Spec: &mesh_proto.ZoneEgress{
 						Networking: &mesh_proto.ZoneEgress_Networking{
@@ -263,11 +259,11 @@ var _ = Describe("MeshFaultInjection", func() {
 						},
 					},
 				},
-				ZoneIngresses: []*mesh.ZoneIngressResource{},
+				ZoneIngresses: []*core_mesh.ZoneIngressResource{},
 				MeshResourcesList: []*core_xds.MeshResources{
 					{
 						Mesh: builders.Mesh().WithName("mesh-1").WithEnabledMTLSBackend("ca-1").WithBuiltinMTLSBackend("ca-1").Build(),
-						ExternalServices: []*mesh.ExternalServiceResource{
+						ExternalServices: []*core_mesh.ExternalServiceResource{
 							{
 								Meta: &test_model.ResourceMeta{
 									Mesh: "mesh-1",
@@ -322,7 +318,7 @@ var _ = Describe("MeshFaultInjection", func() {
 					},
 					{
 						Mesh: builders.Mesh().WithName("mesh-2").WithEnabledMTLSBackend("ca-2").WithBuiltinMTLSBackend("ca-2").Build(),
-						ExternalServices: []*mesh.ExternalServiceResource{
+						ExternalServices: []*core_mesh.ExternalServiceResource{
 							{
 								Meta: &test_model.ResourceMeta{
 									Mesh: "mesh-2",
@@ -436,7 +432,7 @@ var _ = Describe("MeshFaultInjection", func() {
 		Expect(err).ToNot(HaveOccurred())
 		bytes, err := util_proto.ToYAML(resp)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(bytes).To(matchers.MatchGoldenYAML(path.Join("testdata", "egress_basic_listener.golden.yaml")))
+		Expect(bytes).To(test_matchers.MatchGoldenYAML(path.Join("testdata", "egress_basic_listener.golden.yaml")))
 	})
 
 	It("should generate proper Envoy config for MeshGateway Dataplanes", func() {

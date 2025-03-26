@@ -35,7 +35,7 @@ type server struct {
 
 func (s *server) GlobalToZoneSync(stream mesh_proto.KDSSyncService_GlobalToZoneSyncServer) error {
 	errorStream := NewErrorRecorderStream(stream)
-	err := s.Server.DeltaStreamHandler(errorStream, "")
+	err := s.DeltaStreamHandler(errorStream, "")
 	if err == nil {
 		err = errorStream.Err()
 	}
@@ -54,7 +54,7 @@ func (s *server) ZoneToGlobalSync(stream mesh_proto.KDSSyncService_ZoneToGlobalS
 // expected by delta xDS server.
 func (s *server) ZoneToGlobal(stream stream.DeltaStream) error {
 	errorStream := NewErrorRecorderStream(stream)
-	err := s.Server.DeltaStreamHandler(errorStream, "")
+	err := s.DeltaStreamHandler(errorStream, "")
 	if err == nil {
 		err = errorStream.Err()
 	}

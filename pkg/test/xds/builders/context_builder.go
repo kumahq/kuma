@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	"github.com/kumahq/kuma/pkg/test/xds"
-	"github.com/kumahq/kuma/pkg/xds/context"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -87,7 +86,7 @@ func (mc *ContextBuilder) WithMeshContext(mesh *xds_context.MeshContext) *Contex
 }
 
 func (mc *ContextBuilder) WithMeshLocalResources(rs []model.Resource) *ContextBuilder {
-	mc.res.Mesh.Resources = context.Resources{MeshLocalResources: map[model.ResourceType]model.ResourceList{}}
+	mc.res.Mesh.Resources = xds_context.Resources{MeshLocalResources: map[model.ResourceType]model.ResourceList{}}
 	for _, p := range rs {
 		if _, ok := mc.res.Mesh.Resources.MeshLocalResources[p.Descriptor().Name]; !ok {
 			mc.res.Mesh.Resources.MeshLocalResources[p.Descriptor().Name] = registry.Global().MustNewList(p.Descriptor().Name)

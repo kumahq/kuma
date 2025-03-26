@@ -21,7 +21,6 @@ import (
 	"sigs.k8s.io/yaml"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	_ "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	builtin_config "github.com/kumahq/kuma/pkg/plugins/ca/builtin/config"
 	provided_config "github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
 	"github.com/kumahq/kuma/tools/policy-gen/generator/pkg/save"

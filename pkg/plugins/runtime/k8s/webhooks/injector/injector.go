@@ -639,8 +639,8 @@ func (i *KumaInjector) NewValidationContainer(ipFamilyMode, inboundRedirectPort 
 			"--validation-server-port", inboundRedirectPort,
 		},
 		SecurityContext: &kube_core.SecurityContext{
-			RunAsUser:  &i.cfg.SidecarContainer.DataplaneContainer.UID,
-			RunAsGroup: &i.cfg.SidecarContainer.DataplaneContainer.GID,
+			RunAsUser:  &i.cfg.SidecarContainer.UID,
+			RunAsGroup: &i.cfg.SidecarContainer.GID,
 			Capabilities: &kube_core.Capabilities{
 				Drop: []kube_core.Capability{
 					"ALL",

@@ -140,13 +140,13 @@ func ErrorResourceConflict(rt model.ResourceType, name, mesh string) error {
 }
 
 func ErrorResourceNotFound(rt model.ResourceType, name, mesh string) error {
-	return fmt.Errorf("Resource not found: type=%q name=%q mesh=%q", rt, name, mesh)
+	return fmt.Errorf("resource not found: type=%q name=%q mesh=%q", rt, name, mesh)
 }
 
 var ErrorInvalidOffset = errors.New("invalid offset")
 
 func IsResourceNotFound(err error) bool {
-	return err != nil && strings.HasPrefix(err.Error(), "Resource not found")
+	return err != nil && strings.HasPrefix(err.Error(), "resource not found")
 }
 
 func IsResourceAlreadyExists(err error) bool {

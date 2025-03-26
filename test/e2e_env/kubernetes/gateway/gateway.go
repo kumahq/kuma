@@ -12,7 +12,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -621,7 +620,7 @@ spec:
 				g.Expect(responses).To(HaveLen(3))
 			}, "30s", "1s").Should(Succeed())
 
-			Expect(framework.YamlK8s(mlbs)(kubernetes.Cluster)).To(Succeed())
+			Expect(YamlK8s(mlbs)(kubernetes.Cluster)).To(Succeed())
 
 			Eventually(func(g Gomega) {
 				responses, err := client.CollectResponsesByInstance(

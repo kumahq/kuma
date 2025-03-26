@@ -469,13 +469,13 @@ var _ = Describe("KubernetesStore", func() {
 			err := rs.Get(context.Background(), actual, store.GetByKey(name, "default"))
 
 			// then
-			Expect(err).To(MatchError(`Resource not found: type="Secret" name="demo" mesh="default"`))
+			Expect(err).To(MatchError(`resource not found: type="Secret" name="demo" mesh="default"`))
 
 			// when
 			err = rs.Get(context.Background(), actual, store.GetByKey(name, noMesh))
 
 			// then
-			Expect(err).To(MatchError(`Resource not found: type="Secret" name="demo" mesh=""`))
+			Expect(err).To(MatchError(`resource not found: type="Secret" name="demo" mesh=""`))
 		})
 
 		It("should not return regular secret as global secret", func() {
@@ -499,13 +499,13 @@ var _ = Describe("KubernetesStore", func() {
 			err := rs.Get(context.Background(), actual, store.GetByKey(name, "default"))
 
 			// then
-			Expect(err).To(MatchError(`Resource not found: type="GlobalSecret" name="demo" mesh="default"`))
+			Expect(err).To(MatchError(`resource not found: type="GlobalSecret" name="demo" mesh="default"`))
 
 			// when
 			err = rs.Get(context.Background(), actual, store.GetByKey(name, noMesh))
 
 			// then
-			Expect(err).To(MatchError(`Resource not found: type="GlobalSecret" name="demo" mesh=""`))
+			Expect(err).To(MatchError(`resource not found: type="GlobalSecret" name="demo" mesh=""`))
 		})
 
 		It("should return an existing resource with implicit default mesh", func() {
@@ -626,7 +626,7 @@ var _ = Describe("KubernetesStore", func() {
 			err := rs.Delete(context.Background(), core_system.NewSecretResource(), store.DeleteByKey(name, noMesh))
 
 			// then
-			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="Secret" name="demo" mesh=""`))
+			Expect(err).To(MatchError(`failed to delete k8s secret: resource not found: type="Secret" name="demo" mesh=""`))
 		})
 
 		It("should no delete an existing mesh scoped secret if GlobalSecretResource", func() {
@@ -645,7 +645,7 @@ var _ = Describe("KubernetesStore", func() {
 			err := rs.Delete(context.Background(), core_system.NewGlobalSecretResource(), store.DeleteByKey(name, "default"))
 
 			// then
-			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="GlobalSecret" name="demo" mesh="default"`))
+			Expect(err).To(MatchError(`failed to delete k8s secret: resource not found: type="GlobalSecret" name="demo" mesh="default"`))
 		})
 	})
 

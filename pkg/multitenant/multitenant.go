@@ -62,4 +62,4 @@ func TenantFromCtx(ctx context.Context) (string, bool) {
 	return value, ok
 }
 
-var TenantMissingErr = errors.New("tenant is missing")
+var ErrTenantMissing = errors.New("tenant is missing")

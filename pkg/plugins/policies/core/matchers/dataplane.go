@@ -383,7 +383,7 @@ func SortByTargetRef(rl core_model.ResourceList) core_model.ResourceList {
 	slices.SortFunc(rs, func(r1, r2 core_model.Resource) int {
 		p1, ok1 := r1.GetSpec().(core_model.Policy)
 		p2, ok2 := r2.GetSpec().(core_model.Policy)
-		if !(ok1 && ok2) {
+		if !ok1 || !ok2 {
 			panic("resource doesn't support TargetRef matching")
 		}
 

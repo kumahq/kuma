@@ -17,7 +17,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -367,7 +366,7 @@ func (OutboundProxyGenerator) determineRoutes(
 				continue
 			}
 
-			name, _ := tags.Tags(destination.Destination).DestinationClusterName(nil)
+			name, _ := envoy_tags.Tags(destination.Destination).DestinationClusterName(nil)
 
 			if mesh, ok := destination.Destination[mesh_proto.MeshTag]; ok {
 				// The name should be distinct to the service & mesh combination

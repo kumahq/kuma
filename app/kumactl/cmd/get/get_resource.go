@@ -44,7 +44,7 @@ func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTy
 					return errors.Wrapf(err, "failed to get %s in mesh %s", name, currentMesh)
 				}
 			default:
-				return fmt.Errorf("Scope %s is unsupported", desc.Scope)
+				return errors.Errorf("Scope %s is unsupported", desc.Scope)
 			}
 
 			format := output.Format(pctx.GetContext.Args.OutputFormat)

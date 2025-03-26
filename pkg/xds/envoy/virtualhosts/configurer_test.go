@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -92,7 +91,7 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 								},
 							},
 						},
-						mesh.ProtocolHTTP,
+						core_mesh.ProtocolHTTP,
 					),
 				},
 				expected: `

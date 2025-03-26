@@ -11,7 +11,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -257,7 +256,7 @@ func (*ExternalServicesGenerator) configureFilterChain(
 		envoy_common.WithExternalService(true),
 	)
 
-	filterChainName := names.GetEgressFilterChainName(esName, meshName)
+	filterChainName := envoy_names.GetEgressFilterChainName(esName, meshName)
 	if isMeshExternalService(endpoints) {
 		filterChainName = esName
 	}
