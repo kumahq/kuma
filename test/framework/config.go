@@ -264,7 +264,6 @@ var defaultConf = E2eConfig{
 	DumpOnSuccess:                     false,
 }
 
-=======
 func Init(configModificationFunctions ...func(*E2eConfig)) {
 	Config = &defaultConf
 	if err := config.Load("", Config); err != nil {
