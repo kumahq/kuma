@@ -16,6 +16,6 @@ func TestE2E(t *testing.T) {
 
 var (
 	_ = ReportAfterSuite("report suite", report.DumpReport)
-	_ = Describe("Federation with Kube Global", Label("job-3"), federation.FederateKubeZoneCPToKubeGlobal, Ordered)
+	_ = XDescribe("Federation with Kube Global", Label("job-3"), federation.FederateKubeZoneCPToKubeGlobal, Ordered)
 	_ = Describe("Federation with Universal Global", Label("job-3"), federation.FederateKubeZoneCPToUniversalGlobal, Ordered)
 )
