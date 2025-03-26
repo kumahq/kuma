@@ -144,18 +144,7 @@
        "requestTimeout": "10s"
       }
      },
-     "matchers": [
-      {
-       "key": "kuma.io/service",
-       "not": true,
-       "value": "bar"
-      },
-      {
-       "key": "kuma.io/service",
-       "not": true,
-       "value": "foo"
-      }
-     ],
+     "matchers": [],
      "origin": [
       {
        "labels": {},
