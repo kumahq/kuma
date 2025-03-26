@@ -26,7 +26,4 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: retry-1
     type: MeshRetry
-  Subset:
-  - Key: kuma.io/service
-    Not: true
-    Value: backend
+  Subset: []

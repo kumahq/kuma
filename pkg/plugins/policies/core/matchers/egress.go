@@ -167,7 +167,7 @@ func processToRules(tags map[string]string, policies []core_model.Resource, mes 
 		}
 	}
 
-	rules, err := core_rules.BuildRules(toList)
+	rules, err := core_rules.BuildRules(toList, false)
 	if err != nil {
 		return core_rules.FromRules{}, err
 	}

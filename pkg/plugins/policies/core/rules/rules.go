@@ -397,7 +397,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta())...)
 		}
-		rules, err := BuildRules(fromList)
+		rules, err := BuildRules(fromList, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -418,7 +418,7 @@ func BuildToRules(matchedPolicies []core_model.Resource, httpRoutes []core_model
 		toList = append(toList, BuildPolicyItemsWithMeta(tl, mp.GetMeta())...)
 	}
 
-	rules, err := BuildRules(toList)
+	rules, err := BuildRules(toList, false)
 	if err != nil {
 		return ToRules{}, err
 	}
@@ -558,7 +558,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items)
+	rules, err := BuildRules(items, false)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -569,11 +569,14 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
 // If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
+// In case of `to` policies we don't need to check negations since only possible value for `to` is either Mesh
+// which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	rules := Rules{}
 
+	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets
 	var subsets []Subset
 	for _, item := range list {
@@ -581,7 +584,34 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tag := range ss {
+			uniqueKeys[tag.Key] = struct{}{}
+		}
 		subsets = append(subsets, ss)
+	}
+
+	// we don't need to generate all permutations when there is no negations
+	// and we have only 0 or one tag, in other cases we need to generate.
+	// in case of `to` policies it can happen when using top target ref MeshGateway,
+	// for policy MeshHTTPRoute.
+	if !withNegations && len(uniqueKeys) <= 1 {
+		// deduplicate subsets
+		subsets = Deduplicate(subsets)
+
+		for _, ss := range subsets {
+			if r, err := createRule(ss, list); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
+			}
+		}
+
+		sort.SliceStable(rules, func(i, j int) bool {
+			// resource with more tags should be first
+			return len(rules[i].Subset) > len(rules[j].Subset)
+		})
+
+		return rules, nil
 	}
 
 	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
@@ -634,36 +664,12 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
+
 			// 5. For each combination determine a configuration
-			confs := []interface{}{}
-			distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
-			for i := 0; i < len(list); i++ {
-				item := list[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
-				if err != nil {
-					return nil, err
-				}
-				if itemSubset.IsSubset(ss) {
-					confs = append(confs, item.GetDefault())
-					distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
-				}
-			}
-			merged, err := MergeConfs(confs)
-			if err != nil {
+			if r, err := createRule(ss, list); err != nil {
 				return nil, err
-			}
-			if merged != nil {
-				origins := maps.Values(distinctOrigins)
-				sort.Slice(origins, func(i, j int) bool {
-					return origins[i].GetName() < origins[j].GetName()
-				})
-				for _, mergedRule := range merged {
-					rules = append(rules, &Rule{
-						Subset: ss,
-						Conf:   mergedRule,
-						Origin: origins,
-					})
-				}
+			} else {
+				rules = append(rules, r...)
 			}
 		}
 	}
@@ -671,6 +677,42 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
+
+	return rules, nil
+}
+
+func createRule(ss Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+	rules := Rules{}
+	confs := []interface{}{}
+	distinctOrigins := map[core_model.ResourceKey]core_model.ResourceMeta{}
+	for i := 0; i < len(items); i++ {
+		item := items[i]
+		itemSubset, err := asSubset(item.GetTargetRef())
+		if err != nil {
+			return nil, err
+		}
+		if itemSubset.IsSubset(ss) {
+			confs = append(confs, item.GetDefault())
+			distinctOrigins[core_model.MetaToResourceKey(item.ResourceMeta)] = item.ResourceMeta
+		}
+	}
+	merged, err := MergeConfs(confs)
+	if err != nil {
+		return nil, err
+	}
+	if merged != nil {
+		origins := maps.Values(distinctOrigins)
+		sort.Slice(origins, func(i, j int) bool {
+			return origins[i].GetName() < origins[j].GetName()
+		})
+		for _, mergedRule := range merged {
+			rules = append(rules, &Rule{
+				Subset: ss,
+				Conf:   mergedRule,
+				Origin: origins,
+			})
+		}
+	}
 
 	return rules, nil
 }
@@ -726,6 +768,18 @@ func NewSubsetIter(tags []Tag) *SubsetIter {
 	return &SubsetIter{
 		current: tags,
 	}
+}
+
+func (ss Subset) Sorted() {
+	sort.SliceStable(ss, func(i, j int) bool {
+		if ss[i].Key != ss[j].Key {
+			return ss[i].Key < ss[j].Key
+		}
+		if ss[i].Value != ss[j].Value {
+			return ss[i].Value < ss[j].Value
+		}
+		return !ss[i].Not && ss[j].Not
+	})
 }
 
 // Next returns the next subset of the partition. When reaches the end Next returns 'nil'
@@ -793,4 +847,44 @@ func (c *SubsetIter) simplified() Subset {
 	}
 
 	return result
+}
+
+// Deduplicate returns a new slice of subsetutils.Subset with duplicates removed.
+func Deduplicate(subsets []Subset) []Subset {
+	seen := make(map[string]struct{})
+	result := make([]Subset, 0, len(subsets))
+
+	for _, s := range subsets {
+		key := canonicalSubset(s)
+		if _, exists := seen[key]; !exists {
+			seen[key] = struct{}{}
+			result = append(result, s)
+		}
+	}
+	return result
+}
+
+// canonicalSubset returns a canonical string representation for a subset.
+// It assumes that a subset is a slice of subsetutils.Tag with fields Key, Value, and Not.
+func canonicalSubset(s Subset) string {
+	if len(s) == 0 {
+		return ""
+	}
+	s.Sorted()
+	var sb strings.Builder
+	for i, t := range s {
+		if i > 0 {
+			sb.WriteByte('|') // Separator
+		}
+		sb.WriteString(t.Key)
+		sb.WriteByte(':')
+		sb.WriteString(t.Value)
+		sb.WriteByte(':')
+		if t.Not {
+			sb.WriteByte('1')
+		} else {
+			sb.WriteByte('0')
+		}
+	}
+	return sb.String()
 }
