@@ -43,7 +43,7 @@ func ToValidUnixFilename(input ...string) string {
 	// This includes control characters, /, and other special characters
 	// We also include a few additional characters that are problematic in GitHub Actions:
 	// Double quote ", Colon :, Less than <, Greater than >, Vertical bar |, Asterisk *, Question mark ?, Carriage return \r, Line feed \n
-	reg := regexp.MustCompile(`[^\w\-|?<>*:"\r\n]+`)
+	reg := regexp.MustCompile(`[/|?<>*:"\r\n-]+`)
 	sanitized := reg.ReplaceAllString(noSpaces, "-")
 
 	// Trim leading/trailing periods and dashes which can cause issues
