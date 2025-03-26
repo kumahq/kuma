@@ -119,24 +119,22 @@ func (s *VmUniversalApp) CreateDP(
 	concurrency int,
 	envsMap map[string]string,
 	transparent bool,
-	dpVersion string,
 ) error {
 	cmd := &strings.Builder{}
+
+	workingDir := fmt.Sprintf("/tmp/kuma")
 	// create the token file on the app container
 	_, _ = cmd.WriteString("#!/bin/sh\n")
-	_, _ = fmt.Fprintf(cmd, "printf %q > /kuma/token-%s\n", token, name)
-	if dpVersion != "" {
-		// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
-		url := fmt.Sprintf("https://packages.konghq.com/public/kuma-binaries-release/raw/names/kuma-linux-%[2]s/versions/%[1]s/kuma-%[1]s-linux-%[2]s.tar.gz", dpVersion, Config.Arch)
-		newPathOut := fmt.Sprintf("/tmp/kuma/kuma-%s/bin", dpVersion)
+	_, _ = fmt.Fprintf(cmd, "mkdir -p %s/bin", workingDir)
+	_, _ = fmt.Fprintf(cmd, "printf %q > %s/token-%s\n", token, workingDir, name)
 
-		_, _ = fmt.Fprintf(cmd, `
-mkdir -p /tmp/
-curl --no-progress-bar --fail '%s' | tar xvzf - --directory /tmp/kuma/
-cp %s/kuma-dp /usr/bin/kuma-dp
-cp %s/envoy /usr/bin/envoy
-		`, url, newPathOut, newPathOut)
-	}
+	_, _ = fmt.Fprintf(cmd, `
+curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
+DOWNLOAD_DIR=$(find -maxdepth 1 -type d -name '*-%s')
+mv $DOWNLOAD_DIR/bin/* %s/bin/
+export PATH=$PATH:%s/bin
+		`, Config.KumaInstallerUrl, Config.KumaImageTag, Config.KumaImageTag, workingDir, workingDir)
+
 	for k, v := range envsMap {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))
 	}
@@ -147,20 +145,20 @@ cp %s/envoy /usr/bin/envoy
 		if builtindns {
 			extraArgs = append(extraArgs, "--redirect-dns")
 		}
-		_, _ = fmt.Fprintf(cmd, "/usr/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n", sshPort, strings.Join(extraArgs, " "))
+		_, _ = fmt.Fprintf(cmd, "kumactl install transparent-proxy --exclude-inbound-ports %s %s\n", sshPort, strings.Join(extraArgs, " "))
 	}
 
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	args := []string{
 		"runuser", "-u", "kuma-dp", "--",
-		"/usr/bin/kuma-dp", "run",
+		"kuma-dp", "run",
 		"--cp-address=" + cpAddress,
-		"--dataplane-token-file=/kuma/token-" + name,
-		"--binary-path", "/usr/local/bin/envoy",
+		fmt.Sprintf("--dataplane-token-file=%s/kuma/token-%s", workingDir, name),
+		"--binary-path", fmt.Sprintf("%s/bin/envoy", workingDir),
 	}
 
 	if dpyaml != "" {
-		dpPath := fmt.Sprintf("/kuma-dp-%s.yaml", name)
+		dpPath := fmt.Sprintf("%s/kuma-dp-%s.yaml", workingDir, name)
 		_, _ = fmt.Fprintf(cmd, `cat > %s << 'EOF'
 %s
 EOF

@@ -25,6 +25,7 @@ type E2eConfig struct {
 	KumaImageTag                      string            `json:"imageTag,omitempty" envconfig:"KUMA_GLOBAL_IMAGE_TAG"`
 	KumaNamespace                     string            `json:"namespace,omitempty"`
 	KumaServiceName                   string            `json:"serviceName,omitempty"`
+	KumaInstallerUrl                  string            `json:"kumaInstallerUrl,omitempty" envconfig:"KUMA_INSTALLER_URL"`
 	HelmChartPath                     string            `json:"helmChartPath,omitempty"`
 	HelmSubChartPrefix                string            `json:"helmSubChartPrefix,omitempty"`
 	HelmChartName                     string            `json:"helmChartName,omitempty"`

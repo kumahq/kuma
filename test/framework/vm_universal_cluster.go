@@ -5,7 +5,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -80,6 +79,7 @@ func NewVmUniversalCluster(t *TestingT, name string, hosts []*VmClusterHost, ver
 		hosts:          hostMap,
 		verbose:        verbose,
 		deployments:    map[string]Deployment{},
+		portForwards:   map[string]*VmPortForward{},
 		defaultRetries: Config.DefaultClusterStartupRetries,
 		defaultTimeout: Config.DefaultClusterStartupTimeout,
 		envoyTunnels:   map[string]envoy_admin.Tunnel{},
@@ -165,31 +165,23 @@ func (c *VmUniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentO
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	var dockerVolumes []string
-	if c.opts.yamlConfig != "" {
-		path, err := os.MkdirTemp("", "e2e-cp-cfg-*")
-		if err != nil {
-			return err
-		}
-		path = filepath.Join(path, "kuma-cp.conf")
-		if err := os.WriteFile(path, []byte(c.opts.yamlConfig), 0o600); err != nil {
-			return err
-		}
-		dockerVolumes = append(dockerVolumes, path+":/kuma/kuma-cp.conf")
-	}
-	// todo: copy file to remote host
-
 	cmd := &strings.Builder{}
 	_, _ = cmd.WriteString("#!/bin/sh\n")
+	_, _ = fmt.Fprintf(cmd, `
+curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
+PRODUCT_DIR=$(find -maxdepth 1 -type d -name '*-%s')
+export PATH=$PATH:$(realpath ${PRODUCT_DIR}/bin/)
+		`, Config.KumaInstallerUrl, Config.KumaImageTag, Config.KumaImageTag)
+
 	for k, v := range env {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))
 	}
 	if c.opts.runPostgresMigration {
-		_, _ = fmt.Fprintf(cmd, "/usr/bin/kuma-cp migrate up\n")
+		_, _ = fmt.Fprintf(cmd, "kuma-cp migrate up\n")
 	}
-	_, _ = fmt.Fprintf(cmd, "cat /kuma/kuma-cp.conf\n")
+	// _, _ = fmt.Fprintf(cmd, "cat /kuma/kuma-cp.conf\n")
 
-	runCp := "kuma-cp run --config-file /kuma/kuma-cp.conf"
+	runCp := "kuma-cp run" // --config-file /kuma/kuma-cp.conf
 	if Config.Debug {
 		runCp += " --log-level debug"
 	}
@@ -302,10 +294,10 @@ func (c *VmUniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc)
 	return nil
 }
 
-func (c *VmUniversalCluster) CreateDP(app *VmUniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool, dpVersion string) error {
+func (c *VmUniversalCluster) CreateDP(app *VmUniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent, dpVersion)
+	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent)
 	if err != nil {
 		return err
 	}
@@ -317,7 +309,7 @@ func (c *VmUniversalCluster) CreateDP(app *VmUniversalApp, name string, mesh str
 }
 
 func (c *VmUniversalCluster) CreateZoneIngress(app *VmUniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false, "")
+	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false)
 	if err != nil {
 		return err
 	}
@@ -411,7 +403,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		if opts.mesh == "" {
 			opts.mesh = "default"
 		}
-		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtindns, opts.concurrency, transparent, opts.dpVersion); err != nil {
+		if err := c.CreateDP(app, opts.name, opts.mesh, ip, dataplaneResource, opts.dpEnvs, token, builtindns, opts.concurrency, transparent); err != nil {
 			return err
 		}
 	}

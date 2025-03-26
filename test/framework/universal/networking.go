@@ -133,6 +133,11 @@ func (s *Networking) NewSession(exportPath string, cmdName string, verbose bool,
 }
 
 func (s *Networking) PortForward(local, remote string, stopChan <-chan struct{}) (net.Addr, error) {
+	_, err := s.initSSH()
+	if err != nil {
+		return nil, err
+	}
+
 	errorChan := make(chan error)
 	readyChan := make(chan net.Addr)
 
