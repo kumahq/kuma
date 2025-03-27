@@ -32,8 +32,8 @@ func RunSpecs(t *testing.T, description string) {
 	runSpecs(t, description)
 }
 
-func RunE2ESpecs(t *testing.T, description string) {
-	framework.Init()
+func RunE2ESpecs(t *testing.T, description string, configModificationFunctions ...func(config *framework.E2eConfig)) {
+	framework.Init(configModificationFunctions...)
 	plugins.InitAll(core_apis.NameToModule)
 	plugins.InitAll(policies.NameToModule)
 	gomega.SetDefaultConsistentlyDuration(time.Second * 5)
