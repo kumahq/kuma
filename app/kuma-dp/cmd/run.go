@@ -2,8 +2,11 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
+	"slices"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -22,6 +25,7 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -103,26 +107,47 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
-			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
-				tmpDir, err = os.MkdirTemp("", "kuma-dp-")
-				if err != nil {
-					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
-					return err
+			if slices.Contains([]string{
+				cfg.DataplaneRuntime.ConfigDir,
+				cfg.DataplaneRuntime.SocketDir,
+				cfg.DNS.ConfigDir,
+			}, "") {
+				var workDir string
+
+				// In Kubernetes environment, we added read-only root FS for sidecar container.
+				// So, we keep using the tmp dir.
+				if dpEnvironmentType() == core.KubernetesEnvironment {
+					workDir, err = os.MkdirTemp("", "kuma-dp-")
+					if err != nil {
+						runLog.Error(err, "unable to create a temporary directory to store generated configuration")
+						return err
+					}
+				} else {
+					homeDir, err := os.UserHomeDir()
+					if err != nil {
+						runLog.Error(err, "failed to get current user's home directory $HOME")
+						return err
+					}
+					workDir = path.Join(homeDir, ".kuma")
+					err = os.MkdirAll(workDir, os.ModePerm)
+					if err != nil && !os.IsExist(err) {
+						runLog.Error(err, fmt.Sprintf("failed to create a working directory '%s' inside $HOME", workDir))
+					}
 				}
 
 				if cfg.DataplaneRuntime.ConfigDir == "" {
-					cfg.DataplaneRuntime.ConfigDir = tmpDir
+					cfg.DataplaneRuntime.ConfigDir = workDir
 				}
 
 				if cfg.DataplaneRuntime.SocketDir == "" {
-					cfg.DataplaneRuntime.SocketDir = tmpDir
+					cfg.DataplaneRuntime.SocketDir = workDir
 				}
 
 				if cfg.DNS.ConfigDir == "" {
-					cfg.DNS.ConfigDir = tmpDir
+					cfg.DNS.ConfigDir = workDir
 				}
 
-				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
+				runLog.Info(fmt.Sprintf("generated configurations will be stored in '%s' directory", workDir))
 			}
 
 			if cfg.DataplaneRuntime.SystemCaPath == "" {
@@ -427,4 +452,13 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 	)
 
 	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}
+}
+
+func dpEnvironmentType() core.EnvironmentType {
+	_, hasPodName := os.LookupEnv("POD_NAME")
+	_, hasPodNamespace := os.LookupEnv("POD_NAMESPACE")
+	if hasPodName && hasPodNamespace {
+		return core.KubernetesEnvironment
+	}
+	return core.UniversalEnvironment
 }
