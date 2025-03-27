@@ -10,7 +10,7 @@ if [ "${VERSION}" == "" ]; then
   exit 1
 fi
 
-if [ -e "${golangcilint}" ] && [ "v$(${golangcilint} version --format short)" == "${VERSION}" ]; then
+if [ -e "${golangcilint}" ] && [ "v$(${golangcilint} version --short)" == "${VERSION}" ]; then
   echo "golangci-lint ${VERSION} is already installed at ${OUTPUT_BIN_DIR}"
   exit
 fi
