@@ -141,6 +141,7 @@ export PATH=$PATH:%s/bin
 	}
 
 	// todo: remove sudo prefix to adapt more distros
+	_, _ = fmt.Fprintf(cmd, "sudo useradd --system --no-create-home --shell /sbin/nologin kuma-dp\n")
 
 	// Install transparent proxy
 	if transparent {
@@ -150,21 +151,20 @@ export PATH=$PATH:%s/bin
 		}
 		_, _ = fmt.Fprintf(cmd, "sudo %s/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n",
 			workingDir, sshPort, strings.Join(extraArgs, " "))
-		_, _ = fmt.Fprintf(cmd, `function uninstall_transparent_proxy(){
-    sudo %s/bin/kumactl install transparent-proxy 
+		_, _ = fmt.Fprintf(cmd, `uninstall_transparent_proxy () {
+    sudo %s/bin/kumactl uninstall transparent-proxy
 }
 trap uninstall_transparent_proxy EXIT INT QUIT TERM
-\n`,
+`,
 			workingDir)
 	}
 
-	_, _ = fmt.Fprintf(cmd, "sudo useradd --system --no-create-home --shell /sbin/nologin kuma-dp\n")
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	args := []string{
 		"sudo", "runuser", "-u", "kuma-dp", "--",
-		"kuma-dp", "run",
+		fmt.Sprintf("%s/bin/kuma-dp", workingDir), "run",
 		"--cp-address=" + cpAddress,
-		fmt.Sprintf("--dataplane-token-file=%s/kuma/token-%s", workingDir, name),
+		fmt.Sprintf("--dataplane-token-file=%s/token-%s", workingDir, name),
 		"--binary-path", fmt.Sprintf("%s/bin/envoy", workingDir),
 	}
 
