@@ -132,6 +132,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 					err = os.MkdirAll(workDir, os.ModePerm)
 					if err != nil && !os.IsExist(err) {
 						runLog.Error(err, fmt.Sprintf("failed to create a working directory '%s' inside $HOME", workDir))
+						return err
 					}
 				}
 
