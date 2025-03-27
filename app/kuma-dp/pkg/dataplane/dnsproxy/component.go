@@ -71,11 +71,6 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		}
 	}()
 	var response *dns.Msg
-	// In case it was never loaded
-	s.dnsMap.CompareAndSwap(nil, &dnsMap{
-		ARecords:    make(map[string]*dnsEntry),
-		AAAARecords: make(map[string]*dnsEntry),
-	})
 	var dnsEntry *dnsEntry
 	if len(req.Question) > 0 { // Apparently most DNS don't support multiple questions so let's just support the first one
 		if len(req.Question) > 1 {
