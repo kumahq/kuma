@@ -20,7 +20,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
-	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	meshmetrics_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -145,7 +144,7 @@ var _ = Describe("snapshotGenerator", func() {
 				}
 
 				// given
-				snapshotter := NewSnapshotGenerator(resourceManager, mads_generator.MonitoringAssignmentsGenerator{}, cache)
+				snapshotter := NewSnapshotGenerator(resourceManager, meshmetrics_generator.MonitoringAssignmentsGenerator{}, cache)
 				// when
 				snapshotPerClient, err := snapshotter.GenerateSnapshot(context.Background())
 				// then

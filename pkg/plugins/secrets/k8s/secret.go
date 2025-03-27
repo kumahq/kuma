@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 	v1 "k8s.io/api/core/v1"
-	k8s "k8s.io/apimachinery/pkg/apis/meta/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -36,16 +35,16 @@ func NewSecret(typ v1.SecretType) *Secret {
 
 var _ model.KubernetesObject = &Secret{}
 
-func (s *Secret) GetObjectMeta() *k8s.ObjectMeta {
+func (s *Secret) GetObjectMeta() *metav1.ObjectMeta {
 	return &s.ObjectMeta
 }
 
-func (s *Secret) SetObjectMeta(meta *k8s.ObjectMeta) {
+func (s *Secret) SetObjectMeta(meta *metav1.ObjectMeta) {
 	s.ObjectMeta = *meta
 }
 
 func (s *Secret) GetMesh() string {
-	if mesh, ok := s.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := s.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
@@ -53,10 +52,10 @@ func (s *Secret) GetMesh() string {
 }
 
 func (s *Secret) SetMesh(mesh string) {
-	if s.ObjectMeta.Labels == nil {
-		s.ObjectMeta.Labels = map[string]string{}
+	if s.Labels == nil {
+		s.Labels = map[string]string{}
 	}
-	s.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
+	s.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (s *Secret) GetSpec() (core_model.ResourceSpec, error) {

@@ -2,7 +2,6 @@ package builders
 
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
@@ -10,28 +9,28 @@ import (
 )
 
 type ProxyBuilder struct {
-	res *xds.Proxy
+	res *core_xds.Proxy
 }
 
 func Proxy() *ProxyBuilder {
 	return &ProxyBuilder{
-		res: &xds.Proxy{
+		res: &core_xds.Proxy{
 			APIVersion:        envoy_common.APIV3,
 			Dataplane:         &core_mesh.DataplaneResource{},
-			Metadata:          &xds.DataplaneMetadata{},
-			Policies:          xds.MatchedPolicies{},
-			Routing:           xds.Routing{},
+			Metadata:          &core_xds.DataplaneMetadata{},
+			Policies:          core_xds.MatchedPolicies{},
+			Routing:           core_xds.Routing{},
 			RuntimeExtensions: map[string]interface{}{},
 			Zone:              "test-zone",
 		},
 	}
 }
 
-func (p *ProxyBuilder) Build() *xds.Proxy {
+func (p *ProxyBuilder) Build() *core_xds.Proxy {
 	return p.res
 }
 
-func (p *ProxyBuilder) With(fn func(*xds.Proxy)) *ProxyBuilder {
+func (p *ProxyBuilder) With(fn func(*core_xds.Proxy)) *ProxyBuilder {
 	fn(p.res)
 	return p
 }
@@ -51,7 +50,7 @@ func (p *ProxyBuilder) WithDataplane(dataplane *builders.DataplaneBuilder) *Prox
 	return p
 }
 
-func (p *ProxyBuilder) WithMetadata(metadata *xds.DataplaneMetadata) *ProxyBuilder {
+func (p *ProxyBuilder) WithMetadata(metadata *core_xds.DataplaneMetadata) *ProxyBuilder {
 	p.res.Metadata = metadata
 	return p
 }
@@ -76,12 +75,12 @@ func (p *ProxyBuilder) WithRouting(routing *RoutingBuilder) *ProxyBuilder {
 	return p
 }
 
-func (p *ProxyBuilder) WithID(id xds.ProxyId) *ProxyBuilder {
+func (p *ProxyBuilder) WithID(id core_xds.ProxyId) *ProxyBuilder {
 	p.res.Id = id
 	return p
 }
 
-func (p *ProxyBuilder) WithInternalAddresses(addresses ...xds.InternalAddress) *ProxyBuilder {
+func (p *ProxyBuilder) WithInternalAddresses(addresses ...core_xds.InternalAddress) *ProxyBuilder {
 	p.res.InternalAddresses = append(p.res.InternalAddresses, addresses...)
 	return p
 }

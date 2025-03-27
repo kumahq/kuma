@@ -188,7 +188,7 @@ func (g *KDSSyncServiceServer) watchZoneHealthCheck(streamContext context.Contex
 			case service.ZoneWentOffline:
 				return event.TenantID == tenantID && event.Zone == zone
 			case service.StreamCancelled:
-				return event.TenantID == tenantID && event.Zone == zone && event.Type == typ && event.ConnTime == connectTime
+				return event.TenantID == tenantID && event.Zone == zone && event.Type == typ && event.ConnTime.Equal(connectTime)
 			default:
 				return false
 			}

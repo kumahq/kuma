@@ -107,7 +107,7 @@ func newSyncTracker(
 						// and spreads them evenly across the entire interval. After the initial trigger, we reset
 						// the ticker, returning it to its full resync interval.
 						// #nosec G404 - math rand is enough
-						delay := time.Duration(experimentalWatchdogCfg.FullResyncInterval.Duration.Seconds()*rand.Float64()) * time.Second
+						delay := time.Duration(experimentalWatchdogCfg.FullResyncInterval.Seconds()*rand.Float64()) * time.Second
 						ticker := time.NewTicker(experimentalWatchdogCfg.FullResyncInterval.Duration + delay)
 						go func() {
 							<-time.After(delay)
@@ -171,7 +171,7 @@ func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, envoy_cache.SnapshotC
 
 type Hasher struct{}
 
-func (_ Hasher) ID(node *envoy_core.Node) string {
+func (Hasher) ID(node *envoy_core.Node) string {
 	tenantID, found := util.TenantFromMetadata(node)
 	if !found {
 		return node.Id

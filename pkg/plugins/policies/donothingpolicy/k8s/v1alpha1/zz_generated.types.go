@@ -46,7 +46,7 @@ func (cb *DoNothingPolicy) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *DoNothingPolicy) GetMesh() string {
-	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
@@ -54,10 +54,10 @@ func (cb *DoNothingPolicy) GetMesh() string {
 }
 
 func (cb *DoNothingPolicy) SetMesh(mesh string) {
-	if cb.ObjectMeta.Labels == nil {
-		cb.ObjectMeta.Labels = map[string]string{}
+	if cb.Labels == nil {
+		cb.Labels = map[string]string{}
 	}
-	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
+	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *DoNothingPolicy) GetSpec() (core_model.ResourceSpec, error) {

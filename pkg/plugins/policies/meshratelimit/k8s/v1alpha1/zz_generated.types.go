@@ -47,7 +47,7 @@ func (cb *MeshRateLimit) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *MeshRateLimit) GetMesh() string {
-	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
@@ -55,10 +55,10 @@ func (cb *MeshRateLimit) GetMesh() string {
 }
 
 func (cb *MeshRateLimit) SetMesh(mesh string) {
-	if cb.ObjectMeta.Labels == nil {
-		cb.ObjectMeta.Labels = map[string]string{}
+	if cb.Labels == nil {
+		cb.Labels = map[string]string{}
 	}
-	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
+	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *MeshRateLimit) GetSpec() (core_model.ResourceSpec, error) {

@@ -54,7 +54,7 @@ func SNIForResource(resName string, meshName string, resType model.ResourceType,
 	}
 
 	hash := fnv.New64a()
-	_, _ = hash.Write([]byte(fmt.Sprintf("%s;%s;%v", resName, meshName, strings.Join(mapStrings, ",")))) // fnv64a does not return error
+	_, _ = fmt.Fprintf(hash, "%s;%s;%v", resName, meshName, strings.Join(mapStrings, ",")) // fnv64a does not return error
 	hashBytes := hash.Sum(nil)
 
 	if len(resName) > dnsLabelLimit-1 {

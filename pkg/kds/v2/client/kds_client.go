@@ -8,16 +8,15 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type UpstreamResponse struct {
 	ControlPlaneId      string
-	Type                model.ResourceType
-	AddedResources      model.ResourceList
-	InvalidResourcesKey []model.ResourceKey
-	RemovedResourcesKey []model.ResourceKey
+	Type                core_model.ResourceType
+	AddedResources      core_model.ResourceList
+	InvalidResourcesKey []core_model.ResourceKey
+	RemovedResourcesKey []core_model.ResourceKey
 	IsInitialRequest    bool
 }
 
@@ -27,7 +26,7 @@ func (u *UpstreamResponse) Validate() error {
 	}
 	var err error
 	for _, res := range u.AddedResources.GetItems() {
-		if validationErr := model.Validate(res); validationErr != nil {
+		if validationErr := core_model.Validate(res); validationErr != nil {
 			err = std_errors.Join(err, validationErr)
 			u.InvalidResourcesKey = append(u.InvalidResourcesKey, core_model.MetaToResourceKey(res.GetMeta()))
 		}
@@ -41,10 +40,10 @@ type Callbacks struct {
 
 // All methods other than Receive() are non-blocking. It does not wait until the peer CP receives the message.
 type DeltaKDSStream interface {
-	DeltaDiscoveryRequest(resourceType model.ResourceType) error
+	DeltaDiscoveryRequest(resourceType core_model.ResourceType) error
 	Receive() (UpstreamResponse, error)
-	ACK(resourceType model.ResourceType) error
-	NACK(resourceType model.ResourceType, err error) error
+	ACK(resourceType core_model.ResourceType) error
+	NACK(resourceType core_model.ResourceType, err error) error
 }
 
 type KDSSyncClient interface {

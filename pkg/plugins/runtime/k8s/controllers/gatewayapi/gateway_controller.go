@@ -78,7 +78,7 @@ func (r *GatewayReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 	}
 
 	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: gateway.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGateway")
 	}
 
@@ -120,7 +120,7 @@ func (r *GatewayReconciler) meshGatewayConfigFromClass(ctx context.Context, clas
 
 	if ref != nil {
 		if ref.Spec.CrossMesh {
-			ref.Spec.MeshGatewayCommonConfig.ServiceType = kube_core.ServiceTypeClusterIP
+			ref.Spec.ServiceType = kube_core.ServiceTypeClusterIP
 		}
 
 		return ref.Spec, nil

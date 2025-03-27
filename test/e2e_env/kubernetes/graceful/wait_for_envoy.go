@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -70,9 +69,9 @@ spec:
     resources:
       limits:
         cpu: 50m
-        memory: 64Mi`, namespace, meshName, framework.Config.GetUniversalImage()))).
-			Install(framework.WaitNumPods(namespace, 1, "wait-for-envoy")).
-			Install(framework.WaitPodsAvailable(namespace, "wait-for-envoy")).
+        memory: 64Mi`, namespace, meshName, Config.GetUniversalImage()))).
+			Install(WaitNumPods(namespace, 1, "wait-for-envoy")).
+			Install(WaitPodsAvailable(namespace, "wait-for-envoy")).
 			Setup(kubernetes.Cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

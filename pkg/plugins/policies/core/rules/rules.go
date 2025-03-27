@@ -20,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -300,12 +299,12 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 		return nil, nil
 	}
 
-	var mhr *v1alpha1.MeshHTTPRouteResource
+	var mhr *meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
 		for _, route := range httpRoutes {
 			if core_model.IsReferenced(p.GetMeta(), pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
-				if r, ok := route.(*v1alpha1.MeshHTTPRouteResource); ok {
+				if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
 					mhr = r
 				}
 			}
@@ -320,7 +319,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
 		for _, mhrRule := range mhrRules.Rules {
-			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
+			matchesHash := meshhttproute_api.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
 				var targetRef common_api.TargetRef
 				switch mhrRules.TargetRef.Kind {
@@ -411,7 +410,7 @@ func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
-		if item.PolicyItem.GetTargetRef().Kind.IsOldKind() {
+		if item.GetTargetRef().Kind.IsOldKind() {
 			oldKindsItems = append(oldKindsItems, item)
 		}
 	}

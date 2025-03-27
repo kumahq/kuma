@@ -71,6 +71,6 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache envoy_cache.SnapshotCache) 
 
 type hasher struct{}
 
-func (_ hasher) ID(node *envoy_core.Node) string {
+func (hasher) ID(node *envoy_core.Node) string {
 	return node.Id
 }

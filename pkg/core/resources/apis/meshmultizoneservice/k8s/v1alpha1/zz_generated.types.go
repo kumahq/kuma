@@ -48,7 +48,7 @@ func (cb *MeshMultiZoneService) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *MeshMultiZoneService) GetMesh() string {
-	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
@@ -56,10 +56,10 @@ func (cb *MeshMultiZoneService) GetMesh() string {
 }
 
 func (cb *MeshMultiZoneService) SetMesh(mesh string) {
-	if cb.ObjectMeta.Labels == nil {
-		cb.ObjectMeta.Labels = map[string]string{}
+	if cb.Labels == nil {
+		cb.Labels = map[string]string{}
 	}
-	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
+	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *MeshMultiZoneService) GetSpec() (core_model.ResourceSpec, error) {

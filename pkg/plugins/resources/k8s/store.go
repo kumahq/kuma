@@ -263,17 +263,17 @@ type KubernetesMetaAdapter struct {
 
 func (m *KubernetesMetaAdapter) GetName() string {
 	if m.Namespace == "" { // it's cluster scoped object
-		return m.ObjectMeta.Name
+		return m.Name
 	}
-	return util_k8s.K8sNamespacedNameToCoreName(m.ObjectMeta.Name, m.ObjectMeta.Namespace)
+	return util_k8s.K8sNamespacedNameToCoreName(m.Name, m.Namespace)
 }
 
 func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
-	return k8s_common.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+	return k8s_common.ResourceNameExtensions(m.Namespace, m.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
-	return m.ObjectMeta.GetResourceVersion()
+	return m.GetResourceVersion()
 }
 
 func (m *KubernetesMetaAdapter) GetMesh() string {

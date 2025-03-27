@@ -27,7 +27,6 @@ import (
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -254,7 +253,7 @@ func newHTTPFilterChain(ctx xds_context.MeshContext, info GatewayListenerInfo) *
 		// will be the only policy available for a Dataplane with no outbounds.
 		envoy_listeners.HttpAccessLog(
 			ctx.Resource.Meta.GetName(),
-			envoy.TrafficDirectionInbound,
+			envoy_common.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
 			ctx.GetLoggingBackend(info.Proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
@@ -341,7 +340,7 @@ func newTCPFilterChain(
 		envoy_listeners.TcpProxyDeprecated(service, clusters...),
 		envoy_listeners.NetworkAccessLog(
 			ctx.Mesh.Resource.Meta.GetName(),
-			envoy.TrafficDirectionInbound,
+			envoy_common.TrafficDirectionInbound,
 			service,                // Source service is the gateway service.
 			mesh_proto.MatchAllTag, // Destination service could be anywhere, depending on the routes.
 			ctx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
@@ -363,7 +362,7 @@ func (g *TCPFilterChainGenerator) Generate(
 
 	resources := core_xds.NewResourceSet()
 
-	clustersByHostname := map[string][]envoy.Cluster{}
+	clustersByHostname := map[string][]envoy_common.Cluster{}
 	var allDests []route.Destination
 
 	for _, listenerHostnames := range info.ListenerHostnames {
@@ -372,11 +371,11 @@ func (g *TCPFilterChainGenerator) Generate(
 			allDests = append(allDests, dests...)
 
 			for _, dest := range dests {
-				cluster := envoy.NewCluster(
-					envoy.WithName(dest.Name),
-					envoy.WithService(dest.Destination[mesh_proto.ServiceTag]),
-					envoy.WithTags(dest.Destination),
-					envoy.WithWeight(dest.Weight),
+				cluster := envoy_common.NewCluster(
+					envoy_common.WithName(dest.Name),
+					envoy_common.WithService(dest.Destination[mesh_proto.ServiceTag]),
+					envoy_common.WithTags(dest.Destination),
+					envoy_common.WithWeight(dest.Weight),
 				)
 				clustersByHostname[host.Host.Hostname] = append(clustersByHostname[host.Host.Hostname], cluster)
 			}
