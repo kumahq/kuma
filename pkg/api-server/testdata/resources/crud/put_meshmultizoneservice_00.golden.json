@@ -1,1 +1,5 @@
-{}
+{
+ "warnings": [
+  "MeshMultiZoneService type resource \"redis\" has the following fields deprecations: "
+ ]
+}

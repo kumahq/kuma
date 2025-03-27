@@ -5,6 +5,8 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
+- 'MeshExternalService type resource "mes.kuma-global.kuma-system" has the following
+  fields deprecations: '
 - 'Invalid MeshExternalService resource name: ''mes.kuma-global''. It does not conform
   to the DNS format (RFC 1035). This is deprecated. Errors: a DNS-1035 label must
   consist of lower case alphanumeric characters or ''-'', start with an alphabetic

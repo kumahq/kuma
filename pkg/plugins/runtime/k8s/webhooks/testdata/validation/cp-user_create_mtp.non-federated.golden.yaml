@@ -5,6 +5,8 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
+- 'MeshTrafficPermission type resource "mtp-es.kuma-system" has the following fields
+  deprecations: '
 - MeshService value for 'targetRef.kind' is deprecated, use MeshSubset with 'kuma.io/service'
   tag instead
 - MeshService value for 'from[].targetRef.kind' is deprecated, use MeshSubset with

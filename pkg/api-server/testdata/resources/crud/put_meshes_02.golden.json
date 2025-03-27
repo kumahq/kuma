@@ -1,1 +1,5 @@
-{}
+{
+ "warnings": [
+  "Mesh type resource \"new-mesh\" has the following fields deprecations: "
+ ]
+}

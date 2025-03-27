@@ -1,1 +1,5 @@
-{}
+{
+ "warnings": [
+  "MeshExternalService type resource \"mes-tcp\" has the following fields deprecations: "
+ ]
+}
