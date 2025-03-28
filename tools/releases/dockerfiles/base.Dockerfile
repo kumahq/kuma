@@ -1,4 +1,4 @@
-FROM gcr.io/distroless/base-nossl-debian11:debug-nonroot@sha256:934b713496a9ed100550aaa58636270c4d69c27040e44f2aed1fa39594c45eba
+FROM gcr.io/distroless/base-nossl-debian12:debug-nonroot@sha256:393a39691519a85382db0f75cedffc6f0208911484d138b2afc46c7d218e46af
 
 COPY /tools/releases/templates/LICENSE \
     /tools/releases/templates/README \

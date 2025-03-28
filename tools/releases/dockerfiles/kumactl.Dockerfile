@@ -1,5 +1,5 @@
 ARG ARCH
-FROM kumahq/base-nossl-debian11:no-push-$ARCH
+FROM kumahq/base-nossl-debian12:no-push-$ARCH
 ARG ARCH
 
 # override NOTICE
