@@ -26,13 +26,11 @@ import (
 
 type remoteBootstrap struct {
 	operatingSystem string
-	features        []string
 }
 
-func NewRemoteBootstrapGenerator(operatingSystem string, features []string) BootstrapConfigFactoryFunc {
+func NewRemoteBootstrapGenerator(operatingSystem string) BootstrapConfigFactoryFunc {
 	rb := remoteBootstrap{
 		operatingSystem: operatingSystem,
-		features:        features,
 	}
 	return rb.Generate
 }
@@ -79,7 +77,7 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	backoff := retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration.Duration, retry.NewConstant(cfg.ControlPlane.Retry.Backoff.Duration))
 	var respBytes []byte
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		log.Info("trying to fetch bootstrap configuration from the Control Plane")
+		log.Info("trying to fetch bootstrap configuration from the Control Plane", "features", cfg.Features())
 		bootstrapUrl.Path = "/bootstrap"
 		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, cfg, params)
 		if err == nil {
@@ -182,7 +180,7 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 		ReadinessPort:        params.ReadinessPort,
 		AppProbeProxyEnabled: params.AppProbeProxyEnabled,
 		OperatingSystem:      b.operatingSystem,
-		Features:             b.features,
+		Features:             cfg.Features(),
 		Resources:            resources,
 		Workdir:              params.Workdir,
 		MetricsResources: types.MetricsResources{
