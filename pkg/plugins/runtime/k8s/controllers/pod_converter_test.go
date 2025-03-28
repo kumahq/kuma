@@ -144,7 +144,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes, mesh_proto.Mesh_MeshServices_Exclusive)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -326,6 +326,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			existingDataplane: "update-dataplane.existing-dataplane.yaml",
 			otherServices:     "update-dataplane.other-services.yaml",
 			dataplane:         "update-dataplane.dataplane.yaml",
+		}),
+		Entry("Multiples services selecting single port", testCase{
+			pod:            "duplicated-inbounds.pod.yaml",
+			servicesForPod: "duplicated-inbounds.services-for-pod.yaml",
+			dataplane:      "duplicated-inbounds.dataplane.yaml",
 		}),
 	)
 
