@@ -213,39 +213,114 @@ ifndef K3D_DONT_LOAD
 	$(MAKE) k3d/load/images
 endif
 
-.PHONY: k3d/deploy/kuma
-k3d/deploy/kuma: build/kumactl k3d/load
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  $(KUBECTL) apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
-	until \
-		 KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get mesh default ; \
-	do echo "Waiting for default mesh to be present" && sleep 1; done
+k3d/deploy/%: export KUBECONFIG = $(KIND_KUBECONFIG)
+k3d/deploy/%: KUMACTL := $(BUILD_ARTIFACTS_DIR)/kumactl/kumactl
+
+.PHONY: k3d/deploy/wait/%
+k3d/deploy/wait/%: CONDITION = $(word 1,$(subst /, ,$*))
+k3d/deploy/wait/%: KIND = $(word 2,$(subst /, ,$*))
+k3d/deploy/wait/%: APP = $(word 3,$(subst /, ,$*))
+k3d/deploy/wait/%:
+	@echo "Waiting for $(KIND) with app=$(APP) to be $(CONDITION)..."
+	@$(KUBECTL) wait \
+		--namespace $(KUMA_NAMESPACE) \
+		--timeout=60s \
+		--for=condition=$(CONDITION) \
+		--selector app=$(APP) \
+		$(KIND) >/dev/null
+
+.PHONY: k3d/deploy/wait/mesh
+k3d/deploy/wait/mesh:
+	@echo "Waiting for 'default' mesh to be created..."
+	@until $(KUBECTL) get mesh default >/dev/null 2>&1; do \
+		echo "  Still waiting..."; \
+		sleep 1; \
+	done
+
+.PHONY: k3d/deploy/wait/cp
+k3d/deploy/wait/cp: k3d/deploy/wait/Available/deployments/kuma-control-plane k3d/deploy/wait/Ready/pods/kuma-control-plane k3d/deploy/wait/mesh
+
+.PHONY: k3d/deploy/kumactl/install
+k3d/deploy/kumactl/install:
+	@$(KUMACTL) install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
+		| $(KUBECTL) apply -f- \
+		| grep --invert-match 'unchanged'
+	@echo
+
+.PHONY: k3d/deploy/kumactl/clean
+k3d/deploy/kumactl/clean:
+	@$(KUMACTL) install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) \
+		| $(KUBECTL) delete -f-
+
+.PHONY: k3d/deploy/kumactl
+k3d/deploy/kumactl: build/kumactl k3d/load k3d/deploy/kumactl/install k3d/deploy/wait/cp
+
+.PHONY: k3d/restart/kumactl
+k3d/restart/kumactl: k3d/stop k3d/start k3d/deploy/kumactl k3d/deploy/demo
+
+### Helm
+
+.PHONY: k3d/deploy/helm/clean/release
+k3d/deploy/helm/clean/release:
+ifeq (,$(or $(K3D_DEPLOY_HELM_DONT_CLEAN),$(K3D_DEPLOY_HELM_DONT_CLEAN_RELEASE)))
+	@echo "Deleting Helm release 'kuma'..."
+	@helm delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) kuma >/dev/null 2>&1
+
+	@echo "Waiting for control plane pods to terminate..."
+	@until $(KUBECTL) get pods --namespace $(KUMA_NAMESPACE) --selector app=kuma-control-plane >/dev/null 2>&1; do \
+		echo "  Still terminating..."; \
+		sleep 1; \
+	done
+endif
+
+.PHONY: k3d/deploy/helm/clean/ns
+k3d/deploy/helm/clean/ns:
+ifeq (,$(or $(K3D_DEPLOY_HELM_DONT_CLEAN),$(K3D_DEPLOY_HELM_DONT_CLEAN_NS)))
+	@echo "Deleting namespace '$(KUMA_NAMESPACE)'..."
+	@$(KUBECTL) delete namespace $(KUMA_NAMESPACE) --force --wait --ignore-not-found >/dev/null 2>&1
+
+	@echo "Waiting for namespace to be fully removed..."
+	@until ! $(KUBECTL) get namespace $(KUMA_NAMESPACE) >/dev/null 2>&1; do \
+		echo "  Still deleting..."; \
+		sleep 1; \
+	done
+endif
+
+.PHONY: k3d/deploy/helm/clean
+k3d/deploy/helm/clean: k3d/deploy/helm/clean/release k3d/deploy/helm/clean/ns
+
+.PHONY: k3d/deploy/helm/upgrade
+k3d/deploy/helm/upgrade:
+	@echo "Upgrading or installing Helm release 'kuma'..."
+	@helm upgrade kuma ./deployments/charts/kuma \
+		--install \
+		--create-namespace \
+		--namespace $(KUMA_NAMESPACE) \
+		$(strip $(K3D_HELM_DEPLOY_OPTS)) >/dev/null 2>&1
 
 .PHONY: k3d/deploy/helm
-k3d/deploy/helm: k3d/load
-ifndef K3D_DEPLOY_HELM_DONT_DELETE_NS
-	@KUBECONFIG=$(KIND_KUBECONFIG) helm delete --wait --ignore-not-found --namespace $(KUMA_NAMESPACE) kuma 2>/dev/null
-	@until \
-	    ! @KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get pods -n $(KUMA_NAMESPACE) --selector app=kuma-control-plane 2>/dev/null ; \
-	do sleep 1; done
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) delete namespace $(KUMA_NAMESPACE) --force --wait --ignore-not-found 2>/dev/null
-	@until \
-	    ! @KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) get namespace $(KUMA_NAMESPACE) 2>/dev/null ; \
-	do sleep 1; done
-endif
-	KUBECONFIG=$(KIND_KUBECONFIG) helm upgrade --install --namespace $(KUMA_NAMESPACE) --create-namespace $(K3D_HELM_DEPLOY_OPTS) kuma ./deployments/charts/kuma
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+k3d/deploy/helm: k3d/load k3d/deploy/helm/clean k3d/deploy/helm/upgrade k3d/deploy/wait/cp
 
 .PHONY: k3d/deploy/demo
 k3d/deploy/demo: build/kumactl
-	@$(BUILD_ARTIFACTS_DIR)/kumactl/kumactl install demo | KUBECONFIG=$(KIND_KUBECONFIG)  $(KUBECTL) apply -f -
-	@KUBECONFIG=$(KIND_KUBECONFIG) $(KUBECTL) wait --timeout=60s --for=condition=Ready -n kuma-demo --all pods
+	@$(KUMACTL) install demo | $(KUBECTL) apply -f -
+	@$(KUBECTL) wait --timeout=60s --for=condition=Ready -n kuma-demo --all pods
+
+# Renamed targets
+
+.PHONY: k3d/deploy/kuma
+k3d/deploy/kuma: k3d/deploy/kumactl
+	@echo
+	@echo " #######################################"
+	@echo " #         Target was renamed          #"
+	@echo " #       Use: k3d/deploy/kumactl       #"
+	@echo " #######################################"
+	@echo
 
 .PHONY: k3d/restart
-k3d/restart:
-	$(MAKE) k3d/stop
-	$(MAKE) k3d/start
-	$(MAKE) k3d/deploy/kuma
-	$(MAKE) k3d/deploy/demo
+k3d/restart: k3d/restart/kumactl
+	@echo
+	@echo " #######################################"
+	@echo " #         Target was renamed          #"
+	@echo " #      Use: k3d/restart/kumactl       #"
+	@echo " #######################################"
