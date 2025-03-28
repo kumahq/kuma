@@ -199,9 +199,7 @@ export PATH=$PATH:$(realpath ${PRODUCT_DIR}/bin/)
 	}
 	app.universalNetworking.ApiServerPort = strconv.Itoa(localApiServerPort)
 
-	app.CreateMainApp(cmd.String())
-
-	if err := app.mainApp.Start(); err != nil {
+	if _, err = app.RunOnHost(fmt.Sprintf("cp-run-cp"), cmd.String()); err != nil {
 		return err
 	}
 
@@ -409,8 +407,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	}
 
 	if !opts.proxyOnly {
-		app.CreateMainApp(strings.Join(args, " "))
-		err = app.mainApp.Start()
+		err = app.CreateMainApp(strings.Join(args, " "))
 		if err != nil {
 			return err
 		}

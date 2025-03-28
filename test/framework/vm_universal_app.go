@@ -10,7 +10,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"golang.org/x/crypto/ssh"
 
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
@@ -19,9 +18,12 @@ import (
 	"github.com/kumahq/kuma/test/framework/utils"
 )
 
+const (
+	vmMainAppContainerName = "main-app"
+)
+
 type VmUniversalApp struct {
 	t          testing.TestingT
-	mainApp    *kssh.Session
 	mainAppCmd string
 	dpApp      *kssh.Session
 	dpAppCmd   string
@@ -31,7 +33,8 @@ type VmUniversalApp struct {
 
 	universalNetworking *universal.Networking
 	appName             string
-	logger              *logger.Logger
+
+	mainAppLogger *logger.Logger
 }
 
 func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmClusterHost, verbose bool) (*VmUniversalApp, error) {
@@ -47,6 +50,11 @@ func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmCluster
 		RemoteHost: &host.Host,
 	}
 
+	app.mainAppLogger = logger.Discard
+	if verbose {
+		app.mainAppLogger = logger.Default
+	}
+
 	Logf("App %s running on Node IP %s", appName, app.universalNetworking.IP)
 
 	return app, nil
@@ -54,7 +62,7 @@ func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmCluster
 
 func (s *VmUniversalApp) GetEnvoyAdminTunnel() envoy_admin.Tunnel {
 	return tunnel.NewUniversalEnvoyAdminTunnel(func(cmdName, cmd string) (string, error) {
-		session, err := s.newSession("envoytunnel"+cmdName, cmd)
+		session, err := s.RunOnHost("envoytunnel"+cmdName, cmd)
 		if err != nil {
 			return "", err
 		}
@@ -71,11 +79,19 @@ func (s *VmUniversalApp) GetIP() string {
 	return s.universalNetworking.IP
 }
 
+// Stop stops all running components on this host
 func (s *VmUniversalApp) Stop() error {
 	Logf("Stopping app:%q", s.appName)
-	_ = s.KillMainApp()
+
+	Logf("Uninstalling the transparent proxy for app:%q", s.appName)
+	session, _ := s.RunOnHost(fmt.Sprintf("dp-%s-tp-uninstall", s.appName), "sudo /tmp/kuma/bin/kumactl uninstall transparent-proxy")
+	_ = session.Wait()
+
 	_ = s.universalNetworking.Close()
-	return fmt.Errorf("timed out waiting for app:%q to stop", s.appName)
+
+	err := s.KillMainApp()
+
+	return err
 }
 
 func (s *VmUniversalApp) ReStart() error {
@@ -85,32 +101,30 @@ func (s *VmUniversalApp) ReStart() error {
 	}
 	// No needed but this just in case kill -9 is not instant
 	time.Sleep(1 * time.Second)
-	return s.StartMainApp()
+	return s.CreateMainApp(s.mainAppCmd)
 }
 
 func (s *VmUniversalApp) KillMainApp() error {
-	defer s.mainApp.Close()
-	err := s.mainApp.Signal(ssh.SIGKILL, false)
-	if err != nil {
-		return err
-	}
-	return nil
+	Logf("Stopping main app:%q on remote host %q", s.appName, s.universalNetworking.RemoteHost.Address)
+
+	dockerCmd := fmt.Sprintf("docker stop %s", vmMainAppContainerName)
+
+	_, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-stop", s.appName), dockerCmd)
+	return err
 }
 
-func (s *VmUniversalApp) StartMainApp() error {
-	Logf("Starting app:%q", s.appName)
-	s.CreateMainApp(s.mainAppCmd)
+func (s *VmUniversalApp) CreateMainApp(cmd string) error {
+	Logf("Starting main app:%q on remote host %q", s.appName, s.universalNetworking.RemoteHost.Address)
 
-	return s.mainApp.Start()
-}
-
-func (s *VmUniversalApp) CreateMainApp(cmd string) {
 	s.mainAppCmd = cmd
-	var err error
-	s.mainApp, err = s.newSession(s.appName, s.mainAppCmd)
-	if err != nil {
-		panic(err)
-	}
+
+	dockerCmd := fmt.Sprintf("docker run --detach --rm --name %s --network host --privileged --entrypoint /bin/sh %s -c %s",
+		vmMainAppContainerName,
+		Config.GetUniversalImage(),
+		cmd)
+
+	_, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-start", s.appName), dockerCmd)
+	return err
 }
 
 func (s *VmUniversalApp) CreateDP(
@@ -151,12 +165,6 @@ export PATH=$PATH:%s/bin
 		}
 		_, _ = fmt.Fprintf(cmd, "sudo %s/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n",
 			workingDir, sshPort, strings.Join(extraArgs, " "))
-		_, _ = fmt.Fprintf(cmd, `uninstall_transparent_proxy () {
-    sudo %s/bin/kumactl uninstall transparent-proxy
-}
-trap uninstall_transparent_proxy EXIT INT QUIT TERM
-`,
-			workingDir)
 	}
 
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
@@ -203,10 +211,10 @@ EOF
 	_, _ = cmd.WriteString(strings.Join(args, " "))
 	s.dpAppCmd = cmd.String()
 	var err error
-	s.dpApp, err = s.newSession("dp-"+name, s.dpAppCmd)
+	s.dpApp, err = s.RunOnHost("dp-"+name, s.dpAppCmd)
 	return err
 }
 
-func (s *VmUniversalApp) newSession(name string, cmd string) (*kssh.Session, error) {
+func (s *VmUniversalApp) RunOnHost(name string, cmd string) (*kssh.Session, error) {
 	return s.universalNetworking.NewSession(path.Join("vm-universal", "exec"), name, s.verbose, cmd)
 }
