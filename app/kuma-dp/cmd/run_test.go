@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -48,6 +49,13 @@ var _ = Describe("run", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		}
+
+		// when
+		homeDir, err := os.UserHomeDir()
+		Expect(err).NotTo(HaveOccurred())
+		err = os.RemoveAll(path.Join(homeDir, ".kuma"))
+		// then
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	var backupEnvVars []string
@@ -121,12 +129,12 @@ var _ = Describe("run", func() {
 			}()
 
 			// then
-			var actualConfigFile string
+			var actualBootstrapConfigFile string
 			envoyPid := verifyComponentProcess("Envoy", envoyPidFile, envoyCmdlineFile, func(actualArgs []string) {
 				Expect(actualArgs[0]).To(Equal("--version"))
 				Expect(actualArgs[1]).To(Equal("--config-path"))
-				actualConfigFile = actualArgs[2]
-				Expect(actualConfigFile).To(BeARegularFile())
+				actualBootstrapConfigFile = actualArgs[2]
+				Expect(actualBootstrapConfigFile).To(BeARegularFile())
 				if given.expectedFile != "" {
 					Expect(actualArgs[2]).To(Equal(given.expectedFile))
 				}
@@ -163,9 +171,9 @@ var _ = Describe("run", func() {
 				return err != nil
 			}, "5s", "100ms").Should(BeTrue())
 
-			By("verifying that temporary configuration dir gets removed")
+			By("verifying that implicit configuration dir($HOME) is not removed")
 			if given.expectedFile == "" {
-				Expect(actualConfigFile).NotTo(BeAnExistingFile())
+				Expect(actualBootstrapConfigFile).To(BeAnExistingFile())
 			}
 
 			By("verifying that explicit configuration dir is not removed")
