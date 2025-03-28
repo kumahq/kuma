@@ -84,7 +84,7 @@ func (k *kubeAuthenticator) authResource(ctx context.Context, resource model.Res
 		return serviceAccountAuthErr
 	}
 
-	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
+	if userInfo[0] != "system" || userInfo[1] != "serviceaccount" {
 		log.Info(fmt.Sprintf("[WARNING] invalid service account token: user %q is not a service account", tokenReview.Status.User.Username),
 			"proxy", resourceName, "serviceAccountName", serviceAccountName)
 		return serviceAccountAuthErr

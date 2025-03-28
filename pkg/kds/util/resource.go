@@ -11,14 +11,13 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	cache_v2 "github.com/kumahq/kuma/pkg/kds/v2/cache"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceList, error) {
+func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (core_model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
@@ -27,10 +26,10 @@ func ToCoreResourceList(response *envoy_sd.DiscoveryResponse) (model.ResourceLis
 		}
 		krs = append(krs, kr)
 	}
-	return toResources(model.ResourceType(response.TypeUrl), krs)
+	return toResources(core_model.ResourceType(response.TypeUrl), krs)
 }
 
-func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.ResourceList, cache_v2.NameToVersion, error) {
+func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (core_model.ResourceList, cache_v2.NameToVersion, error) {
 	krs := []*mesh_proto.KumaResource{}
 	resourceVersions := cache_v2.NameToVersion{}
 	for _, r := range response.Resources {
@@ -41,23 +40,23 @@ func ToDeltaCoreResourceList(response *envoy_sd.DeltaDiscoveryResponse) (model.R
 		krs = append(krs, kr)
 		resourceVersions[kr.GetMeta().GetName()] = r.Version
 	}
-	list, err := toResources(model.ResourceType(response.TypeUrl), krs)
+	list, err := toResources(core_model.ResourceType(response.TypeUrl), krs)
 	if err != nil {
 		return list, resourceVersions, err
 	}
 	return list, resourceVersions, err
 }
 
-func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
+func ToEnvoyResources(rlist core_model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := model.ToAny(r.GetSpec())
+		pbany, err := core_model.ToAny(r.GetSpec())
 		if err != nil {
 			return nil, err
 		}
 		var pbanyStatus *anypb.Any
 		if r.Descriptor().HasStatus {
-			pbanyStatus, err = model.ToAny(r.GetStatus())
+			pbanyStatus, err = core_model.ToAny(r.GetStatus())
 			if err != nil {
 				return nil, err
 			}
@@ -76,7 +75,7 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 	return rv, nil
 }
 
-func AddPrefixToNames(rs []model.Resource, prefix string) {
+func AddPrefixToNames(rs []core_model.Resource, prefix string) {
 	for _, r := range rs {
 		r.SetMeta(CloneResourceMeta(
 			r.GetMeta(),
@@ -85,14 +84,14 @@ func AddPrefixToNames(rs []model.Resource, prefix string) {
 	}
 }
 
-func AddPrefixToResourceKeyNames(rk []model.ResourceKey, prefix string) []model.ResourceKey {
+func AddPrefixToResourceKeyNames(rk []core_model.ResourceKey, prefix string) []core_model.ResourceKey {
 	for idx, r := range rk {
 		rk[idx].Name = fmt.Sprintf("%s.%s", prefix, r.Name)
 	}
 	return rk
 }
 
-func AddSuffixToNames(rs []model.Resource, suffix string) {
+func AddSuffixToNames(rs []core_model.Resource, suffix string) {
 	for _, r := range rs {
 		r.SetMeta(CloneResourceMeta(
 			r.GetMeta(),
@@ -101,7 +100,7 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 	}
 }
 
-func AddSuffixToResourceKeyNames(rk []model.ResourceKey, suffix string) []model.ResourceKey {
+func AddSuffixToResourceKeyNames(rk []core_model.ResourceKey, suffix string) []core_model.ResourceKey {
 	for idx, r := range rk {
 		rk[idx].Name = fmt.Sprintf("%s.%s", r.Name, suffix)
 	}
@@ -118,7 +117,7 @@ func ResourceNameHasAtLeastOneOfPrefixes(resName string, prefixes ...string) boo
 	return false
 }
 
-func ZoneTag(r model.Resource) string {
+func ZoneTag(r core_model.Resource) string {
 	switch res := r.GetSpec().(type) {
 	case *mesh_proto.Dataplane:
 		if res.GetNetworking().GetGateway() != nil {
@@ -130,12 +129,12 @@ func ZoneTag(r model.Resource) string {
 	case *mesh_proto.ZoneEgress:
 		return res.GetZone()
 	default:
-		// todo(jakubdyszkiewicz): consider replacing this whole function with just model.ZoneOfResource(r)
-		return model.ZoneOfResource(r)
+		// todo(jakubdyszkiewicz): consider replacing this whole function with just core_model.ZoneOfResource(r)
+		return core_model.ZoneOfResource(r)
 	}
 }
 
-func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource) (model.ResourceList, error) {
+func toResources(resourceType core_model.ResourceType, krs []*mesh_proto.KumaResource) (core_model.ResourceList, error) {
 	list, err := registry.Global().NewList(resourceType)
 	if err != nil {
 		return nil, err
@@ -145,11 +144,11 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		if err = model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
+		if err = core_model.FromAny(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
 		if obj.Descriptor().HasStatus && kr.Status != nil {
-			if err = model.FromAny(kr.Status, obj.GetStatus()); err != nil {
+			if err = core_model.FromAny(kr.Status, obj.GetStatus()); err != nil {
 				return nil, err
 			}
 		}
@@ -165,7 +164,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 	return list, nil
 }
 
-func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.ResourceType) *system_proto.KDSServiceStats {
+func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType core_model.ResourceType) *system_proto.KDSServiceStats {
 	if status == nil {
 		return &system_proto.KDSServiceStats{}
 	}

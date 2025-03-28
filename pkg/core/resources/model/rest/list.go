@@ -34,8 +34,8 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	if err := json.Unmarshal(data, &list); err != nil {
 		return err
 	}
-	rec.ResourceList.Total = list.Total
-	rec.ResourceList.Items = make([]Resource, len(list.Items))
+	rec.Total = list.Total
+	rec.Items = make([]Resource, len(list.Items))
 	for i, li := range list.Items {
 		b, err := json.Marshal(li)
 		if err != nil {
@@ -47,8 +47,8 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 			return err
 		}
 
-		rec.ResourceList.Items[i] = restResource
+		rec.Items[i] = restResource
 	}
-	rec.ResourceList.Next = list.Next
+	rec.Next = list.Next
 	return nil
 }

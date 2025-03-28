@@ -5,7 +5,6 @@ import (
 
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	meshtimeout_proto "github.com/kumahq/kuma/pkg/plugins/policies/meshtimeout/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 )
@@ -15,7 +14,7 @@ func MeshTimeoutInCustomNamespace() *meshtimeout_proto.MeshTimeoutResource {
 		builders.TargetRefMesh(),
 	).AddTo(
 		builders.TargetRefMesh(),
-		v1alpha1.Conf{
+		meshtimeout_proto.Conf{
 			IdleTimeout: &v1.Duration{
 				Duration: 99 * time.Second,
 			},

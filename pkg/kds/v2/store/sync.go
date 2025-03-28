@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -132,7 +131,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	log = kuma_log.AddFieldsFromCtx(log, ctx, s.extensions)
 	upstream := upstreamResponse.AddedResources
 	downstream, err := registry.Global().NewList(upstreamResponse.Type)
-	indexedInvalidResources := model.IndexKeys(upstreamResponse.InvalidResourcesKey)
+	indexedInvalidResources := core_model.IndexKeys(upstreamResponse.InvalidResourcesKey)
 	if err != nil {
 		return err, nil
 	}
@@ -162,7 +161,7 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 	}
 
 	isValidResource := func(r core_model.Resource) bool {
-		_, exists := indexedInvalidResources[model.MetaToResourceKey(r.GetMeta())]
+		_, exists := indexedInvalidResources[core_model.MetaToResourceKey(r.GetMeta())]
 		return !exists
 	}
 
@@ -182,8 +181,8 @@ func (s *syncResourceStore) Sync(syncCtx context.Context, upstreamResponse clien
 
 	log.V(1).Info("after filtering", "downstream", downstream, "upstream", upstream)
 
-	indexedDownstream := model.IndexByKey(downstream.GetItems())
-	indexedUpstream := model.IndexByKey(upstream.GetItems())
+	indexedDownstream := core_model.IndexByKey(downstream.GetItems())
+	indexedUpstream := core_model.IndexByKey(upstream.GetItems())
 
 	onDelete := []core_model.Resource{}
 	// 1. delete resources which were removed from the upstream
@@ -316,7 +315,7 @@ func ZoneSyncCallback(ctx context.Context, syncer ResourceSyncer, k8sStore bool,
 				PrefilterBy(func(r core_model.Resource) bool {
 					// If it's not provided by zone we should always override as this is when we prefer global over zone
 					// this can happen when we've just started federation
-					if !tDesc.KDSFlags.Has(model.ProvidedByZoneFlag) {
+					if !tDesc.KDSFlags.Has(core_model.ProvidedByZoneFlag) {
 						return true
 					}
 					return !core_model.IsLocallyOriginated(config_core.Zone, r.GetMeta().GetLabels())
@@ -374,7 +373,7 @@ func GlobalSyncCallback(
 				}
 			}
 
-			return syncer.Sync(ctx, upstream, PrefilterBy(func(r model.Resource) bool {
+			return syncer.Sync(ctx, upstream, PrefilterBy(func(r core_model.Resource) bool {
 				// Assuming the global CP was updated first, the prefix check is only necessary
 				// if the client doesn't have `supportsHashSuffixes`.
 				// But maybe some prefixed resources were previously synced, we

@@ -32,7 +32,6 @@ import (
 	meshtcproute_plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
-	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -595,7 +594,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 		// then
 		Expect(getResource(rs, envoy_resource.ClusterType)).
-			To(matchers.MatchGoldenYAML(filepath.Join("testdata", "basic-meshexternalservice.egress_cluster.golden.yaml")))
+			To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", "basic-meshexternalservice.egress_cluster.golden.yaml")))
 	})
 
 	type gatewayTestCase struct {
@@ -656,7 +655,7 @@ var _ = Describe("MeshCircuitBreaker", func() {
 
 			// then
 			Expect(getResource(generatedResources, envoy_resource.ClusterType)).
-				To(matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
+				To(test_matchers.MatchGoldenYAML(filepath.Join("testdata", fmt.Sprintf("%s.gateway_cluster.golden.yaml", given.name))))
 		},
 		Entry("basic outbound cluster with connection limits", gatewayTestCase{
 			name:          "basic",

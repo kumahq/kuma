@@ -26,7 +26,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 	"github.com/kumahq/kuma/pkg/kds/service"
-	"github.com/kumahq/kuma/pkg/util/grpc"
 	util_grpc "github.com/kumahq/kuma/pkg/util/grpc"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 )
@@ -55,7 +54,7 @@ func (k *kdsEnvoyAdminClient) PostQuit(context.Context, *core_mesh.DataplaneReso
 }
 
 type message interface {
-	grpc.ReverseUnaryMessage
+	util_grpc.ReverseUnaryMessage
 	GetError() string
 }
 
@@ -79,8 +78,8 @@ func doRequest[T message]( // nolint:nonamedreturns
 	resManager manager.ReadOnlyResourceManager,
 	proxy core_model.ResourceWithAddress,
 	requestType string,
-	rpcs grpc.ReverseUnaryRPCs,
-	mkMsg func(id, typ, name, mesh string) grpc.ReverseUnaryMessage,
+	rpcs util_grpc.ReverseUnaryRPCs,
+	mkMsg func(id, typ, name, mesh string) util_grpc.ReverseUnaryMessage,
 ) (resp T, retErr error) {
 	var t T
 	ctx, span := startTrace(ctx, tracer, requestType)
@@ -136,7 +135,7 @@ func doRequest[T message]( // nolint:nonamedreturns
 
 func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	requestType := "StatsRequest"
-	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+	mkMsg := func(reqId, typ, name, mesh string) util_grpc.ReverseUnaryMessage {
 		return &mesh_proto.StatsRequest{
 			RequestId:    reqId,
 			ResourceType: typ,
@@ -154,7 +153,7 @@ func (k *kdsEnvoyAdminClient) Stats(ctx context.Context, proxy core_model.Resour
 
 func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.ResourceWithAddress, includeEds bool) ([]byte, error) {
 	requestType := "XDSConfigRequest"
-	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+	mkMsg := func(reqId, typ, name, mesh string) util_grpc.ReverseUnaryMessage {
 		return &mesh_proto.XDSConfigRequest{
 			RequestId:    reqId,
 			ResourceType: typ,
@@ -172,7 +171,7 @@ func (k *kdsEnvoyAdminClient) ConfigDump(ctx context.Context, proxy core_model.R
 
 func (k *kdsEnvoyAdminClient) Clusters(ctx context.Context, proxy core_model.ResourceWithAddress, format mesh_proto.AdminOutputFormat) ([]byte, error) {
 	requestType := "ClustersRequest"
-	mkMsg := func(reqId, typ, name, mesh string) grpc.ReverseUnaryMessage {
+	mkMsg := func(reqId, typ, name, mesh string) util_grpc.ReverseUnaryMessage {
 		return &mesh_proto.ClustersRequest{
 			RequestId:    reqId,
 			ResourceType: typ,

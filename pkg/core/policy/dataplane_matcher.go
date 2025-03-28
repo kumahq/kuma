@@ -35,14 +35,14 @@ func SelectDataplanePolicyWithMatcher(matches TagMatcher, policies []DataplanePo
 	}
 
 	for _, policy := range policies {
-		if 0 == len(policy.Selectors()) { // match everything
+		if len(policy.Selectors()) == 0 { // match everything
 			if bestPolicy == nil || sameRankCreatedLater(policy, mesh_proto.TagSelectorRank{}) {
 				bestPolicy = policy
 			}
 			continue
 		}
 		for _, selector := range policy.Selectors() {
-			if 0 == len(selector.Match) { // match everything
+			if len(selector.Match) == 0 { // match everything
 				if bestPolicy == nil || sameRankCreatedLater(policy, mesh_proto.TagSelectorRank{}) {
 					bestPolicy = policy
 				}
@@ -79,14 +79,14 @@ func SelectInboundDataplanePolicies(dataplane *mesh.DataplaneResource, policies 
 			return rank.CompareTo(bestRank) == 0 && policy.GetMeta().GetCreationTime().After(bestPolicy.GetMeta().GetCreationTime())
 		}
 		for _, policy := range policies {
-			if 0 == len(policy.Selectors()) { // match everything
+			if len(policy.Selectors()) == 0 { // match everything
 				if bestPolicy == nil || sameRankCreatedLater(policy, mesh_proto.TagSelectorRank{}) {
 					bestPolicy = policy
 				}
 				continue
 			}
 			for _, selector := range policy.Selectors() {
-				if 0 == len(selector.Match) { // match everything
+				if len(selector.Match) == 0 { // match everything
 					if bestPolicy == nil || sameRankCreatedLater(policy, mesh_proto.TagSelectorRank{}) {
 						bestPolicy = policy
 					}

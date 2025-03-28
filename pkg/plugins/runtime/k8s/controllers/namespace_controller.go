@@ -51,7 +51,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Namespace %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Namespace %s", req.Name)
 	}
 
 	if ns.Status.Phase == kube_core.NamespaceTerminating {
@@ -77,7 +77,7 @@ func (r *NamespaceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 
 func (r *NamespaceReconciler) hasNetworkAttachmentDefinition(ctx context.Context) (bool, error) {
 	crd := apiextensionsv1.CustomResourceDefinition{}
-	err := r.Client.Get(ctx, kube_client.ObjectKey{Name: "network-attachment-definitions.k8s.cni.cncf.io"}, &crd)
+	err := r.Get(ctx, kube_client.ObjectKey{Name: "network-attachment-definitions.k8s.cni.cncf.io"}, &crd)
 	if err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return false, nil
@@ -108,11 +108,11 @@ func (r *NamespaceReconciler) deleteNetworkAttachmentDefinition(ctx context.Cont
 		Namespace: namespace,
 		Name:      metadata.KumaCNI,
 	}
-	err := r.Client.Get(ctx, key, nad)
+	err := r.Get(ctx, key, nad)
 	switch {
 	case err == nil:
 		log.Info("deleting NetworkAttachmentDefinition")
-		return r.Client.Delete(ctx, nad)
+		return r.Delete(ctx, nad)
 	case kube_apierrs.IsNotFound(err): // it means that namespace never had Kuma injected
 		return nil
 	default:

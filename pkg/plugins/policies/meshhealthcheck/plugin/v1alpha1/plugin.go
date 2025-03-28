@@ -12,7 +12,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -99,7 +98,7 @@ func applyToGateways(
 
 	for _, listenerInfo := range gateway_plugin.ExtractGatewayListeners(proxy) {
 		for _, listenerHostname := range listenerInfo.ListenerHostnames {
-			inboundListener := rules.NewInboundListenerHostname(
+			inboundListener := core_rules.NewInboundListenerHostname(
 				proxy.Dataplane.Spec.GetNetworking().Address,
 				listenerInfo.Listener.Port,
 				listenerHostname.Hostname,

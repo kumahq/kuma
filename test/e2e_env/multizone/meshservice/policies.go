@@ -14,7 +14,6 @@ import (
 	meshretry_api "github.com/kumahq/kuma/pkg/plugins/policies/meshretry/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
@@ -342,7 +341,7 @@ spec:
           retryOn: ["503"]
 `, Config.KumaNamespace, meshName, Kuma2)
 		// and when a MeshRetry policy is applied
-		Expect(framework.YamlK8s(meshRetryPolicy)(multizone.KubeZone1)).To(Succeed())
+		Expect(YamlK8s(meshRetryPolicy)(multizone.KubeZone1)).To(Succeed())
 
 		// then
 		Eventually(func() ([]client.FailureResponse, error) {
@@ -409,7 +408,7 @@ spec:
           expectedStatuses:
           - 500`, Config.KumaNamespace, meshName, Kuma2)
 		// update HealthCheck policy to check for another status code
-		Expect(framework.YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
+		Expect(YamlK8s(healthCheck)(multizone.KubeZone1)).To(Succeed())
 
 		// check that test-server is unhealthy
 		Eventually(func(g Gomega) {

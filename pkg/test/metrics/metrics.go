@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega"
 	prometheus_client "github.com/prometheus/client_model/go"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -9,7 +9,7 @@ import (
 
 func FindMetric(metrics core_metrics.Metrics, name string, labelsValues ...string) *prometheus_client.Metric {
 	gathered, err := metrics.Gather()
-	Expect(err).ToNot(HaveOccurred())
+	gomega.Expect(err).ToNot(gomega.HaveOccurred())
 	for _, metricFamily := range gathered {
 		if metricFamily.Name != nil && *metricFamily.Name == name {
 			for _, metric := range metricFamily.Metric {

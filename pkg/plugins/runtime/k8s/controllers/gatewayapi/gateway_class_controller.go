@@ -53,7 +53,7 @@ func (r *GatewayClassReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	}
 
 	gateways := &gatewayapi.GatewayList{}
-	if err := r.Client.List(
+	if err := r.List(
 		ctx, gateways, kube_client.MatchingFields{gatewayClassField: class.Name},
 	); err != nil {
 		return kube_ctrl.Result{}, err

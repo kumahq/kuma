@@ -105,7 +105,7 @@ func newEchoHTTPCmd() *cobra.Command {
 						}
 					default:
 						writer.WriteHeader(http.StatusBadRequest)
-						if _, err := writer.Write([]byte(fmt.Sprintf("unknown probe type: %q", html.EscapeString(request.URL.Query().Get("type"))))); err != nil {
+						if _, err := fmt.Fprintf(writer, "unknown probe type: %q", html.EscapeString(request.URL.Query().Get("type"))); err != nil {
 							panic(err)
 						}
 					}

@@ -3,7 +3,6 @@ package k8s
 import (
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -50,7 +49,7 @@ func NewInferenceMapper(systemNamespace string) k8s.ResourceMapperFunc {
 			rs.SetNamespace(systemNamespace)
 		}
 		rs.SetName(resource.GetMeta().GetName())
-		rs.SetCreationTimestamp(v1.NewTime(resource.GetMeta().GetCreationTime()))
+		rs.SetCreationTimestamp(metav1.NewTime(resource.GetMeta().GetCreationTime()))
 		rs.SetSpec(resource.GetSpec())
 		return rs, nil
 	}
