@@ -1,6 +1,6 @@
 {
  "warnings": [
-  "MeshExternalService type resource \"mes.http\" has the following fields deprecations: ",
+  "MeshExternalService type resource \"mes.http\" has the following deprecated fields: Invalid MeshExternalService resource name: 'mes.http'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')",
   "Invalid MeshExternalService resource name: 'mes.http'. It does not conform to the DNS format (RFC 1035). This is deprecated. Errors: a DNS-1035 label must consist of lower case alphanumeric characters or '-', start with an alphabetic character, and end with an alphanumeric character (e.g. 'my-name',  or 'abc-123', regex used for validation is '[a-z]([-a-z0-9]*[a-z0-9])?')"
  ]
 }

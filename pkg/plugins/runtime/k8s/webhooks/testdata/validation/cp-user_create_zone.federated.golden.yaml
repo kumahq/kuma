@@ -5,4 +5,4 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'Zone type resource "zone-1" has the following fields deprecations: '
+- 'Zone type resource "zone-1" has the following deprecated fields: '

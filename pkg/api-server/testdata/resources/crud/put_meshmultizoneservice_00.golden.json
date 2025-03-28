@@ -1,5 +1,5 @@
 {
  "warnings": [
-  "MeshMultiZoneService type resource \"redis\" has the following fields deprecations: "
+  "MeshMultiZoneService type resource \"redis\" has the following deprecated fields: "
  ]
 }

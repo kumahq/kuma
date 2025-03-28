@@ -1,5 +1,5 @@
 {
  "warnings": [
-  "MeshAccessLog type resource \"my-access-log\" has the following fields deprecations: "
+  "MeshAccessLog type resource \"my-access-log\" has the following deprecated fields: "
  ]
 }

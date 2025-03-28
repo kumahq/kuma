@@ -5,4 +5,4 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'MeshTimeout type resource "backend-v3" has the following fields deprecations: '
+- 'MeshTimeout type resource "backend-v3" has the following deprecated fields: '

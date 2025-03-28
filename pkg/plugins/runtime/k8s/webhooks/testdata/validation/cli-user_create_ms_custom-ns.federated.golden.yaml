@@ -5,4 +5,4 @@ status:
   metadata: {}
 uid: "12345"
 warnings:
-- 'MeshService type resource "redis" has the following fields deprecations: '
+- 'MeshService type resource "redis" has the following deprecated fields: '
