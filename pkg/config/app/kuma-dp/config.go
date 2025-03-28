@@ -33,7 +33,8 @@ var DefaultConfig = func() Config {
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
-			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+			ConfigDir:  "",
+			SocketDir:  "",
 			DynamicConfiguration: DynamicConfiguration{
 				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
 			},
@@ -44,7 +45,7 @@ var DefaultConfig = func() Config {
 			EnvoyDNSPort:              15054,
 			CoreDNSBinaryPath:         "coredns",
 			CoreDNSConfigTemplatePath: "",
-			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
+			ConfigDir:                 "",
 			PrometheusPort:            19153,
 			CoreDNSLogging:            false,
 		},
@@ -187,6 +188,7 @@ type DataplaneRuntime struct {
 	// Path to Envoy binary.
 	BinaryPath string `json:"binaryPath,omitempty" envconfig:"kuma_dataplane_runtime_binary_path"`
 	// Dir to store auto-generated Envoy bootstrap config in.
+	// If empty then the working directory is $HOME/.kuma
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 	// Concurrency specifies how to generate the Envoy concurrency flag.
 	Concurrency uint32 `json:"concurrency,omitempty" envconfig:"kuma_dataplane_runtime_concurrency"`
@@ -210,6 +212,7 @@ type DataplaneRuntime struct {
 	// Resources defines the resources for this proxy.
 	Resources DataplaneResources `json:"resources,omitempty"`
 	// SocketDir dir to store socket used between Envoy and the dp process
+	// If empty then the working directory is $HOME/.kuma
 	SocketDir string `json:"socketDir,omitempty" envconfig:"kuma_dataplane_runtime_socket_dir"`
 	// Metrics defines properties of metrics
 	Metrics Metrics `json:"metrics,omitempty"`
@@ -370,6 +373,7 @@ type DNS struct {
 	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
 	CoreDNSConfigTemplatePath string `json:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
 	// Dir to store auto-generated DNS Server config in.
+	// If empty then the working directory is $HOME/.kuma
 	ConfigDir string `json:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
 	// PrometheusPort where Prometheus stats will be exposed for the DNS Server
 	PrometheusPort uint32 `json:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
