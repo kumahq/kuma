@@ -107,7 +107,7 @@ func mapCrdNamesToFiles(files []data.File) (map[string]data.File, error) {
 			return nil, errors.Wrap(err, "Failed parsing file as CRD")
 		}
 
-		result[crd.ObjectMeta.Name] = file
+		result[crd.Name] = file
 	}
 
 	return result, nil

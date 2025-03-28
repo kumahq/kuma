@@ -130,7 +130,7 @@ func (f *subscriptionFinalizer) checkGeneration(ctx context.Context, typ core_mo
 
 	tenantId, ok := multitenant.TenantFromCtx(ctx)
 	if !ok {
-		return multitenant.TenantMissingErr
+		return multitenant.ErrTenantMissing
 	}
 
 	// delete items from the map that don't exist in the upstream

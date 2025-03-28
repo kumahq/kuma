@@ -32,7 +32,7 @@ type Pool struct {
 	tlsCfg *TLSConfig
 }
 
-var TLSNotConfigured = errors.New("tls config is not yet set")
+var ErrTLSNotConfigured = errors.New("tls config is not yet set")
 
 func NewPool(
 	newConn func(string, *TLSConfig) (Conn, error),
@@ -52,7 +52,7 @@ func (c *Pool) Client(serverURL string) (Conn, error) {
 	c.mut.Lock()
 	defer c.mut.Unlock()
 	if c.tlsCfg == nil {
-		return nil, TLSNotConfigured
+		return nil, ErrTLSNotConfigured
 	}
 	ac, ok := c.connections[serverURL]
 	createNewConnection := !ok

@@ -13,7 +13,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/xds"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -79,7 +78,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			ctx := xds_context.Context{
 				ControlPlane: &xds_context.ControlPlaneContext{
 					CLACache: &test_xds.DummyCLACache{OutboundTargets: outboundTargets},
-					Secrets:  &xds.TestSecrets{},
+					Secrets:  &test_xds.TestSecrets{},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &core_mesh.MeshResource{

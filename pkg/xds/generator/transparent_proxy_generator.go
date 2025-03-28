@@ -55,7 +55,7 @@ func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.Resour
 	return resources, nil
 }
 
-func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
+func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
 	outboundName, inboundName, allIP, inPassThroughIP string,
 	redirectPortOutbound, redirectPortInbound uint32,
 ) (*model.ResourceSet, error) {

@@ -8,7 +8,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/report"
 	"github.com/kumahq/kuma/test/framework/universal"
@@ -52,9 +51,9 @@ type State struct {
 	KubeZone2 K8sNetworkingState
 }
 
-func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framework.KumaDeploymentOption) *K8sCluster {
+func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *K8sCluster {
 	wg.Add(1)
-	options := []framework.KumaDeploymentOption{
+	options := []KumaDeploymentOption{
 		WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
 		WithIngress(),
 		WithIngressEnvoyAdminTunnel(),
@@ -64,9 +63,9 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 		// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 		// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
 		// 100s and 80s are values that we also use in mesh-perf when we put a lot of pressure on the CP.
-		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
-		framework.WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
-		framework.WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
+		WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_LEASE_DURATION", "100s"),
+		WithEnv("KUMA_RUNTIME_KUBERNETES_LEADER_ELECTION_RENEW_DEADLINE", "80s"),
+		WithEnv("KUMA_MULTIZONE_ZONE_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
 	}
 	options = append(options, extraOptions...)
 	zone := NewK8sCluster(NewTestingT(), clusterName, Verbose)
@@ -78,10 +77,10 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...frame
 	return zone
 }
 
-func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framework.KumaDeploymentOption) *UniversalCluster {
+func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *UniversalCluster {
 	wg.Add(1)
 	options := append(
-		[]framework.KumaDeploymentOption{
+		[]KumaDeploymentOption{
 			WithGlobalAddress(Global.GetKuma().GetKDSServerAddress()),
 			WithEgressEnvoyAdminTunnel(),
 			WithIngressEnvoyAdminTunnel(),
@@ -109,17 +108,17 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...framew
 func SetupAndGetState() []byte {
 	Global = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	globalOptions := append(
-		[]framework.KumaDeploymentOption{
+		[]KumaDeploymentOption{
 			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_NACK_BACKOFF", "1s"),
 			WithEnv("KUMA_MULTIZONE_GLOBAL_KDS_LABELS_SKIP_PREFIXES", "argocd.argoproj.io"),
 		},
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.Global)...)
+		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.Global)...)
 	Expect(Global.Install(Kuma(core.Global, globalOptions...))).To(Succeed())
 
 	wg := sync.WaitGroup{}
 
 	kubeZone1Options := append(
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone1),
+		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone1),
 		WithEnv("KUMA_STORE_UNSAFE_DELETE", "true"),
 	)
 	if Config.IPV6 {
@@ -132,18 +131,18 @@ func SetupAndGetState() []byte {
 	}
 	KubeZone1 = setupKubeZone(&wg, Kuma1, kubeZone1Options...)
 
-	kubeZone2Options := framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.KubeZone2)
+	kubeZone2Options := KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2)
 	kubeZone2Options = append(kubeZone2Options, WithCNI())
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	UniZone1 = setupUniZone(&wg, Kuma4, framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone1)...)
+	UniZone1 = setupUniZone(&wg, Kuma4, KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)...)
 
 	vipCIDROverride := "251.0.0.0/8"
 	if Config.IPV6 {
 		vipCIDROverride = "fd00:fd11::/64"
 	}
 	uniZone2Options := append(
-		framework.KumaDeploymentOptionsFromConfig(framework.Config.KumaCpConfig.Multizone.UniZone2),
+		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone2),
 		WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 	)
 	UniZone2 = setupUniZone(&wg, Kuma5, uniZone2Options...)
@@ -245,7 +244,7 @@ func SynchronizedAfterSuite() {
 		ControlPlaneAssertions(cluster)
 	}
 	for _, cluster := range append(Zones(), Global) {
-		framework.DebugCPLogs(cluster)
+		DebugCPLogs(cluster)
 	}
 	Expect(Global.DismissCluster()).To(Succeed())
 	Expect(UniZone1.DismissCluster()).To(Succeed())

@@ -642,7 +642,7 @@ func ComputePolicyRole(p Policy, ns Namespace) (mesh_proto.PolicyRole, error) {
 		return "", errors.New("it's not allowed to mix 'to' and 'from' arrays in the same policy")
 	}
 
-	if hasFrom || !(hasTo || hasFrom) {
+	if hasFrom || (!hasTo && !hasFrom) {
 		// if there is 'from' or neither (single item)
 		return mesh_proto.WorkloadOwnerPolicyRole, nil
 	}
@@ -765,7 +765,7 @@ func (p *Pagination) SetNextOffset(nextOffset string) {
 }
 
 func ErrorInvalidItemType(expected, actual interface{}) error {
-	return fmt.Errorf("Invalid argument type: expected=%q got=%q", reflect.TypeOf(expected), reflect.TypeOf(actual))
+	return fmt.Errorf("invalid argument type: expected=%q got=%q", reflect.TypeOf(expected), reflect.TypeOf(actual))
 }
 
 type ResourceWithAddress interface {

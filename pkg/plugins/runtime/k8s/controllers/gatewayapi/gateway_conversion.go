@@ -291,7 +291,7 @@ func (r *GatewayReconciler) handleCertRefs(ctx context.Context, mesh string, gat
 		}
 
 		secret := &kube_core.Secret{}
-		if err := r.Client.Get(ctx, policyRef.NamespacedNameReferredTo(), secret); err != nil {
+		if err := r.Get(ctx, policyRef.NamespacedNameReferredTo(), secret); err != nil {
 			if kube_apierrs.IsNotFound(err) {
 				return nil, &certRefCondition{
 					reason:  string(gatewayapi_v1.ListenerReasonInvalidCertificateRef),

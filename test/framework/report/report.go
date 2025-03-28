@@ -48,7 +48,7 @@ func AddFileToReportEntry(name string, content interface{}) {
 	case []byte:
 		_, err = tmp.Write(c)
 	default:
-		_, err = tmp.WriteString(fmt.Sprintf("%v", c))
+		_, err = fmt.Fprintf(tmp, "%v", c)
 	}
 	if err != nil {
 		logf("[WARNING]: could not write to temporary report %v", err)

@@ -74,7 +74,7 @@ func (r *HTTPRouteReconciler) Reconcile(ctx context.Context, req kube_ctrl.Reque
 	}
 
 	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: httpRoute.Namespace}, &ns); err != nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: httpRoute.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of HTTPRoute")
 	}
 
@@ -151,7 +151,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 	route *gatewayapi.HTTPRoute,
 ) (map[string]core_model.ResourceSpec, ParentConditions, error) {
 	routeNs := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: route.Namespace}, &routeNs); err != nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: route.Namespace}, &routeNs); err != nil {
 		if kube_apierrs.IsNotFound(err) {
 			return nil, nil, nil
 		} else {
@@ -228,7 +228,7 @@ func (r *HTTPRouteReconciler) gapiToKumaRoutes(
 				}
 			case attachment.Service:
 				var parent kube_core.Service
-				if err := r.Client.Get(ctx, kube_types.NamespacedName{
+				if err := r.Get(ctx, kube_types.NamespacedName{
 					Name:      string(ref.Name),
 					Namespace: namespace,
 				}, &parent); err != nil {

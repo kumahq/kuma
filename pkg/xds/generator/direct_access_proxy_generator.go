@@ -33,7 +33,7 @@ func DirectAccessEndpointName(endpoint Endpoint) string {
 	return fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
 }
 
-func (_ DirectAccessProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+func (DirectAccessProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	resources := core_xds.NewResourceSet()
 	if tproxy.GetRedirectPortOutbound() == 0 || tproxy.GetRedirectPortInbound() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {

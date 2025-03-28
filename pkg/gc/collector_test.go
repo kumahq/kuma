@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -71,7 +70,7 @@ var _ = Describe("Collector", func() {
 			collector, err := gc.NewCollector(rm, func() *time.Ticker {
 				return &time.Ticker{C: ticks}
 			}, 1*time.Hour, metrics, "dp", map[gc.InsightType]gc.ResourceType{
-				gc.InsightType(mesh.DataplaneInsightType): gc.ResourceType(mesh.DataplaneType),
+				gc.InsightType(core_mesh.DataplaneInsightType): gc.ResourceType(core_mesh.DataplaneType),
 			})
 			Expect(err).ToNot(HaveOccurred())
 
@@ -184,8 +183,8 @@ var _ = Describe("Collector", func() {
 			collector, err := gc.NewCollector(rm, func() *time.Ticker {
 				return &time.Ticker{C: ticks}
 			}, 1*time.Hour, metrics, "zone", map[gc.InsightType]gc.ResourceType{
-				gc.InsightType(mesh.ZoneIngressInsightType): gc.ResourceType(mesh.ZoneIngressType),
-				gc.InsightType(mesh.ZoneEgressInsightType):  gc.ResourceType(mesh.ZoneEgressType),
+				gc.InsightType(core_mesh.ZoneIngressInsightType): gc.ResourceType(core_mesh.ZoneIngressType),
+				gc.InsightType(core_mesh.ZoneEgressInsightType):  gc.ResourceType(core_mesh.ZoneEgressType),
 			})
 			Expect(err).ToNot(HaveOccurred())
 

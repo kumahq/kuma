@@ -65,7 +65,7 @@ func (r *GatewayInstanceReconciler) Reconcile(ctx context.Context, req kube_ctrl
 	}
 
 	ns := kube_core.Namespace{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: gatewayInstance.Namespace}, &ns); err != nil {
 		return kube_ctrl.Result{}, errors.Wrap(err, "unable to get Namespace of MeshGatewayInstance")
 	}
 

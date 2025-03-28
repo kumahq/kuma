@@ -411,7 +411,7 @@ func (r *HTTPRouteReconciler) uncheckedGapiToKumaRef(
 		port := int32(*ref.Port)
 
 		svc := &kube_core.Service{}
-		if err := r.Client.Get(ctx, namespacedName, svc); err != nil {
+		if err := r.Get(ctx, namespacedName, svc); err != nil {
 			if kube_apierrs.IsNotFound(err) {
 				return unresolvedTargetRef,
 					&ResolvedRefsConditionFalse{

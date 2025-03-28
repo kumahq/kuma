@@ -69,7 +69,7 @@ var rootCmd = &cobra.Command{
 		if err := exec.Command("make", path, "POLICIES_DIR="+cfg.basePath).Run(); err != nil {
 			return err
 		}
-		_, _ = cmd.OutOrStdout().Write([]byte(fmt.Sprintf(`
+		_, _ = fmt.Fprintf(cmd.OutOrStdout(), `
 Successfully bootstrapped policy
 regenerate auto generated files with: make generate/policy/%s
 
@@ -81,8 +81,7 @@ Useful files:
 			cfg.lowercase(),
 			fmt.Sprintf("%s/api/%s/%s.proto", cfg.policyPath(), cfg.version, cfg.lowercase()),
 			fmt.Sprintf("%s/api/%s/validator.go", cfg.policyPath(), cfg.version),
-			fmt.Sprintf("%s/plugin/%s/plugin.go", cfg.policyPath(), cfg.version),
-		)))
+			fmt.Sprintf("%s/plugin/%s/plugin.go", cfg.policyPath(), cfg.version))
 		return nil
 	},
 }
