@@ -142,7 +142,7 @@ func (s *Server) Start(stop <-chan struct{}) error {
 			log.Error(err, "server shutdown returned an error")
 		}
 	case err = <-done:
-		log.Info("[WARNING] server stopped with shutdown ever being called")
+		log.Info("[WARNING] server stopped with shutdown never called")
 		if err != nil {
 			return err
 		}

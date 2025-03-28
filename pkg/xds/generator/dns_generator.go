@@ -22,6 +22,10 @@ const OriginDNS = "dns"
 type DNSGenerator struct{}
 
 func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	dnsPort := proxy.Metadata.GetDNSPort()
+	if dnsPort == 0 {
+		return nil, nil
+	}
 	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
@@ -67,10 +71,6 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 		if err != nil {
 			return nil, err
 		}
-		return nil, nil
-	}
-	dnsPort := proxy.Metadata.GetDNSPort()
-	if dnsPort == 0 {
 		return nil, nil
 	}
 

@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -31,7 +33,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
-	"github.com/kumahq/kuma/pkg/util/net"
+	kuma_net "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -229,7 +231,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if dnsOpts.Config.DNS.ProxyPort != 0 {
 					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
 					// Using embedded DNS
-					dnsproxyServer := dnsproxy.NewServer(net.JoinHostPort("localhost", dnsOpts.Config.DNS.ProxyPort))
+					dnsproxyServer := dnsproxy.NewServer(net.JoinHostPort("localhost", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
 					err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap)
 					if err != nil {
 						return err
@@ -383,7 +385,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:              item.Name,
 				Path:              item.Path,
 				Port:              item.Port,
-				IsIPv6:            net.IsAddressIPv6(item.Address),
+				IsIPv6:            kuma_net.IsAddressIPv6(item.Address),
 				QueryModifier:     metrics.RemoveQueryParameters,
 				MeshMetricMutator: metrics.AggregatedOtelMutator(),
 			})
