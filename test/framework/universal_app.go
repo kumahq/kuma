@@ -433,7 +433,11 @@ cp %s/envoy /usr/bin/envoy
 		_, _ = fmt.Fprintf(cmd, "/usr/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n", sshPort, strings.Join(extraArgs, " "))
 	}
 
-	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
+	// run the DP as user `envoy` so iptables can distinguish its traffic if needed.
+	_, _ = fmt.Fprintf(cmd, "mkdir -p /home/kuma-dp\n")
+	_, _ = fmt.Fprintf(cmd, "chown kuma-dp /home/kuma-dp\n")
+	_, _ = fmt.Fprintf(cmd, "chmod 700 /home/kuma-dp\n")
+
 	args := []string{
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
