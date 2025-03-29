@@ -161,6 +161,15 @@
 * perf(xds): add `x-kuma-tags` conditionally [#11076](https://github.com/kumahq/kuma/pull/11076) @jakubdyszkiewicz
 
 
+## 2.9.5
+> Released on 2025/03/28
+
+* chore(deps): bump envoy from v1.30.9 to v1.30.11 [#13160](https://github.com/kumahq/kuma/pull/13160) [#13240](https://github.com/kumahq/kuma/pull/13240) @lukidzi
+* chore(deps): bump golang from 1.23.6 to 1.23.7 [#13246](https://github.com/kumahq/kuma/pull/13246) @lukidzi
+* chore(deps): security update [#13096](https://github.com/kumahq/kuma/pull/13096) [#13170](https://github.com/kumahq/kuma/pull/13170) @kumahq
+* perf(rules): add `withNegation` flag to simplify `to` policy flow (backport of #13151) [#13194](https://github.com/kumahq/kuma/pull/13194) @kumahq
+
+
 ## 2.7.12
 > Released on 2025/03/03
 
