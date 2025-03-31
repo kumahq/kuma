@@ -2,9 +2,20 @@
 
 ## Context and problem statement
 
-In version 2.9, we added an experimental feature to configure the transparent proxy using a ConfigMap in Kubernetes. But the first version had issues. The control plane needed access to ConfigMaps in *all* namespaces, which some users didn't allow.
+In version 2.9, we introduced an experimental feature to configure the transparent proxy using a Kubernetes ConfigMap. This version had a major limitation: the control plane needed access to ConfigMaps in *all* namespaces, which some users didn’t allow.
 
-This document proposes removing that requirement. Instead of the control plane building the full proxy config, each data plane component (`kuma-init`, `kuma-dp`, `kuma-cni`) will build its own config.
+There are three components outside the control plane that rely on the transparent proxy configuration:
+
+- `kuma-init` - an init container injected alongside the workload container to install the transparent proxy
+- `kuma-cni` - our custom CNI plugin that installs the transparent proxy
+- `kuma-dp` - the data plane proxy injected next to the workload container
+
+The proxy config is built from default values, control plane settings, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-dp`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
+
+This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init`, `kuma-dp`) will build its own.
+
+> [!WARNING]
+> `kuma-cni` is deployed in the `kube-system` namespace. Without expanding its permissions to access ConfigMaps from other namespaces, it cannot support custom ConfigMaps specified at the workload level. With the proposed changes, where config building moves outside of the control plane, `kuma-cni` will no longer be able to consume workload-specific ConfigMaps at all. This document **_WON'T_** cover the changes required to support such functionality in `kuma-cni`. As a result, the transparent proxy configuration via ConfigMaps will be incomplete and backward incompatible when using `kuma-cni`.
 
 ## Problems
 
@@ -15,7 +26,6 @@ The Dataplane object includes some transparent proxy settings, which the control
 ### Each component gets config in a different way
 
 - `kuma-init`: gets full config as a CLI argument
-- `kuma-cni`: gets full config as an annotation (`traffic.kuma.io/transparent-proxy-config`)
 - `kuma-dp`: gets config as environment variables (`KUMA_DNS_ENABLED`, `KUMA_DNS_CORE_DNS_PORT`)
 
 This inconsistency makes it hard to track where values are coming from.
@@ -32,7 +42,7 @@ During sidecar injection, the control plane will:
 3. Compute the differences from defaults
 4. Add a single annotation `traffic.kuma.io/transparent-proxy-config` with the final config
 
-Components (`kuma-init`, `kuma-dp`, `kuma-cni`) will read this annotation via a mounted volume using the Downward API.
+Components (`kuma-init`, `kuma-dp`) will read this annotation via a mounted volume using the Downward API.
 
 If there's a `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the named ConfigMap will be mounted into `kuma-init` and `kuma-dp`, and its values will override everything else.
 
