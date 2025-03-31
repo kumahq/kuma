@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 	"sync"
+	"sync/atomic"
 
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo/v2"
@@ -21,7 +22,7 @@ var _ = Describe("components", func() {
 	var wg sync.WaitGroup
 	var server *dnsproxy.Server
 	var address string
-	var mock func(*dns.Msg) (*dns.Msg, error)
+	var mock atomic.Pointer[func(*dns.Msg) (*dns.Msg, error)]
 
 	BeforeEach(func() {
 		port, err := test.FindFreePort("127.0.0.1")
@@ -35,7 +36,8 @@ var _ = Describe("components", func() {
 		server = dnsproxy.NewServer(address)
 		server.MockDNS(func(msg *dns.Msg) (*dns.Msg, error) {
 			defer GinkgoRecover()
-			return mock(msg)
+			f := *mock.Load()
+			return f(msg)
 		})
 
 		go func() {
@@ -51,7 +53,7 @@ var _ = Describe("components", func() {
 		wg.Wait()
 	})
 	It("works with no local table", func() {
-		mock = func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
 			response := new(dns.Msg)
 			response.SetRcode(req, dns.RcodeSuccess)
 			response.Authoritative = true
@@ -60,6 +62,7 @@ var _ = Describe("components", func() {
 			}
 			return response, nil
 		}
+		mock.Store(&f)
 		msg := &dns.Msg{}
 		msg.SetQuestion("example.com.", dns.TypeA)
 		msg.RecursionAvailable = true
@@ -70,13 +73,14 @@ var _ = Describe("components", func() {
 		Expect(res.Answer[0].String()).To(ContainSubstring("17.0.0.1"))
 	})
 	It("failing upstream", func() {
-		mock = func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
 			response := new(dns.Msg)
 			response.SetRcode(req, dns.RcodeServerFailure)
 			response.Authoritative = true
 			response.Answer = []dns.RR{}
 			return response, nil
 		}
+		mock.Store(&f)
 		msg := &dns.Msg{}
 		msg.SetQuestion("example.com.", dns.TypeA)
 		msg.RecursionAvailable = true
@@ -87,9 +91,10 @@ var _ = Describe("components", func() {
 		Expect(res).To(HaveField("Rcode", Equal(dns.RcodeServerFailure)))
 	})
 	It("failing network", func() {
-		mock = func(req *dns.Msg) (*dns.Msg, error) {
+		f := func(req *dns.Msg) (*dns.Msg, error) {
 			return nil, fmt.Errorf("some error")
 		}
+		mock.Store(&f)
 		msg := &dns.Msg{}
 		msg.SetQuestion("example.com.", dns.TypeA)
 		msg.RecursionAvailable = true
@@ -100,7 +105,7 @@ var _ = Describe("components", func() {
 		Expect(res).To(HaveField("Rcode", Equal(dns.RcodeServerFailure)))
 	})
 	It("hit the map", func() {
-		mock = func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
+		f := func(req *dns.Msg) (*dns.Msg, error) { // nolint:unparam
 			if req.Question[0].Name == "example.com." {
 				Fail("should never call upstream for something in the map")
 			}
@@ -112,6 +117,7 @@ var _ = Describe("components", func() {
 			}
 			return response, nil
 		}
+		mock.Store(&f)
 
 		_ = server.ReloadMap(context.Background(), bytes.NewBuffer([]byte(`{
 "ttl": 123,

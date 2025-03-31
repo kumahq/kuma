@@ -6,6 +6,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 )
 
-func TestMetrics(t *testing.T) {
+func TestDNSProxy(t *testing.T) {
 	test.RunSpecs(t, "DNS Proxy")
 }
