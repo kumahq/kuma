@@ -1,4 +1,4 @@
-# Reworking transparent proxy config with ConfigMaps
+# Transparent Proxy ConfigMap Handling Outside the Control Plane
 
 ## Context and problem statement
 
