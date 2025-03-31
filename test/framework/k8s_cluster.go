@@ -521,6 +521,11 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 
 	if c.opts.helmChartVersion != "" {
 		helmOpts.Version = c.opts.helmChartVersion
+		// helm upgrade does not support --version flag
+		// remove this hack until this issue is solved: https://github.com/gruntwork-io/terratest/issues/1531
+		helmOpts.ExtraArgs = map[string][]string{
+			"upgrade": {"--version", c.opts.helmChartVersion},
+		}
 	}
 
 	releaseName := c.opts.helmReleaseName
