@@ -22,6 +22,7 @@ import (
 
 func ControlPlaneAssertions(cluster Cluster) {
 	ginkgo.GinkgoHelper()
+	defer ginkgo.GinkgoRecover() // Ensures that Ginkgo can recover from any failures
 	logs := cluster.GetKumaCPLogs()
 	for k, log := range logs {
 		Expect(utils.HasPanicInCpLogs(log)).To(BeFalse(), fmt.Sprintf("CP %s has panic in logs %s", cluster.Name(), k))
