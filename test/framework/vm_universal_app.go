@@ -101,7 +101,7 @@ func (s *VmUniversalApp) ReStart() error {
 	}
 	// No needed but this just in case kill -9 is not instant
 	time.Sleep(1 * time.Second)
-	return s.CreateMainApp(s.mainAppCmd)
+	return s.RunMainApp(s.mainAppCmd)
 }
 
 func (s *VmUniversalApp) KillMainApp() error {
@@ -109,11 +109,14 @@ func (s *VmUniversalApp) KillMainApp() error {
 
 	dockerCmd := fmt.Sprintf("docker stop %s", vmMainAppContainerName)
 
-	_, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-stop", s.appName), dockerCmd)
+	session, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-stop", s.appName), dockerCmd)
+	if err == nil {
+		err = session.Run()
+	}
 	return err
 }
 
-func (s *VmUniversalApp) CreateMainApp(cmd string) error {
+func (s *VmUniversalApp) RunMainApp(cmd string) error {
 	Logf("Starting main app:%q on remote host %q", s.appName, s.universalNetworking.RemoteHost.Address)
 
 	s.mainAppCmd = cmd
@@ -123,7 +126,10 @@ func (s *VmUniversalApp) CreateMainApp(cmd string) error {
 		Config.GetUniversalImage(),
 		cmd)
 
-	_, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-start", s.appName), dockerCmd)
+	session, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-start", s.appName), dockerCmd)
+	if err == nil {
+		err = session.Run()
+	}
 	return err
 }
 
@@ -144,9 +150,16 @@ func (s *VmUniversalApp) CreateDP(
 	_, _ = fmt.Fprintf(cmd, "printf %q > %s/token-%s\n", token, workingDir, name)
 
 	_, _ = fmt.Fprintf(cmd, `
-curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
 DOWNLOAD_DIR=$(find -maxdepth 1 -type d -name '*-%s')
-mv -f $DOWNLOAD_DIR/bin/* %s/bin/
+if [ "$DOWNLOAD_DIR" == "" ]; then
+  curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
+  DOWNLOAD_DIR=$(find -maxdepth 1 -type d -name '*-%s')
+fi
+if [ "$DOWNLOAD_DIR" == "" ]; then
+  >&2 echo "Could not download the installer"
+  exit 1;
+fi
+cp -f $DOWNLOAD_DIR/bin/* %s/bin/
 export PATH=$PATH:%s/bin
 		`, Config.KumaInstallerUrl, Config.KumaImageTag, Config.KumaImageTag, workingDir, workingDir)
 

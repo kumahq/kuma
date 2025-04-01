@@ -199,7 +199,12 @@ export PATH=$PATH:$(realpath ${PRODUCT_DIR}/bin/)
 	}
 	app.universalNetworking.ApiServerPort = strconv.Itoa(localApiServerPort)
 
-	if _, err = app.RunOnHost(fmt.Sprintf("cp-run-cp"), cmd.String()); err != nil {
+	sshSession, err := app.RunOnHost(fmt.Sprintf("cp-run-cp"), cmd.String())
+	if err != nil {
+		return err
+	}
+	err = sshSession.Start()
+	if err != nil {
 		return err
 	}
 
@@ -361,7 +366,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 		return errors.Errorf("there is no host to deploy app %q", opts.name)
 	}
 
-	app, err := NewVmUniversalApp(c.t, opts.name, opts.mesh, host, false)
+	app, err := NewVmUniversalApp(c.t, opts.name, opts.mesh, host, Config.Debug)
 	if err != nil {
 		return err
 	}
@@ -407,7 +412,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	}
 
 	if !opts.proxyOnly {
-		err = app.CreateMainApp(strings.Join(args, " "))
+		err = app.RunMainApp(strings.Join(args, " "))
 		if err != nil {
 			return err
 		}

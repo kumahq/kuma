@@ -118,12 +118,12 @@ func (s *Networking) Close() error {
 	return s.sshClient.Close()
 }
 
-func (s *Networking) NewSession(exportPath string, cmdName string, verbose bool, cmd string) (*kssh.Session, error) {
+func (s *Networking) NewSession(reportPath string, cmdName string, verbose bool, cmd string) (*kssh.Session, error) {
 	id, err := s.initSSH()
 	if err != nil {
 		return nil, err
 	}
-	session, err := kssh.NewSession(s.sshClient, exportPath, fmt.Sprintf("%s-%d", cmdName, id), verbose, cmd)
+	session, err := kssh.NewSession(s.sshClient, reportPath, fmt.Sprintf("%s-%d", cmdName, id), verbose, cmd)
 	if err != nil {
 		return nil, err
 	}

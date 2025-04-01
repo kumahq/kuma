@@ -96,18 +96,7 @@ func (c *VmUniversalControlPlane) GetAPIServerAddress() string {
 }
 
 func (c *VmUniversalControlPlane) GetMetrics() (string, error) {
-	stdout, stderr, err := c.Exec(
-		"curl", "--no-progress-meter",
-		"--fail", "--show-error",
-		"http://localhost:5680/metrics",
-	)
-	if err != nil {
-		return "", err
-	}
-	if stderr != "" {
-		return "", fmt.Errorf("got on stderr: %q", stderr)
-	}
-	return stdout, nil
+	return "", fmt.Errorf("vm cluster did not support get CP metrics yet")
 }
 
 func (c *VmUniversalControlPlane) GetMonitoringAssignment(clientId string) (string, error) {
