@@ -1,7 +1,8 @@
-paths-ignore:
-  # this is to ignore InsecureIgnoreHostKey call from specific test file
-  - test/framework/universal/networking.go
 query-filters:
   - exclude:
       # this is to ignore every warning about InsecureSkipVerify: true
       id: go/disabled-certificate-check
+  - exclude:
+      id: go/insecure-hostkeycallback
+      paths:
+      - test/framework/universal/networking.go
