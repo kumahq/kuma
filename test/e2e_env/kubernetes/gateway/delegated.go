@@ -22,6 +22,7 @@ import (
 )
 
 func Delegated() {
+
 	config := delegated.Config{
 		Namespace:                   "delegated-gateway",
 		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh",
@@ -33,6 +34,9 @@ func Delegated() {
 		MeshServiceMode:             mesh_proto.Mesh_MeshServices_Disabled,
 		UseEgress:                   false,
 	}
+	AfterEachFailure(func() {
+		DebugKube(kubernetes.Cluster, config.Mesh, config.Namespace, config.NamespaceOutsideMesh)
+	})
 
 	configMs := delegated.Config{
 		Namespace:                   "delegated-gateway-ms",
