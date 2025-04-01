@@ -3,6 +3,7 @@ package outbound_test
 import (
 	"fmt"
 	"maps"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -24,7 +25,6 @@ import (
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
 	"github.com/kumahq/kuma/pkg/util/k8s"
 	"github.com/kumahq/kuma/pkg/xds/context"
-	"path/filepath"
 )
 
 var _ = Describe("BuildRules", func() {
