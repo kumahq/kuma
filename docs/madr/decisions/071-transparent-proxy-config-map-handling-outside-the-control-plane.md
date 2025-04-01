@@ -1,5 +1,7 @@
 # Transparent Proxy ConfigMap Handling Outside the Control Plane
 
+* Status: accepted
+
 ## Context and problem statement
 
 In version 2.9, we introduced an experimental feature to configure the transparent proxy using a Kubernetes ConfigMap. This version had a major limitation: the control plane needed access to ConfigMaps in *all* namespaces, which some users didn’t allow.
@@ -10,18 +12,26 @@ There are three components outside the control plane that rely on the transparen
 - `kuma-cni` - our custom CNI plugin that installs the transparent proxy
 - `kuma-dp` - the data plane proxy injected next to the workload container
 
-The proxy config is built from default values, control plane settings, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-dp`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
+The proxy config is built from default values, control plane configuration, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-dp`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
 
-This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init`, `kuma-dp`) will build its own.
+This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init` and `kuma-dp`) will build its own.
 
-> [!WARNING]
-> `kuma-cni` is deployed in the `kube-system` namespace. Without expanding its permissions to access ConfigMaps from other namespaces, it cannot support custom ConfigMaps specified at the workload level. With the proposed changes, where config building moves outside of the control plane, `kuma-cni` will no longer be able to consume workload-specific ConfigMaps at all. This document **_WON'T_** cover the changes required to support such functionality in `kuma-cni`. As a result, the transparent proxy configuration via ConfigMaps will be incomplete and backward incompatible when using `kuma-cni`.
+## Out of Scope
+
+`kuma-cni` is deployed in the `kube-system` namespace. Without expanding its permissions to access ConfigMaps from other namespaces, it cannot support custom ConfigMaps specified at the workload level. With the proposed changes, where config building moves outside of the control plane, `kuma-cni` will no longer be able to consume workload-specific ConfigMaps at all. This document **_WON'T_** cover the changes required to support such functionality in `kuma-cni`. As a result, the transparent proxy configuration via ConfigMaps will be incomplete and backward incompatible when using `kuma-cni`.
 
 ## Problems
 
 ### Control plane needs the config to build the Dataplane object
 
-The Dataplane object includes some transparent proxy settings, which the control plane uses to generate xDS config. The control plane creates or updates this object when a Pod changes. But it doesn't have a clean way to get the proxy config from the sidecar injector, because they're separate components.
+There are two control plane components that require transparent proxy configuration:
+
+- **Sidecar Injector** - injects `kuma-dp` and `kuma-init` containers into Pods that are part of the mesh
+- **Pod Reconciler** - creates and updates the `Dataplane` object based on the Pod
+
+The `Dataplane` object includes transparent proxy settings like `ipFamilyMode`, `redirectPortInbound`, and `redirectPortOutbound`. These are used by the control plane to generate the xDS config delivered to `kuma-dp`.
+
+Sidecar injection and Dataplane generation are handled by separate components, with no shared state. This means there is no direct way to pass configuration between them.
 
 ### Each component gets config in a different way
 
