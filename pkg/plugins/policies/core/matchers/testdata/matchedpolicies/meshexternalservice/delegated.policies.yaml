@@ -1,0 +1,48 @@
+type: MeshRetry
+mesh: mesh-1
+name: mr-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 3
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-2
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes
+      default:
+        http:
+          numRetries: 4
+          retryOn:
+            - "5xx"
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-3
+spec:
+  targetRef:
+    kind: MeshSubset
+    tags:
+      kuma.io/service: kong_kong_svc_80
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes
+      default:
+        http:
+          backOff:
+            baseInterval: 15s
+            maxInterval: 20m
+          retryOn:
+            - "5xx"

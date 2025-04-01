@@ -1,0 +1,47 @@
+type: MeshRetry
+mesh: mesh-1
+name: mr-1
+spec:
+  targetRef:
+    kind: Mesh
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 3
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-2
+spec:
+  targetRef:
+    kind: Mesh
+    proxyTypes: ["Gateway"]
+  to:
+    - targetRef:
+        kind: Mesh
+      default:
+        http:
+          numRetries: 4
+          retryOn:
+            - "5xx"
+---
+type: MeshRetry
+mesh: mesh-1
+name: mr-3
+spec:
+  targetRef:
+    kind: MeshSubset
+    proxyTypes: ["Sidecar"]
+    tags:
+      version: "v1"
+  to:
+    - targetRef:
+        kind: MeshExternalService
+        name: mes
+      default:
+        http:
+          numRetries: 5
+          retryOn:
+            - "5xx"

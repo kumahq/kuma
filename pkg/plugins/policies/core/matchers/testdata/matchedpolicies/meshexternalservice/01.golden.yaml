@@ -1,0 +1,35 @@
+ResourceRules:
+  meshexternalservice:mesh/mesh-1:name/mes:
+    BackendRefOriginIndex: {}
+    Conf:
+    - http:
+        numRetries: 5
+        retryOn:
+        - 5xx
+    Origin:
+    - Resource:
+        creationTime: "0001-01-01T00:00:00Z"
+        mesh: mesh-1
+        modificationTime: "0001-01-01T00:00:00Z"
+        name: mr-3
+        type: MeshRetry
+      RuleIndex: 0
+    Resource:
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: mesh-1
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: mes
+      type: MeshExternalService
+    ResourceSectionName: ""
+Rules:
+- BackendRefOriginIndex: {}
+  Conf:
+    http:
+      numRetries: 3
+  Origin:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mr-1
+    type: MeshRetry
+  Subset: []
