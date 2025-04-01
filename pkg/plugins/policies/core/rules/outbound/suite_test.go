@@ -4,10 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	. "github.com/onsi/gomega"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/test"
-	. "github.com/onsi/gomega"
 )
 
 func TestRules(t *testing.T) {
