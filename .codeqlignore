@@ -1,6 +1,0 @@
-# Ignore internal Dockerfile
-tools/releases/dockerfiles/kumactl.Dockerfile
-tools/releases/dockerfiles/kuma-cp.Dockerfile
-tools/releases/dockerfiles/kuma-cni.Dockerfile
-tools/releases/dockerfiles/kuma-dp.Dockerfile
-tools/releases/dockerfiles/kuma-init.Dockerfile
