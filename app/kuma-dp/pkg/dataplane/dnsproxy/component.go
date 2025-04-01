@@ -22,7 +22,7 @@ var log = core.Log.WithName("dnsproxy")
 type Server struct {
 	// HostPort or unix domain socket for tests
 	address          string
-	done             chan struct{}
+	componentDone    chan struct{}
 	dnsMap           atomic.Pointer[dnsMap]
 	metrics          *metrics
 	upstreamHostPort string
@@ -33,11 +33,11 @@ type Server struct {
 
 func NewServer(address string) *Server {
 	s := Server{
-		address: address,
-		done:    make(chan struct{}),
-		dnsMap:  atomic.Pointer[dnsMap]{},
-		ready:   make(chan struct{}),
-		metrics: newMetrics(),
+		address:       address,
+		componentDone: make(chan struct{}),
+		dnsMap:        atomic.Pointer[dnsMap]{},
+		ready:         make(chan struct{}),
+		metrics:       newMetrics(),
 	}
 	s.dnsMap.Store(&dnsMap{ARecords: make(map[string]*dnsEntry), AAAARecords: make(map[string]*dnsEntry)})
 	return &s
@@ -85,7 +85,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 			dnsMap := s.dnsMap.Load()
 			dnsEntry = dnsMap.AAAARecords[req.Question[0].Name]
 		}
-		log.V(1).Info("Got request", "type", req.Question[0].Qtype, "name", req.Question[0].Name, "entry", dnsEntry)
+		log.V(1).Info("got request", "type", req.Question[0].Qtype, "name", req.Question[0].Name, "entry", dnsEntry)
 	}
 	if dnsEntry != nil {
 		response = new(dns.Msg)
@@ -104,7 +104,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		}
 		if err != nil {
 			s.metrics.UpstreamRequestFailureCount.Inc()
-			log.Error(err, "Failed to write message to upstream")
+			log.Error(err, "failed to write message to upstream")
 			response = new(dns.Msg)
 			response.SetRcode(req, dns.RcodeServerFailure)
 		} else {
@@ -114,26 +114,29 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	}
 	err := res.WriteMsg(response)
 	if err != nil {
-		log.Error(err, "Failed to write upstreamResponse")
+		log.Error(err, "failed to write upstreamResponse")
 	}
 }
 
 func (s *Server) Start(stop <-chan struct{}) error {
-	defer close(s.done)
+	defer close(s.componentDone)
 	srv := &dns.Server{Addr: s.address, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
 	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 	if err != nil {
 		return fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
 	}
+	if len(config.Servers) == 0 {
+		return fmt.Errorf("no server found in /etc/resolv.conf")
+	}
 	s.upstreamHostPort = net.JoinHostPort(config.Servers[0], config.Port)
 
-	done := make(chan error)
+	serverDone := make(chan error)
 	srv.NotifyStartedFunc = func() {
 		close(s.ready)
 	}
 	go func() {
 		err := srv.ListenAndServe()
-		done <- err
+		serverDone <- err
 	}()
 	select {
 	case <-stop:
@@ -141,13 +144,13 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		if err != nil {
 			log.Error(err, "server shutdown returned an error")
 		}
-	case err = <-done:
+	case err = <-serverDone:
 		log.Info("[WARNING] server stopped with shutdown never called")
 		if err != nil {
 			return err
 		}
 	}
-	err = <-done
+	err = <-serverDone
 	log.Info("server shutdown complete")
 	return err
 }
@@ -157,7 +160,7 @@ func (s *Server) NeedLeaderElection() bool {
 }
 
 func (s *Server) WaitForDone() {
-	<-s.done
+	<-s.componentDone
 }
 
 func (s *Server) WaitForReady() {

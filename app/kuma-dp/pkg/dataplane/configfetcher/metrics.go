@@ -14,7 +14,7 @@ func newHandlerMetrics(path string) *handlerMetrics {
 	labels := prometheus.Labels{"path": path}
 	handlerTickCount := prometheus.NewCounter(prometheus.CounterOpts{
 		Name:        "kuma_dp_envoyconfigfetcher_handler_call_count",
-		Help:        "Number of times a handler has been called, unlike onchange_duration_seconds_count this is inclusive of not modified cases",
+		Help:        "Number of times a handler has been called, unlike kuma_dp_envoyconfigfetcher_handler_call_duration_seconds this is inclusive of not modified cases",
 		ConstLabels: labels,
 	})
 	prometheus.MustRegister(handlerTickCount)
