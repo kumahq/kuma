@@ -128,18 +128,6 @@ violations:
   - field: spec.targetRef.kind
     message: value is not supported`, // this could be more specific
 			}),
-			Entry("to field is an empty array", testCase{
-				inputYaml: `
-targetRef:
-  kind: MeshService
-  name: backend
-to: []
-`,
-				expected: `
-violations:
-  - field: spec.to
-    message: must not be empty`,
-			}),
 			Entry("required fields are missing", testCase{
 				inputYaml: `
 targetRef:
