@@ -55,18 +55,6 @@ var _ = Describe("MeshCircuitBreaker", func() {
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := func(mesh string) *core_model.TypedResourceIdentifier {
-		return &core_model.TypedResourceIdentifier{
-			ResourceIdentifier: core_model.ResourceIdentifier{
-				Name:      "external",
-				Mesh:      mesh,
-				Namespace: "",
-				Zone:      "",
-			},
-			ResourceType: "MeshExternalService",
-		}
-	}
-
 	getResource := func(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []byte {
 		resources, err := resourceSet.ListOf(typ).ToDeltaDiscoveryResponse()
 		Expect(err).ToNot(HaveOccurred())
