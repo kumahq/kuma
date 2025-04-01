@@ -3,6 +3,7 @@ package outbound_test
 import (
 	"fmt"
 	"maps"
+	"path/filepath"
 	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -165,7 +166,12 @@ var _ = Describe("BuildRules", func() {
 					// then
 					bytes, err := yaml.Marshal(rules)
 					Expect(err).ToNot(HaveOccurred())
-					Expect(bytes).To(matchers.MatchGoldenYAML(strings.Replace(inputFile, ".input.", fmt.Sprintf(".%s.golden.", given.golden), 1)))
+					goldenFile := filepath.Join(
+						filepath.Dir(inputFile),
+						strings.TrimSuffix(filepath.Base(inputFile), ".input.yaml"),
+						fmt.Sprintf("%s.golden.yaml", given.golden),
+					)
+					Expect(bytes).To(matchers.MatchGoldenYAML(goldenFile))
 				},
 				// policies are created and checked on the same cluster
 				Entry("created and checked on global-uni", testCase{
