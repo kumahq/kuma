@@ -127,13 +127,3 @@ func ErrorCases(description string, errs []validators.Violation, yaml string) Ta
 		},
 	)
 }
-
-func XErrorCases(description string, errs []validators.Violation, yaml string) TableEntry {
-	return XEntry(
-		description,
-		ResourceValidationCase{
-			Violations: errs,
-			Resource:   yaml,
-		},
-	)
-}
