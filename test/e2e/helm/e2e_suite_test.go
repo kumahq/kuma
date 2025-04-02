@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/helm"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {
@@ -14,6 +15,7 @@ func TestE2E(t *testing.T) {
 }
 
 var (
+	_ = ReportAfterSuite("report suite", report.DumpReport)
 	_ = Describe("Zone and Global with Helm chart", Label("job-2"), helm.ZoneAndGlobalWithHelmChart, Ordered)
 	_ = Describe("Zone and Global universal mode with Helm chart", Label("job-2"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
 	_ = Describe("Global and Zone universal mode with Helm chart", Label("job-0"), helm.GlobalAndZoneInUniversalModeWithHelmChart, Ordered)
