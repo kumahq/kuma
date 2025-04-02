@@ -14,13 +14,15 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.c
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -227,7 +229,20 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader common.Resourc
 		return ToRules{}, err
 	}
 
-	resourceRules, err := outbound.BuildRules(matchedPolicies, reader)
+	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
+	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
+	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
+	if err != nil {
+		return ToRules{}, err
+	}
+	for _, item := range matchedPolicies.GetItems() {
+		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
+			if err = excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
+				return ToRules{}, err
+			}
+		}
+	}
+	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
 	if err != nil {
 		return ToRules{}, err
 	}
