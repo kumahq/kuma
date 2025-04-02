@@ -42,7 +42,7 @@ This inconsistency makes it hard to track where values are coming from.
 
 ## Solution
 
-We remove proxy config from the Dataplane object. Instead, the control plane will pass the config as metadata when `kuma-dp` connects.
+We stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be relied on by `kuma-dp` in Kubernetes deployments. Instead, the same information will be passed as metadata during the xDS connection, using values from the transparent proxy config passed via a CLI flag.
 
 `kuma-dp` will accept a CLI flag like `--transparent-proxy-config`, just like `kuma-init`. Some fields can still be overridden using env vars.
 
