@@ -86,8 +86,7 @@ func test(meshName string, meshBuilder *builders.MeshBuilder) {
 		Expect(multizone.Global.DeleteMesh(meshName)).To(Succeed())
 	})
 
-	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9346
-	XIt("should use MeshHTTPRoute for cross-zone communication", func() {
+	It("should use MeshHTTPRoute for cross-zone communication", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
 name: route-1
@@ -115,7 +114,7 @@ spec:
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(
@@ -124,11 +123,10 @@ spec:
 					HaveKeyWithValue(MatchRegexp(`^alias-zone2.*`), Not(BeNil())),
 				),
 			)
-		}, "30s", "500ms").Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 	})
 
-	// Disabled because of flakes: https://github.com/kumahq/kuma/issues/9346
-	XIt("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
+	It("should use MeshHTTPRoute for cross-zone with MeshServiceSubset", func() {
 		Expect(YamlUniversal(fmt.Sprintf(`
 type: MeshHTTPRoute
 name: route-1
@@ -163,7 +161,7 @@ spec:
 `, meshName))(multizone.Global)).To(Succeed())
 
 		Eventually(func(g Gomega) {
-			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh")
+			response, err := client.CollectResponsesByInstance(multizone.UniZone1, "demo-client", "test-server.mesh", client.WithNumberOfRequests(100))
 			g.Expect(err).ToNot(HaveOccurred())
 			g.Expect(response).To(
 				And(
@@ -172,6 +170,6 @@ spec:
 					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
 				),
 			)
-		}, "30s", "500ms").Should(Succeed())
+		}, "30s", "5s").Should(Succeed())
 	})
 }
