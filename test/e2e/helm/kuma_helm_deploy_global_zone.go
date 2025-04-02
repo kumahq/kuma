@@ -171,8 +171,7 @@ interCp:
 		})
 	})
 
-	// TODO(bartsmykla): disabled while investingating flake
-	XIt("should execute admin operations on Global CP", func() {
+	It("should execute admin operations on Global CP", func() {
 		// given DP available on Global CP
 		Eventually(func(g Gomega) {
 			dataplanes, err := c1.GetKumactlOptions().KumactlList("dataplanes", "default")
