@@ -166,7 +166,7 @@ func (c *VmUniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentO
 	}
 
 	cmd := &strings.Builder{}
-	_, _ = cmd.WriteString("#!/bin/sh\n")
+	_, _ = cmd.WriteString("#!/bin/bash\n")
 	_, _ = fmt.Fprintf(cmd, `
 curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
 PRODUCT_DIR=$(find -maxdepth 1 -type d -name '*-%s')
@@ -199,7 +199,7 @@ export PATH=$PATH:$(realpath ${PRODUCT_DIR}/bin/)
 	}
 	app.universalNetworking.ApiServerPort = strconv.Itoa(localApiServerPort)
 
-	sshSession, err := app.RunOnHost(fmt.Sprintf("cp-run-cp"), cmd.String())
+	sshSession, err := app.CreateHostProcess(fmt.Sprintf("cp-run-cp"), cmd.String(), true)
 	if err != nil {
 		return err
 	}
@@ -300,7 +300,7 @@ func (c *VmUniversalCluster) DeleteNamespace(string, ...NamespaceDeleteHookFunc)
 func (c *VmUniversalCluster) CreateDP(app *VmUniversalApp, name string, mesh string, ip string, dpyaml string, envs map[string]string, token string, builtindns bool, concurrency int, transparent bool) error {
 	cpIp := c.controlplane.Networking().IP
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent)
+	session, err := app.CreateDP(token, cpAddress, name, mesh, ip, dpyaml, builtindns, "", concurrency, envs, transparent)
 	if err != nil {
 		return err
 	}
@@ -308,11 +308,11 @@ func (c *VmUniversalCluster) CreateDP(app *VmUniversalApp, name string, mesh str
 	c.mutex.Lock()
 	c.dataplanes = append(c.dataplanes, name)
 	c.mutex.Unlock()
-	return app.dpApp.Start()
+	return session.Start()
 }
 
 func (c *VmUniversalCluster) CreateZoneIngress(app *VmUniversalApp, name, ip, dpyaml, token string, builtindns bool) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false)
+	session, err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpyaml, builtindns, "ingress", 0, nil, false)
 	if err != nil {
 		return err
 	}
@@ -320,15 +320,15 @@ func (c *VmUniversalCluster) CreateZoneIngress(app *VmUniversalApp, name, ip, dp
 	c.networking[Config.ZoneIngressApp] = app.universalNetworking
 
 	c.createEnvoyTunnel(Config.ZoneIngressApp)
-	return app.dpApp.Start()
+	return session.Start()
 }
 
 func (c *VmUniversalCluster) CreateZoneEgress(
-	app *UniversalApp,
+	app *VmUniversalApp,
 	name, ip, dpYAML, token string,
 	builtinDNS bool,
 ) error {
-	err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", app.concurrency, nil, false, "")
+	session, err := app.CreateDP(token, c.controlplane.Networking().BootstrapAddress(), name, "", ip, dpYAML, builtinDNS, "egress", 0, nil, false)
 	if err != nil {
 		return err
 	}
@@ -336,7 +336,7 @@ func (c *VmUniversalCluster) CreateZoneEgress(
 	c.networking[Config.ZoneEgressApp] = app.universalNetworking
 
 	c.createEnvoyTunnel(Config.ZoneEgressApp)
-	return app.dpApp.Start()
+	return session.Start()
 }
 
 func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
@@ -412,7 +412,7 @@ func (c *VmUniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 	}
 
 	if !opts.proxyOnly {
-		err = app.RunMainApp(strings.Join(args, " "))
+		err = app.RunMainApp(strings.Join(args, " "), opts.dockerContainerName)
 		if err != nil {
 			return err
 		}
@@ -564,6 +564,9 @@ func (c *VmUniversalCluster) AddNetworking(networking *universal.Networking, nam
 func (c *VmUniversalCluster) createEnvoyTunnel(name string) {
 	c.envoyTunnels[name] = tunnel.NewUniversalEnvoyAdminTunnel(func(cmdName, cmd string) (string, error) {
 		s, err := c.networking[name].NewSession(path.Join(c.name, "universal", "envoytunnel", name), cmdName, c.verbose, cmd)
+		defer func(s *kssh.Session) {
+			_ = s.Close()
+		}(s)
 		if err != nil {
 			return "", err
 		}

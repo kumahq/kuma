@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"golang.org/x/crypto/ssh"
 	"os"
 	"path"
 	"strconv"
@@ -23,10 +24,11 @@ const (
 )
 
 type VmUniversalApp struct {
-	t          testing.TestingT
-	mainAppCmd string
-	dpApp      *kssh.Session
-	dpAppCmd   string
+	t                     testing.TestingT
+	mainAppCmd            string
+	mainAppContainerImage string
+	dpAppCmd              string
+	longRunningSessions   map[string]*kssh.Session
 
 	verbose bool
 	mesh    string
@@ -39,10 +41,11 @@ type VmUniversalApp struct {
 
 func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmClusterHost, verbose bool) (*VmUniversalApp, error) {
 	app := &VmUniversalApp{
-		t:       t,
-		verbose: verbose,
-		mesh:    mesh,
-		appName: appName,
+		t:                   t,
+		verbose:             verbose,
+		mesh:                mesh,
+		appName:             appName,
+		longRunningSessions: map[string]*kssh.Session{},
 	}
 
 	app.universalNetworking = &universal.Networking{
@@ -62,7 +65,7 @@ func NewVmUniversalApp(t testing.TestingT, appName, mesh string, host *VmCluster
 
 func (s *VmUniversalApp) GetEnvoyAdminTunnel() envoy_admin.Tunnel {
 	return tunnel.NewUniversalEnvoyAdminTunnel(func(cmdName, cmd string) (string, error) {
-		session, err := s.RunOnHost("envoytunnel"+cmdName, cmd)
+		session, err := s.CreateHostProcess("envoytunnel"+cmdName, cmd, false)
 		if err != nil {
 			return "", err
 		}
@@ -83,15 +86,25 @@ func (s *VmUniversalApp) GetIP() string {
 func (s *VmUniversalApp) Stop() error {
 	Logf("Stopping app:%q", s.appName)
 
-	Logf("Uninstalling the transparent proxy for app:%q", s.appName)
-	session, _ := s.RunOnHost(fmt.Sprintf("dp-%s-tp-uninstall", s.appName), "sudo /tmp/kuma/bin/kumactl uninstall transparent-proxy")
-	_ = session.Wait()
+	if s.mainAppCmd != "" {
+		_ = s.KillMainApp()
+	}
+
+	for _, session := range s.longRunningSessions {
+		_ = session.Signal(ssh.SIGKILL, false)
+		_ = session.Close()
+	}
+
+	if s.dpAppCmd != "" {
+		Logf("Uninstalling the transparent proxy for app:%q", s.appName)
+		session, _ := s.CreateHostProcess(fmt.Sprintf("dp-%s-tp-uninstall", s.appName), "sudo /tmp/kuma/bin/kumactl uninstall transparent-proxy", false)
+		_ = session.Start()
+		_ = session.Wait()
+	}
 
 	_ = s.universalNetworking.Close()
 
-	err := s.KillMainApp()
-
-	return err
+	return nil
 }
 
 func (s *VmUniversalApp) ReStart() error {
@@ -101,7 +114,7 @@ func (s *VmUniversalApp) ReStart() error {
 	}
 	// No needed but this just in case kill -9 is not instant
 	time.Sleep(1 * time.Second)
-	return s.RunMainApp(s.mainAppCmd)
+	return s.RunMainApp(s.mainAppCmd, s.mainAppContainerImage)
 }
 
 func (s *VmUniversalApp) KillMainApp() error {
@@ -109,26 +122,27 @@ func (s *VmUniversalApp) KillMainApp() error {
 
 	dockerCmd := fmt.Sprintf("docker stop %s", vmMainAppContainerName)
 
-	session, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-stop", s.appName), dockerCmd)
+	session, err := s.CreateHostProcess(fmt.Sprintf("dp-%s-main-app-stop", s.appName), dockerCmd, false)
 	if err == nil {
 		err = session.Run()
+		_ = session.Close()
 	}
 	return err
 }
 
-func (s *VmUniversalApp) RunMainApp(cmd string) error {
+func (s *VmUniversalApp) RunMainApp(cmd, containerImage string) error {
 	Logf("Starting main app:%q on remote host %q", s.appName, s.universalNetworking.RemoteHost.Address)
 
 	s.mainAppCmd = cmd
 
-	dockerCmd := fmt.Sprintf("docker run --detach --rm --name %s --network host --privileged --entrypoint /bin/sh %s -c %s",
+	dockerCmd := fmt.Sprintf("docker run --name %s --rm --network host --privileged --entrypoint /bin/sh %s -c '%s'",
 		vmMainAppContainerName,
-		Config.GetUniversalImage(),
+		containerImage,
 		cmd)
 
-	session, err := s.RunOnHost(fmt.Sprintf("dp-%s-main-app-start", s.appName), dockerCmd)
+	session, err := s.CreateHostProcess(fmt.Sprintf("dp-%s-main-app-start", s.appName), dockerCmd, true)
 	if err == nil {
-		err = session.Run()
+		err = session.Start()
 	}
 	return err
 }
@@ -140,28 +154,28 @@ func (s *VmUniversalApp) CreateDP(
 	concurrency int,
 	envsMap map[string]string,
 	transparent bool,
-) error {
+) (*kssh.Session, error) {
 	cmd := &strings.Builder{}
 
 	workingDir := fmt.Sprintf("/tmp/kuma")
 	// create the token file on the app container
-	_, _ = cmd.WriteString("#!/bin/sh\n")
+	_, _ = cmd.WriteString("#!/bin/bash\n")
 	_, _ = fmt.Fprintf(cmd, "mkdir -p %s/bin\n", workingDir)
 	_, _ = fmt.Fprintf(cmd, "printf %q > %s/token-%s\n", token, workingDir, name)
 
 	_, _ = fmt.Fprintf(cmd, `
 DOWNLOAD_DIR=$(find -maxdepth 1 -type d -name '*-%s')
-if [ "$DOWNLOAD_DIR" == "" ]; then
+if [[ "$DOWNLOAD_DIR" == "" ]]; then
   curl -L --no-progress-bar --fail '%s' | VERSION=%s sh
   DOWNLOAD_DIR=$(find -maxdepth 1 -type d -name '*-%s')
 fi
-if [ "$DOWNLOAD_DIR" == "" ]; then
+if [[ "$DOWNLOAD_DIR" == "" ]]; then
   >&2 echo "Could not download the installer"
   exit 1;
 fi
 cp -f $DOWNLOAD_DIR/bin/* %s/bin/
 export PATH=$PATH:%s/bin
-		`, Config.KumaInstallerUrl, Config.KumaImageTag, Config.KumaImageTag, workingDir, workingDir)
+		`, Config.KumaImageTag, Config.KumaInstallerUrl, Config.KumaImageTag, Config.KumaImageTag, workingDir, workingDir)
 
 	for k, v := range envsMap {
 		_, _ = fmt.Fprintf(cmd, "export %s=%s\n", k, utils.ShellEscape(v))
@@ -169,16 +183,6 @@ export PATH=$PATH:%s/bin
 
 	// todo: remove sudo prefix to adapt more distros
 	_, _ = fmt.Fprintf(cmd, "sudo useradd --system --no-create-home --shell /sbin/nologin kuma-dp\n")
-
-	// Install transparent proxy
-	if transparent {
-		extraArgs := []string{}
-		if builtindns {
-			extraArgs = append(extraArgs, "--redirect-dns")
-		}
-		_, _ = fmt.Fprintf(cmd, "sudo %s/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n",
-			workingDir, sshPort, strings.Join(extraArgs, " "))
-	}
 
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	args := []string{
@@ -223,11 +227,39 @@ EOF
 	}
 	_, _ = cmd.WriteString(strings.Join(args, " "))
 	s.dpAppCmd = cmd.String()
-	var err error
-	s.dpApp, err = s.RunOnHost("dp-"+name, s.dpAppCmd)
-	return err
+	dpSession, err := s.CreateHostProcess("dp-"+name, s.dpAppCmd, true)
+
+	// Install transparent proxy after the kuma-dp to make it fast, otherwise the runuser will trigger a DNS resolutin timeout
+	if err == nil && transparent {
+		var extraArgs []string
+		if builtindns {
+			extraArgs = append(extraArgs, "--redirect-dns")
+		}
+		tpSession, _ := s.CreateHostProcess(fmt.Sprintf("dp-%s-tp-install", s.appName), fmt.Sprintf("sudo %s/bin/kumactl install transparent-proxy --exclude-inbound-ports %s %s\n",
+			workingDir, sshPort, strings.Join(extraArgs, " ")), false)
+		err = tpSession.Start()
+		if err == nil {
+			_ = tpSession.Wait()
+		}
+	}
+
+	if err != nil {
+		if dpSession != nil {
+			_ = dpSession.Close()
+		}
+		return nil, err
+	}
+	return dpSession, nil
 }
 
-func (s *VmUniversalApp) RunOnHost(name string, cmd string) (*kssh.Session, error) {
-	return s.universalNetworking.NewSession(path.Join("vm-universal", "exec"), name, s.verbose, cmd)
+func (s *VmUniversalApp) CreateHostProcess(name string, cmd string, longRunning bool) (*kssh.Session, error) {
+	session, err := s.universalNetworking.NewSession(path.Join("vm-universal", "exec"), name, s.verbose, cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	if longRunning {
+		s.longRunningSessions[name] = session
+	}
+	return session, nil
 }
