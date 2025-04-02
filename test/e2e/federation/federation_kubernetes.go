@@ -86,8 +86,8 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 			// sometimes we can hit a race condition which I can't reproduce
 			Eventually(func(g Gomega) {
-				Expect(k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)).To(Succeed())
-			}, "10s", "1s")
+				g.Expect(k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)).To(Succeed())
+			}, "10s", "1s").Should(Succeed())
 			Expect(zone.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
