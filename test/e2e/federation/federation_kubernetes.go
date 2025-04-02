@@ -84,13 +84,14 @@ func FederateKubeZoneCPToKubeGlobal() {
 
 			report.AddFileToReportEntry("kumactl-export-federation-output.yaml", out)
 
-			err = k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)
-			Expect(err).ToNot(HaveOccurred())
-			err = zone.(*K8sCluster).UpgradeKuma(core.Zone,
+			// sometimes we can hit a race condition which I can't reproduce
+			Eventually(func(g Gomega) {
+				Expect(k8s.KubectlApplyFromStringE(global.GetTesting(), global.GetKubectlOptions(), out)).To(Succeed())
+			}, "10s", "1s")
+			Expect(zone.(*K8sCluster).UpgradeKuma(core.Zone,
 				WithHelmReleaseName(releaseName),
 				WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-			)
-			Expect(err).ToNot(HaveOccurred())
+			)).To(Succeed())
 		})
 
 		It("should sync data plane proxies to global cp", func() {
