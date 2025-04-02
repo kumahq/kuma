@@ -57,6 +57,8 @@ The annotation will be mounted into each container as a file named `0.yaml` unde
 
 If the Pod also has a `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the named ConfigMap will be mounted in the same directory as `1.yaml`. Since files are processed alphabetically, it will override values from the default config.
 
+Even though environment variables seem easier, we avoid using them for the full config. They take priority over everything else when parsed, and the control plane can't safely set them if it doesn't have access to the workload's ConfigMaps. Annotations give better control over precedence.
+
 ### Example
 
 Assumptions:
