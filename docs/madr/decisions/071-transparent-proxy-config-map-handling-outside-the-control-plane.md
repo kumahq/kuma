@@ -10,11 +10,11 @@ There are three components outside the control plane that rely on the transparen
 
 - `kuma-init` - an init container injected alongside the workload container to install the transparent proxy
 - `kuma-cni` - our custom CNI plugin that installs the transparent proxy
-- `kuma-dp` - the data plane proxy injected next to the workload container
+- `kuma-sidecar` - the data plane proxy injected next to the workload container
 
-The proxy config is built from default values, control plane configuration, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-dp`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
+The proxy config is built from default values, control plane configuration, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-sidecar`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
 
-This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init` and `kuma-dp`) will build its own.
+This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init` and `kuma-sidecar`) will build its own.
 
 ## Out of Scope
 
@@ -26,38 +26,141 @@ This document proposes removing that requirement for setups that don’t use `ku
 
 There are two control plane components that require transparent proxy configuration:
 
-- **Sidecar Injector** - injects `kuma-dp` and `kuma-init` containers into Pods that are part of the mesh
+- **Sidecar Injector** - injects `kuma-sidecar` and `kuma-init` containers into Pods that are part of the mesh
 - **Pod Reconciler** - creates and updates the `Dataplane` object based on the Pod
 
-The `Dataplane` object includes transparent proxy settings like `ipFamilyMode`, `redirectPortInbound`, and `redirectPortOutbound`. These are used by the control plane to generate the xDS config delivered to `kuma-dp`.
+The `Dataplane` object includes transparent proxy settings like `ipFamilyMode`, `redirectPortInbound`, and `redirectPortOutbound`. These are used by the control plane to generate the xDS config delivered to `kuma-sidecar`.
 
 Sidecar injection and Dataplane generation are handled by separate components, with no shared state. This means there is no direct way to pass configuration between them.
 
 ### Each component gets config in a different way
 
 - `kuma-init`: gets full config as a CLI argument
-- `kuma-dp`: gets config as environment variables (`KUMA_DNS_ENABLED`, `KUMA_DNS_CORE_DNS_PORT`)
+- `kuma-sidecar`: gets config as environment variables (`KUMA_DNS_ENABLED`, `KUMA_DNS_CORE_DNS_PORT`)
 
 This inconsistency makes it hard to track where values are coming from.
 
 ## Solution
 
-We stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be relied on by `kuma-dp` in Kubernetes deployments. Instead, the same information will be passed as metadata during the xDS connection, using values from the transparent proxy config passed via a CLI flag.
+We stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be relied on by `kuma-sidecar` in Kubernetes deployments. Instead, the same information will be passed as metadata during the xDS connection, using values from the transparent proxy config passed via a CLI flag.
 
-`kuma-dp` will accept a CLI flag like `--transparent-proxy-config`, just like `kuma-init`. Some fields can still be overridden using env vars.
+Both `kuma-init` and `kuma-sidecar` will accept a `--config-dir` CLI flag. This directory will contain one or more configuration files, read in alphabetical order. In case of conflicts, values from the later file override earlier ones.
 
 During sidecar injection, the control plane will:
-1. Combine default settings from its config and the `kuma-system` ConfigMap
-2. Apply any annotations set on the Pod
-3. Compute the differences from defaults
-4. Add a single annotation `traffic.kuma.io/transparent-proxy-config` with the final config
+1. Merge default values from the control plane config and the `kuma-system` ConfigMap
+2. Apply any Pod-level annotations
+3. Add the resulting values (only those that differ from defaults) as a single annotation: `traffic.kuma.io/transparent-proxy-config`
 
-Components (`kuma-init`, `kuma-dp`) will read this annotation via a mounted volume using the Downward API.
+To avoid unintended overrides, we don’t use environment variables for the full config. Env vars take precedence during parsing and can’t be safely set when the control plane doesn’t have access to workload-level ConfigMaps. Annotations provide better control over precedence and merging.
 
-If there's a `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the named ConfigMap will be mounted into `kuma-init` and `kuma-dp`, and its values will override everything else.
+The annotation will be mounted into each container as a file named `0.yaml` under `/tmp/transparent-proxy`.
 
-Even though environment variables seem easier, we avoid using them for the full config. They take priority over everything else when parsed, and the control plane can't safely set them if it doesn't have access to the workload's ConfigMaps. Annotations give better control over precedence.
+If the Pod also has a `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the named ConfigMap will be mounted in the same directory as `1.yaml`. Since files are processed alphabetically, it will override values from the default config.
+
+### Example
+
+Assumptions:
+
+1. Kuma was installed with default control plane settings
+2. User creates the following Pod:
+   ```yaml
+   apiVersion: v1
+   kind: Pod
+   metadata:
+     annotations:
+       kuma.io/sidecar-injection: enabled
+       traffic.kuma.io/exclude-inbound-ports: "7777"
+       traffic.kuma.io/transparent-proxy-configmap-name: custom-tproxy-config
+   ...
+   ```
+3. The default transparent proxy ConfigMap was modified:
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: kuma-transparent-proxy-config
+     namespace: kuma-system
+   data:
+     config.yaml: |
+       redirect:
+         outbound:
+           excludePorts: [8888]
+   ```
+4. A custom ConfigMap was created in the Pod’s namespace:
+   ```yaml
+   apiVersion: v1
+   kind: ConfigMap
+   metadata:
+     name: custom-tproxy-config
+     namespace: ...
+   data:
+     config.yaml: |
+       ipFamilyMode: ipv4
+   ```
+
+After injection, the resulting Pod should look like:
+
+```yaml
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kuma.io/sidecar-injection: enabled
+    traffic.kuma.io/exclude-inbound-ports: "7777"
+    traffic.kuma.io/transparent-proxy-configmap-name: custom-tproxy-config
+    traffic.kuma.io/transparent-proxy-config: |
+      redirect:
+        inbound:
+          excludePorts: [7777]
+        outbound:
+          excludePorts: [8888]
+spec:
+  containers:
+  - name: kuma-sidecar
+    args:
+    - run
+    - --config-dir=/tmp/transparent-proxy
+    volumeMounts:
+    - name: transparent-proxy-default
+      mountPath: /tmp/transparent-proxy/0.yaml
+      subPath: config.yaml
+      readOnly: true
+    - name: transparent-proxy-custom
+      mountPath: /tmp/transparent-proxy/1.yaml
+      subPath: config.yaml
+      readOnly: true
+  initContainers:
+  - name: kuma-init
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    args:
+    - --config-dir=/tmp/transparent-proxy
+    volumeMounts:
+    - name: transparent-proxy-default
+      mountPath: /tmp/transparent-proxy/0.yaml
+      subPath: config.yaml
+      readOnly: true
+    - name: transparent-proxy-custom
+      mountPath: /tmp/transparent-proxy/1.yaml
+      subPath: config.yaml
+      readOnly: true
+  volumes:
+  - name: transparent-proxy-default
+    downwardAPI:
+      items:
+      - fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.annotations['traffic.kuma.io/transparent-proxy-config']
+        path: config.yaml
+  - name: transparent-proxy-custom
+    configMap:
+      name: custom-tproxy-config
+...
+```
 
 ## Downsides
 
-Each component now has to parse annotations and handle config merging on its own. They'll also need to mount any custom ConfigMap the user specifies. But we can reuse the same code across components.
+1. Each component now has to parse annotations and handle config merging on its own. They'll also need to mount any custom ConfigMap the user specifies. But we can reuse the same code across components.
+2. When using custom ConfigMaps on workloads, it won’t be possible to specify settings needed during sidecar injection, such as `kumaDPUser` or `ebpf`. This isn’t a major limitation because these values rarely change. If needed, they can still be set globally in the main ConfigMap or in the control plane configuration. The need to override them per workload is extremely rare. 
