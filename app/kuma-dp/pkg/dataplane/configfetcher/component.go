@@ -152,12 +152,11 @@ func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 	h.lastEtag = "" // reset ETag to force refetch when errors happen
 	switch response.StatusCode {
 	case http.StatusOK:
-		etag := response.Header.Get("ETag")
-		h.l.Info("scraped config from Envoy changed", "etag", etag, "lastEtag", prevEtag)
-		h.lastEtag = etag
+		eTag := response.Header.Get("ETag")
+		h.l.Info("scraped config from Envoy changed", "etag", eTag, "lastEtag", prevEtag)
 		err = h.onChange(ctx, response.Body)
-		if err != nil {
-			h.lastEtag = "" // reset ETag to force refetch when errors happen
+		if err == nil {
+			h.lastEtag = eTag // only update ETag if we successfully processed the config
 		}
 		return true, err
 	case http.StatusNotFound:
@@ -165,6 +164,7 @@ func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 		return false, nil
 	case http.StatusNotModified:
 		h.l.V(1).Info("no change in config from Envoy")
+		h.lastEtag = prevEtag
 		return false, nil
 	default:
 		return false, fmt.Errorf("failed to scrape config: unexpected status code: %d", response.StatusCode)
