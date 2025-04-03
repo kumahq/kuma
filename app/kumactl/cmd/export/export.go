@@ -8,15 +8,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
+	kuma_yaml "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type exportContext struct {
@@ -92,6 +95,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			var meshSecrets []model.Resource
 			var otherResources []model.Resource
 			var meshesResources []model.Resource
+			var meshesCertAndKey []model.Resource
 			for _, resDesc := range resTypes {
 				if resDesc.Scope == model.ScopeGlobal {
 					list := resDesc.NewList()
@@ -102,7 +106,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 						if res.Descriptor().Name == core_mesh.MeshType {
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
-							meshesResources = append(meshesResources, res)
+							err := changeBuiltinBackendsToProvided(mesh)
+							if err != nil {
+								return nil
+							}
+							meshesResources = append(meshesResources, mesh)
 						} else {
 							otherResources = append(otherResources, res)
 						}
@@ -114,6 +122,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 							return errors.Wrapf(err, "could not list %q", resDesc.Name)
 						}
 						for _, res := range list.GetItems() {
+							isBuiltinCertOrKey := strings.HasPrefix(res.GetMeta().GetName(), fmt.Sprintf("%s.%s", mesh.Meta.GetName(), core_system.BuiltinCertificateSecretNamePart))
+							if res.Descriptor().Name == core_system.SecretType && isBuiltinCertOrKey {
+								meshesCertAndKey = append(meshesCertAndKey, res)
+								continue
+							}
 							if res.Descriptor().Name == core_system.SecretType {
 								meshSecrets = append(meshSecrets, res)
 							} else {
@@ -130,6 +143,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
 			for _, res := range allResources {
 				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
+				
 				if res.GetMeta().GetName() != core_system.EnvoyAdminCA &&
 					res.GetMeta().GetName() != core_system.InterCpCA &&
 					!isUserTokenSigningKey {
@@ -144,7 +158,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 
 			switch ctx.args.format {
 			case formatUniversal:
-				for _, res := range meshesResources {
+				for _, res := range append(meshesCertAndKey, meshesResources...) {
 					// print mesh first since you cannot create other resources if there is no mesh
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
@@ -166,16 +180,27 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				if err != nil {
 					return err
 				}
-				yamlPrinter := yaml.NewPrinter()
-				for _, res := range append(meshesResources, resources...) {
+				yamlPrinter := kuma_yaml.NewPrinter()
+				for _, res := range append(meshesCertAndKey, append(meshesResources, resources...)...) {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
 						return err
 					}
+					// test := util_proto.ToMap(res.GetSpec())
 					if shouldSkipKubeObject(obj, ctx) {
 						continue
 					}
+
 					cleanKubeObject(obj)
+					switch res.Descriptor().Name {
+					// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources
+					case core_mesh.MeshType:
+						result, err := model.ToMap(res.GetSpec())
+						if err != nil {
+							return err
+						}
+						obj["spec"] = result
+					}
 					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
 						return err
 					}
@@ -220,6 +245,34 @@ func cleanKubeObject(obj map[string]interface{}) {
 	delete(meta, "uid")
 	delete(meta, "generation")
 	delete(meta, "managedFields")
+}
+
+func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
+	if res.Spec.Mtls != nil {
+		for _, backend := range res.Spec.Mtls.GetBackends() {
+			switch backend.Type {
+			case "builtin":
+				cfg := &config.ProvidedCertificateAuthorityConfig{}
+				cfg.Cert = &v1alpha1.DataSource{
+					Type: &v1alpha1.DataSource_Secret{
+						Secret: core_system.BuiltinCertSecretName(res.Meta.GetName(), backend.Name),
+					},
+				}
+				cfg.Key = &v1alpha1.DataSource{
+					Type: &v1alpha1.DataSource_Secret{
+						Secret: core_system.BuiltinKeySecretName(res.Meta.GetName(), backend.Name),
+					},
+				}
+				conf, err := util_proto.ToStruct(cfg)
+				if err != nil {
+					return err
+				}
+				backend.Type = "provided"
+				backend.Conf = conf
+			}
+		}
+	}
+	return nil
 }
 
 func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.ResourceTypeDescriptor, error) {

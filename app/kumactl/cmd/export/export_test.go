@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	test_kumactl "github.com/kumahq/kuma/app/kumactl/pkg/test"
 	"github.com/kumahq/kuma/pkg/api-server/mappers"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -103,6 +104,9 @@ var _ = Describe("kumactl export", func() {
 				samples.MeshAccessLogWithFileBackend(),
 				samples.Retry(),
 				samples.MeshTimeoutInCustomNamespace(),
+				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
+				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
+				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinKeySecretName("mesh-with-mtls", "ca-1")).Build(),
 			},
 			args: []string{
 				"--format=kubernetes",
@@ -110,6 +114,24 @@ var _ = Describe("kumactl export", func() {
 				"-a",
 			},
 			goldenFile: "export-kube.golden.yaml",
+		}),
+		FEntry("universal profile=all", testCase{
+			resources: []model.Resource{
+				samples.MeshDefault(),
+				samples.SampleSigningKeyGlobalSecret(),
+				samples.MeshAccessLogWithFileBackend(),
+				samples.Retry(),
+				samples.MeshTimeoutInCustomNamespace(),
+				samples.MeshDefaultBuilder().WithName("mesh-with-mtls").WithBuiltinMTLSBackend("ca-1").Build(),
+				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinCertSecretName("mesh-with-mtls", "ca-1")).Build(),
+				samples.SampleSecretBuilder().WithMesh("mesh-with-mtls").WithName(core_system.BuiltinKeySecretName("mesh-with-mtls", "ca-1")).Build(),
+			},
+			args: []string{
+				"--format=universal",
+				"--profile", "all",
+				"-a",
+			},
+			goldenFile: "export-uni.golden.yaml",
 		}),
 		Entry("kubernetes profile=no-dataplanes without secrets", testCase{
 			resources: []model.Resource{
