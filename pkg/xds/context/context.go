@@ -168,6 +168,7 @@ func (mc *MeshContext) GetReachableBackends(dataplane *core_mesh.DataplaneResour
 			}
 		} else {
 			key := resolve.TargetRefToKRI(dataplane.GetMeta(), common_api.TargetRef{
+				Kind:      common_api.TargetRefKind(reachableBackend.Kind),
 				Name:      &reachableBackend.Name,
 				Namespace: &reachableBackend.Namespace,
 			})
