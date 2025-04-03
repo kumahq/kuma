@@ -1,35 +1,4 @@
-mesh:name/mesh-1:
-  BackendRefOriginIndex: {}
-  Conf:
-  - http:
-      backOff:
-        baseInterval: 55s
-      numRetries: 99
-      retryOn:
-      - 5xx
-  Origin:
-  - Resource:
-      CreationTime: "0001-01-01T00:00:00Z"
-      Labels:
-        k8s.kuma.io/namespace: ns-k8s
-        kuma.io/display-name: matched-for-rules-mr-bbbbbb
-        kuma.io/mesh: mesh-1
-        kuma.io/origin: global
-      Mesh: mesh-1
-      ModificationTime: "0001-01-01T00:00:00Z"
-      Name: matched-for-rules-mr-bbbbbb-2254vz77fb9z275c.kuma-system
-      NameExtensions:
-        k8s.kuma.io/name: matched-for-rules-mr-bbbbbb-2254vz77fb9z275c
-        k8s.kuma.io/namespace: kuma-system
-      Version: ""
-    RuleIndex: 0
-  Resource:
-    creationTime: "0001-01-01T00:00:00Z"
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: mesh-1
-    type: Mesh
-  ResourceSectionName: ""
-meshexternalservice:mesh/mesh-1:namespace/ns-k8s:name/external:
+kri_extsvc_mesh-1__ns-k8s_external_:
   BackendRefOriginIndex: {}
   Conf:
   - http:
@@ -84,4 +53,35 @@ meshexternalservice:mesh/mesh-1:namespace/ns-k8s:name/external:
       k8s.kuma.io/name: external-bbdcw2w474fx4bc7
       k8s.kuma.io/namespace: kuma-system
     Version: ""
+  ResourceSectionName: ""
+kri_m____mesh-1_:
+  BackendRefOriginIndex: {}
+  Conf:
+  - http:
+      backOff:
+        baseInterval: 55s
+      numRetries: 99
+      retryOn:
+      - 5xx
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        k8s.kuma.io/namespace: ns-k8s
+        kuma.io/display-name: matched-for-rules-mr-bbbbbb
+        kuma.io/mesh: mesh-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mr-bbbbbb-2254vz77fb9z275c.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mr-bbbbbb-2254vz77fb9z275c
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    creationTime: "0001-01-01T00:00:00Z"
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: mesh-1
+    type: Mesh
   ResourceSectionName: ""

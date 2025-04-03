@@ -1,4 +1,4 @@
-meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-dev:section/http-port:
+kri_msvc_mesh-1__ns-k8s_backend-dev_http-port:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 12s
@@ -53,7 +53,7 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-dev:section/http-port:
       k8s.kuma.io/namespace: kuma-system
     Version: ""
   ResourceSectionName: http-port
-meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-prod:section/http-port:
+kri_msvc_mesh-1__ns-k8s_backend-prod_http-port:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 31s

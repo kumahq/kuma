@@ -1,4 +1,4 @@
-meshservice:mesh/mesh-1:name/backend:
+kri_msvc_mesh-1___backend_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 1m51s
@@ -26,7 +26,7 @@ meshservice:mesh/mesh-1:name/backend:
     NameExtensions: null
     Version: ""
   ResourceSectionName: ""
-meshservice:mesh/mesh-1:name/backend:section/http-port:
+kri_msvc_mesh-1___backend_http-port:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
