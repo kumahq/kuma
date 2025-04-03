@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	kssh "github.com/kumahq/kuma/test/framework/ssh"
 	"net"
 	"os"
 	"path"
@@ -28,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/kumactl"
+	kssh "github.com/kumahq/kuma/test/framework/ssh"
 	"github.com/kumahq/kuma/test/framework/universal"
 	"github.com/kumahq/kuma/test/framework/utils"
 )

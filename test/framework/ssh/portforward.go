@@ -1,10 +1,11 @@
 package ssh
 
 import (
-	"golang.org/x/crypto/ssh"
 	"io"
 	"log"
 	"net"
+
+	"golang.org/x/crypto/ssh"
 )
 
 func Tunnel(sshClient *ssh.Client, local, remote string, stopChan <-chan struct{}, readyChan chan<- net.Addr) error {

@@ -2,18 +2,20 @@ package framework
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/docker"
-	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/gruntwork-io/terratest/modules/shell"
-	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/kumahq/kuma/test/framework/universal"
-	"github.com/pkg/errors"
 	"net"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gruntwork-io/terratest/modules/docker"
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/gruntwork-io/terratest/modules/testing"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/test/framework/universal"
 )
 
 const DockerNetworkName = "kind"
@@ -31,8 +33,7 @@ type DockerBackend interface {
 	RunCommandAndGetStdOutE(t testing.TestingT, cmdName string, args []string, log *logger.Logger) (string, error)
 }
 
-type LocalDockerBackend struct {
-}
+type LocalDockerBackend struct{}
 
 func (*LocalDockerBackend) RunAndGetIDE(t testing.TestingT, image string, options *docker.RunOptions) (string, error) {
 	return docker.RunAndGetIDE(t, image, options)
@@ -120,10 +121,7 @@ func (u *RemoteDockerBackend) RunAndGetIDE(t testing.TestingT, image string, opt
 	}
 
 	cmd := []string{"docker"}
-	args, err := formatDockerRunArgs(image, options)
-	if err != nil {
-		return "", err
-	}
+	args := formatDockerRunArgs(image, options)
 	cmd = append(cmd, args...)
 
 	return u.runDockerCommandInSession(t, "run", strings.Join(cmd, " "), options.Logger)
@@ -136,10 +134,7 @@ func (u *RemoteDockerBackend) StopE(t testing.TestingT, containers []string, opt
 	}
 
 	cmd := []string{"docker"}
-	args, err := formatDockerStopArgs(containers, options)
-	if err != nil {
-		return "", err
-	}
+	args := formatDockerStopArgs(containers, options)
 	cmd = append(cmd, args...)
 	strings.Join(cmd, " ")
 
@@ -199,7 +194,7 @@ func (u *RemoteDockerBackend) GetPublishedDockerPorts(
 		// 30094/tcp -> 0.0.0.0:40094
 		// 30094/tcp -> [::]:40094
 
-		mappingPrefix := fmt.Sprintf("%d/tcp")
+		mappingPrefix := fmt.Sprintf("%d/tcp", port)
 		var addresses []string
 		for _, portMapping := range allPortMappings {
 			if strings.HasPrefix(portMapping, mappingPrefix) {
@@ -262,7 +257,7 @@ func portForward(networking *universal.Networking, remoteAddress string) (*VmPor
 
 // FormatDockerRunArgs formats the arguments for the 'docker run' command.
 // it is taken from terratest/modules/docker
-func formatDockerRunArgs(image string, options *docker.RunOptions) ([]string, error) {
+func formatDockerRunArgs(image string, options *docker.RunOptions) []string {
 	args := []string{"run"}
 
 	if options.Detach {
@@ -315,12 +310,12 @@ func formatDockerRunArgs(image string, options *docker.RunOptions) ([]string, er
 
 	args = append(args, options.Command...)
 
-	return args, nil
+	return args
 }
 
 // FormatDockerStopArgs formats the arguments for the 'docker stop' command
 // it is taken from terratest/modules/docker
-func formatDockerStopArgs(containers []string, options *docker.StopOptions) ([]string, error) {
+func formatDockerStopArgs(containers []string, options *docker.StopOptions) []string {
 	args := []string{"stop"}
 
 	if options.Time != 0 {
@@ -329,7 +324,7 @@ func formatDockerStopArgs(containers []string, options *docker.StopOptions) ([]s
 
 	args = append(args, containers...)
 
-	return args, nil
+	return args
 }
 
 var _ = []DockerBackend{
