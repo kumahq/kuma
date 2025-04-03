@@ -27,7 +27,7 @@ func ControlPlaneAssertions(cluster Cluster) {
 		Expect(utils.HasPanicInCpLogs(log)).To(BeFalse(), fmt.Sprintf("CP %s has panic in logs %s", cluster.Name(), k))
 	}
 	switch cluster.(type) {
-	case *UniversalCluster, *VmUniversalCluster:
+	case *UniversalCluster:
 		// CP does not recover restart on universal. If it crashed, we can just check if the process is still running.
 		out, _, _ := cluster.Exec("", "", AppModeCP, "ps", "aux")
 		Expect(out).To(ContainSubstring("kuma-cp run"), "CP %s is not running", cluster.Name())

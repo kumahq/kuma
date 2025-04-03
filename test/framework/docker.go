@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-var DockerNetworkName = "kind"
+const DockerNetworkName = "kind"
 
 type DockerBackend interface {
 	// RunAndGetIDE runs the 'docker run' command on the given image with the given options and returns the container ID
