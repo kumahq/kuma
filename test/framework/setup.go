@@ -689,7 +689,7 @@ func IngressUniversal(tokenProvider func(zone string) (string, error), opt ...Ap
 		return fmt.Sprintf(ZoneIngress, AppIngress, address, UniversalZoneIngressPort, port)
 	}
 
-	var opts AppDeploymentOptions
+	var opts appDeploymentOptions
 	opts.apply(opt...)
 
 	return universalZoneProxyRelatedResource(tokenProvider, AppIngress, AppIngress, manifestFunc, opts.concurrency)
@@ -701,7 +701,7 @@ func MultipleIngressUniversal(advertisedPort int, tokenProvider func(zone string
 		return fmt.Sprintf(ZoneIngress, name, address, advertisedPort, port)
 	}
 
-	var opts AppDeploymentOptions
+	var opts appDeploymentOptions
 	opts.apply(opt...)
 
 	return universalZoneProxyRelatedResource(tokenProvider, name, AppIngress, manifestFunc, opts.concurrency)
@@ -712,7 +712,7 @@ func EgressUniversal(tokenProvider func(zone string) (string, error), opt ...App
 		return fmt.Sprintf(ZoneEgress, port)
 	}
 
-	var opts AppDeploymentOptions
+	var opts appDeploymentOptions
 	opts.apply(opt...)
 
 	return universalZoneProxyRelatedResource(tokenProvider, AppEgress, AppEgress, manifestFunc, opts.concurrency)
@@ -770,7 +770,7 @@ func DemoClientJobK8s(namespace, mesh, destination string) InstallFunc {
 
 func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		var opts AppDeploymentOptions
+		var opts appDeploymentOptions
 		opts.apply(opt...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := opts.appYaml
@@ -823,7 +823,7 @@ func DemoClientUniversal(name string, mesh string, opt ...AppDeploymentOption) I
 
 func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		var opts AppDeploymentOptions
+		var opts appDeploymentOptions
 		opts.apply(opt...)
 		args := []string{"ncat", "-lk", "9999", ">", "/nc.out"}
 		opt = append(
@@ -841,7 +841,7 @@ func TcpSinkUniversal(name string, opt ...AppDeploymentOption) InstallFunc {
 
 func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		var opts AppDeploymentOptions
+		var opts appDeploymentOptions
 		opts.apply(opt...)
 		args := []string{"test-server", "echo", "--instance", name, "--port", fmt.Sprintf("%d", port)}
 		if tls {
@@ -866,7 +866,7 @@ func TestServerExternalServiceUniversal(name string, port int, tls bool, opt ...
 
 func TestServerUniversal(name string, mesh string, opt ...AppDeploymentOption) InstallFunc {
 	return func(cluster Cluster) error {
-		var opts AppDeploymentOptions
+		var opts appDeploymentOptions
 		opts.apply(opt...)
 		if len(opts.protocol) == 0 {
 			opts.protocol = "http"

@@ -63,7 +63,7 @@ type K8sCluster struct {
 	mutex               sync.RWMutex // to protect deployments
 	defaultTimeout      time.Duration
 	defaultRetries      int
-	opts                KumaDeploymentOptions
+	opts                kumaDeploymentOptions
 	portForwards        map[string]PortFwd
 }
 
@@ -1165,7 +1165,7 @@ func (c *K8sCluster) GetLBIngressIP(serviceName, namespace string) (string, erro
 }
 
 func (c *K8sCluster) DeployApp(opt ...AppDeploymentOption) error {
-	var opts AppDeploymentOptions
+	var opts appDeploymentOptions
 
 	opts.apply(opt...)
 
