@@ -44,7 +44,14 @@ This inconsistency makes it hard to track where values are coming from.
 
 We stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be relied on by `kuma-sidecar` in Kubernetes deployments. Instead, the same information will be passed as metadata during the xDS connection, using values from the transparent proxy config passed via a CLI flag.
 
-Both `kuma-init` and `kuma-sidecar` will accept a `--config-dir` CLI flag. This directory will contain one or more configuration files, read in alphabetical order. In case of conflicts, values from the later file override earlier ones.
+`kuma-dp` will support a `--transparent-proxy` flag, and `kumactl install transparent-proxy` will support a unified `--config` flag. Both flags can accept one of the following values:
+
+- No value: uses the default transparent proxy config (allows running `kuma-dp` without enabling the proxy)
+- A path to a single config file
+- A path to a directory with one or more config files, read in alphabetical order (later files override earlier ones)
+- A raw YAML string with the config
+
+To ensure consistent behavior, we will deprecate the `--config-file` flag in `kumactl install transparent-proxy` and replace it with the unified `--config` flag.
 
 During sidecar injection, the control plane will:
 1. Merge default values from the control plane config and the `kuma-system` ConfigMap
@@ -119,7 +126,7 @@ spec:
   - name: kuma-sidecar
     args:
     - run
-    - --config-dir=/tmp/transparent-proxy
+    - --transparent-proxy=/tmp/transparent-proxy
     volumeMounts:
     - name: transparent-proxy-default
       mountPath: /tmp/transparent-proxy/0.yaml
@@ -136,7 +143,7 @@ spec:
     - install
     - transparent-proxy
     args:
-    - --config-dir=/tmp/transparent-proxy
+    - --config=/tmp/transparent-proxy
     volumeMounts:
     - name: transparent-proxy-default
       mountPath: /tmp/transparent-proxy/0.yaml
