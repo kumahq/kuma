@@ -21,23 +21,44 @@ var log = core.Log.WithName("dnsproxy")
 
 type Server struct {
 	// HostPort or unix domain socket for tests
-	address          string
-	componentDone    chan struct{}
-	dnsMap           atomic.Pointer[dnsMap]
-	metrics          *metrics
-	upstreamHostPort string
-	// upstreamHandler is used for testing purposes
-	upstreamHandler func(msg *dns.Msg) (*dns.Msg, error)
-	ready           chan struct{}
+	address       string
+	componentDone chan struct{}
+	dnsMap        atomic.Pointer[dnsMap]
+	metrics       *metrics
+	// upstreamClient is used for testing purposes
+	upstreamClient func(msg *dns.Msg) (*dns.Msg, error)
+	ready          chan struct{}
 }
 
-func NewServer(address string) *Server {
+func NewServer(address string) (*Server, error) {
+	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
+	if err != nil {
+		return nil, fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
+	}
+	if len(config.Servers) == 0 {
+		return nil, fmt.Errorf("no server found in /etc/resolv.conf")
+	}
+	etcResolveHostPort := net.JoinHostPort(config.Servers[0], config.Port)
+	handler := func(msg *dns.Msg) (*dns.Msg, error) {
+		client := new(dns.Client)
+		response, _, err := client.Exchange(msg, etcResolveHostPort)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write message to upstream %w", err)
+		}
+		return response, nil
+	}
+	return NewServerWithCustomClient(address, handler), nil
+}
+
+// NewServerWithCustomClient is used for testing purposes
+func NewServerWithCustomClient(address string, upstreamClient func(msg *dns.Msg) (*dns.Msg, error)) *Server {
 	s := Server{
-		address:       address,
-		componentDone: make(chan struct{}),
-		dnsMap:        atomic.Pointer[dnsMap]{},
-		ready:         make(chan struct{}),
-		metrics:       newMetrics(),
+		address:        address,
+		componentDone:  make(chan struct{}),
+		dnsMap:         atomic.Pointer[dnsMap]{},
+		ready:          make(chan struct{}),
+		metrics:        newMetrics(),
+		upstreamClient: upstreamClient,
 	}
 	s.dnsMap.Store(&dnsMap{ARecords: make(map[string]*dnsEntry), AAAARecords: make(map[string]*dnsEntry)})
 	return &s
@@ -54,10 +75,6 @@ type dnsEntry struct {
 }
 
 var _ component.GracefulComponent = &Server{}
-
-func (s *Server) MockDNS(h func(msg *dns.Msg) (*dns.Msg, error)) {
-	s.upstreamHandler = h
-}
 
 func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 	start := time.Now()
@@ -94,14 +111,7 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 		response.Answer = append(response.Answer, dnsEntry.RR...)
 	} else {
 		proxyStart := time.Now()
-		var resp *dns.Msg
-		var err error
-		if s.upstreamHandler != nil {
-			resp, err = s.upstreamHandler(req)
-		} else {
-			c := new(dns.Client)
-			resp, _, err = c.Exchange(req, s.upstreamHostPort)
-		}
+		resp, err := s.upstreamClient(req)
 		if err != nil {
 			s.metrics.UpstreamRequestFailureCount.Inc()
 			log.Error(err, "failed to write message to upstream")
@@ -121,14 +131,6 @@ func (s *Server) Handler(res dns.ResponseWriter, req *dns.Msg) {
 func (s *Server) Start(stop <-chan struct{}) error {
 	defer close(s.componentDone)
 	srv := &dns.Server{Addr: s.address, Handler: dns.HandlerFunc(s.Handler), Net: "udp"}
-	config, err := dns.ClientConfigFromFile("/etc/resolv.conf")
-	if err != nil {
-		return fmt.Errorf("failed to read DNS for /etc/resolv.conf %w", err)
-	}
-	if len(config.Servers) == 0 {
-		return fmt.Errorf("no server found in /etc/resolv.conf")
-	}
-	s.upstreamHostPort = net.JoinHostPort(config.Servers[0], config.Port)
 
 	serverDone := make(chan error)
 	srv.NotifyStartedFunc = func() {
@@ -144,13 +146,13 @@ func (s *Server) Start(stop <-chan struct{}) error {
 		if err != nil {
 			log.Error(err, "server shutdown returned an error")
 		}
-	case err = <-serverDone:
+	case err := <-serverDone:
 		log.Info("[WARNING] server stopped with shutdown never called")
 		if err != nil {
 			return err
 		}
 	}
-	err = <-serverDone
+	err := <-serverDone
 	log.Info("server shutdown complete")
 	return err
 }

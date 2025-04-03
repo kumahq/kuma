@@ -22,7 +22,6 @@ import (
 )
 
 func Delegated() {
-
 	config := delegated.Config{
 		Namespace:                   "delegated-gateway",
 		NamespaceOutsideMesh:        "delegated-gateway-outside-mesh",
