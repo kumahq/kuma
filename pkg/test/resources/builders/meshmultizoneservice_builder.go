@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/kri"
-	core_mesh "github.com/ku
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/kri"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 

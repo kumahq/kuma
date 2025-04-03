@@ -5,6 +5,7 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -19,9 +20,8 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/api/v1alpha1"
 	plugin_xds "github.com/kumahq/kuma/pkg/plugins/policies/meshcircuitbreaker/plugin/xds"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
 var _ core_plugins.EgressPolicyPlugin = &plugin{}
