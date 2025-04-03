@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
+	"github.com/kumahq/kuma/test/framework/envs/multizone"
 )
 
 func ZoneDisable() {
@@ -29,6 +30,7 @@ func ZoneDisable() {
 			Install(MeshTrafficPermissionAllowAllUniversal(nonDefaultMesh)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(WaitForMesh(nonDefaultMesh, multizone.Zones())).To(Succeed())
 
 		globalCP := global.GetKuma()
 
