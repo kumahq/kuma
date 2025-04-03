@@ -132,7 +132,10 @@ func (s *Networking) NewSession(reportPath string, cmdName string, verbose bool,
 	return session, nil
 }
 
-func (s *Networking) PortForward(local, remote string, stopChan <-chan struct{}) (net.Addr, error) {
+// PortForward establishes an SSH tunnel from the local address to the destination address that is accessible by the remote host
+// destAddr is the destination host:port that we want to access from the local port
+// returns the bound local address when the tunnel is established
+func (s *Networking) PortForward(destAddr string, stopChan <-chan struct{}) (net.Addr, error) {
 	_, err := s.initSSH()
 	if err != nil {
 		return nil, err
@@ -142,7 +145,7 @@ func (s *Networking) PortForward(local, remote string, stopChan <-chan struct{})
 	readyChan := make(chan net.Addr)
 
 	go func() {
-		err := kssh.Tunnel(s.sshClient, local, remote, stopChan, readyChan)
+		err := kssh.Tunnel(s.sshClient, "127.0.0.1:0", destAddr, stopChan, readyChan)
 		if err != nil {
 			errorChan <- err
 		}

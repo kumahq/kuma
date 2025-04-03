@@ -223,7 +223,7 @@ func (u *RemoteDockerBackend) GetPublishedDockerPorts(
 		}
 
 		// setup SSH port forwarding for the remote port
-		pf, err := portForward(u.networking, fmt.Sprintf("%s:%d", u.networking.RemoteHost.Address, pubPortStr))
+		pf, err := portForward(u.networking, net.JoinHostPort("127.0.0.1", pubPortStr))
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +246,7 @@ func (u *RemoteDockerBackend) RunCommandAndGetStdOutE(t testing.TestingT, cmdNam
 
 func portForward(networking *universal.Networking, remoteAddress string) (*VmPortForward, error) {
 	stopChan := make(chan struct{})
-	addr, err := networking.PortForward("localhost:0", remoteAddress, stopChan)
+	addr, err := networking.PortForward(remoteAddress, stopChan)
 	if err != nil {
 		return nil, fmt.Errorf("could not establish ssh port forwarding to remote host %q: %w",
 			networking.RemoteHost, err)
