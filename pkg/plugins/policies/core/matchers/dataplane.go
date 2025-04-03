@@ -8,16 +8,20 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"g
 	"github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+e_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"g
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 )
 
 func PolicyMatches(resource core_model.Resource, dpp *core_mesh.DataplaneResource, referencableResources xds_context.Resources) (bool, error) {
@@ -269,7 +273,7 @@ func isSelectedByResourceIdentifier(dpp *core_mesh.DataplaneResource, ref common
 	if pointer.Deref(ref.Name) == "" {
 		return false
 	}
-	return core_model.NewResourceIdentifier(dpp) == core_model.TargetRefToResourceIdentifier(meta, ref)
+	return kri.From(dpp, "") == resolve.TargetRefToKRI(meta, ref)
 }
 
 func dppSelectedByNamespace(meta core_model.ResourceMeta, dpp *core_mesh.DataplaneResource) bool {

@@ -7,14 +7,15 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
+	p
 	plugin_gateway "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -35,7 +36,7 @@ type MapGatewayRulesToHosts func(
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []Sublistener,
-	resolver model.LabelResourceIdentifierResolver,
+	resolver resolve.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname
 
 func CollectListenerInfos(

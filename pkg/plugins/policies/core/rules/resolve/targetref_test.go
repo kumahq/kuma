@@ -1,4 +1,4 @@
-package common_test
+package resolve_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -9,14 +9,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ = Describe("ResolveTargetRef", func() {
+var _ = Describe("Resolve TargetRef", func() {
 	var resources context.Resources
 	BeforeEach(func() {
 		resources = context.NewResources()
@@ -55,7 +55,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -77,7 +77,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		// given no MeshServices
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -108,7 +108,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -140,7 +140,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -171,7 +171,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -202,7 +202,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -235,7 +235,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -269,7 +269,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -303,7 +303,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -337,7 +337,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -370,7 +370,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -399,7 +399,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -429,7 +429,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -459,7 +459,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -494,7 +494,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
@@ -524,7 +524,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))

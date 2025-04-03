@@ -4,15 +4,16 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	"github.com/ku
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshServiceResource) DestinationName(port uint32) string {
-	id := model.NewResourceIdentifier(m)
+	id := kri.From(m, "")
 	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshServiceResourceTypeDescriptor.ShortName, port)
 }
 
@@ -101,7 +102,7 @@ func (t *MeshServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     port.Port,
-				Resource: pointer.To(model.NewTypedResourceIdentifier(t, model.WithSectionName(port.GetNameOrStringifyPort()))),
+				Resource: pointer.To(kri.From(t, port.GetNameOrStringifyPort())),
 			})
 		}
 	}

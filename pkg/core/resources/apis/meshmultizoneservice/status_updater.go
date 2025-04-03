@@ -10,15 +10,16 @@ import (
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
+	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/user"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	util_time "github.com/kumahq/kuma/pkg/util/time"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 type StatusUpdater struct {
@@ -97,7 +98,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 		ports := map[uint32]meshservice_api.Port{}
 		for _, svc := range msList.Items {
 			if matchesService(mzSvc, svc) {
-				ri := model.NewResourceIdentifier(svc)
+				ri := kri.From(svc, "")
 				matched = append(matched, meshmzservice_api.MatchedMeshService{
 					Name:      ri.Name,
 					Namespace: ri.Namespace,

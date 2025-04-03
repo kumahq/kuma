@@ -3,11 +3,13 @@ package builders
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_mesh "github.com/ku
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -48,7 +50,7 @@ func (m *MeshMultiZoneServiceBuilder) WithServiceLabelSelector(labels map[string
 	return m
 }
 
-func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(msID core_model.ResourceIdentifier) *MeshMultiZoneServiceBuilder {
+func (m *MeshMultiZoneServiceBuilder) AddMatchedMeshServiceName(msID kri.Identifier) *MeshMultiZoneServiceBuilder {
 	m.res.Status.MeshServices = append(m.res.Status.MeshServices, meshmzservice_api.MatchedMeshService{
 		Name:      msID.Name,
 		Namespace: msID.Namespace,

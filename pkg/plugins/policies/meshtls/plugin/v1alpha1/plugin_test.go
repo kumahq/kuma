@@ -12,6 +12,8 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_plugins "g
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -36,7 +38,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	"github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -313,14 +315,12 @@ func getMeshServiceResources(secretsTracker core_xds.SecretsTracker, mesh *build
 				Configure(clusters.ClientSideMTLS(secretsTracker, mesh.Build(), "outgoing", true, nil)).
 				MustBuild(),
 			Protocol: core_mesh.ProtocolHTTP,
-			ResourceOrigin: &core_model.TypedResourceIdentifier{
-				ResourceIdentifier: core_model.ResourceIdentifier{
-					Name:      "backend",
-					Mesh:      "default",
-					Namespace: "backend-ns",
-					Zone:      "zone-1",
-				},
+			ResourceOrigin: &kri.Identifier{
 				ResourceType: "MeshService",
+				Mesh:         "default",
+				Zone:         "zone-1",
+				Namespace:    "backend-ns",
+				Name:         "backend",
 				SectionName:  "",
 			},
 		},

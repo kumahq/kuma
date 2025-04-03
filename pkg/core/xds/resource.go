@@ -7,9 +7,10 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshexternalservice_api "github.com/kuma
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -20,7 +21,7 @@ type Resource struct {
 	Name           string
 	Origin         string
 	Resource       ResourcePayload
-	ResourceOrigin *core_model.TypedResourceIdentifier
+	ResourceOrigin *kri.Identifier
 	Protocol       core_mesh.Protocol
 }
 
@@ -183,8 +184,8 @@ func NonGatewayResources(r *Resource) bool {
 
 type ResourcesByType map[string][]*Resource
 
-func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[core_model.TypedResourceIdentifier]ResourcesByType {
-	byOwner := map[core_model.TypedResourceIdentifier]ResourcesByType{}
+func (s *ResourceSet) IndexByOrigin(filters ...func(*Resource) bool) map[kri.Identifier]ResourcesByType {
+	byOwner := map[kri.Identifier]ResourcesByType{}
 	for typ, nameToRes := range s.typeToNamesIndex {
 		for _, resource := range nameToRes {
 			add := true

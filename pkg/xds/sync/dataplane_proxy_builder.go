@@ -8,6 +8,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/pkg/core/kri"
+
 	"github.com/kumahq/kuma/pkg/core/logs"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/permissions"
@@ -151,11 +153,7 @@ func (p *DataplaneProxyBuilder) resolveVIPOutbounds(meshContext xds_context.Mesh
 			}
 			if reachableBackends != nil {
 				// check if there is an entry with specific port or without port
-				noPort := core_model.TypedResourceIdentifier{
-					ResourceIdentifier: outbound.Resource.ResourceIdentifier,
-					ResourceType:       outbound.Resource.ResourceType,
-				}
-				if !pointer.Deref(reachableBackends)[pointer.Deref(outbound.Resource)] && !pointer.Deref(reachableBackends)[noPort] {
+				if !(*reachableBackends)[pointer.Deref(outbound.Resource)] && !(*reachableBackends)[kri.NoSectionName(pointer.Deref(outbound.Resource))] {
 					// ignore VIP outbound if reachableServices is defined and not specified
 					// Reachable services takes precedence over reachable services graph.
 					continue

@@ -2,7 +2,7 @@ package types
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 type Outbound struct {
@@ -11,7 +11,7 @@ type Outbound struct {
 
 	Address  string
 	Port     uint32
-	Resource *core_model.TypedResourceIdentifier
+	Resource *kri.Identifier
 }
 
 func (o *Outbound) GetAddress() string {

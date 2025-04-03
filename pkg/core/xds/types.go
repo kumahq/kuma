@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -72,7 +73,7 @@ type (
 		SANs                     []SAN
 		MinTlsVersion            *tlsv3.TlsParameters_TlsProtocol
 		MaxTlsVersion            *tlsv3.TlsParameters_TlsProtocol
-		OwnerResource            *core_model.TypedResourceIdentifier
+		OwnerResource            *kri.Identifier
 	}
 )
 
@@ -241,10 +242,10 @@ type MeshResources struct {
 	Resources map[core_model.ResourceType]core_model.ResourceList
 }
 
-func (r MeshResources) Get(resourceType core_model.ResourceType, ri core_model.ResourceIdentifier) core_model.Resource {
+func (r MeshResources) Get(id kri.Identifier) core_model.Resource {
 	// todo: we can probably optimize it by using indexing on ResourceIdentifier
-	list := r.ListOrEmpty(resourceType).GetItems()
-	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return core_model.NewResourceIdentifier(r) == ri }); i >= 0 {
+	list := r.ListOrEmpty(id.ResourceType).GetItems()
+	if i := slices.IndexFunc(list, func(r core_model.Resource) bool { return kri.From(r, "") == kri.NoSectionName(id) }); i >= 0 {
 		return list[i]
 	}
 	return nil

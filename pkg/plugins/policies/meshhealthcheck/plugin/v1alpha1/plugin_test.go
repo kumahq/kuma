@@ -13,6 +13,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -53,24 +54,20 @@ var _ = Describe("MeshHealthCheck", func() {
 	tcpServiceTag := "echo-tcp"
 	grpcServiceTag := "echo-grpc"
 
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := func(mesh string) *core_model.TypedResourceIdentifier {
-		return &core_model.TypedResourceIdentifier{
-			ResourceIdentifier: core_model.ResourceIdentifier{
-				Name:      "external",
-				Mesh:      mesh,
-				Namespace: "",
-				Zone:      "",
-			},
+	backendMeshExternalServiceIdentifier := func(mesh string) *kri.Identifier {
+		return &kri.Identifier{
 			ResourceType: "MeshExternalService",
+			Mesh:         mesh,
+			Zone:         "",
+			Namespace:    "",
+			Name:         "external",
 		}
 	}
 
@@ -265,7 +262,7 @@ var _ = Describe("MeshHealthCheck", func() {
 		Entry("TCP HealthCheck to real MeshService", testCase{
 			resources: tcpCluster,
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -729,7 +726,7 @@ var _ = Describe("MeshHealthCheck", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 						core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										api.Conf{

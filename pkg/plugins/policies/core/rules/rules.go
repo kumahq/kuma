@@ -14,13 +14,15 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
+	core_model "github.co
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -217,7 +219,7 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader) (ToRules, error) {
+func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
 	toList, err := buildToList(matchedPolicies.GetItems(), reader)
 	if err != nil {
 		return ToRules{}, err
@@ -241,7 +243,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader common.Resourc
 	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
 }
 
-func buildToList(matchedPolicies []core_model.Resource, reader common.ResourceReader) ([]PolicyItemWithMeta, error) {
+func buildToList(matchedPolicies []core_model.Resource, reader kri.ResourceReader) ([]PolicyItemWithMeta, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		tl, err := buildToListWithRoutes(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
@@ -259,7 +261,7 @@ func buildToList(matchedPolicies []core_model.Resource, reader common.ResourceRe
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
-	reader common.ResourceReader,
+	reader kri.ResourceReader,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]ToRules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
