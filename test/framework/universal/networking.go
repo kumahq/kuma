@@ -40,7 +40,7 @@ func (s *Networking) initSSH() (int, error) {
 				return s.id, errors.New("failed to connect to container")
 			}
 			client, err := ssh.Dial("tcp", net.JoinHostPort("localhost", s.SshPort), &ssh.ClientConfig{
-				HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
+				HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests // lgtm [go/insecure-hostkeycallback]
 				User:            "root",
 			})
 			if err == nil {

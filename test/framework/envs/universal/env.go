@@ -56,6 +56,7 @@ func RestoreState(bytes []byte) {
 
 func SynchronizedAfterSuite() {
 	framework.ControlPlaneAssertions(Cluster)
+	framework.DebugCPLogs(Cluster)
 	Expect(Cluster.DismissCluster()).To(Succeed())
 }
 
