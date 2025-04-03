@@ -7,7 +7,7 @@ controlPlane:
     maxDuration: 5m0s
   url: https://localhost:5678
 dataplane:
-  ResilientComponentMaxBackoff: 1m0s
+  resilientComponentMaxBackoff: 1m0s
   drainTime: 30s
   proxyType: dataplane
   readinessPort: 9902

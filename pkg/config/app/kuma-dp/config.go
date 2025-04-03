@@ -155,7 +155,7 @@ type Dataplane struct {
 	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
 	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
 	// ResilientComponentMaxBackoff defines the max backoff between restarts of resilient components
-	ResilientComponentMaxBackoff config_types.Duration `json:"ResilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
+	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
 }
 
 func (d *Dataplane) PostProcess() error {
