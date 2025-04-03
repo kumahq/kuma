@@ -85,7 +85,7 @@ type ToEntry interface {
 
 // BuildRules constructs ResourceRules from the given policies and resource reader.
 // It first extracts 'to' entries from the policies and then builds the rules based on these entries.
-func BuildRules(policies []core_model.Resource, reader kri.ResourceReader) (ResourceRules, error) {
+func BuildRules(policies core_model.ResourceList, reader kri.ResourceReader) (ResourceRules, error) {
 	entries, err := GetEntries(policies)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get 'to' entries")
@@ -93,8 +93,8 @@ func BuildRules(policies []core_model.Resource, reader kri.ResourceReader) (Reso
 	return buildRules(entries, reader)
 }
 
-func GetEntries(policies []core_model.Resource) ([]common.WithPolicyAttributes[ToEntry], error) {
-	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](policies)
+func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes[ToEntry], error) {
+	policiesWithTo, ok := common.Cast[core_model.PolicyWithToList](policies.GetItems())
 	if !ok {
 		return nil, nil
 	}
@@ -105,7 +105,7 @@ func GetEntries(policies []core_model.Resource) ([]common.WithPolicyAttributes[T
 		for j, item := range pwt.GetToList() {
 			entries = append(entries, common.WithPolicyAttributes[ToEntry]{
 				Entry:     item,
-				Meta:      policies[i].GetMeta(),
+				Meta:      policies.GetItems()[i].GetMeta(),
 				TopLevel:  pwt.GetTargetRef(),
 				RuleIndex: j,
 			})

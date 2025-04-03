@@ -63,7 +63,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		if err != nil {
 			return core_xds.TypedMatchingPolicies{}, err
 		}
-		tr, err = processToResourceRules(policies.GetItems(), resources)
+		tr, err = processToResourceRules(policies, resources)
 	case isFrom:
 		fr, err = processFromRules(tags, policies)
 	case isTo:
@@ -71,7 +71,7 @@ func EgressMatchedPolicies(rType core_model.ResourceType, tags map[string]string
 		if err != nil {
 			return core_xds.TypedMatchingPolicies{}, err
 		}
-		tr, err = processToResourceRules(policies.GetItems(), resources)
+		tr, err = processToResourceRules(policies, resources)
 	}
 
 	if err != nil {
@@ -200,7 +200,7 @@ func processToRules(tags map[string]string, policies core_model.ResourceList) (c
 	}, nil
 }
 
-func processToResourceRules(policies []core_model.Resource, resources xds_context.Resources) (core_rules.ToRules, error) {
+func processToResourceRules(policies core_model.ResourceList, resources xds_context.Resources) (core_rules.ToRules, error) {
 	resourceRules, err := outbound.BuildRules(policies, resources)
 	if err != nil {
 		return core_rules.ToRules{}, err
