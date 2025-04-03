@@ -11,6 +11,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshroute_gateway "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute/gateway"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -36,7 +37,7 @@ func sortRulesToHosts(
 	port uint32,
 	protocol mesh_proto.MeshGateway_Listener_Protocol,
 	sublisteners []meshroute_gateway.Sublistener,
-	resolver model.LabelResourceIdentifierResolver,
+	resolver resolve.LabelResourceIdentifierResolver,
 ) []plugin_gateway.GatewayListenerHostname {
 	hostInfosByHostname := map[string]plugin_gateway.GatewayListenerHostname{}
 
@@ -177,7 +178,7 @@ func generateEnvoyRouteEntries(
 	meshCtx xds_context.MeshContext,
 	host plugin_gateway.GatewayHost,
 	toRules []ruleByHostname,
-	resolver model.LabelResourceIdentifierResolver,
+	resolver resolve.LabelResourceIdentifierResolver,
 ) []route.Entry {
 	var entries []route.Entry
 
@@ -228,7 +229,7 @@ func makeHttpRouteEntry(
 	name string,
 	rule api.Rule,
 	backendRefToOrigin map[common_api.MatchesHash]model.ResourceMeta,
-	resolver model.LabelResourceIdentifierResolver,
+	resolver resolve.LabelResourceIdentifierResolver,
 ) route.Entry {
 	entry := route.Entry{
 		Route: name,
@@ -236,9 +237,9 @@ func makeHttpRouteEntry(
 
 	for _, b := range pointer.Deref(rule.Default.BackendRefs) {
 		var dest map[string]string
-		var ref *model.ResolvedBackendRef
+		var ref *resolve.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			ref = model.ResolveBackendRef(origin, b, resolver)
+			ref = resolve.BackendRef(origin, b, resolver)
 			if ref.ReferencesRealResource() {
 				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
 				if ok {

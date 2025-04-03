@@ -14,14 +14,13 @@ import (
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshservice"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -79,7 +78,7 @@ func BuildIngressEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -99,7 +98,7 @@ func BuildEdsEndpointMap(
 	ctx context.Context,
 	mesh *core_mesh.MeshResource,
 	localZone string,
-	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
 	dataplanes []*core_mesh.DataplaneResource,
@@ -140,16 +139,17 @@ func BuildEdsEndpointMap(
 
 func fillMeshMultiZoneServices(
 	outbound core_xds.EndpointMap,
-	meshServicesByName map[model.ResourceIdentifier]*meshservice_api.MeshServiceResource,
+	meshServicesByName map[kri.Identifier]*meshservice_api.MeshServiceResource,
 	meshMultiZoneServices []*meshmzservice_api.MeshMultiZoneServiceResource,
 ) {
 	for _, mzSvc := range meshMultiZoneServices {
 		for _, matchedMs := range mzSvc.Status.MeshServices {
-			ri := model.ResourceIdentifier{
-				Name:      matchedMs.Name,
-				Namespace: matchedMs.Namespace,
-				Zone:      matchedMs.Zone,
-				Mesh:      matchedMs.Mesh,
+			ri := kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Mesh:         matchedMs.Mesh,
+				Zone:         matchedMs.Zone,
+				Namespace:    matchedMs.Namespace,
+				Name:         matchedMs.Name,
 			}
 			ms, ok := meshServicesByName[ri]
 			if !ok {
@@ -644,7 +644,7 @@ func createMeshExternalServiceEndpoint(
 ) error {
 	es := &core_xds.ExternalService{
 		Protocol:      mes.Spec.Match.Protocol,
-		OwnerResource: pointer.To(rules_common.UniqueKey(mes, "")),
+		OwnerResource: pointer.To(kri.From(mes, "")),
 	}
 	tags := maps.Clone(mes.Meta.GetLabels())
 	if tags == nil {
@@ -806,7 +806,7 @@ func fillExternalServicesOutboundsThroughEgress(
 		tls := mes.Spec.Tls
 		es := &core_xds.ExternalService{
 			Protocol:      mes.Spec.Match.Protocol,
-			OwnerResource: pointer.To(rules_common.UniqueKey(mes, "")),
+			OwnerResource: pointer.To(kri.From(mes, "")),
 		}
 		if tls != nil && tls.Enabled {
 			err := setTlsConfiguration(ctx, tls, es, mes.Meta.GetMesh(), loader)

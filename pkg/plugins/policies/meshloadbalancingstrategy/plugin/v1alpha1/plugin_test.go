@@ -13,6 +13,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
@@ -55,12 +56,10 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
 	}
 
@@ -1601,7 +1600,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										v1alpha1.Conf{

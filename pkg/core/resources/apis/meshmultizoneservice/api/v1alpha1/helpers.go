@@ -3,10 +3,10 @@ package v1alpha1
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_vip "github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -56,7 +56,7 @@ func (m *MeshMultiZoneServiceResource) FindPortByName(name string) (Port, bool) 
 }
 
 func (m *MeshMultiZoneServiceResource) DestinationName(port uint32) string {
-	id := model.NewResourceIdentifier(m)
+	id := kri.From(m, "")
 	return fmt.Sprintf("%s_%s_%s_%s_%s_%d", id.Mesh, id.Name, id.Namespace, id.Zone, MeshMultiZoneServiceResourceTypeDescriptor.ShortName, port)
 }
 
@@ -67,7 +67,7 @@ func (m *MeshMultiZoneServiceResource) AsOutbounds() xds_types.Outbounds {
 			outbounds = append(outbounds, &xds_types.Outbound{
 				Address:  vip.IP,
 				Port:     port.Port,
-				Resource: pointer.To(model.NewTypedResourceIdentifier(m, model.WithSectionName(port.GetNameOrStringifyPort()))),
+				Resource: pointer.To(kri.From(m, port.GetNameOrStringifyPort())),
 			})
 		}
 	}

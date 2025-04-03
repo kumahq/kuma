@@ -3,6 +3,7 @@ package graph
 import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	ms_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -15,10 +16,10 @@ import (
 
 type Graph struct {
 	rules        map[string]core_rules.Rules
-	backendRules map[core_model.TypedResourceIdentifier]core_rules.Rules
+	backendRules map[kri.Identifier]core_rules.Rules
 }
 
-func NewGraph(rules map[string]core_rules.Rules, backendRules map[core_model.TypedResourceIdentifier]core_rules.Rules) *Graph {
+func NewGraph(rules map[string]core_rules.Rules, backendRules map[kri.Identifier]core_rules.Rules) *Graph {
 	return &Graph{
 		rules:        rules,
 		backendRules: backendRules,
@@ -38,15 +39,11 @@ func (r *Graph) CanReach(fromTags map[string]string, toTags map[string]string) b
 	return action == mtp_api.Allow || action == mtp_api.AllowWithShadowDeny
 }
 
-func (r *Graph) CanReachBackend(fromTags map[string]string, backendIdentifier core_model.TypedResourceIdentifier) bool {
+func (r *Graph) CanReachBackend(fromTags map[string]string, backendIdentifier kri.Identifier) bool {
 	if backendIdentifier.ResourceType == core_model.ResourceType(common_api.MeshExternalService) || backendIdentifier.ResourceType == core_model.ResourceType(common_api.MeshMultiZoneService) {
 		return true
 	}
-	noPort := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: backendIdentifier.ResourceIdentifier,
-		ResourceType:       backendIdentifier.ResourceType,
-	}
-	rule := r.backendRules[noPort].Compute(fromTags)
+	rule := r.backendRules[kri.NoSectionName(backendIdentifier)].Compute(fromTags)
 	if rule == nil {
 		return false
 	}

@@ -12,9 +12,9 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -42,25 +42,21 @@ import (
 )
 
 var _ = Describe("MeshTimeout", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "backend-ns",
+		Name:         "backend",
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
-		},
+	backendMeshExternalServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshExternalService",
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "backend-ns",
+		Name:         "backend",
 		SectionName:  "",
 	}
 
@@ -524,7 +520,7 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{
@@ -562,7 +558,7 @@ var _ = Describe("MeshTimeout", func() {
 				},
 			},
 			toRules: core_rules.ToRules{
-				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 					backendMeshExternalServiceIdentifier: {
 						Conf: []interface{}{
 							api.Conf{

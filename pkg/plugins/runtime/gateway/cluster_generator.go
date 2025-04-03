@@ -8,8 +8,8 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/match"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/gateway/metadata"
@@ -147,7 +147,7 @@ func (c *ClusterGenerator) GenerateClusters(ctx context.Context, xdsCtx xds_cont
 func (c *ClusterGenerator) generateRealBackendRefCluster(
 	meshCtx xds_context.MeshContext,
 	proxy *core_xds.Proxy,
-	backendRef *model.RealResourceBackendRef,
+	backendRef *resolve.RealResourceBackendRef,
 	routeProtocol core_mesh.Protocol,
 	systemNamespace string,
 	identifyingTags map[string]string,

@@ -1,4 +1,4 @@
-package common
+package resolve
 
 import (
 	"strconv"
@@ -8,6 +8,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
@@ -19,16 +20,8 @@ type ResourceSection struct {
 	SectionName string
 }
 
-func (rs *ResourceSection) Identifier() core_model.TypedResourceIdentifier {
-	return UniqueKey(rs.Resource, rs.SectionName)
-}
-
-func UniqueKey(r core_model.Resource, sectionName string) core_model.TypedResourceIdentifier {
-	return core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.NewResourceIdentifier(r),
-		ResourceType:       r.Descriptor().Name,
-		SectionName:        sectionName,
-	}
+func (rs *ResourceSection) Identifier() kri.Identifier {
+	return kri.From(rs.Resource, rs.SectionName)
 }
 
 type ResourceWithPorts interface {
@@ -36,7 +29,7 @@ type ResourceWithPorts interface {
 }
 
 type query struct {
-	byIdentifier *core_model.ResourceIdentifier
+	byIdentifier *kri.Identifier
 	byLabels     map[string]string
 	port         uint32
 	sectionName  string
@@ -63,7 +56,7 @@ func (q query) findPort(ports []core.Port) core.Port {
 	return nil
 }
 
-func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader ResourceReader) []*ResourceSection {
+func TargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceMeta, reader kri.ResourceReader) []*ResourceSection {
 	if !targetRef.Kind.IsRealResource() {
 		return nil
 	}
@@ -78,7 +71,7 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 		}
 	default:
 		q = query{
-			byIdentifier: pointer.To(core_model.TargetRefToResourceIdentifier(tMeta, targetRef)),
+			byIdentifier: pointer.To(TargetRefToKRI(tMeta, targetRef)),
 			sectionName:  pointer.Deref(targetRef.SectionName),
 		}
 	}
@@ -111,7 +104,7 @@ func ResolveTargetRef(targetRef common_api.TargetRef, tMeta core_model.ResourceM
 			}
 		}
 	case q.byIdentifier != nil:
-		if r := reader.Get(rtype, *q.byIdentifier); r != nil {
+		if r := reader.Get(*q.byIdentifier); r != nil {
 			resources = []core_model.Resource{r}
 		}
 	}
