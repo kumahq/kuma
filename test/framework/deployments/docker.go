@@ -7,7 +7,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/logger"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
@@ -15,15 +14,16 @@ import (
 )
 
 type DockerContainer struct {
-	t          testing.TestingT
-	name       string
-	id         string
-	ports      map[uint32]uint32
-	envVars    map[string]string
-	image      string
-	args       map[string][]string
-	dockerOpts *docker.RunOptions
-	logger     *logger.Logger
+	t             testing.TestingT
+	name          string
+	id            string
+	ports         map[uint32]uint32
+	envVars       map[string]string
+	image         string
+	args          map[string][]string
+	dockerOpts    *docker.RunOptions
+	logger        *logger.Logger
+	dockerBackend framework.DockerBackend
 }
 
 type DockerContainerOptFn func(d *DockerContainer) error
@@ -102,6 +102,14 @@ func buildArgsForDocker(args map[string][]string, ports map[uint32]uint32) []str
 	return opts
 }
 
+func WithDockerBackend(backend framework.DockerBackend) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.dockerBackend = backend
+
+		return nil
+	}
+}
+
 func WithTestingT(t testing.TestingT) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.t = t
@@ -159,13 +167,7 @@ func (d *DockerContainer) GetIP() (string, error) {
 		d.id,
 	}
 
-	cmd := shell.Command{
-		Command: "docker",
-		Args:    args,
-		Logger:  d.logger,
-	}
-
-	return shell.RunCommandAndGetStdOutE(d.t, cmd)
+	return d.dockerBackend.RunCommandAndGetStdOutE(d.t, "container-inspect", args, d.logger)
 }
 
 func (d *DockerContainer) GetName() (string, error) {
@@ -177,13 +179,7 @@ func (d *DockerContainer) GetName() (string, error) {
 		d.id,
 	}
 
-	cmd := shell.Command{
-		Command: "docker",
-		Args:    args,
-		Logger:  d.logger,
-	}
-
-	out, err := shell.RunCommandAndGetStdOutE(d.t, cmd)
+	out, err := d.dockerBackend.RunCommandAndGetStdOutE(d.t, "container-inspect", args, d.logger)
 	if err != nil {
 		return "", err
 	}
@@ -202,7 +198,7 @@ func AllocatePublicPortsFor(ports ...uint32) DockerContainerOptFn {
 }
 
 func (d *DockerContainer) Run() error {
-	container, err := docker.RunAndGetIDE(d.t, d.image, d.dockerOpts)
+	container, err := d.dockerBackend.RunAndGetIDE(d.t, d.image, d.dockerOpts)
 	if err != nil {
 		return err
 	}
@@ -220,7 +216,7 @@ func (d *DockerContainer) updatePorts() error {
 	for port := range d.ports {
 		ports = append(ports, port)
 	}
-	publishedPorts, err := framework.GetPublishedDockerPorts(d.t, d.logger, d.id, ports)
+	publishedPorts, err := d.dockerBackend.GetPublishedDockerPorts(d.t, d.logger, d.id, ports)
 	if err != nil {
 		return err
 	}
@@ -231,7 +227,7 @@ func (d *DockerContainer) updatePorts() error {
 func (d *DockerContainer) Stop() error {
 	retry.DoWithRetry(d.t, "stop "+d.id, 30, 3*time.Second,
 		func() (string, error) {
-			_, err := docker.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1, Logger: d.logger})
+			_, err := d.dockerBackend.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1, Logger: d.logger})
 			if err != nil {
 				return "Container still running", err
 			}
