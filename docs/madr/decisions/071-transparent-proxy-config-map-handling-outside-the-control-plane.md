@@ -63,21 +63,19 @@ Mounted configuration will then be passed to `kuma-sidecar` and `kuma-init` usin
 
 - No value: enables the transparent proxy with default settings
 - Comma-separated paths to one or more config files
-- A raw YAML string
 - A `-` to read YAML from STDIN
 
 Values are merged in the order provided. Later values override earlier ones. Example:
 
 ```sh
-export CONFIG1="{ redirect: { inbound: { port: 1111 } } }"
-export CONFIG2="{ redirect: { inbound: { port: 2222 } }, ipFamilyMode: ipv4 }"
-export CONFIG3="$(mktemp)"; echo "{ redirect: { inbound: { port: 3333 } }, wait: 6 }" > "$CONFIG3"
-export CONFIG4="$(mktemp)"; echo "{ redirect: { inbound: { port: 4444 } }, waitInterval: 1 }" > "$CONFIG4"
+CONFIG2=$(mktemp)
+CONFIG3=$(mktemp)
 
-echo "$CONFIG1" | kuma-dp run \
+echo "{ redirect: { inbound: { port: 2222 } }, wait: 2 }" > "$CONFIG2"
+echo "{ redirect: { inbound: { port: 3333 } }, waitInterval: 3 }" > "$CONFIG3"
+echo "{ redirect: { inbound: { port: 1111 } }, ipFamilyMode: ipv4 }" | kuma-dp run \
   --transparent-proxy \
-  --transparent-proxy-config "$CONFIG2" \
-  --transparent-proxy-config "$CONFIG3,$CONFIG4" \
+  --transparent-proxy-config "$CONFIG2,$CONFIG3" \
   --transparent-proxy-config -
 ```
 
@@ -88,8 +86,8 @@ ipFamilyMode: ipv4
 redirect:
   inbound:
     port: 1111
-wait: 6
-waitInterval: 1
+wait: 2
+waitInterval: 3
 ```
 
 In this case, `redirect.inbound.port` appears in all inputs. Since STDIN is last, its value (`1111`) takes precedence.
