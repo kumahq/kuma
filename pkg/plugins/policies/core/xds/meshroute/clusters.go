@@ -5,10 +5,12 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -98,7 +100,7 @@ func GenerateClusters(
 					if realResourceRef := service.BackendRef().RealResourceBackendRef(); realResourceRef != nil {
 						tlsReady = true // tls readiness is only relevant for MeshService
 						if common_api.TargetRefKind(realResourceRef.Resource.ResourceType) == common_api.MeshService {
-							if ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(realResourceRef.Resource).ResourceIdentifier]; ms != nil {
+							if ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(realResourceRef.Resource)); ms != nil {
 								// we only check TLS status for local service
 								// services that are synced can be accessed only with TLS through ZoneIngress
 								tlsReady = !ms.IsLocalMeshService() || ms.Status.TLS.Status == meshservice_api.TLSReady
@@ -141,7 +143,7 @@ func GenerateClusters(
 }
 
 func SniForBackendRef(
-	backendRef *core_model.RealResourceBackendRef,
+	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 	systemNamespace string,
 ) string {
@@ -150,19 +152,19 @@ func SniForBackendRef(
 	var port uint32
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
-		ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(backendRef.Resource))
 		resource = ms
 		name = ms.SNIName(systemNamespace)
 		if p, ok := ms.FindPortByName(backendRef.Resource.SectionName); ok {
 			port = p.Port
 		}
 	case common_api.MeshExternalService:
-		mes := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(backendRef.Resource))
 		resource = mes
 		name = core_model.GetDisplayName(resource.GetMeta())
 		port = uint32(mes.Spec.Match.Port)
 	case common_api.MeshMultiZoneService:
-		mzms := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		mzms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(backendRef.Resource))
 		resource = mzms
 		name = core_model.GetDisplayName(resource.GetMeta())
 		if p, ok := mzms.FindPortByName(backendRef.Resource.SectionName); ok {
@@ -173,30 +175,31 @@ func SniForBackendRef(
 }
 
 func ServiceTagIdentities(
-	backendRef *core_model.RealResourceBackendRef,
+	backendRef *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []string {
 	var result []string
 	switch common_api.TargetRefKind(backendRef.Resource.ResourceType) {
 	case common_api.MeshService:
-		ms := meshCtx.MeshServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(backendRef.Resource))
 		for _, identity := range ms.Spec.Identities {
 			if identity.Type == meshservice_api.MeshServiceIdentityServiceTagType {
 				result = append(result, identity.Value)
 			}
 		}
 	case common_api.MeshMultiZoneService:
-		svc := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(backendRef.Resource).ResourceIdentifier]
+		svc := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(backendRef.Resource))
 		identities := map[string]struct{}{}
 		for _, matchedMs := range svc.Status.MeshServices {
-			ri := core_model.ResourceIdentifier{
-				Name:      matchedMs.Name,
-				Namespace: matchedMs.Namespace,
-				Zone:      matchedMs.Zone,
-				Mesh:      matchedMs.Mesh,
+			ri := kri.Identifier{
+				ResourceType: meshservice_api.MeshServiceType,
+				Name:         matchedMs.Name,
+				Namespace:    matchedMs.Namespace,
+				Zone:         matchedMs.Zone,
+				Mesh:         matchedMs.Mesh,
 			}
-			ms, ok := meshCtx.MeshServiceByIdentifier[ri]
-			if !ok {
+			ms := meshCtx.GetMeshServiceByKRI(ri)
+			if ms == nil {
 				continue
 			}
 			for _, identity := range ms.Spec.Identities {

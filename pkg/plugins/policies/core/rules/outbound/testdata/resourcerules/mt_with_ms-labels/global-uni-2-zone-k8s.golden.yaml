@@ -1,4 +1,4 @@
-meshservice:mesh/mesh-1:name/backend-1:
+kri_msvc_mesh-1___backend-1_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
@@ -33,7 +33,7 @@ meshservice:mesh/mesh-1:name/backend-1:
       k8s.kuma.io/namespace: kuma-system
     Version: ""
   ResourceSectionName: ""
-meshservice:mesh/mesh-1:name/backend-2:
+kri_msvc_mesh-1___backend-2_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s

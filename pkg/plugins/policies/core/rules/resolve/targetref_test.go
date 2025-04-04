@@ -1,4 +1,4 @@
-package common_test
+package resolve_test
 
 import (
 	. "github.com/onsi/ginkgo/v2"
@@ -9,14 +9,14 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/xds/context"
 )
 
-var _ = Describe("ResolveTargetRef", func() {
+var _ = Describe("Resolve TargetRef", func() {
 	var resources context.Resources
 	BeforeEach(func() {
 		resources = context.NewResources()
@@ -55,11 +55,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_"))
 	})
 
 	It("should not resolve MeshService targetRef when there is no MeshService", func() {
@@ -77,7 +77,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		// given no MeshServices
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -108,11 +108,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/tcp-port"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_tcp-port"))
 	})
 
 	It("should not resolve MeshService targetRef with section name that doesn't exist", func() {
@@ -140,7 +140,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -171,7 +171,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -202,11 +202,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/8080"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_8080"))
 	})
 
 	It("should resolve MeshService targetRef with labels", func() {
@@ -235,11 +235,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_"))
 	})
 
 	It("should resolve MeshService targetRef with labels and section name", func() {
@@ -269,11 +269,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/tcp-port"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_tcp-port"))
 	})
 
 	It("should resolve MeshService targetRef with labels and section name being a port value and port's name unset", func() {
@@ -303,11 +303,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/8080"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_8080"))
 	})
 
 	It("should not resolve MeshService targetRef with labels and section name being a port value and port's name set", func() {
@@ -337,7 +337,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -370,7 +370,7 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(BeEmpty())
@@ -399,11 +399,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/tcp-port"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_tcp-port"))
 	})
 
 	It("should resolve legacy MeshService targetRef, MeshService's port without name", func() {
@@ -429,11 +429,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend:section/8080"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_8080"))
 	})
 
 	It("should resolve legacy MeshService targetRef for service less", func() {
@@ -459,11 +459,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshservice:mesh/mesh-1:namespace/kuma-demo:name/backend"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_msvc_mesh-1__kuma-demo_backend_"))
 	})
 
 	It("should resolve MeshMultiZoneService targetRef with section name", func() {
@@ -494,11 +494,11 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshmultizoneservice:mesh/mesh-1:namespace/kuma-demo:name/backend-mzsvc:section/tcp-port"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_mzsvc_mesh-1__kuma-demo_backend-mzsvc_tcp-port"))
 	})
 
 	It("should resolve MeshExternalService targetRef", func() {
@@ -524,10 +524,10 @@ var _ = Describe("ResolveTargetRef", func() {
 		)
 
 		// when
-		resolved := common.ResolveTargetRef(targetRef, policyMeta, resources)
+		resolved := resolve.TargetRef(targetRef, policyMeta, resources)
 
 		// then
 		Expect(resolved).To(HaveLen(1))
-		Expect(resolved[0].Identifier().String()).To(Equal("meshexternalservice:mesh/mesh-1:namespace/kuma-demo:name/mes"))
+		Expect(resolved[0].Identifier().String()).To(Equal("kri_extsvc_mesh-1__kuma-demo_mes_"))
 	})
 })

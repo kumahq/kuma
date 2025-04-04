@@ -18,6 +18,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -65,20 +66,16 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshHTTPRoute", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
 	}
-	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "example",
-			Mesh: "default",
-		},
+	backendMeshExternalServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshExternalService",
+		Mesh:         "default",
+		Name:         "example",
 	}
 
 	type outboundsTestCase struct {
@@ -255,7 +252,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							},
 						}},
 						{
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("80"))),
+							Resource: pointer.To(kri.From(&meshSvc, "80")),
 							Address:  "10.0.0.1",
 							Port:     80,
 						},
@@ -352,7 +349,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Outbounds = xds_types.Outbounds{{
 				Address:  "10.0.0.2",
 				Port:     80,
-				Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshMZSvc, core_model.WithSectionName("80"))),
+				Resource: pointer.To(kri.From(&meshMZSvc, "80")),
 			}}
 
 			return outboundsTestCase{
@@ -508,7 +505,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Policies.Dynamic[api.MeshHTTPRouteType] = core_xds.TypedMatchingPolicies{
 				Type: api.MeshHTTPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+					ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
 							Origin: []rules_common.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -838,14 +835,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
 										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -1023,7 +1020,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
 						},
 					}).
 					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
@@ -1031,7 +1028,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
 										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -2526,7 +2523,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 			{
 				Address:  "10.20.20.1",
 				Port:     9090,
-				Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),
+				Resource: pointer.To(kri.From(mes, "")),
 			},
 		}).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).

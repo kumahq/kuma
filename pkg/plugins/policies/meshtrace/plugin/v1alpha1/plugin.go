@@ -11,11 +11,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	policies_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrace/api/v1alpha1"
@@ -150,7 +150,7 @@ func applyToRealResources(
 	proxy *xds.Proxy,
 ) error {
 	for uri, resType := range rs.IndexByOrigin(xds.NonMeshExternalService) {
-		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &model.RealResourceBackendRef{
+		service, _, _, found := meshroute.GetServiceProtocolPortFromRef(ctx.Mesh, &resolve.RealResourceBackendRef{
 			Resource: &uri,
 		})
 		if !found {

@@ -43,7 +43,7 @@ func Migration() {
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName)).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo"}))).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})

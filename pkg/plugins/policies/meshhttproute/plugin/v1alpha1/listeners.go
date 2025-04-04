@@ -10,6 +10,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -56,7 +57,7 @@ func generateFromService(
 				// we need to create a split for the mirror backend
 				_ = meshroute_xds.MakeHTTPSplit(
 					clusterCache, servicesAcc,
-					[]core_model.ResolvedBackendRef{*core_model.NewResolvedBackendRef(pointer.To(core_model.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
+					[]resolve.ResolvedBackendRef{*resolve.NewResolvedBackendRef(pointer.To(resolve.LegacyBackendRef(filter.RequestMirror.BackendRef)))},
 					meshCtx,
 				)
 			}
@@ -222,7 +223,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		}
 
 		if len(route.BackendRefs) == 0 {
-			route.BackendRefs = []core_model.ResolvedBackendRef{
+			route.BackendRefs = []resolve.ResolvedBackendRef{
 				*svc.DefaultBackendRef(),
 			}
 		}
