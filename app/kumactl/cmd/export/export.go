@@ -14,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
-	kuma_yaml "github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/yaml"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -162,7 +162,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				if err != nil {
 					return err
 				}
-				yamlPrinter := kuma_yaml.NewPrinter()
+				yamlPrinter := yaml.NewPrinter()
 				for _, res := range allResources {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
