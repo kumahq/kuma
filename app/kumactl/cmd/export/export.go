@@ -149,7 +149,6 @@ $ kumactl export --profile federation --format universal > policies.yaml
 			switch ctx.args.format {
 			case formatUniversal:
 				for _, res := range allResources {
-					// print mesh first since you cannot create other resources if there is no mesh
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -303,10 +302,10 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 	}
 
 	order := map[model.ResourceType]int{
-		// we need secret for the mesh first
-		core_system.SecretType: 0,
-		// after secret is availabel we can add mesh with mTLS
-		core_mesh.MeshType: 1,
+		// we need a Mesh first
+		core_mesh.MeshType: 0,
+		// after this the best would be to apply secretes
+		core_system.SecretType: 1,
 		// we don't want user token to be added first
 		core_system.GlobalSecretType: 99,
 	}
