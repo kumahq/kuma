@@ -1,5 +1,5 @@
 ResourceRules:
-  meshexternalservice:mesh/mesh-1:name/mes:
+  kri_extsvc_mesh-1___mes_:
     BackendRefOriginIndex: {}
     Conf:
     - http:

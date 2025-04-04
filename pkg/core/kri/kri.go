@@ -2,10 +2,10 @@ package kri
 
 import (
 	"fmt"
-	"strings"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 type Identifier struct {
@@ -22,26 +22,12 @@ func (i Identifier) MarshalText() ([]byte, error) {
 }
 
 func (i Identifier) String() string {
-	var pairs []string
-	if i.ResourceType != "" {
-		pairs = append(pairs, strings.ToLower(string(i.ResourceType)))
+	desc, err := registry.Global().DescriptorFor(i.ResourceType)
+	if err != nil {
+		panic(err)
 	}
-	if i.Mesh != "" {
-		pairs = append(pairs, fmt.Sprintf("mesh/%s", i.Mesh))
-	}
-	if i.Zone != "" {
-		pairs = append(pairs, fmt.Sprintf("zone/%s", i.Zone))
-	}
-	if i.Namespace != "" {
-		pairs = append(pairs, fmt.Sprintf("namespace/%s", i.Namespace))
-	}
-	if i.Name != "" {
-		pairs = append(pairs, fmt.Sprintf("name/%s", i.Name))
-	}
-	if i.SectionName != "" {
-		pairs = append(pairs, fmt.Sprintf("section/%s", i.SectionName))
-	}
-	return strings.Join(pairs, ":")
+
+	return fmt.Sprintf("kri_%s_%s_%s_%s_%s_%s", desc.ShortName, i.Mesh, i.Zone, i.Namespace, i.Name, i.SectionName)
 }
 
 func From(r core_model.Resource, sectionName string) Identifier {

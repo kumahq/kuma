@@ -1,4 +1,4 @@
-meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-1:
+kri_msvc_mesh-1__ns-k8s_backend-1_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
@@ -33,7 +33,7 @@ meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-1:
     NameExtensions: null
     Version: ""
   ResourceSectionName: ""
-meshservice:mesh/mesh-1:namespace/ns-k8s:name/backend-2:
+kri_msvc_mesh-1__ns-k8s_backend-2_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
