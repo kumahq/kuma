@@ -61,7 +61,7 @@ Mounted configuration will then be passed to `kuma-sidecar` and `kuma-init` usin
 
 Compatibility will be maintained in cases where the control plane is newer than the data plane proxy. Until the feature described in this document becomes Generally Available and enabled by default, the control plane will support both the existing and new ways of configuring and delivering transparent proxy settings. The new method (using `--transparent-proxy-config` and Dataplane Metadata) will take precedence over values set directly in the Dataplane resource.
 
-However, compatibility is not guaranteed when the data plane proxy is newer than the control plane, such as during a control plane downgrade. If a user wants to downgrade to a version that does not support the feature described here, they must first disable it on the control plane, then restart all data plane proxies, and only after that proceed with the downgrade.
+However, compatibility is not guaranteed when the data plane proxy is newer than the control plane, such as during a control plane downgrade. To safely downgrade, the feature described in this document must first be disabled in the control plane. Then, all data plane proxies must be restarted to ensure they fall back to the old configuration format. Only after that can the control plane be downgraded. This process will be documented in `UPGRADE.md`.
 
 ### CLI flags
 
