@@ -134,9 +134,7 @@ func SortRules(
 		origin, ok := backendRefToOrigin[hashMatches]
 		if !ok {
 			// shouldn't happen
-			panic("origin match not found")
-			//continue
-			//println("origin match not found")
+			continue
 		}
 
 		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
