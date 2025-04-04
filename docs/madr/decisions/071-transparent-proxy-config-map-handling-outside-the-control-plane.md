@@ -57,6 +57,12 @@ If the Pod includes the `traffic.kuma.io/transparent-proxy-configmap-name` annot
 
 Mounted configuration will then be passed to `kuma-sidecar` and `kuma-init` using appropriate CLI flags.
 
+### Compatibility
+
+Compatibility will be maintained in cases where the control plane is newer than the data plane proxy. Until the feature described in this document becomes Generally Available and enabled by default, the control plane will support both the existing and new ways of configuring and delivering transparent proxy settings. The new method (using `--transparent-proxy-config` and Dataplane Metadata) will take precedence over values set directly in the Dataplane resource.
+
+However, compatibility is not guaranteed when the data plane proxy is newer than the control plane, such as during a control plane downgrade. If a user wants to downgrade to a version that does not support the feature described here, they must first disable it on the control plane, then restart all data plane proxies, and only after that proceed with the downgrade.
+
 ### CLI flags
 
 `kuma-dp` will support a new `--transparent-proxy-config` flag. It can be repeated and accepts the following values:
@@ -73,6 +79,7 @@ CONFIG3=$(mktemp)
 
 echo "{ redirect: { inbound: { port: 2222 } }, wait: 2 }" > "$CONFIG2"
 echo "{ redirect: { inbound: { port: 3333 } }, waitInterval: 3 }" > "$CONFIG3"
+
 echo "{ redirect: { inbound: { port: 1111 } }, ipFamilyMode: ipv4 }" | kuma-dp run \
   --transparent-proxy-config "$CONFIG2,$CONFIG3" \
   --transparent-proxy-config -
