@@ -7,6 +7,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/helm"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {
@@ -14,6 +15,7 @@ func TestE2E(t *testing.T) {
 }
 
 var (
+	_ = ReportAfterSuite("report suite", report.DumpReport)
 	_ = Describe("Zone and Global with Helm chart", Label("job-2"), helm.ZoneAndGlobalWithHelmChart, Ordered)
 	_ = Describe("Zone and Global universal mode with Helm chart", Label("job-2"), helm.ZoneAndGlobalInUniversalModeWithHelmChart, Ordered)
 	// Skipped as it fails with: error while running command: exit status 1; Error: INSTALLATION FAILED: rendered manifests contain a resource that already exists. Unable to continue with install: ServiceAccount "kuma-control-plane" in namespace "kuma-system" exists and cannot be imported into the current release: invalid ownership metadata; annotation validation error: key "meta.helm.sh/release-name" must equal "kuma-c0vo8o": current value is "kuma-8yy3uv"
