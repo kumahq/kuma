@@ -4,6 +4,7 @@ import (
 	"github.com/pkg/errors"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmultizoneservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -11,6 +12,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 )
 
@@ -45,9 +47,9 @@ func (r *ResourceRule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_mo
 	return r.Origin[index].Resource, true
 }
 
-type ResourceRules map[core_model.TypedResourceIdentifier]ResourceRule
+type ResourceRules map[kri.Identifier]ResourceRule
 
-func (rr ResourceRules) Compute(uri core_model.TypedResourceIdentifier, reader common.ResourceReader) *ResourceRule {
+func (rr ResourceRules) Compute(uri kri.Identifier, reader kri.ResourceReader) *ResourceRule {
 	if rule, ok := rr[uri]; ok {
 		return &rule
 	}
@@ -61,13 +63,13 @@ func (rr ResourceRules) Compute(uri core_model.TypedResourceIdentifier, reader c
 			return rr.Compute(uriWithoutSection, reader)
 		}
 		// find MeshService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(common.UniqueKey(mesh, ""), reader)
+		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(kri.From(mesh, ""), reader)
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
 		// find MeshExternalService's Mesh and compute rules for it
-		if mesh := reader.Get(core_mesh.MeshType, core_model.ResourceIdentifier{Name: uri.Mesh}); mesh != nil {
-			return rr.Compute(common.UniqueKey(mesh, ""), reader)
+		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(kri.From(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
 		// todo(lobkovilya): handle MeshHTTPRoute
@@ -83,7 +85,7 @@ type ToEntry interface {
 
 // BuildRules constructs ResourceRules from the given policies and resource reader.
 // It first extracts 'to' entries from the policies and then builds the rules based on these entries.
-func BuildRules(policies core_model.ResourceList, reader common.ResourceReader) (ResourceRules, error) {
+func BuildRules(policies core_model.ResourceList, reader kri.ResourceReader) (ResourceRules, error) {
 	entries, err := GetEntries(policies)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get 'to' entries")
@@ -115,20 +117,20 @@ func GetEntries(policies core_model.ResourceList) ([]common.WithPolicyAttributes
 func buildRules[T interface {
 	common.PolicyAttributes
 	common.Entry[ToEntry]
-}](list []T, reader common.ResourceReader) (ResourceRules, error) {
+}](list []T, reader kri.ResourceReader) (ResourceRules, error) {
 	rules := ResourceRules{}
 
 	Sort(list)
 
 	var resolvedItems []*withResolvedResource[T]
 	for _, item := range list {
-		rs := common.ResolveTargetRef(item.GetEntry().GetTargetRef(), item.GetResourceMeta(), reader)
+		rs := resolve.TargetRef(item.GetEntry().GetTargetRef(), item.GetResourceMeta(), reader)
 		for _, r := range rs {
 			resolvedItems = append(resolvedItems, &withResolvedResource[T]{entry: item, rs: r})
 		}
 	}
 
-	indexed := map[core_model.TypedResourceIdentifier]core_model.Resource{}
+	indexed := map[kri.Identifier]core_model.Resource{}
 	for _, i := range resolvedItems {
 		indexed[i.rs.Identifier()] = i.rs.Resource
 	}
@@ -166,7 +168,7 @@ func buildRules[T interface {
 
 type withResolvedResource[T any] struct {
 	entry T
-	rs    *common.ResourceSection
+	rs    *resolve.ResourceSection
 }
 
 // isRelevant returns true if the rs.resource is relevant to the other resource or section of the resource
@@ -184,9 +186,9 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 			return false
 		}
 		switch {
-		case common.UniqueKey(rw.rs.Resource, rw.rs.SectionName) == common.UniqueKey(other, sectionName):
+		case kri.From(rw.rs.Resource, rw.rs.SectionName) == kri.From(other, sectionName):
 			return true
-		case common.UniqueKey(rw.rs.Resource, "") == common.UniqueKey(other, "") && rw.rs.SectionName == "" && sectionName != "":
+		case kri.From(rw.rs.Resource, "") == kri.From(other, "") && rw.rs.SectionName == "" && sectionName != "":
 			return true
 		default:
 			return false
@@ -195,7 +197,7 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
-		return common.UniqueKey(rw.rs.Resource, "") == common.UniqueKey(other, "")
+		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
 	default:
 		return false
 	}

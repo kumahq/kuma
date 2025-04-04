@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/core/vip"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 func (m *MeshExternalServiceResource) DestinationName(port uint32) string {
-	id := model.NewResourceIdentifier(m)
+	id := kri.From(m, "")
 	if port == 0 {
 		port = uint32(m.Spec.Match.Port)
 	}
@@ -42,7 +42,7 @@ func (t *MeshExternalServiceResource) AsOutbounds() xds_types.Outbounds {
 		return xds_types.Outbounds{{
 			Address:  t.Status.VIP.IP,
 			Port:     uint32(t.Spec.Match.Port),
-			Resource: pointer.To(model.NewTypedResourceIdentifier(t)),
+			Resource: pointer.To(kri.From(t, "")),
 		}}
 	}
 	return nil

@@ -12,6 +12,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -236,7 +237,7 @@ func (d *DataplaneResource) Hash() []byte {
 	return hasher.Sum(nil)
 }
 
-func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentifierResolver) xds_types.Outbounds {
+func (d *DataplaneResource) AsOutbounds(resolver resolve.LabelResourceIdentifierResolver) xds_types.Outbounds {
 	var outbounds xds_types.Outbounds
 	for _, o := range d.Spec.Networking.Outbound {
 		if o.BackendRef != nil {
@@ -249,7 +250,7 @@ func (d *DataplaneResource) AsOutbounds(resolver core_model.LabelResourceIdentif
 				},
 				Port: pointer.To(o.BackendRef.Port),
 			}
-			ref := core_model.ResolveBackendRef(d.GetMeta(), backendRef, resolver)
+			ref := resolve.BackendRef(d.GetMeta(), backendRef, resolver)
 			if ref.ReferencesRealResource() {
 				outbounds = append(outbounds, &xds_types.Outbound{
 					Address:  o.Address,

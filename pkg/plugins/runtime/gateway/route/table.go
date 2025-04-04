@@ -3,6 +3,7 @@ package route
 import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
@@ -109,7 +110,7 @@ type Redirection struct {
 // Destination is a forwarding target (aka Cluster).
 type Destination struct {
 	Destination tags.Tags
-	BackendRef  *model.ResolvedBackendRef
+	BackendRef  *resolve.ResolvedBackendRef
 
 	Weight        uint32
 	RouteProtocol core_mesh.Protocol
