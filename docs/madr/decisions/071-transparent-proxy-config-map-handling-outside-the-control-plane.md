@@ -62,21 +62,22 @@ Mounted configuration will then be passed to `kuma-sidecar` and `kuma-init` usin
 `kuma-dp` will support a new `--transparent-proxy-config` flag. It can be repeated and accepts the following values:
 
 - No value: enables the transparent proxy with default settings
-- A path to a config file
+- Comma-separated paths to one or more config files
 - A raw YAML string
-- A `-` to read raw YAML from STDIN
+- A `-` to read YAML from STDIN
 
-Later values override earlier ones. For example:
+Values are merged in the order provided. Later values override earlier ones. Example:
 
 ```sh
 export CONFIG1="{ redirect: { inbound: { port: 1111 } } }"
 export CONFIG2="{ redirect: { inbound: { port: 2222 } }, ipFamilyMode: ipv4 }"
 export CONFIG3="$(mktemp)"; echo "{ redirect: { inbound: { port: 3333 } }, wait: 6 }" > "$CONFIG3"
+export CONFIG4="$(mktemp)"; echo "{ redirect: { inbound: { port: 4444 } }, waitInterval: 1 }" > "$CONFIG4"
 
 echo "$CONFIG1" | kuma-dp run \
   --transparent-proxy \
   --transparent-proxy-config "$CONFIG2" \
-  --transparent-proxy-config "$CONFIG3" \
+  --transparent-proxy-config "$CONFIG3,$CONFIG4" \
   --transparent-proxy-config -
 ```
 
@@ -88,13 +89,14 @@ redirect:
   inbound:
     port: 1111
 wait: 6
+waitInterval: 1
 ```
 
-In this example, `redirect.inbound.port` is set in all inputs. Since the value from STDIN is last, it takes precedence. The value from `$CONFIG1` (STDIN) wins.
+In this case, `redirect.inbound.port` appears in all inputs. Since STDIN is last, its value (`1111`) takes precedence.
 
-To make things more intuitive, we’ll introduce a `--transparent-proxy` alias for `--transparent-proxy-config`. When used without a value, it enables the transparent proxy using default settings.
+For convenience, we’ll also support a `--transparent-proxy` flag as an alias for `--transparent-proxy-config`. When used without a value, it enables the transparent proxy with default settings, making the intent clearer.
 
-To keep behavior consistent, `kumactl install transparent-proxy` will support a unified `--config` flag with the same precedence rules. The existing `--config-file` flag will be deprecated.
+To ensure consistency, `kumactl install transparent-proxy` will also support the unified `--config` flag, following the same precedence rules. The older `--config-file` flag will be deprecated.
 
 ### Example
 
