@@ -12,7 +12,7 @@ There are three components outside the control plane that rely on the transparen
 - `kuma-cni` - our custom CNI plugin that installs the transparent proxy
 - `kuma-sidecar` - the data plane proxy injected next to the workload container
 
-The proxy config is built from default values, control plane configuration, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-sidecar`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
+The transparent proxy config is built from default values, control plane configuration, annotations, and ConfigMaps. Since ConfigMaps are namespace-scoped, the component that builds the final config must access all of these inputs. The simplest way to do that is in the control plane, which then passes the final config to `kuma-init`, `kuma-cni`, and `kuma-sidecar`. But this requires the control plane to access all workload namespaces, which led to expanding its ClusterRole permissions.
 
 This document proposes removing that requirement for setups that don’t use `kuma-cni`. Instead of having the control plane build the full config, each data plane component (`kuma-init` and `kuma-sidecar`) will build its own.
 
@@ -42,27 +42,59 @@ This inconsistency makes it hard to track where values are coming from.
 
 ## Solution
 
-We stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be relied on by `kuma-sidecar` in Kubernetes deployments. Instead, the same information will be passed as metadata during the xDS connection, using values from the transparent proxy config passed via a CLI flag.
-
-`kuma-dp` will support a `--transparent-proxy` flag, and `kumactl install transparent-proxy` will support a unified `--config` flag. Both flags can accept one of the following values:
-
-- No value: uses the default transparent proxy config (allows running `kuma-dp` without enabling the proxy)
-- A path to a single config file
-- A path to a directory with one or more config files, read in alphabetical order (later files override earlier ones)
-- A raw YAML string with the config
-
-To ensure consistent behavior, we will deprecate the `--config-file` flag in `kumactl install transparent-proxy` and replace it with the unified `--config` flag.
+We will stop using the transparent proxy config fields in the Dataplane object and mark them as deprecated. These fields will no longer be used by `kuma-dp`. Instead, the same values will be passed as metadata during the xDS connection, using configuration provided via CLI flags.
 
 During sidecar injection, the control plane will:
-1. Merge default values from the control plane config and the `kuma-system` ConfigMap
+1. Merge default values from the control plane config and the ConfigMap in `kuma-system` namespace
 2. Apply any Pod-level annotations
-3. Add the resulting values (only those that differ from defaults) as a single annotation: `traffic.kuma.io/transparent-proxy-config`
+3. Add only the values that differ from defaults to a single annotation: `traffic.kuma.io/transparent-proxy-config`
 
-To avoid unintended overrides, we don’t use environment variables for the full config. Env vars take precedence during parsing and can’t be safely set when the control plane doesn’t have access to workload-level ConfigMaps. Annotations provide better control over precedence and merging.
+We avoid using environment variables for this config. Env vars take priority when parsed and can't be safely set if the control plane doesn’t have access to the workload’s namespace. Annotations provide better control over merge order and allow overrides per workload.
 
-The annotation will be mounted into each container as a file named `0.yaml` under `/tmp/transparent-proxy`.
+The resulting config will be mounted into containers at `/tmp/transparent-proxy/default/config.yaml`.
 
-If the Pod also has a `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the named ConfigMap will be mounted in the same directory as `1.yaml`. Since files are processed alphabetically, it will override values from the default config.
+If the Pod includes the `traffic.kuma.io/transparent-proxy-configmap-name` annotation, the specified ConfigMap will be mounted at `/tmp/transparent-proxy/custom`. Since the ConfigMap is required to include a `config.yaml` key, the actual file path available in the container will be `/tmp/transparent-proxy/custom/config.yaml`.
+
+Mounted configuration will then be passed to `kuma-sidecar` and `kuma-init` using appropriate CLI flags.
+
+### CLI flags
+
+`kuma-dp` will support a new `--transparent-proxy-config` flag. It can be repeated and accepts the following values:
+
+- No value: enables the transparent proxy with default settings
+- A path to a config file
+- A raw YAML string
+- A `-` to read raw YAML from STDIN
+
+Later values override earlier ones. For example:
+
+```sh
+export CONFIG1="{ redirect: { inbound: { port: 1111 } } }"
+export CONFIG2="{ redirect: { inbound: { port: 2222 } }, ipFamilyMode: ipv4 }"
+export CONFIG3="$(mktemp)"; echo "{ redirect: { inbound: { port: 3333 } }, wait: 6 }" > "$CONFIG3"
+
+echo "$CONFIG1" | kuma-dp run \
+  --transparent-proxy \
+  --transparent-proxy-config "$CONFIG2" \
+  --transparent-proxy-config "$CONFIG3" \
+  --transparent-proxy-config -
+```
+
+The final configuration will be:
+
+```yaml
+ipFamilyMode: ipv4
+redirect:
+  inbound:
+    port: 1111
+wait: 6
+```
+
+In this example, `redirect.inbound.port` is set in all inputs. Since the value from STDIN is last, it takes precedence. The value from `$CONFIG1` (STDIN) wins.
+
+To make things more intuitive, we’ll introduce a `--transparent-proxy` alias for `--transparent-proxy-config`. When used without a value, it enables the transparent proxy using default settings.
+
+To keep behavior consistent, `kumactl install transparent-proxy` will support a unified `--config` flag with the same precedence rules. The existing `--config-file` flag will be deprecated.
 
 ### Example
 
@@ -77,7 +109,7 @@ Assumptions:
      annotations:
        kuma.io/sidecar-injection: enabled
        traffic.kuma.io/exclude-inbound-ports: "7777"
-       traffic.kuma.io/transparent-proxy-configmap-name: custom-tproxy-config
+       traffic.kuma.io/transparent-proxy-configmap-name: configmap-with-custom-transparent-proxy-config
    ...
    ```
 3. The default transparent proxy ConfigMap was modified:
@@ -98,7 +130,7 @@ Assumptions:
    apiVersion: v1
    kind: ConfigMap
    metadata:
-     name: custom-tproxy-config
+     name: configmap-with-custom-transparent-proxy-config
      namespace: ...
    data:
      config.yaml: |
@@ -114,7 +146,7 @@ metadata:
   annotations:
     kuma.io/sidecar-injection: enabled
     traffic.kuma.io/exclude-inbound-ports: "7777"
-    traffic.kuma.io/transparent-proxy-configmap-name: custom-tproxy-config
+    traffic.kuma.io/transparent-proxy-configmap-name: configmap-with-custom-transparent-proxy-config
     traffic.kuma.io/transparent-proxy-config: |
       redirect:
         inbound:
@@ -126,15 +158,14 @@ spec:
   - name: kuma-sidecar
     args:
     - run
-    - --transparent-proxy=/tmp/transparent-proxy
+    - --transparent-proxy-config=/tmp/transparent-proxy/default/config.yaml
+    - --transparent-proxy-config=/tmp/transparent-proxy/custom/config.yaml
     volumeMounts:
     - name: transparent-proxy-default
-      mountPath: /tmp/transparent-proxy/0.yaml
-      subPath: config.yaml
+      mountPath: /tmp/transparent-proxy/default
       readOnly: true
     - name: transparent-proxy-custom
-      mountPath: /tmp/transparent-proxy/1.yaml
-      subPath: config.yaml
+      mountPath: /tmp/transparent-proxy/custom
       readOnly: true
   initContainers:
   - name: kuma-init
@@ -143,15 +174,14 @@ spec:
     - install
     - transparent-proxy
     args:
-    - --config=/tmp/transparent-proxy
+    - --config=/tmp/transparent-proxy/default/config.yaml
+    - --config=/tmp/transparent-proxy/custom/config.yaml
     volumeMounts:
     - name: transparent-proxy-default
-      mountPath: /tmp/transparent-proxy/0.yaml
-      subPath: config.yaml
+      mountPath: /tmp/transparent-proxy/default
       readOnly: true
     - name: transparent-proxy-custom
-      mountPath: /tmp/transparent-proxy/1.yaml
-      subPath: config.yaml
+      mountPath: /tmp/transparent-proxy/custom
       readOnly: true
   volumes:
   - name: transparent-proxy-default
@@ -163,7 +193,7 @@ spec:
         path: config.yaml
   - name: transparent-proxy-custom
     configMap:
-      name: custom-tproxy-config
+      name: configmap-with-custom-transparent-proxy-config
 ...
 ```
 
