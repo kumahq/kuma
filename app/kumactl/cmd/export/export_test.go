@@ -115,7 +115,7 @@ var _ = Describe("kumactl export", func() {
 			},
 			goldenFile: "export-kube.golden.yaml",
 		}),
-		FEntry("universal profile=all", testCase{
+		Entry("universal profile=all", testCase{
 			resources: []model.Resource{
 				samples.MeshDefault(),
 				samples.SampleSigningKeyGlobalSecret(),

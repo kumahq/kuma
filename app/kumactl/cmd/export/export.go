@@ -3,6 +3,7 @@ package export
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -92,82 +93,63 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var meshSecrets []model.Resource
-			var otherResources []model.Resource
-			var meshesResources []model.Resource
-			var meshesCertAndKey []model.Resource
+			// Mesh resources
+			var meshResource []model.Resource
+			// resources created after Mesh
+			var meshDependedResources []model.Resource
+			// resources added last
+			var lastResources []model.Resource
+			// resource types are sorted
 			for _, resDesc := range resTypes {
-				if resDesc.Scope == model.ScopeGlobal {
+				switch resDesc.Scope {
+				case model.ScopeGlobal:
 					list := resDesc.NewList()
 					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resDesc.Name)
 					}
 					for _, res := range list.GetItems() {
-						if res.Descriptor().Name == core_mesh.MeshType {
+						switch resDesc.Name {
+						case core_mesh.MeshType:
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
 							err := changeBuiltinBackendsToProvided(mesh)
 							if err != nil {
 								return nil
 							}
-							meshesResources = append(meshesResources, mesh)
-						} else {
-							otherResources = append(otherResources, res)
+							meshResource = append(meshResource, res)
+							continue
+						case core_system.GlobalSecretType:
+							// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
+							if res.GetMeta().GetName() == core_system.EnvoyAdminCA || res.GetMeta().GetName() == core_system.InterCpCA {
+								continue
+							}
+							// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
+							isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
+							if isUserTokenSigningKey {
+								lastResources = append(lastResources, res)
+								continue
+							}
 						}
+						meshDependedResources = append(meshDependedResources, res)
 					}
-				} else {
+				case model.ScopeMesh:
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resDesc.Name)
 						}
-						for _, res := range list.GetItems() {
-							isBuiltinCertOrKey := strings.HasPrefix(res.GetMeta().GetName(), fmt.Sprintf("%s.%s", mesh.Meta.GetName(), core_system.BuiltinCertificateSecretNamePart))
-							if res.Descriptor().Name == core_system.SecretType && isBuiltinCertOrKey {
-								meshesCertAndKey = append(meshesCertAndKey, res)
-								continue
-							}
-							if res.Descriptor().Name == core_system.SecretType {
-								meshSecrets = append(meshSecrets, res)
-							} else {
-								otherResources = append(otherResources, res)
-							}
-						}
+						meshDependedResources = append(meshDependedResources, list.GetItems()...)
 					}
 				}
 			}
 
-			allResources := append(meshSecrets, otherResources...)
-			var resources []model.Resource
-			var userTokenSigningKeys []model.Resource
-			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
-			for _, res := range allResources {
-				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
-				
-				if res.GetMeta().GetName() != core_system.EnvoyAdminCA &&
-					res.GetMeta().GetName() != core_system.InterCpCA &&
-					!isUserTokenSigningKey {
-					resources = append(resources, res)
-				}
-				if isUserTokenSigningKey {
-					userTokenSigningKeys = append(userTokenSigningKeys, res)
-				}
-			}
-			// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
-			resources = append(resources, userTokenSigningKeys...)
+			allResources := append(meshResource, meshDependedResources...)
+			allResources = append(allResources, lastResources...)
 
 			switch ctx.args.format {
 			case formatUniversal:
-				for _, res := range append(meshesCertAndKey, meshesResources...) {
+				for _, res := range allResources {
 					// print mesh first since you cannot create other resources if there is no mesh
-					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
-						return err
-					}
-					if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
-						return err
-					}
-				}
-				for _, res := range resources {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -181,12 +163,11 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					return err
 				}
 				yamlPrinter := kuma_yaml.NewPrinter()
-				for _, res := range append(meshesCertAndKey, append(meshesResources, resources...)...) {
+				for _, res := range allResources {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
 						return err
 					}
-					// test := util_proto.ToMap(res.GetSpec())
 					if shouldSkipKubeObject(obj, ctx) {
 						continue
 					}
@@ -269,6 +250,8 @@ func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
 				}
 				backend.Type = "provided"
 				backend.Conf = conf
+				// we want to create secrets at any time
+				res.Spec.Mtls.SkipValidation = true
 			}
 		}
 	}
@@ -318,6 +301,26 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 		}
 		resDescList = append(resDescList, resDesc)
 	}
+
+	order := map[model.ResourceType]int{
+		// we need secret for the mesh first
+		core_system.SecretType: 0,
+		// after secret is availabel we can add mesh with mTLS
+		core_mesh.MeshType: 1,
+		// we don't want user token to be added first
+		core_system.GlobalSecretType: 99,
+	}
+	sort.SliceStable(resDescList, func(i, j int) bool {
+		priorityI := 50
+		priorityJ := 50
+		if priority, exist := order[resDescList[i].Name]; exist {
+			priorityI = priority
+		}
+		if priority, exist := order[resDescList[j].Name]; exist {
+			priorityJ = priority
+		}
+		return priorityI < priorityJ
+	})
 	if len(incompatibleTypes) > 0 {
 		msg := fmt.Sprintf("The following types won't be exported because they are unknown to kumactl: %s", strings.Join(incompatibleTypes, ","))
 		cmd.Printf("# %s\n", msg)

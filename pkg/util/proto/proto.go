@@ -92,7 +92,7 @@ func ToMap(message proto.Message) (map[string]interface{}, error) {
 	value := map[string]interface{}{}
 	err = json.Unmarshal(configBytes, &value)
 	if err != nil {
-	 return value, err
+		return value, err
 	}
 	return value, err
 }
