@@ -9,6 +9,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	plugins_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -19,7 +20,7 @@ import (
 func MakeTCPSplit(
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []core_model.ResolvedBackendRef,
+	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
@@ -41,7 +42,7 @@ func MakeTCPSplit(
 func MakeHTTPSplit(
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []core_model.ResolvedBackendRef,
+	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	return makeSplit(
@@ -63,14 +64,14 @@ type DestinationService struct {
 	ServiceName string
 }
 
-func (ds *DestinationService) DefaultBackendRef() *core_model.ResolvedBackendRef {
+func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
 	if ds.Outbound.Resource != nil {
-		return core_model.NewResolvedBackendRef(&core_model.RealResourceBackendRef{
+		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
 			Resource: ds.Outbound.Resource,
 			Weight:   100,
 		})
 	} else {
-		return core_model.NewResolvedBackendRef(&core_model.LegacyBackendRef{
+		return resolve.NewResolvedBackendRef(&resolve.LegacyBackendRef{
 			TargetRef: common_api.TargetRef{
 				Kind: common_api.MeshService,
 				Name: pointer.To(ds.Outbound.LegacyOutbound.GetService()),
@@ -111,8 +112,8 @@ func collectMeshService(
 	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	ms, msOk := meshCtx.MeshServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
-	if !msOk {
+	ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(outbound.Resource))
+	if ms == nil {
 		// we want to ignore service which is not found. Logging might be excessive here.
 		// We don't have other mechanism to bubble up warnings yet.
 		return nil
@@ -136,8 +137,8 @@ func collectMeshExternalService(
 	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	mes, mesOk := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
-	if !mesOk {
+	mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(outbound.Resource))
+	if mes == nil {
 		return nil
 	}
 	protocol := core_mesh.Protocol(core_mesh.ProtocolTCP)
@@ -155,8 +156,8 @@ func collectMeshMultiZoneService(
 	outbound *xds_types.Outbound,
 	meshCtx xds_context.MeshContext,
 ) *DestinationService {
-	svc, mesOk := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(outbound.Resource).ResourceIdentifier]
-	if !mesOk {
+	svc := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(outbound.Resource))
+	if svc == nil {
 		return nil
 	}
 	port, ok := svc.FindPortByName(outbound.Resource.SectionName)
@@ -188,12 +189,12 @@ func collectServiceTagService(
 
 func GetServiceProtocolPortFromRef(
 	meshCtx xds_context.MeshContext,
-	ref *core_model.RealResourceBackendRef,
+	ref *resolve.RealResourceBackendRef,
 ) (string, core_mesh.Protocol, uint32, bool) {
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
-		mes, ok := meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		if !ok {
+		mes := meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource))
+		if mes == nil {
 			return "", "", 0, false
 		}
 		port := uint32(mes.Spec.Match.Port)
@@ -201,8 +202,8 @@ func GetServiceProtocolPortFromRef(
 		protocol := mes.Spec.Match.Protocol
 		return service, protocol, port, true
 	case common_api.MeshMultiZoneService:
-		ms, ok := meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		if !ok {
+		ms := meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource))
+		if ms == nil {
 			return "", "", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
@@ -213,8 +214,8 @@ func GetServiceProtocolPortFromRef(
 		protocol := port.AppProtocol
 		return service, protocol, port.Port, true
 	case common_api.MeshService:
-		ms, ok := meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier]
-		if !ok {
+		ms := meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource))
+		if ms == nil {
 			return "", "", 0, false
 		}
 		port, ok := ms.FindPortByName(ref.Resource.SectionName)
@@ -233,7 +234,7 @@ func makeSplit(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	refs []core_model.ResolvedBackendRef,
+	refs []resolve.ResolvedBackendRef,
 	meshCtx xds_context.MeshContext,
 ) []envoy_common.Split {
 	var split []envoy_common.Split
@@ -257,7 +258,7 @@ func handleRealResources(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	ref *core_model.RealResourceBackendRef,
+	ref *resolve.RealResourceBackendRef,
 	meshCtx xds_context.MeshContext,
 ) envoy_common.Split {
 	if ref.Weight == 0 {
@@ -277,12 +278,12 @@ func handleRealResources(
 
 	switch common_api.TargetRefKind(ref.Resource.ResourceType) {
 	case common_api.MeshExternalService:
-		clusterName = meshCtx.MeshExternalServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+		clusterName = meshCtx.GetMeshExternalServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
 		isExternalService = true
 	case common_api.MeshMultiZoneService:
-		clusterName = meshCtx.MeshMultiZoneServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+		clusterName = meshCtx.GetMeshMultiZoneServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
 	case common_api.MeshService:
-		clusterName = meshCtx.MeshServiceByIdentifier[pointer.Deref(ref.Resource).ResourceIdentifier].DestinationName(port)
+		clusterName = meshCtx.GetMeshServiceByKRI(pointer.Deref(ref.Resource)).DestinationName(port)
 	}
 
 	// todo(lobkovilya): instead of computing hash we should use ResourceIdentifier as a key in clusterCache (or maybe we don't need clusterCache)
@@ -309,7 +310,7 @@ func handleRealResources(
 		WithTags(envoy_tags.Tags{}.WithTags(mesh_proto.ServiceTag, service)). // todo(lobkovilya): do we need tags for real resource cluster?
 		WithExternalService(isExternalService)
 
-	servicesAcc.AddBackendRef(core_model.NewResolvedBackendRef(ref), clusterBuilder.Build())
+	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 
 	return splitTo(clusterName)
 }
@@ -318,7 +319,7 @@ func handleLegacyBackendRef(
 	protocols map[core_mesh.Protocol]struct{},
 	clusterCache map[common_api.BackendRefHash]string,
 	servicesAcc envoy_common.ServicesAccumulator,
-	ref *core_model.LegacyBackendRef,
+	ref *resolve.LegacyBackendRef,
 	meshCtx xds_context.MeshContext,
 ) envoy_common.Split {
 	if ref.Weight != nil && *ref.Weight == 0 {
@@ -374,6 +375,6 @@ func handleLegacyBackendRef(
 		clusterBuilder.WithMesh(mesh)
 	}
 
-	servicesAcc.AddBackendRef(core_model.NewResolvedBackendRef(ref), clusterBuilder.Build())
+	servicesAcc.AddBackendRef(resolve.NewResolvedBackendRef(ref), clusterBuilder.Build())
 	return split
 }

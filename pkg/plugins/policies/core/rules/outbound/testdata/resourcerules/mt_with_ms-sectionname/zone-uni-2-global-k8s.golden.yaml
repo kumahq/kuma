@@ -1,4 +1,4 @@
-meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
+kri_msvc_mesh-1_zone-uni__backend_:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 1m51s
@@ -32,7 +32,7 @@ meshservice:mesh/mesh-1:zone/zone-uni:name/backend:
       k8s.kuma.io/namespace: kuma-system
     Version: ""
   ResourceSectionName: ""
-meshservice:mesh/mesh-1:zone/zone-uni:name/backend:section/http-port:
+kri_msvc_mesh-1_zone-uni__backend_http-port:
   BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s

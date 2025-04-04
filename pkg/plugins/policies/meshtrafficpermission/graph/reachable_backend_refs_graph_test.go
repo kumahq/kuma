@@ -6,8 +6,8 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/graph"
@@ -58,7 +58,7 @@ var _ = Describe("Reachable Backends Graph", func() {
 					_, conn := given.expectedConnections[from.Meta.GetName()][to.Meta.GetName()]
 					Expect(g.CanReachBackend(
 						map[string]string{"app": from.Meta.GetName()},
-						model.NewTypedResourceIdentifier(to),
+						kri.From(to, ""),
 					)).To(Equal(fromAll || conn))
 				}
 			}
@@ -241,22 +241,18 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "b", "version": "v1"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeFalse())
 	})
@@ -284,32 +280,26 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "east"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{"kuma.io/zone": "west"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeFalse())
 		Expect(g.CanReachBackend(
 			map[string]string{"othertag": "other"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeFalse())
 	})
@@ -343,22 +333,18 @@ var _ = Describe("Reachable Backends Graph", func() {
 			// then
 			Expect(g.CanReachBackend(
 				map[string]string{"app": "b"},
-				model.TypedResourceIdentifier{
+				kri.Identifier{
 					ResourceType: meshservice_api.MeshServiceType,
-					ResourceIdentifier: model.ResourceIdentifier{
-						Name: "a",
-						Mesh: "default",
-					},
+					Mesh:         "default",
+					Name:         "a",
 				},
 			)).To(BeTrue())
 			Expect(g.CanReachBackend(
 				map[string]string{"app": "a"},
-				model.TypedResourceIdentifier{
+				kri.Identifier{
 					ResourceType: meshservice_api.MeshServiceType,
-					ResourceIdentifier: model.ResourceIdentifier{
-						Name: "b",
-						Mesh: "default",
-					},
+					Mesh:         "default",
+					Name:         "b",
 				},
 			)).To(BeFalse()) // it's not selected by top-level target ref
 		},
@@ -399,22 +385,18 @@ var _ = Describe("Reachable Backends Graph", func() {
 		// then
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "b"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "a",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "a",
 			},
 		)).To(BeTrue())
 		Expect(g.CanReachBackend(
 			map[string]string{"app": "a"},
-			model.TypedResourceIdentifier{
+			kri.Identifier{
 				ResourceType: meshservice_api.MeshServiceType,
-				ResourceIdentifier: model.ResourceIdentifier{
-					Name: "b",
-					Mesh: "default",
-				},
+				Mesh:         "default",
+				Name:         "b",
 			},
 		)).To(BeFalse())
 	})

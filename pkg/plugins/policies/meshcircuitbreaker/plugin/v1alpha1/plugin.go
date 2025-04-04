@@ -5,10 +5,10 @@ import (
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
@@ -240,7 +240,7 @@ func applyToEgressRealResources(rs *core_xds.ResourceSet, proxy *core_xds.Proxy)
 func applyToRealResource(
 	meshCtx xds_context.MeshContext,
 	rules outbound.ResourceRules,
-	uri core_model.TypedResourceIdentifier,
+	uri kri.Identifier,
 	resourcesByType core_xds.ResourcesByType,
 ) error {
 	conf := rules.Compute(uri, meshCtx.Resources)

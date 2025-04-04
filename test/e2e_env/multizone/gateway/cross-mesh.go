@@ -88,6 +88,8 @@ func CrossMeshGatewayOnMultizone() {
 			Install(YamlUniversal(crossMeshGatewayYaml)).
 			Install(YamlUniversal(edgeGatewayYaml))
 		Expect(globalSetup.Setup(multizone.Global)).To(Succeed())
+		Expect(WaitForMesh(gatewayMesh, multizone.Zones())).To(Succeed())
+		Expect(WaitForMesh(gatewayOtherMesh, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
 		NewClusterSetup().

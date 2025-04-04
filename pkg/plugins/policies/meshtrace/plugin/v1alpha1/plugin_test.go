@@ -11,10 +11,10 @@ import (
 	. "github.com/onsi/gomega"
 	"k8s.io/apimachinery/pkg/util/intstr"
 
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -54,14 +54,12 @@ var _ = Describe("MeshTrace", func() {
 		outbounds       xds_types.Outbounds
 		goldenFile      string
 	}
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "backend",
-			Mesh:      "default",
-			Namespace: "backend-ns",
-			Zone:      "zone-1",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Zone:         "zone-1",
+		Namespace:    "backend-ns",
+		Name:         "backend",
 		SectionName:  "",
 	}
 	inboundAndOutbound := func() []core_xds.Resource {
@@ -124,8 +122,8 @@ var _ = Describe("MeshTrace", func() {
 				WithOutbounds(given.outbounds).
 				WithPolicies(xds_builders.MatchedPolicies().WithSingleItemPolicy(api.MeshTraceType, given.singleItemRules)).
 				Build()
-			context.Mesh.MeshServiceByIdentifier = map[core_model.ResourceIdentifier]*meshservice_api.MeshServiceResource{
-				backendMeshServiceIdentifier.ResourceIdentifier: samples.MeshServiceBackend(),
+			context.Mesh.MeshServiceByIdentifier = map[kri.Identifier]*meshservice_api.MeshServiceResource{
+				backendMeshServiceIdentifier: samples.MeshServiceBackend(),
 			}
 			plugin := plugin.NewPlugin().(core_plugins.PolicyPlugin)
 

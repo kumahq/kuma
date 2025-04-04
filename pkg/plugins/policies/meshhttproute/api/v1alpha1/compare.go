@@ -6,6 +6,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -94,7 +95,7 @@ func CompareMatch(a Match, b Match) int {
 type Route struct {
 	Match       Match
 	Filters     []Filter
-	BackendRefs []core_model.ResolvedBackendRef
+	BackendRefs []resolve.ResolvedBackendRef
 	Hash        common_api.MatchesHash
 }
 
@@ -105,7 +106,7 @@ type Route struct {
 func SortRules(
 	rules []Rule,
 	backendRefToOrigin map[common_api.MatchesHash]core_model.ResourceMeta,
-	labelResolver core_model.LabelResourceIdentifierResolver,
+	labelResolver resolve.LabelResourceIdentifierResolver,
 ) []Route {
 	type keyed struct {
 		sortKey Match
@@ -125,11 +126,11 @@ func SortRules(
 	})
 	var out []Route
 	for _, key := range keys {
-		var backendRefs []core_model.ResolvedBackendRef
+		var backendRefs []resolve.ResolvedBackendRef
 		hashMatches := HashMatches(key.rule.Matches)
 		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
 			if origin, ok := backendRefToOrigin[hashMatches]; ok {
-				if resolved := core_model.ResolveBackendRef(origin, br, labelResolver); resolved != nil {
+				if resolved := resolve.BackendRef(origin, br, labelResolver); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)
 				}
 			}

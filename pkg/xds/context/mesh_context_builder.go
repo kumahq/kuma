@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshextenralservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshmzservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
@@ -144,27 +145,27 @@ func (m *meshContextBuilder) BuildIfChanged(ctx context.Context, meshName string
 		dataplanesByName[dp.Meta.GetName()] = dp
 	}
 	meshServices := resources.MeshServices().Items
-	meshServicesByName := make(map[core_model.ResourceIdentifier]*v1alpha1.MeshServiceResource, len(meshServices))
+	meshServicesByName := make(map[kri.Identifier]*v1alpha1.MeshServiceResource, len(meshServices))
 	meshServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
 	for _, ms := range meshServices {
-		ri := core_model.NewResourceIdentifier(ms)
+		ri := kri.From(ms, "")
 		meshServicesByName[ri] = ms
 		buildLabelValueToServiceNames(ri, meshServicesByLabelByValue, ms.Meta.GetLabels())
 	}
 
 	meshExternalServices := resources.MeshExternalServices().Items
-	meshExternalServicesByName := make(map[core_model.ResourceIdentifier]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
+	meshExternalServicesByName := make(map[kri.Identifier]*meshextenralservice_api.MeshExternalServiceResource, len(meshExternalServices))
 	meshExternalServicesByLabelByValue := LabelsToValuesToResourceIdentifier{}
 	for _, mes := range meshExternalServices {
-		ri := core_model.NewResourceIdentifier(mes)
+		ri := kri.From(mes, "")
 		meshExternalServicesByName[ri] = mes
 		buildLabelValueToServiceNames(ri, meshExternalServicesByLabelByValue, mes.Meta.GetLabels())
 	}
 	meshMultiZoneServices := resources.MeshMultiZoneServices().Items
-	meshMultiZoneServicesByName := make(map[core_model.ResourceIdentifier]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
+	meshMultiZoneServicesByName := make(map[kri.Identifier]*meshmzservice_api.MeshMultiZoneServiceResource, len(meshMultiZoneServices))
 	meshMultiZoneServiceNameByLabelByValue := LabelsToValuesToResourceIdentifier{}
 	for _, svc := range meshMultiZoneServices {
-		ri := core_model.NewResourceIdentifier(svc)
+		ri := kri.From(svc, "")
 		meshMultiZoneServicesByName[ri] = svc
 		buildLabelValueToServiceNames(ri, meshMultiZoneServiceNameByLabelByValue, svc.Meta.GetLabels())
 	}
@@ -517,7 +518,7 @@ func (m *meshContextBuilder) decorateWithCrossMeshResources(ctx context.Context,
 	return nil
 }
 
-func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
+func buildLabelValueToServiceNames(ri kri.Identifier, resourceNamesByLabels LabelsToValuesToResourceIdentifier, labels map[string]string) {
 	for label, value := range labels {
 		key := LabelValue{
 			Label: label,
@@ -526,7 +527,7 @@ func buildLabelValueToServiceNames(ri core_model.ResourceIdentifier, resourceNam
 		if _, ok := resourceNamesByLabels[key]; ok {
 			resourceNamesByLabels[key][ri] = true
 		} else {
-			resourceNamesByLabels[key] = map[core_model.ResourceIdentifier]bool{
+			resourceNamesByLabels[key] = map[kri.Identifier]bool{
 				ri: true,
 			}
 		}

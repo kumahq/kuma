@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -149,7 +150,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
+		ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 	},
 }), Entry("tie-breaking", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -245,7 +246,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
+		ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 	},
 }), Entry("ordering", policiesTestCase{
 	dataplane: samples.DataplaneWeb(),
@@ -502,7 +503,7 @@ var _ = DescribeTable("MatchedPolicies", func(given policiesTestCase) {
 				},
 			},
 		},
-		ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
+		ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 	},
 }),
 )

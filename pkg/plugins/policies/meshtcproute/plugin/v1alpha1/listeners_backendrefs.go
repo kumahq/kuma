@@ -5,6 +5,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/plugin/v1alpha1"
@@ -44,7 +45,7 @@ func getBackendRefs(
 	svc meshroute_xds.DestinationService,
 	protocol core_mesh.Protocol,
 	meshCtx xds_context.MeshContext,
-) []core_model.ResolvedBackendRef {
+) []resolve.ResolvedBackendRef {
 	tcpConf, backendRefOrigin := computeConf(toRulesTCP, svc, meshCtx)
 
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
@@ -62,17 +63,17 @@ func getBackendRefs(
 	default:
 	}
 
-	var backendRefs []core_model.ResolvedBackendRef
+	var backendRefs []resolve.ResolvedBackendRef
 	if tcpConf != nil {
 		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
 			if backendRefOrigin != nil {
-				if resolved := core_model.ResolveBackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
+				if resolved := resolve.BackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)
 				}
 			}
 		}
 	} else {
-		return []core_model.ResolvedBackendRef{*svc.DefaultBackendRef()}
+		return []resolve.ResolvedBackendRef{*svc.DefaultBackendRef()}
 	}
 
 	return backendRefs
