@@ -125,6 +125,7 @@ func (i *KumaInjector) InjectKuma(ctx context.Context, pod *kube_core.Pod) error
 		ReadOnly:  false,
 	})
 	container.SecurityContext.ReadOnlyRootFilesystem = pointer.To(true)
+	container.SecurityContext.AllowPrivilegeEscalation = pointer.To(false)
 
 	patchedContainer, err := i.applyCustomPatches(logger, container, sidecarPatches)
 	if err != nil {

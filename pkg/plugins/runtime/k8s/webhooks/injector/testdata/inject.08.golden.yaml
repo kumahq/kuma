@@ -108,6 +108,7 @@ spec:
         ephemeral-storage: 50M
         memory: 164Mi
     securityContext:
+      allowPrivilegeEscalation: false
       capabilities:
         drop:
         - ALL
