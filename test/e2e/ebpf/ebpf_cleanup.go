@@ -54,6 +54,7 @@ func CleanupEbpfConfigFromNode() {
 	})
 
 	AfterAll(func() {
+		DebugCPLogs(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

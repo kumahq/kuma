@@ -35,6 +35,9 @@ func UpgradingWithHelmChartMultizone() {
 	})
 
 	E2EAfterEach(func() {
+		DebugCPLogs(global)
+		DebugCPLogs(zoneK8s)
+		DebugCPLogs(zoneUniversal)
 		grp := sync.WaitGroup{}
 		grp.Add(3)
 		go func() {

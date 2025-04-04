@@ -41,6 +41,7 @@ func AutoReachableServices() {
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(KubeCluster)
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteNamespace(esNamespace)).To(Succeed())
 		Expect(KubeCluster.DeleteMesh(meshName)).To(Succeed())

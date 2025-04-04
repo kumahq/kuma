@@ -63,6 +63,8 @@ func FederateKubeZoneCPToKubeGlobal() {
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(global)
+		DebugCPLogs(zone)
 		Expect(zone.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(global.DeleteKuma()).To(Succeed())
 		Expect(zone.DeleteKuma()).To(Succeed())

@@ -60,6 +60,7 @@ spec:
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(KubeCluster)
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteMesh(meshName)).To(Succeed())
 	})

@@ -55,6 +55,7 @@ func ExcludeOutboundPort() {
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(k8sCluster)
 		Expect(cluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteNamespace(namespaceExternal)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())

@@ -68,6 +68,7 @@ data:
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(k8sCluster)
 		Expect(k8sCluster.TriggerDeleteNamespace(appNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
