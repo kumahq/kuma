@@ -74,7 +74,6 @@ CONFIG3=$(mktemp)
 echo "{ redirect: { inbound: { port: 2222 } }, wait: 2 }" > "$CONFIG2"
 echo "{ redirect: { inbound: { port: 3333 } }, waitInterval: 3 }" > "$CONFIG3"
 echo "{ redirect: { inbound: { port: 1111 } }, ipFamilyMode: ipv4 }" | kuma-dp run \
-  --transparent-proxy \
   --transparent-proxy-config "$CONFIG2,$CONFIG3" \
   --transparent-proxy-config -
 ```
