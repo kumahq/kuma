@@ -15,6 +15,7 @@ env:
   E2E_PARAM_CNI_NETWORK_PLUGIN: ${{ fromJSON(inputs.matrix).cniNetworkPlugin }}
   E2E_PARAM_ARCH: ${{ fromJSON(inputs.matrix).arch }}
   E2E_PARAM_SIDECAR_CONTAINERS: ${{ fromJSON(inputs.matrix).sidecarContainers }}
+  E2E_PARAM_DP_DNS: ${{ fromJSON(inputs.matrix).dpDNS }}
   E2E_PARAM_TARGET: ${{ fromJSON(inputs.matrix).target }}
   E2E_PARAM_PARALLELISM: ${{ fromJSON(inputs.matrix).parallelism }}
 jobs:
@@ -100,6 +101,9 @@ jobs:
 
           if [[ "${{ env.E2E_PARAM_SIDECAR_CONTAINERS }}" != "" ]]; then
             export KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS=true
+          fi
+          if [[ "${{ env.E2E_PARAM_DP_DNS }}" != "" ]]; then
+            export KUMA_EXPERIMENTAL_DP_DNS=true
           fi
 
           if [[ "${{ env.E2E_PARAM_TARGET }}" == "" ]]; then

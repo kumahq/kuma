@@ -24,6 +24,7 @@ var _ = Describe("DNSGenerator", func() {
 	type testCase struct {
 		dataplaneFile string
 		expected      string
+		features      map[string]bool
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -62,8 +63,9 @@ var _ = Describe("DNSGenerator", func() {
 				APIVersion: envoy_common.APIV3,
 				Routing:    model.Routing{},
 				Metadata: &model.DataplaneMetadata{
-					DNSPort: 53001,
-					Version: &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
+					DNSPort:  53001,
+					Version:  &mesh_proto.Version{Envoy: &mesh_proto.EnvoyVersion{Version: "1.20.0"}},
+					Features: given.features,
 				},
 				InternalAddresses: DummyInternalAddresses,
 			}
@@ -73,10 +75,12 @@ var _ = Describe("DNSGenerator", func() {
 			}
 
 			// when
-			rs, err := gen.Generate(context.Background(), nil, ctx, proxy)
+			rs := model.NewResourceSet()
+			resources, err := gen.Generate(context.Background(), rs, ctx, proxy)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
+			rs.AddSet(resources)
 
 			// and output matches golden files
 			resp, err := rs.List().ToDeltaDiscoveryResponse()
@@ -96,6 +100,13 @@ var _ = Describe("DNSGenerator", func() {
 		Entry("03. DNS enabled no ipv6", testCase{
 			dataplaneFile: "3-dataplane.input.yaml",
 			expected:      "3-envoy-config.golden.yaml",
+		}),
+		Entry("04. DNS using proxy map", testCase{
+			features: map[string]bool{
+				"feature-embedded-dns": true,
+			},
+			dataplaneFile: "4-dataplane.input.yaml",
+			expected:      "4-envoy-config.golden.yaml",
 		}),
 	)
 })

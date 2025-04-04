@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -13,6 +15,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/certificate"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/configfetcher"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsproxy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/meshmetrics"
@@ -27,7 +31,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/net"
+	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
+	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
+	kuma_net "github.com/kumahq/kuma/pkg/util/net"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -84,7 +90,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "failed to read policy", "proxyType", cfg.Dataplane.ProxyType)
+				runLog.Error(err, "failed to read dataplane", "proxyType", cfg.Dataplane.ProxyType)
 
 				return err
 			}
@@ -205,6 +211,12 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			}
 			opts.AdminPort = bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue()
 
+			confFetcher := configfetcher.NewConfigFetcher(
+				core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
+				time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
+				cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration,
+			)
+
 			if cfg.DNS.Enabled && !cfg.Dataplane.IsZoneProxy() {
 				dnsOpts := &dnsserver.Opts{
 					Config:   *cfg,
@@ -216,20 +228,31 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				if len(kumaSidecarConfiguration.Networking.CorefileTemplate) > 0 {
 					dnsOpts.ProvidedCorefileTemplate = kumaSidecarConfiguration.Networking.CorefileTemplate
 				}
+				if dnsOpts.Config.DNS.ProxyPort != 0 {
+					runLog.Info("Running with embedded DNS proxy port", "port", dnsOpts.Config.DNS.ProxyPort)
+					// Using embedded DNS
+					dnsproxyServer, err := dnsproxy.NewServer(net.JoinHostPort("localhost", strconv.Itoa(int(dnsOpts.Config.DNS.ProxyPort))))
+					if err != nil {
+						return err
+					}
+					if err := confFetcher.AddHandler(dns_dpapi.PATH, dnsproxyServer.ReloadMap); err != nil {
+						return err
+					}
+					components = append(components, dnsproxyServer)
+				} else {
+					dnsServer, err := dnsserver.New(dnsOpts)
+					if err != nil {
+						return err
+					}
 
-				dnsServer, err := dnsserver.New(dnsOpts)
-				if err != nil {
-					return err
+					version, err := dnsServer.GetVersion()
+					if err != nil {
+						return err
+					}
+
+					rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
+					components = append(components, dnsServer)
 				}
-
-				version, err := dnsServer.GetVersion()
-				if err != nil {
-					return err
-				}
-
-				rootCtx.BootstrapDynamicMetadata[core_xds.FieldPrefixDependenciesVersion+".coredns"] = version
-
-				components = append(components, dnsServer)
 			}
 
 			envoyComponent, err := envoy.New(opts)
@@ -237,8 +260,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 			components = append(components, envoyComponent)
+			components = append(components, component.NewResilientComponent(
+				runLog.WithName("configfetcher"),
+				confFetcher,
+				cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+				cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
+			))
 
-			observabilityComponents := setupObservability(kumaSidecarConfiguration, bootstrap, cfg)
+			observabilityComponents, err := setupObservability(gracefulCtx, kumaSidecarConfiguration, bootstrap, cfg, confFetcher)
+			if err != nil {
+				return err
+			}
 			components = append(components, observabilityComponents...)
 
 			var readinessReporter *readiness.Reporter
@@ -355,7 +387,7 @@ func getApplicationsToScrape(kumaSidecarConfiguration *types.KumaSidecarConfigur
 				Name:              item.Name,
 				Path:              item.Path,
 				Port:              item.Port,
-				IsIPv6:            net.IsAddressIPv6(item.Address),
+				IsIPv6:            kuma_net.IsAddressIPv6(item.Address),
 				QueryModifier:     metrics.RemoveQueryParameters,
 				MeshMetricMutator: metrics.AggregatedOtelMutator(),
 			})
@@ -382,9 +414,7 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 	return os.WriteFile(filename, data, perm)
 }
 
-func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config) []component.Component {
-	resilientComponentBaseBackoff := 5 * time.Second
-	resilientComponentMaxBackoff := 1 * time.Minute
+func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.KumaSidecarConfiguration, bootstrap *envoy_bootstrap_v3.Bootstrap, cfg *kumadp.Config, fetcher *configfetcher.ConfigFetcher) ([]component.Component, error) {
 	baseApplicationsToScrape := getApplicationsToScrape(kumaSidecarConfiguration, bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
 	accessLogStreamer := component.NewResilientComponent(
@@ -392,8 +422,8 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		accesslogs.NewAccessLogStreamer(
 			core_xds.AccessLogSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		),
-		resilientComponentBaseBackoff,
-		resilientComponentMaxBackoff,
+		cfg.Dataplane.ResilientComponentBaseBackoff.Duration,
+		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
 	)
 
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
@@ -410,21 +440,18 @@ func setupObservability(kumaSidecarConfiguration *types.KumaSidecarConfiguration
 		openTelemetryProducer,
 	)
 
-	meshMetricsConfigFetcher := component.NewResilientComponent(
-		runLog.WithName("mesh-metric-config-fetcher"),
-		meshmetrics.NewMeshMetricConfigFetcher(
-			core_xds.MeshMetricsDynamicConfigurationSocketName(cfg.DataplaneRuntime.SocketDir),
-			time.NewTicker(cfg.DataplaneRuntime.DynamicConfiguration.RefreshInterval.Duration),
-			metricsServer,
-			openTelemetryProducer,
-			kumaSidecarConfiguration.Networking.Address,
-			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
-			bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
-			cfg.Dataplane.DrainTime.Duration,
-		),
-		resilientComponentBaseBackoff,
-		resilientComponentMaxBackoff,
+	mm := meshmetrics.NewManager(
+		ctx,
+		metricsServer,
+		openTelemetryProducer,
+		kumaSidecarConfiguration.Networking.Address,
+		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue(),
+		bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetAddress(),
+		cfg.Dataplane.DrainTime.Duration,
 	)
-
-	return []component.Component{accessLogStreamer, meshMetricsConfigFetcher, metricsServer}
+	err := fetcher.AddHandler(meshmetric_dpapi.PATH, mm.OnChange)
+	if err != nil {
+		return nil, err
+	}
+	return []component.Component{accessLogStreamer, metricsServer, mm}, nil
 }
