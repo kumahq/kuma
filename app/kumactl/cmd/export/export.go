@@ -3,11 +3,13 @@ package export
 import (
 	"fmt"
 	"slices"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/api/system/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
@@ -17,6 +19,8 @@ import (
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/ca/provided/config"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type exportContext struct {
@@ -89,71 +93,62 @@ $ kumactl export --profile federation --format universal > policies.yaml
 				return errors.Wrap(err, "could not list meshes")
 			}
 
-			var meshSecrets []model.Resource
-			var otherResources []model.Resource
-			var meshesResources []model.Resource
+			// Mesh resources
+			var meshResource []model.Resource
+			// resources created after Mesh
+			var meshDependedResources []model.Resource
+			// resources added last
+			var lastResources []model.Resource
+			// resource types are sorted
 			for _, resDesc := range resTypes {
-				if resDesc.Scope == model.ScopeGlobal {
+				switch resDesc.Scope {
+				case model.ScopeGlobal:
 					list := resDesc.NewList()
 					if err := rs.List(cmd.Context(), list); err != nil {
 						return errors.Wrapf(err, "could not list %q", resDesc.Name)
 					}
 					for _, res := range list.GetItems() {
-						if res.Descriptor().Name == core_mesh.MeshType {
+						switch resDesc.Name {
+						case core_mesh.MeshType:
 							mesh := res.(*core_mesh.MeshResource)
 							mesh.Spec.SkipCreatingInitialPolicies = []string{"*"}
-							meshesResources = append(meshesResources, res)
-						} else {
-							otherResources = append(otherResources, res)
+							err := changeBuiltinBackendsToProvided(mesh)
+							if err != nil {
+								return nil
+							}
+							meshResource = append(meshResource, res)
+							continue
+						case core_system.GlobalSecretType:
+							// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
+							if res.GetMeta().GetName() == core_system.EnvoyAdminCA || res.GetMeta().GetName() == core_system.InterCpCA {
+								continue
+							}
+							// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
+							isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
+							if isUserTokenSigningKey {
+								lastResources = append(lastResources, res)
+								continue
+							}
 						}
+						meshDependedResources = append(meshDependedResources, res)
 					}
-				} else {
+				case model.ScopeMesh:
 					for _, mesh := range meshes.Items {
 						list := resDesc.NewList()
 						if err := rs.List(cmd.Context(), list, store.ListByMesh(mesh.GetMeta().GetName())); err != nil {
 							return errors.Wrapf(err, "could not list %q", resDesc.Name)
 						}
-						for _, res := range list.GetItems() {
-							if res.Descriptor().Name == core_system.SecretType {
-								meshSecrets = append(meshSecrets, res)
-							} else {
-								otherResources = append(otherResources, res)
-							}
-						}
+						meshDependedResources = append(meshDependedResources, list.GetItems()...)
 					}
 				}
 			}
 
-			allResources := append(meshSecrets, otherResources...)
-			var resources []model.Resource
-			var userTokenSigningKeys []model.Resource
-			// filter out envoy-admin-ca and inter-cp-ca otherwise it will cause TLS handshake errors
-			for _, res := range allResources {
-				isUserTokenSigningKey := strings.HasPrefix(res.GetMeta().GetName(), core_system.UserTokenSigningKeyPrefix)
-				if res.GetMeta().GetName() != core_system.EnvoyAdminCA &&
-					res.GetMeta().GetName() != core_system.InterCpCA &&
-					!isUserTokenSigningKey {
-					resources = append(resources, res)
-				}
-				if isUserTokenSigningKey {
-					userTokenSigningKeys = append(userTokenSigningKeys, res)
-				}
-			}
-			// put user token signing keys as last, because once we apply this, we cannot apply anything else without reconfiguring kumactl with a new auth data
-			resources = append(resources, userTokenSigningKeys...)
+			allResources := append(meshResource, meshDependedResources...)
+			allResources = append(allResources, lastResources...)
 
 			switch ctx.args.format {
 			case formatUniversal:
-				for _, res := range meshesResources {
-					// print mesh first since you cannot create other resources if there is no mesh
-					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
-						return err
-					}
-					if err := printers.GenericPrint(output.YAMLFormat, res, table.Table{}, cmd.OutOrStdout()); err != nil {
-						return err
-					}
-				}
-				for _, res := range resources {
+				for _, res := range allResources {
 					if _, err := cmd.OutOrStdout().Write([]byte("---\n")); err != nil {
 						return err
 					}
@@ -167,7 +162,7 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					return err
 				}
 				yamlPrinter := yaml.NewPrinter()
-				for _, res := range append(meshesResources, resources...) {
+				for _, res := range allResources {
 					obj, err := k8sResources.Get(cmd.Context(), res.Descriptor(), res.GetMeta().GetName(), res.GetMeta().GetMesh())
 					if err != nil {
 						return err
@@ -175,7 +170,17 @@ $ kumactl export --profile federation --format universal > policies.yaml
 					if shouldSkipKubeObject(obj, ctx) {
 						continue
 					}
+
 					cleanKubeObject(obj)
+					switch res.Descriptor().Name {
+					// only for the mesh we edit object by changing mtls backend from builtin to provided and adding skip initial resources
+					case core_mesh.MeshType:
+						result, err := model.ToMap(res.GetSpec())
+						if err != nil {
+							return err
+						}
+						obj["spec"] = result
+					}
 					if err := yamlPrinter.Print(obj, cmd.OutOrStdout()); err != nil {
 						return err
 					}
@@ -222,6 +227,36 @@ func cleanKubeObject(obj map[string]interface{}) {
 	delete(meta, "managedFields")
 }
 
+func changeBuiltinBackendsToProvided(res *core_mesh.MeshResource) error {
+	if res.Spec.Mtls != nil {
+		for _, backend := range res.Spec.Mtls.GetBackends() {
+			switch backend.Type {
+			case "builtin":
+				cfg := &config.ProvidedCertificateAuthorityConfig{}
+				cfg.Cert = &v1alpha1.DataSource{
+					Type: &v1alpha1.DataSource_Secret{
+						Secret: core_system.BuiltinCertSecretName(res.Meta.GetName(), backend.Name),
+					},
+				}
+				cfg.Key = &v1alpha1.DataSource{
+					Type: &v1alpha1.DataSource_Secret{
+						Secret: core_system.BuiltinKeySecretName(res.Meta.GetName(), backend.Name),
+					},
+				}
+				conf, err := util_proto.ToStruct(cfg)
+				if err != nil {
+					return err
+				}
+				backend.Type = "provided"
+				backend.Conf = conf
+				// we want to create secrets at any time
+				res.Spec.Mtls.SkipValidation = true
+			}
+		}
+	}
+	return nil
+}
+
 func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.ResourceTypeDescriptor, error) {
 	client, err := ectx.CurrentResourcesListClient()
 	if err != nil {
@@ -265,6 +300,26 @@ func resourcesTypesToDump(cmd *cobra.Command, ectx *exportContext) ([]model.Reso
 		}
 		resDescList = append(resDescList, resDesc)
 	}
+
+	order := map[model.ResourceType]int{
+		// we need a Mesh first
+		core_mesh.MeshType: 0,
+		// after this the best would be to apply secretes
+		core_system.SecretType: 1,
+		// we don't want user token to be added first
+		core_system.GlobalSecretType: 99,
+	}
+	sort.SliceStable(resDescList, func(i, j int) bool {
+		priorityI := 50
+		priorityJ := 50
+		if priority, exist := order[resDescList[i].Name]; exist {
+			priorityI = priority
+		}
+		if priority, exist := order[resDescList[j].Name]; exist {
+			priorityJ = priority
+		}
+		return priorityI < priorityJ
+	})
 	if len(incompatibleTypes) > 0 {
 		msg := fmt.Sprintf("The following types won't be exported because they are unknown to kumactl: %s", strings.Join(incompatibleTypes, ","))
 		cmd.Printf("# %s\n", msg)

@@ -6,7 +6,9 @@ metadata:
     k8s.kuma.io/mesh-defaults-generated: "true"
   creationTimestamp: "2024-01-08T17:25:45Z"
   name: default
-spec: {}
+spec:
+  skipCreatingInitialPolicies:
+  - '*'
 ---
 apiVersion: kuma.io/v1alpha1
 kind: MeshAccessLog
