@@ -8,6 +8,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 func comparePath(a *PathMatch, b *PathMatch) int {
@@ -93,6 +94,7 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
+	KRI         *kri.Identifier
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
@@ -128,14 +130,31 @@ func SortRules(
 	for _, key := range keys {
 		var backendRefs []resolve.ResolvedBackendRef
 		hashMatches := HashMatches(key.rule.Matches)
+
+		origin, ok := backendRefToOrigin[hashMatches]
+		if !ok {
+			// shouldn't happen
+			panic("origin match not found")
+			//continue
+			//println("origin match not found")
+		}
+
 		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
-			if origin, ok := backendRefToOrigin[hashMatches]; ok {
-				if resolved := resolve.BackendRef(origin, br, labelResolver); resolved != nil {
-					backendRefs = append(backendRefs, *resolved)
-				}
+			if resolved := resolve.BackendRef(origin, br, labelResolver); resolved != nil {
+				backendRefs = append(backendRefs, *resolved)
 			}
 		}
+
+		var id *kri.Identifier
+		idx := slices.IndexFunc(backendRefs, func(ref resolve.ResolvedBackendRef) bool {
+			return ref.ReferencesRealResource()
+		})
+		if idx >= 0 {
+			id = pointer.To(kri.FromResourceMeta(origin, MeshHTTPRouteType, ""))
+		}
+
 		out = append(out, Route{
+			KRI:         id,
 			Hash:        hashMatches,
 			Match:       key.sortKey,
 			BackendRefs: backendRefs,

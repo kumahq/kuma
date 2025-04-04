@@ -1128,6 +1128,13 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
+									Origin: []core_model.ResourceMeta{
+										&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+									},
+									BackendRefOriginIndex: map[common_api.MatchesHash]int{
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}):                                              0,
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.Exact, Value: "/v1/specific"}}, {Method: pointer.To(api.Method("GET"))}}): 0,
+									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
@@ -1206,6 +1213,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
 								Rules: core_rules.Rules{{
+									Origin: []core_model.ResourceMeta{
+										&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+									},
+									BackendRefOriginIndex: map[common_api.MatchesHash]int{
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/"}}}): 0,
+									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
@@ -1259,6 +1272,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1328,6 +1347,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1394,6 +1419,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1449,6 +1480,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 							Rules: core_rules.Rules{
 								{
 									Subset: subsetutils.MeshService("backend"),
+									Origin: []core_model.ResourceMeta{
+										&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+									},
+									BackendRefOriginIndex: map[common_api.MatchesHash]int{
+										api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+									},
 									Conf: api.PolicyDefault{
 										Rules: []api.Rule{{
 											Matches: []api.Match{{
@@ -1484,6 +1521,29 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPort(8084).
 					WithWeight(1).
 					WithTags(mesh_proto.ServiceTag, "backend", mesh_proto.ProtocolTag, core_mesh.ProtocolHTTP, "region", "us"))
+
+			matches := []api.Match{{
+				Headers: &[]common_api.HeaderMatch{{
+					Type:  pointer.To(common_api.HeaderMatchExact),
+					Name:  "foo-exact",
+					Value: "bar",
+				}, {
+					Type: pointer.To(common_api.HeaderMatchPresent),
+					Name: "foo-present",
+				}, {
+					Type:  pointer.To(common_api.HeaderMatchRegularExpression),
+					Name:  "foo-regex",
+					Value: "x.*y",
+				}, {
+					Type: pointer.To(common_api.HeaderMatchAbsent),
+					Name: "foo-absent",
+				}, {
+					Type:  pointer.To(common_api.HeaderMatchPrefix),
+					Name:  "foo-prefix",
+					Value: "x",
+				}},
+			}}
+
 			return outboundsTestCase{
 				xdsContext: *xds_builders.Context().WithEndpointMap(outboundTargets).
 					AddServiceProtocol("backend", core_mesh.ProtocolHTTP).
@@ -1508,29 +1568,15 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches(matches): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
-												Matches: []api.Match{{
-													Headers: &[]common_api.HeaderMatch{{
-														Type:  pointer.To(common_api.HeaderMatchExact),
-														Name:  "foo-exact",
-														Value: "bar",
-													}, {
-														Type: pointer.To(common_api.HeaderMatchPresent),
-														Name: "foo-present",
-													}, {
-														Type:  pointer.To(common_api.HeaderMatchRegularExpression),
-														Name:  "foo-regex",
-														Value: "x.*y",
-													}, {
-														Type: pointer.To(common_api.HeaderMatchAbsent),
-														Name: "foo-absent",
-													}, {
-														Type:  pointer.To(common_api.HeaderMatchPrefix),
-														Name:  "foo-prefix",
-														Value: "x",
-													}},
-												}},
+												Matches: matches,
 											}},
 										},
 									},
@@ -1571,6 +1617,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{
@@ -1631,6 +1683,12 @@ var _ = Describe("MeshHTTPRoute", func() {
 								Rules: core_rules.Rules{
 									{
 										Subset: subsetutils.MeshService("backend"),
+										Origin: []core_model.ResourceMeta{
+											&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
+										},
+										BackendRefOriginIndex: map[common_api.MatchesHash]int{
+											api.HashMatches([]api.Match{{Path: &api.PathMatch{Type: api.PathPrefix, Value: "/v1"}}}): 0,
+										},
 										Conf: api.PolicyDefault{
 											Rules: []api.Rule{{
 												Matches: []api.Match{{

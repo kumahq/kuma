@@ -13,9 +13,11 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 type RoutesConfigurer struct {
+	KRI                     *kri.Identifier
 	Hash                    common_api.MatchesHash
 	Match                   api.Match
 	Filters                 []api.Filter
@@ -25,9 +27,15 @@ type RoutesConfigurer struct {
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Match)
+	var routeName string
+	if c.KRI != nil {
+		routeName = c.KRI.String()
+	} else {
+		routeName = string(c.Hash)
+	}
 
 	for _, match := range matches {
-		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, string(c.Hash)).
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, routeName).
 			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				// todo: create configurers for Match and Action
 				envoyRoute.Match = match.routeMatch

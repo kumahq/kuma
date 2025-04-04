@@ -11,9 +11,11 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 	envoy_virtual_hosts "github.com/kumahq/kuma/pkg/xds/envoy/virtualhosts"
+	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 type OutboundRoute struct {
+	KRI                     *kri.Identifier
 	Hash                    common_api.MatchesHash
 	Match                   api.Match
 	Filters                 []api.Filter
@@ -42,6 +44,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
+				KRI:                     route.KRI,
 				Hash:                    route.Hash,
 				Match:                   route.Match,
 				Filters:                 route.Filters,
