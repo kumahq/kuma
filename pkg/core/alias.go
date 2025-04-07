@@ -8,18 +8,18 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	kube_log "sigs.k8s.io/controller-runtime/pkg/log"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
 
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 )
 
 var (
 	// TODO remove dependency on kubernetes see: https://github.com/kumahq/kuma/issues/2798
-	Log                   = kube_log.Log
+	Log                   = kube_ctrl.Log
 	NewLogger             = kuma_log.NewLogger
 	NewLoggerTo           = kuma_log.NewLoggerTo
 	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
-	SetLogger             = kube_log.SetLogger
+	SetLogger             = kube_ctrl.SetLogger
 	Now                   = time.Now
 
 	SetupSignalHandler = func() (context.Context, context.Context, <-chan struct{}) {

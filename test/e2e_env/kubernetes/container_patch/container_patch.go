@@ -30,7 +30,7 @@ spec:
   sidecarPatch:
     - op: add
       path: /securityContext/privileged
-      value: "true"`, ns)
+      value: "false"`, ns)
 	}
 	containerPatch2 := func(ns string) string {
 		return fmt.Sprintf(`apiVersion: kuma.io/v1alpha1
@@ -113,8 +113,8 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		pointerTrue := new(bool)
-		*pointerTrue = true
+		pointerFalse := new(bool)
+		*pointerFalse = false
 		Expect(pod.Spec.InitContainers).To(
 			Or(HaveLen(1), HaveLen(2)),
 		)
@@ -123,17 +123,17 @@ spec:
 		Expect(pod.Spec.Containers).To(
 			Or(HaveLen(2), HaveLen(1)),
 		)
-		beSidecarWithPrivileged := And(
+		beSidecarWithPrivilegedDisabled := And(
 			WithTransform(func(c kube_core.Container) string { return c.Name }, BeEquivalentTo(k8s_util.KumaSidecarContainerName)),
-			WithTransform(func(c kube_core.Container) *bool { return c.SecurityContext.Privileged }, Equal(pointerTrue)),
+			WithTransform(func(c kube_core.Container) *bool { return c.SecurityContext.Privileged }, Equal(pointerFalse)),
 		)
 		if len(pod.Spec.Containers) == 2 {
 			// kuma-sidecar is the first container
-			Expect(pod.Spec.Containers[0]).To(beSidecarWithPrivileged)
+			Expect(pod.Spec.Containers[0]).To(beSidecarWithPrivilegedDisabled)
 		} else {
 			Expect(pod.Spec.InitContainers).To(HaveLen(2))
 			// kuma-sidecar is the second init container
-			Expect(pod.Spec.InitContainers[1]).To(beSidecarWithPrivileged)
+			Expect(pod.Spec.InitContainers[1]).To(beSidecarWithPrivilegedDisabled)
 		}
 	})
 
