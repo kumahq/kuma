@@ -18,12 +18,12 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
@@ -68,21 +68,17 @@ func getResource(
 }
 
 var _ = Describe("MeshTCPRoute", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
 	}
 
-	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "example",
-			Mesh: "default",
-		},
+	backendMeshExternalServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshExternalService",
+		Mesh:         "default",
+		Name:         "example",
 	}
 
 	type policiesTestCase struct {
@@ -198,7 +194,7 @@ var _ = Describe("MeshTCPRoute", func() {
 						},
 					},
 				},
-				ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{},
+				ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
 			},
 		}),
 	)
@@ -473,7 +469,7 @@ var _ = Describe("MeshTCPRoute", func() {
 			proxy.Policies.Dynamic[api.MeshTCPRouteType] = core_xds.TypedMatchingPolicies{
 				Type: api.MeshTCPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+					ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
 							Origin: []rules_common.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
@@ -610,13 +606,13 @@ var _ = Describe("MeshTCPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
 						},
 					}).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshTCPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
 										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "tcp-route"}},
@@ -1199,7 +1195,7 @@ rZigv0SZ20Y+BHgf0y3Tv0X+Rx96lYiUtfU+54vjokEjSsfF+iauxfL75QuVvAf9
 func meshContextForMeshExternalService(resources ...core_model.Resource) *xds_context.MeshContext {
 	resourceStore := memory.NewStore()
 	mesh := builders.Mesh().WithBuiltinMTLSBackend("ca-1").WithEgressRoutingEnabled().WithEnabledMTLSBackend("ca-1").Build()
-	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", model.NoMesh))
+	err := resourceStore.Create(context.Background(), mesh, store.CreateByKey("default", core_model.NoMesh))
 	Expect(err).ToNot(HaveOccurred())
 
 	for _, res := range resources {
@@ -1241,7 +1237,7 @@ func dppForMeshExternalService(mesList ...*meshexternalservice_api.MeshExternalS
 		outbounds = append(outbounds, &xds_types.Outbound{
 			Address:  mes.Status.VIP.IP,
 			Port:     uint32(mes.Spec.Match.Port),
-			Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),
+			Resource: pointer.To(kri.From(mes, "")),
 		})
 	}
 	dp := builders.Dataplane().

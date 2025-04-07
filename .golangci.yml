@@ -1,170 +1,182 @@
+version: "2"
+run:
+  modules-download-mode: readonly
 linters:
   enable:
     - bodyclose
     - contextcheck
     - depguard
     - errcheck
-    - gci
     - ginkgolinter
     - gocritic
-    - gofumpt
     - gomodguard
-    - gosimple
     - govet
     - gosec
     - importas
-    - ineffassign
+    - loggercheck
+    - makezero
     - misspell
     - nonamedreturns
+    - nosprintfhostport
     - staticcheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
-    - nosprintfhostport
-    - loggercheck
-    - makezero
-
-run:
-  modules-download-mode: readonly
-  timeout: 30m
-
-linters-settings:
-  gocritic:
-    disabled-checks:
-      - singleCaseSwitch
-  gosec:
-    excludes:
-    - G115
-  gci:
-    sections:
-    - standard
-    - default
-    - prefix(github.com/kumahq/kuma)
-    custom-order: true
-  importas:
-    alias:
-    - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
-      alias: core_mesh
-    - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
-      alias: mesh_proto
-    - pkg: github.com/kumahq/kuma/api/system/v1alpha1
-      alias: system_proto
-    - pkg: github.com/kumahq/kuma/pkg/util/proto
-      alias: util_proto
-    - pkg: github.com/kumahq/kuma/pkg/util/rsa
-      alias: util_rsa
-    - pkg: github.com/kumahq/kuma/pkg/cmd
-      alias: kuma_cmd
-    - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
-      alias: bootstrap_k8s
-    - pkg: github.com/kumahq/kuma/pkg/config/core
-      alias: config_core
-    - pkg: github.com/kumahq/kuma/pkg/core/resources/model
-      alias: core_model
-    - pkg: github.com/kumahq/kuma/api/common/v1alpha1
-      alias: common_api
-    - pkg: github.com/kumahq/kuma/api/openapi/types
-      alias: api_types
-  gomodguard:
-    blocked:
-      modules:
-        - github.com/go-errors/errors:
-            recommendations:
-              - github.com/pkg/errors
-        - github.com/ghodss/yaml:
-            recommendations:
-              - sigs.k8s.io/yaml
-        - github.com/hashicorp/multierror:
-            recommendations:
-              - errors
-        - gopkg.in/yaml.v2:
-            recommendations:
-              - sigs.k8s.io/yaml
-        - gopkg.in/yaml.v3:
-            recommendations:
-              - sigs.k8s.io/yaml
-        - io/ioutil:
-            recommendations:
-              - io
-              - os
-  depguard:
+  settings:
+    depguard:
+      rules:
+        DenyGolangProtobuf:
+          files:
+            - $all
+          deny:
+            - pkg: github.com/golang/protobuf
+              desc: github.com/golang/protobuf is deprecated; use google.golang.org/protobuf instead
+        DenyGoogleProtoJson:
+          files:
+            - $all
+          deny:
+            - pkg: google.golang.org/protobuf/encoding/protojson
+              desc: don't use the protojson package, it's incompatible and might cause issues(https://github.com/golang/protobuf/issues/1374); use github.com/golang/protobuf/jsonpb instead
+        pkg-import:
+          list-mode: lax
+          files:
+            - '!**/app/**/*.go'
+            - '!**/pkg/api-server/gui_handler.go'
+          deny:
+            - pkg: github.com/kumahq/kuma/app
+              desc: pkg can't import app
+    gocritic:
+      disabled-checks:
+        - singleCaseSwitch
+    gomodguard:
+      blocked:
+        modules:
+          - github.com/go-errors/errors:
+              recommendations:
+                - github.com/pkg/errors
+          - github.com/ghodss/yaml:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - github.com/hashicorp/multierror:
+              recommendations:
+                - errors
+          - gopkg.in/yaml.v2:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - gopkg.in/yaml.v3:
+              recommendations:
+                - sigs.k8s.io/yaml
+          - io/ioutil:
+              recommendations:
+                - io
+                - os
+    gosec:
+      excludes:
+        - G115
+    importas:
+      alias:
+        - pkg: github.com/kumahq/kuma/pkg/core/resources/apis/mesh
+          alias: core_mesh
+        - pkg: github.com/kumahq/kuma/api/mesh/v1alpha1
+          alias: mesh_proto
+        - pkg: github.com/kumahq/kuma/api/system/v1alpha1
+          alias: system_proto
+        - pkg: github.com/kumahq/kuma/pkg/util/proto
+          alias: util_proto
+        - pkg: github.com/kumahq/kuma/pkg/util/rsa
+          alias: util_rsa
+        - pkg: github.com/kumahq/kuma/pkg/cmd
+          alias: kuma_cmd
+        - pkg: github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s
+          alias: bootstrap_k8s
+        - pkg: github.com/kumahq/kuma/pkg/config/core
+          alias: config_core
+        - pkg: github.com/kumahq/kuma/pkg/core/resources/model
+          alias: core_model
+        - pkg: github.com/kumahq/kuma/api/common/v1alpha1
+          alias: common_api
+        - pkg: github.com/kumahq/kuma/api/openapi/types
+          alias: api_types
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+    nonamedreturns:
+      report-error-in-defer: false
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
     rules:
-      pkg-import:
-        list-mode: lax # only disallow some imports
-        files:
-          - "!**/app/**/*.go"
-          - "!**/pkg/api-server/gui_handler.go"
-        deny:
-          - pkg: "github.com/kumahq/kuma/app"
-            desc: "pkg can't import app"
-      DenyGolangProtobuf:
-        files:
-          - $all
-        deny:
-          - pkg: github.com/golang/protobuf
-            desc: "github.com/golang/protobuf is deprecated; use google.golang.org/protobuf instead"
-      DenyGoogleProtoJson:
-        files:
-          - $all
-        deny:
-          - pkg: google.golang.org/protobuf/encoding/protojson
-            desc: "don't use the protojson package, it's incompatible and might cause issues(https://github.com/golang/protobuf/issues/1374); use github.com/golang/protobuf/jsonpb instead"
-
-  misspell:
-    locale: US
-    ignore-words:
-    - cancelled # US English should be "canceled", but this is in the Retry API, so we can't change it.
-  nonamedreturns:
-    report-error-in-defer: false
-
+      - linters:
+          - staticcheck
+        text: 'SA1019: "github.com/golang/protobuf/jsonpb"'
+      - linters:
+          - staticcheck
+        text: 'SA1019: l.UseOriginalDst is deprecated: Do not use.'
+      - linters:
+          - staticcheck
+        text: 'IsIngress is deprecated: use ZoneIngress'
+      - linters:
+          - gocritic
+        text: 'appendAssign: append result not assigned to the same slice'
+      - linters:
+          - staticcheck
+        text: 'SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated'
+      - linters:
+          - staticcheck
+        text: 'SA1019: l.ReusePort is deprecated'
+      - linters:
+          - staticcheck
+        text: 'SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
+      - linters:
+          - staticcheck
+        text: 'SA1019: kumaCPConfig.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
+      - linters:
+          - staticcheck
+        text: 'SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead.'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use MinResyncInterval instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use FullResyncInterval instead'
+      - linters:
+          - staticcheck
+        text: 'SA1019: .* is deprecated: use common.WithPolicyAttributes instead'
+      - linters:
+          - staticcheck
+        text: 'ST1001: should not use dot imports'
+    paths:
+      - app/kumactl/pkg/k8s/kubectl_proxy.go
+      - pkg/xds/server/server.go
+      - pkg/xds/server/server_test.go
+      - (^|/)vendored($|/)
+      - pkg/transparentproxy/iptables/builder
 issues:
   fix: true
-  exclude-files:
-    - app/kumactl/pkg/k8s/kubectl_proxy.go # excluded to keep as close to original file from K8S repository
-    - pkg/xds/server/server.go # excluded to keep as close to original file from Envoy repository
-    - pkg/xds/server/server_test.go # excluded to keep as close to original file from Envoy repository
-  exclude-dirs-use-default: false # The default skip omits "builtin" directories, which we have.
-  exclude-dirs:
-    - (^|/)vendored($|/)
-  exclude-rules:
-    - linters:
-        - staticcheck
-      text: 'SA1019: "github.com/golang/protobuf/jsonpb"' # We need to use the deprecated module since the jsonpb replacement is not backwards compatible.
-    - linters:
-        - staticcheck
-      text: "SA1019: l.UseOriginalDst is deprecated: Do not use." # TODO What is the up-to-date alternative ?
-    - linters:
-        - staticcheck
-      text: "IsIngress is deprecated: use ZoneIngress" # It's deprecated but Kuma still needs to support it for backwards compatibility.
-    - linters:
-        - gocritic
-      text: "appendAssign: append result not assigned to the same slice" # None of the instances of this in Kuma were bugs.
-    - linters:
-        - staticcheck
-      text: "SA1019: package sigs.k8s.io/controller-runtime/pkg/client/fake is deprecated" # https://github.com/kumahq/kuma/issues/2460
-    - linters:
-        - staticcheck
-      text: "SA1019: l.ReusePort is deprecated"
-    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
-        - staticcheck
-      text: "SA1019: cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
-    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
-        - staticcheck
-      text: "SA1019: kumaCPConfig.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
-    - linters: # AdminPort is deprecated, but it's used to support backwards compatibility
-        - staticcheck
-      text: "SA1019: c.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort is deprecated: Use KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT instead."
-    - linters:
-        - staticcheck
-      text: "SA1019: .* for new policies use pkg/plugins/policies/xds/cluster.go"
-    - linters:
-        - staticcheck
-      text: "SA1019: .* is deprecated: use MinResyncInterval instead"
-    - linters:
-        - staticcheck
-      text: "SA1019: .* is deprecated: use FullResyncInterval instead"
-    - linters:
-        - staticcheck
-      text: "SA1019: .* is deprecated: use common.WithPolicyAttributes instead"
+formatters:
+  enable:
+    - gci
+    - gofumpt
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github.com/kumahq/kuma)
+      custom-order: true
+  exclusions:
+    generated: lax
+    paths:
+      - app/kumactl/pkg/k8s/kubectl_proxy.go
+      - pkg/xds/server/server.go
+      - pkg/xds/server/server_test.go
+      - (^|/)vendored($|/)

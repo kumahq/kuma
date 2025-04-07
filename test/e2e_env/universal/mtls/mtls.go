@@ -3,7 +3,6 @@ package mtls
 import (
 	"fmt"
 	"net"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -33,25 +32,24 @@ func Policy() {
 		)
 	}
 	trafficAllowed := func(addr string, fn ...client.CollectResponsesOptsFn) {
+		GinkgoHelper()
 		expectation := func(g Gomega) {
-			stdout, _, err := curlAddr(addr, fn...)
+			_, stderr, err := curlAddr(addr, fn...)
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}
-		Eventually(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 20).Should(Succeed())
-		Consistently(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 2).Should(Succeed())
+		Eventually(expectation, "30s", "250ms").MustPassRepeatedly(10).Should(Succeed())
 	}
 	trafficBlocked := func(addr string, fn ...client.CollectResponsesOptsFn) {
+		GinkgoHelper()
 		expectation := func(g Gomega) {
 			_, _, err := curlAddr(addr, fn...)
 			g.Expect(err).To(HaveOccurred())
 		}
-		Eventually(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 20).Should(Succeed())
-		Consistently(expectation).WithOffset(1).WithPolling(time.Millisecond * 250).WithTimeout(time.Second * 2).Should(Succeed())
+		Eventually(expectation, "30s", "250ms").MustPassRepeatedly(10).Should(Succeed())
 	}
 
-	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	Describe("should support mode", FlakeAttempts(3), func() {
+	Describe("should support mode", func() {
 		publicAddress := func() string {
 			return net.JoinHostPort(universal.Cluster.GetApp("test-server").GetIP(), "80")
 		}
@@ -149,13 +147,13 @@ mtls:
 
 		By("inside-mesh communication never fails")
 		Consistently(func(g Gomega) {
-			stdout, _, err := curlAddr("test-server.mesh")
+			_, stderr, err := curlAddr("test-server.mesh")
 			g.Expect(err).ToNot(HaveOccurred())
-			g.Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			g.Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		}).Should(Succeed())
 	})
-	// Added Flake because: https://github.com/kumahq/kuma/issues/4700
-	PDescribeTable("should enforce traffic permissions", FlakeAttempts(3),
+
+	DescribeTable("should enforce traffic permissions",
 		func(yaml string) {
 			err := NewClusterSetup().
 				Install(MeshUniversal(meshName)).

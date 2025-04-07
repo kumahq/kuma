@@ -23,11 +23,11 @@ type ProxiedApplicationProbe kube_core.Probe
 
 func (p ProxiedApplicationProbe) ToVirtual(virtualPort uint32) (ProxiedApplicationProbe, error) {
 	switch {
-	case p.ProbeHandler.HTTPGet != nil:
+	case p.HTTPGet != nil:
 		return p.httpProbeToVirtual(virtualPort)
-	case p.ProbeHandler.TCPSocket != nil:
+	case p.TCPSocket != nil:
 		return p.tcpProbeToVirtual(virtualPort)
-	case p.ProbeHandler.GRPC != nil:
+	case p.GRPC != nil:
 		return p.grpcProbeToVirtual(virtualPort)
 	default:
 		return ProxiedApplicationProbe{}, errors.New("unsupported probe type")
@@ -133,11 +133,11 @@ func (p ProxiedApplicationProbe) grpcProbeToVirtual(virtualPort uint32) (Proxied
 
 func (p ProxiedApplicationProbe) Port() uint32 {
 	switch {
-	case p.ProbeHandler.HTTPGet != nil:
+	case p.HTTPGet != nil:
 		return uint32(p.HTTPGet.Port.IntValue())
-	case p.ProbeHandler.TCPSocket != nil:
+	case p.TCPSocket != nil:
 		return uint32(p.TCPSocket.Port.IntValue())
-	case p.ProbeHandler.GRPC != nil:
+	case p.GRPC != nil:
 		return uint32(p.GRPC.Port)
 	default:
 		return 0
@@ -154,11 +154,11 @@ func (p ProxiedApplicationProbe) Headers() []kube_core.HTTPHeader {
 
 func (p ProxiedApplicationProbe) OverridingSupported() bool {
 	switch {
-	case p.ProbeHandler.HTTPGet != nil:
+	case p.HTTPGet != nil:
 		return true
-	case p.ProbeHandler.TCPSocket != nil:
+	case p.TCPSocket != nil:
 		return true
-	case p.ProbeHandler.GRPC != nil:
+	case p.GRPC != nil:
 		return true
 	default:
 		return false

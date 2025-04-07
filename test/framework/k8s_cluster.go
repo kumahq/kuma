@@ -521,6 +521,11 @@ func (c *K8sCluster) processViaHelm(mode string, fn helmFn) error {
 
 	if c.opts.helmChartVersion != "" {
 		helmOpts.Version = c.opts.helmChartVersion
+		// helm upgrade does not support --version flag
+		// remove this hack until this issue is solved: https://github.com/gruntwork-io/terratest/issues/1531
+		helmOpts.ExtraArgs = map[string][]string{
+			"upgrade": {"--version", c.opts.helmChartVersion},
+		}
 	}
 
 	releaseName := c.opts.helmReleaseName
@@ -899,7 +904,10 @@ func (c *K8sCluster) GetKuma() ControlPlane {
 }
 
 func (c *K8sCluster) GetKumaCPLogs() map[string]string {
-	pods := c.GetKuma().(*K8sControlPlane).GetKumaCPPods()
+	if c.controlplane == nil { // This is required if the cp never succeeded to start
+		return map[string]string{}
+	}
+	pods := c.controlplane.GetKumaCPPods()
 	if len(pods) < 1 {
 		return map[string]string{"failed": "no kuma-cp pods found for logs"}
 	}

@@ -54,7 +54,7 @@ var _ = Describe("DataSource Loader", func() {
 			})
 
 			// then
-			Expect(err).To(MatchError(`could not load data: Resource not found: type="Secret" name="test-secret-2" mesh="default"`))
+			Expect(err).To(MatchError(`could not load data: resource not found: type="Secret" name="test-secret-2" mesh="default"`))
 		})
 	})
 

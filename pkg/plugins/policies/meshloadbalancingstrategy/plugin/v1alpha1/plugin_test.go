@@ -13,9 +13,9 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -42,7 +42,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 	"github.com/kumahq/kuma/pkg/xds/generator/egress"
 )
@@ -57,22 +56,11 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshLoadBalancingStrategy", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
-	}
-	externalMeshExternalServiceIdentifier := &core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name:      "external",
-			Mesh:      "mesh-1",
-			Namespace: "",
-			Zone:      "",
-		},
-		ResourceType: "MeshExternalService",
 	}
 
 	type testCase struct {
@@ -447,126 +435,6 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 												},
 											},
 										},
-									},
-								},
-							},
-						},
-						{
-							Mesh: builders.Mesh().WithName("mesh-2").Build(),
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								"static-cluster": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
-										FromRules: core_rules.FromRules{
-											Rules: map[core_rules.InboundListener]core_rules.Rules{
-												{}: {
-													{Conf: v1alpha1.Conf{LocalityAwareness: &v1alpha1.LocalityAwareness{
-														Disabled: pointer.To(false),
-													}}},
-												},
-											},
-										},
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		}),
-		XEntry("egress_meshexternalservice", testCase{
-			resources: []core_xds.Resource{
-				{
-					Name:   "mesh-1_external___extsvc_9000",
-					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-1:external").
-						Configure(clusters.EdsCluster()).
-						MustBuild(),
-					ResourceOrigin: externalMeshExternalServiceIdentifier,
-					Protocol:       core_mesh.ProtocolTCP,
-				},
-				{
-					Name:   "mesh-2:static-cluster",
-					Origin: egress.OriginEgress,
-					Resource: clusters.NewClusterBuilder(envoy_common.APIV3, "mesh-2:static-cluster").
-						Configure(clusters.ProvidedEndpointCluster(
-							false,
-							createEndpointWith("zone-1", "192.168.0.1", map[string]string{}),
-							createEndpointWith("zone-2", "192.168.0.2", map[string]string{}),
-						)).MustBuild(),
-				},
-				{
-					Name:   "egress-listener",
-					Origin: egress.OriginEgress,
-					Resource: NewInboundListenerBuilder(envoy_common.APIV3, "127.0.0.1", 10002, core_xds.SocketAddressProtocolTCP).
-						Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3, "mesh-1_external___extsvc_9000").
-							Configure(MatchTransportProtocol("tls")).
-							Configure(MatchServerNames(tls.SNIForResource("external", "mesh-1", meshexternalservice_api.MeshExternalServiceType, 9000, nil))).
-							Configure(HttpConnectionManager("127.0.0.1:10002", false, nil)).
-							Configure(
-								HttpInboundRoutes(
-									"external",
-									envoy_common.Routes{{
-										Clusters: []envoy_common.Cluster{envoy_common.NewCluster(
-											envoy_common.WithService("external"),
-											envoy_common.WithWeight(100),
-										)},
-									}},
-								),
-							),
-						)).MustBuild(),
-				},
-			},
-			proxy: &core_xds.Proxy{
-				APIVersion: envoy_common.APIV3,
-				Zone:       "zone-1",
-				ZoneEgressProxy: &core_xds.ZoneEgressProxy{
-					MeshResourcesList: []*core_xds.MeshResources{
-						{
-							Mesh: builders.Mesh().WithName("mesh-1").Build(),
-							Dynamic: core_xds.ExternalServiceDynamicPolicies{
-								"mesh-1_external___extsvc_9000": {
-									v1alpha1.MeshLoadBalancingStrategyType: core_xds.TypedMatchingPolicies{
-										ToRules: core_rules.ToRules{
-											ResourceRules: outbound.ResourceRules{
-												*externalMeshExternalServiceIdentifier: {
-													Conf: []interface{}{
-														v1alpha1.Conf{
-															LoadBalancer: &v1alpha1.LoadBalancer{
-																Type: v1alpha1.RingHashType,
-																RingHash: &v1alpha1.RingHash{
-																	MinRingSize:  pointer.To[uint32](100),
-																	MaxRingSize:  pointer.To[uint32](1000),
-																	HashFunction: pointer.To(v1alpha1.MurmurHash2Type),
-																	HashPolicies: &[]v1alpha1.HashPolicy{
-																		{
-																			Type: v1alpha1.QueryParameterType,
-																			QueryParameter: &v1alpha1.QueryParameter{
-																				Name: "queryparam",
-																			},
-																			Terminal: pointer.To(true),
-																		},
-																		{
-																			Type: v1alpha1.ConnectionType,
-																			Connection: &v1alpha1.Connection{
-																				SourceIP: pointer.To(true),
-																			},
-																			Terminal: pointer.To(false),
-																		},
-																	},
-																},
-															},
-														},
-													},
-												},
-											},
-										},
-									},
-								},
-							},
-							Resources: map[core_model.ResourceType]core_model.ResourceList{
-								meshexternalservice_api.MeshExternalServiceType: &meshexternalservice_api.MeshExternalServiceResourceList{
-									Items: []*meshexternalservice_api.MeshExternalServiceResource{
-										samples.MeshExternalServiceExampleBuilder().WithName("external").WithMesh("mesh-1").Build(),
 									},
 								},
 							},
@@ -1732,7 +1600,7 @@ var _ = Describe("MeshLoadBalancingStrategy", func() {
 				ToRules: core_rules.GatewayToRules{
 					ByListener: map[core_rules.InboundListener]core_rules.ToRules{
 						{Address: "192.168.0.1", Port: 8080}: {
-							ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+							ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 								backendMeshServiceIdentifier: {
 									Conf: []interface{}{
 										v1alpha1.Conf{

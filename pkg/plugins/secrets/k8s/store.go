@@ -222,11 +222,11 @@ type KubernetesMetaAdapter struct {
 }
 
 func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
-	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+	return common_k8s.ResourceNameExtensions(m.Namespace, m.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {
-	return m.ObjectMeta.GetResourceVersion()
+	return m.GetResourceVersion()
 }
 
 func (m *KubernetesMetaAdapter) GetMesh() string {

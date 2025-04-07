@@ -3,7 +3,6 @@ package rules
 import (
 	"encoding"
 	"fmt"
-	"slices"
 	"sort"
 	"strings"
 
@@ -14,13 +13,14 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/inbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/merge"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
-	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -200,7 +200,7 @@ func BuildFromRules(
 			}
 			fromList = append(fromList, BuildPolicyItemsWithMeta(policyWithFrom.GetFromList(), p.GetMeta(), policyWithFrom.GetTargetRef())...)
 		}
-		rules, err := BuildRules(fromList)
+		rules, err := BuildRules(fromList, true)
 		if err != nil {
 			return FromRules{}, err
 		}
@@ -218,22 +218,30 @@ func BuildFromRules(
 	}, nil
 }
 
-func BuildToRules(matchedPolicies core_model.ResourceList, reader common.ResourceReader) (ToRules, error) {
+func BuildToRules(matchedPolicies core_model.ResourceList, reader kri.ResourceReader) (ToRules, error) {
 	toList, err := buildToList(matchedPolicies.GetItems(), reader)
 	if err != nil {
 		return ToRules{}, err
 	}
 
-	rules, err := BuildRules(toList)
+	rules, err := BuildRules(toList, false)
 	if err != nil {
 		return ToRules{}, err
 	}
 
 	// we have to exclude top-level targetRef 'MeshHTTPRoute' as new outbound rules work with MeshHTTPRoute differently,
 	// see docs/madr/decisions/060-policy-matching-with-real-resources.md
-	excludeTopLevelMeshHTTPRoute := slices.DeleteFunc(slices.Clone(matchedPolicies.GetItems()), func(r core_model.Resource) bool {
-		return r.GetSpec().(core_model.Policy).GetTargetRef().Kind == common_api.MeshHTTPRoute
-	})
+	excludeTopLevelMeshHTTPRoute, err := registry.Global().NewList(matchedPolicies.GetItemType())
+	if err != nil {
+		return ToRules{}, err
+	}
+	for _, item := range matchedPolicies.GetItems() {
+		if item.GetSpec().(core_model.Policy).GetTargetRef().Kind != common_api.MeshHTTPRoute {
+			if err = excludeTopLevelMeshHTTPRoute.AddItem(item); err != nil {
+				return ToRules{}, err
+			}
+		}
+	}
 	resourceRules, err := outbound.BuildRules(excludeTopLevelMeshHTTPRoute, reader)
 	if err != nil {
 		return ToRules{}, err
@@ -242,7 +250,7 @@ func BuildToRules(matchedPolicies core_model.ResourceList, reader common.Resourc
 	return ToRules{Rules: rules, ResourceRules: resourceRules}, nil
 }
 
-func buildToList(matchedPolicies []core_model.Resource, reader common.ResourceReader) ([]PolicyItemWithMeta, error) {
+func buildToList(matchedPolicies []core_model.Resource, reader kri.ResourceReader) ([]PolicyItemWithMeta, error) {
 	toList := []PolicyItemWithMeta{}
 	for _, mp := range matchedPolicies {
 		tl, err := buildToListWithRoutes(mp, reader.ListOrEmpty(meshhttproute_api.MeshHTTPRouteType).GetItems())
@@ -260,7 +268,7 @@ func buildToList(matchedPolicies []core_model.Resource, reader common.ResourceRe
 func BuildGatewayRules(
 	matchedPoliciesByInbound map[InboundListener]core_model.ResourceList,
 	matchedPoliciesByListener map[InboundListenerHostname]core_model.ResourceList,
-	reader common.ResourceReader,
+	reader kri.ResourceReader,
 ) (GatewayRules, error) {
 	toRulesByInbound := map[InboundListener]ToRules{}
 	toRulesByListenerHostname := map[InboundListenerHostname]ToRules{}
@@ -300,12 +308,12 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 		return nil, nil
 	}
 
-	var mhr *v1alpha1.MeshHTTPRouteResource
+	var mhr *meshhttproute_api.MeshHTTPRouteResource
 	switch policyWithTo.GetTargetRef().Kind {
 	case common_api.MeshHTTPRoute:
 		for _, route := range httpRoutes {
 			if core_model.IsReferenced(p.GetMeta(), pointer.Deref(policyWithTo.GetTargetRef().Name), route.GetMeta()) {
-				if r, ok := route.(*v1alpha1.MeshHTTPRouteResource); ok {
+				if r, ok := route.(*meshhttproute_api.MeshHTTPRouteResource); ok {
 					mhr = r
 				}
 			}
@@ -320,7 +328,7 @@ func buildToListWithRoutes(p core_model.Resource, httpRoutes []core_model.Resour
 	rv := []core_model.PolicyItem{}
 	for _, mhrRules := range pointer.Deref(mhr.Spec.To) {
 		for _, mhrRule := range mhrRules.Rules {
-			matchesHash := v1alpha1.HashMatches(mhrRule.Matches)
+			matchesHash := meshhttproute_api.HashMatches(mhrRule.Matches)
 			for _, to := range policyWithTo.GetToList() {
 				var targetRef common_api.TargetRef
 				switch mhrRules.TargetRef.Kind {
@@ -392,7 +400,7 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 		items = append(items, item)
 	}
 
-	rules, err := BuildRules(items)
+	rules, err := BuildRules(items, false)
 	if err != nil {
 		return SingleItemRules{}, err
 	}
@@ -403,13 +411,15 @@ func BuildSingleItemRules(matchedPolicies []core_model.Resource) (SingleItemRule
 // BuildRules creates a list of rules with negations sorted by the number of positive tags.
 // If rules with negative tags are filtered out then the order becomes 'most specific to less specific'.
 // Filtering out of negative rules could be useful for XDS generators that don't have a way to configure negations.
+// In case of `to` policies we don't need to check negations since only possible value for `to` is either Mesh
+// which has empty subset or kuma.io/service.
 //
 // See the detailed algorithm description in docs/madr/decisions/007-mesh-traffic-permission.md
-func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
+func BuildRules(list []PolicyItemWithMeta, withNegations bool) (Rules, error) {
 	rules := Rules{}
 	oldKindsItems := []PolicyItemWithMeta{}
 	for _, item := range list {
-		if item.PolicyItem.GetTargetRef().Kind.IsOldKind() {
+		if item.GetTargetRef().Kind.IsOldKind() {
 			oldKindsItems = append(oldKindsItems, item)
 		}
 	}
@@ -417,6 +427,7 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		return rules, nil
 	}
 
+	uniqueKeys := map[string]struct{}{}
 	// 1. Convert list of rules into the list of subsets
 	var subsets []subsetutils.Subset
 	for _, item := range oldKindsItems {
@@ -424,7 +435,34 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 		if err != nil {
 			return nil, err
 		}
+		for _, tag := range ss {
+			uniqueKeys[tag.Key] = struct{}{}
+		}
 		subsets = append(subsets, ss)
+	}
+
+	// we don't need to generate all permutations when there is no negations
+	// and we have only 0 or one tag, in other cases we need to generate.
+	// in case of `to` policies it can happen when using top target ref MeshGateway,
+	// for policy MeshHTTPRoute.
+	if !withNegations && len(uniqueKeys) <= 1 {
+		// deduplicate subsets
+		subsets = subsetutils.Deduplicate(subsets)
+
+		for _, ss := range subsets {
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
+			}
+		}
+
+		sort.SliceStable(rules, func(i, j int) bool {
+			// resource with more tags should be first
+			return len(rules[i].Subset) > len(rules[j].Subset)
+		})
+
+		return rules, nil
 	}
 
 	// 2. Create a graph where nodes are subsets and edge exists between 2 subsets only if there is an intersection
@@ -477,39 +515,12 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 			if ss == nil {
 				break
 			}
-			// 5. For each combination determine a configuration
-			confs := []interface{}{}
-			var relevant []PolicyItemWithMeta
-			for i := 0; i < len(oldKindsItems); i++ {
-				item := oldKindsItems[i]
-				itemSubset, err := asSubset(item.GetTargetRef())
-				if err != nil {
-					return nil, err
-				}
-				if itemSubset.IsSubset(ss) {
-					confs = append(confs, item.GetDefault())
-					relevant = append(relevant, item)
-				}
-			}
 
-			if len(relevant) > 0 {
-				merged, err := merge.Confs(confs)
-				if err != nil {
-					return nil, err
-				}
-				ruleOrigins, originIndex := common.Origins(relevant, false)
-				resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
-				for _, o := range ruleOrigins {
-					resourceMetas = append(resourceMetas, o.Resource)
-				}
-				for _, mergedRule := range merged {
-					rules = append(rules, &Rule{
-						Subset:                ss,
-						Conf:                  mergedRule,
-						Origin:                resourceMetas,
-						BackendRefOriginIndex: originIndex,
-					})
-				}
+			// 5. For each combination determine a configuration
+			if r, err := createRule(ss, oldKindsItems); err != nil {
+				return nil, err
+			} else {
+				rules = append(rules, r...)
 			}
 		}
 	}
@@ -517,6 +528,45 @@ func BuildRules(list []PolicyItemWithMeta) (Rules, error) {
 	sort.SliceStable(rules, func(i, j int) bool {
 		return rules[i].Subset.NumPositive() > rules[j].Subset.NumPositive()
 	})
+
+	return rules, nil
+}
+
+func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, error) {
+	rules := []*Rule{}
+	confs := []interface{}{}
+	var relevant []PolicyItemWithMeta
+	for i := 0; i < len(items); i++ {
+		item := items[i]
+		itemSubset, err := asSubset(item.GetTargetRef())
+		if err != nil {
+			return nil, err
+		}
+		if itemSubset.IsSubset(ss) {
+			confs = append(confs, item.GetDefault())
+			relevant = append(relevant, item)
+		}
+	}
+
+	if len(relevant) > 0 {
+		merged, err := merge.Confs(confs)
+		if err != nil {
+			return nil, err
+		}
+		ruleOrigins, originIndex := common.Origins(relevant, false)
+		resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
+		for _, o := range ruleOrigins {
+			resourceMetas = append(resourceMetas, o.Resource)
+		}
+		for _, mergedRule := range merged {
+			rules = append(rules, &Rule{
+				Subset:                ss,
+				Conf:                  mergedRule,
+				Origin:                resourceMetas,
+				BackendRefOriginIndex: originIndex,
+			})
+		}
+	}
 
 	return rules, nil
 }

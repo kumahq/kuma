@@ -4,19 +4,20 @@ import (
 	"reflect"
 	"slices"
 
+	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1"
 	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	envoy_tags "github.com/kumahq/kuma/pkg/xds/envoy/tags"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
@@ -31,7 +32,7 @@ type BackendRefDestination struct {
 	// DestinationName is a string to reference Type+Name+Mesh+Port. Effectively an Envoy Cluster name
 	DestinationName string
 	SNI             string
-	Resource        *model.ResolvedBackendRef
+	Resource        *resolve.ResolvedBackendRef
 }
 
 func BuildMeshDestinations(
@@ -41,7 +42,7 @@ func BuildMeshDestinations(
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
 	mesServices []*meshexternalservice_api.MeshExternalServiceResource,
 	systemNamespace string,
-	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
+	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
 ) MeshDestinations {
 	return MeshDestinations{
 		KumaIoServices: buildKumaIoServiceDestinations(availableServices, res),
@@ -55,7 +56,7 @@ func BuildMeshDestinations(
 func buildMeshServiceDestinations(
 	meshServices []*meshservice_api.MeshServiceResource,
 	systemNamespace string,
-	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
+	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
 ) []BackendRefDestination {
 	var msDestinations []BackendRefDestination
 	for _, ms := range meshServices {
@@ -71,9 +72,9 @@ func buildMeshServiceDestinations(
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
 				SNI:             sni,
-				Resource: model.ResolveBackendRef(
+				Resource: resolve.BackendRef(
 					ms.Meta,
-					model.ResourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
+					resourceToBackendRef(ms, meshservice_api.MeshServiceType, port.Port),
 					resolveResourceIdentifier,
 				),
 			})
@@ -82,9 +83,21 @@ func buildMeshServiceDestinations(
 	return msDestinations
 }
 
+func resourceToBackendRef(r core_model.Resource, resType core_model.ResourceType, port uint32) common_api.BackendRef {
+	id := kri.From(r, "")
+	return common_api.BackendRef{
+		TargetRef: common_api.TargetRef{
+			Kind:      common_api.TargetRefKind(resType),
+			Name:      pointer.To(id.Name),
+			Namespace: pointer.To(id.Namespace),
+		},
+		Port: pointer.To(port),
+	}
+}
+
 func buildMeshExternalServiceDestinations(
 	meshExternalServices []*meshexternalservice_api.MeshExternalServiceResource,
-	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
+	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
 ) []BackendRefDestination {
 	var mesDestinations []BackendRefDestination
 	for _, mes := range meshExternalServices {
@@ -99,9 +112,9 @@ func buildMeshExternalServiceDestinations(
 			Mesh:            mes.GetMeta().GetMesh(),
 			DestinationName: mes.DestinationName(uint32(mes.Spec.Match.Port)),
 			SNI:             sni,
-			Resource: model.ResolveBackendRef(
+			Resource: resolve.BackendRef(
 				mes.Meta,
-				model.ResourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port)),
+				resourceToBackendRef(mes, meshexternalservice_api.MeshExternalServiceType, uint32(mes.Spec.Match.Port)),
 				resolveResourceIdentifier,
 			),
 		})
@@ -111,7 +124,7 @@ func buildMeshExternalServiceDestinations(
 
 func buildMeshMultiZoneServiceDestinations(
 	meshMzSvc []*v1alpha1.MeshMultiZoneServiceResource,
-	resolveResourceIdentifier model.LabelResourceIdentifierResolver,
+	resolveResourceIdentifier resolve.LabelResourceIdentifierResolver,
 ) []BackendRefDestination {
 	var msDestinations []BackendRefDestination
 	for _, ms := range meshMzSvc {
@@ -119,9 +132,9 @@ func buildMeshMultiZoneServiceDestinations(
 			msDestinations = append(msDestinations, BackendRefDestination{
 				Mesh:            ms.GetMeta().GetMesh(),
 				DestinationName: ms.DestinationName(port.Port),
-				Resource: model.ResolveBackendRef(
+				Resource: resolve.BackendRef(
 					ms.Meta,
-					model.ResourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
+					resourceToBackendRef(ms, meshexternalservice_api.MeshExternalServiceType, port.Port),
 					resolveResourceIdentifier,
 				),
 				SNI: tls.SNIForResource(
@@ -244,7 +257,7 @@ func addMeshHTTPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
+			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
 				addMeshHTTPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -265,7 +278,7 @@ func addMeshTCPRouteDestinations(
 	// iterating through them.
 	for _, policy := range policies {
 		for _, to := range pointer.Deref(policy.Spec.To) {
-			if toTags, ok := tags.FromLegacyTargetRef(to.TargetRef); ok {
+			if toTags, ok := envoy_tags.FromLegacyTargetRef(to.TargetRef); ok {
 				addMeshTCPRouteToDestinations(to.Rules, toTags, destinations)
 			}
 		}
@@ -284,7 +297,7 @@ func addMeshHTTPRouteToDestinations(
 		}
 
 		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
+			if tags, ok := envoy_tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}
 		}
@@ -303,7 +316,7 @@ func addMeshTCPRouteToDestinations(
 		}
 
 		for _, backendRef := range pointer.Deref(rule.Default.BackendRefs) {
-			if tags, ok := tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
+			if tags, ok := envoy_tags.FromLegacyTargetRef(backendRef.TargetRef); ok {
 				addDestination(tags, destinations)
 			}
 		}

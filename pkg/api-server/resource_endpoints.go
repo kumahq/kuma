@@ -27,7 +27,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -63,7 +62,7 @@ type resourceEndpoints struct {
 	federatedZone          bool
 	zoneName               string
 	resManager             manager.ResourceManager
-	descriptor             model.ResourceTypeDescriptor
+	descriptor             core_model.ResourceTypeDescriptor
 	resourceAccess         access.ResourceAccess
 	k8sMapper              k8s.ResourceMapperFunc
 	filter                 func(request *restful.Request) (store.ListFilterFunc, error)
@@ -76,7 +75,7 @@ type resourceEndpoints struct {
 	disableOriginLabelValidation bool
 }
 
-func typeToLegacyOverviewPath(resourceType model.ResourceType) string {
+func typeToLegacyOverviewPath(resourceType core_model.ResourceType) string {
 	switch resourceType {
 	case core_mesh.ZoneEgressType:
 		return "zoneegressoverviews"
@@ -164,7 +163,7 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 
 		if err := r.resourceAccess.ValidateGet(
 			request.Request.Context(),
-			model.ResourceKey{Mesh: meshName, Name: name},
+			core_model.ResourceKey{Mesh: meshName, Name: name},
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
@@ -183,16 +182,16 @@ func (r *resourceEndpoints) findResource(withInsight bool) func(request *restful
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
 				return
 			}
-			overview, ok := r.descriptor.NewOverview().(model.OverviewResource)
+			overview, ok := r.descriptor.NewOverview().(core_model.OverviewResource)
 			if !ok {
-				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
+				rest_errors.HandleError(request.Request.Context(), response, fmt.Errorf("type withInsight for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", r.descriptor.Name), "Could not retrieve insights")
 				return
 			}
 			if err := overview.SetOverviewSpec(resource, insight); err != nil {
 				rest_errors.HandleError(request.Request.Context(), response, err, "Could not retrieve insights")
 				return
 			}
-			resource = overview.(model.Resource)
+			resource = overview.(core_model.Resource)
 		}
 		var res interface{}
 		switch request.QueryParameter("format") {
@@ -297,23 +296,23 @@ func (r *resourceEndpoints) listResources(withInsight bool) func(request *restfu
 	}
 }
 
-func (r *resourceEndpoints) MergeInOverview(resources model.ResourceList, insights model.ResourceList) (model.ResourceList, error) {
-	insightsByKey := map[model.ResourceKey]model.Resource{}
+func (r *resourceEndpoints) MergeInOverview(resources core_model.ResourceList, insights core_model.ResourceList) (core_model.ResourceList, error) {
+	insightsByKey := map[core_model.ResourceKey]core_model.Resource{}
 	for _, insight := range insights.GetItems() {
-		insightsByKey[model.MetaToResourceKey(insight.GetMeta())] = insight
+		insightsByKey[core_model.MetaToResourceKey(insight.GetMeta())] = insight
 	}
 
 	items := r.descriptor.NewOverviewList()
 	for _, resource := range resources.GetItems() {
-		overview, ok := items.NewItem().(model.OverviewResource)
+		overview, ok := items.NewItem().(core_model.OverviewResource)
 		if !ok {
-			return nil, fmt.Errorf("type overview for '%s' doesn't implement model.OverviewResource this shouldn't happen", r.descriptor.Name)
+			return nil, fmt.Errorf("type overview for '%s' doesn't implement core_model.OverviewResource this shouldn't happen", r.descriptor.Name)
 		}
-		if err := overview.SetOverviewSpec(resource, insightsByKey[model.MetaToResourceKey(resource.GetMeta())]); err != nil {
+		if err := overview.SetOverviewSpec(resource, insightsByKey[core_model.MetaToResourceKey(resource.GetMeta())]); err != nil {
 			return nil, err
 		}
 
-		if err := items.AddItem(overview.(model.Resource)); err != nil {
+		if err := items.AddItem(overview.(core_model.Resource)); err != nil {
 			return nil, err
 		}
 	}
@@ -384,7 +383,7 @@ func (r *resourceEndpoints) createResource(
 ) {
 	if err := r.resourceAccess.ValidateCreate(
 		ctx,
-		model.ResourceKey{Mesh: meshName, Name: name},
+		core_model.ResourceKey{Mesh: meshName, Name: name},
 		resRest.GetSpec(),
 		r.descriptor,
 		user.FromCtx(ctx),
@@ -400,11 +399,11 @@ func (r *resourceEndpoints) createResource(
 		_ = res.SetStatus(resRest.GetStatus())
 	}
 
-	labels, err := model.ComputeLabels(
+	labels, err := core_model.ComputeLabels(
 		res.Descriptor(),
 		res.GetSpec(),
 		res.GetMeta().GetLabels(),
-		model.GetNamespace(res.GetMeta(), r.systemNamespace),
+		core_model.GetNamespace(res.GetMeta(), r.systemNamespace),
 		meshName,
 		r.mode,
 		r.isK8s,
@@ -420,7 +419,7 @@ func (r *resourceEndpoints) createResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(res)}
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(res)}
 	if err := response.WriteHeaderAndJson(http.StatusCreated, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the create response")
 	}
@@ -428,14 +427,14 @@ func (r *resourceEndpoints) createResource(
 
 func (r *resourceEndpoints) updateResource(
 	ctx context.Context,
-	currentRes model.Resource,
+	currentRes core_model.Resource,
 	newResRest rest.Resource,
 	response *restful.Response,
 	meshName string,
 ) {
 	if err := r.resourceAccess.ValidateUpdate(
 		ctx,
-		model.ResourceKey{Mesh: currentRes.GetMeta().GetMesh(), Name: currentRes.GetMeta().GetName()},
+		core_model.ResourceKey{Mesh: currentRes.GetMeta().GetMesh(), Name: currentRes.GetMeta().GetName()},
 		currentRes.GetSpec(),
 		newResRest.GetSpec(),
 		r.descriptor,
@@ -449,11 +448,11 @@ func (r *resourceEndpoints) updateResource(
 	if r.descriptor.HasStatus { // todo(jakubdyszkiewicz) should we always override this?
 		_ = currentRes.SetStatus(newResRest.GetStatus())
 	}
-	labels, err := model.ComputeLabels(
+	labels, err := core_model.ComputeLabels(
 		currentRes.Descriptor(),
 		currentRes.GetSpec(),
 		newResRest.GetMeta().GetLabels(),
-		model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
+		core_model.GetNamespace(newResRest.GetMeta(), r.systemNamespace),
 		meshName,
 		r.mode,
 		r.isK8s,
@@ -469,7 +468,7 @@ func (r *resourceEndpoints) updateResource(
 		return
 	}
 
-	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: model.Deprecations(currentRes)}
+	resp := api_server_types.CreateOrUpdateSuccessResponse{Warnings: core_model.Deprecations(currentRes)}
 	if err := response.WriteHeaderAndJson(http.StatusOK, resp, "application/json"); err != nil {
 		log.Error(err, "Could not write the update response")
 	}
@@ -505,7 +504,7 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 
 	if err := r.resourceAccess.ValidateDelete(
 		request.Request.Context(),
-		model.ResourceKey{Mesh: meshName, Name: name},
+		core_model.ResourceKey{Mesh: meshName, Name: name},
 		resource.GetSpec(),
 		resource.Descriptor(),
 		user.FromCtx(request.Request.Context()),
@@ -536,7 +535,7 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 	if string(r.descriptor.Name) != resource.GetMeta().Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if r.descriptor.Scope == model.ScopeMesh && meshName != resource.GetMeta().Mesh {
+	if r.descriptor.Scope == core_model.ScopeMesh && meshName != resource.GetMeta().Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
 
@@ -549,7 +548,7 @@ func (r *resourceEndpoints) validateResourceRequest(name string, meshName string
 func (r *resourceEndpoints) validateLabels(resource rest.Resource) validators.ValidationError {
 	var err validators.ValidationError
 
-	origin, ok := model.ResourceOrigin(resource.GetMeta())
+	origin, ok := core_model.ResourceOrigin(resource.GetMeta())
 	if ok {
 		if oerr := origin.IsValid(); oerr != nil {
 			err.AddViolationAt(validators.Root().Key(mesh_proto.ResourceOriginLabel), oerr.Error())
@@ -609,13 +608,13 @@ func (r *resourceEndpoints) doesNameLengthFitsGlobal(name string) bool {
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) (string, error) {
-	if r.descriptor.Scope == model.ScopeMesh {
+	if r.descriptor.Scope == core_model.ScopeMesh {
 		meshName := request.PathParameter("mesh")
 		if meshName == "" { // Handle lists across all meshes
 			return "", nil
 		}
 		mRes := core_mesh.MeshResourceTypeDescriptor.NewObject()
-		if err := r.resManager.Get(request.Request.Context(), mRes, store.GetByKey(meshName, model.NoMesh)); err != nil {
+		if err := r.resManager.Get(request.Request.Context(), mRes, store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 			return "", err
 		}
 		return meshName, nil
@@ -642,11 +641,11 @@ func (r *resourceEndpoints) matchingDataplanesForPolicy() restful.RouteFunction 
 			return
 		}
 
-		var dependentTypes []model.ResourceType
+		var dependentTypes []core_model.ResourceType
 		if r.descriptor.IsTargetRefBased {
-			dependentTypes = []model.ResourceType{meshhttproute_api.MeshHTTPRouteType, core_mesh.MeshGatewayType}
+			dependentTypes = []core_model.ResourceType{meshhttproute_api.MeshHTTPRouteType, core_mesh.MeshGatewayType}
 		} else if r.descriptor.Name == core_mesh.MeshGatewayRouteType {
-			dependentTypes = []model.ResourceType{core_mesh.MeshGatewayType}
+			dependentTypes = []core_model.ResourceType{core_mesh.MeshGatewayType}
 		}
 		dependentResources := xds_context.NewResources()
 		for _, dependentType := range dependentTypes {
@@ -704,7 +703,7 @@ func matchingDataplanesForFilter(
 	descriptor core_model.ResourceTypeDescriptor,
 	resManager manager.ResourceManager,
 	resourceAccess access.ResourceAccess,
-	dpFilterForResource func(resource model.Resource) store.ListFilterFunc,
+	dpFilterForResource func(resource core_model.Resource) store.ListFilterFunc,
 ) {
 	policyName := request.PathParameter("name")
 	page, err := pagination(request)
@@ -717,7 +716,7 @@ func matchingDataplanesForFilter(
 
 	if err := resourceAccess.ValidateGet(
 		request.Request.Context(),
-		model.ResourceKey{Mesh: meshName, Name: policyName},
+		core_model.ResourceKey{Mesh: meshName, Name: policyName},
 		descriptor,
 		user.FromCtx(request.Request.Context()),
 	); err != nil {
@@ -852,7 +851,7 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 
 		if err := r.resourceAccess.ValidateGet(
 			request.Request.Context(),
-			model.ResourceKey{Mesh: meshName, Name: resourceName},
+			core_model.ResourceKey{Mesh: meshName, Name: resourceName},
 			r.descriptor,
 			user.FromCtx(request.Request.Context()),
 		); err != nil {
@@ -866,10 +865,10 @@ func (r *resourceEndpoints) rulesForResource() restful.RouteFunction {
 			return
 		}
 		var dp *core_mesh.DataplaneResource
-		switch {
-		case r.descriptor.Name == core_mesh.DataplaneType:
+		switch r.descriptor.Name {
+		case core_mesh.DataplaneType:
 			dp = resource.(*core_mesh.DataplaneResource)
-		case r.descriptor.Name == core_mesh.MeshGatewayType:
+		case core_mesh.MeshGatewayType:
 			// Create a dataplane that would match this gateway.
 			// It might not show all policies but most of the ones matching this specific gateway and its routes
 			gw := resource.(*core_mesh.MeshGatewayResource)

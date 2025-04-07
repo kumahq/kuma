@@ -141,7 +141,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: err.Error(),
 		}
-	case err == multitenant.TenantMissingErr:
+	case err == multitenant.ErrTenantMissing:
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,

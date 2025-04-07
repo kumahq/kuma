@@ -23,6 +23,7 @@ func Migration() {
 			Install(MTLSMeshUniversal(meshName)).
 			Setup(multizone.Global)
 		Expect(err).ToNot(HaveOccurred())
+		Expect(WaitForMesh(meshName, multizone.Zones())).To(Succeed())
 
 		group := errgroup.Group{}
 		NewClusterSetup().
@@ -42,7 +43,7 @@ func Migration() {
 			SetupInGroup(multizone.KubeZone1, &group)
 
 		NewClusterSetup().
-			Install(TestServerUniversal("test-server", meshName)).
+			Install(TestServerUniversal("test-server", meshName, WithArgs([]string{"echo"}))).
 			SetupInGroup(multizone.UniZone1, &group)
 		Expect(group.Wait()).To(Succeed())
 	})

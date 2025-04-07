@@ -5,7 +5,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/matchers"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	mtp_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtrafficpermission/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/xds/context"
@@ -14,7 +13,7 @@ import (
 func ComputeMtpRulesForTags(
 	dpTags map[string]string,
 	mtpsWithTrimmedTags []*mtp_api.MeshTrafficPermissionResource,
-) (rules.Rules, bool, error) {
+) (core_rules.Rules, bool, error) {
 	resources := context.Resources{
 		MeshLocalResources: map[core_model.ResourceType]core_model.ResourceList{
 			mtp_api.MeshTrafficPermissionType: &mtp_api.MeshTrafficPermissionResourceList{

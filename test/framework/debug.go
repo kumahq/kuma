@@ -22,6 +22,7 @@ import (
 
 func ControlPlaneAssertions(cluster Cluster) {
 	ginkgo.GinkgoHelper()
+	defer ginkgo.GinkgoRecover() // Ensures that Ginkgo can recover from any failures
 	logs := cluster.GetKumaCPLogs()
 	for k, log := range logs {
 		Expect(utils.HasPanicInCpLogs(log)).To(BeFalse(), fmt.Sprintf("CP %s has panic in logs %s", cluster.Name(), k))
@@ -234,6 +235,7 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 
 	for _, dpObj := range dpResp.Items {
 		for inspectType, fileExtension := range map[string]string{
+			"get":         ".yaml",
 			"config-dump": ".json",
 			"config":      ".json",
 			"policies":    ".txt",
@@ -247,6 +249,10 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 
 			dpName := dpObj.Name
 			args := []string{"inspect", string(dpType), dpName, "--type", inspectType}
+			switch inspectType {
+			case "get":
+				args = []string{"get", string(dpType), dpName, "-oyaml"}
+			}
 			if dpType == dataplaneType {
 				args = append(args, "--mesh", mesh)
 			}
@@ -256,7 +262,7 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 				errs = multierr.Combine(errs, fmt.Errorf("failed to inspect %s of dp %q from cluster %q for mesh %q, %w", inspectType, dpName, cluster.Name(), mesh, err))
 			} else {
 				inspectFilePath := fmt.Sprintf("%s-%s-%s%s", mesh, dpName, inspectType, fileExtension)
-				report.AddFileToReportEntry(path.Join(cluster.Name(), inspectFilePath), inspectResp)
+				report.AddFileToReportEntry(path.Join(cluster.Name(), "dps", inspectFilePath), inspectResp)
 			}
 		}
 	}
