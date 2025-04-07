@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -224,9 +225,12 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 	if containerName != "" {
 		app.containerName = containerName
 	}
+	app.universalNetworking = &universal.Networking{
+		ApiServerPort: app.ports["5681"],
+		SshPort:       app.ports[sshPort],
+	}
 
 	app.allocatePublicPortsFor("22")
-
 	if mode == AppModeCP {
 		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
 	}
@@ -248,6 +252,40 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 	if verbose {
 		app.logger = logger.Default
 	}
+
+	if len(volumes) > 0 && app.universalNetworking.RemoteHost != nil {
+		var files map[string]string
+		for _, volume := range volumes {
+			parts := strings.Split(volume, ":")
+			if len(parts) != 2 {
+				continue
+			}
+
+			hostPath := parts[0]
+			absPath, err := filepath.Abs(hostPath)
+			if err != nil {
+				continue
+			}
+			stat, err := os.Stat(absPath)
+			if err != nil {
+				continue
+			}
+			if stat.IsDir() {
+				continue
+			}
+
+			// we copy to the same place on the remote host
+			files[absPath] = absPath
+		}
+
+		if len(files) > 0 {
+			err := app.universalNetworking.CopyFiles(t, files)
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+
 	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
 		Detach:       true,
 		Remove:       true,
@@ -264,10 +302,6 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 
 	if err := app.updatePublishedPorts(); err != nil {
 		return nil, err
-	}
-	app.universalNetworking = &universal.Networking{
-		ApiServerPort: app.ports["5681"],
-		SshPort:       app.ports[sshPort],
 	}
 	app.universalNetworking.IP, err = app.getIP(Config.IPV6)
 	if err != nil {

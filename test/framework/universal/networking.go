@@ -4,9 +4,14 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/gruntwork-io/terratest/modules/testing"
 	"net"
 	"os"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -160,9 +165,48 @@ func (s *Networking) PortForward(destAddr string, stopChan <-chan struct{}) (net
 	}
 }
 
-func (u *Networking) BootstrapAddress() string {
-	if u.ApiServerPort == "" {
+// CopyFiles copies a set of files to the local host
+func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) error {
+	mkdirCmds := "#!/bin/sh\n"
+	for _, destPath := range files {
+		dir := filepath.Base(destPath)
+		mkdirCmds += fmt.Sprintf("mkdir -p %s \n", dir)
+	}
+
+	_, stdErr, err := s.RunCommand(mkdirCmds)
+	if err != nil {
+		return fmt.Errorf("unable to prepare directores to copy the files: %w", err)
+	}
+	stdErr = strings.Trim(stdErr, "\n")
+	if stdErr != "" {
+		return fmt.Errorf("unable to prepare directores to copy the files: %s", stdErr)
+	}
+
+	for localPath, destPath := range files {
+		cmd := shell.Command{
+			Command: "scp",
+			Args: []string{
+				"-i", s.RemoteHost.PrivateKeyFile,
+				"-P", strconv.Itoa(s.RemoteHost.Port),
+				"-o", "StrictHostKeyChecking=no",
+				"-o", "UserKnownHostsFile=/dev/null",
+				fmt.Sprintf("%s %s@%s:%s", localPath, s.RemoteHost.User, s.RemoteHost.Address, destPath)},
+			Logger: logger.Discard,
+		}
+
+		_, err = shell.RunCommandAndGetStdOutE(t, cmd)
+		if err != nil {
+			return fmt.Errorf("unable to execute scp command to copy file %q to %q onto %q: %w",
+				localPath, destPath, s.RemoteHost.Address, err)
+		}
+	}
+
+	return nil
+}
+
+func (s *Networking) BootstrapAddress() string {
+	if s.ApiServerPort == "" {
 		panic("ApiServerPort is not set, this networking is not for a CP")
 	}
-	return "https://" + net.JoinHostPort(u.IP, "5678")
+	return "https://" + net.JoinHostPort(s.IP, "5678")
 }

@@ -194,8 +194,6 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 	_, _ = fmt.Fprintf(cmd, "%s\n", runCp)
 
-	// todo: (jijiechen) copy files to remote host and mount the volumes
-
 	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
