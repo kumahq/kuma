@@ -178,10 +178,10 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           resources:
             limits:
-              memory: 256Mi
+              memory: 512Mi
             requests:
               cpu: 500m
-              memory: 256Mi
+              memory: 512Mi
           volumeMounts:
             - name: postgres-tls-cert-ca
               subPath: ca.crt
@@ -253,10 +253,10 @@ spec:
               port: 5680
           resources:
             limits:
-              memory: 256Mi
+              memory: 512Mi
             requests:
               cpu: 500m
-              memory: 256Mi
+              memory: 512Mi
           
           volumeMounts:
             - name: kuma-control-plane-config

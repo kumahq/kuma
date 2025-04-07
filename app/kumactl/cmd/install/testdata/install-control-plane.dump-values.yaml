@@ -203,9 +203,9 @@ controlPlane:
   resources:
     requests:
        cpu: 500m
-       memory: 256Mi
+       memory: 512Mi
     limits:
-       memory: 256Mi
+       memory: 512Mi
 
   # -- Pod lifecycle settings (useful for adding a preStop hook, when
   # using AWS ALB or NLB)
