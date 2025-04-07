@@ -161,7 +161,8 @@ func (v *Validator) RunClient(
 			return nil
 		},
 	); err != nil {
-		return errors.Wrap(err, "client failed to connect to the verification server after retries")
+		return errors.Wrap(err, "client failed to connect to the verification server after retries - " +
+			"most likely iptables rules are not applied correctly, please check CNI logs")
 	}
 
 	v.Logger.Info("validation successful, iptables rules applied correctly")
