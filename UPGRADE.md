@@ -6,6 +6,14 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `2.11.x`
+
+### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
+
+In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. Starting with this version, it is now explicitly set to `false`.
+
+Before upgrading, ensure that your configuration does not override this setting.
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
