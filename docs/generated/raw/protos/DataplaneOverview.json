@@ -34,6 +34,11 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.Dataplane.Probes",
                     "additionalProperties": true,
                     "description": "Probes describe a list of endpoints that will be exposed without mTLS. This is useful to expose the health endpoints of the application so the orchestration system (e.g. Kubernetes) can still health check the application. See https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes for more information. Deprecated: this feature will be removed for Universal; on Kubernetes, it's not needed anymore."
+                },
+                "envoy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyConfiguration",
+                    "additionalProperties": true,
+                    "description": "EnvoyConfiguration provides additional configuration for the Envoy sidecar."
                 }
             },
             "additionalProperties": true,
@@ -588,6 +593,32 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Envoy Admin"
+        },
+        "kuma.mesh.v1alpha1.EnvoyConfiguration": {
+            "properties": {
+                "xds_transport_protocol_variant": {
+                    "enum": [
+                        "DEFAULT",
+                        0,
+                        "DELTA_GRPC",
+                        1,
+                        "GRPC",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Xds Transport Protocol Variant"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Configuration"
         },
         "kuma.mesh.v1alpha1.EnvoyVersion": {
             "properties": {
