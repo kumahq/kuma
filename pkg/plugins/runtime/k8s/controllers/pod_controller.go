@@ -22,7 +22,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
@@ -319,8 +318,8 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	others []*mesh_k8s.Dataplane,
 ) error {
 	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
-	k8sMesh := v1alpha1.Mesh{}
-	if err := r.Client.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
+	k8sMesh := mesh_k8s.Mesh{}
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
 		return err
 	}
 	mesh := core_mesh.NewMeshResource()
