@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20240527124623-de85860b7d21
 	github.com/cilium/ebpf v0.18.0
-	github.com/containernetworking/cni v1.2.3
+	github.com/containernetworking/cni v1.3.0
 	github.com/containernetworking/plugins v1.6.2
 	github.com/emicklei/go-restful/v3 v3.12.2
 	github.com/envoyproxy/go-control-plane v0.13.4
