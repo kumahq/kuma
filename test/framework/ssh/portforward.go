@@ -10,8 +10,12 @@ import (
 
 func Tunnel(sshClient *ssh.Client, local, remote string, stopChan <-chan struct{}, readyChan chan<- net.Addr) error {
 	pipe := func(writer, reader net.Conn) {
-		defer writer.Close()
-		defer reader.Close()
+		defer func(writer net.Conn) {
+			_ = writer.Close()
+		}(writer)
+		defer func(reader net.Conn) {
+			_ = reader.Close()
+		}(reader)
 
 		_, err := io.Copy(writer, reader)
 		if err != nil {
@@ -31,6 +35,7 @@ func Tunnel(sshClient *ssh.Client, local, remote string, stopChan <-chan struct{
 	for {
 		select {
 		case <-stopChan:
+			_ = listener.Close()
 			return nil
 		default:
 			localConnection, err := listener.Accept()

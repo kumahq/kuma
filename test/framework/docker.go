@@ -167,7 +167,8 @@ func (u *RemoteDockerBackend) runDockerCommandInSession(t testing.TestingT, cmdN
 	if err != nil {
 		return "", fmt.Errorf("failed to read stdout of docker %s command: %w", cmdName, err)
 	}
-	return string(stdOut), nil
+	out := string(stdOut)
+	return strings.TrimRight(out, "\n"), nil
 }
 
 func (u *RemoteDockerBackend) GetPublishedDockerPorts(
@@ -224,6 +225,9 @@ func (u *RemoteDockerBackend) GetPublishedDockerPorts(
 		}
 		pfList, exists := u.portForwards[container]
 		if !exists {
+			if u.portForwards == nil {
+				u.portForwards = make(map[string][]*VmPortForward)
+			}
 			u.portForwards[container] = []*VmPortForward{}
 		}
 		pfList = append(pfList, pf)
