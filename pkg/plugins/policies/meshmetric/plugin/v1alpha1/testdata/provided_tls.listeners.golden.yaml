@@ -1,5 +1,5 @@
 resources:
-- name: _kuma:dynamicconfig:observability
+- name: _kuma:dynamicconfig
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -18,16 +18,29 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: _kuma:dynamicconfig:observability
+              name: _kuma:dynamicconfig
               routes:
+              - directResponse:
+                  status: 304
+                match:
+                  headers:
+                  - name: If-None-Match
+                    stringMatch:
+                      exact: b9bb50e6669e165d376167ec8984ed443ba5ef900111f4333b3a86146b1d0d97
+                  path: /meshmetric
               - directResponse:
                   body:
                     inlineString: '{"observability":{"metrics":{"applications":null,"backends":[{"type":"Prometheus","name":null}],"extraLabels":{"kuma_io_service":"backend","kuma_io_services":",backend,"}}}}'
                   status: 200
                 match:
-                  prefix: /
-          statPrefix: _kuma_dynamicconfig_observability
-    name: _kuma:dynamicconfig:observability
+                  path: /meshmetric
+                name: _kuma:dynamicconfig:/meshmetric
+                responseHeadersToAdd:
+                - header:
+                    key: Etag
+                    value: b9bb50e6669e165d376167ec8984ed443ba5ef900111f4333b3a86146b1d0d97
+          statPrefix: _kuma_dynamicconfig
+    name: _kuma:dynamicconfig
 - name: _kuma:metrics:prometheus:default-backend
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

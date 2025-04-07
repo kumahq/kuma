@@ -21,7 +21,9 @@
  "caCert": "",
  "dynamicMetadata": null,
  "operatingSystem": "linux",
- "features": [],
+ "features": [
+  "feature-tcp-accesslog-via-named-pipe"
+ ],
  "resources": {
   "maxHeapSizeBytes": 0
  },
