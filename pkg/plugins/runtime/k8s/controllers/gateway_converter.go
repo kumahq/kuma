@@ -31,7 +31,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	tagsAnnotation, ok := pod.Annotations[metadata.KumaTagsAnnotation]
 
 	if !ok {
-		r.EventRecorder.Eventf(
+		r.Eventf(
 			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Missing %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
 		)
 		return nil
@@ -39,7 +39,7 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 
 	var tags map[string]string
 	if err := json.Unmarshal([]byte(tagsAnnotation), &tags); err != nil || tags == nil {
-		r.EventRecorder.Eventf(
+		r.Eventf(
 			pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Invalid %s annotation on Pod serving a builtin Gateway", metadata.KumaTagsAnnotation,
 		)
 		return nil
@@ -74,17 +74,17 @@ func (r *PodReconciler) createorUpdateBuiltinGatewayDataplane(ctx context.Contex
 	})
 	if err != nil {
 		log.Error(err, "unable to create/update Dataplane", "operationResult", operationResult)
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
+		r.Eventf(pod, kube_core.EventTypeWarning, FailedToGenerateKumaDataplaneReason, "Failed to generate Kuma Dataplane: %s", err.Error())
 		return err
 	}
 
 	switch operationResult {
 	case kube_controllerutil.OperationResultCreated:
 		log.Info("Dataplane created")
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
+		r.Eventf(pod, kube_core.EventTypeNormal, CreatedKumaDataplaneReason, "Created Kuma Dataplane: %s", dataplane.Name)
 	case kube_controllerutil.OperationResultUpdated:
 		log.Info("Dataplane updated")
-		r.EventRecorder.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
+		r.Eventf(pod, kube_core.EventTypeNormal, UpdatedKumaDataplaneReason, "Updated Kuma Dataplane: %s", dataplane.Name)
 	}
 	return nil
 }

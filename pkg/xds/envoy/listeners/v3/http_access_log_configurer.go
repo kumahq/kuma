@@ -12,7 +12,7 @@ type HttpAccessLogConfigurer struct {
 }
 
 func (c *HttpAccessLogConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	accessLog, err := convertLoggingBackend(c.AccessLogConfigurer.Mesh, c.AccessLogConfigurer.TrafficDirection, c.AccessLogConfigurer.SourceService, c.AccessLogConfigurer.DestinationService, c.AccessLogConfigurer.Backend, c.AccessLogConfigurer.Proxy, defaultHttpAccessLogFormat)
+	accessLog, err := convertLoggingBackend(c.Mesh, c.TrafficDirection, c.SourceService, c.DestinationService, c.Backend, c.Proxy, defaultHttpAccessLogFormat)
 	if err != nil {
 		return err
 	}

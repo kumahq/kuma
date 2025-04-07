@@ -45,7 +45,7 @@ func (cb *HostnameGenerator) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (cb *HostnameGenerator) GetMesh() string {
-	if mesh, ok := cb.ObjectMeta.Labels[metadata.KumaMeshLabel]; ok {
+	if mesh, ok := cb.Labels[metadata.KumaMeshLabel]; ok {
 		return mesh
 	} else {
 		return core_model.DefaultMesh
@@ -53,10 +53,10 @@ func (cb *HostnameGenerator) GetMesh() string {
 }
 
 func (cb *HostnameGenerator) SetMesh(mesh string) {
-	if cb.ObjectMeta.Labels == nil {
-		cb.ObjectMeta.Labels = map[string]string{}
+	if cb.Labels == nil {
+		cb.Labels = map[string]string{}
 	}
-	cb.ObjectMeta.Labels[metadata.KumaMeshLabel] = mesh
+	cb.Labels[metadata.KumaMeshLabel] = mesh
 }
 
 func (cb *HostnameGenerator) GetSpec() (core_model.ResourceSpec, error) {

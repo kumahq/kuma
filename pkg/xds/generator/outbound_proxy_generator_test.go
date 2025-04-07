@@ -16,7 +16,6 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/test/xds"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -107,7 +106,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 	mtlsCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{
-			Secrets: &xds.TestSecrets{},
+			Secrets: &test_xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
 			Resources: xds_context.Resources{
@@ -135,7 +134,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 	serviceVipCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{
-			Secrets: &xds.TestSecrets{},
+			Secrets: &test_xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
 			Resources: xds_context.Resources{
@@ -173,7 +172,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 
 	crossMeshCtx := xds_context.Context{
 		ControlPlane: &xds_context.ControlPlaneContext{
-			Secrets: &xds.TestSecrets{},
+			Secrets: &test_xds.TestSecrets{},
 		},
 		Mesh: xds_context.MeshContext{
 			Resource: &core_mesh.MeshResource{

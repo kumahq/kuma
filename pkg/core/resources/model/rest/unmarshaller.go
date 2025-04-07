@@ -117,7 +117,7 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 	if err := u.unmarshalFn(b, rsr); err != nil {
 		return err
 	}
-	for _, ri := range rsr.ResourceList.Items {
+	for _, ri := range rsr.Items {
 		r := rs.NewItem()
 		if err := r.SetSpec(ri.GetSpec()); err != nil {
 			return err
@@ -142,7 +142,7 @@ func (u *unmarshaler) UnmarshalListToCore(b []byte, rs core_model.ResourceList) 
 			rs.GetPagination().SetNextOffset(offset)
 		}
 	}
-	rs.GetPagination().SetTotal(rsr.ResourceList.Total)
+	rs.GetPagination().SetTotal(rsr.Total)
 	return nil
 }
 

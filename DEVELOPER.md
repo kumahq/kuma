@@ -104,7 +104,7 @@ In this section we'll go into how to trigger a breakpoint both in K8S and Univer
 2. Remove "-w -s" from LDFLAGS [here](https://github.com/kumahq/kuma/blob/7398d8901798d5cf1c2715e036204fc3632ec45d/mk/build.mk#L2) so that debugging symbols are not stripped
 3. Always add `EXTRA_GOFLAGS='-gcflags "all=-N -l"'` to build / deploy parameters to make sure debug info is in the binaries
 4. Run `make k3d/start`
-5. Run `make EXTRA_GOFLAGS='-gcflags "all=-N -l"' -j k3d/deploy/kuma`
+5. Run `make EXTRA_GOFLAGS='-gcflags "all=-N -l"' -j k3d/deploy/kumactl`
 6. Change the Kuma deployment:
    1. Remove readiness and Liveness probes (otherwise Kubernetes will kill the container if you stay in a breakpoint long enough)
    2. set runAsNonRoot: false

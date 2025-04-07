@@ -1,0 +1,84 @@
+kri_msvc_mesh-1___backend-dev_http-port:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 12s
+    http:
+      requestTimeout: 32s
+    idleTimeout: 11s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-494dvdzf6bx978w2.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mt-1-494dvdzf6bx978w2
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-494dvdzf6bx978w2.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mt-1-494dvdzf6bx978w2
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 2
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      domain: backend
+      env: dev
+      kuma.io/display-name: backend-dev
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-dev-c4xd8z94cv6zcccx.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: backend-dev-c4xd8z94cv6zcccx
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  ResourceSectionName: http-port
+kri_msvc_mesh-1___backend-prod_http-port:
+  BackendRefOriginIndex: {}
+  Conf:
+  - connectionTimeout: 31s
+    http:
+      requestTimeout: 32s
+  Origin:
+  - Resource:
+      CreationTime: "0001-01-01T00:00:00Z"
+      Labels:
+        kuma.io/display-name: matched-for-rules-mt-1
+        kuma.io/origin: global
+      Mesh: mesh-1
+      ModificationTime: "0001-01-01T00:00:00Z"
+      Name: matched-for-rules-mt-1-494dvdzf6bx978w2.kuma-system
+      NameExtensions:
+        k8s.kuma.io/name: matched-for-rules-mt-1-494dvdzf6bx978w2
+        k8s.kuma.io/namespace: kuma-system
+      Version: ""
+    RuleIndex: 0
+  Resource:
+    CreationTime: "0001-01-01T00:00:00Z"
+    Labels:
+      domain: backend
+      env: prod
+      kuma.io/display-name: backend-prod
+      kuma.io/origin: global
+    Mesh: mesh-1
+    ModificationTime: "0001-01-01T00:00:00Z"
+    Name: backend-prod-w58447bbdz47xxf8.kuma-system
+    NameExtensions:
+      k8s.kuma.io/name: backend-prod-w58447bbdz47xxf8
+      k8s.kuma.io/namespace: kuma-system
+    Version: ""
+  ResourceSectionName: http-port

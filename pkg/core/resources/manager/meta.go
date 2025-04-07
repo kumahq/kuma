@@ -3,7 +3,6 @@ package manager
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -47,11 +46,11 @@ func (r *resourceMetaObject) GetLabels() map[string]string {
 	return r.Labels
 }
 
-func metaFromCreateOpts(descriptor model.ResourceTypeDescriptor, fs store.CreateOptions) core_model.ResourceMeta {
+func metaFromCreateOpts(descriptor core_model.ResourceTypeDescriptor, fs store.CreateOptions) core_model.ResourceMeta {
 	if fs.Name == "" {
 		return nil
 	}
-	if fs.Mesh == "" && descriptor.Scope == model.ScopeMesh {
+	if fs.Mesh == "" && descriptor.Scope == core_model.ScopeMesh {
 		return nil
 	}
 	return &resourceMetaObject{

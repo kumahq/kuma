@@ -109,7 +109,7 @@ func validateEndpoints(endpoints []Endpoint) validators.ValidationError {
 			}
 		}
 
-		if !(govalidator.IsIP(endpoint.Address) || govalidator.IsDNSName(endpoint.Address)) {
+		if !govalidator.IsIP(endpoint.Address) && !govalidator.IsDNSName(endpoint.Address) {
 			verr.AddViolationAt(validators.Root().Index(i).Field("address"), "address has to be a valid IP or hostname")
 		}
 	}

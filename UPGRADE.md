@@ -55,6 +55,25 @@ New rule:
 
 > A lowercase RFC 1035 Label Names must have at most 63 characters and consist of lower case alphanumeric characters or '-', and must start with an alphabetic character, end with an alphanumeric character.
 
+### New kind Dataplane for targetRef in policies
+
+This version introduced new `Dataplane` kind for top level `targetRef` in policies. Dataplane will replace `MeshSubset` kind.
+Making `MeshSubset` deprecated. Dataplane selects Dataplane resources by its labels and adds possibility to select single inbound
+by using `sectionName` field, as opposed to old MeshSubset which was selecting proxies by inbound tags. More detailed info in docs.
+
+### New Rules API
+
+This version adds new `rules` api that replaces `from` section in policies. Making `from` deprecated. Support was added for
+policies:
+- MeshAccessLog
+- MeshCircuitBreaker
+- MeshRateLimit
+- MeshTimeout
+- MeshTls
+
+You cannot combine inbound configuration with outbound traffic configuration in policies when using new Rules API.
+If you have old policies with both `from` and `to` you need to split them into separate policies before migrating to `rules`.
+
 ### MeshHTTPRoute
 
 #### Unifying defaults for `statusCode`

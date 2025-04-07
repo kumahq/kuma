@@ -18,6 +18,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	meshexternalservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshexternalservice/api/v1alpha1"
@@ -29,12 +30,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
@@ -67,20 +66,16 @@ func getResource(resourceSet *core_xds.ResourceSet, typ envoy_resource.Type) []b
 }
 
 var _ = Describe("MeshHTTPRoute", func() {
-	backendMeshServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "backend",
-			Mesh: "default",
-		},
+	backendMeshServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshService",
+		Mesh:         "default",
+		Name:         "backend",
 		SectionName:  "",
 	}
-	backendMeshExternalServiceIdentifier := core_model.TypedResourceIdentifier{
-		ResourceIdentifier: core_model.ResourceIdentifier{
-			Name: "example",
-			Mesh: "default",
-		},
+	backendMeshExternalServiceIdentifier := kri.Identifier{
 		ResourceType: "MeshExternalService",
+		Mesh:         "default",
+		Name:         "example",
 	}
 
 	type outboundsTestCase struct {
@@ -162,7 +157,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						}},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
-					WithInternalAddresses(xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
+					WithInternalAddresses(core_xds.InternalAddress{AddressPrefix: "192.168.0.0", PrefixLen: 16}, core_xds.InternalAddress{AddressPrefix: "::1", PrefixLen: 128}).
 					Build(),
 			}
 		}()),
@@ -257,7 +252,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 							},
 						}},
 						{
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("80"))),
+							Resource: pointer.To(kri.From(&meshSvc, "80")),
 							Address:  "10.0.0.1",
 							Port:     80,
 						},
@@ -354,7 +349,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Outbounds = xds_types.Outbounds{{
 				Address:  "10.0.0.2",
 				Port:     80,
-				Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshMZSvc, core_model.WithSectionName("80"))),
+				Resource: pointer.To(kri.From(&meshMZSvc, "80")),
 			}}
 
 			return outboundsTestCase{
@@ -507,10 +502,10 @@ var _ = Describe("MeshHTTPRoute", func() {
 			proxy.Policies = core_xds.MatchedPolicies{
 				Dynamic: core_xds.PluginOriginatedPolicies{},
 			}
-			proxy.Policies.Dynamic[api.MeshHTTPRouteType] = xds.TypedMatchingPolicies{
+			proxy.Policies.Dynamic[api.MeshHTTPRouteType] = core_xds.TypedMatchingPolicies{
 				Type: api.MeshHTTPRouteType,
 				ToRules: core_rules.ToRules{
-					ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+					ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 						backendMeshExternalServiceIdentifier: {
 							Origin: []rules_common.Origin{
 								{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -840,14 +835,14 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
 						},
 					}).
 					WithRouting(xds_builders.Routing().WithOutboundTargets(outboundTargets)).
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
 										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -1025,7 +1020,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithOutbounds(xds_types.Outbounds{
 						{
 							Port:     builders.FirstOutboundPort,
-							Resource: pointer.To(core_model.NewTypedResourceIdentifier(&meshSvc, core_model.WithSectionName("test-port"))),
+							Resource: pointer.To(kri.From(&meshSvc, "test-port")),
 						},
 					}).
 					WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).
@@ -1033,7 +1028,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 					WithPolicies(
 						xds_builders.MatchedPolicies().
 							WithToPolicy(api.MeshHTTPRouteType, core_rules.ToRules{
-								ResourceRules: map[core_model.TypedResourceIdentifier]outbound.ResourceRule{
+								ResourceRules: map[kri.Identifier]outbound.ResourceRule{
 									backendMeshServiceIdentifier: {
 										Origin: []rules_common.Origin{
 											{Resource: &test_model.ResourceMeta{Mesh: "default", Name: "http-route"}},
@@ -1829,7 +1824,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.ToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"):      commonRules,
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "go.dev"): commonRules,
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, "*.dev"):  commonRules,
@@ -1945,7 +1940,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.ToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): commonRules,
 									},
 								},
@@ -2004,9 +1999,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.ToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2029,7 +2024,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, "go.dev"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2164,9 +2159,9 @@ var _ = Describe("MeshHTTPRoute", func() {
 						xds_builders.MatchedPolicies().
 							WithGatewayPolicy(api.MeshHTTPRouteType, core_rules.GatewayRules{
 								ToRules: core_rules.GatewayToRules{
-									ByListenerAndHostname: map[rules.InboundListenerHostname]rules.ToRules{
+									ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "other.dev"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2190,7 +2185,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "go.dev"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2214,7 +2209,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8081, ""): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2238,7 +2233,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8082, ""): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2280,7 +2275,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*.secure.dev"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2323,7 +2318,7 @@ var _ = Describe("MeshHTTPRoute", func() {
 											},
 										},
 										core_rules.NewInboundListenerHostname("192.168.0.1", 8083, "*.super-secure.dev"): {
-											Rules: rules.Rules{
+											Rules: core_rules.Rules{
 												{
 													Subset: subsetutils.MeshSubset(),
 													Conf: api.PolicyDefault{
@@ -2528,7 +2523,7 @@ func dppForMeshExternalService(mes *meshexternalservice_api.MeshExternalServiceR
 			{
 				Address:  "10.20.20.1",
 				Port:     9090,
-				Resource: pointer.To(core_model.NewTypedResourceIdentifier(mes)),
+				Resource: pointer.To(kri.From(mes, "")),
 			},
 		}).
 		WithSecretsTracker(envoy.NewSecretsTracker("default", nil)).

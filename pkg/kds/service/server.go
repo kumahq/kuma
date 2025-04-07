@@ -179,7 +179,7 @@ func (g *GlobalKDSServiceServer) streamEnvoyAdminRPC(
 			case ZoneWentOffline:
 				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone
 			case StreamCancelled:
-				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone && event.Type == streamType && event.ConnTime == connectTime
+				return event.TenantID == tenantZoneID.TenantID && event.Zone == zone && event.Type == streamType && event.ConnTime.Equal(connectTime)
 			default:
 				return false
 			}

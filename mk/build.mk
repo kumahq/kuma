@@ -115,13 +115,13 @@ build/artifacts-$(1)-$(2)/install-cni:
 build/artifacts-$(1)-$(2)/coredns:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/coredns ] || \
-	curl -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
+	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/coredns-builds/releases/download/$(COREDNS_VERSION)/coredns_$(COREDNS_VERSION)_$(1)_$(2)$(COREDNS_EXT).tar.gz | tar -C $$(@) -xz
 
 .PHONY: build/artifacts-$(1)-$(2)/envoy
 build/artifacts-$(1)-$(2)/envoy:
 	mkdir -p $$(@) && \
 	[ -f $$(@)/envoy ] || \
-	curl -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$$(ENVOY_VERSION_$(1)_$(2))/envoy-$(1)-$(2)-v$$(ENVOY_VERSION_$(1)_$(2))$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
+	curl --retry 3 --retry-delay 60 -s --fail --location https://github.com/kumahq/envoy-builds/releases/download/v$$(ENVOY_VERSION_$(1)_$(2))/envoy-$(1)-$(2)-v$$(ENVOY_VERSION_$(1)_$(2))$(ENVOY_EXT_$(1)_$(2)).tar.gz | tar -C $$(@) -xz
 
 .PHONY: build/artifacts-$(1)-$(2)/test-server
 build/artifacts-$(1)-$(2)/test-server:

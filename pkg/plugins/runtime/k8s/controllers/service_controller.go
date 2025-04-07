@@ -34,7 +34,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.Name)
 	}
 
 	if svc.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.AnnotationBuiltin {
@@ -46,7 +46,7 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		if kube_apierrs.IsNotFound(err) {
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.NamespacedName.Name)
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Service %s", req.Name)
 	}
 
 	injectedLabel, _, err := metadata.Annotations(namespace.Labels).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
@@ -54,14 +54,14 @@ func (r *ServiceReconciler) Reconcile(ctx context.Context, req kube_ctrl.Request
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection label on namespace %s", namespace.Name)
 	}
 	if !injectedLabel {
-		log.V(1).Info(req.NamespacedName.String() + "is not part of the mesh")
+		log.V(1).Info(req.String() + "is not part of the mesh")
 		return kube_ctrl.Result{}, nil
 	}
 
 	if svc.Spec.Type == kube_core.ServiceTypeExternalName {
 		log.V(1).Info(
 			"ignoring Service because it is of an unsupported type",
-			"name", req.NamespacedName.String(),
+			"name", req.String(),
 			"type", kube_core.ServiceTypeExternalName,
 		)
 		return kube_ctrl.Result{}, nil

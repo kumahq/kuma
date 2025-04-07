@@ -51,7 +51,7 @@ func (r *CniNodeTaintReconciler) Reconcile(ctx context.Context, req kube_ctrl.Re
 	namespaceOption := kube_client.InNamespace(r.CniNamespace)
 	matchingFields := kube_client.MatchingFields{nodeIndexField: node.Name}
 	matchingLabels := kube_client.MatchingLabels{cniAppLabel: r.CniApp}
-	if err := r.Client.List(ctx, kubeSystemPods, namespaceOption, matchingFields, matchingLabels); err != nil {
+	if err := r.List(ctx, kubeSystemPods, namespaceOption, matchingFields, matchingLabels); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -90,7 +90,7 @@ func (r *CniNodeTaintReconciler) updateTaints(ctx context.Context, log logr.Logg
 func (r *CniNodeTaintReconciler) untaintNode(ctx context.Context, log logr.Logger, node *kube_core.Node, taintIndex int) error {
 	node.Spec.Taints = slices.Delete(node.Spec.Taints, taintIndex, taintIndex+1)
 
-	err := r.Client.Update(ctx, node)
+	err := r.Update(ctx, node)
 	if err == nil {
 		log.Info("removed the taint from node")
 	}
@@ -103,7 +103,7 @@ func (r *CniNodeTaintReconciler) taintNode(ctx context.Context, log logr.Logger,
 		Effect: kube_core.TaintEffectNoSchedule,
 	})
 
-	err := r.Client.Update(ctx, node)
+	err := r.Update(ctx, node)
 	if err == nil {
 		log.Info("added taint to node")
 	}

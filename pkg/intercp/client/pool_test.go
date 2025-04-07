@@ -23,7 +23,7 @@ var _ = Describe("Pool", func() {
 		_, err := pool.Client("http://192.168.0.1")
 
 		// then
-		Expect(err).To(Equal(client.TLSNotConfigured))
+		Expect(err).To(Equal(client.ErrTLSNotConfigured))
 	})
 
 	Context("configured with TLS", func() {

@@ -528,17 +528,17 @@ func (c *Executables) Set(s string) error {
 
 		switch name {
 		case consts.Iptables:
-			c.ExecutablesPathsIPv4.Iptables = cleanPath
+			c.Iptables = cleanPath
 		case consts.IptablesSave:
-			c.ExecutablesPathsIPv4.IptablesSave = cleanPath
+			c.IptablesSave = cleanPath
 		case consts.IptablesRestore:
-			c.ExecutablesPathsIPv4.IptablesRestore = cleanPath
+			c.IptablesRestore = cleanPath
 		case consts.Ip6tables:
-			c.ExecutablesPathsIPv6.Ip6tables = cleanPath
+			c.Ip6tables = cleanPath
 		case consts.Ip6tablesSave:
-			c.ExecutablesPathsIPv6.Ip6tablesSave = cleanPath
+			c.Ip6tablesSave = cleanPath
 		case consts.Ip6tablesRestore:
-			c.ExecutablesPathsIPv6.Ip6tablesRestore = cleanPath
+			c.Ip6tablesRestore = cleanPath
 		default:
 			errs = append(
 				errs,

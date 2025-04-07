@@ -76,7 +76,7 @@ func (s *Networking) initSSH() (int, error) {
 					strconv.Itoa(s.RemoteHost.Port)), configCfg)
 			} else {
 				client, err = ssh.Dial("tcp", net.JoinHostPort("localhost", s.SshPort), &ssh.ClientConfig{
-					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests // lgtm [go/insecure-hostkeycallback]
 					User:            "root",
 				})
 			}

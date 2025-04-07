@@ -133,9 +133,10 @@ func labelsNotAllowedMsg(label, correctValue, actual string) string {
 
 func resourceTypeNotAllowedMsg(resType core_model.ResourceType, mode core.CpMode) string {
 	otherCpMode := ""
-	if mode == core.Zone {
+	switch mode {
+	case core.Zone:
 		otherCpMode = core.Global
-	} else if mode == core.Global {
+	case core.Global:
 		otherCpMode = core.Zone
 	}
 	return fmt.Sprintf("Operation not allowed. %s resources like %s can be updated or deleted only "+

@@ -71,7 +71,7 @@ func E2EBeforeSuite(fn func()) bool {
 
 func E2EDeferCleanup(args ...interface{}) {
 	callback := reflect.ValueOf(args[0])
-	if !(callback.Kind() == reflect.Func && callback.Type().NumOut() <= 1) {
+	if callback.Kind() != reflect.Func || callback.Type().NumOut() > 1 {
 		ginkgo.Fail(fmt.Sprintf(
 			"first argument in E2EDeferCleanup must be a function and is %T instead",
 			args[0],

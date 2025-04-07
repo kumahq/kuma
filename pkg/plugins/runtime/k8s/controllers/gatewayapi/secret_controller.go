@@ -40,7 +40,7 @@ func (r *SecretController) Reconcile(ctx context.Context, req kube_ctrl.Request)
 			}
 			return kube_ctrl.Result{}, nil
 		}
-		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Secret %s", req.NamespacedName.String())
+		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to fetch Secret %s", req.String())
 	}
 
 	if secret.Type != kube_core.SecretTypeTLS {

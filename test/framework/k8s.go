@@ -343,7 +343,7 @@ func simplifySingleK8sEvent(v1Event v1.Event) *simplifiedEvent {
 	if !v1Event.LastTimestamp.IsZero() {
 		lastSeen = v1Event.LastTimestamp.Time
 	} else {
-		lastSeen = v1Event.ObjectMeta.CreationTimestamp.Time
+		lastSeen = v1Event.CreationTimestamp.Time
 	}
 
 	return &simplifiedEvent{
