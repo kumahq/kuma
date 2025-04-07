@@ -12743,7 +12743,7 @@ spec:
       serviceAccountName: loki-promtail
       containers:
         - name: promtail
-          image: "grafana/promtail:3.4.2@sha256:c6e9a987ca086cbfef945b8ebd708eb09f98b5e78bfb659e4e5a8b3bd604d11b"
+          image: "grafana/promtail:3.4.3@sha256:168eb785ce3603fa1bfdd9d44840d3fe81e644bf9d3c64a0f4a19e993c5ff050"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/promtail/promtail.yaml"
@@ -12843,7 +12843,7 @@ spec:
         []
       containers:
         - name: loki
-          image: "grafana/loki:3.4.2@sha256:58a6c186ce78ba04d58bfe2a927eff296ba733a430df09645d56cdc158f3ba08"
+          image: "grafana/loki:3.4.3@sha256:5fe9fa99e9a747297cdf0239a5b25d192d8f668bd6505b09beef4dffcab5aac2"
           imagePullPolicy: IfNotPresent
           args:
             - "-config.file=/etc/loki/loki.yaml"
@@ -12939,7 +12939,7 @@ items:
                     value: "9411"
                   - name: COLLECTOR_OTLP_ENABLED
                     value: "true"
-                image: jaegertracing/all-in-one:1.67.0@sha256:34e3d18e0f2eeb9abd9bb53d0dc7abaf2a5b1c884fdca575093af3126811a9d3
+                image: jaegertracing/all-in-one:1.68.0@sha256:6279882637ae03e70f519965d2ba5ca84cb785f4baf4f0d7237e827a37c33a42
                 name: jaeger
                 ports:
                   - containerPort: 5775
