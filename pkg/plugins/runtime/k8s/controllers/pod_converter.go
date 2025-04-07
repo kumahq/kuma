@@ -274,8 +274,6 @@ func (p *PodConverter) dataplaneFor(
 	} else {
 		var ifaces []*mesh_proto.Dataplane_Networking_Inbound
 		var err error
-		// deduplicate inbounds only when MeshService mode is exclusive. Without MeshServices we need duplicated inbounds
-		// for identity and traffic routing
 		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
 			ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
 			if err != nil {
