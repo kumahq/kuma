@@ -97,6 +97,8 @@ stringData:
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(globalCluster)
+		DebugCPLogs(zoneCluster)
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
 		Expect(globalCluster.DismissCluster()).To(Succeed())

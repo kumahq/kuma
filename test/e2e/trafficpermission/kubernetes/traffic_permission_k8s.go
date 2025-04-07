@@ -18,6 +18,7 @@ var _ = E2EBeforeSuite(func() {
 	k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 	E2EDeferCleanup(func() {
+		DebugCPLogs(k8sCluster)
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})

@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/e2e/reachableservices"
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/report"
 )
 
 func TestE2E(t *testing.T) {
@@ -34,6 +35,7 @@ var _ = framework.E2EAfterSuite(func() {
 })
 
 var (
+	_ = ReportAfterSuite("report suite", report.DumpReport)
 	_ = Describe("Auto Reachable Services on Kubernetes", Label("job-3"), reachableservices.AutoReachableServices, Ordered)
 	_ = Describe("Auto Reachable Mesh Services on Kubernetes", Label("job-3"), reachableservices.AutoReachableMeshServices, Ordered)
 )

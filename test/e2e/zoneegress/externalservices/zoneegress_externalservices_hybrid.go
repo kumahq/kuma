@@ -145,6 +145,9 @@ conf:
 	})
 
 	E2EAfterAll(func() {
+		DebugCPLogs(zone1)
+		DebugCPLogs(zone4)
+		DebugCPLogs(global)
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())

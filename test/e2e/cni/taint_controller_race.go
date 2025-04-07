@@ -57,6 +57,7 @@ metadata:
 	}
 
 	E2EAfterEach(func() {
+		DebugCPLogs(cluster)
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

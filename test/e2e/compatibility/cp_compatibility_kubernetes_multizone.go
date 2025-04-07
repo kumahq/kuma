@@ -45,6 +45,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			DebugCPLogs(globalCluster)
 			Expect(globalCluster.DeleteKuma()).To(Succeed())
 			Expect(globalCluster.DismissCluster()).To(Succeed())
 		})
@@ -59,6 +60,7 @@ func CpCompatibilityMultizoneKubernetes() {
 			WithTimeout(6 * time.Second).
 			WithRetries(60)
 		E2EDeferCleanup(func() {
+			DebugCPLogs(zoneCluster)
 			Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 			Expect(zoneCluster.DeleteKuma()).To(Succeed())
 			Expect(zoneCluster.DismissCluster()).To(Succeed())
