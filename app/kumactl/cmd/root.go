@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/kumahq/kuma/app/kumactl/cmd/whoami"
 	"os"
 	"time"
 
@@ -106,6 +107,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(install.NewInstallCmd(root))
 	cmd.AddCommand(uninstall.NewUninstallCmd(root))
 	cmd.AddCommand(version.NewCmd(root))
+	cmd.AddCommand(whoami.NewWhoAmICmd(root))
 
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)
 	return cmd
