@@ -42,7 +42,7 @@ linters:
           files:
             - $all
           deny:
-            - pkg: sigs.k8s.io/controller-runtime/pkg/log
+            - pkg: sigs.k8s.io/controller-runtime/pkg/log$
               desc: Disallowed due to internal data races caused by cyclic dependencies and global state in controller-runtime. This can lead to long delays (up to 2 minutes) in init containers. Use sigs.k8s.io/controller-runtime instead. See https://github.com/kumahq/kuma/issues/13299
         pkg-import:
           list-mode: lax
