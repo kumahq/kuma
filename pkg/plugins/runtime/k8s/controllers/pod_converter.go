@@ -20,7 +20,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -45,15 +44,14 @@ func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
-	msMode mesh_proto.Mesh_MeshServices_Mode,
+	mesh *core_mesh.MeshResource,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
-	dataplane.Mesh = util_k8s.MeshOfByLabelOrAnnotation(logger, pod, ns)
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, msMode)
+	dataplane.Mesh = mesh.Meta.GetName()
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
 	if err != nil {
 		return err
 	}

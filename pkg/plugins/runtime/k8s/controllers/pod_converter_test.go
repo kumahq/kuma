@@ -22,6 +22,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
@@ -70,12 +71,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err = Parse[*kube_core.Service](YAMLs)
 				Expect(err).ToNot(HaveOccurred())
-			}
-
-			namespace := kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name: pod.Namespace,
-				},
 			}
 
 			// other services
@@ -143,8 +138,12 @@ var _ = Describe("PodToDataplane(..)", func() {
 				ResourceConverter: k8s.NewSimpleConverter(),
 			}
 
+			mesh := builders.Mesh().
+				WithMeshServicesEnabled(mesh_proto.Mesh_MeshServices_Exclusive).
+				Build()
+
 			// when
-			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, &namespace, services, otherDataplanes, mesh_proto.Mesh_MeshServices_Exclusive)
+			err = converter.PodToDataplane(context.Background(), existingDataplane, pod, services, otherDataplanes, mesh)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

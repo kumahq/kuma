@@ -145,7 +145,7 @@ func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone 
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	inbounds, err := i.inboundInterfacesFor(ctx, zone, pod, services)
 	if err != nil {
-		return inbounds, err
+		return nil, err
 	}
 
 	return deduplicateInboundsByAddressAndPort(inbounds), nil
