@@ -183,11 +183,23 @@ func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) erro
 		return fmt.Errorf("unable to prepare directors to copy the files: %s", stdErr)
 	}
 
+	sshPrivKeyFile := s.RemoteHost.PrivateKeyFile
+	if sshPrivKeyFile == "" && len(s.RemoteHost.PrivateKeyData) > 0 {
+		if keyFile, e := os.CreateTemp("", "ssh_key"); e == nil {
+			if _, e = keyFile.Write(s.RemoteHost.PrivateKeyData); e == nil {
+				sshPrivKeyFile = keyFile.Name()
+			}
+		}
+	}
+	if sshPrivKeyFile == "" {
+		return fmt.Errorf("unable to prepare directors to copy the files: no private key available")
+	}
+
 	for localPath, destPath := range files {
 		cmd := shell.Command{
 			Command: "scp",
 			Args: []string{
-				"-i", s.RemoteHost.PrivateKeyFile,
+				"-i", sshPrivKeyFile,
 				"-P", strconv.Itoa(s.RemoteHost.Port),
 				"-o", "StrictHostKeyChecking=no",
 				"-o", "UserKnownHostsFile=/dev/null",
