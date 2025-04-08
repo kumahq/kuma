@@ -11,7 +11,7 @@ import (
 	"github.com/onsi/ginkgo/v2"
 	"github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
-	"sigs.k8s.io/controller-runtime/pkg/log"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -52,7 +52,7 @@ func runSpecs(t *testing.T, description string) {
 
 	// Log to the Ginkgo writer. This makes Ginkgo emit logs on
 	// test failure.
-	log.SetLogger(zap.New(
+	kube_ctrl.SetLogger(zap.New(
 		zap.UseDevMode(true),
 		zap.WriteTo(ginkgo.GinkgoWriter),
 	))

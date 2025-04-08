@@ -317,6 +317,16 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
 ) error {
+	meshName := util_k8s.MeshOfByLabelOrAnnotation(r.Log, pod, ns)
+	k8sMesh := mesh_k8s.Mesh{}
+	if err := r.Get(ctx, kube_types.NamespacedName{Name: meshName}, &k8sMesh); err != nil {
+		return err
+	}
+	mesh := core_mesh.NewMeshResource()
+	if err := r.ResourceConverter.ToCoreResource(&k8sMesh, mesh); err != nil {
+		return err
+	}
+
 	dataplane := &mesh_k8s.Dataplane{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
@@ -324,7 +334,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, ns, services, others); err != nil {
+		if err := r.PodConverter.PodToDataplane(ctx, dataplane, pod, services, others, mesh); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {

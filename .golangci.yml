@@ -38,6 +38,12 @@ linters:
           deny:
             - pkg: google.golang.org/protobuf/encoding/protojson
               desc: don't use the protojson package, it's incompatible and might cause issues(https://github.com/golang/protobuf/issues/1374); use github.com/golang/protobuf/jsonpb instead
+        DenyControllerRuntimePkgLog:
+          files:
+            - $all
+          deny:
+            - pkg: sigs.k8s.io/controller-runtime/pkg/log$
+              desc: Disallowed due to internal data races caused by cyclic dependencies and global state in controller-runtime. This can lead to long delays (up to 2 minutes) in init containers. Use sigs.k8s.io/controller-runtime instead. See https://github.com/kumahq/kuma/issues/13299
         pkg-import:
           list-mode: lax
           files:

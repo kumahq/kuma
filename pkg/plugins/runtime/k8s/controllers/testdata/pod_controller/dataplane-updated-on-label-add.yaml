@@ -1,0 +1,45 @@
+mesh: poc
+metadata:
+  creationTimestamp: null
+  labels:
+    app: sample
+    k8s.kuma.io/namespace: demo
+    kuma.io/env: kubernetes
+    kuma.io/mesh: poc
+    kuma.io/origin: zone
+    kuma.io/proxy-type: sidecar
+    kuma.io/zone: zone-1
+  name: pod-with-custom-admin-port
+  namespace: demo
+  ownerReferences:
+  - apiVersion: v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Pod
+    name: pod-with-custom-admin-port
+    uid: pod-with-custom-admin-port-demo
+  resourceVersion: "2"
+spec:
+  envoy:
+    xdsTransportProtocolVariant: GRPC
+  networking:
+    address: 192.168.0.1
+    admin:
+      port: 9999
+    inbound:
+    - health: {}
+      port: 8080
+      state: NotReady
+      tags:
+        app: sample
+        k8s.kuma.io/namespace: demo
+        k8s.kuma.io/service-name: example
+        k8s.kuma.io/service-port: "80"
+        kuma.io/protocol: http
+        kuma.io/service: example_demo_svc_80
+        kuma.io/zone: zone-1
+    outbound:
+    - address: 192.168.0.1
+      port: 80
+      tags:
+        kuma.io/service: example_demo_svc_80
