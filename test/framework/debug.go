@@ -208,7 +208,7 @@ type dpType string
 const (
 	dataplaneType   dpType = "dataplane"
 	zoneegressType  dpType = "zoneegress"
-	zoneingressType dpType = "zoneingress"
+	zoneingressType dpType = "zone-ingress"
 )
 
 func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh string, dpType dpType) error {
