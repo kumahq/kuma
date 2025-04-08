@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/random"
 	"net"
 	"os"
 	"path"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/docker"
 	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"github.com/gruntwork-io/terratest/modules/shell"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"

@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/logger"
-	"github.com/gruntwork-io/terratest/modules/shell"
-	"github.com/gruntwork-io/terratest/modules/testing"
 	"net"
 	"os"
 	"path/filepath"
@@ -15,6 +12,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/shell"
+	"github.com/gruntwork-io/terratest/modules/testing"
 	"golang.org/x/crypto/ssh"
 
 	kssh "github.com/kumahq/kuma/test/framework/ssh"
@@ -204,7 +204,8 @@ func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) erro
 				"-o", "StrictHostKeyChecking=no",
 				"-o", "UserKnownHostsFile=/dev/null",
 				localPath,
-				fmt.Sprintf("%s@%s:%s", s.RemoteHost.User, s.RemoteHost.Address, destPath)},
+				fmt.Sprintf("%s@%s:%s", s.RemoteHost.User, s.RemoteHost.Address, destPath),
+			},
 			Logger: logger.Discard,
 		}
 
