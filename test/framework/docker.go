@@ -2,9 +2,11 @@ package framework
 
 import (
 	"fmt"
+	"github.com/gruntwork-io/terratest/modules/random"
 	"net"
 	"os"
 	"path"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -118,6 +120,43 @@ type RemoteDockerBackend struct {
 func (u *RemoteDockerBackend) RunAndGetIDE(t testing.TestingT, image string, options *docker.RunOptions) (string, error) {
 	if u.networking.RemoteHost == nil || u.networking.RemoteHost.Address == "" {
 		return "", errors.New("RemoteHost is not set for the RemoteDockerBackend")
+	}
+
+	if len(options.Volumes) > 0 {
+		files := make(map[string]string)
+		uploadDir := fmt.Sprintf("/tmp/smoke-%s", random.UniqueId())
+
+		for i := 0; i < len(options.Volumes); i++ {
+			parts := strings.Split(options.Volumes[i], ":")
+			if len(parts) != 2 {
+				continue
+			}
+
+			hostPath := parts[0]
+			mountPath := parts[1]
+			absPath, err := filepath.Abs(hostPath)
+			if err != nil {
+				continue
+			}
+			stat, err := os.Stat(absPath)
+			if err != nil {
+				continue
+			}
+			if stat.IsDir() {
+				continue
+			}
+
+			uploadPath := fmt.Sprintf("%s/%s", uploadDir, filepath.Base(absPath))
+			files[absPath] = uploadPath
+			options.Volumes[i] = fmt.Sprintf("%s:%s", uploadPath, mountPath)
+		}
+
+		if len(files) > 0 {
+			err := u.networking.CopyFiles(t, files)
+			if err != nil {
+				return "", err
+			}
+		}
 	}
 
 	cmd := []string{"docker"}

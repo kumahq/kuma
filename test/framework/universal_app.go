@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -251,39 +250,6 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 	app.logger = logger.Discard
 	if verbose {
 		app.logger = logger.Default
-	}
-
-	if len(volumes) > 0 && app.universalNetworking.RemoteHost != nil {
-		var files map[string]string
-		for _, volume := range volumes {
-			parts := strings.Split(volume, ":")
-			if len(parts) != 2 {
-				continue
-			}
-
-			hostPath := parts[0]
-			absPath, err := filepath.Abs(hostPath)
-			if err != nil {
-				continue
-			}
-			stat, err := os.Stat(absPath)
-			if err != nil {
-				continue
-			}
-			if stat.IsDir() {
-				continue
-			}
-
-			// we copy to the same place on the remote host
-			files[absPath] = absPath
-		}
-
-		if len(files) > 0 {
-			err := app.universalNetworking.CopyFiles(t, files)
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{

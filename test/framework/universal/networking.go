@@ -167,19 +167,20 @@ func (s *Networking) PortForward(destAddr string, stopChan <-chan struct{}) (net
 
 // CopyFiles copies a set of files to the local host
 func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) error {
-	mkdirCmds := "#!/bin/sh\n"
+	mkdirCmds := "sh -c '"
 	for _, destPath := range files {
-		dir := filepath.Base(destPath)
-		mkdirCmds += fmt.Sprintf("mkdir -p %s \n", dir)
+		dir := filepath.Dir(destPath)
+		mkdirCmds += fmt.Sprintf("mkdir -p %s ;", dir)
 	}
+	mkdirCmds += "'"
 
 	_, stdErr, err := s.RunCommand(mkdirCmds)
 	if err != nil {
-		return fmt.Errorf("unable to prepare directores to copy the files: %w", err)
+		return fmt.Errorf("unable to prepare directors to copy the files: %w", err)
 	}
 	stdErr = strings.Trim(stdErr, "\n")
 	if stdErr != "" {
-		return fmt.Errorf("unable to prepare directores to copy the files: %s", stdErr)
+		return fmt.Errorf("unable to prepare directors to copy the files: %s", stdErr)
 	}
 
 	for localPath, destPath := range files {
@@ -190,7 +191,8 @@ func (s *Networking) CopyFiles(t testing.TestingT, files map[string]string) erro
 				"-P", strconv.Itoa(s.RemoteHost.Port),
 				"-o", "StrictHostKeyChecking=no",
 				"-o", "UserKnownHostsFile=/dev/null",
-				fmt.Sprintf("%s %s@%s:%s", localPath, s.RemoteHost.User, s.RemoteHost.Address, destPath)},
+				localPath,
+				fmt.Sprintf("%s@%s:%s", s.RemoteHost.User, s.RemoteHost.Address, destPath)},
 			Logger: logger.Discard,
 		}
 
