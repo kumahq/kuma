@@ -224,11 +224,6 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 	if containerName != "" {
 		app.containerName = containerName
 	}
-	app.universalNetworking = &universal.Networking{
-		ApiServerPort: app.ports["5681"],
-		SshPort:       app.ports[sshPort],
-	}
-
 	app.allocatePublicPortsFor("22")
 	if mode == AppModeCP {
 		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
@@ -268,6 +263,10 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 
 	if err := app.updatePublishedPorts(); err != nil {
 		return nil, err
+	}
+	app.universalNetworking = &universal.Networking{
+		ApiServerPort: app.ports["5681"],
+		SshPort:       app.ports[sshPort],
 	}
 	app.universalNetworking.IP, err = app.getIP(Config.IPV6)
 	if err != nil {
