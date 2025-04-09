@@ -278,7 +278,7 @@ var DefaultConfig = func() Config {
 				DelayFullResync:    false,
 			},
 			SidecarContainers: false,
-			DeltaXds:          true,
+			DeltaXds:          false,
 		},
 		Proxy:         xds.DefaultProxyConfig(),
 		InterCp:       intercp.DefaultInterCpConfig(),

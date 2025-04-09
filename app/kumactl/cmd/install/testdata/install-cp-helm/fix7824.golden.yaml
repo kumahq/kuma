@@ -575,10 +575,10 @@ spec:
               port: 5680
           resources:
             limits:
-              memory: 512Mi
+              memory: 256Mi
             requests:
               cpu: 500m
-              memory: 512Mi
+              memory: 256Mi
           
           volumeMounts:
             - mountPath: /var/run/secrets/kubernetes.io/serviceaccount

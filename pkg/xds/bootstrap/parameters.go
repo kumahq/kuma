@@ -52,5 +52,5 @@ type configParameters struct {
 	IsGatewayDataplane          bool
 	Resources                   types.ProxyResources
 	SystemCaPath                string
-	XdsTransportProtocolVariant types.XdsMode
+	XdsTransportProtocolVariant types.XdsTransportProtocolVariant
 }

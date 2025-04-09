@@ -769,7 +769,7 @@ experimental:
   # environment.
   sidecarContainers: false # ENV: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   # If true uses Delta xDS to deliver changes to sidecars.
-  deltaXds: true # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
+  deltaXds: false # ENV: KUMA_EXPERIMENTAL_DELTA_XDS
 proxy:
   gateway:
     # Sets the envoy runtime value to limit maximum number of incoming

@@ -23,12 +23,12 @@ type BootstrapRequest struct {
 	SystemCaPath         string            `json:"systemCaPath"`
 }
 
-type XdsMode string
+type XdsTransportProtocolVariant string
 
 const (
-	DEFAULT    XdsMode = "DEFAULT"
-	DELTA_GRPC XdsMode = "DELTA_GRPC"
-	GRPC       XdsMode = "GRPC"
+	DEFAULT    XdsTransportProtocolVariant = "DEFAULT"
+	DELTA_GRPC XdsTransportProtocolVariant = "DELTA_GRPC"
+	GRPC       XdsTransportProtocolVariant = "GRPC"
 )
 
 type Version struct {
