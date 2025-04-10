@@ -20,6 +20,12 @@ To simplify the namespace selector logic in webhooks, we now require the `kuma.i
 
 Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
 
+If you are running helm with `noHelmHooks` please set label on the system namespace:
+
+```bash
+kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
+```
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
