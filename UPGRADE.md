@@ -14,6 +14,12 @@ In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. St
 
 Before upgrading, ensure that your configuration does not override this setting.
 
+### System namespace requires the `kuma.io/sidecar-injection: false` label
+
+To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on the system namespace.
+
+Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
