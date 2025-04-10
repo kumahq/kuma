@@ -20,6 +20,30 @@ To simplify the namespace selector logic in webhooks, we now require the `kuma.i
 
 Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
 
+### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
+
+Since version 2.11.x, to improve performance and security, we require that each namespace participating in the Mesh has the `kuma.io/sidecar-injection` label set.
+
+Before upgrading, check if you are running any deployments with the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: false` or `disabled` to those namespaces.
+
+You can use this script
+```bash
+for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+  ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
+  if [ -z "$ns_label" ]; then
+    kubectl get pods -n "$ns" --show-labels --no-headers 2>/dev/null | \
+      grep 'kuma.io/sidecar-injection' | \
+      awk -v ns="$ns" '{print ns "/" $1}'
+  fi
+done
+```
+
+You can later patch namespaces with the following command:
+
+```bash
+kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
+```
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
