@@ -63,6 +63,7 @@ func generateFromService(
 			}
 		}
 		routes = append(routes, xds.OutboundRoute{
+			KRI:                     route.KRI,
 			Hash:                    route.Hash,
 			Match:                   route.Match,
 			Filters:                 route.Filters,
@@ -76,8 +77,8 @@ func generateFromService(
 	}
 
 	var outboundRouteName string
-	if svc.Outbound.Resource != nil && svc.Outbound.Resource.ResourceType == core_model.ResourceType(common_api.MeshExternalService) {
-		outboundRouteName = resourceName
+	if svc.Outbound.Resource != nil {
+		outboundRouteName = svc.Outbound.Resource.String()
 	}
 	var dpTags mesh_proto.MultiValueTagSet
 	if meshCtx.IsXKumaTagsUsed() {
