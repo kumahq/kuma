@@ -18,6 +18,10 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if .Values.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for pre-upgrade-install-crds-job manually.\n" }}
+{{- end }}
+{{- if not .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -59,6 +63,7 @@ subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: kuma-system
   labels:
-    kuma.io/system-namespace: "true"
+    kuma.io/sidecar-injection: "false"
 ---
 apiVersion: v1
 kind: ServiceAccount
