@@ -456,11 +456,16 @@ var ProtoTypeToType = map[string]reflect.Type{
 
 func openApiGenerator(pkg string, resources []ResourceInfo) error {
 	// this is where the new types need to be added if we want to generate openAPI for it
-
 	reflector := jsonschema.Reflector{
 		ExpandedStruct:            true,
 		DoNotReference:            true,
 		AllowAdditionalProperties: true,
+		KeyNamer: func(key string) string {
+			if key == "RSAbits" {
+				return "rsaBits"
+			}
+			return key
+		},
 	}
 	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
 	if err != nil {
