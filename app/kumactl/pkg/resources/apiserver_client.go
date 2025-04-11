@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"net/http"
 
 	"github.com/kumahq/kuma/api/openapi/types"
@@ -12,37 +13,69 @@ import (
 
 type ApiServerClient interface {
 	GetVersion(ctx context.Context) (*types.IndexResponse, error)
+	GetUser(ctx context.Context) (*api_server.WhoamiResponse, error)
 }
 
-type ApiServerClientFn func(ctx context.Context) (*types.IndexResponse, error)
-
-func (fn ApiServerClientFn) GetVersion(ctx context.Context) (*types.IndexResponse, error) {
-	return fn(ctx)
+type apiServerClient struct {
+	client util_http.Client
 }
 
 func NewAPIServerClient(client util_http.Client) ApiServerClient {
-	return ApiServerClientFn(func(ctx context.Context) (*types.IndexResponse, error) {
-		req, err := http.NewRequest("GET", "/", nil)
-		if err != nil {
-			return nil, err
-		}
-		statusCode, b, err := doRequest(client, ctx, req)
-		if err != nil {
-			return nil, err
-		}
-		if statusCode != 200 {
-			return nil, fmt.Errorf("(%d): %s", statusCode, string(b))
-		}
-		version := types.IndexResponse{}
-		if err := json.Unmarshal(b, &version); err != nil {
-			return nil, err
-		}
-		return &version, nil
-	})
+	return &apiServerClient{
+		client: client,
+	}
 }
 
-func NewStaticApiServiceClient(response types.IndexResponse) ApiServerClient {
-	return ApiServerClientFn(func(ctx context.Context) (*types.IndexResponse, error) {
-		return &response, nil
-	})
+func (c *apiServerClient) GetVersion(ctx context.Context) (*types.IndexResponse, error) {
+	var version types.IndexResponse
+	if err := c.getJSON(ctx, "/", &version); err != nil {
+		return nil, err
+	}
+	return &version, nil
+}
+
+func (c *apiServerClient) GetUser(ctx context.Context) (*api_server.WhoamiResponse, error) {
+	var user api_server.WhoamiResponse
+	if err := c.getJSON(ctx, "/who-am-i", &user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func (c *apiServerClient) getJSON(ctx context.Context, path string, out interface{}) error {
+	req, err := http.NewRequest("GET", path, nil)
+	if err != nil {
+		return err
+	}
+	statusCode, body, err := doRequest(c.client, ctx, req)
+	if err != nil {
+		return err
+	}
+	if statusCode != http.StatusOK {
+		return fmt.Errorf("(%d): %s", statusCode, string(body))
+	}
+	if err := json.Unmarshal(body, out); err != nil {
+		return err
+	}
+	return nil
+}
+
+func NewStaticApiServiceClient(version types.IndexResponse, user api_server.WhoamiResponse) ApiServerClient {
+	return &staticApiServerClient{
+		version: version,
+		user:    user,
+	}
+}
+
+type staticApiServerClient struct {
+	version types.IndexResponse
+	user    api_server.WhoamiResponse
+}
+
+func (c *staticApiServerClient) GetVersion(ctx context.Context) (*types.IndexResponse, error) {
+	return &c.version, nil
+}
+
+func (c *staticApiServerClient) GetUser(ctx context.Context) (*api_server.WhoamiResponse, error) {
+	return &c.user, nil
 }
