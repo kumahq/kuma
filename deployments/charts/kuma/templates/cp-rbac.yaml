@@ -1,3 +1,6 @@
+{{- if or .Values.skipRBAC .Values.controlPlane.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for control-plane manually.\n" }}
+{{- end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -14,8 +17,9 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
-{{- if (eq .Values.controlPlane.environment "kubernetes") }}
+{{- if and (not .Values.skipRBAC) (eq .Values.controlPlane.environment "kubernetes") (not .Values.controlPlane.skipRBAC) }}
 ---
+# ClusterRole for cluster-scoped resources and read resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -152,103 +156,7 @@ subjects:
     name: {{ include "kuma.name" . }}-control-plane
     namespace: {{ .Release.Namespace }}
 ---
-apiVersion: rbac.authorization.k8s.io/v1
-kind: Role
-metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
-rules:
-  - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - configmaps
-      - secrets
-    verbs:
-      - get
-      - delete
-      - list
-      - watch
-      - create
-      - update
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  # leader-for-life election deletes Pods in some circumstances
-  - apiGroups:
-      - ""
-    resources:
-      - pods
-    verbs:
-      - delete
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gateways
-      - referencegrants
-      - httproutes
-    verbs:
-      - create
-      - delete
-      - get
-      - list
-      - patch
-      - update
-      - watch
-  - apiGroups:
-      - gateway.networking.k8s.io
-    resources:
-      - gateways/status
-      - httproutes/status
-    verbs:
-      - get
-      - patch
-      - update
-  {{- if .Values.cni.enabled }}
-  - apiGroups:
-      - k8s.cni.cncf.io
-    resources:
-      - network-attachment-definitions
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - delete
-  {{- end }}
----
-apiVersion: rbac.authorization.k8s.io/v1
-kind: RoleBinding
-metadata:
-  name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Release.Namespace }}
-  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: Role
-  name: {{ include "kuma.name" . }}-control-plane
-subjects:
-  - kind: ServiceAccount
-    name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{ .Release.Namespace }}
----
+# ClusterRole for namespaces-scoped resource with write permissions
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -374,4 +282,102 @@ subjects:
     name: {{ include "kuma.name" . }}-control-plane
     namespace: {{ .Release.Namespace }}
 {{- end }}
+---
+# Role for control-plane required resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - secrets
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  # leader-for-life election deletes Pods in some circumstances
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - delete
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+  {{- if .Values.cni.enabled }}
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  {{- end }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels: {{ include "kuma.cpLabels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "kuma.name" . }}-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" . }}-control-plane
+    namespace: {{ .Release.Namespace }}
 {{- end }}

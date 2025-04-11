@@ -1,4 +1,7 @@
 {{- if and (.Values.experimental.ebpf.enabled) (and (not .Values.cni.enabled) (not .Values.noHelmHooks) (eq .Values.controlPlane.environment "kubernetes")) }}
+{{- if .Values.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for post-delete-cleanup-ebpf-job manually.\n" }}
+{{- end }}
   {{- $serviceAccountName := printf "%s-cleanup-node-ebpf-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
@@ -16,6 +19,7 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -67,6 +71,7 @@ subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
