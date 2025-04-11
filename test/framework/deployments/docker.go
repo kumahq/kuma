@@ -187,6 +187,15 @@ func (d *DockerContainer) GetName() (string, error) {
 	return out[1:], nil
 }
 
+func (d *DockerContainer) GetLogs() (string, error) {
+	args := []string{
+		"logs",
+		d.id,
+	}
+
+	return d.dockerBackend.RunCommandAndGetStdOutE(d.t, "logs", args, d.logger)
+}
+
 func AllocatePublicPortsFor(ports ...uint32) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		for _, port := range ports {

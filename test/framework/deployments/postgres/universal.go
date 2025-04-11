@@ -1,9 +1,7 @@
 package postgres
 
 import (
-	"bytes"
 	"fmt"
-	"os/exec"
 	"regexp"
 	"strconv"
 
@@ -84,19 +82,14 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 
 	retry.DoWithRetry(t, "logs "+containerID, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			var stdout bytes.Buffer
-
-			cmd := exec.Command("docker", "logs", containerID)
-			cmd.Stdout = &stdout
-
-			if err := cmd.Run(); err != nil {
+			containerLogs, err := u.container.GetLogs()
+			if err != nil {
 				return "docker logs command failed", err
 			}
 
-			if !r.Match(stdout.Bytes()) {
-				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", stdout.String())
+			if !r.Match([]byte(containerLogs)) {
+				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", containerLogs)
 			}
-
 			return "Postgres is ready", nil
 		})
 
