@@ -175,7 +175,6 @@ func (u *RemoteDockerBackend) StopE(t testing.TestingT, containers []string, opt
 	cmd := []string{"docker"}
 	args := formatDockerStopArgs(containers, options)
 	cmd = append(cmd, args...)
-	strings.Join(cmd, " ")
 
 	for _, container := range containers {
 		pfList, exists := u.portForwards[container]
@@ -278,8 +277,14 @@ func (u *RemoteDockerBackend) GetPublishedDockerPorts(
 }
 
 func (u *RemoteDockerBackend) RunCommandAndGetStdOutE(t testing.TestingT, cmdName string, args []string, log *logger.Logger) (string, error) {
-	args = append(args, "docker")
-	return u.runDockerCommandInSession(t, cmdName, strings.Join(args, " "), log)
+	for i := 0; i < len(args); i++ {
+		if strings.Contains(args[i], " ") {
+			args[i] = fmt.Sprintf("%q", args[i])
+		}
+	}
+	allArgs := []string{"docker"}
+	allArgs = append(allArgs, args...)
+	return u.runDockerCommandInSession(t, cmdName, strings.Join(allArgs, " "), log)
 }
 
 func portForward(networking *universal.Networking, remoteAddress string) (*VmPortForward, error) {
