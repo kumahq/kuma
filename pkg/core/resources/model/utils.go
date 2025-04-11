@@ -20,6 +20,18 @@ func ToJSON(spec ResourceSpec) ([]byte, error) {
 	}
 }
 
+func ToMap(spec ResourceSpec) (map[string]interface{}, error) {
+	v, err := ToJSON(spec)
+	if err != nil {
+		return nil, err
+	}
+	result := map[string]interface{}{}
+	if err := json.Unmarshal(v, &result); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
 func ToYAML(spec ResourceSpec) ([]byte, error) {
 	if msg, ok := spec.(proto.Message); ok {
 		return util_proto.ToYAML(msg)

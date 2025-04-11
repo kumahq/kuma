@@ -65,7 +65,7 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		verr.AddViolation("", "could not convert backend config: "+err.Error())
 	}
-	backendNameWithPrefix := createSecretName(mesh, backend.Name, "cert")
+	backendNameWithPrefix := core_system.BuiltinCertSecretName(mesh, backend.Name)
 	if len(backendNameWithPrefix) > MaxBackendNameLength {
 		verr.AddViolationAt(core_validators.RootedAt("mtls").Field("backends").Field("name"), fmt.Sprintf("Backend name is too long. Max length: %d", MaxBackendNameLength))
 	}
@@ -131,19 +131,15 @@ func (b *builtinCaManager) create(ctx context.Context, mesh core_model.Resource,
 func certSecretResKey(mesh string, backendName string) core_model.ResourceKey {
 	return core_model.ResourceKey{
 		Mesh: mesh,
-		Name: createSecretName(mesh, backendName, "cert"),
+		Name: core_system.BuiltinCertSecretName(mesh, backendName),
 	}
 }
 
 func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
 	return core_model.ResourceKey{
 		Mesh: mesh,
-		Name: createSecretName(mesh, backendName, "key"),
+		Name: core_system.BuiltinKeySecretName(mesh, backendName),
 	}
-}
-
-func createSecretName(mesh string, backendName string, secretType string) string {
-	return fmt.Sprintf("%s.ca-builtin-%s-%s", mesh, secretType, backendName) // we add mesh as a prefix to have uniqueness of Secret names on K8S
 }
 
 func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
