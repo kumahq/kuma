@@ -11,42 +11,13 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var defaultMeshTimeoutResource = func() model.Resource {
-	const factor = 2
+var defaultOutboundMeshTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Sidecar,
-				},
-			},
-
-			// bigger than outbound side timeouts or disabled.
-			From: &[]v1alpha1.From{
-				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
-					Default: v1alpha1.Conf{
-						ConnectionTimeout: &kube_meta.Duration{
-							Duration: factor * policies_defaults.DefaultConnectTimeout,
-						},
-						IdleTimeout: &kube_meta.Duration{
-							Duration: factor * policies_defaults.DefaultIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							RequestTimeout: &kube_meta.Duration{
-								Duration: 0,
-							},
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
-							},
-							MaxStreamDuration: &kube_meta.Duration{
-								Duration: 0,
-							},
-						},
-					},
 				},
 			},
 			To: &[]v1alpha1.To{
@@ -76,33 +47,52 @@ var defaultMeshTimeoutResource = func() model.Resource {
 	}
 }
 
-var defaulMeshGatewaysTimeoutResource = func() model.Resource {
+var defaultInboundMeshTimeoutResource = func() model.Resource {
+	const factor = 2
+	return &v1alpha1.MeshTimeoutResource{
+		Spec: &v1alpha1.MeshTimeout{
+			TargetRef: &common_api.TargetRef{
+				Kind: common_api.Mesh,
+				ProxyTypes: &[]common_api.TargetRefProxyType{
+					common_api.Sidecar,
+				},
+			},
+
+			// bigger than outbound side timeouts or disabled.
+			Rules: &[]v1alpha1.Rule{
+				{
+					Default: v1alpha1.Conf{
+						ConnectionTimeout: &kube_meta.Duration{
+							Duration: factor * policies_defaults.DefaultConnectTimeout,
+						},
+						IdleTimeout: &kube_meta.Duration{
+							Duration: factor * policies_defaults.DefaultIdleTimeout,
+						},
+						Http: &v1alpha1.Http{
+							RequestTimeout: &kube_meta.Duration{
+								Duration: 0,
+							},
+							StreamIdleTimeout: &kube_meta.Duration{
+								Duration: factor * policies_defaults.DefaultStreamIdleTimeout,
+							},
+							MaxStreamDuration: &kube_meta.Duration{
+								Duration: 0,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+var defaultOutboundMeshGatewaysTimeoutResource = func() model.Resource {
 	return &v1alpha1.MeshTimeoutResource{
 		Spec: &v1alpha1.MeshTimeout{
 			TargetRef: &common_api.TargetRef{
 				Kind: common_api.Mesh,
 				ProxyTypes: &[]common_api.TargetRefProxyType{
 					common_api.Gateway,
-				},
-			},
-			From: &[]v1alpha1.From{
-				{
-					TargetRef: common_api.TargetRef{
-						Kind: common_api.Mesh,
-					},
-					Default: v1alpha1.Conf{
-						IdleTimeout: &kube_meta.Duration{
-							Duration: policies_defaults.DefaultGatewayIdleTimeout,
-						},
-						Http: &v1alpha1.Http{
-							StreamIdleTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
-							},
-							RequestHeadersTimeout: &kube_meta.Duration{
-								Duration: policies_defaults.DefaultGatewayRequestHeadersTimeout,
-							},
-						},
-					},
 				},
 			},
 			To: &[]v1alpha1.To{
@@ -117,6 +107,36 @@ var defaulMeshGatewaysTimeoutResource = func() model.Resource {
 						Http: &v1alpha1.Http{
 							StreamIdleTimeout: &kube_meta.Duration{
 								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+var defaultInboundMeshGatewaysTimeoutResource = func() model.Resource {
+	return &v1alpha1.MeshTimeoutResource{
+		Spec: &v1alpha1.MeshTimeout{
+			TargetRef: &common_api.TargetRef{
+				Kind: common_api.Mesh,
+				ProxyTypes: &[]common_api.TargetRefProxyType{
+					common_api.Gateway,
+				},
+			},
+			Rules: &[]v1alpha1.Rule{
+				{
+					Default: v1alpha1.Conf{
+						IdleTimeout: &kube_meta.Duration{
+							Duration: policies_defaults.DefaultGatewayIdleTimeout,
+						},
+						Http: &v1alpha1.Http{
+							StreamIdleTimeout: &kube_meta.Duration{
+								Duration: policies_defaults.DefaultGatewayStreamIdleTimeout,
+							},
+							RequestHeadersTimeout: &kube_meta.Duration{
+								Duration: policies_defaults.DefaultGatewayRequestHeadersTimeout,
 							},
 						},
 					},
