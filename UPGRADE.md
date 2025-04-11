@@ -26,6 +26,15 @@ If you are running helm with `noHelmHooks` please set label on the system namesp
 kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
 ```
 
+### More Restricted `ClusterRole` for Control Plane and CNI
+
+We have split the `ClusterRole` for the control plane into two parts:
+
+* A cluster-scoped `ClusterRole` with read access to namespaced resources .
+* A `ClusterRole` with write permissions, now scoped more narrowly.
+
+By default, we use a `ClusterRoleBinding` to grant write permissions to the control plane. However, starting with version 2.11.x, you can specify the namespaces where the control plane should have write access by using the `enabledNamespaces` configuration.
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
