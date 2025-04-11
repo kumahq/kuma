@@ -37,7 +37,7 @@ kind: Namespace
 metadata:
   name: %s
   labels:
-    kuma.io/system-namespace: "true"
+    kuma.io/sidecar-injection: "false"
 `, namespace)
 }
 
