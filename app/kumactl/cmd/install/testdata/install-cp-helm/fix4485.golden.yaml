@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: kuma-system
   labels:
-    kuma.io/system-namespace: "true"
+    kuma.io/sidecar-injection: "false"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -396,7 +396,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 657976d1d15be570530803f20447e8f2958e1ce203d615f98c74be75c89636e1
+        checksum/tls-secrets: 6ca677bfd7776d1b12e940c3f3b292cf19c869d3a610054810f3a63961ed3187
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -817,8 +817,11 @@ webhooks:
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     namespaceSelector:
-      matchLabels:
-        kuma.io/system-namespace: "true"
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ

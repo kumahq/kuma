@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: kuma-system
   labels:
-    kuma.io/system-namespace: "true"
+    kuma.io/sidecar-injection: "false"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -785,8 +785,11 @@ webhooks:
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     namespaceSelector:
-      matchLabels:
-        kuma.io/system-namespace: "true"
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
