@@ -13676,11 +13676,11 @@ components:
       properties:
         caCert:
           properties:
-            RSAbits:
-              format: uint32
-              type: integer
             expiration:
               type: string
+            rsaBits:
+              format: uint32
+              type: integer
           type: object
       type: object
     DatadogTracingBackendConfig:
