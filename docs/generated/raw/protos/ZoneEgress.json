@@ -12,6 +12,11 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.ZoneEgress.Networking",
                     "additionalProperties": true,
                     "description": "Networking defines the address and port of the Egress to listen on."
+                },
+                "envoy": {
+                    "$ref": "#/definitions/kuma.mesh.v1alpha1.EnvoyConfiguration",
+                    "additionalProperties": true,
+                    "description": "EnvoyConfiguration provides additional configuration for the Envoy sidecar."
                 }
             },
             "additionalProperties": true,
@@ -29,6 +34,32 @@
             "additionalProperties": true,
             "type": "object",
             "title": "Envoy Admin"
+        },
+        "kuma.mesh.v1alpha1.EnvoyConfiguration": {
+            "properties": {
+                "xds_transport_protocol_variant": {
+                    "enum": [
+                        "DEFAULT",
+                        0,
+                        "DELTA_GRPC",
+                        1,
+                        "GRPC",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Xds Transport Protocol Variant"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Configuration"
         },
         "kuma.mesh.v1alpha1.ZoneEgress.Networking": {
             "properties": {

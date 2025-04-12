@@ -23,6 +23,14 @@ type BootstrapRequest struct {
 	SystemCaPath         string            `json:"systemCaPath"`
 }
 
+type XdsTransportProtocolVariant string
+
+const (
+	DEFAULT    XdsTransportProtocolVariant = "DEFAULT"
+	DELTA_GRPC XdsTransportProtocolVariant = "DELTA_GRPC"
+	GRPC       XdsTransportProtocolVariant = "GRPC"
+)
+
 type Version struct {
 	KumaDp KumaDpVersion `json:"kumaDp"`
 	Envoy  EnvoyVersion  `json:"envoy"`

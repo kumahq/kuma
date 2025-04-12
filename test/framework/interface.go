@@ -51,6 +51,7 @@ type kumaDeploymentOptions struct {
 	zoneName                    string
 	verifyKuma                  bool
 	setupKumactl                bool
+	memory                      string
 
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
@@ -319,6 +320,12 @@ func WithEgress() KumaDeploymentOption {
 func WithCNI() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.cni = true
+	})
+}
+
+func WithMemoryLimit(memory string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.memory = memory
 	})
 }
 

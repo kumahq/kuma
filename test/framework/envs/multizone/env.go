@@ -130,12 +130,18 @@ func SetupAndGetState() []byte {
 		)
 	}
 	KubeZone1 = setupKubeZone(&wg, Kuma1, kubeZone1Options...)
-
-	kubeZone2Options := KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2)
-	kubeZone2Options = append(kubeZone2Options, WithCNI())
+	kubeZone2Options := append(
+		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2),
+		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
+		WithMemoryLimit("512Mi"),
+	)
 	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	UniZone1 = setupUniZone(&wg, Kuma4, KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)...)
+	uniZone1Options := append(
+		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1),
+		WithEnv("KUMA_EXPERIMENTAL_DELTA_XDS", "true"),
+	)
+	UniZone1 = setupUniZone(&wg, Kuma4, uniZone1Options...)
 
 	vipCIDROverride := "251.0.0.0/8"
 	if Config.IPV6 {
