@@ -26,10 +26,6 @@ func UpgradingWithHelmChartStandalone() {
 		DebugKube(cluster, "default")
 	})
 
-	E2EAfterEach(func() {
-		DebugCPLogs(cluster)
-	})
-
 	DescribeTable("upgrade Kuma via Helm",
 		func(version string) {
 			cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).

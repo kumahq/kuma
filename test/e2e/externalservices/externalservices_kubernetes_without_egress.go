@@ -73,7 +73,6 @@ spec:
 	})
 
 	E2EAfterEach(func() {
-		DebugCPLogs(cluster)
 		Expect(cluster.DeleteNamespace(externalServicesNamespace)).To(Succeed())
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())

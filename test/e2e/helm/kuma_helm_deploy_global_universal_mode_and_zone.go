@@ -109,8 +109,6 @@ stringData:
 	})
 
 	E2EAfterAll(func() {
-		DebugCPLogs(globalCluster)
-		DebugCPLogs(zoneCluster)
 		Expect(zoneCluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(globalCluster.DeleteKuma()).To(Succeed())
 		Expect(zoneCluster.DeleteKuma()).To(Succeed())
