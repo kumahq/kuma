@@ -131,7 +131,27 @@ func inboundForServiceless(zone string, pod *kube_core.Pod, name string, nodeLab
 	}
 }
 
+// Deprecated: LegacyInboundInterfacesFor is currently only used for delegated gateway and Mesh without MeshService exclusive
+// to not change order of inbounds.
+// For gateway we pick first inbound to take tags from. Delegated gateway identity relies on this.
+// For Dataplanes when MeshService is disabled we base identity and routing on inbound tags
+// TODO: We should revisit this when we rework identity. More in https://github.com/kumahq/kuma/issues/3339
+func (i *InboundConverter) LegacyInboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	return i.inboundInterfacesFor(ctx, zone, pod, services)
+}
+
+// InboundInterfacesFor should be used when MeshService mode is Exclusive. This function deduplicates inbounds by address and port.
+// Since MeshService does not need tags we can safely deduplicate inbounds
 func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
+	inbounds, err := i.inboundInterfacesFor(ctx, zone, pod, services)
+	if err != nil {
+		return nil, err
+	}
+
+	return deduplicateInboundsByAddressAndPort(inbounds), nil
+}
+
+func (i *InboundConverter) inboundInterfacesFor(ctx context.Context, zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
 	nodeLabels, err := i.getNodeLabelsToCopy(ctx, pod.Spec.NodeName)
 	if err != nil {
 		return nil, err
@@ -159,6 +179,23 @@ func (i *InboundConverter) InboundInterfacesFor(ctx context.Context, zone string
 		ifaces = append(ifaces, inboundForServiceless(zone, pod, name, nodeLabels))
 	}
 	return ifaces, nil
+}
+
+func deduplicateInboundsByAddressAndPort(ifaces []*mesh_proto.Dataplane_Networking_Inbound) []*mesh_proto.Dataplane_Networking_Inbound {
+	inboundKey := func(iface *mesh_proto.Dataplane_Networking_Inbound) string {
+		return fmt.Sprintf("%s:%d", iface.Address, iface.Port)
+	}
+
+	var deduplicatedInbounds []*mesh_proto.Dataplane_Networking_Inbound
+	inboundsPerAddressPort := map[string]*mesh_proto.Dataplane_Networking_Inbound{}
+	for _, iface := range ifaces {
+		if inboundsPerAddressPort[inboundKey(iface)] == nil {
+			inboundsPerAddressPort[inboundKey(iface)] = iface
+			deduplicatedInbounds = append(deduplicatedInbounds, iface)
+		}
+	}
+
+	return deduplicatedInbounds
 }
 
 func (i *InboundConverter) getNodeLabelsToCopy(ctx context.Context, nodeName string) (map[string]string, error) {

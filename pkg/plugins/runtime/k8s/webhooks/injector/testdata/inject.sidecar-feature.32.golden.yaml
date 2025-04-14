@@ -151,6 +151,7 @@ spec:
         memory: 164Mi
     restartPolicy: Always
     securityContext:
+      allowPrivilegeEscalation: false
       capabilities:
         drop:
         - ALL

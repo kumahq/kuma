@@ -7,13 +7,15 @@ controlPlane:
     maxDuration: 5m0s
   url: https://localhost:5678
 dataplane:
+  resilientComponentMaxBackoff: 1m0s
   drainTime: 30s
   proxyType: dataplane
   readinessPort: 9902
+  resilientComponentBaseBackoff: 5s
 dataplaneRuntime:
   binaryPath: envoy
   dynamicConfiguration:
-    refreshInterval: 10s
+    refreshInterval: 1s
   metrics: {}
   resources: {}
 dns:

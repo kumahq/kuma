@@ -41,6 +41,9 @@ func SetupAndGetState() []byte {
 	if framework.Config.KumaExperimentalSidecarContainers {
 		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS", "true"))
 	}
+	if framework.Config.KumaExperimentalDPDNS {
+		kumaOptions = append(kumaOptions, framework.WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_EXPERIMENTAL_PROXY", "true"))
+	}
 
 	Eventually(func() error {
 		return Cluster.Install(framework.Kuma(core.Zone, kumaOptions...))

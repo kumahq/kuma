@@ -16,6 +16,7 @@ import (
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -36,6 +37,7 @@ var _ = Describe("run", func() {
 	var tmpDir string
 
 	BeforeEach(func() {
+		prometheus.DefaultRegisterer = prometheus.NewRegistry()
 		ctx, cancel = context.WithCancel(context.Background())
 		var err error
 		tmpDir, err = os.MkdirTemp("", "")
