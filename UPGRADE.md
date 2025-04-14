@@ -14,6 +14,27 @@ In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. St
 
 Before upgrading, ensure that your configuration does not override this setting.
 
+### System namespace requires the `kuma.io/sidecar-injection: false` label
+
+To simplify the namespace selector logic in webhooks, we now require the `kuma.io/sidecar-injection: false` label to be set on the system namespace.
+
+Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
+
+If you are running helm with `noHelmHooks` please set label on the system namespace:
+
+```bash
+kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
+```
+
+### More Restricted `ClusterRole` for Control Plane and CNI
+
+We have split the `ClusterRole` for the control plane into two parts:
+
+* A cluster-scoped `ClusterRole` with read access to namespaced resources .
+* A `ClusterRole` with write permissions, now scoped more narrowly.
+
+By default, we use a `ClusterRoleBinding` to grant write permissions to the control plane. However, starting with version 2.11.x, you can specify the namespaces where the control plane should have write access by using the `enabledNamespaces` configuration.
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes

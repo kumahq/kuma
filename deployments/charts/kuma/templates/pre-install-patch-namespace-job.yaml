@@ -1,11 +1,11 @@
 {{- if and ( .Values.noHelmHooks ) (eq .Values.controlPlane.environment "kubernetes") }}
-  {{- $errorMessage := ".Values.noHelmHooks is set. You must manually create and label the system namespace with kuma.io/system-namespace: \"true\" before installing or upgrading the chart" }}
+  {{- $errorMessage := ".Values.noHelmHooks is set. You must manually create and label the system namespace with kuma.io/sidecar-injection: \"false\" before installing or upgrading the chart" }}
   {{- $systemNamespace := (lookup "v1" "Namespace" "" .Release.Namespace) }}
   {{- if not $systemNamespace }}
       {{- fail $errorMessage }}
     {{- end }}
   {{- $systemNamespaceLabels := ($systemNamespace).metadata.labels }}
-  {{- if ne (get $systemNamespaceLabels "kuma.io/system-namespace") "true" }}
+  {{- if ne (get $systemNamespaceLabels "kuma.io/sidecar-injection") "false" }}
     {{- fail $errorMessage }}
   {{- end }}
 {{- else}}
@@ -27,6 +27,10 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if .Values.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for pre-install-patch-namespace-job manually.\n" }}
+{{- end }}
+{{- if not .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -67,6 +71,7 @@ subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
     namespace: {{ .Release.Namespace }}
+{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
@@ -119,6 +124,6 @@ spec:
             - '--type'
             - 'merge'
             - '--patch'
-            - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
+            - '{ "metadata": { "labels": { "kuma.io/sidecar-injection": "false" } } }'
   {{- end }}
 {{- end }}
