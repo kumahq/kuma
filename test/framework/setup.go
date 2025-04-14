@@ -642,6 +642,7 @@ func universalZoneProxyRelatedResource(
 
 		app, err := NewUniversalApp(
 			cluster.GetTesting(),
+			uniCluster.GetDockerBackend(),
 			uniCluster.name,
 			dpName,
 			"",
