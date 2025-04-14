@@ -68,6 +68,10 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(cluster, "default", TestNamespace, externalServicesNamespace)
+	})
+
 	E2EAfterEach(func() {
 		DebugCPLogs(cluster)
 		Expect(cluster.DeleteNamespace(externalServicesNamespace)).To(Succeed())

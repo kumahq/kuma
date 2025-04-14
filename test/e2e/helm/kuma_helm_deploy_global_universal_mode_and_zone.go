@@ -103,6 +103,11 @@ stringData:
 		Expect(zone).ToNot(BeNil())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(globalCluster, "default", TestNamespace)
+		DebugKube(zoneCluster, "default", TestNamespace)
+	})
+
 	E2EAfterAll(func() {
 		DebugCPLogs(globalCluster)
 		DebugCPLogs(zoneCluster)

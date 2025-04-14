@@ -40,9 +40,20 @@ func ResilienceMultizoneK8s() {
 		Expect(zone1.VerifyKuma()).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(global, "before-zone-restart", TestNamespace)
+		DebugKube(zone1, "before-zone-restart", TestNamespace)
+		DebugKube(global, "when-zone-is-down", TestNamespace)
+		DebugKube(zone1, "when-zone-is-down", TestNamespace)
+		DebugKube(global, "after-zone-restart", TestNamespace)
+		DebugKube(zone1, "after-zone-restart", TestNamespace)
+		DebugKube(global, "before-global-restart", TestNamespace)
+		DebugKube(zone1, "before-global-restart", TestNamespace)
+		DebugKube(global, "after-global-restart", TestNamespace)
+		DebugKube(zone1, "after-global-restart", TestNamespace)
+	})
+
 	E2EAfterAll(func() {
-		DebugCPLogs(zone1)
-		DebugCPLogs(global)
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())
 		Expect(zone1.DismissCluster()).To(Succeed())

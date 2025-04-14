@@ -22,6 +22,10 @@ func UpgradingWithHelmChartStandalone() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(cluster, "default")
+	})
+
 	E2EAfterEach(func() {
 		DebugCPLogs(cluster)
 	})

@@ -18,7 +18,6 @@ var _ = E2EBeforeSuite(func() {
 	k8sCluster = NewK8sCluster(NewTestingT(), Kuma1, Silent)
 
 	E2EDeferCleanup(func() {
-		DebugCPLogs(k8sCluster)
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())
 		Expect(k8sCluster.DismissCluster()).To(Succeed())
 	})
@@ -30,6 +29,10 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func TrafficPermission() {
+	AfterEachFailure(func() {
+		DebugKube(k8sCluster, "default")
+	})
+
 	removeDefaultTrafficPermission := func() {
 		err := k8s.RunKubectlE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
 		Expect(err).ToNot(HaveOccurred())
