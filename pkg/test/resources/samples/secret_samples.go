@@ -18,6 +18,11 @@ func SampleSigningKeySecret() *system.SecretResource {
 	return SampleSigningKeySecretBuilder().Build()
 }
 
+func SampleSecretBuilder() *builders.SecretBuilder {
+	return builders.Secret().
+		WithStringValue(SampleSigningKeyValue)
+}
+
 func SampleGlobalSecretAdminCa() *system.GlobalSecretResource {
 	globalSecret := system.NewGlobalSecretResource()
 	globalSecret.Spec.Data = &wrapperspb.BytesValue{
