@@ -74,14 +74,16 @@ func (s *Networking) initSSH() (int, error) {
 					Auth: []ssh.AuthMethod{
 						ssh.PublicKeys(signer),
 					},
-					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests // codeql[go/insecure-hostkeycallback]: just for tests
+					// codeql[go/insecure-hostkeycallback]: just for tests
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
 				}
 
 				client, err = ssh.Dial("tcp", net.JoinHostPort(s.RemoteHost.Address,
 					strconv.Itoa(s.RemoteHost.Port)), configCfg)
 			} else {
 				client, err = ssh.Dial("tcp", net.JoinHostPort("localhost", s.SshPort), &ssh.ClientConfig{
-					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests // codeql[go/insecure-hostkeycallback]: just for tests
+					// codeql[go/insecure-hostkeycallback]: just for tests
+					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
 					User:            "root",
 				})
 			}
