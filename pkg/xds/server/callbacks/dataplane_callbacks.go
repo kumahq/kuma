@@ -135,7 +135,7 @@ func (d *xdsCallbacks) onStreamRequest(streamID core_xds.StreamID, request util_
 
 	d.Lock()
 	// in case client will open 2 concurrent request for the same streamID then
-	// we don't to increment the counter twice, so checking once again that stream
+	// we don't want to increment the counter twice, so checking once again that stream
 	// wasn't processed
 	alreadyProcessed = getDpStream()[streamID].dp != nil
 	if alreadyProcessed {

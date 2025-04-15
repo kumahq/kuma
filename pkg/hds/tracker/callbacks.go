@@ -57,11 +57,10 @@ func NewCallbacks(
 	return &tracker{
 		resourceManager:    resourceManager,
 		streamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
-		// deltaStreamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
-		dpStreams: map[core_model.ResourceKey]streams{},
-		config:    config,
-		log:       log,
-		metrics:   metrics,
+		dpStreams:          map[core_model.ResourceKey]streams{},
+		config:             config,
+		log:                log,
+		metrics:            metrics,
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
