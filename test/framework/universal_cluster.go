@@ -27,6 +27,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/envoy_admin"
 	"github.com/kumahq/kuma/test/framework/envoy_admin/tunnel"
 	"github.com/kumahq/kuma/test/framework/kumactl"
+	kssh "github.com/kumahq/kuma/test/framework/ssh"
 	"github.com/kumahq/kuma/test/framework/universal"
 	"github.com/kumahq/kuma/test/framework/utils"
 )
@@ -46,11 +47,31 @@ type UniversalCluster struct {
 
 	envoyTunnels map[string]envoy_admin.Tunnel
 	networking   map[string]*universal.Networking
+
+	remoteHostNetworking *universal.Networking
+	dockerBackend        DockerBackend
 }
 
 var _ Cluster = &UniversalCluster{}
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
+	return NewRemoteUniversalCluster(t, name, nil, verbose)
+}
+
+func NewRemoteUniversalCluster(t *TestingT, name string, remoteHost *kssh.Host, verbose bool) *UniversalCluster {
+	var remoteHostNetworking *universal.Networking
+	var dockerBackend DockerBackend
+
+	if remoteHost == nil {
+		dockerBackend = &LocalDockerBackend{}
+	} else {
+		remoteHostNetworking = &universal.Networking{
+			RemoteHost: remoteHost,
+		}
+
+		dockerBackend = &RemoteDockerBackend{networking: remoteHostNetworking}
+	}
+
 	return &UniversalCluster{
 		t:              t,
 		name:           name,
@@ -61,6 +82,9 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		defaultTimeout: Config.DefaultClusterStartupTimeout,
 		envoyTunnels:   map[string]envoy_admin.Tunnel{},
 		networking:     map[string]*universal.Networking{},
+
+		remoteHostNetworking: remoteHostNetworking,
+		dockerBackend:        dockerBackend,
 	}
 }
 
@@ -170,7 +194,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 	_, _ = fmt.Fprintf(cmd, "%s\n", runCp)
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
 	if err != nil {
 		return err
 	}
@@ -333,7 +357,7 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
+	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
 	if err != nil {
 		return err
 	}
@@ -538,6 +562,10 @@ func (c *UniversalCluster) AddNetworking(networking *universal.Networking, name 
 	c.networking[name] = networking
 	c.createEnvoyTunnel(name)
 	return nil
+}
+
+func (c *UniversalCluster) GetDockerBackend() DockerBackend {
+	return c.dockerBackend
 }
 
 func (c *UniversalCluster) createEnvoyTunnel(name string) {

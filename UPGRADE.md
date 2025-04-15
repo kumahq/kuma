@@ -20,6 +20,7 @@ To simplify the namespace selector logic in webhooks, we now require the `kuma.i
 
 Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/metadata.name` label to all namespaces. As a result, we’ve replaced the use of the custom `kuma.io/system-namespace` label in the secret webhook selector with this standard label.
 
+<<<<<<< HEAD
 ### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
 
 Since version 2.11.x, to improve performance and security, we require that each namespace participating in the Mesh has the `kuma.io/sidecar-injection` label set.
@@ -42,6 +43,12 @@ You can later patch namespaces with the following command:
 
 ```bash
 kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
+=======
+If you are running helm with `noHelmHooks` please set label on the system namespace:
+
+```bash
+kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
+>>>>>>> master
 ```
 
 ## Upgrade to `2.10.x`
