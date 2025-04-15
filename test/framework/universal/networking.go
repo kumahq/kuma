@@ -69,20 +69,20 @@ func (s *Networking) initSSH() (int, error) {
 					return s.id, fmt.Errorf("failed to parse ssh private key: %w", err)
 				}
 
+				// codeql[go/insecure-hostkeycallback]: just for tests
 				configCfg := &ssh.ClientConfig{
 					User: s.RemoteHost.User,
 					Auth: []ssh.AuthMethod{
 						ssh.PublicKeys(signer),
 					},
-					// codeql[go/insecure-hostkeycallback]: just for tests
 					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
 				}
 
 				client, err = ssh.Dial("tcp", net.JoinHostPort(s.RemoteHost.Address,
 					strconv.Itoa(s.RemoteHost.Port)), configCfg)
 			} else {
+				// codeql[go/insecure-hostkeycallback]: just for tests
 				client, err = ssh.Dial("tcp", net.JoinHostPort("localhost", s.SshPort), &ssh.ClientConfig{
-					// codeql[go/insecure-hostkeycallback]: just for tests
 					HostKeyCallback: ssh.InsecureIgnoreHostKey(), //#nosec G106 // skip for tests
 					User:            "root",
 				})
