@@ -91,8 +91,9 @@ check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 
 .PHONY: check/rbac
 check/rbac:
-	@RBAC_CHANGED=$$(git --no-pager diff --name-only -- deployments/ | xargs grep -E 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' || true); \
-	UPGRADE_CHANGED=$$(git --no-pager diff --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
+	@BASE=$$(git merge-base HEAD master); \
+	RBAC_CHANGED=$$(git --no-pager diff $$BASE --name-only -- deployments/ | xargs grep -E 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' || true); \
+	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
 	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \
 		echo "Detected RBAC changes, but UPGRADE.md was not updated. Please document the change in UPGRADE.md."; \
 		exit 1; \
