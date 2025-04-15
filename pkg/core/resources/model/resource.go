@@ -136,13 +136,6 @@ func Deprecations(resource Resource) []string {
 	return nil
 }
 
-func Warnings(resource Resource) []string {
-	if v, ok := interface{}(resource).(interface{ Warnings() []string }); ok {
-		return v.Warnings()
-	}
-	return nil
-}
-
 type OverviewResource interface {
 	SetOverviewSpec(resource Resource, insight Resource) error
 }
