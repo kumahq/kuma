@@ -111,7 +111,7 @@ var _ = Describe("DataplaneConfig functions", func() {
 				features: map[string]bool{
 					core_xds.FeatureTransparentProxyInDataplaneMetadata: true,
 				},
-				dnsPort:  12345,
+				dnsPort: 12345,
 			}
 
 			// when
