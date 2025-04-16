@@ -60,6 +60,10 @@ message KumaResourceOptions {
 
   // Indicates if this resource is a proxy.
   bool is_proxy = 20;
+
+  bool is_deprecated = 21;
+
+  string deprecation_message = 22;
 }
 
 message KumaWsOptions {
@@ -73,6 +77,8 @@ message KumaWsOptions {
   // AdminOnly whether this entity requires admin auth to access these
   // endpoints.
   bool admin_only = 4;
+
+  string aliases = 5;
 }
 
 message KumaPolicyOptions {
