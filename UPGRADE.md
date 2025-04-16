@@ -26,6 +26,30 @@ If you are running helm with `noHelmHooks` please set label on the system namesp
 kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
 ```
 
+### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
+
+Since version 2.11.x, to improve performance and security, each namespace participating in the Mesh is required to have the `kuma.io/sidecar-injection` label set.
+
+Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: false` to those namespaces.
+
+You can use this script to detect such namespaces:
+```bash
+for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
+  ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
+  if [ -z "$ns_label" ]; then
+    kubectl get pods -n "$ns" --show-labels --no-headers 2>/dev/null | \
+      grep 'kuma.io/sidecar-injection' | \
+      awk -v ns="$ns" '{print ns "/" $1}'
+  fi
+done
+```
+
+You can later patch namespaces with the following command:
+
+```bash
+kubectl label namespace NAMESPACE_NAME kuma.io/sidecar-injection=disabled
+```
+
 ## Upgrade to `2.10.x`
 
 ### API Server behaviour changes
