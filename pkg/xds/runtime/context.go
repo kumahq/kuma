@@ -17,7 +17,7 @@ type XDSRuntimeContext struct {
 	DpProxyAuthenticator   xds_auth.Authenticator
 	ZoneProxyAuthenticator xds_auth.Authenticator
 	Hooks                  *xds_hooks.Hooks
-	ServerCallbacks        util_xds.Callbacks
+	ServerCallbacks        util_xds.MultiXDSCallbacks
 	Metrics                *xds_metrics.Metrics
 }
 
