@@ -8,6 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/dns/dpapi"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -51,7 +52,7 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 			vips[domain] = addresses
 		}
 	}
-	if proxy.Metadata.Features.HasFeature(core_xds.FeatureEmbeddedDNS) {
+	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
 		dnsInfo := dpapi.DNSProxyConfig{TTL: 3600, Records: []dpapi.DNSRecord{}}
 		for name, addresses := range vips {
 			dnsInfo.Records = append(dnsInfo.Records, dpapi.DNSRecord{

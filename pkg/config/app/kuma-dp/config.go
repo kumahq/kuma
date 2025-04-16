@@ -13,7 +13,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 )
 
 var DefaultConfig = func() Config {
@@ -72,11 +73,17 @@ type Config struct {
 
 func (c *Config) Features() []string {
 	base := []string{
-		xds.FeatureTCPAccessLogViaNamedPipe,
+		xds_types.FeatureTCPAccessLogViaNamedPipe,
 	}
+
 	if c.DNS.ProxyPort != 0 {
-		base = append(base, xds.FeatureEmbeddedDNS)
+		base = append(base, xds_types.FeatureEmbeddedDNS)
 	}
+
+	if c.DataplaneRuntime.TransparentProxy != nil {
+		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
+	}
+
 	return base
 }
 
@@ -234,6 +241,10 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
+	// TransparentProxy configures transparent proxy settings for the dataplane,
+	// including redirect behavior, DNS capture, and IP family mode.
+	// This is used to determine how traffic redirection and interception is handled.
+	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 }
 
 type Metrics struct {

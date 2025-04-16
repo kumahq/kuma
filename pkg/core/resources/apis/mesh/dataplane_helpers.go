@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
 	"google.golang.org/protobuf/proto"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
@@ -13,6 +14,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -181,33 +184,33 @@ func (d *DataplaneResource) GetIP() string {
 }
 
 func (d *DataplaneResource) IsIPv6() bool {
-	if d == nil {
-		return false
-	}
-
-	ip := net.ParseIP(d.Spec.Networking.Address)
-	if ip == nil {
-		return false
-	}
-
-	return ip.To4() == nil
+	return d != nil && govalidator.IsIPv6(d.Spec.GetNetworking().GetAddress())
 }
 
-func (d *DataplaneResource) IsUsingTransparentProxy() bool {
+func (d *DataplaneResource) GetAddress() string {
+	if d == nil || d.Spec == nil {
+		return ""
+	}
+
+	return d.Spec.GetNetworking().GetAddress()
+}
+
+func (d *DataplaneResource) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
 	if d == nil {
-		return false
+		return &tproxy_dp.DataplaneConfig{}
 	}
 
-	tproxy := d.Spec.GetNetworking().GetTransparentProxying()
-
-	switch {
-	case tproxy == nil, tproxy.GetRedirectPortInbound() == 0, tproxy.GetRedirectPortOutbound() == 0:
-		return false
-	case d.IsIPv6():
-		return tproxy.GetIpFamilyMode() != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-	default:
-		return true
+	if tp := d.Spec.GetNetworking().GetTransparentProxying(); tp != nil {
+		return &tproxy_dp.DataplaneConfig{
+			IPFamilyMode: tproxy_config.IPFamilyModeFromStringer(tp.GetIpFamilyMode()),
+			Redirect: tproxy_dp.DataplaneRedirect{
+				Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortInbound()),
+				Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(tp.GetRedirectPortOutbound()),
+			},
+		}
 	}
+
+	return &tproxy_dp.DataplaneConfig{}
 }
 
 func (d *DataplaneResource) AdminAddress(defaultAdminPort uint32) string {

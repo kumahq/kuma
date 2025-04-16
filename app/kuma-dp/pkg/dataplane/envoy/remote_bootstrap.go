@@ -187,7 +187,8 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 			CertPath: params.MetricsCertPath,
 			KeyPath:  params.MetricsKeyPath,
 		},
-		SystemCaPath: params.SystemCaPath,
+		SystemCaPath:     params.SystemCaPath,
+		TransparentProxy: cfg.DataplaneRuntime.TransparentProxy,
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

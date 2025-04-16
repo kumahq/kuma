@@ -22,9 +22,8 @@ type KumaSidecarConfiguration struct {
 }
 
 type NetworkingConfiguration struct {
-	IsUsingTransparentProxy bool   `json:"isUsingTransparentProxy"`
-	CorefileTemplate        []byte `json:"corefileTemplate"`
-	Address                 string `json:"address"`
+	CorefileTemplate []byte `json:"corefileTemplate"`
+	Address          string `json:"address"`
 }
 
 type MetricsConfiguration struct {

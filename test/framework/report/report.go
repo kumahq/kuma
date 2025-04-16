@@ -118,7 +118,7 @@ func DumpReport(report ginkgo.Report) {
 			writeEntry(path.Join(entryPath, "report.txt"), f.String())
 
 			for _, e := range entry.ReportEntries {
-				writeEntry(path.Join(entryPath, e.Name), e.StringRepresentation())
+				writeEntry(path.Join(entryPath, files.ToValidUnixFilename(e.Name)), e.StringRepresentation())
 			}
 		}
 	}

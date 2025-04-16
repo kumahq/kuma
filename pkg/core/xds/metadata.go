@@ -11,6 +11,8 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -34,6 +36,7 @@ const (
 	FieldMetricsCertPath               = "metricsCertPath"
 	FieldMetricsKeyPath                = "metricsKeyPath"
 	FieldSystemCaPath                  = "systemCaPath"
+	FieldTransparentProxy              = "transparentProxy"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -60,11 +63,12 @@ type DataplaneMetadata struct {
 	DynamicMetadata      map[string]string
 	ProxyType            mesh_proto.ProxyType
 	Version              *mesh_proto.Version
-	Features             Features
+	Features             xds_types.Features
 	WorkDir              string
 	MetricsCertPath      string
 	MetricsKeyPath       string
 	SystemCaPath         string
+	TransparentProxy     *tproxy_dp.DataplaneConfig
 }
 
 // GetDataplaneResource returns the underlying DataplaneResource, if present.
@@ -166,6 +170,20 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
+func (m *DataplaneMetadata) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
+	if m == nil {
+		return nil
+	}
+	return m.TransparentProxy
+}
+
+func (m *DataplaneMetadata) HasFeature(feature string) bool {
+	if m == nil || m.Features == nil {
+		return false
+	}
+	return m.Features.HasFeature(feature)
+}
+
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
 	// Be extra careful here about nil checks since xdsMetadata is a "user" input.
 	// Even if we know that something should not be nil since we are generating metadata,
@@ -214,7 +232,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 	}
 
 	if listValue := xdsMetadata.Fields[FieldFeatures]; listValue != nil {
-		metadata.Features = Features{}
+		metadata.Features = xds_types.Features{}
 		for _, feature := range listValue.GetListValue().GetValues() {
 			metadata.Features[feature.GetStringValue()] = true
 		}
@@ -227,6 +245,10 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMe
 		}
 		version.KumaDp.KumaCpCompatible = kuma_version.DeploymentVersionCompatible(kuma_version.Build.Version, version.KumaDp.GetVersion())
 		metadata.Version = version
+	}
+
+	if v := xdsMetadata.Fields[FieldTransparentProxy]; v.GetStructValue() != nil {
+		metadata.TransparentProxy = util_proto.MustFromMapOfAny[*tproxy_dp.DataplaneConfig](v.GetStructValue())
 	}
 
 	if value := xdsMetadata.Fields[FieldDynamicMetadata]; value != nil {

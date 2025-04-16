@@ -97,9 +97,7 @@ func buildOutboundListener(
 		core_xds.SocketAddressProtocolTCP,
 	)
 
-	tproxy := envoy_listeners.TransparentProxying(
-		proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying(),
-	)
+	tproxy := envoy_listeners.TransparentProxying(proxy)
 
 	tagsMetadata := envoy_listeners.TagsMetadata(
 		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
