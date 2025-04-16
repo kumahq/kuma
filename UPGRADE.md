@@ -22,11 +22,11 @@ Since Kubernetes v1.22, the API server automatically adds the `kubernetes.io/met
 
 ### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
 
-Since version 2.11.x, to improve performance and security, we require that each namespace participating in the Mesh has the `kuma.io/sidecar-injection` label set.
+Since version 2.11.x, to improve performance and security, each namespace participating in the Mesh is required to have the `kuma.io/sidecar-injection` label set.
 
-Before upgrading, check if you are running any deployments with the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: false` or `disabled` to those namespaces.
+Before upgrading, check whether any deployments are using the `kuma.io/sidecar-injection: true` or `enabled` label in namespaces that do not have the `kuma.io/sidecar-injection` label set. If so, add `kuma.io/sidecar-injection: false` to those namespaces.
 
-You can use this script
+You can use this script to detect such namespaces:
 ```bash
 for ns in $(kubectl get ns -o jsonpath='{.items[*].metadata.name}'); do
   ns_label=$(kubectl get ns "$ns" -o jsonpath='{.metadata.labels.kuma\.io/sidecar-injection}' 2>/dev/null)
