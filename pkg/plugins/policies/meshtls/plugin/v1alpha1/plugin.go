@@ -274,7 +274,7 @@ func configure(
 	service := inbound.GetService()
 	routes := generator.GenerateRoutes(proxy, iface, cluster)
 	listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, iface.DataplaneIP, iface.DataplanePort, core_xds.SocketAddressProtocolTCP).
-		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Configure(envoy_listeners.TagsMetadata(inbound.GetTags()))
 
 	switch mode {

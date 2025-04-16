@@ -70,7 +70,7 @@ func (g ProbeProxyGenerator) Generate(ctx context.Context, _ *model.ResourceSet,
 			Configure(envoy_listeners.HttpConnectionManager(listenerName, false, nil)).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(proxy.APIVersion, routeConfigurationName).
 				Configure(envoy_routes.VirtualHost(virtualHostBuilder)))))).
-		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+		Configure(envoy_listeners.TransparentProxying(proxy)).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s", listenerName)

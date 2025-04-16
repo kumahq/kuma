@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -31,21 +30,19 @@ type TransparentProxyGenerator struct{}
 
 func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
-	if redirectPortOutbound == 0 {
+	tpCfg := proxy.GetTransparentProxy()
+	if !tpCfg.Redirect.Outbound.Enabled {
 		return resources, nil
 	}
 
-	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	resourcesIPv4, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
+	resourcesIPv4, err := tpg.generateIPv4(xdsCtx, proxy)
 	if err != nil {
 		return nil, err
 	}
 	resources.Add(resourcesIPv4.List()...)
 
-	ipFamilyMode := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetIpFamilyMode()
-	if ipFamilyMode != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4 {
-		resourcesIPv6, err := tpg.generate(xdsCtx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6, redirectPortOutbound, redirectPortInbound)
+	if tpCfg.EnabledIPv6() {
+		resourcesIPv6, err := tpg.generateIPv6(xdsCtx, proxy)
 		if err != nil {
 			return nil, err
 		}
@@ -55,12 +52,9 @@ func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.Resour
 	return resources, nil
 }
 
-func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
-	outboundName, inboundName, allIP, inPassThroughIP string,
-	redirectPortOutbound, redirectPortInbound uint32,
-) (*model.ResourceSet, error) {
+func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName string, inboundName string, allIP string, inPassThroughIP string) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-
+	tpCfg := proxy.GetTransparentProxy()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
@@ -78,7 +72,7 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		}
 	}
 
-	outboundListener, err = envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP).
+	outboundListener, err = envoy_listeners.NewOutboundListenerBuilder(proxy.APIVersion, allIP, tpCfg.Redirect.Outbound.Port.Uint32(), model.SocketAddressProtocolTCP).
 		WithOverwriteName(outboundName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.TcpProxyDeprecated(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
@@ -105,7 +99,7 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
 	}
 
-	inboundListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, redirectPortInbound, model.SocketAddressProtocolTCP).
+	inboundListener, err := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, allIP, tpCfg.Redirect.Inbound.Port.Uint32(), model.SocketAddressProtocolTCP).
 		WithOverwriteName(inboundName).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion, envoy_common.AnonymousResource).
 			Configure(envoy_listeners.TcpProxyDeprecated(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))))).
@@ -139,4 +133,12 @@ func (TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.
 		Resource: inboundPassThroughCluster,
 	})
 	return resources, nil
+}
+
+func (tpg TransparentProxyGenerator) generateIPv4(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	return tpg.generate(ctx, proxy, OutboundNameIPv4, InboundNameIPv4, allIPv4, InPassThroughIPv4)
+}
+
+func (tpg TransparentProxyGenerator) generateIPv6(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	return tpg.generate(ctx, proxy, OutboundNameIPv6, InboundNameIPv6, allIPv6, InPassThroughIPv6)
 }

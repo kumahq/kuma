@@ -1,4 +1,4 @@
-package xds
+package types
 
 // Features is a set of features which a data plane has enabled.
 type Features map[string]bool
@@ -17,3 +17,5 @@ const FeatureTCPAccessLogViaNamedPipe string = "feature-tcp-accesslog-via-named-
 
 // FeatureEmbeddedDNS indicates that the DP runs with the embedded DNS instead of the buddy coreDNS
 const FeatureEmbeddedDNS string = "feature-embedded-dns"
+
+const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
