@@ -1,4 +1,4 @@
-#/zoneingresses/zone-ingress-1 200
+#/zone-ingresses/zone-ingress-1 200
 type: Mesh
 name: default
 ---

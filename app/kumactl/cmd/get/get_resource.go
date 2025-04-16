@@ -15,10 +15,11 @@ import (
 
 func NewGetResourceCmd(pctx *kumactl_cmd.RootContext, desc core_model.ResourceTypeDescriptor) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   fmt.Sprintf("%s NAME", desc.KumactlArg),
-		Short: fmt.Sprintf("Show a single %s resource", desc.Name),
-		Long:  fmt.Sprintf("Show a single %s resource.", desc.Name),
-		Args:  cobra.ExactArgs(1),
+		Use:     fmt.Sprintf("%s NAME", desc.KumactlArg),
+		Short:   fmt.Sprintf("Show a single %s resource", desc.Name),
+		Long:    fmt.Sprintf("Show a single %s resource.", desc.Name),
+		Aliases: []string{desc.KumactlArgAlias},
+		Args:    cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()
 			if err != nil {

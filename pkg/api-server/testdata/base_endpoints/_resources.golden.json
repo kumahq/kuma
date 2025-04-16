@@ -582,7 +582,7 @@
   {
    "includeInFederation": false,
    "name": "ZoneIngress",
-   "path": "zone-ingresses",
+   "path": "zoneingresses",
    "pluralDisplayName": "Zone Ingresses",
    "readOnly": false,
    "scope": "Global",

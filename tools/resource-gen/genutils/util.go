@@ -73,10 +73,13 @@ type ResourceInfo struct {
 	Global                   bool
 	KumactlSingular          string
 	KumactlPlural            string
+	KumactlSingularAlias     string
+	KumactlPluralAlias       string
 	ShortName                string
 	WsReadOnly               bool
 	WsAdminOnly              bool
 	WsPath                   string
+	AlternativeWsPath        string
 	KdsDirection             string
 	SkipKDSHash              bool
 	AllowToInspect           bool
@@ -129,6 +132,15 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 				out.KumactlSingular = "healthcheck"
 				out.KumactlPlural = "healthchecks"
 			}
+		}
+		if r.Ws.AliasName != "" {
+			pluralAliasResourceName := r.Ws.AliasPlural
+			if r.Ws.AliasPlural == "" {
+				pluralResourceName = r.Ws.AliasName + "s"
+			}
+			out.KumactlSingularAlias = r.Ws.AliasName
+			out.KumactlPluralAlias = pluralAliasResourceName
+			out.AlternativeWsPath = pluralAliasResourceName
 		}
 	}
 
