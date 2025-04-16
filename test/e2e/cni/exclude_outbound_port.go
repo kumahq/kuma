@@ -54,6 +54,10 @@ func ExcludeOutboundPort() {
 			Setup(cluster)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(k8sCluster, meshName, namespace, namespaceExternal)
+	})
+
 	E2EAfterAll(func() {
 		Expect(cluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(cluster.DeleteNamespace(namespaceExternal)).To(Succeed())
