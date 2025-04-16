@@ -1420,9 +1420,9 @@ _kumactl_get_fault-injections()
     noun_aliases=()
 }
 
-_kumactl_get_global-secret()
+_kumactl_get_globalsecret()
 {
-    last_command="kumactl_get_global-secret"
+    last_command="kumactl_get_globalsecret"
 
     command_aliases=()
 
@@ -1453,9 +1453,9 @@ _kumactl_get_global-secret()
     noun_aliases=()
 }
 
-_kumactl_get_global-secrets()
+_kumactl_get_globalsecrets()
 {
-    last_command="kumactl_get_global-secrets"
+    last_command="kumactl_get_globalsecrets"
 
     command_aliases=()
 
@@ -4127,15 +4127,15 @@ _kumactl_get()
         command_aliases+=("")
         aliashash[""]="fault-injections"
     fi
-    commands+=("global-secret")
+    commands+=("globalsecret")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="global-secret"
+        command_aliases+=("global-secret")
+        aliashash["global-secret"]="globalsecret"
     fi
-    commands+=("global-secrets")
+    commands+=("globalsecrets")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
-        command_aliases+=("")
-        aliashash[""]="global-secrets"
+        command_aliases+=("global-secrets")
+        aliashash["global-secrets"]="globalsecrets"
     fi
     commands+=("healthcheck")
     if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then

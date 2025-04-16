@@ -420,6 +420,11 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--set", fmt.Sprintf("%s%s=%s", Config.HelmSubChartPrefix, "controlPlane.config", c.opts.yamlConfig))
 	}
 
+	if c.opts.memory != "" {
+		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.resources.limits.memory=%s", Config.HelmSubChartPrefix, c.opts.memory))
+		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.resources.requests.memory=%s", Config.HelmSubChartPrefix, c.opts.memory))
+	}
+
 	return c.controlplane.InstallCP(args...)
 }
 

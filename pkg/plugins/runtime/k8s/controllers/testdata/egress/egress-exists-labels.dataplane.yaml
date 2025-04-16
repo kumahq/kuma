@@ -6,6 +6,8 @@ metadata:
     kuma.io/proxy-type: zoneegress
     test: new
 spec:
+  envoy:
+    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     port: 10002

@@ -1,0 +1,145 @@
+admin:
+  accessLog:
+  - name: envoy.access_loggers.file
+    typedConfig:
+      '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+      path: /var/log
+  address:
+    socketAddress:
+      address: 192.168.0.1
+      portValue: 9902
+defaultRegexEngine:
+  name: envoy.regex_engines.google_re2
+  typedConfig:
+    '@type': type.googleapis.com/envoy.extensions.regex_engines.v3.GoogleRE2
+dynamicResources:
+  adsConfig:
+    apiType: DELTA_GRPC
+    grpcServices:
+    - envoyGrpc:
+        clusterName: ads_cluster
+    setNodeOnFirstMessageOnly: true
+    transportApiVersion: V3
+  cdsConfig:
+    ads: {}
+    initialFetchTimeout: 0s
+    resourceApiVersion: V3
+  ldsConfig:
+    ads: {}
+    initialFetchTimeout: 0s
+    resourceApiVersion: V3
+hdsConfig:
+  apiType: GRPC
+  grpcServices:
+  - envoyGrpc:
+      clusterName: ads_cluster
+  setNodeOnFirstMessageOnly: true
+  transportApiVersion: V3
+layeredRuntime:
+  layers:
+  - name: kuma
+    staticLayer:
+      re2.max_program_size.error_level: 4294967295
+      re2.max_program_size.warn_level: 1000
+node:
+  cluster: backend
+  id: mesh.name.namespace
+  metadata:
+    dataplane.admin.address: 192.168.0.1
+    dataplane.admin.port: "9902"
+    dataplane.proxyType: dataplane
+    features: []
+    metricsCertPath: ""
+    metricsKeyPath: ""
+    systemCaPath: ""
+    version:
+      envoy:
+        build: hash/1.15.0/RELEASE
+        version: 1.15.0
+      kumaDp:
+        buildDate: "2019-08-07T11:26:06Z"
+        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+        gitTag: v0.0.1
+        version: 0.0.1
+    workdir: /tmp
+staticResources:
+  clusters:
+  - connectTimeout: 2s
+    loadAssignment:
+      clusterName: access_log_sink
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-al-name.namespace-mesh.sock
+    name: access_log_sink
+    type: STATIC
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+    upstreamConnectionOptions:
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
+  - connectTimeout: 2s
+    loadAssignment:
+      clusterName: ads_cluster
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: localhost
+                portValue: 15678
+    name: ads_cluster
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          tlsParams:
+            tlsMinimumProtocolVersion: TLSv1_2
+          validationContextSdsSecretConfig:
+            name: cp_validation_ctx
+        sni: localhost
+    type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
+    upstreamConnectionOptions:
+      tcpKeepalive:
+        keepaliveInterval: 10
+        keepaliveProbes: 3
+        keepaliveTime: 10
+  secrets:
+  - name: cp_validation_ctx
+    validationContext:
+      matchTypedSubjectAltNames:
+      - matcher:
+          exact: localhost
+        sanType: DNS
+      - matcher:
+          exact: localhost
+        sanType: IP_ADDRESS
+      trustedCa:
+        inlineBytes: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURNekNDQWh1Z0F3SUJBZ0lRRGhsSW5mc1hZSGFtS04rMjlxblF2ekFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJeE1EUXdNakV3TWpJeU5sb1hEVE14TURNek1URXdNakl5TmxvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFMNEdHZytlMk83ZUExMkYwRjZ2MnJyOGoyaVZTRktlcG5adEwxNWxyQ2RzNmxxSzUwc1hXT3c4UEtacDJpaEEKWEpWVFNaekthc3lMRFRBUjlWWVFqVHBFNTI2RXp2dGR0aFNhZ2YzMlFXVyt3WTZMTXBFZGV4S09PQ3gyc2U1NQpSZDk3TDMzeVlQZmdYMTVPWWxpSFBEMDU2ampob3RITGROMmxweTcrU1REdlF5Um5YQXU3M1lrWTM3RWQ0aEk0CnQvVjZzb0h5RUdOY0RobTlwNWZCR3F6MG5qQmJRa3AybFRZNS9rajQycUI3UTZyQ00ydGJQc0VNb29lQUF3NW0KaHlZNHhqMHRQOXVjcWxVejhnYys2bzhIRE5zdDhOZUpYWmt0V24rQ095dGpyL056R2dTMjJrdlNEcGhpc0pvdApvMEZ5b0lPZEF0eEMxcXhYWFIrWHVVVUNBd0VBQWFPQmlqQ0JoekFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGS1JMa2dJelgvT2pLdzlpZGVwdVEvUk10VCtBTUNZR0ExVWRFUVFmTUIyQ0NXeHZZMkZzYUc5egpkSWNRL1FDaEl3QUFBQUFBQUFBQUFBQUFBVEFOQmdrcWhraUc5dzBCQVFzRkFBT0NBUUVBUHM1eUpaaG9ZbEdXCkNwQThkU0lTaXZNOC84aUJOUTNmVndQNjNmdDBFSkxNVkd1MlJGWjQvVUFKL3JVUFNHTjh4aFhTazUrMWQ1NmEKL2thSDlyWDBIYVJJSEhseEE3aVBVS3hBajQ0eDlMS21xUEhUb0wzWGxXWTFBWHp2aWNXOWQrR00yRmFRZWUrSQpsZWFxTGJ6MEFadmxudTI3MVoxQ2VhQUN1VTlHbGp1anZ5aVRURTluYUhVRXF2SGdTcFB0aWxKYWx5SjUveklsClo5RjArVVd0M1RPWU1zNWcrU0N0ME13SFROYmlzYm1ld3BjRkZKemp0Mmt2dHJjOXQ5ZGtGODF4aGNTMTl3N3EKaDFBZVAzUlJsTGw3YnY5RUFWWEVtSWF2aWgvMjlQQTNaU3krcGJZTlc3ak5KSGpNUTRoUTBFK3hjQ2F6VS9PNAp5cFdHYWFudlBnPT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo=
+statsConfig:
+  statsTags:
+  - regex: ^grpc\.((.+)\.)
+    tagName: name
+  - regex: ^grpc.*streams_closed(_([0-9]+))
+    tagName: status
+  - regex: ^kafka(\.(\S*[0-9]))\.
+    tagName: kafka_name
+  - regex: ^kafka\..*\.(.*?(?=_duration|$))
+    tagName: kafka_type
+  - regex: (worker_([0-9]+)\.)
+    tagName: worker
+  - regex: ((.+?)\.)rbac\.
+    tagName: listener

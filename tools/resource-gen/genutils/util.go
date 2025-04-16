@@ -136,7 +136,7 @@ func ToResourceInfo(desc protoreflect.MessageDescriptor) ResourceInfo {
 		if r.Ws.AliasName != "" {
 			pluralAliasResourceName := r.Ws.AliasPlural
 			if r.Ws.AliasPlural == "" {
-				pluralResourceName = r.Ws.AliasName + "s"
+				pluralAliasResourceName = r.Ws.AliasName + "s"
 			}
 			out.KumactlSingularAlias = r.Ws.AliasName
 			out.KumactlPluralAlias = pluralAliasResourceName

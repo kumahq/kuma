@@ -1,7 +1,4 @@
 #/zone-ingresses 200
-type: Mesh
-name: default
----
 type: ZoneIngress
 name: zone-ingress-1
 networking:

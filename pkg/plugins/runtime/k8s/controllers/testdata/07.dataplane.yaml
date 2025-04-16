@@ -8,6 +8,8 @@ metadata:
     kuma.io/proxy-type: sidecar
     version: "0.1"
 spec:
+  envoy:
+    xdsTransportProtocolVariant: GRPC
   metrics:
     conf:
       path: /non-standard-path
