@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/user"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	v3 "github.com/kumahq/kuma/pkg/hds/v3"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/util/net"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -124,7 +125,9 @@ func (g *SnapshotGenerator) GenerateSnapshot(ctx context.Context, node *envoy_co
 			},
 		}
 
-		if dp.IsUsingTransparentProxy() && (intf.WorkloadIP != mesh.IPv4Loopback.String() && intf.WorkloadIP != mesh.IPv6Loopback.String()) {
+		meta := xds.DataplaneMetadataFromXdsMetadata(node.GetMetadata())
+		tpCfg := tproxy_dp.GetDataplaneConfig(dp, meta)
+		if tpCfg.Enabled() && (intf.WorkloadIP != mesh.IPv4Loopback.String() && intf.WorkloadIP != mesh.IPv6Loopback.String()) {
 			if net.IsAddressIPv6(intf.WorkloadIP) {
 				hc.UpstreamBindConfig = g.upstreamBindConfig(generator.InPassThroughIPv6, 0)
 			} else {

@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/pkg/errors"
@@ -39,14 +40,26 @@ func (l *Loader) WithValidation() *Loader {
 	return l
 }
 
-func (l *Loader) Load(stdin io.Reader, content []byte, filename string) error {
-	switch filename {
-	case "-":
+func (l *Loader) Load(stdin io.Reader, values ...string) error {
+	for _, value := range values {
+		if err := l.load(stdin, value); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (l *Loader) load(stdin io.Reader, value string) error {
+	switch {
+	case strings.TrimSpace(value) == "":
+		return nil
+	case value == "-":
 		return l.LoadReader(stdin)
-	case "":
-		return l.LoadBytes(content)
+	case l.LoadBytes([]byte(value)) != nil:
+		return l.LoadFile(value)
 	default:
-		return l.LoadFile(filename)
+		return nil
 	}
 }
 

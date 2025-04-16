@@ -115,6 +115,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		MetricsCertPath:      request.MetricsResources.CertPath,
 		MetricsKeyPath:       request.MetricsResources.KeyPath,
 		SystemCaPath:         request.SystemCaPath,
+		TransparentProxy:     request.TransparentProxy,
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -151,7 +152,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		if dataplane.Spec.IsBuiltinGateway() {
 			params.IsGatewayDataplane = true
 		}
-		kumaDpBootstrap.NetworkingConfig.IsUsingTransparentProxy = dataplane.IsUsingTransparentProxy()
 		kumaDpBootstrap.NetworkingConfig.Address = dataplane.Spec.GetNetworking().GetAddress()
 		if b.config.Params.CorefileTemplatePath != "" {
 			corefileTemplate, err := os.ReadFile(b.config.Params.CorefileTemplatePath)
