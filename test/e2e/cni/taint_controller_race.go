@@ -56,6 +56,10 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	}
 
+	AfterEachFailure(func() {
+		DebugKube(k8sCluster, "default", TestNamespace)
+	})
+
 	E2EAfterEach(func() {
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DeleteKuma()).To(Succeed())

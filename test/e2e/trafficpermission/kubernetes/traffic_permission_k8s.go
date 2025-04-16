@@ -29,6 +29,10 @@ var _ = E2EBeforeSuite(func() {
 })
 
 func TrafficPermission() {
+	AfterEachFailure(func() {
+		DebugKube(k8sCluster, "default")
+	})
+
 	removeDefaultTrafficPermission := func() {
 		err := k8s.RunKubectlE(k8sCluster.GetTesting(), k8sCluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
 		Expect(err).ToNot(HaveOccurred())

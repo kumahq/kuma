@@ -77,6 +77,11 @@ interCp:
 		Expect(zone).ToNot(BeNil())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(c1, "default", TestNamespace)
+		DebugKube(c2, "default", TestNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
