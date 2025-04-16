@@ -206,9 +206,10 @@ type UniversalApp struct {
 	universalNetworking *universal.Networking
 	appName             string
 	logger              *logger.Logger
+	dockerBackend       DockerBackend
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterName, appName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
 		ports:         map[string]string{},
@@ -218,19 +219,18 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueId()),
 		concurrency:   concurrency,
 		clusterName:   clusterName,
+		dockerBackend: dockerBackend,
 	}
 	if containerName != "" {
 		app.containerName = containerName
 	}
-
 	app.allocatePublicPortsFor("22")
-
 	if mode == AppModeCP {
 		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
 	}
 
 	dockerExtraOptions := []string{
-		"--network", "kind",
+		"--network", DockerNetworkName,
 	}
 	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
 	if !isipv6 {
@@ -246,7 +246,8 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 	if verbose {
 		app.logger = logger.Default
 	}
-	container, err := docker.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
+
+	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
 		Detach:       true,
 		Remove:       true,
 		Name:         app.containerName,
@@ -287,7 +288,7 @@ func (s *UniversalApp) updatePublishedPorts() error {
 		ports = append(ports, uint32(port))
 	}
 
-	publishedPorts, err := GetPublishedDockerPorts(s.t, s.logger, s.container, ports)
+	publishedPorts, err := s.dockerBackend.GetPublishedDockerPorts(s.t, s.logger, s.container, ports)
 	if err != nil {
 		return err
 	}
@@ -350,7 +351,7 @@ func (s *UniversalApp) GetIP() string {
 func (s *UniversalApp) Stop() error {
 	Logf("Stopping app:%q container:%q", s.appName, s.container)
 	for i := 0; i < 10; i++ {
-		_, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1, Logger: s.logger})
+		_, err := s.dockerBackend.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1, Logger: s.logger})
 		if err != nil {
 			return nil
 		}

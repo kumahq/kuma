@@ -4,6 +4,7 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -13,9 +14,8 @@ type KumaDpBootstrap struct {
 }
 
 type NetworkingConfig struct {
-	IsUsingTransparentProxy bool
-	CorefileTemplate        []byte
-	Address                 string
+	CorefileTemplate []byte
+	Address          string
 }
 
 type AggregateMetricsConfig struct {
@@ -52,4 +52,5 @@ type configParameters struct {
 	IsGatewayDataplane   bool
 	Resources            types.ProxyResources
 	SystemCaPath         string
+	TransparentProxy     *tproxy_config.DataplaneConfig
 }

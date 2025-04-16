@@ -569,9 +569,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -624,9 +627,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -686,10 +692,13 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
         - key: kuma.io/sidecar-injection
           operator: In
-          values: ["enabled", "true"]
+          values: 
+          - enabled
+          - "true"
     clientConfig:
       caBundle: XYZ
       service:
@@ -711,9 +720,13 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values:
+          - kube-system
+          - kuma-system
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -749,9 +762,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:

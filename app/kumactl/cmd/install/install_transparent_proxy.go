@@ -166,7 +166,7 @@ runuser -u kuma-dp -- \
 
 			// After parsing the config flags, we load the configuration, which involves parsing
 			// the provided YAML or JSON, and including environment variables if present
-			if err := cfgLoader.Load(cmd.InOrStdin(), []byte(configValue), configFile); err != nil {
+			if err := cfgLoader.Load(cmd.InOrStdin(), configFile, configValue); err != nil {
 				return errors.Wrap(err, "failed to load configuration from provided input")
 			}
 

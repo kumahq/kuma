@@ -23,7 +23,8 @@ jobs:
     timeout-minutes: 60
     # can't use env vars here
     runs-on: ${{ inputs.runner }}
-    if: ${{ inputs.runner != '' }}
+    # workaround for this bug https://github.com/actions/runner-images/issues/11985 - revert when done
+    if: ${{ fromJSON(inputs.matrix).k8sVersion != 'kindipv6' && inputs.runner != '' }}
     strategy:
       fail-fast: false
       matrix:

@@ -34,6 +34,12 @@ func UpgradingWithHelmChartMultizone() {
 		zoneUniversal = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(global, "default", namespace)
+		DebugKube(zoneK8s, "default", namespace)
+		DebugUniversal(zoneUniversal, "default")
+	})
+
 	E2EAfterEach(func() {
 		grp := sync.WaitGroup{}
 		grp.Add(3)

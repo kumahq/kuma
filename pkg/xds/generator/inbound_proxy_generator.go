@@ -44,7 +44,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 			Configure(envoy_clusters.Timeout(defaults_mesh.DefaultInboundTimeout(), protocol))
 		// localhost traffic is routed dirrectly to the application, in case of other interface we are going to set source address to
 		// 127.0.0.6 to avoid redirections and thanks to first iptables rule just return fast
-		if proxy.Dataplane.IsUsingTransparentProxy() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() && endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
+		if proxy.GetTransparentProxy().Enabled() && (endpoint.WorkloadIP != core_mesh.IPv4Loopback.String() && endpoint.WorkloadIP != core_mesh.IPv6Loopback.String()) {
 			switch net.IsAddressIPv6(endpoint.WorkloadIP) {
 			case true:
 				clusterBuilder.Configure(envoy_clusters.UpstreamBindConfig(InPassThroughIPv6, 0))
@@ -77,7 +77,7 @@ func (g InboundProxyGenerator) Generate(ctx context.Context, _ *core_xds.Resourc
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 
 		listenerBuilder := envoy_listeners.NewInboundListenerBuilder(proxy.APIVersion, endpoint.DataplaneIP, endpoint.DataplanePort, core_xds.SocketAddressProtocolTCP).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Configure(envoy_listeners.TagsMetadata(iface.GetTags()))
 
 		switch xdsCtx.Mesh.Resource.GetEnabledCertificateAuthorityBackend().GetMode() {

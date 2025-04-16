@@ -67,6 +67,10 @@ data:
 		).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(k8sCluster, "default", appNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(k8sCluster.TriggerDeleteNamespace(appNamespace)).To(Succeed())
 		Expect(k8sCluster.DeleteKuma()).To(Succeed())

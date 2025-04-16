@@ -1,6 +1,8 @@
 package proto
 
 import (
+	"encoding/json"
+	"reflect"
 	"time"
 
 	"google.golang.org/protobuf/types/known/durationpb"
@@ -86,4 +88,110 @@ func MustNewValueForStruct(in interface{}) *structpb.Value {
 		panic(err.Error())
 	}
 	return r
+}
+
+func StructToMapOfAny(value any) map[string]any {
+	var v reflect.Value
+
+	switch val := value.(type) {
+	case reflect.Value:
+		v = val
+	default:
+		v = reflect.ValueOf(value)
+	}
+
+	if v.Kind() == reflect.Pointer {
+		v = v.Elem()
+	}
+
+	out := make(map[string]any)
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		if field.PkgPath != "" {
+			continue
+		}
+		key := field.Tag.Get("json")
+		if key == "" {
+			key = field.Name
+		}
+		val := v.Field(i)
+
+		switch val.Kind() {
+		case reflect.Struct:
+			out[key] = StructToMapOfAny(val)
+		case reflect.Bool:
+			out[key] = val.Bool()
+		case reflect.String:
+			out[key] = val.String()
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			out[key] = float64(val.Uint())
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			out[key] = float64(val.Int())
+		default:
+			out[key] = val.Interface()
+		}
+	}
+
+	return out
+}
+
+func StructToProtoStruct(in any) (*structpb.Struct, error) {
+	return structpb.NewStruct(StructToMapOfAny(in))
+}
+
+func MustStructToProtoStruct(in any) *structpb.Struct {
+	r, err := StructToProtoStruct(in)
+	if err != nil {
+		panic(err.Error())
+	}
+	return r
+}
+
+func MustFromMapOfAny[T any, U map[string]any | *structpb.Struct](in U) T {
+	out, _ := FromMapOfAny[T](in)
+	return out
+}
+
+func FromMapOfAny[T any, U map[string]any | *structpb.Struct](value U) (T, error) {
+	var result T
+	var in map[string]any
+
+	switch val := any(value).(type) {
+	case *structpb.Struct:
+		in = val.AsMap()
+	case map[string]any:
+		in = val
+	default:
+		return result, nil
+	}
+
+	// encode to JSON using structpb-compatible values
+	b, err := json.Marshal(convertToPlainJSON(in))
+	if err != nil {
+		return result, err
+	}
+
+	if err := json.Unmarshal(b, &result); err != nil {
+		return result, err
+	}
+
+	return result, nil
+}
+
+func convertToPlainJSON(v any) any {
+	switch v := v.(type) {
+	case map[string]any:
+		out := map[string]any{}
+		for k, val := range v {
+			out[k] = convertToPlainJSON(val)
+		}
+		return out
+	case []any:
+		for i := range v {
+			v[i] = convertToPlainJSON(v[i])
+		}
+	}
+	return v
 }

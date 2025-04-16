@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/report"
+	kssh "github.com/kumahq/kuma/test/framework/ssh"
 	"github.com/kumahq/kuma/test/framework/universal"
 )
 
@@ -51,7 +52,7 @@ type State struct {
 	KubeZone2 K8sNetworkingState
 }
 
-func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *K8sCluster {
+func SetupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *K8sCluster {
 	wg.Add(1)
 	options := []KumaDeploymentOption{
 		WithEnv("KUMA_MULTIZONE_ZONE_KDS_NACK_BACKOFF", "1s"),
@@ -77,7 +78,11 @@ func setupKubeZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaD
 	return zone
 }
 
-func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *UniversalCluster {
+func SetupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDeploymentOption) *UniversalCluster {
+	return SetupRemoteUniZone(wg, clusterName, nil, extraOptions...)
+}
+
+func SetupRemoteUniZone(wg *sync.WaitGroup, clusterName string, remoteHost *kssh.Host, extraOptions ...KumaDeploymentOption) *UniversalCluster {
 	wg.Add(1)
 	options := append(
 		[]KumaDeploymentOption{
@@ -90,7 +95,14 @@ func setupUniZone(wg *sync.WaitGroup, clusterName string, extraOptions ...KumaDe
 		},
 		extraOptions...,
 	)
-	zone := NewUniversalCluster(NewTestingT(), clusterName, Silent)
+
+	var zone *UniversalCluster
+	if remoteHost == nil {
+		zone = NewUniversalCluster(NewTestingT(), clusterName, Silent)
+	} else {
+		zone = NewRemoteUniversalCluster(NewTestingT(), clusterName, remoteHost, Silent)
+	}
+
 	go func() {
 		defer ginkgo.GinkgoRecover()
 		defer wg.Done()
@@ -129,13 +141,13 @@ func SetupAndGetState() []byte {
 			WithEnv("KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS", "::1"),
 		)
 	}
-	KubeZone1 = setupKubeZone(&wg, Kuma1, kubeZone1Options...)
+	KubeZone1 = SetupKubeZone(&wg, Kuma1, kubeZone1Options...)
 
 	kubeZone2Options := KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.KubeZone2)
 	kubeZone2Options = append(kubeZone2Options, WithCNI())
-	KubeZone2 = setupKubeZone(&wg, Kuma2, kubeZone2Options...)
+	KubeZone2 = SetupKubeZone(&wg, Kuma2, kubeZone2Options...)
 
-	UniZone1 = setupUniZone(&wg, Kuma4, KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)...)
+	UniZone1 = SetupUniZone(&wg, Kuma4, KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone1)...)
 
 	vipCIDROverride := "251.0.0.0/8"
 	if Config.IPV6 {
@@ -145,7 +157,7 @@ func SetupAndGetState() []byte {
 		KumaDeploymentOptionsFromConfig(Config.KumaCpConfig.Multizone.UniZone2),
 		WithEnv("KUMA_IPAM_MESH_SERVICE_CIDR", vipCIDROverride), // just to see that the status is not synced around
 	)
-	UniZone2 = setupUniZone(&wg, Kuma5, uniZone2Options...)
+	UniZone2 = SetupUniZone(&wg, Kuma5, uniZone2Options...)
 
 	wg.Wait()
 

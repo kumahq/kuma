@@ -136,7 +136,7 @@ func (cf *ConfigFetcher) stepForHandler(h *handlerInfo) (bool, error) {
 	if err != nil {
 		var opErr *net.OpError
 		if errors.As(err, &opErr) && os.IsNotExist(opErr.Err) {
-			h.l.Info("skipping fetch endpoint scrape since socket does not exist, this is likely about to start", "err", err)
+			h.l.V(1).Info("skipping fetch endpoint scrape since socket does not exist, this is likely about to start", "err", err)
 			return false, nil
 		}
 		// this error can only occur when we configured policy once and then remove it. Listener is removed but socket file

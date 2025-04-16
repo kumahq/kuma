@@ -74,7 +74,7 @@ api-lint:
 		github.com/kumahq/kuma/pkg/core/resources/apis/meshmultizoneservice/api/v1alpha1
 
 .PHONY: check
-check: format lint ## Dev: Run code checks (go fmt, go vet, ...)
+check: format lint check/rbac ## Dev: Run code checks (go fmt, go vet, ...)
 	@untracked() { git ls-files --other --directory --exclude-standard --no-empty-directory; }; \
 	check-changes() { git --no-pager diff "$$@"; }; \
 	if [ $$(untracked | wc -l) -gt 0 ]; then \
@@ -88,6 +88,16 @@ check: format lint ## Dev: Run code checks (go fmt, go vet, ...)
 		check-changes; \
 	fi; \
 	if [ "$$FAILED" = true ]; then exit 1; fi
+
+.PHONY: check/rbac
+check/rbac:
+	@BASE=$$(git merge-base HEAD master); \
+	RBAC_CHANGED=$$(git --no-pager diff $$BASE --name-only -- deployments/ | xargs grep -E 'kind: (Role|RoleBinding|ClusterRole|ClusterRoleBinding)' || true); \
+	UPGRADE_CHANGED=$$(git --no-pager diff $$BASE --quiet UPGRADE.md; [ $$? -ne 0 ] && echo true || echo ""); \
+	if [ -n "$$RBAC_CHANGED" ] && [ -z "$$UPGRADE_CHANGED" ]; then \
+		echo "Detected RBAC changes, but UPGRADE.md was not updated. Please document the change in UPGRADE.md."; \
+		exit 1; \
+	fi
 
 .PHONY: update-vulnerable-dependencies
 update-vulnerable-dependencies:

@@ -698,7 +698,6 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeTrue())
 		Expect(configParam.AggregateMetricsConfig).To(ContainElements([]AggregateMetricsConfig{
 			{
 				Address: "8.8.8.8",
@@ -794,7 +793,6 @@ Provide CA that was used to sign a certificate used in the control plane by usin
 		// and config is as expected
 		_, err = util_proto.ToYAML(bootstrapConfig)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(configParam.NetworkingConfig.IsUsingTransparentProxy).To(BeFalse())
 		Expect(configParam.AggregateMetricsConfig).To(Equal([]AggregateMetricsConfig{
 			{
 				Address: "8.8.8.8",

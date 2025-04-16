@@ -144,6 +144,12 @@ conf:
 		).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(zone1, nonDefaultMesh, TestNamespace)
+		DebugUniversal(global, nonDefaultMesh)
+		DebugUniversal(zone4, nonDefaultMesh)
+	})
+
 	E2EAfterAll(func() {
 		Expect(zone1.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(zone1.DeleteKuma()).To(Succeed())

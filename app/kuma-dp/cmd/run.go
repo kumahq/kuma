@@ -5,6 +5,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -33,7 +34,10 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	dns_dpapi "github.com/kumahq/kuma/pkg/dns/dpapi"
 	meshmetric_dpapi "github.com/kumahq/kuma/pkg/plugins/policies/meshmetric/dpapi"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	kuma_net "github.com/kumahq/kuma/pkg/util/net"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -49,6 +53,10 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var tmpDir string
 	var proxyResource model.Resource
+
+	var tpEnabled bool
+	var tpCfgValues []string
+
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
@@ -64,6 +72,24 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				runLog.Error(err, "unable to load configuration")
 				return err
 			}
+
+			var tpCfg *tproxy_dp.DataplaneConfig
+			if len(tpCfgValues) > 0 || tpEnabled {
+				if runtime.GOOS != "linux" {
+					return errors.New("transparent proxy is supported only on Linux systems")
+				}
+
+				tpCfg = pointer.To(tproxy_dp.DefaultDataplaneConfig())
+				tpCfgLoader := config.NewLoader(tpCfg).WithValidation()
+
+				if err := tpCfgLoader.Load(cmd.InOrStdin(), tpCfgValues...); err != nil {
+					return errors.Wrap(err, "failed to load transparent proxy configuration from provided input")
+				}
+
+				tpCfg.Redirect.DNS.Port = tproxy_config.Port(cfg.DNS.EnvoyDNSPort)
+				tpCfg.Redirect.DNS.Enabled = cfg.DNS.Enabled
+			}
+			cfg.DataplaneRuntime.TransparentProxy = tpCfg
 
 			kumadp.PrintDeprecations(cfg, cmd.OutOrStdout())
 
@@ -375,6 +401,20 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
 	cmd.PersistentFlags().BoolVar(&cfg.DNS.CoreDNSLogging, "dns-enable-logging", cfg.DNS.CoreDNSLogging, "If true then CoreDNS logging is enabled")
 
+	// Transparent Proxy
+	cmd.PersistentFlags().BoolVar(&tpEnabled, "transparent-proxy", tpEnabled, "Enable transparent proxy with default configuration")
+	cmd.PersistentFlags().StringArrayVar(
+		&tpCfgValues,
+		"transparent-proxy-config",
+		tpCfgValues,
+		"Enable transparent proxy with provided configuration. This flag can be repeated. Each value can be:\n"+
+			"- a comma-separated list of file paths\n"+
+			"- a raw YAML string\n"+
+			"- a dash '-' to read from STDIN\n"+
+			"Later values override earlier ones when merging. "+
+			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
+	)
+
 	return cmd
 }
 
@@ -426,17 +466,19 @@ func setupObservability(ctx context.Context, kumaSidecarConfiguration *types.Kum
 		cfg.Dataplane.ResilientComponentMaxBackoff.Duration,
 	)
 
+	tpEnabled := cfg.DataplaneRuntime.TransparentProxy.Enabled()
+
 	openTelemetryProducer := metrics.NewAggregatedMetricsProducer(
 		cfg.Dataplane.Mesh,
 		cfg.Dataplane.Name,
 		bootstrap.Node.Cluster,
 		baseApplicationsToScrape,
-		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+		tpEnabled,
 	)
 	metricsServer := metrics.New(
 		core_xds.MetricsHijackerSocketName(cfg.DataplaneRuntime.SocketDir, cfg.Dataplane.Name, cfg.Dataplane.Mesh),
 		baseApplicationsToScrape,
-		kumaSidecarConfiguration.Networking.IsUsingTransparentProxy,
+		tpEnabled,
 		openTelemetryProducer,
 	)
 
