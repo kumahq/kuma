@@ -2,8 +2,6 @@ package kic
 
 import (
 	"fmt"
-	"strings"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -49,7 +47,7 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 		case *framework.K8sCluster:
 			deployment = &k8sDeployment{
 				ingressNamespace: opts.namespace,
-				watchNamespaces:  strings.Join(opts.watchNamespaces, ","),
+				watchNamespaces:  opts.watchNamespaces,
 				mesh:             opts.mesh,
 				name:             opts.name,
 			}
