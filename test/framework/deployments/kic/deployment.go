@@ -2,6 +2,7 @@ package kic
 
 import (
 	"fmt"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
