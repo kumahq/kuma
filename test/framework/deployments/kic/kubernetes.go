@@ -16,6 +16,7 @@ import (
 
 type k8sDeployment struct {
 	ingressNamespace string
+	watchNamespaces  string
 	mesh             string
 	name             string
 }
@@ -31,13 +32,16 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	if t.ingressNamespace == "" {
 		t.ingressNamespace = framework.Config.DefaultGatewayNamespace
 	}
+	if t.watchNamespaces == "" {
+		t.watchNamespaces = t.ingressNamespace
+	}
 	opts := helm.Options{
 		KubectlOptions: cluster.GetKubectlOptions(t.ingressNamespace),
 	}
 	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
 		"--repo", "https://charts.konghq.com",
-		"--set", "controller.ingressController.watchNamespaces={"+t.ingressNamespace+"}",
+		"--set", "controller.ingressController.watchNamespaces={"+t.watchNamespaces+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,
