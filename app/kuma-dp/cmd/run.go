@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
-	"testing"
 	"time"
 
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
@@ -76,7 +75,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 
 			var tpCfg *tproxy_dp.DataplaneConfig
 			if len(tpCfgValues) > 0 || tpEnabled {
-				if !testing.Testing() && runtime.GOOS != "linux" {
+				if runtime.GOOS != "linux" {
 					return errors.New("transparent proxy is supported only on Linux systems")
 				}
 
