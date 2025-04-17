@@ -206,7 +206,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
 
-			FIt("when cross-mesh was added and previous removed", func() {
+			It("when cross-mesh was added and previous removed", func() {
 				// given
 				defaultMesh := newMesh("default")
 
