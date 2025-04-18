@@ -13,15 +13,18 @@
   },
   "envoy": {
    "version": "1.15.0",
-   "build": "hash/1.15.0/RELEASE",
+   "build": "50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.15.0/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL",
    "kumaDpCompatible": false
   }
  },
  "caCert": "",
  "dynamicMetadata": null,
+ "dnsPort": 15054,
+ "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [
-  "feature-tcp-accesslog-via-named-pipe"
+  "feature-tcp-accesslog-via-named-pipe",
+  "feature-transparent-proxy-in-dataplane-metadata"
  ],
  "resources": {
   "maxHeapSizeBytes": 0
@@ -31,5 +34,22 @@
   "certPath": "",
   "keyPath": ""
  },
- "systemCaPath": ""
+ "systemCaPath": "",
+ "dataplaneConfig": {
+  "ipFamilyMode": "ipv4",
+  "redirect": {
+   "inbound": {
+    "enabled": false,
+    "port": 1234
+   },
+   "outbound": {
+    "enabled": false,
+    "port": 2345
+   },
+   "dns": {
+    "enabled": false,
+    "port": 3456
+   }
+  }
+ }
 }

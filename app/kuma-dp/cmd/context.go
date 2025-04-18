@@ -17,7 +17,7 @@ import (
 // RootContext contains variables, functions and components that can be overridden when extending kuma-dp or running the test.
 type RootContext struct {
 	ComponentManager         component.Manager
-	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
+	BootstrapClient          envoy.BootstrapClient
 	BootstrapDynamicMetadata map[string]string
 	DataplaneTokenGenerator  func(cfg *kumadp.Config) (component.Component, error)
 	Config                   *kumadp.Config
@@ -51,7 +51,7 @@ func DefaultRootContext() *RootContext {
 	config := kumadp.DefaultConfig()
 	return &RootContext{
 		ComponentManager:         component.NewManager(leader_memory.NewNeverLeaderElector()),
-		BootstrapGenerator:       envoy.NewRemoteBootstrapGenerator(runtime.GOOS),
+		BootstrapClient:          envoy.NewRemoteBootstrapClient(runtime.GOOS),
 		Config:                   &config,
 		BootstrapDynamicMetadata: map[string]string{},
 		DataplaneTokenGenerator:  defaultDataplaneTokenGenerator,
