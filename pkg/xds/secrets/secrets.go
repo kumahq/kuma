@@ -52,7 +52,7 @@ type Info struct {
 	SupportedBackends []string
 
 	OwnMesh        MeshInfo
-	OtherMeshInfos []MeshInfo
+	OtherMeshInfos map[string]MeshInfo
 	// this marks our info as having failed last time to get the mesh CAs that
 	// we wanted and so we should retry next time we want certs.
 	failedOtherMeshes bool
@@ -256,8 +256,14 @@ func (s *secrets) shouldGenerateCerts(info *Info, tags mesh_proto.MultiValueTagS
 		updates.AddKind(OtherMeshChange)
 		reason = "Another mesh has been added or removed or we must retry"
 	} else {
-		for i, mesh := range info.OtherMeshInfos {
-			if !proto.Equal(mesh.MTLS, otherMeshInfos[i].Spec.Mtls) {
+		for _, otherMesh := range otherMeshInfos {
+			if previousInfo, found := info.OtherMeshInfos[otherMesh.GetMeta().GetName()]; found {
+				if !proto.Equal(previousInfo.MTLS, otherMesh.Spec.Mtls) {
+					updates.AddKind(OtherMeshChange)
+					reason = "Another Mesh's mTLS settings have changed"
+					break
+				}
+			} else {
 				updates.AddKind(OtherMeshChange)
 				reason = "Another Mesh's mTLS settings have changed"
 				break
@@ -346,16 +352,16 @@ func (s *secrets) generateCerts(
 	}
 
 	if updateKinds.HasType(OtherMeshChange) || updateKinds.HasType(OwnMeshChange) {
-		var otherMeshInfos []MeshInfo
+		otherMeshInfos := make(map[string]MeshInfo, len(otherMeshes))
 		var bytes [][]byte
 		var names []string
 		otherCas = []MeshCa{}
 
 		failedOtherMeshes := false
 		for _, otherMesh := range otherMeshes {
-			otherMeshInfos = append(otherMeshInfos, MeshInfo{
+			otherMeshInfos[otherMesh.GetMeta().GetName()] = MeshInfo{
 				MTLS: otherMesh.Spec.GetMtls(),
-			})
+			}
 
 			// We need to track this mesh but we don't do anything with certs
 			if !otherMesh.MTLSEnabled() {
@@ -370,15 +376,14 @@ func (s *secrets) generateCerts(
 				log.Error(err, "could not get other mesh CA cert")
 				continue
 			}
-
-			meshName := otherMesh.GetMeta().GetName()
+			otherMeshName := otherMesh.GetMeta().GetName()
 
 			otherCas = append(otherCas, MeshCa{
-				Mesh:     meshName,
+				Mesh:     otherMeshName,
 				CaSecret: otherCa,
 			})
 
-			names = append(names, meshName)
+			names = append(names, otherMeshName)
 			bytes = append(bytes, otherCa.PemCerts...)
 		}
 
