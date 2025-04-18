@@ -68,13 +68,13 @@ resources:
                   timeout: 0s
               - match:
                   path: /v4
-                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v4/
-                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s

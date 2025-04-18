@@ -32,14 +32,14 @@ resources:
               routes:
               - match:
                   path: /v1
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___http-route_
                 route:
                   autoHostRewrite: true
                   cluster: default_example___extsvc_9090
                   timeout: 0s
               - match:
                   prefix: /v1/
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___http-route_
                 route:
                   autoHostRewrite: true
                   cluster: default_example___extsvc_9090
