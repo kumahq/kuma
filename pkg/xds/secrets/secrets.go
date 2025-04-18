@@ -75,20 +75,11 @@ func NewSecrets(caProvider CaProvider, identityProvider IdentityProvider, metric
 		return nil, err
 	}
 
-	otherMeshesCertGenerationsMetric := prometheus.NewCounterVec(prometheus.CounterOpts{
-		Help: "Number of generated certificates for other meshes",
-		Name: "cert_generation_other_meshes",
-	}, []string{"mesh", "other_mesh"})
-	if err := metrics.Register(otherMeshesCertGenerationsMetric); err != nil {
-		return nil, err
-	}
-
 	return &secrets{
-		caProvider:                       caProvider,
-		identityProvider:                 identityProvider,
-		cachedCerts:                      map[certCacheKey]*certs{},
-		certGenerationsMetric:            certGenerationsMetric,
-		otherMeshesCertGenerationsMetric: otherMeshesCertGenerationsMetric,
+		caProvider:            caProvider,
+		identityProvider:      identityProvider,
+		cachedCerts:           map[certCacheKey]*certs{},
+		certGenerationsMetric: certGenerationsMetric,
 	}, nil
 }
 
@@ -102,9 +93,8 @@ type secrets struct {
 	identityProvider IdentityProvider
 
 	sync.RWMutex
-	cachedCerts                      map[certCacheKey]*certs
-	certGenerationsMetric            *prometheus.CounterVec
-	otherMeshesCertGenerationsMetric *prometheus.CounterVec
+	cachedCerts           map[certCacheKey]*certs
+	certGenerationsMetric *prometheus.CounterVec
 }
 
 var _ Secrets = &secrets{}
@@ -387,7 +377,6 @@ func (s *secrets) generateCerts(
 				continue
 			}
 			otherMeshName := otherMesh.GetMeta().GetName()
-			s.otherMeshesCertGenerationsMetric.WithLabelValues(meshName, otherMeshName).Inc()
 
 			otherCas = append(otherCas, MeshCa{
 				Mesh:     otherMeshName,

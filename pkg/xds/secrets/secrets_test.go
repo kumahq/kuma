@@ -211,20 +211,23 @@ var _ = Describe("Secrets", Ordered, func() {
 				defaultMesh := newMesh("default")
 
 				// when
-				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-1")})
+				_, caSecrets, err := secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-1")})
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-				Expect(test_metrics.FindMetric(metrics, "cert_generation_other_meshes", "other_mesh", "mesh-1").GetCounter().GetValue()).To(Equal(1.0))
+				Expect(caSecrets["default"]).ToNot(BeNil())
+				Expect(caSecrets["mesh-1"]).ToNot(BeNil())
 
 				// when
-				_, _, err = secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-2")})
+				_, caSecrets, err = secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-2")})
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-				Expect(test_metrics.FindMetric(metrics, "cert_generation_other_meshes", "other_mesh", "mesh-2").GetCounter().GetValue()).To(Equal(1.0))
+				Expect(caSecrets["default"]).ToNot(BeNil())
+				Expect(caSecrets["mesh-1"]).To(BeNil())
+				Expect(caSecrets["mesh-2"]).ToNot(BeNil())
 			})
 
 			It("when mTLS settings has changed", func() {
