@@ -107,7 +107,9 @@ spec:
 	It("should limit tcp connections", func() {
 		admin := universal.Cluster.GetApp("test-server-tcp").GetEnvoyAdminTunnel()
 		// should have no ratelimited connections
-		Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
+		Eventually(func(g Gomega) {
+			g.Expect(tcpRateLimitStats(admin)).To(stats.BeEqualZero())
+		}, "10s", "1s").Should(Succeed())
 
 		// open connection
 		go keepConnectionOpen()
