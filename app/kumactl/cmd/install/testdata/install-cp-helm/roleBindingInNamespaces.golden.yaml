@@ -229,23 +229,6 @@ subjects:
     namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kuma-control-plane-writer
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kuma-control-plane-writer
-subjects:
-  - kind: ServiceAccount
-    name: kuma-control-plane
-    namespace: kuma-system
----
-apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma-control-plane
@@ -331,6 +314,42 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
   name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  namespace: kuma-demo
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-writer
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+  namespace: kuma-test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-writer
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
@@ -450,7 +469,7 @@ spec:
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
-              value: "true"
+              value: "false"
             - name: KUMA_DP_SERVER_HDS_ENABLED
               value: "false"
             - name: KUMA_ENVIRONMENT

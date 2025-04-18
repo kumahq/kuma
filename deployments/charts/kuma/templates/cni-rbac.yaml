@@ -21,11 +21,6 @@ metadata:
 rules:
   - apiGroups: [""]
     resources:
-      - nodes
-    verbs:
-      - get
-  - apiGroups: [""]
-    resources:
       - pods
     verbs:
       - get
@@ -33,6 +28,27 @@ rules:
       - list
       - watch
       {{- end }}
+{{- if gt (len .Values.enabledNamespaces) 0 }}
+{{- $root := . }}
+{{- range $element := .Values.enabledNamespaces }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "kuma.name" $root }}-cni
+  labels: {{ include "kuma.cpLabels" $root | nindent 4 }}
+  namespace: {{ $element }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" $root }}-cni
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "kuma.name" $root }}-cni
+    namespace: {{ $root.Release.Namespace }}
+{{- end }}
+{{- end }}
+{{- if eq (len .Values.enabledNamespaces) 0 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -48,4 +64,5 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
     namespace: {{ .Values.cni.namespace }}
-  {{- end }}
+{{- end }}
+{{- end }}
