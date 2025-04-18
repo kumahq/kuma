@@ -2,7 +2,8 @@
  "mesh": "demo",
  "name": "sample",
  "proxyType": "dataplane",
- "dataplaneToken": "token",
+ "dataplaneToken": "token1234",
+ "dataplaneTokenPath": "testdata/token",
  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
  "version": {
   "kumaDp": {
@@ -13,12 +14,14 @@
   },
   "envoy": {
    "version": "1.15.0",
-   "build": "hash/1.15.0/RELEASE",
+   "build": "50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.15.0/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL",
    "kumaDpCompatible": false
   }
  },
  "caCert": "",
  "dynamicMetadata": null,
+ "dnsPort": 15054,
+ "readinessPort": 9902,
  "operatingSystem": "linux",
  "features": [
   "feature-tcp-accesslog-via-named-pipe"

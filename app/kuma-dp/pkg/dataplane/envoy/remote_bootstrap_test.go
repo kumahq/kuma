@@ -3,14 +3,11 @@ package envoy_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -22,31 +19,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest/unversioned"
 	rest_v1alpha1 "github.com/kumahq/kuma/pkg/core/resources/model/rest/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-func defaultBootstrapParams() BootstrapParams {
-	return BootstrapParams{
-		Dataplane: &unversioned.Resource{
-			Meta: rest_v1alpha1.ResourceMeta{
-				Type: "Dataplane",
-				Mesh: "demo",
-				Name: "sample",
-			},
-		},
-		EnvoyVersion: EnvoyVersion{
-			Build:   "hash/1.15.0/RELEASE",
-			Version: "1.15.0",
-		},
-		Workdir: "/tmp",
-	}
-}
-
 var _ = Describe("Remote Bootstrap", func() {
 	type testCase struct {
-		config                       kuma_dp.Config
-		params                       BootstrapParams
+		optsBuilder                  optsBuilder
+		metadata                     map[string]string
 		expectedBootstrapRequestFile string
 	}
 
@@ -81,81 +62,59 @@ var _ = Describe("Remote Bootstrap", func() {
 			_, err = writer.Write(responseBytes)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
-		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator("linux")
+		bootstrapClient := NewRemoteBootstrapClient("linux")
 
 		// when
-		bootstrap, kumaSidecar, err := generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), given.config, given.params)
+		bootstrap, kumaSidecar, err := bootstrapClient.Fetch(
+			context.Background(),
+			given.optsBuilder.cpURL(server.URL).build(),
+			given.metadata,
+		)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bootstrap).ToNot(BeNil())
 		Expect(kumaSidecar).ToNot(BeNil())
 	},
-		Entry("should support port range with exactly 1 port",
-			func() testCase {
-				cfg := kuma_dp.DefaultConfig()
-				cfg.Dataplane.Mesh = "demo"
-				cfg.Dataplane.Name = "sample"
-				cfg.DataplaneRuntime.Token = "token"
+		Entry("includes TLS metrics config and custom metadata",
+			testCase{
+				optsBuilder:                  newOptsBuilder().metrics("/tmp/cert.pem", "/tmp/key.pem"),
+				metadata:                     map[string]string{"test": "value"},
+				expectedBootstrapRequestFile: "bootstrap-request-metrics-metadata.golden.json",
+			},
+		),
 
-				params := defaultBootstrapParams()
-				params.DynamicMetadata = map[string]string{
-					"test": "value",
-				}
-				params.MetricsCertPath = "/tmp/cert.pem"
-				params.MetricsKeyPath = "/tmp/key.pem"
+		Entry("reads token from file and sets file path in request",
+			testCase{
+				optsBuilder:                  newOptsBuilder().tokenPath("testdata/token"),
+				expectedBootstrapRequestFile: "bootstrap-request-token-path.golden.json",
+			},
+		),
 
-				return testCase{
-					config:                       cfg,
-					params:                       params,
-					expectedBootstrapRequestFile: "bootstrap-request-0.golden.json",
-				}
-			}()),
-
-		Entry("should read token from the file and include file path",
-			func() testCase {
-				cfg := kuma_dp.DefaultConfig()
-				cfg.Dataplane.Mesh = "demo"
-				cfg.Dataplane.Name = "sample"
-				cfg.DataplaneRuntime.TokenPath = "testdata/token"
-
-				return testCase{
-					config:                       cfg,
-					params:                       defaultBootstrapParams(),
-					expectedBootstrapRequestFile: "bootstrap-request-1.golden.json",
-				}
-			}()),
-
-		Entry("should support port range with multiple ports (choose the lowest port)",
-			func() testCase {
-				cfg := kuma_dp.DefaultConfig()
-				cfg.Dataplane.Mesh = "demo"
-				cfg.Dataplane.Name = "sample"
-				cfg.DataplaneRuntime.Token = "token"
-
-				return testCase{
-					config:                       cfg,
-					params:                       defaultBootstrapParams(),
-					expectedBootstrapRequestFile: "bootstrap-request-2.golden.json",
-				}
-			}()),
-		Entry("should support empty port range",
-			func() testCase {
-				cfg := kuma_dp.DefaultConfig()
-				cfg.Dataplane.Mesh = "demo"
-				cfg.Dataplane.Name = "sample"
-				cfg.DataplaneRuntime.Token = "token"
-
-				return testCase{
-					config:                       cfg,
-					params:                       defaultBootstrapParams(),
-					expectedBootstrapRequestFile: "bootstrap-request-3.golden.json",
-				}
-			}()),
+		Entry("includes transparent proxy configuration when provided",
+			testCase{
+				optsBuilder: newOptsBuilder().tproxy(tproxy_dp.DataplaneConfig{
+					IPFamilyMode: "ipv4",
+					Redirect: tproxy_dp.DataplaneRedirect{
+						Inbound: tproxy_dp.DatalpaneTrafficFlow{
+							Enabled: false,
+							Port:    1234,
+						},
+						Outbound: tproxy_dp.DatalpaneTrafficFlow{
+							Enabled: false,
+							Port:    2345,
+						},
+						DNS: tproxy_dp.DatalpaneTrafficFlow{
+							Enabled: false,
+							Port:    3456,
+						},
+					},
+				}),
+				expectedBootstrapRequestFile: "bootstrap-request-transparent-proxy.golden.json",
+			},
+		),
 	)
 
 	It("should get configuration of kuma sidecar", func() {
@@ -195,25 +154,16 @@ var _ = Describe("Remote Bootstrap", func() {
 			_, err = writer.Write(responseBytes)
 			Expect(err).ToNot(HaveOccurred())
 		})
-		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
-		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator("linux")
+		bootstrapClient := NewRemoteBootstrapClient("linux")
 
 		// when
-		cfg := kuma_dp.DefaultConfig()
-		params := BootstrapParams{
-			Dataplane: &unversioned.Resource{
-				Meta: rest_v1alpha1.ResourceMeta{
-					Type: "Dataplane",
-					Mesh: "demo",
-					Name: "sample",
-				},
-			},
-		}
-
-		bootstrap, kumaSidecarConfiguration, err := generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		bootstrap, kumaSidecarConfiguration, err := bootstrapClient.Fetch(
+			context.Background(),
+			newOptsBuilder().token("").cpURL(server.URL).build(),
+			nil,
+		)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -255,29 +205,26 @@ var _ = Describe("Remote Bootstrap", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})
-		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
-		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator("linux")
+		bootstrapClient := NewRemoteBootstrapClient("linux")
 
 		// when
-		cfg := kuma_dp.DefaultConfig()
-		cfg.ControlPlane.Retry.Backoff = config_types.Duration{Duration: 10 * time.Millisecond}
-		params := BootstrapParams{
-			Dataplane: &unversioned.Resource{
-				Meta: rest_v1alpha1.ResourceMeta{
-					Type: "Dataplane",
-					Mesh: "default",
-					Name: "dp-1",
-				},
-			},
-		}
-		_, _, err = generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), cfg, params)
+		bootstrap, _, err := bootstrapClient.Fetch(
+			context.Background(),
+			newOptsBuilder().
+				mesh("default").
+				name("dp-1").
+				token("").
+				retryBackoff(10*time.Millisecond).
+				cpURL(server.URL).
+				build(),
+			nil,
+		)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(cfg).ToNot(BeNil())
+		Expect(bootstrap).ToNot(BeNil())
 	})
 
 	It("should return error when DP is not found", func() {
@@ -289,28 +236,96 @@ var _ = Describe("Remote Bootstrap", func() {
 			defer GinkgoRecover()
 			writer.WriteHeader(404)
 		})
-		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
-		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator("linux")
+		bootstrapClient := NewRemoteBootstrapClient("linux")
 
 		// when
-		config := kuma_dp.DefaultConfig()
-		config.ControlPlane.Retry.Backoff = config_types.Duration{Duration: 10 * time.Millisecond}
-		config.ControlPlane.Retry.MaxDuration = config_types.Duration{Duration: 100 * time.Millisecond}
-		params := BootstrapParams{
-			Dataplane: &unversioned.Resource{
-				Meta: rest_v1alpha1.ResourceMeta{
-					Type: "Dataplane",
-					Mesh: "default",
-					Name: "dp-1",
-				},
-			},
-		}
-		_, _, err = generator(context.Background(), fmt.Sprintf("http://localhost:%d", port), config, params)
+		_, _, err := bootstrapClient.Fetch(
+			context.Background(),
+			newOptsBuilder().
+				mesh("default").
+				name("dp-1").
+				token("").
+				retryBackoff(10*time.Millisecond).
+				maxDuration(100*time.Millisecond).
+				cpURL(server.URL).build(),
+			nil,
+		)
 
 		// then
 		Expect(err).To(MatchError("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
 	})
 })
+
+type optsBuilder Opts
+
+func (b optsBuilder) mesh(mesh string) optsBuilder {
+	b.Config.Dataplane.Mesh = mesh
+	return b
+}
+
+func (b optsBuilder) name(name string) optsBuilder {
+	b.Config.Dataplane.Name = name
+	return b
+}
+
+func (b optsBuilder) token(token string) optsBuilder {
+	b.Config.DataplaneRuntime.Token = token
+	return b
+}
+
+func (b optsBuilder) tokenPath(tokenPath string) optsBuilder {
+	b.Config.DataplaneRuntime.Token = ""
+	b.Config.DataplaneRuntime.TokenPath = tokenPath
+	return b
+}
+
+func (b optsBuilder) metrics(certPath, keyPath string) optsBuilder {
+	b.Config.DataplaneRuntime.Metrics.CertPath = certPath
+	b.Config.DataplaneRuntime.Metrics.KeyPath = keyPath
+	return b
+}
+
+func (b optsBuilder) retryBackoff(duration time.Duration) optsBuilder {
+	b.Config.ControlPlane.Retry.Backoff = config_types.Duration{Duration: duration}
+	return b
+}
+
+func (b optsBuilder) maxDuration(duration time.Duration) optsBuilder {
+	b.Config.ControlPlane.Retry.MaxDuration = config_types.Duration{Duration: duration}
+	return b
+}
+
+func (b optsBuilder) cpURL(cpURL string) optsBuilder {
+	b.Config.ControlPlane.URL = cpURL
+	return b
+}
+
+func (b optsBuilder) tproxy(cfg tproxy_dp.DataplaneConfig) optsBuilder {
+	b.Config.DataplaneRuntime.TransparentProxy = &cfg
+	return b
+}
+
+func (b optsBuilder) build() Opts {
+	return Opts{
+		Config: b.Config,
+		Dataplane: &unversioned.Resource{
+			Meta: rest_v1alpha1.ResourceMeta{
+				Type: "Dataplane",
+				Mesh: b.Config.Dataplane.Mesh,
+				Name: b.Config.Dataplane.Name,
+			},
+		},
+	}
+}
+
+func newOptsBuilder() optsBuilder {
+	cfg := kuma_dp.DefaultConfig()
+	cfg.Dataplane.Mesh = "demo"
+	cfg.Dataplane.Name = "sample"
+	cfg.DataplaneRuntime.Token = "token"
+	cfg.DataplaneRuntime.BinaryPath = filepath.Join("testdata", "envoy-mock.exit-0.sh")
+	cfg.DataplaneRuntime.SocketDir = "/tmp"
+	return optsBuilder{Config: cfg}
+}
