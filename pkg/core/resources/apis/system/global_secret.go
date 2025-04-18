@@ -113,9 +113,12 @@ func init() {
 	GlobalSecretResourceTypeDescriptor.Resource = NewGlobalSecretResource()
 	GlobalSecretResourceTypeDescriptor.ResourceList = &GlobalSecretResourceList{}
 	GlobalSecretResourceTypeDescriptor.Scope = model.ScopeGlobal
-	GlobalSecretResourceTypeDescriptor.WsPath = "global-secrets"
-	GlobalSecretResourceTypeDescriptor.KumactlArg = "global-secret"
-	GlobalSecretResourceTypeDescriptor.KumactlListArg = "global-secrets"
+	GlobalSecretResourceTypeDescriptor.AlternativeWsPath = "global-secrets"
+	GlobalSecretResourceTypeDescriptor.KumactlArgAlias = "global-secret"
+	GlobalSecretResourceTypeDescriptor.KumactlListArgAlias = "global-secrets"
+	GlobalSecretResourceTypeDescriptor.WsPath = "globalsecrets"
+	GlobalSecretResourceTypeDescriptor.KumactlArg = "globalsecret"
+	GlobalSecretResourceTypeDescriptor.KumactlListArg = "globalsecrets"
 	GlobalSecretResourceTypeDescriptor.SingularDisplayName = "Global Secret"
 	GlobalSecretResourceTypeDescriptor.PluralDisplayName = "Global Secrets"
 	registry.RegisterType(GlobalSecretResourceTypeDescriptor)

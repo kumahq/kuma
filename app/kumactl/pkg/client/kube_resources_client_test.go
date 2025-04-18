@@ -21,7 +21,7 @@ var _ = Describe("Kube Resources Client", func() {
 		mux := http.NewServeMux()
 		server := httptest.NewServer(mux)
 		defer server.Close()
-		mux.HandleFunc("/global-secrets/zone-token-signing-key-1", func(writer http.ResponseWriter, req *http.Request) {
+		mux.HandleFunc("/globalsecrets/zone-token-signing-key-1", func(writer http.ResponseWriter, req *http.Request) {
 			defer GinkgoRecover()
 			Expect(req.Header.Get("accept")).To(Equal("application/json"))
 			Expect(req.URL.Query().Get("format")).To(Equal("k8s"))

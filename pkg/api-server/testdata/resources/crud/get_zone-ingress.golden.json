@@ -1,0 +1,12 @@
+{
+ "type": "ZoneIngress",
+ "name": "zone-ingress-1",
+ "creationTime": "0001-01-01T00:00:00Z",
+ "modificationTime": "0001-01-01T00:00:00Z",
+ "networking": {
+  "address": "10.2.3.4",
+  "advertisedAddress": "10.3.4.5",
+  "port": 1000,
+  "advertisedPort": 1000
+ }
+}

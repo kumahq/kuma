@@ -60,7 +60,7 @@
   {
    "includeInFederation": true,
    "name": "GlobalSecret",
-   "path": "global-secrets",
+   "path": "globalsecrets",
    "pluralDisplayName": "Global Secrets",
    "readOnly": false,
    "scope": "Global",
@@ -582,7 +582,7 @@
   {
    "includeInFederation": false,
    "name": "ZoneIngress",
-   "path": "zone-ingresses",
+   "path": "zoneingresses",
    "pluralDisplayName": "Zone Ingresses",
    "readOnly": false,
    "scope": "Global",

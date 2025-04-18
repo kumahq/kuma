@@ -1420,9 +1420,9 @@ _kumactl_get_fault-injections()
     noun_aliases=()
 }
 
-_kumactl_get_global-secret()
+_kumactl_get_globalsecret()
 {
-    last_command="kumactl_get_global-secret"
+    last_command="kumactl_get_globalsecret"
 
     command_aliases=()
 
@@ -1453,9 +1453,9 @@ _kumactl_get_global-secret()
     noun_aliases=()
 }
 
-_kumactl_get_global-secrets()
+_kumactl_get_globalsecrets()
 {
-    last_command="kumactl_get_global-secrets"
+    last_command="kumactl_get_globalsecrets"
 
     command_aliases=()
 
@@ -3903,76 +3903,6 @@ _kumactl_get_zone()
     noun_aliases=()
 }
 
-_kumactl_get_zone-ingress()
-{
-    last_command="kumactl_get_zone-ingress"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
-_kumactl_get_zone-ingresses()
-{
-    last_command="kumactl_get_zone-ingresses"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--mesh=")
-    two_word_flags+=("--mesh")
-    two_word_flags+=("-m")
-    flags+=("--offset=")
-    two_word_flags+=("--offset")
-    flags+=("--size=")
-    two_word_flags+=("--size")
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_get_zoneegress()
 {
     last_command="kumactl_get_zoneegress"
@@ -4009,6 +3939,76 @@ _kumactl_get_zoneegress()
 _kumactl_get_zoneegresses()
 {
     last_command="kumactl_get_zoneegresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_zoneingress()
+{
+    last_command="kumactl_get_zoneingress"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_zoneingresses()
+{
+    last_command="kumactl_get_zoneingresses"
 
     command_aliases=()
 
@@ -4088,89 +4088,425 @@ _kumactl_get()
 
     commands=()
     commands+=("circuit-breaker")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="circuit-breaker"
+    fi
     commands+=("circuit-breakers")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="circuit-breakers"
+    fi
     commands+=("dataplane")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="dataplane"
+    fi
     commands+=("dataplanes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="dataplanes"
+    fi
     commands+=("external-service")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="external-service"
+    fi
     commands+=("external-services")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="external-services"
+    fi
     commands+=("fault-injection")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="fault-injection"
+    fi
     commands+=("fault-injections")
-    commands+=("global-secret")
-    commands+=("global-secrets")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="fault-injections"
+    fi
+    commands+=("globalsecret")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("global-secret")
+        aliashash["global-secret"]="globalsecret"
+    fi
+    commands+=("globalsecrets")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("global-secrets")
+        aliashash["global-secrets"]="globalsecrets"
+    fi
     commands+=("healthcheck")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="healthcheck"
+    fi
     commands+=("healthchecks")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="healthchecks"
+    fi
     commands+=("hostnamegenerator")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="hostnamegenerator"
+    fi
     commands+=("hostnamegenerators")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="hostnamegenerators"
+    fi
     commands+=("mesh")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="mesh"
+    fi
     commands+=("meshaccesslog")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshaccesslog"
+    fi
     commands+=("meshaccesslogs")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshaccesslogs"
+    fi
     commands+=("meshcircuitbreaker")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshcircuitbreaker"
+    fi
     commands+=("meshcircuitbreakers")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshcircuitbreakers"
+    fi
     commands+=("meshes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshes"
+    fi
     commands+=("meshexternalservice")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshexternalservice"
+    fi
     commands+=("meshexternalservices")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshexternalservices"
+    fi
     commands+=("meshfaultinjection")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshfaultinjection"
+    fi
     commands+=("meshfaultinjections")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshfaultinjections"
+    fi
     commands+=("meshgateway")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshgateway"
+    fi
     commands+=("meshgatewayroute")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshgatewayroute"
+    fi
     commands+=("meshgatewayroutes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshgatewayroutes"
+    fi
     commands+=("meshgateways")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshgateways"
+    fi
     commands+=("meshhealthcheck")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshhealthcheck"
+    fi
     commands+=("meshhealthchecks")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshhealthchecks"
+    fi
     commands+=("meshhttproute")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshhttproute"
+    fi
     commands+=("meshhttproutes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshhttproutes"
+    fi
     commands+=("meshloadbalancingstrategies")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshloadbalancingstrategies"
+    fi
     commands+=("meshloadbalancingstrategy")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshloadbalancingstrategy"
+    fi
     commands+=("meshmetric")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshmetric"
+    fi
     commands+=("meshmetrics")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshmetrics"
+    fi
     commands+=("meshmultizoneservice")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshmultizoneservice"
+    fi
     commands+=("meshmultizoneservices")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshmultizoneservices"
+    fi
     commands+=("meshpassthrough")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshpassthrough"
+    fi
     commands+=("meshpassthroughs")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshpassthroughs"
+    fi
     commands+=("meshproxypatch")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshproxypatch"
+    fi
     commands+=("meshproxypatches")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshproxypatches"
+    fi
     commands+=("meshratelimit")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshratelimit"
+    fi
     commands+=("meshratelimits")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshratelimits"
+    fi
     commands+=("meshretries")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshretries"
+    fi
     commands+=("meshretry")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshretry"
+    fi
     commands+=("meshservice")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshservice"
+    fi
     commands+=("meshservices")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshservices"
+    fi
     commands+=("meshtcproute")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtcproute"
+    fi
     commands+=("meshtcproutes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtcproutes"
+    fi
     commands+=("meshtimeout")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtimeout"
+    fi
     commands+=("meshtimeouts")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtimeouts"
+    fi
     commands+=("meshtls")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtls"
+    fi
     commands+=("meshtlses")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtlses"
+    fi
     commands+=("meshtrace")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtrace"
+    fi
     commands+=("meshtraces")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtraces"
+    fi
     commands+=("meshtrafficpermission")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtrafficpermission"
+    fi
     commands+=("meshtrafficpermissions")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="meshtrafficpermissions"
+    fi
     commands+=("proxytemplate")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="proxytemplate"
+    fi
     commands+=("proxytemplates")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="proxytemplates"
+    fi
     commands+=("rate-limit")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="rate-limit"
+    fi
     commands+=("rate-limits")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="rate-limits"
+    fi
     commands+=("retries")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="retries"
+    fi
     commands+=("retry")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="retry"
+    fi
     commands+=("secret")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="secret"
+    fi
     commands+=("secrets")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="secrets"
+    fi
     commands+=("timeout")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="timeout"
+    fi
     commands+=("timeouts")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="timeouts"
+    fi
     commands+=("traffic-log")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-log"
+    fi
     commands+=("traffic-logs")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-logs"
+    fi
     commands+=("traffic-permission")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-permission"
+    fi
     commands+=("traffic-permissions")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-permissions"
+    fi
     commands+=("traffic-route")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-route"
+    fi
     commands+=("traffic-routes")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-routes"
+    fi
     commands+=("traffic-trace")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-trace"
+    fi
     commands+=("traffic-traces")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="traffic-traces"
+    fi
     commands+=("virtual-outbound")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="virtual-outbound"
+    fi
     commands+=("virtual-outbounds")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="virtual-outbounds"
+    fi
     commands+=("zone")
-    commands+=("zone-ingress")
-    commands+=("zone-ingresses")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="zone"
+    fi
     commands+=("zoneegress")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="zoneegress"
+    fi
     commands+=("zoneegresses")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="zoneegresses"
+    fi
+    commands+=("zoneingress")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("zone-ingress")
+        aliashash["zone-ingress"]="zoneingress"
+    fi
+    commands+=("zoneingresses")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("zone-ingresses")
+        aliashash["zone-ingresses"]="zoneingresses"
+    fi
     commands+=("zones")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("")
+        aliashash[""]="zones"
+    fi
 
     flags=()
     two_word_flags=()
@@ -5363,36 +5699,6 @@ _kumactl_inspect_traffic-trace()
     noun_aliases=()
 }
 
-_kumactl_inspect_zone-ingresses()
-{
-    last_command="kumactl_inspect_zone-ingresses"
-
-    command_aliases=()
-
-    commands=()
-
-    flags=()
-    two_word_flags=()
-    local_nonpersistent_flags=()
-    flags_with_completion=()
-    flags_completion=()
-
-    flags+=("--api-timeout=")
-    two_word_flags+=("--api-timeout")
-    flags+=("--config-file=")
-    two_word_flags+=("--config-file")
-    flags+=("--log-level=")
-    two_word_flags+=("--log-level")
-    flags+=("--no-config")
-    flags+=("--output=")
-    two_word_flags+=("--output")
-    two_word_flags+=("-o")
-
-    must_have_one_flag=()
-    must_have_one_noun=()
-    noun_aliases=()
-}
-
 _kumactl_inspect_zoneegress()
 {
     last_command="kumactl_inspect_zoneegress"
@@ -5489,6 +5795,36 @@ _kumactl_inspect_zoneingress()
     noun_aliases=()
 }
 
+_kumactl_inspect_zoneingresses()
+{
+    last_command="kumactl_inspect_zoneingresses"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--api-timeout=")
+    two_word_flags+=("--api-timeout")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--no-config")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_inspect_zones()
 {
     last_command="kumactl_inspect_zones"
@@ -5558,10 +5894,14 @@ _kumactl_inspect()
     commands+=("traffic-permission")
     commands+=("traffic-route")
     commands+=("traffic-trace")
-    commands+=("zone-ingresses")
     commands+=("zoneegress")
     commands+=("zoneegresses")
     commands+=("zoneingress")
+    commands+=("zoneingresses")
+    if [[ -z "${BASH_VERSION:-}" || "${BASH_VERSINFO[0]:-}" -gt 3 ]]; then
+        command_aliases+=("zone-ingresses")
+        aliashash["zone-ingresses"]="zoneingresses"
+    fi
     commands+=("zones")
 
     flags=()

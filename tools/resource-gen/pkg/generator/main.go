@@ -356,8 +356,17 @@ var {{.ResourceName}}TypeDescriptor = model.ResourceTypeDescriptor{
 		SkipKDSHash: true,
 		{{- end}}
 		WsPath: "{{.WsPath}}",
+		{{- if ne .AlternativeWsPath "" }}
+		AlternativeWsPath: "{{.AlternativeWsPath}}",
+		{{- end }}
 		KumactlArg: "{{.KumactlSingular}}",
 		KumactlListArg: "{{.KumactlPlural}}",
+		{{- if ne .KumactlSingularAlias ""}}
+		KumactlArgAlias: "{{.KumactlSingularAlias}}",
+		{{- end }}
+		{{- if ne .KumactlPluralAlias ""}}
+		KumactlListArgAlias: "{{.KumactlPluralAlias}}",
+		{{- end }}
 		AllowToInspect: {{.AllowToInspect}},
 		IsPolicy: {{.IsPolicy}},
 		SingularDisplayName: "{{.SingularDisplayName}}",

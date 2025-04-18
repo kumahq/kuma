@@ -172,6 +172,12 @@ type ResourceTypeDescriptor struct {
 	KumactlArg string
 	// KumactlListArg the name of the cmdline argument when doing `list`.
 	KumactlListArg string
+	// AlternativeWsPath the alternative path to access on the REST api.
+	AlternativeWsPath string
+	// KumactlArgAlias the alternative name of the cmdline argument when doing `get` or `delete`.
+	KumactlArgAlias string
+	// KumactlListArgAlias the alternative name of the cmdline argument when doing `list`.
+	KumactlListArgAlias string
 	// AllowToInspect if it's required to generate Inspect API endpoint for this type
 	AllowToInspect bool
 	// IsPolicy if this type is a policy (Dataplanes, Insights, Ingresses are not policies as they describe either metadata or workload, Retries are policies).

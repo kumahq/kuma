@@ -18,6 +18,10 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	allNames := []string{}
 	for _, desc := range pctx.Runtime.Registry.ObjectDescriptors(model.HasKumactlEnabled()) {
 		byName[desc.KumactlArg] = desc
+		if desc.KumactlArgAlias != "" {
+			byName[desc.KumactlArgAlias] = desc
+			allNames = append(allNames, desc.KumactlArgAlias)
+		}
 		allNames = append(allNames, desc.KumactlArg)
 	}
 	sort.Strings(allNames)
