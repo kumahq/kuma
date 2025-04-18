@@ -1,70 +1,30 @@
 # {short title of solved problem and solution}
 
-* Status: {rejected | accepted | deprecated | superseded by [ADR-0005](0005-example.md) | implemented in `<link to releavant PR/issue...>`} <!-- recommended to have the status as accepted proactively and then to change it if needed -->
+* Status: {rejected | accepted} <!-- recommended to have the status as accepted proactively and then to change it if needed -->
 
-Technical Story: {description | ticket/issue URL} <!-- link to the github issue -->
+Technical Story: {ticket/issue URL} <!-- link to the github issue -->
 
 ## Context and Problem Statement
 
-{Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.}
+{Describe the context and problem statement. You need to be as thorough as possible. If possible create set of use cases.
+Always try thinking from end user point of view. Remember to not think in terms of solutions in this section. Try to be as 
+objective as possible only describing current state and what we need.}
 
-## Decision Drivers <!-- optional -->
+## Design
 
-* {driver 1, e.g., a force, facing concern, …}
-* {driver 2, e.g., a force, facing concern, …}
-* … <!-- numbers of drivers can vary -->
+{This is a place for main design, it is best to present multiple solutions. 
+- Remember about examples. It is best to present then in context of previously defined use cases. 
+- Add advantages and disadvantages sections to proposed solutions.
+- When writing design remember to include history of how it evolved. This doc should be understandable without looking into git history.}
 
-## Considered Options
+## Implications for Kong Mesh
 
-* {option 1}
-* {option 2}
-* {option 3}
-* … <!-- numbers of options can vary -->
+{In this section we should look into how this changes affect Kong Mesh. For example we might need to update Kong Mesh policies to new API.}
 
-## Decision Outcome
+## Decision
 
-Chosen option: "{option 1}", because {justification. e.g., only option, which meets k.o. criterion decision driver | which resolves force {force} | … | comes out best (see below)}.
+{Fill this section as last. This section should contain simplified description of selected solution.}
 
-### Positive Consequences <!-- optional -->
+## Notes <!-- optional -->
 
-* {e.g., improvement of quality attribute satisfaction, follow-up decisions required, …}
-* …
-
-### Negative Consequences <!-- optional -->
-
-* {e.g., compromising quality attribute, follow-up decisions required, …}
-* …
-
-## Pros and Cons of the Options <!-- optional -->
-
-### {option 1}
-
-{example | description | pointer to more information | …} <!-- optional -->
-
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
-
-### {option 2}
-
-{example | description | pointer to more information | …} <!-- optional -->
-
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
-
-### {option 3}
-
-{example | description | pointer to more information | …} <!-- optional -->
-
-* Good, because {argument a}
-* Good, because {argument b}
-* Bad, because {argument c}
-* … <!-- numbers of pros and cons can vary -->
-
-## Links <!-- optional -->
-
-* {Link type} {Link to ADR} <!-- example: Refined by [ADR-0005](0005-example.md) -->
-* … <!-- numbers of links can vary -->
+{This section could include notes from meeting or open topics for discussion}
