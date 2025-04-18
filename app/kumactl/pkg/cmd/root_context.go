@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"io"
 	"time"
 
@@ -361,4 +362,16 @@ func (rc *RootContext) FetchServerVersion() (*types.IndexResponse, error) {
 	}
 
 	return kumaBuildVersion, nil
+}
+func (rc *RootContext) FetchUserInfo() (*api_server.WhoamiResponse, error) {
+	cl, err := rc.CurrentApiClient()
+	if err != nil {
+		return nil, err
+	}
+	userInfo, err := cl.GetUser(context.Background())
+	if err != nil {
+		return nil, errors.Wrap(err, "Unable to retrieve user information")
+	}
+
+	return userInfo, nil
 }
