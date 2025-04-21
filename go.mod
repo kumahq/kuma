@@ -287,4 +287,4 @@ replace github.com/envoyproxy/go-control-plane/contrib => github.com/kumahq/go-c
 
 replace github.com/envoyproxy/go-control-plane/ratelimit => github.com/kumahq/go-control-plane/ratelimit v0.1.0-kong-1
 
-replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-kong-2
+replace github.com/envoyproxy/go-control-plane => github.com/kumahq/go-control-plane v0.13.4-ld-delta-test-1
