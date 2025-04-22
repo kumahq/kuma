@@ -33,7 +33,7 @@ We have split the `ClusterRole` for the control plane into two parts:
 * A cluster-scoped `ClusterRole` with read access to namespaced resources .
 * A `ClusterRole` with write permissions, now scoped more narrowly.
 
-By default, we use a `ClusterRoleBinding` to grant write permissions to the control plane. However, starting with version 2.11.x, you can specify the namespaces where the control plane should have write access by using the `enabledNamespaces` configuration.
+By default, a `ClusterRoleBinding` is used to grant write permissions to the control plane, and no action is required from the user. However, if you want the control plane to have access only in specific namespaces, you can use the `enabledNamespaces` configuration to define where it should have write permissions.
 
 ### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
 

@@ -20,8 +20,8 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
-# -- Namespaces that are part of the Mesh. Required to create RoleBindings in these namespaces.
-# If not specified, a ClusterRoleBinding will be created instead.
+# -- Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces.
+# If not specified, the control plane has write permissions for all namespaces.
 enabledNamespaces: []
 
 # -- Whether to restart control-plane by calculating a new checksum for the secret
