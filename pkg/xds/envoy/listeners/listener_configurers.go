@@ -4,8 +4,8 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 )
 
@@ -39,9 +39,17 @@ func PipeListener(socketPath string) ListenerBuilderOpt {
 	})
 }
 
-func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying) ListenerBuilderOpt {
-	virtual := transparentProxying.GetRedirectPortOutbound() != 0 && transparentProxying.GetRedirectPortInbound() != 0
-	if virtual {
+func TransparentProxying[T *tproxy_dp.DataplaneConfig | *core_xds.Proxy](value T) ListenerBuilderOpt {
+	var enabled bool
+
+	switch v := any(value).(type) {
+	case *tproxy_dp.DataplaneConfig:
+		enabled = v.Enabled()
+	case *core_xds.Proxy:
+		enabled = v.GetTransparentProxy().Enabled()
+	}
+
+	if enabled {
 		return AddListenerConfigurer(&v3.TransparentProxyingConfigurer{})
 	}
 

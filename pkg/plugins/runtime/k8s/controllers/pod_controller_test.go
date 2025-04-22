@@ -2,12 +2,12 @@ package controllers_test
 
 import (
 	"context"
-	"encoding/json"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
 	kube_discovery "k8s.io/api/discovery/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
@@ -16,6 +16,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/yaml"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -24,6 +25,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
@@ -95,6 +97,99 @@ var _ = Describe("PodReconciler", func() {
 						{
 							State: kube_core.ContainerState{},
 						},
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-with-duplicated-inbound",
+					Annotations: map[string]string{
+						"kuma.io/mesh":             "poc-ms",
+						"kuma.io/sidecar-injected": "true",
+					},
+					Labels: map[string]string{
+						"app": "sample-ms",
+					},
+					UID: "pod-with-duplicated-inbound-demo",
+				},
+				Spec: kube_core.PodSpec{
+					Containers: []kube_core.Container{
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 8080},
+							},
+						},
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 6060, Name: "metrics"},
+							},
+						},
+						{
+							Ports: []kube_core.ContainerPort{
+								{ContainerPort: 9090},
+							},
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example-ms-1",
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+							AppProtocol: pointer.To("http"),
+						},
+						{
+							Protocol: "TCP",
+							Port:     6061,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.String,
+								StrVal: "metrics",
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "sample-ms",
+					},
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "example-ms-2",
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+							AppProtocol: pointer.To("http"),
+						},
+					},
+					Selector: map[string]string{
+						"app": "sample-ms",
 					},
 				},
 			},
@@ -443,6 +538,19 @@ var _ = Describe("PodReconciler", func() {
 						"app": "sample",
 					},
 				},
+			},
+			&mesh_k8s.Mesh{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name: "poc",
+				},
+			},
+			&mesh_k8s.Mesh{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Name: "poc-ms",
+				},
+				Spec: &apiextensionsv1.JSON{
+					Raw: []byte(`{"meshServices":{"mode":"Exclusive"}}`),
+				},
 			}).Build()
 
 		reconciler = &PodReconciler{
@@ -630,71 +738,41 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(HaveLen(1))
 
 		// when
-		actual, err := json.Marshal(dataplanes.Items[0])
+		actual, err := yaml.Marshal(dataplanes.Items[0])
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
-          name: pod-with-kuma-sidecar-and-ip
-          namespace: demo
-          ownerReferences:
-          - apiVersion: v1
-            blockOwnerDeletion: true
-            controller: true
-            kind: Pod
-            name: pod-with-kuma-sidecar-and-ip
-            uid: pod-with-kuma-sidecar-and-ip-demo
-          resourceVersion: "1"
-        spec:
-          networking:
-            address: 192.168.0.1
-            inbound:
-            - state: NotReady
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 6060
-              name: metrics
-              tags:
-                app: sample
-                kuma.io/service: example_demo_svc_6061
-                kuma.io/protocol: tcp
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "6061"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 9090
-              tags:
-                app: sample
-                kuma.io/service: manual-example_demo_svc_90
-                kuma.io/protocol: http
-                k8s.kuma.io/service-name: manual-example
-                k8s.kuma.io/service-port: "90"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-`))
+		Expect(actual).To(MatchGoldenYAML("testdata", "pod_controller", "dataplane-for-pod.golden.yaml"))
+	})
+
+	It("should generate Dataplane resource for every Pod that has Kuma sidecar injected when MeshService enabled", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-duplicated-inbound"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(context.Background(), req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+
+		// when
+		dataplanes := &mesh_k8s.DataplaneList{}
+		err = kubeClient.List(context.Background(), dataplanes)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(dataplanes.Items).To(HaveLen(1))
+
+		// when
+		actual, err := yaml.Marshal(dataplanes.Items[0])
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(actual).To(MatchGoldenYAML("testdata", "pod_controller", "dataplane-for-pod-ms.golden.yaml"))
 	})
 
 	It("should update Dataplane resource, e.g. when new Services get registered", func() {
@@ -732,71 +810,11 @@ var _ = Describe("PodReconciler", func() {
 		Expect(dataplanes.Items).To(HaveLen(1))
 
 		// when
-		actual, err := json.Marshal(dataplanes.Items[0])
+		actual, err := yaml.Marshal(dataplanes.Items[0])
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
-		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
-          name: pod-with-kuma-sidecar-and-ip
-          namespace: demo
-          ownerReferences:
-          - apiVersion: v1
-            blockOwnerDeletion: true
-            controller: true
-            kind: Pod
-            name: pod-with-kuma-sidecar-and-ip
-            uid: "pod-with-kuma-sidecar-and-ip-demo"
-          resourceVersion: "2"
-        spec:
-          networking:
-            address: 192.168.0.1
-            inbound:
-            - state: NotReady 
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 6060
-              name: metrics
-              tags:
-                app: sample
-                kuma.io/service: example_demo_svc_6061
-                kuma.io/protocol: tcp
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "6061"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            - state: NotReady
-              health: {}
-              port: 9090
-              tags:
-                app: sample
-                kuma.io/service: manual-example_demo_svc_90
-                kuma.io/protocol: http
-                k8s.kuma.io/service-name: manual-example
-                k8s.kuma.io/service-port: "90"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-`))
+		Expect(actual).To(MatchGoldenYAML("testdata", "pod_controller", "dataplane-update-after-service-register.golden.yaml"))
 	})
 
 	It("should not update Dataplane if nothing has changed", func() {
@@ -827,6 +845,9 @@ var _ = Describe("PodReconciler", func() {
 				},
 			},
 			Spec: mesh_k8s.ToSpec(&mesh_proto.Dataplane{
+				Envoy: &mesh_proto.EnvoyConfiguration{
+					XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_GRPC,
+				},
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Admin: &mesh_proto.EnvoyAdmin{
@@ -883,58 +904,12 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(dataplanes.Items).To(HaveLen(1))
-
 		// when
-		actual, err := json.Marshal(dataplanes.Items[0])
+		test, err := yaml.Marshal(dataplanes.Items[0])
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and should not add owner reference
-		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/display-name: pod-with-custom-admin-port
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
-          name: pod-with-custom-admin-port
-          namespace: demo
-          ownerReferences:
-              - apiVersion: v1
-                blockOwnerDeletion: true
-                controller: true
-                kind: Pod
-                name: pod-with-custom-admin-port
-                uid: pod-with-custom-admin-port-demo
-          resourceVersion: "2"
-        spec:
-          networking:
-            address: 192.168.0.1
-            admin:
-              port: 9999
-            inbound:
-            - state: NotReady 
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            outbound:
-            - address: 192.168.0.1
-              port: 80
-              tags:
-                kuma.io/service: example_demo_svc_80
-`))
+		Expect(test).To(MatchGoldenYAML("testdata", "pod_controller", "dataplane-not-changed.yaml"))
 	})
 
 	// test check if we have changed resourceVersion since we set labels in `dataplane_manager.go` on a create/update and we cannot set them here
@@ -1010,55 +985,11 @@ var _ = Describe("PodReconciler", func() {
 		// and
 		Expect(dataplanes.Items).To(HaveLen(1))
 		// when
-		actual, err := json.Marshal(dataplanes.Items[0])
+		actual, err := yaml.Marshal(dataplanes.Items[0])
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and should not add owner reference
-		Expect(actual).To(MatchYAML(`
-        mesh: poc
-        metadata:
-          creationTimestamp: null
-          labels:
-            app: sample
-            k8s.kuma.io/namespace: demo
-            kuma.io/env: kubernetes
-            kuma.io/mesh: poc
-            kuma.io/origin: zone
-            kuma.io/proxy-type: sidecar
-            kuma.io/zone: zone-1
-          name: pod-with-custom-admin-port
-          namespace: demo
-          ownerReferences:
-              - apiVersion: v1
-                blockOwnerDeletion: true
-                controller: true
-                kind: Pod
-                name: pod-with-custom-admin-port
-                uid: pod-with-custom-admin-port-demo
-          resourceVersion: "2"
-        spec:
-          networking:
-            address: 192.168.0.1
-            admin:
-              port: 9999
-            inbound:
-            - state: NotReady 
-              health: {}
-              port: 8080
-              tags:
-                app: sample
-                kuma.io/protocol: http
-                kuma.io/service: example_demo_svc_80
-                k8s.kuma.io/service-name: example
-                k8s.kuma.io/service-port: "80"
-                k8s.kuma.io/namespace: demo
-                kuma.io/zone: zone-1
-            outbound:
-            - address: 192.168.0.1
-              port: 80
-              tags:
-                kuma.io/service: example_demo_svc_80
-`))
+		Expect(actual).To(MatchGoldenYAML("testdata", "pod_controller", "dataplane-updated-on-label-add.yaml"))
 	})
 
 	It("should update Pods when ExternalService updated", func() {

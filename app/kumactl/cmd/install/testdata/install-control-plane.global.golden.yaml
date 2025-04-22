@@ -5,7 +5,7 @@ kind: Namespace
 metadata:
   name: kuma-system
   labels:
-    kuma.io/system-namespace: "true"
+    kuma.io/sidecar-injection: "false"
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -390,7 +390,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: f1a4df5e47b745b7cd65510548092d78f5d4b4193d05728d8012a478ae463c6d
+        checksum/tls-secrets: e9741bc4fe1e33f53a468d3708f263fa8f73199a22d3ae1d06505f1ba9651d41
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -557,9 +557,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -612,9 +615,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -683,9 +689,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -747,8 +756,11 @@ webhooks:
   - name: secret.validator.kuma-admission.kuma.io
     admissionReviewVersions: ["v1"]
     namespaceSelector:
-      matchLabels:
-        kuma.io/system-namespace: "true"
+      matchExpressions:
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ

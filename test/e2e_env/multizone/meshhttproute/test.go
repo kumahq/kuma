@@ -170,6 +170,6 @@ spec:
 					Not(HaveKey(MatchRegexp(`^zone2-v3.*`))),
 				),
 			)
-		}, "30s", "5s").Should(Succeed())
+		}, "60s", "5s").Should(Succeed())
 	})
 }

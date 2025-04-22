@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -34,7 +35,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			proxy := &core_xds.Proxy{
 				Id: *core_xds.BuildProxyId(meshName, "dataplane0"),
 				Metadata: &core_xds.DataplaneMetadata{
-					Features: core_xds.Features{core_xds.FeatureTCPAccessLogViaNamedPipe: true},
+					Features: xds_types.Features{xds_types.FeatureTCPAccessLogViaNamedPipe: true},
 					WorkDir:  "/tmp",
 				},
 				Dataplane: &core_mesh.DataplaneResource{

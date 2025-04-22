@@ -34,9 +34,9 @@ func DirectAccessEndpointName(endpoint Endpoint) string {
 }
 
 func (DirectAccessProxyGenerator) Generate(ctx context.Context, _ *core_xds.ResourceSet, xdsCtx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	tproxy := proxy.Dataplane.Spec.Networking.GetTransparentProxying()
 	resources := core_xds.NewResourceSet()
-	if tproxy.GetRedirectPortOutbound() == 0 || tproxy.GetRedirectPortInbound() == 0 || len(tproxy.GetDirectAccessServices()) == 0 {
+	directAccessServices := proxy.Dataplane.Spec.GetNetworking().TransparentProxying.GetDirectAccessServices()
+	if !proxy.GetTransparentProxy().Enabled() || len(directAccessServices) == 0 {
 		return resources, nil
 	}
 
@@ -62,7 +62,7 @@ func (DirectAccessProxyGenerator) Generate(ctx context.Context, _ *core_xds.Reso
 					xdsCtx.Mesh.GetLoggingBackend(proxy.Policies.TrafficLogs[core_mesh.PassThroughService]),
 					proxy,
 				)))).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
+			Configure(envoy_listeners.TransparentProxying(proxy)).
 			Build()
 		if err != nil {
 			return nil, err

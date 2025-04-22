@@ -20,7 +20,6 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -39,20 +38,21 @@ type PodConverter struct {
 	SystemNamespace     string
 	Mode                config_core.CpMode
 	KubeOutboundsAsVIPs bool
+	DeltaXds            bool
 }
 
 func (p *PodConverter) PodToDataplane(
 	ctx context.Context,
 	dataplane *mesh_k8s.Dataplane,
 	pod *kube_core.Pod,
-	ns *kube_core.Namespace,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
+	mesh *core_mesh.MeshResource,
 ) error {
 	logger := converterLog.WithValues("Dataplane.name", dataplane.Name, "Pod.name", pod.Name)
 	previousMesh := dataplane.Mesh
-	dataplane.Mesh = util_k8s.MeshOfByLabelOrAnnotation(logger, pod, ns)
-	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others)
+	dataplane.Mesh = mesh.Meta.GetName()
+	dataplaneProto, err := p.dataplaneFor(ctx, pod, services, others, mesh.Spec.MeshServicesMode())
 	if err != nil {
 		return err
 	}
@@ -169,6 +169,7 @@ func (p *PodConverter) dataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	others []*mesh_k8s.Dataplane,
+	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -270,9 +271,18 @@ func (p *PodConverter) dataplaneFor(
 			return nil, errors.Errorf("invalid delegated gateway type '%s'", gwType)
 		}
 	} else {
-		ifaces, err := p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
-		if err != nil {
-			return nil, err
+		var ifaces []*mesh_proto.Dataplane_Networking_Inbound
+		var err error
+		if msMode == mesh_proto.Mesh_MeshServices_Exclusive {
+			ifaces, err = p.InboundConverter.InboundInterfacesFor(ctx, p.Zone, pod, services)
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			ifaces, err = p.InboundConverter.LegacyInboundInterfacesFor(ctx, p.Zone, pod, services)
+			if err != nil {
+				return nil, err
+			}
 		}
 		dataplane.Networking.Inbound = ifaces
 	}
@@ -304,18 +314,22 @@ func (p *PodConverter) dataplaneFor(
 	if exist {
 		dataplane.Networking.Admin = &mesh_proto.EnvoyAdmin{Port: adminPort}
 	}
+	dataplane.Envoy, err = GetEnvoyConfiguration(p.DeltaXds, annotations)
+	if err != nil {
+		return nil, err
+	}
 
 	return dataplane, nil
 }
 
 func (p *PodConverter) GatewayByServiceFor(ctx context.Context, clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := p.InboundConverter.InboundInterfacesFor(ctx, clusterName, pod, services)
+	interfaces, err := p.InboundConverter.LegacyInboundInterfacesFor(ctx, clusterName, pod, services)
 	if err != nil {
 		return nil, err
 	}
 	return &mesh_proto.Dataplane_Networking_Gateway{
 		Type: mesh_proto.Dataplane_Networking_Gateway_DELEGATED,
-		Tags: interfaces[0].Tags, // InboundInterfacesFor() returns either a non-empty list or an error
+		Tags: interfaces[0].Tags,
 	}, nil
 }
 

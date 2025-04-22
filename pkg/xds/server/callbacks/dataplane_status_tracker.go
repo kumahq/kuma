@@ -21,6 +21,7 @@ var statusTrackerLog = core.Log.WithName("xds").WithName("status-tracker")
 
 type DataplaneStatusTracker interface {
 	util_xds.Callbacks
+	util_xds.DeltaCallbacks
 	GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool)
 }
 
@@ -38,6 +39,7 @@ func NewDataplaneStatusTracker(
 		runtimeInfo:      runtimeInfo,
 		createStatusSink: createStatusSink,
 		streams:          make(map[int64]*streamState),
+		deltaStreams:     make(map[int64]*streamState),
 	}
 }
 
@@ -47,8 +49,18 @@ type dataplaneStatusTracker struct {
 	util_xds.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink DataplaneInsightSinkFactoryFunc
-	mu               sync.RWMutex // protects access to the fields below
+	muStreams        sync.RWMutex
+	muDeltaStreams   sync.RWMutex
 	streams          map[int64]*streamState
+	deltaStreams     map[int64]*streamState
+}
+
+func (d *dataplaneStatusTracker) getStreamsState() map[int64]*streamState {
+	return d.streams
+}
+
+func (d *dataplaneStatusTracker) getDeltaStreamsState() map[int64]*streamState {
+	return d.deltaStreams
 }
 
 type streamState struct {
@@ -61,73 +73,84 @@ type streamState struct {
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
-	c.mu.Lock() // write access to the map of all ADS streams
-	defer c.mu.Unlock()
+	return c.onStreamOpen(streamID, typ, mesh_proto.EnvoyConfiguration_GRPC, &c.muStreams, c.getStreamsState)
+}
 
-	// initialize subscription
-	now := core.Now()
-	subscription := &mesh_proto.DiscoverySubscription{
-		Id:                     core.NewUUID(),
-		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:            util_proto.MustTimestampProto(now),
-		Status:                 mesh_proto.NewSubscriptionStatus(now),
-		Version:                mesh_proto.NewVersion(),
-	}
-	// initialize state per ADS stream
-	state := &streamState{
-		stop:         make(chan struct{}),
-		subscription: subscription,
-	}
-	// save
-	c.streams[streamID] = state
-
-	statusTrackerLog.V(1).Info("proxy connecting", "streamID", streamID, "type", typ, "subscriptionID", subscription.Id)
-	return nil
+// OnDeltaStreamOpen is called once a Delta xDS stream is open with a stream ID and the type URL (or "" for ADS).
+// Returning an error will end processing and close the stream. OnDeltaStreamOpen will still be called.
+func (c *dataplaneStatusTracker) OnDeltaStreamOpen(_ context.Context, streamID int64, typ string) error {
+	return c.onStreamOpen(streamID, typ, mesh_proto.EnvoyConfiguration_DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
 func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
-	c.mu.Lock() // write access to the map of all ADS streams
-	defer c.mu.Unlock()
+	c.onStreamClose(streamID, mesh_proto.EnvoyConfiguration_GRPC, &c.muStreams, c.getStreamsState)
+}
 
-	state := c.streams[streamID]
-	if state == nil {
-		statusTrackerLog.Info("[WARNING] proxy disconnected but no state in the status_tracker", "streamID", streamID)
-		return
-	}
-
-	delete(c.streams, streamID)
-
-	// finilize subscription
-	state.mu.Lock() // write access to the per Dataplane info
-	subscription := state.subscription
-	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
-	state.mu.Unlock()
-
-	// trigger final flush
-	state.Close()
-
-	log := statusTrackerLog.WithValues(
-		"streamID", streamID,
-		"proxyName", state.dataplaneId.Name,
-		"mesh", state.dataplaneId.Mesh,
-		"subscriptionID", state.subscription.Id,
-	)
-
-	if statusTrackerLog.V(1).Enabled() {
-		log = log.WithValues("subscription", subscription)
-	}
-
-	log.Info("proxy disconnected")
+// OnDeltaStreamClosed is called immediately prior to closing an Delta xDS stream with a stream ID.
+func (c *dataplaneStatusTracker) OnDeltaStreamClosed(streamID int64) {
+	c.onStreamClose(streamID, mesh_proto.EnvoyConfiguration_DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
 }
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.DiscoveryRequest) error {
-	c.mu.RLock() // read access to the map of all ADS streams
-	defer c.mu.RUnlock()
+	return c.onStreamRequest(streamID, req, mesh_proto.EnvoyConfiguration_GRPC, &c.muStreams, c.getStreamsState)
+}
 
-	state := c.streams[streamID]
+// OnStreamDeltaRequest is called once a request is received on a delta stream.
+// Returning an error will end processing and close the stream. OnStreamDeltaRequest will still be called.
+func (c *dataplaneStatusTracker) OnStreamDeltaRequest(streamID int64, req util_xds.DeltaDiscoveryRequest) error {
+	return c.onStreamRequest(streamID, req, mesh_proto.EnvoyConfiguration_DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
+}
+
+// OnStreamResponse is called immediately prior to sending a response on a stream.
+func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
+	c.onStreamResponse(streamID, req, resp, mesh_proto.EnvoyConfiguration_GRPC, &c.muStreams, c.getStreamsState)
+}
+
+// OnStreamDeltaResponse is called immediately prior to sending a response on a delta stream.
+func (c *dataplaneStatusTracker) OnStreamDeltaResponse(streamID int64, req util_xds.DeltaDiscoveryRequest, resp util_xds.DeltaDiscoveryResponse) {
+	c.onStreamResponse(streamID, req, resp, mesh_proto.EnvoyConfiguration_DELTA_GRPC, &c.muDeltaStreams, c.getDeltaStreamsState)
+}
+
+// To keep logs short, we want to log "Listeners" instead of full qualified Envoy type url name
+func shortEnvoyType(typeURL string) string {
+	segments := strings.Split(typeURL, ".")
+	if len(segments) <= 1 {
+		return typeURL
+	}
+	return segments[len(segments)-1]
+}
+
+func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
+	state, ok := c.streams[streamID]
+	return state, ok
+}
+
+var _ SubscriptionStatusAccessor = &streamState{}
+
+func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
+	s.mu.RLock() // read access to the per Dataplane info
+	defer s.mu.RUnlock()
+	return s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
+}
+
+func (s *streamState) Close() {
+	close(s.stop)
+}
+
+func (c *dataplaneStatusTracker) onStreamRequest(
+	streamID int64,
+	req util_xds.Request,
+	mode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant,
+	lock *sync.RWMutex,
+	getStreamsState func() map[int64]*streamState,
+) error {
+	lock.RLock() // read access to the map of all ADS streams
+	defer lock.RUnlock()
+
+	state := getStreamsState()[streamID]
 
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
@@ -160,6 +183,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 				"type", md.GetProxyType(),
 				"dpVersion", md.GetVersion().GetKumaDp().GetVersion(),
 				"subscriptionID", state.subscription.Id,
+				"mode", mode,
 			)
 			if statusTrackerLog.V(1).Enabled() {
 				log = log.WithValues("node", req.Node())
@@ -169,12 +193,12 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 			if md.GetVersion() != nil {
 				state.subscription.Version = md.GetVersion()
 			} else {
-				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
+				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "mode", mode, "metadata", req.Metadata())
 			}
 			// Kick off the async Dataplane status flusher.
 			go c.createStatusSink(dpType, state).Start(state.stop)
 		} else {
-			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
+			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "mode", mode, "req", req)
 		}
 	}
 
@@ -185,12 +209,14 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 		"streamID", streamID,
 		"type", shortEnvoyType(req.GetTypeUrl()),
 		"resourceVersion", req.VersionInfo(),
+		"mode", mode,
 	)
 	if statusTrackerLog.V(1).Enabled() {
 		log = log.WithValues(
 			"resourceNames", req.GetResourceNames(),
 			"subscriptionID", subscription.Id,
 			"nonce", req.GetResponseNonce(),
+			"mode", mode,
 		)
 	}
 
@@ -215,12 +241,18 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 	return nil
 }
 
-// OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
-	c.mu.RLock() // read access to the map of all ADS streams
-	defer c.mu.RUnlock()
+func (c *dataplaneStatusTracker) onStreamResponse(
+	streamID int64,
+	req util_xds.Request,
+	resp util_xds.Response,
+	mode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant,
+	lock *sync.RWMutex,
+	getStreamsState func() map[int64]*streamState,
+) {
+	lock.RLock() // read access to the map of all ADS streams
+	defer lock.RUnlock()
 
-	state := c.streams[streamID]
+	state := getStreamsState()[streamID]
 
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
@@ -238,7 +270,8 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 		"type", shortEnvoyType(req.GetTypeUrl()),
 		"resourceVersion", resp.VersionInfo(),
 		"requestedResourceNames", req.GetResourceNames(),
-		"resourceCount", len(resp.GetResources()),
+		"resourceCount", resp.GetNumberOfResources(),
+		"mode", mode,
 	)
 	if statusTrackerLog.V(1).Enabled() {
 		log = log.WithValues(
@@ -250,28 +283,72 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.D
 	log.V(1).Info("config sent")
 }
 
-// To keep logs short, we want to log "Listeners" instead of full qualified Envoy type url name
-func shortEnvoyType(typeURL string) string {
-	segments := strings.Split(typeURL, ".")
-	if len(segments) <= 1 {
-		return typeURL
+func (c *dataplaneStatusTracker) onStreamOpen(
+	streamID int64,
+	typ string,
+	mode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant,
+	lock *sync.RWMutex,
+	getStreamsState func() map[int64]*streamState,
+) error {
+	lock.Lock() // write access to the map of all ADS streams
+	defer lock.Unlock()
+
+	// initialize subscription
+	now := core.Now()
+	subscription := &mesh_proto.DiscoverySubscription{
+		Id:                     core.NewUUID(),
+		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
+		ConnectTime:            util_proto.MustTimestampProto(now),
+		Status:                 mesh_proto.NewSubscriptionStatus(now),
+		Version:                mesh_proto.NewVersion(),
 	}
-	return segments[len(segments)-1]
+	// initialize state per ADS stream
+	state := &streamState{
+		stop:         make(chan struct{}),
+		subscription: subscription,
+	}
+	// save
+	getStreamsState()[streamID] = state
+
+	statusTrackerLog.V(1).Info("proxy connecting", "streamID", streamID, "type", typ, "mode", mode, "subscriptionID", subscription.Id)
+	return nil
 }
 
-func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
-	state, ok := c.streams[streamID]
-	return state, ok
-}
+func (c *dataplaneStatusTracker) onStreamClose(
+	streamID int64,
+	mode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant,
+	lock *sync.RWMutex,
+	getStreamsState func() map[int64]*streamState,
+) {
+	lock.Lock() // write access to the map of all ADS streams
+	defer lock.Unlock()
 
-var _ SubscriptionStatusAccessor = &streamState{}
+	state := getStreamsState()[streamID]
+	if state == nil {
+		statusTrackerLog.Info("[WARNING] proxy disconnected but no state in the status_tracker", "streamID", streamID)
+		return
+	}
+	delete(getStreamsState(), streamID)
+	// finilize subscription
+	state.mu.Lock() // write access to the per Dataplane info
+	subscription := state.subscription
+	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
+	state.mu.Unlock()
 
-func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.DiscoverySubscription) {
-	s.mu.RLock() // read access to the per Dataplane info
-	defer s.mu.RUnlock()
-	return s.dataplaneId, proto.Clone(s.subscription).(*mesh_proto.DiscoverySubscription)
-}
+	// trigger final flush
+	state.Close()
 
-func (s *streamState) Close() {
-	close(s.stop)
+	log := statusTrackerLog.WithValues(
+		"streamID", streamID,
+		"proxyName", state.dataplaneId.Name,
+		"mesh", state.dataplaneId.Mesh,
+		"subscriptionID", state.subscription.Id,
+		"mode", mode,
+	)
+
+	if statusTrackerLog.V(1).Enabled() {
+		log = log.WithValues("subscription", subscription)
+	}
+
+	log.Info("proxy disconnected")
 }

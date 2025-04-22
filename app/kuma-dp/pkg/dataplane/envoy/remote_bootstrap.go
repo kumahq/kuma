@@ -24,17 +24,12 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-type remoteBootstrap struct {
+type remoteBootstrapClient struct {
 	operatingSystem string
-	features        []string
 }
 
-func NewRemoteBootstrapGenerator(operatingSystem string, features []string) BootstrapConfigFactoryFunc {
-	rb := remoteBootstrap{
-		operatingSystem: operatingSystem,
-		features:        features,
-	}
-	return rb.Generate
+func NewRemoteBootstrapClient(operatingSystem string) BootstrapClient {
+	return &remoteBootstrapClient{operatingSystem: operatingSystem}
 }
 
 var (
@@ -50,8 +45,8 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.Config, params BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
-	bootstrapUrl, err := net_url.Parse(url)
+func (b *remoteBootstrapClient) Fetch(ctx context.Context, opts Opts, metadata map[string]string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+	bootstrapUrl, err := net_url.Parse(opts.Config.ControlPlane.URL)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -64,9 +59,9 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 		client.Transport = &http.Transport{
 			TLSClientConfig: tlsConfig,
 		}
-		if cfg.ControlPlane.CaCert != "" {
+		if opts.Config.ControlPlane.CaCert != "" {
 			certPool := x509.NewCertPool()
-			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
+			if ok := certPool.AppendCertsFromPEM([]byte(opts.Config.ControlPlane.CaCert)); !ok {
 				return nil, nil, errors.New("could not add certificate")
 			}
 			tlsConfig.RootCAs = certPool
@@ -76,12 +71,12 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 		}
 	}
 
-	backoff := retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration.Duration, retry.NewConstant(cfg.ControlPlane.Retry.Backoff.Duration))
+	backoff := retry.WithMaxDuration(opts.Config.ControlPlane.Retry.MaxDuration.Duration, retry.NewConstant(opts.Config.ControlPlane.Retry.Backoff.Duration))
 	var respBytes []byte
 	err = retry.Do(ctx, backoff, func(ctx context.Context) error {
-		log.Info("trying to fetch bootstrap configuration from the Control Plane")
+		log.Info("trying to fetch bootstrap configuration from the Control Plane", "features", opts.Config.Features())
 		bootstrapUrl.Path = "/bootstrap"
-		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, cfg, params)
+		respBytes, err = b.requestForBootstrap(ctx, client, bootstrapUrl, opts, metadata)
 		if err == nil {
 			return nil
 		}
@@ -91,9 +86,9 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 
 		switch err {
 		case DpNotFoundErr:
-			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, the control plane is most likely still in the process of converting Pod to Dataplane. If it takes too long, check pod events and control plane logs to see possible cause. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
+			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, the control plane is most likely still in the process of converting Pod to Dataplane. If it takes too long, check pod events and control plane logs to see possible cause. Retrying.", "backoff", opts.Config.ControlPlane.Retry.Backoff)
 		default:
-			log.Info("could not fetch bootstrap configuration, make sure you are not trying to connect to global-cp. retrying (this could help only if you're connecting to zone-cp).", "backoff", cfg.ControlPlane.Retry.Backoff, "err", err.Error())
+			log.Info("could not fetch bootstrap configuration, make sure you are not trying to connect to global-cp. retrying (this could help only if you're connecting to zone-cp).", "backoff", opts.Config.ControlPlane.Retry.Backoff, "err", err.Error())
 		}
 		return retry.RetryableError(err)
 	})
@@ -113,7 +108,7 @@ func (b *remoteBootstrap) Generate(ctx context.Context, url string, cfg kuma_dp.
 	return envoyBootstrap, &bootstrap.KumaSidecarConfiguration, nil
 }
 
-func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) types.ProxyResources {
+func (b *remoteBootstrapClient) resourceMetadata(cfg kuma_dp.DataplaneResources) types.ProxyResources {
 	var maxMemory uint64
 
 	if cfg.MaxMemoryBytes == 0 {
@@ -131,39 +126,52 @@ func (b *remoteBootstrap) resourceMetadata(cfg kuma_dp.DataplaneResources) types
 	return res
 }
 
-func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, error) {
+func (b *remoteBootstrapClient) requestForBootstrap(ctx context.Context, client *http.Client, url *net_url.URL, opts Opts, metadata map[string]string) ([]byte, error) {
 	var dataplaneResource string
-	if params.Dataplane != nil {
-		dpJSON, err := json.Marshal(params.Dataplane)
+	if opts.Dataplane != nil {
+		dpJSON, err := json.Marshal(opts.Dataplane)
 		if err != nil {
 			return nil, err
 		}
 		dataplaneResource = string(dpJSON)
 	}
 	token := ""
-	if cfg.DataplaneRuntime.TokenPath != "" {
-		tokenData, err := os.ReadFile(cfg.DataplaneRuntime.TokenPath)
+	if opts.Config.DataplaneRuntime.TokenPath != "" {
+		tokenData, err := os.ReadFile(opts.Config.DataplaneRuntime.TokenPath)
 		if err != nil {
 			return nil, err
 		}
 		token = string(tokenData)
 	}
-	if cfg.DataplaneRuntime.Token != "" {
-		token = cfg.DataplaneRuntime.Token
+	if opts.Config.DataplaneRuntime.Token != "" {
+		token = opts.Config.DataplaneRuntime.Token
 	}
 	// Remove any trailing and starting spaces.
 	token = strings.TrimSpace(token)
 
-	resources := b.resourceMetadata(cfg.DataplaneRuntime.Resources)
+	resources := b.resourceMetadata(opts.Config.DataplaneRuntime.Resources)
+
+	envoyVersion, err := GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get Envoy version")
+	}
+
+	if envoyVersion.KumaDpCompatible, err = VersionCompatible(kuma_version.Envoy, envoyVersion.Version); err != nil {
+		runLog.Error(err, "cannot determine envoy version compatibility")
+	} else if !envoyVersion.KumaDpCompatible {
+		runLog.Info("Envoy version incompatible", "expected", kuma_version.Envoy, "current", envoyVersion.Version)
+	} else {
+		runLog.Info("fetched Envoy version", "version", envoyVersion)
+	}
 
 	request := types.BootstrapRequest{
-		Mesh:               cfg.Dataplane.Mesh,
-		Name:               cfg.Dataplane.Name,
-		ProxyType:          cfg.Dataplane.ProxyType,
+		Mesh:               opts.Config.Dataplane.Mesh,
+		Name:               opts.Config.Dataplane.Name,
+		ProxyType:          opts.Config.Dataplane.ProxyType,
 		DataplaneToken:     token,
-		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		DataplaneTokenPath: opts.Config.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,
-		CaCert:             cfg.ControlPlane.CaCert,
+		CaCert:             opts.Config.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,
@@ -172,24 +180,25 @@ func (b *remoteBootstrap) requestForBootstrap(ctx context.Context, client *http.
 				BuildDate: kuma_version.Build.BuildDate,
 			},
 			Envoy: types.EnvoyVersion{
-				Version:          params.EnvoyVersion.Version,
-				Build:            params.EnvoyVersion.Build,
-				KumaDpCompatible: params.EnvoyVersion.KumaDpCompatible,
+				Version:          envoyVersion.Version,
+				Build:            envoyVersion.Build,
+				KumaDpCompatible: envoyVersion.KumaDpCompatible,
 			},
 		},
-		DynamicMetadata:      params.DynamicMetadata,
-		DNSPort:              params.DNSPort,
-		ReadinessPort:        params.ReadinessPort,
-		AppProbeProxyEnabled: params.AppProbeProxyEnabled,
+		DynamicMetadata:      metadata,
+		DNSPort:              opts.Config.DNS.EnvoyDNSPort,
+		ReadinessPort:        opts.Config.Dataplane.ReadinessPort,
+		AppProbeProxyEnabled: opts.Config.ApplicationProbeProxyServer.Port > 0,
 		OperatingSystem:      b.operatingSystem,
-		Features:             b.features,
+		Features:             opts.Config.Features(),
 		Resources:            resources,
-		Workdir:              params.Workdir,
+		Workdir:              opts.Config.DataplaneRuntime.SocketDir,
 		MetricsResources: types.MetricsResources{
-			CertPath: params.MetricsCertPath,
-			KeyPath:  params.MetricsKeyPath,
+			CertPath: opts.Config.DataplaneRuntime.Metrics.CertPath,
+			KeyPath:  opts.Config.DataplaneRuntime.Metrics.KeyPath,
 		},
-		SystemCaPath: params.SystemCaPath,
+		SystemCaPath:     opts.Config.DataplaneRuntime.SystemCaPath,
+		TransparentProxy: opts.Config.DataplaneRuntime.TransparentProxy,
 	}
 	jsonBytes, err := json.MarshalIndent(request, "", " ")
 	if err != nil {

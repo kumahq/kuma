@@ -13,6 +13,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
+	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 )
 
 var DefaultConfig = func() Config {
@@ -25,17 +27,19 @@ var DefaultConfig = func() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:          "",
-			Name:          "", // Dataplane name must be set explicitly
-			DrainTime:     config_types.Duration{Duration: 30 * time.Second},
-			ProxyType:     "dataplane",
-			ReadinessPort: 9902,
+			Mesh:                          "",
+			Name:                          "", // Dataplane name must be set explicitly
+			DrainTime:                     config_types.Duration{Duration: 30 * time.Second},
+			ProxyType:                     "dataplane",
+			ReadinessPort:                 9902,
+			ResilientComponentMaxBackoff:  config_types.Duration{Duration: 1 * time.Minute},
+			ResilientComponentBaseBackoff: config_types.Duration{Duration: 5 * time.Second},
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 			DynamicConfiguration: DynamicConfiguration{
-				RefreshInterval: config_types.Duration{Duration: 10 * time.Second},
+				RefreshInterval: config_types.Duration{Duration: 1 * time.Second},
 			},
 		},
 		DNS: DNS{
@@ -65,6 +69,22 @@ type Config struct {
 	// DNS defines a configuration for builtin DNS in Kuma DP
 	DNS                         DNS                         `json:"dns,omitempty"`
 	ApplicationProbeProxyServer ApplicationProbeProxyServer `json:"applicationProbeProxyServer,omitempty"`
+}
+
+func (c *Config) Features() []string {
+	base := []string{
+		xds_types.FeatureTCPAccessLogViaNamedPipe,
+	}
+
+	if c.DNS.ProxyPort != 0 {
+		base = append(base, xds_types.FeatureEmbeddedDNS)
+	}
+
+	if c.DataplaneRuntime.TransparentProxy != nil {
+		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
+	}
+
+	return base
 }
 
 func (c *Config) Sanitize() {
@@ -139,6 +159,10 @@ type Dataplane struct {
 	DrainTime config_types.Duration `json:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
 	// Port that exposes kuma-dp readiness status on localhost, set this value to 0 to provide readiness by "/ready" endpoint from Envoy adminAPI
 	ReadinessPort uint32 `json:"readinessPort,omitempty" envconfig:"kuma_readiness_port"`
+	// ResilientComponentBaseBackoff defines the base backoff between restarts of resilient components
+	ResilientComponentBaseBackoff config_types.Duration `json:"resilientComponentBaseBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_base_backoff"`
+	// ResilientComponentMaxBackoff defines the max backoff between restarts of resilient components
+	ResilientComponentMaxBackoff config_types.Duration `json:"resilientComponentMaxBackoff,omitempty" envconfig:"kuma_dataplane_resilient_component_max_backoff"`
 }
 
 func (d *Dataplane) PostProcess() error {
@@ -217,6 +241,10 @@ type DataplaneRuntime struct {
 	DynamicConfiguration DynamicConfiguration `json:"dynamicConfiguration" envconfig:"kuma_dataplane_runtime_dynamic_configuration"`
 	// SystemCaPath defines path of system provided Ca
 	SystemCaPath string `json:"systemCaPath,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_system_ca_path"`
+	// TransparentProxy configures transparent proxy settings for the dataplane,
+	// including redirect behavior, DNS capture, and IP family mode.
+	// This is used to determine how traffic redirection and interception is handled.
+	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 }
 
 type Metrics struct {
@@ -361,6 +389,9 @@ type DNS struct {
 
 	// If true then builtin DNS functionality is enabled and CoreDNS server is started
 	Enabled bool `json:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
+
+	// ProxyPort defines the port of the embedded DNS proxy (if non 0 then the embedded proxy replaces coreDNS + Envoy. recommended value: 15053)
+	ProxyPort uint32 `json:"proxyPort,omitempty" envconfig:"kuma_dns_proxy_port"`
 	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
 	CoreDNSPort uint32 `json:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
 	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.

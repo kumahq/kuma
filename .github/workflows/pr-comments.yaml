@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Generate GitHub app token
         id: github-app-token
-        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+        uses: actions/create-github-app-token@3ff1caaa28b64c9cc276ce0a02e2ff584f3900c5 # v2.0.2
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}
@@ -59,7 +59,7 @@ jobs:
       - name: format
         if: contains(github.event.comment.body, '/format') # check the comment if it contains the keywords
         run: |
-          make clean/generated generate format
+          make clean/generated check
       - name: run golden_files
         if: contains(github.event.comment.body, '/golden_files') # check the comment if it contains the keywords
         run: |

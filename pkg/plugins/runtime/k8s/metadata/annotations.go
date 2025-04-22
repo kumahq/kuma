@@ -134,6 +134,10 @@ const (
 
 	// HeadlessService is "true" when the Service had ClusterIP: None, otherwise "false"
 	HeadlessService = "k8s.kuma.io/is-headless-service"
+
+	// KumaXdsTransportProtocolVariant allows to specify mode in which control-plane exchange configuration with the sidecar.
+	// Available values are: DELTA_GRPC and GRPC
+	KumaXdsTransportProtocolVariant = "kuma.io/xds-transport-protocol-variant"
 )
 
 var PodAnnotationDeprecations = []Deprecation{

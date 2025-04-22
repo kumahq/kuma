@@ -40,6 +40,10 @@ func AutoReachableServices() {
 		Expect(DeleteMeshResources(KubeCluster, meshName, v1alpha1.MeshTrafficPermissionResourceTypeDescriptor)).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(KubeCluster, meshName, namespace, esNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(KubeCluster.DeleteNamespace(namespace)).To(Succeed())
 		Expect(KubeCluster.DeleteNamespace(esNamespace)).To(Succeed())

@@ -16,10 +16,10 @@ import (
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -36,6 +36,7 @@ var _ = Describe("run", func() {
 	var tmpDir string
 
 	BeforeEach(func() {
+		prometheus.DefaultRegisterer = prometheus.NewRegistry()
 		ctx, cancel = context.WithCancel(context.Background())
 		var err error
 		tmpDir, err = os.MkdirTemp("", "")
@@ -68,6 +69,7 @@ var _ = Describe("run", func() {
 		args         []string
 		expectedFile string
 	}
+
 	DescribeTable("should be possible to start dataplane (Envoy) using `kuma-dp run`",
 		func(givenFunc func() testCase) {
 			given := givenFunc()
@@ -90,15 +92,8 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ context.Context, _ string, cfg kumadp.Config, _ envoy.BootstrapParams) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
-				respBytes, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
-				Expect(err).ToNot(HaveOccurred())
-				bootstrap := &envoy_bootstrap_v3.Bootstrap{}
-				if err := util_proto.FromYAML(respBytes, bootstrap); err != nil {
-					return nil, nil, err
-				}
-				return bootstrap, &types.KumaSidecarConfiguration{}, nil
-			}
+
+			rootCtx.BootstrapClient = fakeBootstrapClient{}
 
 			reader, writer := io.Pipe()
 			go func() {
@@ -123,12 +118,11 @@ var _ = Describe("run", func() {
 			// then
 			var actualConfigFile string
 			envoyPid := verifyComponentProcess("Envoy", envoyPidFile, envoyCmdlineFile, func(actualArgs []string) {
-				Expect(actualArgs[0]).To(Equal("--version"))
-				Expect(actualArgs[1]).To(Equal("--config-path"))
-				actualConfigFile = actualArgs[2]
+				Expect(actualArgs[0]).To(Equal("--config-path"))
+				actualConfigFile = actualArgs[1]
 				Expect(actualConfigFile).To(BeARegularFile())
 				if given.expectedFile != "" {
-					Expect(actualArgs[2]).To(Equal(given.expectedFile))
+					Expect(actualArgs[1]).To(Equal(given.expectedFile))
 				}
 			})
 
@@ -377,4 +371,20 @@ func verifyComponentProcess(processDescription, pidfile string, cmdlinefile stri
 		argsVerifier(actualArgs)
 	}
 	return pid
+}
+
+type fakeBootstrapClient struct{}
+
+func (g fakeBootstrapClient) Fetch(_ context.Context, _ envoy.Opts, _ map[string]string) (*envoy_bootstrap_v3.Bootstrap, *types.KumaSidecarConfiguration, error) {
+	bs, err := os.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var bootstrap envoy_bootstrap_v3.Bootstrap
+	if err := util_proto.FromYAML(bs, &bootstrap); err != nil {
+		return nil, nil, err
+	}
+
+	return &bootstrap, &types.KumaSidecarConfiguration{}, nil
 }

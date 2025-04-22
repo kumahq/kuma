@@ -18,6 +18,7 @@ import (
 	core_config "github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/transparentproxy/consts"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 // ValueOrRangeList is a format acceptable by iptables in which
@@ -56,7 +57,9 @@ var _ json.Unmarshaler = (*Port)(nil)
 
 type Port uint16
 
-func (p *Port) String() string { return strconv.Itoa(int(*p)) }
+func (p *Port) Uint32() uint32 { return uint32(pointer.Deref(p)) }
+
+func (p *Port) String() string { return strconv.Itoa(int(pointer.Deref(p))) }
 
 func (p *Port) Type() string { return "uint16" }
 
@@ -689,6 +692,10 @@ func (c Config) InitializeKumaDPUser() (string, error) {
 }
 
 type IPFamilyMode string
+
+func IPFamilyModeFromStringer(s fmt.Stringer) IPFamilyMode {
+	return IPFamilyMode(strings.ToLower(s.String()))
+}
 
 func (e *IPFamilyMode) UnmarshalJSON(bs []byte) error {
 	var value string

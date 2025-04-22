@@ -77,6 +77,11 @@ interCp:
 		Expect(zone).ToNot(BeNil())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(c1, "default", TestNamespace)
+		DebugKube(c2, "default", TestNamespace)
+	})
+
 	E2EAfterAll(func() {
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(c1.DeleteKuma()).To(Succeed())
@@ -171,8 +176,7 @@ interCp:
 		})
 	})
 
-	// TODO(bartsmykla): disabled while investingating flake
-	XIt("should execute admin operations on Global CP", func() {
+	It("should execute admin operations on Global CP", func() {
 		// given DP available on Global CP
 		Eventually(func(g Gomega) {
 			dataplanes, err := c1.GetKumactlOptions().KumactlList("dataplanes", "default")

@@ -1,0 +1,55 @@
+{
+ "mesh": "demo",
+ "name": "sample",
+ "proxyType": "dataplane",
+ "dataplaneToken": "token",
+ "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+ "version": {
+  "kumaDp": {
+   "version": "0.0.1",
+   "gitTag": "v0.0.1",
+   "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+   "buildDate": "2019-08-07T11:26:06Z"
+  },
+  "envoy": {
+   "version": "1.15.0",
+   "build": "50ef0945fa2c5da4bff7627c3abf41fdd3b7cffd/1.15.0/clean-getenvoy-2aa564b-envoy/RELEASE/BoringSSL",
+   "kumaDpCompatible": false
+  }
+ },
+ "caCert": "",
+ "dynamicMetadata": null,
+ "dnsPort": 15054,
+ "readinessPort": 9902,
+ "operatingSystem": "linux",
+ "features": [
+  "feature-tcp-accesslog-via-named-pipe",
+  "feature-transparent-proxy-in-dataplane-metadata"
+ ],
+ "resources": {
+  "maxHeapSizeBytes": 0
+ },
+ "workdir": "/tmp",
+ "metricsResources": {
+  "certPath": "",
+  "keyPath": ""
+ },
+ "systemCaPath": "",
+ "dataplaneConfig": {
+  "ipFamilyMode": "ipv4",
+  "redirect": {
+   "inbound": {
+    "enabled": false,
+    "port": 1234
+   },
+   "outbound": {
+    "enabled": false,
+    "port": 2345
+   },
+   "dns": {
+    "enabled": false,
+    "port": 3456
+   }
+  }
+ }
+}
