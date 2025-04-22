@@ -23,7 +23,7 @@ resources:
               prefixLen: 128
           normalizePath: true
           routeConfig:
-            name: outbound:default_backend___msvc_80
+            name: kri_msvc_default___backend_test-port
             validateClusters: false
             virtualHosts:
             - domains:
