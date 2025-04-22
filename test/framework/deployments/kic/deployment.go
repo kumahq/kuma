@@ -20,9 +20,10 @@ type Deployment interface {
 }
 
 type deployOptions struct {
-	namespace string
-	mesh      string
-	name      string
+	namespace       string
+	watchNamespaces []string
+	mesh            string
+	name            string
 }
 
 type deployOptionsFunc func(*deployOptions)
@@ -47,6 +48,7 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 		case *framework.K8sCluster:
 			deployment = &k8sDeployment{
 				ingressNamespace: opts.namespace,
+				watchNamespaces:  opts.watchNamespaces,
 				mesh:             opts.mesh,
 				name:             opts.name,
 			}
@@ -60,6 +62,12 @@ func Install(fs ...deployOptionsFunc) framework.InstallFunc {
 func WithNamespace(namespace string) deployOptionsFunc {
 	return func(o *deployOptions) {
 		o.namespace = namespace
+	}
+}
+
+func WithWatchNamespaces(namespaces ...string) deployOptionsFunc {
+	return func(o *deployOptions) {
+		o.watchNamespaces = append(o.watchNamespaces, namespaces...)
 	}
 }
 

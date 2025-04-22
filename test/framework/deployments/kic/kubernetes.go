@@ -2,6 +2,8 @@ package kic
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/helm"
@@ -16,6 +18,7 @@ import (
 
 type k8sDeployment struct {
 	ingressNamespace string
+	watchNamespaces  []string
 	mesh             string
 	name             string
 }
@@ -31,13 +34,21 @@ func (t *k8sDeployment) Deploy(cluster framework.Cluster) error {
 	if t.ingressNamespace == "" {
 		t.ingressNamespace = framework.Config.DefaultGatewayNamespace
 	}
+
+	if len(t.watchNamespaces) == 0 {
+		t.watchNamespaces = []string{t.ingressNamespace}
+	} else if !slices.Contains(t.watchNamespaces, t.ingressNamespace) {
+		t.watchNamespaces = append(t.watchNamespaces, t.ingressNamespace)
+	}
+	watchNamespacesVal := strings.Join(t.watchNamespaces, ",")
+
 	opts := helm.Options{
 		KubectlOptions: cluster.GetKubectlOptions(t.ingressNamespace),
 	}
 	_, err = helm.RunHelmCommandAndGetStdOutE(cluster.GetTesting(), &opts, "install", t.name,
 		"--namespace", t.ingressNamespace,
 		"--repo", "https://charts.konghq.com",
-		"--set", "controller.ingressController.watchNamespaces={"+t.ingressNamespace+"}",
+		"--set", "controller.ingressController.watchNamespaces={"+watchNamespacesVal+"}",
 		"--set", "controller.ingressController.ingressClass="+t.name,
 		"--set", "controller.podAnnotations.kuma\\.io/mesh="+t.mesh,
 		"--set", "gateway.podAnnotations.kuma\\.io/mesh="+t.mesh,

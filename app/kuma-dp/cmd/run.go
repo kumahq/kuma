@@ -192,42 +192,17 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 			components := []component.Component{tokenComp}
 
 			opts := envoy.Opts{
-				Config:    *cfg,
+				Config:    pointer.Deref(cfg),
 				Dataplane: rest.From.Resource(proxyResource),
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 				OnFinish:  cancelComponents,
 			}
 
-			envoyVersion, err := envoy.GetEnvoyVersion(opts.Config.DataplaneRuntime.BinaryPath)
+			runLog.Info("fetching bootstrap configuration")
+			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapClient.Fetch(gracefulCtx, opts, rootCtx.BootstrapDynamicMetadata)
 			if err != nil {
-				return errors.Wrap(err, "failed to get Envoy version")
-			}
-
-			if envoyVersion.KumaDpCompatible, err = envoy.VersionCompatible(kuma_version.Envoy, envoyVersion.Version); err != nil {
-				runLog.Error(err, "cannot determine envoy version compatibility")
-			} else if !envoyVersion.KumaDpCompatible {
-				runLog.Info("Envoy version incompatible", "expected", kuma_version.Envoy, "current", envoyVersion.Version)
-			}
-
-			runLog.Info("fetched Envoy version", "version", envoyVersion)
-
-			runLog.Info("generating bootstrap configuration")
-			appProbeProxyEnabled := opts.Config.ApplicationProbeProxyServer.Port > 0
-			bootstrap, kumaSidecarConfiguration, err := rootCtx.BootstrapGenerator(gracefulCtx, opts.Config.ControlPlane.URL, opts.Config, envoy.BootstrapParams{
-				Dataplane:            opts.Dataplane,
-				DNSPort:              cfg.DNS.EnvoyDNSPort,
-				ReadinessPort:        cfg.Dataplane.ReadinessPort,
-				AppProbeProxyEnabled: appProbeProxyEnabled,
-				EnvoyVersion:         *envoyVersion,
-				Workdir:              cfg.DataplaneRuntime.SocketDir,
-				DynamicMetadata:      rootCtx.BootstrapDynamicMetadata,
-				MetricsCertPath:      cfg.DataplaneRuntime.Metrics.CertPath,
-				MetricsKeyPath:       cfg.DataplaneRuntime.Metrics.KeyPath,
-				SystemCaPath:         cfg.DataplaneRuntime.SystemCaPath,
-			})
-			if err != nil {
-				return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
+				return errors.Errorf("Failed to fetch Envoy bootstrap config. %v", err)
 			}
 			runLog.Info("received bootstrap configuration", "adminPort", bootstrap.GetAdmin().GetAddress().GetSocketAddress().GetPortValue())
 
@@ -311,7 +286,7 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			if appProbeProxyEnabled {
+			if opts.Config.ApplicationProbeProxyServer.Port > 0 {
 				prober := probes.NewProber(kumaSidecarConfiguration.Networking.Address, opts.Config.ApplicationProbeProxyServer.Port)
 				if err := rootCtx.ComponentManager.Add(prober); err != nil {
 					return err

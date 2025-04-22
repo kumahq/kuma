@@ -112,10 +112,17 @@ func StructToMapOfAny(value any) map[string]any {
 		if field.PkgPath != "" {
 			continue
 		}
-		key := field.Tag.Get("json")
-		if key == "" {
+
+		var key string
+		switch k := field.Tag.Get("json"); k {
+		case "-":
+			continue
+		case "":
 			key = field.Name
+		default:
+			key = k
 		}
+
 		val := v.Field(i)
 
 		switch val.Kind() {

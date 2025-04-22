@@ -52,7 +52,7 @@ type DataplaneRedirect struct {
 }
 
 type DataplaneConfig struct {
-	core_config.BaseConfig
+	core_config.BaseConfig `json:"-"`
 
 	IPFamilyMode tproxy_config.IPFamilyMode `json:"ipFamilyMode"`
 	Redirect     DataplaneRedirect          `json:"redirect"`
