@@ -5,10 +5,10 @@ import (
 	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"github.com/kumahq/kuma/pkg/core/kri"
 )
 
 func comparePath(a *PathMatch, b *PathMatch) int {
