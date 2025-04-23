@@ -8,6 +8,16 @@ does not have any particular instructions.
 
 ## Upgrade to `2.11.x`
 
+### Introduce an option to skip RBAC creation
+
+By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:
+
+* `skipRBAC`: Disables the creation of all RBAC resources (CNI, control plane, and Helm jobs).
+* `controlPlane.skipRBAC`: Disables the creation of RBAC resources for the control plane only.
+
+> [!WARNING]
+> Before disabling automatic creation, ensure that the necessary RBAC resources are already in place, as the mesh components will not work correctly without them.
+
 ### `kuma-sidecar` container has `allowPrivilegeEscalation` set to `false`
 
 In previous versions, Kuma did not explicitly set `allowPrivilegeEscalation`. Starting with this version, it is now explicitly set to `false`.
