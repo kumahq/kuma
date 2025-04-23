@@ -13,7 +13,7 @@ does not have any particular instructions.
 By default, we create all RBAC resources required for the mesh to function properly. Since `2.11.x`, it's possible to skip the creation of `ClusterRole`, `ClusterRoleBinding`, `Role`, and `RoleBinding`. We introduced two flags:
 
 * `skipRBAC`: Disables the creation of all RBAC resources (CNI and control plane).
-* `controlPlane.skipRBAC`: Disables the creation of RBAC resources for the control plane only.
+* `controlPlane.skipClusterRoleCreation`: Disables the creation of `ClusterRole `and `ClusterRoleBinding` resources for the control plane only.
 
 > [!WARNING]
 > Before disabling automatic creation, ensure that the necessary RBAC resources are already in place, as the mesh components will not work correctly without them.

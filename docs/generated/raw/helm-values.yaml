@@ -359,9 +359,9 @@ controlPlane:
       nameservers: []
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
-  # -- Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for the control plane should be created.
+  # -- Determines whether ClusterRole and ClusterRoleBinding for the control plane should be created.
   # If set to true, the user must manually create these resources before deploying the control plane.
-  skipRBAC: false
+  skipClusterRoleCreation: false
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container

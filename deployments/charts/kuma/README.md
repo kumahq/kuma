@@ -106,7 +106,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.dns.config | object | `{"nameservers":[],"searches":[]}` | Optional dns configuration, required when policy is 'None' |
 | controlPlane.dns.config.nameservers | list | `[]` | A list of IP addresses that will be used as DNS servers for the Pod. There can be at most 3 IP addresses specified. |
 | controlPlane.dns.config.searches | list | `[]` | A list of DNS search domains for hostname lookup in the Pod. |
-| controlPlane.skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for the control plane should be created. If set to true, the user must manually create these resources before deploying the control plane. |
+| controlPlane.skipClusterRoleCreation | bool | `false` | Determines whether ClusterRole and ClusterRoleBinding for the control plane should be created. If set to true, the user must manually create these resources before deploying the control plane. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |

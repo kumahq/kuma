@@ -1,2 +1,2 @@
 controlPlane:
-  skipRBAC: true
+  skipClusterRoleCreation: true

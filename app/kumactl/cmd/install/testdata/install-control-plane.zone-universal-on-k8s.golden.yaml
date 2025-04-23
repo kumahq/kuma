@@ -8,16 +8,6 @@ metadata:
     kuma.io/sidecar-injection: "false"
 ---
 apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-control-plane
-  namespace: kuma-system
-  labels: 
-    app: kuma-control-plane
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
