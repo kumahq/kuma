@@ -381,6 +381,10 @@ cni:
   # -- Set the CNI affinity
   affinity: {}
 
+  taintController:
+    # -- Enable taint controller
+    enabled: true
+
   image:
     # -- CNI image repository
     repository: "kuma-cni"

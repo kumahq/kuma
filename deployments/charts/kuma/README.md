@@ -116,6 +116,7 @@ A Helm chart for the Kuma Control Plane
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.namespace | string | `"kube-system"` | Set the CNI namespace |
 | cni.affinity | object | `{}` | Set the CNI affinity |
+| cni.taintController.enabled | bool | `true` | Enable taint controller |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |

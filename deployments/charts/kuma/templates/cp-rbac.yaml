@@ -120,12 +120,14 @@ rules:
       - get
       - list
       - watch
+  {{- if.Values.cni.taintController.enabled }}
   - apiGroups: # required for taint controller
       - ""
     resources:
       - nodes
     verbs:
       - update
+  {{- end }}
   {{- end }}
   # validate k8s token before issuing mTLS cert
   - apiGroups:
