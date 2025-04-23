@@ -307,7 +307,7 @@ env:
 - name: KUMA_EXPERIMENTAL_SIDECAR_CONTAINERS
   value: "true"
 {{- end }}
-{{- if .Values.cni.enabled }}
+{{- if and .Values.cni.enabled .Values.cni.taintController.enabled }}
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_ENABLED
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_NODE_TAINT_CONTROLLER_CNI_APP

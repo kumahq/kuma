@@ -4,8 +4,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -16,7 +16,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 		listenerProtocol    xds.SocketAddressProtocol
 		listenerAddress     string
 		listenerPort        uint32
-		transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying
+		transparentProxying *tproxy_dp.DataplaneConfig
 		expected            string
 	}
 
@@ -38,9 +38,11 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 		Entry("basic listener with transparent proxying", testCase{
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-				RedirectPortOutbound: 12345,
-				RedirectPortInbound:  12346,
+			transparentProxying: &tproxy_dp.DataplaneConfig{
+				Redirect: tproxy_dp.DataplaneRedirect{
+					Inbound:  tproxy_dp.DataplaneTrafficFlowFromPortLike(12345),
+					Outbound: tproxy_dp.DataplaneTrafficFlowFromPortLike(12346),
+				},
 			},
 			expected: `
             name: inbound:192.168.0.1:8080
@@ -56,7 +58,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 		Entry("basic listener without transparent proxying", testCase{
 			listenerAddress:     "192.168.0.1",
 			listenerPort:        8080,
-			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{},
+			transparentProxying: &tproxy_dp.DataplaneConfig{},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

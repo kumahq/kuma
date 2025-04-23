@@ -126,9 +126,58 @@ rules:
       - get
       - patch
       - update
-  - apiGroups: # Kuma resources
+  - apiGroups:
       - kuma.io
-    resources: ["*"]
+    resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
+      - meshgatewayconfigs
+      - meshaccesslogs
+      - meshcircuitbreakers
+      - meshfaultinjections
+      - meshhealthchecks
+      - meshhttproutes
+      - meshloadbalancingstrategies
+      - meshmetrics
+      - meshpassthroughs
+      - meshproxypatches
+      - meshratelimits
+      - meshretries
+      - meshtcproutes
+      - meshtimeouts
+      - meshtlses
+      - meshtraces
+      - meshtrafficpermissions
+      - hostnamegenerators
+      - meshexternalservices
+      - meshmultizoneservices
+      - meshservices
     verbs:
       - get
       - list
@@ -137,6 +186,17 @@ rules:
       - update
       - patch
       - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
@@ -146,6 +206,91 @@ rules:
       - create
 ---
 # ClusterRole for namespaces-scoped resource with write permissions
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    "foo": "baz"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+    # required by MeshGateway
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    # required by MeshGateway
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+    # Gateway API
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -244,6 +389,24 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: kuma-control-plane
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    "foo": "baz"
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-writer
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
@@ -429,7 +592,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 3a137bbfcbbe6ba5a3997b30b1b047b2b080a9f912520a5fa683f11c4c6b6f3c
-        checksum/tls-secrets: 6ca677bfd7776d1b12e940c3f3b292cf19c869d3a610054810f3a63961ed3187
+        checksum/tls-secrets: becab2947612dc6b22d74ecf8cc2371b9dd363a890ad5d7246983093d3b781cc
       labels: 
         app: kuma-control-plane
         "foo": "baz"
@@ -605,9 +768,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -660,9 +826,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -722,10 +891,13 @@ webhooks:
       matchExpressions:
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
         - key: kuma.io/sidecar-injection
           operator: In
-          values: ["enabled", "true"]
+          values: 
+          - enabled
+          - "true"
     clientConfig:
       caBundle: XYZ
       service:
@@ -747,9 +919,13 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values:
+          - kube-system
+          - kuma-system
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -786,9 +962,12 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
+        - key: kuma.io/sidecar-injection
+          operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: ["kube-system"]
+          values: 
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:

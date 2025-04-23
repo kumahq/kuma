@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	util_tls "github.com/kumahq/kuma/pkg/tls"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 )
 
 type APIVersion string
@@ -194,6 +195,10 @@ type Proxy struct {
 	Zone string
 	// InternalAddresses is a set of address prefixes that are considered internal to the mesh, it will be configured to in Envoy HCM config
 	InternalAddresses []InternalAddress
+}
+
+func (p *Proxy) GetTransparentProxy() *tproxy_dp.DataplaneConfig {
+	return tproxy_dp.GetDataplaneConfig(p.Dataplane, p.Metadata)
 }
 
 type ServerSideMTLSCerts struct {

@@ -30,10 +30,10 @@ var _ = Describe("Secrets", Ordered, func() {
 	var metrics core_metrics.Metrics
 	var now time.Time
 
-	newMesh := func() *core_mesh.MeshResource {
+	newMesh := func(name string) *core_mesh.MeshResource {
 		return &core_mesh.MeshResource{
 			Meta: &model.ResourceMeta{
-				Name: "default",
+				Name: name,
 			},
 			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
@@ -118,10 +118,22 @@ var _ = Describe("Secrets", Ordered, func() {
 		caManagers := core_ca.Managers{
 			"builtin": builtinCaManager,
 		}
-		mesh := newMesh()
+		mesh := newMesh("default")
 		err := rm.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = builtinCaManager.EnsureBackends(context.Background(), mesh, mesh.Spec.Mtls.Backends)
+		Expect(err).ToNot(HaveOccurred())
+
+		mesh1 := newMesh("mesh-1")
+		err = rm.Create(context.Background(), mesh1, store.CreateByKey("mesh-1", core_model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = builtinCaManager.EnsureBackends(context.Background(), mesh1, mesh1.Spec.Mtls.Backends)
+		Expect(err).ToNot(HaveOccurred())
+
+		mesh2 := newMesh("mesh-2")
+		err = rm.Create(context.Background(), mesh2, store.CreateByKey("mesh-2", core_model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = builtinCaManager.EnsureBackends(context.Background(), mesh2, mesh2.Spec.Mtls.Backends)
 		Expect(err).ToNot(HaveOccurred())
 
 		m, err := core_metrics.NewMetrics("local")
@@ -145,7 +157,7 @@ var _ = Describe("Secrets", Ordered, func() {
 	Context("dataplane proxy", func() {
 		It("should generate cert and emit statistic and info", func() {
 			// when
-			identity, ca, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+			identity, ca, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 
 			// then certs are generated
 			Expect(err).ToNot(HaveOccurred())
@@ -172,11 +184,11 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		It("should not regenerate certs if nothing has changed", func() {
 			// given
-			identity, cas, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+			identity, cas, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			newIdentity, newCa, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+			newIdentity, newCa, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -190,13 +202,37 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		Context("should regenerate certificate", func() {
 			BeforeEach(func() {
-				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("when cross-mesh was added and previous removed", func() {
+				// given
+				defaultMesh := newMesh("default")
+
+				// when
+				_, caSecrets, err := secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-1")})
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+				Expect(caSecrets["default"]).ToNot(BeNil())
+				Expect(caSecrets["mesh-1"]).ToNot(BeNil())
+
+				// when
+				_, caSecrets, err = secrets.GetForDataPlane(context.Background(), newDataplane(), defaultMesh, []*core_mesh.MeshResource{newMesh("mesh-2")})
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(test_metrics.FindMetric(metrics, "cert_generation").GetCounter().GetValue()).To(Equal(1.0))
+				Expect(caSecrets["default"]).ToNot(BeNil())
+				Expect(caSecrets["mesh-1"]).To(BeNil())
+				Expect(caSecrets["mesh-2"]).ToNot(BeNil())
 			})
 
 			It("when mTLS settings has changed", func() {
 				// given
-				mesh := newMesh()
+				mesh := newMesh("default")
 				mesh.Spec.Mtls.EnabledBackend = "ca-2"
 
 				// when
@@ -214,7 +250,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				dataplane.Spec.Networking.Inbound[0].Tags["kuma.io/service"] = "web2"
 
 				// when
-				_, _, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh(), nil)
+				_, _, err := secrets.GetForDataPlane(context.Background(), dataplane, newMesh("default"), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -227,7 +263,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				now = now.Add(48*time.Minute + 1*time.Millisecond) // 4/5 of 60 minutes
 
 				// when
-				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -240,7 +276,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				secrets.Cleanup(mesh_proto.DataplaneProxyType, core_model.MetaToResourceKey(newDataplane().Meta))
 
 				// when
-				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+				_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -251,7 +287,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		It("should cleanup certs", func() {
 			// given
-			_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh(), nil)
+			_, _, err := secrets.GetForDataPlane(context.Background(), newDataplane(), newMesh("default"), nil)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -265,7 +301,7 @@ var _ = Describe("Secrets", Ordered, func() {
 	Context("zone egress", func() {
 		It("should generate cert and emit statistic and info", func() {
 			// when
-			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 
 			// then certs are generated
 			Expect(err).ToNot(HaveOccurred())
@@ -291,11 +327,11 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		It("should not regenerate certs if nothing has changed", func() {
 			// given
-			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+			identity, ca, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			newIdentity, newCa, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+			newIdentity, newCa, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -307,13 +343,13 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		Context("should regenerate certificate", func() {
 			BeforeEach(func() {
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("when mTLS settings has changed", func() {
 				// given
-				mesh := newMesh()
+				mesh := newMesh("default")
 				mesh.Spec.Mtls.EnabledBackend = "ca-2"
 
 				// when
@@ -330,7 +366,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				now = now.Add(48*time.Minute + 1*time.Millisecond) // 4/5 of 60 minutes
 
 				// when
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -343,7 +379,7 @@ var _ = Describe("Secrets", Ordered, func() {
 				secrets.Cleanup(mesh_proto.EgressProxyType, core_model.MetaToResourceKey(newZoneEgress().Meta))
 
 				// when
-				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+				_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 
 				// then
 				Expect(err).ToNot(HaveOccurred())
@@ -354,7 +390,7 @@ var _ = Describe("Secrets", Ordered, func() {
 
 		It("should cleanup certs", func() {
 			// given
-			_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh())
+			_, _, err := secrets.GetForZoneEgress(context.Background(), newZoneEgress(), newMesh("default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

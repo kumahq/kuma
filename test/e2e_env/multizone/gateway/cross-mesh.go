@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	k8s_gateway "github.com/kumahq/kuma/test/e2e_env/kubernetes/gateway"
 	universal_gateway "github.com/kumahq/kuma/test/e2e_env/universal/gateway"
 	. "github.com/kumahq/kuma/test/framework"
@@ -81,8 +82,8 @@ func CrossMeshGatewayOnMultizone() {
 
 	BeforeAll(func() {
 		globalSetup := NewClusterSetup().
-			Install(MTLSMeshUniversalEgress(gatewayMesh)).
-			Install(MTLSMeshUniversalEgress(gatewayOtherMesh)).
+			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayMesh).WithEgressRoutingEnabled())).
+			Install(Yaml(samples.MeshMTLSBuilder().WithName(gatewayOtherMesh).WithEgressRoutingEnabled())).
 			Install(MeshTrafficPermissionAllowAllUniversal(gatewayMesh)).
 			Install(MeshTrafficPermissionAllowAllUniversal(gatewayOtherMesh)).
 			Install(YamlUniversal(crossMeshGatewayYaml)).
@@ -163,14 +164,9 @@ func CrossMeshGatewayOnMultizone() {
 				gatewayMesh,
 				crossMeshGatewayServiceName,
 			)
-			var currentStat stats.StatItem
 
 			BeforeEach(func() {
-				egress := (*zone).GetZoneEgressEnvoyTunnel()
-				stats, err := egress.GetStats(filter)
-				Expect(err).ToNot(HaveOccurred())
-				Expect(stats.Stats).To(HaveLen(1))
-				currentStat = stats.Stats[0]
+				Expect((*zone).GetZoneEgressEnvoyTunnel().ResetCounters()).To(Succeed())
 			})
 
 			It("proxies HTTP requests from a different mesh", func() {
@@ -178,20 +174,18 @@ func CrossMeshGatewayOnMultizone() {
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceOtherMesh,
-				)).Should(Succeed())
+				), "30s", "5s").Should(Succeed())
 
-				egress := (*zone).GetZoneEgressEnvoyTunnel()
-				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))
+				Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThanZero())
 			})
 			It("proxies HTTP requests from the same mesh", func() {
 				Eventually(k8s_gateway.SuccessfullyProxyRequestToGateway(
 					*zone, gatewayMesh,
 					gatewayAddr,
 					gatewayClientNamespaceSameMesh,
-				)).Should(Succeed())
+				), "30s", "5s").Should(Succeed())
 
-				egress := (*zone).GetZoneEgressEnvoyTunnel()
-				Expect(egress.GetStats(filter)).To(stats.BeGreaterThan(currentStat))
+				Expect((*zone).GetZoneEgressEnvoyTunnel().GetStats(filter)).To(stats.BeGreaterThanZero())
 			})
 		})
 	})

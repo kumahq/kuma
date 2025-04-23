@@ -10,6 +10,7 @@ import (
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -563,7 +564,7 @@ var _ = Describe("Dataplane", func() {
 				}
 
 				// expect
-				Expect(dataplane.IsUsingTransparentProxy()).To(Equal(given.expected))
+				Expect(tproxy_dp.GetDataplaneConfig(dataplane, nil).Enabled()).To(Equal(given.expected))
 			},
 			Entry("`nil` dataplane", testCase{
 				dataplane: ``,

@@ -17,7 +17,7 @@ A Helm chart for the Kuma Control Plane
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
 | noHelmHooks | bool | `false` | Whether to disable all helm hooks |
-| enabledNamespaces | list | `[]` | Namespaces that are part of the Mesh. Required to create RoleBindings in these namespaces. If not specified, a ClusterRoleBinding will be created instead. |
+| enabledNamespaces | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces. If not specified, the control plane has write permissions for all namespaces. |
 | skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created. If set to true, the user must manually create these resources before installation. |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
@@ -118,6 +118,7 @@ A Helm chart for the Kuma Control Plane
 | cni.podAnnotations | object | `{}` | Additional pod annotations |
 | cni.namespace | string | `"kube-system"` | Set the CNI namespace |
 | cni.affinity | object | `{}` | Set the CNI affinity |
+| cni.taintController.enabled | bool | `true` | Enable taint controller |
 | cni.image.repository | string | `"kuma-cni"` | CNI image repository |
 | cni.image.tag | string | `nil` | CNI image tag - defaults to .Chart.AppVersion |
 | cni.image.imagePullPolicy | string | `"IfNotPresent"` | CNI image pull policy |

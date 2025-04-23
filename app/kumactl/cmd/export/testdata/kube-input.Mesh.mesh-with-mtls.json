@@ -1,0 +1,25 @@
+{
+  "apiVersion": "kuma.io/v1alpha1",
+  "kind": "Mesh",
+  "metadata": {
+    "annotations": {
+      "k8s.kuma.io/mesh-defaults-generated": "true"
+    },
+    "creationTimestamp": "2024-01-08T17:25:45Z",
+    "generation": 1,
+    "name": "mesh-with-mtls",
+    "resourceVersion": "758",
+    "uid": "b1bca574-c02c-4765-972c-b91d92eacba6"
+  },
+  "spec": {
+    "mtls": {
+      "enabledBackend": "ca-1",
+      "backends": [
+        {
+          "name": "ca-1",
+          "type": "builtin"
+        }
+      ]
+    }
+  }
+}

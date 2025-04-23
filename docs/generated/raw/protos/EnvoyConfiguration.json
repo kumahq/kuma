@@ -1,0 +1,32 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$ref": "#/definitions/EnvoyConfiguration",
+    "definitions": {
+        "EnvoyConfiguration": {
+            "properties": {
+                "xds_transport_protocol_variant": {
+                    "enum": [
+                        "DEFAULT",
+                        0,
+                        "DELTA_GRPC",
+                        1,
+                        "GRPC",
+                        2
+                    ],
+                    "oneOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "integer"
+                        }
+                    ],
+                    "title": "Xds Transport Protocol Variant"
+                }
+            },
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Envoy Configuration"
+        }
+    }
+}

@@ -22,6 +22,10 @@ func UpgradingWithHelmChartStandalone() {
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(cluster, "default")
+	})
+
 	DescribeTable("upgrade Kuma via Helm",
 		func(version string) {
 			cluster = NewK8sCluster(NewTestingT(), Kuma1, Silent).

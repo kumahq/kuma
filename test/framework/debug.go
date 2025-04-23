@@ -220,7 +220,7 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 	case zoneegressType:
 		args = []string{"get", "zoneegresses", "-ojson"}
 	case zoneingressType:
-		args = []string{"get", "zoneingresses", "-ojson"}
+		args = []string{"get", "zone-ingresses", "-ojson"}
 	default:
 		panic("unknown dp type " + string(dpType))
 	}
@@ -251,7 +251,11 @@ func inspectDataplane(kumactlOpts *kumactl.KumactlOptions, cluster Cluster, mesh
 			args := []string{"inspect", string(dpType), dpName, "--type", inspectType}
 			switch inspectType {
 			case "get":
-				args = []string{"get", string(dpType), dpName, "-oyaml"}
+				if dpType == zoneingressType {
+					args = []string{"get", "zone-ingress", dpName, "-oyaml"}
+				} else {
+					args = []string{"get", string(dpType), dpName, "-oyaml"}
+				}
 			}
 			if dpType == dataplaneType {
 				args = append(args, "--mesh", mesh)

@@ -70,6 +70,11 @@ func CpCompatibilityMultizoneKubernetes() {
 		)
 	})
 
+	AfterEachFailure(func() {
+		DebugKube(globalCluster, "demo", TestNamespace)
+		DebugKube(zoneCluster, "default", TestNamespace)
+	})
+
 	DescribeTable("Cross version check", func(globalConf, zoneConf []KumaDeploymentOption) {
 		// Start a global
 		err := NewClusterSetup().

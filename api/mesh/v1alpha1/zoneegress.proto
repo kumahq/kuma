@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "api/mesh/options.proto";
+import "api/mesh/v1alpha1/envoy.proto";
 import "api/mesh/v1alpha1/envoy_admin.proto";
 
 // ZoneEgress allows us to configure dataplane in the Egress mode.
@@ -43,4 +44,7 @@ message ZoneEgress {
 
   // Networking defines the address and port of the Egress to listen on.
   Networking networking = 2;
+
+  // EnvoyConfiguration provides additional configuration for the Envoy sidecar.
+  EnvoyConfiguration envoy = 3;
 }

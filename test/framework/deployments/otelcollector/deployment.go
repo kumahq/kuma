@@ -39,7 +39,7 @@ func DefaultOpts() DeploymentOpts {
 	return DeploymentOpts{
 		name:               DefaultDeploymentName,
 		image:              "otel/opentelemetry-collector-contrib:0.92.0",
-		networks:           []string{"kind"},
+		networks:           []string{framework.DockerNetworkName},
 		logLevel:           "info",
 		waitingToBeReady:   true,
 		serviceAccountName: "otlp-collector",
