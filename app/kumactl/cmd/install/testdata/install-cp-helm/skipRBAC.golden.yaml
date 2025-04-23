@@ -7,6 +7,18 @@ metadata:
   labels:
     kuma.io/sidecar-injection: "false"
 ---
+# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for control-plane manually.
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-control-plane
+  namespace: kuma-system
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -240,8 +252,6 @@ spec:
             name: kuma-control-plane-config
         - name: tmp
           emptyDir: {}
----
-# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for control-plane manually.
 ---
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
