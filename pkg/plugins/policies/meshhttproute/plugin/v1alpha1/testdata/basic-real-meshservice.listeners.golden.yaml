@@ -32,37 +32,37 @@ resources:
               routes:
               - match:
                   path: /v1
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /v1/
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   path: /v2
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v2/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   path: /v3
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v3/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___http-route_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
