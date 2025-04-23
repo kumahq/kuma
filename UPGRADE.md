@@ -26,6 +26,15 @@ If you are running helm with `noHelmHooks` please set label on the system namesp
 kubectl label namespace SYSTEM_NAMESPACE kuma.io/sidecar-injection=disabled
 ```
 
+### More Restricted `ClusterRole` for Control Plane and CNI
+
+We have split the `ClusterRole` for the control plane into two parts:
+
+* A cluster-scoped `ClusterRole` with read access to namespaced resources.
+* A `ClusterRole` with write permissions, now scoped more narrowly.
+
+By default, a `ClusterRoleBinding` is used to grant write permissions to the control plane, and no action is required from the user. However, if you want the control plane to have access only in specific namespaces, you can use the `enabledNamespaces` configuration to define where it should have write permissions.
+
 ### Namespaces that are part of the Mesh requires `kuma.io/sidecar-injection` label to exist
 
 Since version 2.11.x, to improve performance and security, each namespace participating in the Mesh is required to have the `kuma.io/sidecar-injection` label set.
