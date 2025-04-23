@@ -2,9 +2,6 @@
 # HELM first deletes RBAC of Kuma, then it tries to delete Secrets. We've got validating webhook on Secrets.
 # But even that the policy of this webhook is Ignore, it fails because Kuma does not have permission to access Secrets anymore.
 # Therefore we first need to delete webhook so we can delete the rest of the deployment
-{{- if .Values.skipRBAC }}
-{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for pre-delete-webhooks manually.\n" }}
-{{- end }}
 {{- $serviceAccountName := printf "%s-pre-delete-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
@@ -22,7 +19,6 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
-{{- if .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -60,7 +56,6 @@ subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
     namespace: {{ .Release.Namespace }}
-{{- end }}
 ---
 apiVersion: batch/v1
 kind: Job
