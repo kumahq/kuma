@@ -210,6 +210,25 @@ rules:
       - meshexternalservices
       - meshmultizoneservices
       - meshservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   - apiGroups:
       - k8s.cni.cncf.io
     resources:

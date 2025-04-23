@@ -177,6 +177,25 @@ rules:
       - meshexternalservices
       - meshmultizoneservices
       - meshservices
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io

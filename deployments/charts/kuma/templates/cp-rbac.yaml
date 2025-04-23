@@ -134,6 +134,25 @@ rules:
       - {{ $policy }}
   {{- end}}
   {{- end}}
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshgatewayinstances/status
+      - meshgatewayinstances/finalizers
+      - meshes/finalizers
+      - dataplanes/finalizers
+    verbs:
+      - get
+      - patch
+      - update
   {{- if .Values.cni.enabled }}
   - apiGroups:
       - k8s.cni.cncf.io
