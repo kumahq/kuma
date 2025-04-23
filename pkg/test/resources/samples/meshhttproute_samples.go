@@ -30,14 +30,14 @@ func MeshHttpOutboundWithSeveralRoutes(serviceName string) *meshhttproute_xds.Ht
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
 				},
 				Match: anotherBackendMatch,
-				Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{anotherBackendMatch}),
+				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{anotherBackendMatch})),
 			},
 			{
 				Split: []envoy_common.Split{
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
 				},
 				Match: rootPrefixMatch,
-				Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch}),
+				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{
@@ -63,7 +63,7 @@ func MeshHttpOutboudWithSingleRoute(serviceName string) *meshhttproute_xds.HttpO
 					plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
 				},
 				Match: rootPrefixMatch,
-				Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch}),
+				Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{rootPrefixMatch})),
 			},
 		},
 		DpTags: map[string]map[string]bool{

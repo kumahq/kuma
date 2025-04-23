@@ -1005,7 +1005,7 @@ func httpOutboundRoute(serviceName string) *meshhttproute_xds.HttpOutboundRouteC
 			Split: []envoy_common.Split{
 				plugins_xds.NewSplitBuilder().WithClusterName(serviceName).WithWeight(100).Build(),
 			},
-			Hash:  meshhttproute_api.HashMatches([]meshhttproute_api.Match{prefixMatch}),
+			Name:  string(meshhttproute_api.HashMatches([]meshhttproute_api.Match{prefixMatch})),
 			Match: prefixMatch,
 		}},
 		DpTags: map[string]map[string]bool{

@@ -221,7 +221,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		return routes
 	})
 
-	//sort rules before we add default prefix matches etc
+	// sort rules before we add default prefix matches etc
 	slices.SortStableFunc(routes, func(i, j api.Route) int {
 		return api.CompareMatch(i.Match, j.Match)
 	})

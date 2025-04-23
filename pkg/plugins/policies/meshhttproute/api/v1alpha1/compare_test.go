@@ -1,13 +1,14 @@
 package v1alpha1_test
 
 import (
+	"slices"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/pointer"
-	"slices"
 )
 
 func sort(matches []api.Match) []api.Match {
