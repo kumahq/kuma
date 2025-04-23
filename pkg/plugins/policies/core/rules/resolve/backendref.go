@@ -12,13 +12,20 @@ import (
 
 type LabelResourceIdentifierResolver func(core_model.ResourceType, map[string]string) *kri.Identifier
 
-func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
+func BackendRefOrNil(meta core_model.ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) *ResolvedBackendRef {
+	if br, ok := BackendRef(meta, br, resolver); ok {
+		return &br
+	}
+	return nil
+}
+
+func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver LabelResourceIdentifierResolver) (ResolvedBackendRef, bool) {
 	switch {
 	case br.Kind == common_api.MeshService && br.ReferencesRealObject():
 	case br.Kind == common_api.MeshExternalService:
 	case br.Kind == common_api.MeshMultiZoneService:
 	default:
-		return &ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}
+		return ResolvedBackendRef{Ref: pointer.To(LegacyBackendRef(br))}, true
 	}
 
 	rr := RealResourceBackendRef{
@@ -29,7 +36,7 @@ func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver
 	if len(pointer.Deref(br.Labels)) > 0 {
 		ri := resolver(core_model.ResourceType(br.Kind), pointer.Deref(br.Labels))
 		if ri == nil {
-			return nil
+			return ResolvedBackendRef{}, false
 		}
 		rr.Resource = ri
 	}
@@ -38,7 +45,7 @@ func BackendRef(meta core_model.ResourceMeta, br common_api.BackendRef, resolver
 		rr.Resource.SectionName = fmt.Sprintf("%d", *br.Port)
 	}
 
-	return &ResolvedBackendRef{Ref: &rr}
+	return ResolvedBackendRef{Ref: &rr}, true
 }
 
 type IsResolvedBackendRef interface {

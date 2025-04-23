@@ -5,7 +5,6 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners_v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
@@ -15,8 +14,7 @@ import (
 )
 
 type OutboundRoute struct {
-	KRI                     *kri.Identifier
-	Hash                    common_api.MatchesHash
+	Name                    string
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
@@ -44,8 +42,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				KRI:                     route.KRI,
-				Hash:                    route.Hash,
+				Name:                    route.Name,
 				Match:                   route.Match,
 				Filters:                 route.Filters,
 				Split:                   route.Split,

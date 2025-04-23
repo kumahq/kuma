@@ -67,7 +67,7 @@ func getBackendRefs(
 	if tcpConf != nil {
 		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
 			if backendRefOrigin != nil {
-				if resolved := resolve.BackendRef(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
+				if resolved := resolve.BackendRefOrNil(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
 					backendRefs = append(backendRefs, *resolved)
 				}
 			}

@@ -7,7 +7,6 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds/filters"
 	"github.com/kumahq/kuma/pkg/util/pointer"
@@ -17,8 +16,7 @@ import (
 )
 
 type RoutesConfigurer struct {
-	KRI                     *kri.Identifier
-	Hash                    common_api.MatchesHash
+	Name                    string
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
@@ -27,15 +25,9 @@ type RoutesConfigurer struct {
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	matches := c.routeMatch(c.Match)
-	var routeName string
-	if c.KRI != nil {
-		routeName = c.KRI.String()
-	} else {
-		routeName = string(c.Hash)
-	}
 
 	for _, match := range matches {
-		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, routeName).
+		rb := envoy_routes.NewRouteBuilder(envoy_common.APIV3, c.Name).
 			Configure(envoy_routes.RouteMustConfigureFunc(func(envoyRoute *envoy_route.Route) {
 				// todo: create configurers for Match and Action
 				envoyRoute.Match = match.routeMatch

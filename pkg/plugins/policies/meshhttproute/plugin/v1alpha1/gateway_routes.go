@@ -239,7 +239,7 @@ func makeHttpRouteEntry(
 		var dest map[string]string
 		var ref *resolve.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			ref = resolve.BackendRef(origin, b, resolver)
+			ref = resolve.BackendRefOrNil(origin, b, resolver)
 			if ref.ReferencesRealResource() {
 				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
 				if ok {

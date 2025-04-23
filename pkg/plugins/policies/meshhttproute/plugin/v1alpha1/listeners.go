@@ -6,6 +6,7 @@ import (
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/kri"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -16,6 +17,7 @@ import (
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -63,8 +65,7 @@ func generateFromService(
 			}
 		}
 		routes = append(routes, xds.OutboundRoute{
-			KRI:                     route.KRI,
-			Hash:                    route.Hash,
+			Name:                    route.Name,
 			Match:                   route.Match,
 			Filters:                 route.Filters,
 			Split:                   split,
@@ -193,8 +194,37 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 		}
 	}
 
-	// sort rules before we add default prefix matches etc
-	routes := api.SortRules(apiRules, backendRefToOrigin, meshCtx.ResolveResourceIdentifier)
+	getOrigin := func(ms []api.Match) core_model.ResourceMeta {
+		return backendRefToOrigin[api.HashMatches(ms)]
+	}
+
+	getRouteName := func(ms []api.Match) string {
+		if svc.Outbound.Resource != nil {
+			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType, "").String()
+		} else {
+			return string(api.HashMatches(ms))
+		}
+	}
+
+	routes := util_slices.FlatMap(apiRules, func(rule api.Rule) []api.Route {
+		var routes []api.Route
+		for _, match := range rule.Matches {
+			routes = append(routes, api.Route{
+				Name:    getRouteName(rule.Matches),
+				Match:   match,
+				Filters: pointer.Deref(rule.Default.Filters),
+				BackendRefs: util_slices.FilterMap(pointer.Deref(rule.Default.BackendRefs), func(br common_api.BackendRef) (resolve.ResolvedBackendRef, bool) {
+					return resolve.BackendRef(getOrigin(rule.Matches), br, meshCtx.ResolveResourceIdentifier)
+				}),
+			})
+		}
+		return routes
+	})
+
+	//sort rules before we add default prefix matches etc
+	slices.SortStableFunc(routes, func(i, j api.Route) int {
+		return api.CompareMatch(i.Match, j.Match)
+	})
 
 	catchAllPathMatch := api.PathMatch{Value: "/", Type: api.PathPrefix}
 	catchAllMatch := api.Match{
@@ -208,7 +238,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	if noCatchAll {
 		routes = append(routes, api.Route{
 			Match: catchAllMatch,
-			Hash:  api.HashMatches([]api.Match{catchAllMatch}),
+			Name:  string(api.HashMatches([]api.Match{catchAllMatch})),
 		})
 	}
 

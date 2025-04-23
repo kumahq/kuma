@@ -2,11 +2,8 @@ package v1alpha1
 
 import (
 	"cmp"
-	"slices"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/kri"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 )
@@ -73,6 +70,10 @@ func compareQueryParams(a []QueryParamsMatch, b []QueryParamsMatch) int {
 	return cmp.Compare(len(b), len(a))
 }
 
+// CompareMatch orders the rules according to Gateway API precedence:
+// https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
+// We treat RegularExpression matches, which are implementation-specific, the
+// same as prefix matches, the longer length match has priority.
 func CompareMatch(a Match, b Match) int {
 	if p := comparePath(a.Path, b.Path); p != 0 {
 		return p
@@ -94,70 +95,8 @@ func CompareMatch(a Match, b Match) int {
 }
 
 type Route struct {
-	KRI         *kri.Identifier
+	Name        string
 	Match       Match
 	Filters     []Filter
 	BackendRefs []resolve.ResolvedBackendRef
-	Hash        common_api.MatchesHash
-}
-
-// SortRules orders the rules according to Gateway API precedence:
-// https://gateway-api.sigs.k8s.io/reference/spec/#gateway.networking.k8s.io/v1.HTTPRouteRule
-// We treat RegularExpression matches, which are implementation-specific, the
-// same as prefix matches, the longer length match has priority.
-func SortRules(
-	rules []Rule,
-	backendRefToOrigin map[common_api.MatchesHash]core_model.ResourceMeta,
-	labelResolver resolve.LabelResourceIdentifierResolver,
-) []Route {
-	type keyed struct {
-		sortKey Match
-		rule    Rule
-	}
-	var keys []keyed
-	for _, rule := range rules {
-		for _, match := range rule.Matches {
-			keys = append(keys, keyed{
-				sortKey: match,
-				rule:    rule,
-			})
-		}
-	}
-	slices.SortStableFunc(keys, func(i, j keyed) int {
-		return CompareMatch(i.sortKey, j.sortKey)
-	})
-	var out []Route
-	for _, key := range keys {
-		var backendRefs []resolve.ResolvedBackendRef
-		hashMatches := HashMatches(key.rule.Matches)
-
-		origin, ok := backendRefToOrigin[hashMatches]
-		if !ok {
-			// shouldn't happen
-			continue
-		}
-
-		for _, br := range pointer.Deref(key.rule.Default.BackendRefs) {
-			if resolved := resolve.BackendRef(origin, br, labelResolver); resolved != nil {
-				backendRefs = append(backendRefs, *resolved)
-			}
-		}
-
-		var id *kri.Identifier
-		idx := slices.IndexFunc(backendRefs, func(ref resolve.ResolvedBackendRef) bool {
-			return ref.ReferencesRealResource()
-		})
-		if idx >= 0 {
-			id = pointer.To(kri.FromResourceMeta(origin, MeshHTTPRouteType, ""))
-		}
-
-		out = append(out, Route{
-			KRI:         id,
-			Hash:        hashMatches,
-			Match:       key.sortKey,
-			BackendRefs: backendRefs,
-			Filters:     pointer.Deref(key.rule.Default.Filters),
-		})
-	}
-	return out
 }
