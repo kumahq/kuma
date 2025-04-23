@@ -1,8 +1,6 @@
 ResourceRules: {}
 Rules:
-- BackendRefOriginIndex:
-    "": 1
-  Conf:
+- Conf:
     default:
       backendRefs:
       - kind: MeshService
@@ -25,6 +23,13 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: split-40-40-20
     type: MeshTCPRoute
+  OriginByMatches:
+    "":
+      creationTime: "0001-01-01T00:00:00Z"
+      mesh: default
+      modificationTime: "0001-01-01T00:00:00Z"
+      name: split-40-40-20
+      type: MeshTCPRoute
   Subset:
   - Key: kuma.io/service
     Not: false

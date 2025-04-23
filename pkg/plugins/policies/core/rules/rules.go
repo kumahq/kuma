@@ -22,7 +22,9 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
+	util_maps "github.com/kumahq/kuma/pkg/uti
 	"github.com/kumahq/kuma/pkg/util/pointer"
+	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"
@@ -143,24 +145,7 @@ type Rule struct {
 	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
 	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
 	// then key is an empty string "".
-	BackendRefOriginIndex common.BackendRefOriginIndex
-}
-
-func (r *Rule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.ResourceMeta, bool) {
-	if r == nil {
-		return nil, false
-	}
-	if r.BackendRefOriginIndex == nil {
-		return nil, false
-	}
-	index, ok := r.BackendRefOriginIndex[hash]
-	if !ok {
-		return nil, false
-	}
-	if index >= len(r.Origin) {
-		return nil, false
-	}
-	return r.Origin[index], true
+	OriginByMatches map[common_api.MatchesHash]core_model.ResourceMeta
 }
 
 type Rules []*Rule
@@ -548,22 +533,21 @@ func createRule(ss subsetutils.Subset, items []PolicyItemWithMeta) ([]*Rule, err
 		}
 	}
 
+	getMeta := func(o common.Origin) core_model.ResourceMeta {
+		return o.Resource
+	}
+
 	if len(relevant) > 0 {
 		merged, err := merge.Confs(confs)
 		if err != nil {
 			return nil, err
 		}
-		ruleOrigins, originIndex := common.Origins(relevant, false)
-		resourceMetas := make([]core_model.ResourceMeta, 0, len(ruleOrigins))
-		for _, o := range ruleOrigins {
-			resourceMetas = append(resourceMetas, o.Resource)
-		}
 		for _, mergedRule := range merged {
 			rules = append(rules, &Rule{
-				Subset:                ss,
-				Conf:                  mergedRule,
-				Origin:                resourceMetas,
-				BackendRefOriginIndex: originIndex,
+				Subset:          ss,
+				Conf:            mergedRule,
+				Origin:          util_slices.Map(common.Origins(relevant, false), getMeta),
+				OriginByMatches: util_maps.MapValues(common.OriginByMatches(relevant), getMeta),
 			})
 		}
 	}

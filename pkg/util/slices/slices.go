@@ -17,3 +17,11 @@ func FilterMap[A any, B any](input []A, f func(A) (B, bool)) []B {
 	}
 	return output
 }
+
+func Map[A any, B any](input []A, f func(A) B) []B {
+	output := make([]B, len(input))
+	for i, a := range input {
+		output[i] = f(a)
+	}
+	return output
+}

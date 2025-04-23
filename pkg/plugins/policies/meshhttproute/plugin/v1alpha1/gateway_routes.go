@@ -71,18 +71,12 @@ func sortRulesToHosts(
 		for _, rawRule := range rawRules.Rules {
 			conf := rawRule.Conf.(api.PolicyDefault)
 
-			backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
-			for hash := range rawRule.BackendRefOriginIndex {
-				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[hash] = origin
-				}
-			}
 			rule := ToRouteRule{
 				Subset:           rawRule.Subset,
 				Rules:            conf.Rules,
 				Hostnames:        conf.Hostnames,
 				Origins:          rawRule.Origin,
-				BackendRefOrigin: backendRefOrigin,
+				BackendRefOrigin: rawRule.OriginByMatches,
 			}
 			hostnames := rule.Hostnames
 			if len(rule.Hostnames) == 0 {

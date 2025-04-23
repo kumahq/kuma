@@ -28,6 +28,7 @@ import (
 	plugin "github.com/kumahq/kuma/pkg/plugins/policies/meshtls/plugin/v1alpha1"
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test/matchers"
+	test_policies "github.com/kumahq/kuma/pkg/test/polic
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
@@ -154,14 +155,8 @@ var _ = Describe("MeshTLS", func() {
 			resources.MeshLocalResources[core_mesh.MeshGatewayType] = &core_mesh.MeshGatewayResourceList{
 				Items: []*core_mesh.MeshGatewayResource{samples.GatewayResource()},
 			}
-			backendRefOriginIndex := map[common_api.MatchesHash]int{}
 			var backendRef common_api.BackendRef
 			if given.meshService {
-				backendRefOriginIndex = map[common_api.MatchesHash]int{
-					meshhttproute_api.HashMatches([]meshhttproute_api.Match{
-						{Path: &meshhttproute_api.PathMatch{Type: meshhttproute_api.Exact, Value: "/"}},
-					}): 0,
-				}
 				meshSvc := meshservice_api.MeshServiceResource{
 					Meta: &test_model.ResourceMeta{Name: "backend", Mesh: "default"},
 					Spec: &meshservice_api.MeshService{
@@ -216,28 +211,21 @@ var _ = Describe("MeshTLS", func() {
 							ByListenerAndHostname: map[core_rules.InboundListenerHostname]core_rules.ToRules{
 								core_rules.NewInboundListenerHostname("192.168.0.1", 8080, "*"): {
 									Rules: core_rules.Rules{
-										{
-											BackendRefOriginIndex: backendRefOriginIndex,
-											Origin: []core_model.ResourceMeta{
-												&test_model.ResourceMeta{Mesh: "default", Name: "http-route"},
-											},
-											Subset: subsetutils.MeshSubset(),
-											Conf: meshhttproute_api.PolicyDefault{
-												Rules: []meshhttproute_api.Rule{
-													{
-														Matches: []meshhttproute_api.Match{{
-															Path: &meshhttproute_api.PathMatch{
-																Type:  meshhttproute_api.Exact,
-																Value: "/",
-															},
-														}},
-														Default: meshhttproute_api.RuleConf{
-															BackendRefs: &[]common_api.BackendRef{backendRef},
+										test_policies.NewRule(subsetutils.MeshSubset(), meshhttproute_api.PolicyDefault{
+											Rules: []meshhttproute_api.Rule{
+												{
+													Matches: []meshhttproute_api.Match{{
+														Path: &meshhttproute_api.PathMatch{
+															Type:  meshhttproute_api.Exact,
+															Value: "/",
 														},
+													}},
+													Default: meshhttproute_api.RuleConf{
+														BackendRefs: &[]common_api.BackendRef{backendRef},
 													},
 												},
 											},
-										},
+										}),
 									},
 								},
 							},

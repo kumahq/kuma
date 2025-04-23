@@ -13,8 +13,7 @@ ToRules:
     127.0.0.1:8080:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -30,12 +29,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -51,12 +50,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -72,12 +71,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8083:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /applied-only-to-hostname
@@ -98,13 +97,13 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: only-one-hostname-listener
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -120,12 +119,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -141,12 +140,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -162,12 +161,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8083:four-hostname-1:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /applied-only-to-hostname
@@ -188,12 +187,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: only-one-hostname-listener
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8083:four-hostname-2:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /meshsubset
@@ -209,4 +208,5 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: meshsubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []

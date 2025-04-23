@@ -89,15 +89,9 @@ func generateEnvoyRouteEntries(
 		}
 		slices.Sort(names)
 
-		backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
-		for hash := range rule.BackendRefOriginIndex {
-			if origin, ok := rule.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
-				backendRefOrigin[hash] = origin
-			}
-		}
 		entries = append(
 			entries,
-			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), backendRefOrigin, resolver),
+			makeTcpRouteEntry(meshCtx, strings.Join(names, "_"), rule.Conf.(api.Rule), rule.OriginByMatches, resolver),
 		)
 	}
 

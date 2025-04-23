@@ -11,11 +11,13 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/xds"
+	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -151,35 +153,29 @@ func generateListeners(
 func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) (*api.PolicyDefault, map[common_api.MatchesHash]core_model.ResourceMeta) {
 	// compute for old MeshService
 	var conf *api.PolicyDefault
-	backendRefOrigin := map[common_api.MatchesHash]core_model.ResourceMeta{}
+	originByMatches := map[common_api.MatchesHash]core_model.ResourceMeta{}
 
 	ruleHTTP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleHTTP != nil {
 		conf = pointer.To(ruleHTTP.Conf.(api.PolicyDefault))
-		for hash := range ruleHTTP.BackendRefOriginIndex {
-			if origin, ok := ruleHTTP.GetBackendRefOrigin(hash); ok {
-				backendRefOrigin[hash] = origin
-			}
-		}
+		originByMatches = ruleHTTP.OriginByMatches
 	}
 	// check if there is configuration for real MeshService and prioritize it
 	if svc.Outbound.Resource != nil {
 		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
-			for hash := range resourceConf.BackendRefOriginIndex {
-				if origin, ok := resourceConf.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[hash] = origin
-				}
-			}
+			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(o common.Origin) core_model.ResourceMeta {
+				return o.Resource
+			})
 		}
 	}
-	return conf, backendRefOrigin
+	return conf, originByMatches
 }
 
 // prepareRoutes handles the always present, catch all default route
 func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, meshCtx xds_context.MeshContext) []api.Route {
-	conf, backendRefToOrigin := ComputeHTTPRouteConf(toRules, svc, meshCtx)
+	conf, originByMatches := ComputeHTTPRouteConf(toRules, svc, meshCtx)
 
 	var apiRules []api.Rule
 	if conf != nil {
@@ -195,7 +191,7 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	}
 
 	getOrigin := func(ms []api.Match) core_model.ResourceMeta {
-		return backendRefToOrigin[api.HashMatches(ms)]
+		return originByMatches[api.HashMatches(ms)]
 	}
 
 	getRouteName := func(ms []api.Match) string {

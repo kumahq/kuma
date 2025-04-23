@@ -32,25 +32,25 @@ resources:
               routes:
               - match:
                   path: /version1
-                name: kri_mhttpr_default___http-route_
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /version1/
-                name: kri_mhttpr_default___http-route_
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   path: /version2
-                name: kri_mhttpr_default___http-route_
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend-second___msvc_80
                   timeout: 0s
               - match:
                   prefix: /version2/
-                name: kri_mhttpr_default___http-route_
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend-second___msvc_80
                   timeout: 0s

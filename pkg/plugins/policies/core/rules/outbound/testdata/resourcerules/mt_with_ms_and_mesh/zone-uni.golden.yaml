@@ -1,5 +1,4 @@
 kri_m____mesh-1_:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 21s
     idleTimeout: 9s
@@ -28,6 +27,7 @@ kri_m____mesh-1_:
       NameExtensions: null
       Version: ""
     RuleIndex: 2
+  OriginByMatches: {}
   Resource:
     creationTime: "0001-01-01T00:00:00Z"
     modificationTime: "0001-01-01T00:00:00Z"
@@ -35,7 +35,6 @@ kri_m____mesh-1_:
     type: Mesh
   ResourceSectionName: ""
 kri_msvc_mesh-1_zone-uni__backend_:
-  BackendRefOriginIndex: {}
   Conf:
   - connectionTimeout: 11s
     http:
@@ -78,6 +77,7 @@ kri_msvc_mesh-1_zone-uni__backend_:
       NameExtensions: null
       Version: ""
     RuleIndex: 1
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:

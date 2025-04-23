@@ -22,7 +22,7 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	ruleTCP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
-		if o, ok := ruleTCP.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
+		if o, ok := ruleTCP.OriginByMatches[rules_common.EmptyMatches]; ok {
 			origin = o
 		}
 	}
@@ -31,8 +31,8 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			tcpConf = pointer.To(resourceConf.Conf[0].(api.Rule))
-			if o, ok := resourceConf.GetBackendRefOrigin(rules_common.EmptyMatches); ok {
-				origin = o
+			if o, ok := resourceConf.OriginByMatches[rules_common.EmptyMatches]; ok {
+				origin = o.Resource
 			}
 		}
 	}
