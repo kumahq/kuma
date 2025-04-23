@@ -92,17 +92,48 @@ rules:
       - get
       - patch
       - update
-  - apiGroups: # Kuma resources
+  - apiGroups:
       - kuma.io
-    resources: ["*"]
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
+    resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - zoneingresses
+      - zoneingressinsights
+      - zoneegresses
+      - zoneegressinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - ratelimits
+      - trafficpermissions
+      - trafficroutes
+      - timeouts
+      - retries
+      - circuitbreakers
+      - virtualoutbounds
+      - containerpatches
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - trafficlogs
+      - traffictraces
+      - meshgateways
+      - meshgatewayroutes
+      - meshgatewayinstances
+      - meshgatewayconfigs
+  {{- range $policy, $v := .Values.plugins.policies }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
+  {{- range $policy, $v := .Values.plugins.resources }}
+  {{- if $v }}
+      - {{ $policy }}
+  {{- end}}
+  {{- end}}
   {{- if .Values.cni.enabled }}
   - apiGroups:
       - k8s.cni.cncf.io

@@ -17,7 +17,6 @@ checks:
     - writable-host-mount
     - exposed-services
     - use-namespace
-    - wildcard-in-rules
 
 customChecks:
 - name: "unset-cpu-requests"
