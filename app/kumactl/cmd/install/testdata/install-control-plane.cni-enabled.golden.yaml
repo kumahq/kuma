@@ -82,7 +82,6 @@ rules:
     verbs:
       - get
 ---
-# ClusterRole for cluster-scoped resources and read resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -403,7 +402,6 @@ subjects:
     name: kuma-control-plane
     namespace: kuma-system
 ---
-# Role for control-plane required resources
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
