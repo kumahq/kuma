@@ -53,7 +53,7 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 		}
 	}
 	if proxy.Metadata.HasFeature(xds_types.FeatureEmbeddedDNS) {
-		dnsInfo := dpapi.DNSProxyConfig{TTL: 3600, Records: []dpapi.DNSRecord{}}
+		dnsInfo := dpapi.DNSProxyConfig{TTL: 30, Records: []dpapi.DNSRecord{}}
 		for name, addresses := range vips {
 			dnsInfo.Records = append(dnsInfo.Records, dpapi.DNSRecord{
 				Name: name,
