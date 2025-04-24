@@ -1,4 +1,7 @@
 {{- if .Values.cni.enabled }}
+{{- if .Values.skipRBAC }}
+{{- printf "\n# WARNING: RBAC is skipped. If this was intentional, remember to create the necessary resources for kuma-cni manually.\n" }}
+{{- end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -11,6 +14,7 @@ imagePullSecrets:
   - name: {{ . | quote }}
   {{- end }}
 {{- end }}
+{{- if not .Values.skipRBAC }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -63,5 +67,6 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
     namespace: {{ .Values.cni.namespace }}
+{{- end }}
 {{- end }}
 {{- end }}
