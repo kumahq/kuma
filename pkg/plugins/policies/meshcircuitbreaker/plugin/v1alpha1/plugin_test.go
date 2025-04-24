@@ -31,7 +31,7 @@ import (
 	gateway_plugin "github.com/kumahq/kuma/pkg/plugins/runtime/gateway"
 	"github.com/kumahq/kuma/pkg/test"
 	test_matchers "github.com/kumahq/kuma/pkg/test/matchers"
-	test_policies "github.com/kumahq/kuma/pkg/test/polic
+	test_policies "github.com/kumahq/kuma/pkg/test/policies"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
