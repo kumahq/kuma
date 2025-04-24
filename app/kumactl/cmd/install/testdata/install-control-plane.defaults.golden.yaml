@@ -10444,36 +10444,34 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
+  # Kubernetes resources
   - apiGroups:
       - ""
     resources:
       - namespaces
       - pods
       - nodes
+      - services
     verbs:
       - get
       - list
       - watch
   - apiGroups:
-    - "discovery.k8s.io"
+      - "discovery.k8s.io"
     resources:
       - endpointslices
     verbs:
-    - get
-    - list
-    - watch
+      - get
+      - list
+      - watch
   - apiGroups:
       - "apps"
     resources:
       - deployments
       - replicasets
     verbs:
-      - create
-      - delete
       - get
       - list
-      - patch
-      - update
       - watch
   - apiGroups:
       - "batch"
@@ -10483,14 +10481,21 @@ rules:
       - get
       - list
       - watch
-  - apiGroups:
+  - apiGroups: # Gateway API
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses
       - gateways
       - referencegrants
       - httproutes
     verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gatewayclasses # ClusterScope
+    verbs:
       - create
       - delete
       - get
@@ -10501,52 +10506,11 @@ rules:
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
-      - gatewayclasses/status
-      - gateways/status
-      - httproutes/status
+      - gatewayclasses/status # ClusterScope
     verbs:
       - get
       - patch
       - update
-  - apiGroups:
-      - coordination.k8s.io
-    resources:
-      - leases
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - ""
-    resources:
-      - events
-    verbs:
-      - create
-      - patch
-  - apiGroups:
-      - ""
-    resources:
-      - services
-    verbs:
-      - get
-      - delete
-      - list
-      - watch
-      - create
-      - update
-      - patch
-  - apiGroups:
-    - "discovery.k8s.io"
-    resources:
-    - endpointslices
-    verbs:
-    - get
-    - list
-    - watch
   - apiGroups:
       - kuma.io
     resources:
@@ -10618,6 +10582,65 @@ rules:
       - get
       - patch
       - update
+  # validate k8s token before issuing mTLS cert
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+    # required by MeshGateway
+      - "apps"
+    resources:
+      - deployments
+      - replicasets
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - "batch"
+    resources:
+      - jobs
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+    # required by MeshGateway
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - delete
+      - list
+      - watch
+      - create
+      - update
+      - patch
   - apiGroups:
       - ""
     resources:
@@ -10626,13 +10649,30 @@ rules:
       - get
       - patch
       - update
-  # validate k8s token before issuing mTLS cert
   - apiGroups:
-      - authentication.k8s.io
+    # Gateway API
+      - gateway.networking.k8s.io
     resources:
-      - tokenreviews
+      - gateways
+      - referencegrants
+      - httproutes
     verbs:
       - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -10652,6 +10692,23 @@ subjects:
     namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kuma-control-plane-writer
+  labels: 
+    app: kuma-control-plane
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kuma-control-plane-writer
+subjects:
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: kuma-control-plane
@@ -10662,9 +10719,9 @@ metadata:
     app.kubernetes.io/instance: kuma
 rules:
   - apiGroups:
-      - ""
+      - coordination.k8s.io
     resources:
-      - secrets
+      - leases
     verbs:
       - get
       - list
@@ -10677,14 +10734,22 @@ rules:
       - ""
     resources:
       - configmaps
+      - secrets
     verbs:
       - get
+      - delete
       - list
       - watch
       - create
       - update
       - patch
-      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
   # leader-for-life election deletes Pods in some circumstances
   - apiGroups:
       - ""
@@ -10692,6 +10757,29 @@ rules:
       - pods
     verbs:
       - delete
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways
+      - referencegrants
+      - httproutes
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - gateways/status
+      - httproutes/status
+    verbs:
+      - get
+      - patch
+      - update
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
