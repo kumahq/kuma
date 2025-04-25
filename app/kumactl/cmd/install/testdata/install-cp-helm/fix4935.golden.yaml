@@ -750,7 +750,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: d95caa5d7f340792bdf7442a6e6471e06db4f03129af1b84fb8baa4e9b82abcb
+        checksum/tls-secrets: 6dc69e3ba628063a50553d16917d486b6996d13dcdcbcbd95b1dcf646735ce59
         bim: "bam"
         foo: "{\"bar\": \"baz\"}"
       labels: 
@@ -1288,7 +1288,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
@@ -1347,15 +1347,15 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: 
-          - kube-system
         - key: kuma.io/sidecar-injection
           operator: In
           values: 
           - enabled
           - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
     clientConfig:
       caBundle: XYZ
       service:
@@ -1423,7 +1423,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
