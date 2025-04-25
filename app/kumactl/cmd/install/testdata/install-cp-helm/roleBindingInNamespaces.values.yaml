@@ -1,1 +1,1 @@
-enabledNamespaces: ["kuma-demo", "kuma-test"]
+meshNamespaces: ["kuma-demo", "kuma-test"]

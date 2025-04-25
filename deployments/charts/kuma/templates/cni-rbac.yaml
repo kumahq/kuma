@@ -32,9 +32,9 @@ rules:
       - list
       - watch
       {{- end }}
-{{- if gt (len .Values.enabledNamespaces) 0 }}
+{{- if gt (len .Values.namespaceAllowList) 0 }}
 {{- $root := . }}
-{{- range $element := .Values.enabledNamespaces }}
+{{- range $element := .Values.namespaceAllowList }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

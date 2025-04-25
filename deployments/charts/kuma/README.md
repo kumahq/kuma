@@ -17,7 +17,7 @@ A Helm chart for the Kuma Control Plane
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
 | noHelmHooks | bool | `false` | Whether to disable all helm hooks |
-| enabledNamespaces | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces. If not specified, the control plane has write permissions for all namespaces. |
+| namespaceAllowList | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces. If not specified, the control plane has write permissions for all namespaces. |
 | skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created. If set to true, the user must manually create these resources before installation. |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
