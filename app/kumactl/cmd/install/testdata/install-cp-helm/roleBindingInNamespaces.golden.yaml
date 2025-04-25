@@ -481,7 +481,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 2a33cfeb5e67656c28c447074985758294084a009cfe3a76e41c3e182e08afa0
+        checksum/tls-secrets: e17b2594ae2f09e301755970f90b9d78cdc1d7f969661c371f5687df6d65eed9
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -652,6 +652,10 @@ webhooks:
         - key: kuma.io/sidecar-injection
           operator: Exists
         - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+        - key: kubernetes.io/metadata.name
           operator: In
           values:
           - kuma-system
@@ -711,6 +715,10 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
         - key: kubernetes.io/metadata.name
           operator: In
           values:
@@ -776,9 +784,14 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: In
-          values: 
+          values:
           - enabled
           - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
         - key: kubernetes.io/metadata.name
           operator: In
           values:
@@ -807,6 +820,11 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
         - key: kubernetes.io/metadata.name
           operator: In
           values:
@@ -849,6 +867,10 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: Exists
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
         - key: kubernetes.io/metadata.name
           operator: In
           values:

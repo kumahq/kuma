@@ -633,7 +633,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
@@ -752,13 +752,14 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: In
-          values: 
+          values:
           - enabled
           - "true"
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
           - kube-system
+          - kuma-system
     clientConfig:
       caBundle: XYZ
       service:

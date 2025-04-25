@@ -700,7 +700,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: 6dc69e3ba628063a50553d16917d486b6996d13dcdcbcbd95b1dcf646735ce59
+        checksum/tls-secrets: dd07006d086abef5b112a0f450a4969e01fcadcf605cdf25ad749b4099d111ec
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -878,7 +878,7 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
     clientConfig:
       caBundle: XYZ
@@ -997,13 +997,14 @@ webhooks:
       matchExpressions:
         - key: kuma.io/sidecar-injection
           operator: In
-          values: 
+          values:
           - enabled
           - "true"
         - key: kubernetes.io/metadata.name
           operator: NotIn
           values:
           - kube-system
+          - kuma-system
     clientConfig:
       caBundle: XYZ
       service:
