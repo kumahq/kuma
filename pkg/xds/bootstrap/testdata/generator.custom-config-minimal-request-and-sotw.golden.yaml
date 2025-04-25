@@ -14,7 +14,7 @@ defaultRegexEngine:
     '@type': type.googleapis.com/envoy.extensions.regex_engines.v3.GoogleRE2
 dynamicResources:
   adsConfig:
-    apiType: DELTA_GRPC
+    apiType: GRPC
     grpcServices:
     - envoyGrpc:
         clusterName: ads_cluster
