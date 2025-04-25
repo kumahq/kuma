@@ -8,9 +8,6 @@ import (
 )
 
 func GetEnvoyConfiguration(deltaXds bool, annotations metadata.Annotations) (*mesh_proto.EnvoyConfiguration, error) {
-	envoyConfig := &mesh_proto.EnvoyConfiguration{
-		XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_GRPC,
-	}
 	if deltaXds {
 		envoyConfig.XdsTransportProtocolVariant = mesh_proto.EnvoyConfiguration_DELTA_GRPC
 	}

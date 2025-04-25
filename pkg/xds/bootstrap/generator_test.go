@@ -221,9 +221,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			dataplane: func() *core_mesh.DataplaneResource {
 				dp := defaultDataplane()
 				dp.Spec.Networking.Admin.Port = 9902
-				dp.Spec.Envoy = &mesh_proto.EnvoyConfiguration{
-					XdsTransportProtocolVariant: mesh_proto.EnvoyConfiguration_DELTA_GRPC,
-				}
 				return dp
 			},
 			request: types.BootstrapRequest{

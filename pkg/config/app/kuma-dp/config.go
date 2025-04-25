@@ -84,6 +84,10 @@ func (c *Config) Features() []string {
 		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
 	}
 
+	if c.DataplaneRuntime.EnvoyXdsTransportProtocolVariant == "delta" {
+		base = append(base, xds_types.FeatureDeltaXds)
+	}
+
 	return base
 }
 
@@ -245,6 +249,8 @@ type DataplaneRuntime struct {
 	// including redirect behavior, DNS capture, and IP family mode.
 	// This is used to determine how traffic redirection and interception is handled.
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
+	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
+	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_delta_xds_transport_protocol_variant"`
 }
 
 type Metrics struct {
@@ -362,6 +368,15 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+	}
+	if d.EnvoyXdsTransportProtocolVariant != "" {
+		switch d.EnvoyXdsTransportProtocolVariant {
+		case "DELTA_GRPC":
+		case "GRPC":
+		default:
+			errs = multierr.Append(
+				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC", d.EnvoyXdsTransportProtocolVariant))
+		}
 	}
 	return errs
 }

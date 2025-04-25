@@ -4,6 +4,7 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -48,10 +49,10 @@ type configParameters struct {
 	DynamicMetadata             map[string]string
 	DNSPort                     uint32
 	ProxyType                   string
-	Features                    []string
+	Features                    xds_types.Features
 	IsGatewayDataplane          bool
 	Resources                   types.ProxyResources
 	SystemCaPath                string
 	TransparentProxy            *tproxy_config.DataplaneConfig
-	XdsTransportProtocolVariant types.XdsTransportProtocolVariant
+	UseDeltaXds                 bool
 }
