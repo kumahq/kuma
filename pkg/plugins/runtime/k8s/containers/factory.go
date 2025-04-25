@@ -36,6 +36,7 @@ type DataplaneProxyFactory struct {
 	sidecarContainersEnabled  bool
 	virtualProbesEnabled      bool
 	applicationProbeProxyPort uint32
+	useDeltaXds				  bool
 }
 
 func NewDataplaneProxyFactory(
@@ -48,6 +49,7 @@ func NewDataplaneProxyFactory(
 	sidecarContainersEnabled bool,
 	virtualProbesEnabled bool,
 	applicationProbeProxyPort uint32,
+	useDeltaXds bool,
 ) *DataplaneProxyFactory {
 	return &DataplaneProxyFactory{
 		ControlPlaneURL:           controlPlaneURL,
@@ -59,6 +61,7 @@ func NewDataplaneProxyFactory(
 		sidecarContainersEnabled:  sidecarContainersEnabled,
 		virtualProbesEnabled:      virtualProbesEnabled,
 		applicationProbeProxyPort: applicationProbeProxyPort,
+		useDeltaXds:               useDeltaXds,
 	}
 }
 
@@ -83,6 +86,19 @@ func (i *DataplaneProxyFactory) proxyConcurrencyFor(annotations map[string]strin
 func (i *DataplaneProxyFactory) envoyAdminPort(annotations map[string]string) (uint32, error) {
 	adminPort, _, err := metadata.Annotations(annotations).GetUint32(metadata.KumaEnvoyAdminPort)
 	return adminPort, err
+}
+
+func (i *DataplaneProxyFactory) xdsTransportProtocol(annotations map[string]string) (string, error) {
+	xdsTransportProtocol, exist := metadata.Annotations(annotations).GetString(metadata.KumaXdsTransportProtocolVariant)
+	if exist {
+		switch xdsTransportProtocol {
+		case "DELTA_GRPC":
+		case "GRPC":
+		default:
+			return "", errors.Errorf("invalid xds transport protocol variant '%s'. Possible values: DELTA_GRPC or GRPC", xdsTransportProtocol)
+		}
+	}
+	return xdsTransportProtocol, nil
 }
 
 func (i *DataplaneProxyFactory) drainTime(annotations map[string]string) (time.Duration, error) {
@@ -203,6 +219,11 @@ func (i *DataplaneProxyFactory) NewContainer(
 			FailureThreshold:    i.ContainerConfig.StartupProbe.FailureThreshold,
 		}
 	}
+
+	if xdsTransportProtocol != "" {
+		container.Env
+	}
+
 	if waitForDataplaneReady {
 		container.Lifecycle = &kube_core.Lifecycle{
 			PostStart: &kube_core.LifecycleHandler{
@@ -217,6 +238,10 @@ func (i *DataplaneProxyFactory) NewContainer(
 
 func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
 	drainTime, err := i.drainTime(podAnnotations)
+	if err != nil {
+		return nil, err
+	}
+	xdsTransportProtocol, err := i.xdsTransportProtocol(annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -270,6 +295,12 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: i.ControlPlaneCACert,
 		},
 	}
+	if xdsTransportProtocol != "" {
+		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENABLED",
+			Value: "true",
+		}
+	}
 	if i.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENABLED",
@@ -321,6 +352,7 @@ func (i *DataplaneProxyFactory) sidecarEnvVars(mesh string, podAnnotations map[s
 			Value: complogLevel,
 		}
 	}
+	
 
 	annotations := make(map[string]string)
 	if err := probes.SetVirtualProbesEnabledAnnotation(annotations, podAnnotations, i.virtualProbesEnabled); err != nil {

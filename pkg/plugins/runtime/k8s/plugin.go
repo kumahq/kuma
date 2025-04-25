@@ -363,6 +363,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_c
 			converter,
 			rt.Config().GetEnvoyAdminPort(),
 			rt.Config().Store.Kubernetes.SystemNamespace,
+			rt.Config().Experimental.DeltaXds,
 		)
 		if err != nil {
 			return err
