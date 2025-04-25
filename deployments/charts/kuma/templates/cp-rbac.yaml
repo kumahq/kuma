@@ -295,9 +295,9 @@ rules:
       - delete
   {{- end }}
 {{- end }}
-{{- if gt (len .Values.enabledNamespaces) 0 }}
+{{- if gt (len .Values.namespaceAllowList) 0 }}
 {{- $root := . }}
-{{- range $element := .Values.enabledNamespaces }}
+{{- range $element := .Values.namespaceAllowList }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -315,7 +315,7 @@ subjects:
     namespace: {{ $root.Release.Namespace }}
 {{- end }}
 {{- end }}
-{{- if and (eq (len .Values.enabledNamespaces) 0) (not .Values.controlPlane.skipClusterRoleCreation) }}
+{{- if and (eq (len .Values.namespaceAllowList) 0) (not .Values.controlPlane.skipClusterRoleCreation) }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

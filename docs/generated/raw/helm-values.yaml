@@ -20,9 +20,9 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
-# -- Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces.
+# -- Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces.
 # If not specified, the control plane has write permissions for all namespaces.
-enabledNamespaces: []
+namespaceAllowList: []
 
 # -- Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created.
 # If set to true, the user must manually create these resources before installation.
