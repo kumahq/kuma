@@ -481,7 +481,7 @@ spec:
     metadata:
       annotations:
         checksum/config: fd9d1d8386f97f2bd49e50f476520816168a1c9f60bbc43dec1347a64d239155
-        checksum/tls-secrets: d95caa5d7f340792bdf7442a6e6471e06db4f03129af1b84fb8baa4e9b82abcb
+        checksum/tls-secrets: e17b2594ae2f09e301755970f90b9d78cdc1d7f969661c371f5687df6d65eed9
       labels: 
         app: kuma-control-plane
         app.kubernetes.io/name: kuma
@@ -653,8 +653,14 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
+          - kuma-demo
+          - kuma-test
     clientConfig:
       caBundle: XYZ
       service:
@@ -711,8 +717,14 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
+          - kuma-demo
+          - kuma-test
     clientConfig:
       caBundle: XYZ
       service:
@@ -770,15 +782,21 @@ webhooks:
     failurePolicy: Fail
     namespaceSelector:
       matchExpressions:
-        - key: kubernetes.io/metadata.name
-          operator: NotIn
-          values: 
-          - kube-system
         - key: kuma.io/sidecar-injection
           operator: In
-          values: 
+          values:
           - enabled
           - "true"
+        - key: kubernetes.io/metadata.name
+          operator: NotIn
+          values:
+          - kube-system
+          - kuma-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-demo
+          - kuma-test
     clientConfig:
       caBundle: XYZ
       service:
@@ -807,6 +825,11 @@ webhooks:
           values:
           - kube-system
           - kuma-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-demo
+          - kuma-test
     objectSelector:
       matchLabels:
         kuma.io/sidecar-injection: enabled
@@ -846,8 +869,14 @@ webhooks:
           operator: Exists
         - key: kubernetes.io/metadata.name
           operator: NotIn
-          values: 
+          values:
           - kube-system
+        - key: kubernetes.io/metadata.name
+          operator: In
+          values:
+          - kuma-system
+          - kuma-demo
+          - kuma-test
     clientConfig:
       caBundle: XYZ
       service:
