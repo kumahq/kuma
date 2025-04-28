@@ -384,7 +384,6 @@ func newRunCmd(opts kuma_cmd.RunCmdOpts, rootCtx *RootContext) *cobra.Command {
 		tpCfgValues,
 		"Enable transparent proxy with provided configuration. This flag can be repeated. Each value can be:\n"+
 			"- a comma-separated list of file paths\n"+
-			"- a raw YAML string\n"+
 			"- a dash '-' to read from STDIN\n"+
 			"Later values override earlier ones when merging. "+
 			"Use this flag to pass detailed transparent proxy settings to kuma-dp.",
