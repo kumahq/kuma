@@ -26,11 +26,11 @@ resources:
                   headers:
                   - name: If-None-Match
                     stringMatch:
-                      exact: 8b2b708ee2e09b69ef2e448f7a8ea04146b56c8ba9a0d45e58460feb1ba2af75
+                      exact: 639772d25f9c22e338f3c54ebe8be0faeae7e30c57f1acbf2d8ba5eb191007fb
                   path: /dns
               - directResponse:
                   body:
-                    inlineString: '{"records":[{"name":"backend.test-ns.svc.8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"backend_test-ns_svc_8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"httpbin.mesh","ips":["240.0.0.1","::ffff:f000:1"]}],"ttl":3600}'
+                    inlineString: '{"records":[{"name":"backend.test-ns.svc.8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"backend_test-ns_svc_8080.mesh","ips":["240.0.0.0","::ffff:f000:0"]},{"name":"httpbin.mesh","ips":["240.0.0.1","::ffff:f000:1"]}],"ttl":30}'
                   status: 200
                 match:
                   path: /dns
@@ -38,6 +38,6 @@ resources:
                 responseHeadersToAdd:
                 - header:
                     key: Etag
-                    value: 8b2b708ee2e09b69ef2e448f7a8ea04146b56c8ba9a0d45e58460feb1ba2af75
+                    value: 639772d25f9c22e338f3c54ebe8be0faeae7e30c57f1acbf2d8ba5eb191007fb
           statPrefix: _kuma_dynamicconfig
     name: _kuma:dynamicconfig
