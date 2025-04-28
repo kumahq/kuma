@@ -1,0 +1,51 @@
+*raw
+:PREROUTING ACCEPT
+:OUTPUT ACCEPT
+-A PREROUTING -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to all DNS responses" -m udp --sport 53 -j CT --zone 1
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 1 to DNS traffic from the kuma-dp user (UID 5678)" -m udp --dport 53 -m owner --uid-owner 5678 -j CT --zone 1
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to DNS responses from the kuma-dp DNS proxy" -m udp --sport 8888 -m owner --uid-owner 5678 -j CT --zone 2
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/assign connection tracking zone 2 to all DNS requests" -m udp --dport 53 -j CT --zone 2
+COMMIT
+*nat
+:PREROUTING ACCEPT
+:INPUT ACCEPT
+:OUTPUT ACCEPT
+:POSTROUTING ACCEPT
+:KUMA_MESH_INBOUND -
+:KUMA_MESH_INBOUND_REDIRECT -
+:KUMA_MESH_OUTBOUND -
+:KUMA_MESH_OUTBOUND_REDIRECT -
+-A PREROUTING -i br+ -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface br+ to the kuma-dp DNS proxy (listening on port 8888)" -m udp --dport 53 -j REDIRECT --to-ports 8888
+-A PREROUTING ! -d 172.18.0.0/16 -i br+ -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface br+, excluding destination 172.18.0.0/16, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
+-A PREROUTING -i docker0 -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface docker0 to the kuma-dp DNS proxy (listening on port 8888)" -m udp --dport 53 -j REDIRECT --to-ports 8888
+-A PREROUTING ! -d 172.17.0.0/16 -i docker0 -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface docker0, excluding destination 172.17.0.0/16, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
+-A PREROUTING -i docker2 -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect DNS requests on interface docker2 to the kuma-dp DNS proxy (listening on port 8888)" -m udp --dport 53 -j REDIRECT --to-ports 8888
+-A PREROUTING ! -d 10.0.0.0/8 -i docker2 -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic on interface docker2, excluding destination 10.0.0.0/8, to the envoy\'s outbound passthrough port 15001" -j REDIRECT --to-ports 15001
+-A PREROUTING -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect remaining TCP traffic to our custom chain for processing" -j KUMA_MESH_INBOUND
+-A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -m multiport --dports 1:65535 -m owner --uid-owner 1 -j RETURN
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -m multiport --dports 1:65535 -m owner --uid-owner 1 -j RETURN
+-A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -m multiport --dports 2:3 -m owner --uid-owner 4-5 -j RETURN
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -m multiport --dports 2:3 -m owner --uid-owner 4-5 -j RETURN
+-A OUTPUT -d 10.0.0.1/32 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -j RETURN
+-A OUTPUT -d 192.168.0.0/24 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP addresses, ports and UIDs" -j RETURN
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/return early for DNS traffic from kuma-dp" -m udp --dport 53 -m owner --uid-owner 5678 -j RETURN
+-A OUTPUT -p udp -m comment --comment "kuma/mesh/transparent/proxy/redirect all DNS requests to the kuma-dp DNS proxy (listening on port 8888)" -m udp --dport 53 -j REDIRECT --to-ports 8888
+-A OUTPUT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic to our custom chain for processing" -j KUMA_MESH_OUTBOUND
+-A KUMA_MESH_INBOUND -s 192.168.0.1/32 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP address" -j RETURN
+-A KUMA_MESH_INBOUND -s 172.32.0.0/16 -m comment --comment "kuma/mesh/transparent/proxy/skip further processing for configured IP address" -j RETURN
+-A KUMA_MESH_INBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/exclude inbound traffic from port 4444 from redirection" -m tcp --dport 4444 -j RETURN
+-A KUMA_MESH_INBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/exclude inbound traffic from port 55555 from redirection" -m tcp --dport 55555 -j RETURN
+-A KUMA_MESH_INBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect all inbound traffic to the custom chain for processing" -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_INBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15006)" -j REDIRECT --to-ports 15006
+-A KUMA_MESH_OUTBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 6 from redirection" -m tcp --dport 6 -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 77 from redirection" -m tcp --dport 77 -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/exclude outbound traffic from port 888 from redirection" -m tcp --dport 888 -j RETURN
+-A KUMA_MESH_OUTBOUND -s 127.0.0.6/32 -o ifPlaceholder -m comment --comment "kuma/mesh/transparent/proxy/prevent traffic loops by ensuring traffic from the sidecar proxy (using 127.0.0.6/32) to loopback interface is not redirected again" -j RETURN
+-A KUMA_MESH_OUTBOUND ! -d 127.0.0.1/32 -o ifPlaceholder -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect outbound TCP traffic (except to DNS port 53) destined for loopback interface, but not targeting address 127.0.0.1/32, and owned by UID 5678 (kuma-dp user) to KUMA_MESH_INBOUND_REDIRECT chain for proper handling" -m tcp ! --dport 53 -m owner --uid-owner 5678 -j KUMA_MESH_INBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND -o ifPlaceholder -p tcp -m comment --comment "kuma/mesh/transparent/proxy/return outbound TCP traffic (except to DNS port 53) destined for loopback interface, owned by any UID other than 5678 (kuma-dp user)" -m tcp ! --dport 53 -m owner ! --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -m comment --comment "kuma/mesh/transparent/proxy/return outbound traffic owned by UID 5678 (kuma-dp user)" -m owner --uid-owner 5678 -j RETURN
+-A KUMA_MESH_OUTBOUND -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect all DNS requests sent via TCP to kuma-dp DNS proxy (listening on port 8888)" -m tcp --dport 53 -j REDIRECT --to-ports 8888
+-A KUMA_MESH_OUTBOUND -d 127.0.0.1/32 -m comment --comment "kuma/mesh/transparent/proxy/return traffic destined for localhost (127.0.0.1/32) to avoid redirection" -j RETURN
+-A KUMA_MESH_OUTBOUND -m comment --comment "kuma/mesh/transparent/proxy/redirect all other outbound traffic to our custom chain for further processing" -j KUMA_MESH_OUTBOUND_REDIRECT
+-A KUMA_MESH_OUTBOUND_REDIRECT -p tcp -m comment --comment "kuma/mesh/transparent/proxy/redirect TCP traffic to envoy (port 15001)" -j REDIRECT --to-ports 15001
+COMMIT
