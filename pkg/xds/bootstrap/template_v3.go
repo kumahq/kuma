@@ -60,7 +60,7 @@ func genConfig(parameters configParameters, proxyConfig xds.Proxy, enableReloada
 	}
 
 	features := []interface{}{}
-	for _, feature := range parameters.Features {
+	for feature := range parameters.Features {
 		features = append(features, feature)
 	}
 

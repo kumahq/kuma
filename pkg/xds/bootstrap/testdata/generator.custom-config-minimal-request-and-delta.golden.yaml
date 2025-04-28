@@ -49,7 +49,7 @@ node:
     dataplane.admin.port: "9902"
     dataplane.proxyType: dataplane
     features:
-    - true
+    - feature-delta-grpc
     metricsCertPath: ""
     metricsKeyPath: ""
     systemCaPath: ""
