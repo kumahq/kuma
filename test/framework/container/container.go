@@ -37,6 +37,17 @@ func (b *ContainerBuilder) WithPrivileged(privileged bool) *ContainerBuilder {
 	return b
 }
 
+func (b *ContainerBuilder) WithFiles(filesMap map[string]string) *ContainerBuilder {
+	for filePath, content := range filesMap {
+		b.files = append(b.files, testcontainers.ContainerFile{
+			Reader:            strings.NewReader(content),
+			ContainerFilePath: filePath,
+			FileMode:          0o644,
+		})
+	}
+	return b
+}
+
 func (b *ContainerBuilder) WithKumactlBinary(binary string) *ContainerBuilder {
 	b.files = append(b.files, testcontainers.ContainerFile{
 		HostFilePath:      binary,

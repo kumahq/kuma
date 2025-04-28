@@ -51,15 +51,13 @@ func (l *Loader) Load(stdin io.Reader, values ...string) error {
 }
 
 func (l *Loader) load(stdin io.Reader, value string) error {
-	switch {
-	case strings.TrimSpace(value) == "":
+	switch strings.TrimSpace(value) {
+	case "":
 		return nil
-	case value == "-":
+	case "-":
 		return l.LoadReader(stdin)
-	case l.LoadBytes([]byte(value)) != nil:
-		return l.LoadFile(value)
 	default:
-		return nil
+		return l.LoadFile(value)
 	}
 }
 
