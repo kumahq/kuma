@@ -38,7 +38,6 @@ type PodConverter struct {
 	SystemNamespace     string
 	Mode                config_core.CpMode
 	KubeOutboundsAsVIPs bool
-	DeltaXds            bool
 }
 
 func (p *PodConverter) PodToDataplane(
