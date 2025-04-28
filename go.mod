@@ -11,7 +11,7 @@ require (
 	github.com/bakito/go-log-logr-adapter v0.0.3-0.20240527124623-de85860b7d21
 	github.com/cilium/ebpf v0.18.0
 	github.com/containernetworking/cni v1.3.0
-	github.com/containernetworking/plugins v1.6.2
+	github.com/containernetworking/plugins v1.7.1
 	github.com/emicklei/go-restful/v3 v3.12.2
 	github.com/envoyproxy/go-control-plane v0.13.4
 	github.com/envoyproxy/go-control-plane/contrib v1.32.4
@@ -53,7 +53,7 @@ require (
 	github.com/spiffe/go-spiffe/v2 v2.5.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/tonglil/opentelemetry-go-datadog-propagator v0.1.3
-	github.com/vishvananda/netlink v1.3.0
+	github.com/vishvananda/netlink v1.3.1-0.20250303224720-0e7078ed04c8
 	github.com/vishvananda/netns v0.0.5
 	go.opentelemetry.io/contrib/instrumentation/github.com/emicklei/go-restful/otelrestful v0.60.0
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0
