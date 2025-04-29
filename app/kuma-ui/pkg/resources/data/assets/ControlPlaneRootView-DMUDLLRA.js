@@ -1,0 +1,1 @@
+import{_ as l,m as t,o as n,w as e,b as c,r as o,C as p}from"./index-CA7eyJgm.js";const i={};function u(m,w){const a=o("RouterView"),r=o("AppView"),s=o("RouteView");return n(),t(s,{name:"control-plane-root-view"},{default:e(()=>[c(r,null,{default:e(()=>[c(a,null,{default:e(({Component:_})=>[(n(),t(p(_)))]),_:1})]),_:1})]),_:1})}const V=l(i,[["render",u]]);export{V as default};
