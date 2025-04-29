@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"go/format"
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 	"log"
 	"os"
 	"path"
@@ -465,7 +468,7 @@ func openApiGenerator(pkg string, resources []ResourceInfo) error {
 			if key == "RSAbits" {
 				return "rsaBits"
 			}
-			return key
+			return snakeToCamel(key)
 		},
 	}
 	err := reflector.AddGoComments("github.com/kumahq/kuma/", path.Join(readDir, "api/"))
@@ -698,4 +701,24 @@ func confMapper(r reflect.Type, self jsonschema.Reflector) (*jsonschema.Schema, 
 		return schema, true
 	}
 	return nil, false
+}
+
+// snakeToCamel converts a snake_case string to camelCase
+func snakeToCamel(s string) string {
+	parts := strings.Split(s, "_")
+	if len(parts) == 1 {
+		return s
+	}
+
+	camel := strings.ToLower(parts[0])
+	caser := cases.Title(language.Und)
+
+	for _, part := range parts[1:] {
+		if part == "" {
+			continue
+		}
+		camel += caser.String(strings.ToLower(part))
+	}
+
+	return camel
 }

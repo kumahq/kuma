@@ -35,7 +35,7 @@ properties:
               description: Resources is used to specify listener-specific resource
                 settings.
               properties:
-                connection_limit:
+                connectionLimit:
                   type: integer
               type: object
             tags:

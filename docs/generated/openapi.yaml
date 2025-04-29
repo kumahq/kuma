@@ -13848,7 +13848,7 @@ components:
             EnvoyConfiguration provides additional configuration for the Envoy
             sidecar.
           properties:
-            xds_transport_protocol_variant:
+            xdsTransportProtocolVariant:
               description: >-
                 xDSTransportProtocol provides information about protocol used
                 for
@@ -14115,7 +14115,7 @@ components:
 
                       information.
                     properties:
-                      healthy_threshold:
+                      healthyThreshold:
                         description: >-
                           Number of consecutive healthy checks before
                           considering a host
@@ -14145,7 +14145,7 @@ components:
                           seconds:
                             type: integer
                         type: object
-                      unhealthy_threshold:
+                      unhealthyThreshold:
                         description: >-
                           Number of consecutive unhealthy checks before
                           considering a host
@@ -14260,14 +14260,14 @@ components:
                     type: object
                 type: object
               type: array
-            transparent_proxying:
+            transparentProxying:
               description: >-
                 TransparentProxying describes the configuration for transparent
                 proxying.
 
                 It is used by default on Kubernetes.
               properties:
-                direct_access_services:
+                directAccessServices:
                   description: >-
                     List of services that will be accessed directly via IP:PORT
 
@@ -14281,14 +14281,14 @@ components:
                   items:
                     type: string
                   type: array
-                ip_family_mode:
+                ipFamilyMode:
                   description: >-
                     The IP family mode to enable for. Can be "IPv4" or
                     "DualStack".
                   oneOf:
                     - type: string
                     - type: integer
-                reachable_backends:
+                reachableBackends:
                   description: >-
                     Reachable backend via transparent proxy when running with
 
@@ -14325,7 +14325,7 @@ components:
                         type: object
                       type: array
                   type: object
-                reachable_services:
+                reachableServices:
                   description: >-
                     List of reachable services (represented by the value of
 
@@ -14339,12 +14339,12 @@ components:
                   items:
                     type: string
                   type: array
-                redirect_port_inbound:
+                redirectPortInbound:
                   description: >-
                     Port on which all inbound traffic is being transparently
                     redirected.
                   type: integer
-                redirect_port_outbound:
+                redirectPortOutbound:
                   description: >-
                     Port on which all outbound traffic is being transparently
                     redirected.
@@ -14379,14 +14379,14 @@ components:
               description: List of endpoints to expose without mTLS.
               items:
                 properties:
-                  inbound_path:
+                  inboundPath:
                     description: >-
                       Inbound path is a path of the application from which we
                       expose the
 
                       endpoint. It is recommended to be as specific as possible.
                     type: string
-                  inbound_port:
+                  inboundPort:
                     description: >-
                       Inbound port is a port of the application from which we
                       expose the
@@ -14991,7 +14991,7 @@ components:
                       Resources is used to specify listener-specific resource
                       settings.
                     properties:
-                      connection_limit:
+                      connectionLimit:
                         type: integer
                     type: object
                   tags:

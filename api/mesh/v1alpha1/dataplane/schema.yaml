@@ -3,7 +3,7 @@ properties:
     description: EnvoyConfiguration provides additional configuration for the Envoy
       sidecar.
     properties:
-      xds_transport_protocol_variant:
+      xdsTransportProtocolVariant:
         description: |-
           xDSTransportProtocol provides information about protocol used for
           configuration exchange between control-plane and Envoy sidecar.
@@ -173,7 +173,7 @@ properties:
                 See https://kuma.io/docs/latest/documentation/health for more
                 information.
               properties:
-                healthy_threshold:
+                healthyThreshold:
                   description: |-
                     Number of consecutive healthy checks before considering a host
                     healthy.
@@ -200,7 +200,7 @@ properties:
                     seconds:
                       type: integer
                   type: object
-                unhealthy_threshold:
+                unhealthyThreshold:
                   description: |-
                     Number of consecutive unhealthy checks before considering a host
                     unhealthy.
@@ -280,12 +280,12 @@ properties:
               type: object
           type: object
         type: array
-      transparent_proxying:
+      transparentProxying:
         description: |-
           TransparentProxying describes the configuration for transparent proxying.
           It is used by default on Kubernetes.
         properties:
-          direct_access_services:
+          directAccessServices:
             description: |-
               List of services that will be accessed directly via IP:PORT
               Use `*` to indicate direct access to every service in the Mesh.
@@ -294,12 +294,12 @@ properties:
             items:
               type: string
             type: array
-          ip_family_mode:
+          ipFamilyMode:
             description: The IP family mode to enable for. Can be "IPv4" or "DualStack".
             oneOf:
             - type: string
             - type: integer
-          reachable_backends:
+          reachableBackends:
             description: |-
               Reachable backend via transparent proxy when running with
               MeshExternalService, MeshService and MeshMultiZoneService. Setting an
@@ -330,7 +330,7 @@ properties:
                   type: object
                 type: array
             type: object
-          reachable_services:
+          reachableServices:
             description: |-
               List of reachable services (represented by the value of
               `kuma.io/service`) via transparent proxying. Setting an explicit list
@@ -339,11 +339,11 @@ properties:
             items:
               type: string
             type: array
-          redirect_port_inbound:
+          redirectPortInbound:
             description: Port on which all inbound traffic is being transparently
               redirected.
             type: integer
-          redirect_port_outbound:
+          redirectPortOutbound:
             description: Port on which all outbound traffic is being transparently
               redirected.
             type: integer
@@ -366,12 +366,12 @@ properties:
         description: List of endpoints to expose without mTLS.
         items:
           properties:
-            inbound_path:
+            inboundPath:
               description: |-
                 Inbound path is a path of the application from which we expose the
                 endpoint. It is recommended to be as specific as possible.
               type: string
-            inbound_port:
+            inboundPort:
               description: |-
                 Inbound port is a port of the application from which we expose the
                 endpoint.
