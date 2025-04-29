@@ -13843,21 +13843,6 @@ components:
       type: object
     DataplaneItem:
       properties:
-        envoy:
-          description: >-
-            EnvoyConfiguration provides additional configuration for the Envoy
-            sidecar.
-          properties:
-            xds_transport_protocol_variant:
-              description: >-
-                xDSTransportProtocol provides information about protocol used
-                for
-
-                configuration exchange between control-plane and Envoy sidecar.
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
         labels:
           additionalProperties:
             type: string
