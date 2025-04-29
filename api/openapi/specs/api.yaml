@@ -305,6 +305,10 @@ components:
           type: array
           items:
             $ref: './common/resource.yaml#/components/schemas/Meta'
+    DataplaneOverviewWithMeta:
+      allOf:
+        - $ref: './common/resource.yaml#/components/schemas/Meta'
+        - $ref: '/specs/protoresources/dataplaneOverview/schema.yaml#/components/schemas/DataplaneOverview'
     DataplaneXDSConfig:
       type: object
       title: DataplaneXDSConfig
@@ -594,7 +598,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
+            $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     GetDataplaneOverviewListResponse:
       description: A response containing the overview of a dataplane.
       content:
@@ -610,7 +614,7 @@ components:
               items:
                 type: array
                 items:
-                  $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
+                  $ref: '#/components/schemas/DataplaneOverviewWithMeta'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:
