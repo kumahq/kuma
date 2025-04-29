@@ -85,6 +85,46 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_overview:
+    get:
+      operationId: getDataplaneOverview
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/_overview:
+    get:
+      operationId: getDataplaneOverviewList
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       operationId: get-dataplanes-xds-config
@@ -3987,6 +4027,898 @@ components:
         match:
           type: object
           x-go-type: interface{}
+    PrometheusMetricsBackendConfig:
+      properties:
+        aggregate:
+          description: >-
+            Map with the configuration of applications which metrics are going
+            to be
+
+            scrapped by kuma-dp.
+          items:
+            description: >-
+              PrometheusAggregateMetricsConfig defines endpoints that should be
+              scrapped by kuma-dp for prometheus metrics.
+            properties:
+              address:
+                description: >-
+                  Address on which a service expose HTTP endpoint with
+                  Prometheus metrics.
+                type: string
+              enabled:
+                description: >-
+                  If false then the application won't be scrapped. If nil, then
+                  it is treated
+
+                  as true and kuma-dp scrapes metrics from the service.
+                type: boolean
+              name:
+                description: Name which identify given configuration.
+                type: string
+              path:
+                description: >-
+                  Path on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: string
+              port:
+                description: >-
+                  Port on which a service expose HTTP endpoint with Prometheus
+                  metrics.
+                type: integer
+            type: object
+          type: array
+        envoy:
+          description: Configuration of Envoy's metrics.
+          properties:
+            filterRegex:
+              description: >-
+                FilterRegex value that is going to be passed to Envoy for
+                filtering
+
+                Envoy metrics.
+              type: string
+            usedOnly:
+              description: >-
+                If true then return metrics that Envoy has updated (counters
+                incremented
+
+                at least once, gauges changed at least once, and histograms
+                added to at
+
+                least once). If nil, then it is treated as false.
+              type: boolean
+          type: object
+        path:
+          description: >-
+            Path on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: string
+        port:
+          description: >-
+            Port on which a dataplane should expose HTTP endpoint with
+            Prometheus
+
+            metrics.
+          type: integer
+        skipMTLS:
+          description: >-
+            If true then endpoints for scraping metrics won't require mTLS even
+            if mTLS
+
+            is enabled in Mesh. If nil, then it is treated as false.
+          type: boolean
+        tags:
+          additionalProperties:
+            type: string
+          description: >-
+            Tags associated with an application this dataplane is deployed next
+            to,
+
+            e.g. service=web, version=1.0.
+
+            `service` tag is mandatory.
+          type: object
+        tls:
+          description: Configuration of TLS for prometheus listener.
+          properties:
+            mode:
+              description: >-
+                mode defines how configured is the TLS for Prometheus.
+
+                Supported values, delegated, disabled, activeMTLSBackend.
+                Default to
+
+                `activeMTLSBackend`.
+              oneOf:
+                - type: string
+                - type: integer
+          type: object
+      type: object
+    DataplaneOverview:
+      properties:
+        dataplane:
+          properties:
+            envoy:
+              description: >-
+                EnvoyConfiguration provides additional configuration for the
+                Envoy sidecar.
+              properties:
+                xdsTransportProtocolVariant:
+                  description: >-
+                    xDSTransportProtocol provides information about protocol
+                    used for
+
+                    configuration exchange between control-plane and Envoy
+                    sidecar.
+                  oneOf:
+                    - type: string
+                    - type: integer
+              type: object
+            metrics:
+              description: >-
+                Configuration for metrics that should be collected and exposed
+                by the
+
+                data plane proxy.
+
+
+                Settings defined here will override their respective defaults
+
+                defined at a Mesh level.
+              properties:
+                conf:
+                  oneOf:
+                    - $ref: '#/components/schemas/PrometheusMetricsBackendConfig'
+                  type: object
+                name:
+                  description: >-
+                    Name of the backend, can be then used in
+                    Mesh.metrics.enabledBackend
+                  type: string
+                type:
+                  description: Type of the backend (Kuma ships with 'prometheus')
+                  type: string
+              type: object
+            networking:
+              description: >-
+                Networking describes inbound and outbound interfaces of the data
+                plane
+
+                proxy.
+              properties:
+                address:
+                  description: >-
+                    IP on which the data plane proxy is accessible to the
+                    control plane and
+
+                    other data plane proxies in the same network. This can also
+                    be a
+
+                    hostname, in which case the control plane will periodically
+                    resolve it.
+                  type: string
+                admin:
+                  description: >-
+                    Admin describes configuration related to Envoy Admin API.
+
+                    Due to security, all the Envoy Admin endpoints are exposed
+                    only on
+
+                    localhost. Additionally, Envoy will expose `/ready` endpoint
+                    on
+
+                    `networking.address` for health checking systems to be able
+                    to check the
+
+                    state of Envoy. The rest of the endpoints exposed on
+                    `networking.address`
+
+                    are always protected by mTLS and only meant to be consumed
+                    internally by
+
+                    the control plane.
+                  properties:
+                    port:
+                      description: Port on which Envoy Admin API server will be listening
+                      type: integer
+                  type: object
+                advertisedAddress:
+                  description: >-
+                    In some situations, a data plane proxy resides in a private
+                    network (e.g.
+
+                    Docker) and is not reachable via `address` to other data
+                    plane proxies.
+
+                    `advertisedAddress` is configured with a routable address
+                    for such data
+
+                    plane proxy so that other proxies in the mesh can connect to
+                    it over
+
+                    `advertisedAddress` and not via address.
+
+
+                    Envoy still binds to the `address`, not `advertisedAddress`.
+                  type: string
+                gateway:
+                  description: >-
+                    Gateway describes a configuration of the gateway of the data
+                    plane proxy.
+                  properties:
+                    tags:
+                      additionalProperties:
+                        type: string
+                      description: >-
+                        Tags associated with a gateway of this data plane to,
+                        e.g.
+
+                        `kuma.io/service=gateway`, `env=prod`. `kuma.io/service`
+                        tag is
+
+                        mandatory.
+                      type: object
+                    type:
+                      description: >-
+                        Type of gateway this data plane proxy manages.
+
+                        There are two types: `DELEGATED` and `BUILTIN`. Defaults
+                        to
+
+                        `DELEGATED`.
+
+
+                        A `DELEGATED` gateway is an independently deployed proxy
+                        (e.g., Kong,
+
+                        Contour, etc) that receives inbound traffic that is not
+                        proxied by
+
+                        Kuma, and it sends outbound traffic into the data plane
+                        proxy.
+
+
+                        The `BUILTIN` gateway type causes the data plane proxy
+                        itself to be
+
+                        configured as a gateway.
+
+
+                        See https://kuma.io/docs/latest/explore/gateway/ for
+                        more information.
+                      oneOf:
+                        - type: string
+                        - type: integer
+                  type: object
+                inbound:
+                  description: >-
+                    Inbound describes a list of inbound interfaces of the data
+                    plane proxy.
+
+
+                    Inbound describes a service implemented by the data plane
+                    proxy.
+
+                    All incoming traffic to a data plane proxy is going through
+                    inbound
+
+                    listeners. For every defined Inbound there is a
+                    corresponding Envoy
+
+                    Listener.
+                  items:
+                    description: >-
+                      Inbound describes a service implemented by the data plane
+                      proxy.
+                    properties:
+                      address:
+                        description: |-
+                          Address on which inbound listener will be exposed.
+                          Defaults to `networking.address`.
+                        type: string
+                      health:
+                        description: >-
+                          Health describes the status of an inbound.
+
+                          If 'health' is nil we consider data plane proxy as
+                          healthy.
+
+                          Unhealthy data plane proxies are excluded from
+                          Endpoints Discovery
+
+                          Service (EDS). On Kubernetes, it is filled
+                          automatically by the control
+
+                          plane if Pod has readiness probe configured. On
+                          Universal, it can be
+
+                          set by the external health checking system, but the
+                          most common way is
+
+                          to use service probes.
+
+
+                          See https://kuma.io/docs/latest/documentation/health
+                          for more
+
+                          information.
+                        properties:
+                          ready:
+                            description: >-
+                              Ready indicates if the data plane proxy is ready
+                              to serve the
+
+                              traffic.
+                            type: boolean
+                        type: object
+                      name:
+                        description: >-
+                          Name adds another way of referencing this port, usable
+                          with MeshService
+                        type: string
+                      port:
+                        description: >-
+                          Port of the inbound interface that will forward
+                          requests to the
+
+                          service.
+
+
+                          When transparent proxying is used, it is a port on
+                          which the service is
+
+                          listening to. When transparent proxying is not used,
+                          Envoy will bind to
+
+                          this port.
+                        type: integer
+                      serviceAddress:
+                        description: >-
+                          Address of the service that requests will be forwarded
+                          to.
+
+                          Defaults to 'inbound.address', since Kuma DP should be
+                          deployed next
+
+                          to the service.
+                        type: string
+                      servicePort:
+                        description: >-
+                          Port of the service that requests will be forwarded
+                          to.
+
+                          Defaults to the same value as `port`.
+                        type: integer
+                      serviceProbe:
+                        description: >-
+                          ServiceProbe defines parameters for probing the
+                          service next to
+
+                          sidecar. When service probe is defined, Envoy will
+                          periodically health
+
+                          check the application next to it and report the status
+                          to the control
+
+                          plane. On Kubernetes, Kuma deployments rely on
+                          Kubernetes probes so
+
+                          this is not used.
+
+
+                          See https://kuma.io/docs/latest/documentation/health
+                          for more
+
+                          information.
+                        properties:
+                          healthyThreshold:
+                            description: >-
+                              Number of consecutive healthy checks before
+                              considering a host
+
+                              healthy.
+                            format: uint32
+                            type: integer
+                          interval:
+                            description: Interval between consecutive health checks.
+                            properties:
+                              nanos:
+                                type: integer
+                              seconds:
+                                type: integer
+                            type: object
+                          tcp:
+                            description: >-
+                              Tcp checker tries to establish tcp connection with
+                              destination
+                            properties: {}
+                            type: object
+                          timeout:
+                            description: Maximum time to wait for a health check response.
+                            properties:
+                              nanos:
+                                type: integer
+                              seconds:
+                                type: integer
+                            type: object
+                          unhealthyThreshold:
+                            description: >-
+                              Number of consecutive unhealthy checks before
+                              considering a host
+
+                              unhealthy.
+                            format: uint32
+                            type: integer
+                        type: object
+                      state:
+                        description: State describes the current state of the listener.
+                        oneOf:
+                          - type: string
+                          - type: integer
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags associated with an application this data plane
+                          proxy is deployed
+
+                          next to, e.g. `kuma.io/service=web`, `version=1.0`.
+                          You can then
+
+                          reference these tags in policies like
+                          MeshTrafficPermission.
+
+                          `kuma.io/service` tag is mandatory.
+                        type: object
+                    type: object
+                  type: array
+                outbound:
+                  description: >-
+                    Outbound describes a list of services consumed by the data
+                    plane proxy.
+
+                    For every defined Outbound, there is a corresponding Envoy
+                    Listener.
+                  items:
+                    description: >-
+                      Outbound describes a service consumed by the data plane
+                      proxy.
+                    properties:
+                      address:
+                        description: >-
+                          IP on which the consumed service will be available to
+                          this data plane
+
+                          proxy. On Kubernetes, it's usually ClusterIP of a
+                          Service or PodIP of a
+
+                          Headless Service. Defaults to 127.0.0.1
+                        type: string
+                      backendRef:
+                        description: |-
+                          BackendRef is a way to target MeshService.
+                          Experimental. Do not use on production yet.
+                        properties:
+                          kind:
+                            description: >-
+                              Kind is a type of the object to target. Allowed:
+                              MeshService
+                            type: string
+                          labels:
+                            additionalProperties:
+                              type: string
+                            description: >-
+                              Labels to select a single object.
+
+                              If no object is selected then outbound is not
+                              created.
+
+                              If multiple objects are selected then the oldest
+                              one is used.
+                            type: object
+                          name:
+                            description: Name of the targeted object
+                            type: string
+                          port:
+                            description: >-
+                              Port of the targeted object. Required when kind is
+                              MeshService.
+                            type: integer
+                        type: object
+                      port:
+                        description: >-
+                          Port on which the consumed service will be available
+                          to this data plane
+
+                          proxy. When transparent proxying is not used, Envoy
+                          will bind to this
+
+                          port.
+                        type: integer
+                      tags:
+                        additionalProperties:
+                          type: string
+                        description: >-
+                          Tags of consumed data plane proxies.
+
+                          `kuma.io/service` tag is required.
+
+                          These tags can then be referenced in `destinations`
+                          section of policies
+
+                          like TrafficRoute or in `to` section in policies like
+                          MeshAccessLog. It
+
+                          is recommended to only use `kuma.io/service`. If you
+                          need to consume
+
+                          specific data plane proxy of a service (for example:
+                          `version=v2`) the
+
+                          better practice is to use TrafficRoute.
+                        type: object
+                    type: object
+                  type: array
+                transparentProxying:
+                  description: >-
+                    TransparentProxying describes the configuration for
+                    transparent proxying.
+
+                    It is used by default on Kubernetes.
+                  properties:
+                    directAccessServices:
+                      description: >-
+                        List of services that will be accessed directly via
+                        IP:PORT
+
+                        Use `*` to indicate direct access to every service in
+                        the Mesh.
+
+                        Using `*` to directly access every service is a
+                        resource-intensive
+
+                        operation, use it only if needed.
+                      items:
+                        type: string
+                      type: array
+                    ipFamilyMode:
+                      description: >-
+                        The IP family mode to enable for. Can be "IPv4" or
+                        "DualStack".
+                      oneOf:
+                        - type: string
+                        - type: integer
+                    reachableBackends:
+                      description: >-
+                        Reachable backend via transparent proxy when running
+                        with
+
+                        MeshExternalService, MeshService and
+                        MeshMultiZoneService. Setting an
+
+                        explicit list of refs can dramatically improve the
+                        performance of the
+
+                        mesh. If not specified, all services in the mesh are
+                        reachable.
+                      properties:
+                        refs:
+                          items:
+                            properties:
+                              kind:
+                                description: "Type of the backend: MeshService or MeshExternalService\n\n\t+required"
+                                type: string
+                              labels:
+                                additionalProperties:
+                                  type: string
+                                description: "Labels used to select backends\n\n\t+optional"
+                                type: object
+                              name:
+                                description: "Name of the backend.\n\n\t+optional"
+                                type: string
+                              namespace:
+                                description: "Namespace of the backend. Might be empty\n\n\t+optional"
+                                type: string
+                              port:
+                                description: "Port of the backend.\n\n\t+optional"
+                                format: uint32
+                                type: integer
+                            type: object
+                          type: array
+                      type: object
+                    reachableServices:
+                      description: >-
+                        List of reachable services (represented by the value of
+
+                        `kuma.io/service`) via transparent proxying. Setting an
+                        explicit list
+
+                        can dramatically improve the performance of the mesh. If
+                        not specified,
+
+                        all services in the mesh are reachable.
+                      items:
+                        type: string
+                      type: array
+                    redirectPortInbound:
+                      description: >-
+                        Port on which all inbound traffic is being transparently
+                        redirected.
+                      type: integer
+                    redirectPortOutbound:
+                      description: >-
+                        Port on which all outbound traffic is being
+                        transparently redirected.
+                      type: integer
+                  type: object
+              type: object
+            probes:
+              description: >-
+                Probes describe a list of endpoints that will be exposed without
+                mTLS.
+
+                This is useful to expose the health endpoints of the application
+                so the
+
+                orchestration system (e.g. Kubernetes) can still health check
+                the
+
+                application.
+
+
+                See
+
+                https://kuma.io/docs/latest/policies/service-health-probes/#virtual-probes
+
+                for more information.
+
+                Deprecated: this feature will be removed for Universal; on
+                Kubernetes, it's
+
+                not needed anymore.
+              properties:
+                endpoints:
+                  description: List of endpoints to expose without mTLS.
+                  items:
+                    properties:
+                      inboundPath:
+                        description: >-
+                          Inbound path is a path of the application from which
+                          we expose the
+
+                          endpoint. It is recommended to be as specific as
+                          possible.
+                        type: string
+                      inboundPort:
+                        description: >-
+                          Inbound port is a port of the application from which
+                          we expose the
+
+                          endpoint.
+                        type: integer
+                      path:
+                        description: >-
+                          Path is a path on which we expose inbound path on the
+                          probes port.
+                        type: string
+                    type: object
+                  type: array
+                port:
+                  description: >-
+                    Port on which the probe endpoints will be exposed. This
+                    cannot overlap
+
+                    with any other ports.
+                  type: integer
+              type: object
+          type: object
+        dataplaneInsight:
+          properties:
+            mTLS:
+              description: Insights about mTLS for Dataplane.
+              properties:
+                certificateExpirationTime:
+                  description: >-
+                    Expiration time of the last certificate that was generated
+                    for a
+
+                    Dataplane.
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+                certificateRegenerations:
+                  description: Number of certificate regenerations for a Dataplane.
+                  type: integer
+                issuedBackend:
+                  description: Backend that was used to generate current certificate
+                  type: string
+                lastCertificateRegeneration:
+                  description: Time on which the last certificate was generated.
+                  properties:
+                    nanos:
+                      type: integer
+                    seconds:
+                      type: integer
+                  type: object
+                supportedBackends:
+                  description: Supported backends (CA).
+                  items:
+                    type: string
+                  type: array
+              type: object
+            subscriptions:
+              description: List of ADS subscriptions created by a given Dataplane.
+              items:
+                description: >-
+                  DiscoverySubscription describes a single ADS subscription
+                  created by a Dataplane to the Control Plane.
+                properties:
+                  connectTime:
+                    description: >-
+                      Time when a given Dataplane connected to the Control
+                      Plane.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  controlPlaneInstanceId:
+                    description: Control Plane instance that handled given subscription.
+                    type: string
+                  disconnectTime:
+                    description: >-
+                      Time when a given Dataplane disconnected from the Control
+                      Plane.
+                    properties:
+                      nanos:
+                        type: integer
+                      seconds:
+                        type: integer
+                    type: object
+                  generation:
+                    description: >-
+                      Generation is an integer number which is periodically
+                      increased by the
+
+                      status sink
+                    type: integer
+                  id:
+                    description: Unique id per ADS subscription.
+                    type: string
+                  status:
+                    description: Status of the ADS subscription.
+                    properties:
+                      cds:
+                        description: CDS defines all CDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                      eds:
+                        description: EDS defines all EDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                      lastUpdateTime:
+                        description: >-
+                          Time when status of a given ADS subscription was most
+                          recently updated.
+                        properties:
+                          nanos:
+                            type: integer
+                          seconds:
+                            type: integer
+                        type: object
+                      lds:
+                        description: LDS defines all LDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                      rds:
+                        description: RDS defines all RDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                      total:
+                        description: Total defines an aggregate over individual xDS stats.
+                        properties:
+                          responsesAcknowledged:
+                            description: Number of xDS responses ACKed by the Dataplane.
+                            type: integer
+                          responsesRejected:
+                            description: Number of xDS responses NACKed by the Dataplane.
+                            type: integer
+                          responsesSent:
+                            description: Number of xDS responses sent to the Dataplane.
+                            type: integer
+                        type: object
+                    type: object
+                  version:
+                    description: Version of Envoy and Kuma dataplane
+                    properties:
+                      dependencies:
+                        additionalProperties:
+                          type: string
+                        description: Versions of other dependencies, i.e. CoreDNS
+                        type: object
+                      envoy:
+                        description: Version of Envoy
+                        properties:
+                          build:
+                            description: Full build tag of Envoy version
+                            type: string
+                          kumaDpCompatible:
+                            description: >-
+                              True iff Envoy version is compatible with Kuma DP
+                              version
+                            type: boolean
+                          version:
+                            description: Version number of Envoy
+                            type: string
+                        type: object
+                      kumaDp:
+                        description: Version of Kuma Dataplane
+                        properties:
+                          buildDate:
+                            description: Build date of Kuma Dataplane version
+                            type: string
+                          gitCommit:
+                            description: Git commit of Kuma Dataplane version
+                            type: string
+                          gitTag:
+                            description: Git tag of Kuma Dataplane version
+                            type: string
+                          kumaCpCompatible:
+                            description: >-
+                              True iff Kuma DP version is compatible with Kuma
+                              CP version
+                            type: boolean
+                          version:
+                            description: Version number of Kuma Dataplane
+                            type: string
+                        type: object
+                    type: object
+                type: object
+              type: array
+          type: object
+      type: object
     JsonPatchItem:
       type: object
       required:
@@ -14432,115 +15364,6 @@ components:
     DataplaneDeleteSuccessResponse:
       type: object
       properties: {}
-    PrometheusMetricsBackendConfig:
-      properties:
-        aggregate:
-          description: >-
-            Map with the configuration of applications which metrics are going
-            to be
-
-            scrapped by kuma-dp.
-          items:
-            description: >-
-              PrometheusAggregateMetricsConfig defines endpoints that should be
-              scrapped by kuma-dp for prometheus metrics.
-            properties:
-              address:
-                description: >-
-                  Address on which a service expose HTTP endpoint with
-                  Prometheus metrics.
-                type: string
-              enabled:
-                description: >-
-                  If false then the application won't be scrapped. If nil, then
-                  it is treated
-
-                  as true and kuma-dp scrapes metrics from the service.
-                type: boolean
-              name:
-                description: Name which identify given configuration.
-                type: string
-              path:
-                description: >-
-                  Path on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: string
-              port:
-                description: >-
-                  Port on which a service expose HTTP endpoint with Prometheus
-                  metrics.
-                type: integer
-            type: object
-          type: array
-        envoy:
-          description: Configuration of Envoy's metrics.
-          properties:
-            filterRegex:
-              description: >-
-                FilterRegex value that is going to be passed to Envoy for
-                filtering
-
-                Envoy metrics.
-              type: string
-            usedOnly:
-              description: >-
-                If true then return metrics that Envoy has updated (counters
-                incremented
-
-                at least once, gauges changed at least once, and histograms
-                added to at
-
-                least once). If nil, then it is treated as false.
-              type: boolean
-          type: object
-        path:
-          description: >-
-            Path on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: string
-        port:
-          description: >-
-            Port on which a dataplane should expose HTTP endpoint with
-            Prometheus
-
-            metrics.
-          type: integer
-        skipMTLS:
-          description: >-
-            If true then endpoints for scraping metrics won't require mTLS even
-            if mTLS
-
-            is enabled in Mesh. If nil, then it is treated as false.
-          type: boolean
-        tags:
-          additionalProperties:
-            type: string
-          description: >-
-            Tags associated with an application this dataplane is deployed next
-            to,
-
-            e.g. service=web, version=1.0.
-
-            `service` tag is mandatory.
-          type: object
-        tls:
-          description: Configuration of TLS for prometheus listener.
-          properties:
-            mode:
-              description: >-
-                mode defines how configured is the TLS for Prometheus.
-
-                Supported values, delegated, disabled, activeMTLSBackend.
-                Default to
-
-                `activeMTLSBackend`.
-              oneOf:
-                - type: string
-                - type: integer
-          type: object
-      type: object
     FileLoggingBackendConfig:
       properties:
         path:
@@ -16090,6 +16913,28 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneXDSConfig'
+    GetDataplaneOverviewResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneOverview'
+    GetDataplaneOverviewListResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DataplaneOverview'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

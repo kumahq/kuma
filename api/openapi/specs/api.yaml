@@ -96,10 +96,29 @@ paths:
           schema:
             type: string
       responses:
-        '200': {}
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/_overview:
     get:
-      operationId: getDataplanesOverview
+      operationId: getDataplaneOverviewList
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/GetDataplaneOverviewListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_config:
     get:
       operationId: get-dataplanes-xds-config
@@ -570,6 +589,28 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneXDSConfig'
+    GetDataplaneOverviewResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
+    GetDataplaneOverviewListResponse:
+      description: A response containing the overview of a dataplane.
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              total:
+                type: integer
+                example: 200
+              next:
+                type: string
+              items:
+                type: array
+                items:
+                  $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
     InspectRulesResponse:
       description: A response containing policies that match a resource
       content:

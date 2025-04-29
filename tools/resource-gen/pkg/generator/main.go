@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"go/format"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -450,6 +449,7 @@ var AdditionalProtoTypes = []reflect.Type{
 	reflect.TypeOf(v1alpha1.PrometheusMetricsBackendConfig{}),
 	reflect.TypeOf(provided_config.ProvidedCertificateAuthorityConfig{}),
 	reflect.TypeOf(builtin_config.BuiltinCertificateAuthorityConfig{}),
+	reflect.TypeOf(v1alpha1.DataplaneOverview{}),
 }
 
 var ProtoTypeToType = map[string]reflect.Type{
