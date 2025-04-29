@@ -308,7 +308,7 @@ components:
     DataplaneOverviewWithMeta:
       allOf:
         - $ref: './common/resource.yaml#/components/schemas/Meta'
-        - $ref: '/specs/protoresources/dataplaneOverview/schema.yaml#/components/schemas/DataplaneOverview'
+        - $ref: '/specs/protoresources/dataplaneoverview/schema.yaml#/components/schemas/DataplaneOverview'
     DataplaneXDSConfig:
       type: object
       title: DataplaneXDSConfig
