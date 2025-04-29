@@ -119,7 +119,7 @@ func (s *StatusUpdater) updateStatus(ctx context.Context) error {
 			mzSvc.Status.MeshServices = matched
 			log.Info("updating matched mesh services", "matchedMeshServices", matched)
 			if err := s.resManager.Update(ctx, mzSvc); err != nil {
-				if errors.Is(err, &store.ResourceConflictError{}) {
+				if store.IsResourceConflict(err) {
 					log.Info("couldn't update mesh multi zone service, because it was modified in another place. Will try again in the next interval", "interval", s.interval)
 				} else {
 					log.Error(err, "could not update matched mesh services mesh services")

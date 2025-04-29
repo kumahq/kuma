@@ -35,7 +35,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  title,
 			Detail: "Not found",
 		}
-	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), errors.Is(err, &store.PreconditionError{}), errors.Is(err, &BadRequest{}):
+	case errors.Is(err, &rest.InvalidResourceError{}), errors.Is(err, &registry.InvalidResourceTypeError{}), store.IsBadRequest(err), errors.Is(err, &BadRequest{}):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  "Bad Request",
@@ -101,7 +101,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 			Title:  "Method not Allowed",
 			Detail: err.Error(),
 		}
-	case errors.Is(err, &Conflict{}) || errors.Is(err, &store.ResourceConflictError{}):
+	case errors.Is(err, &Conflict{}) || store.IsResourceAlreadyExists(err) || store.IsResourceConflict(err):
 		kumaErr = &types.Error{
 			Status: 409,
 			Title:  "Conflict",

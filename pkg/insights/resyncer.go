@@ -543,7 +543,7 @@ func (r *resyncer) createOrUpdateServiceInsight(
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil, false
 		}
-		if errors.Is(err, &store.ResourceConflictError{}) {
+		if store.IsResourceAlreadyExists(err) || store.IsResourceConflict(err) {
 			log.V(1).Info(err.Error())
 			return nil, false
 		}
@@ -729,7 +729,7 @@ func (r *resyncer) createOrUpdateMeshInsight(
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil, false
 		}
-		if errors.Is(err, &store.ResourceConflictError{}) {
+		if store.IsResourceAlreadyExists(err) || store.IsResourceConflict(err) {
 			log.V(1).Info(err.Error())
 			return nil, false
 		}

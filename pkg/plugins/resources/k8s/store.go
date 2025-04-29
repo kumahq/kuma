@@ -223,7 +223,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 
 func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, error) {
 	if coreName == "" {
-		return "", "", store.PreconditionFormatError("name can't be empty")
+		return "", "", store.ErrorBadRequest("name can't be empty")
 	}
 	switch scope {
 	case k8s_model.ScopeCluster:
@@ -231,7 +231,7 @@ func k8sNameNamespace(coreName string, scope k8s_model.Scope) (string, string, e
 	case k8s_model.ScopeNamespace:
 		name, ns, err := util_k8s.CoreNameToK8sName(coreName)
 		if err != nil {
-			return "", "", store.PreconditionFormatError(err.Error())
+			return "", "", store.ErrorBadRequest(err.Error())
 		}
 		return name, ns, nil
 	default:
