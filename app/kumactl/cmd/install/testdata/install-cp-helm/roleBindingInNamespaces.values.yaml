@@ -1,1 +1,1 @@
-enabledNamespaces: ["kuma-demo", "kuma-test"]
+namespaceAllowList: ["kuma-demo", "kuma-test"]

@@ -451,6 +451,7 @@ var AdditionalProtoTypes = []reflect.Type{
 
 var ProtoTypeToType = map[string]reflect.Type{
 	"Mesh":        reflect.TypeOf(v1alpha1.Mesh{}),
+	"Dataplane":   reflect.TypeOf(v1alpha1.Dataplane{}),
 	"MeshGateway": reflect.TypeOf(v1alpha1.MeshGateway{}),
 }
 

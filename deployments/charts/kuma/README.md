@@ -17,7 +17,7 @@ A Helm chart for the Kuma Control Plane
 | installCrdsOnUpgrade.enabled | bool | `true` | Whether install new CRDs before upgrade (if any were introduced with the new version of Kuma) |
 | installCrdsOnUpgrade.imagePullSecrets | list | `[]` | The `imagePullSecrets` to attach to the Service Account running CRD installation. This field will be deprecated in a future release, please use .global.imagePullSecrets |
 | noHelmHooks | bool | `false` | Whether to disable all helm hooks |
-| enabledNamespaces | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces. If not specified, the control plane has write permissions for all namespaces. |
+| namespaceAllowList | list | `[]` | Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces. If not specified, the control plane has write permissions for all namespaces. |
 | skipRBAC | bool | `false` | Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created. If set to true, the user must manually create these resources before installation. |
 | restartOnSecretChange | bool | `true` | Whether to restart control-plane by calculating a new checksum for the secret |
 | controlPlane.environment | string | `"kubernetes"` | Environment that control plane is run in, useful when running universal global control plane on k8s |
@@ -217,7 +217,7 @@ A Helm chart for the Kuma Control Plane
 | kumactl.image.tag | string | `nil` | The kumactl image tag. When not specified, the value is copied from global.tag |
 | kubectl.image.registry | string | `"docker.io"` | The kubectl image registry |
 | kubectl.image.repository | string | `"bitnami/kubectl"` | The kubectl image repository |
-| kubectl.image.tag | string | `"1.32.3@sha256:c49b008f8ac9973e2d23deff64db6b992b8bd8c76538d0e697d9318bbbf683e2"` | The kubectl image tag |
+| kubectl.image.tag | string | `"1.33.0@sha256:0f6b5088710f1c6d2d41f5e19a15663b7fef07d89699247aaaad92975be7eed6"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 | hooks.tolerations | list | `[]` | Tolerations for the HELM hooks |
 | hooks.podSecurityContext | object | `{"runAsNonRoot":true}` | Security context at the pod level for crd/webhook/ns |
