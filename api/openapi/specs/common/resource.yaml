@@ -154,6 +154,61 @@ components:
           x-go-type: 'map[string]string'
         port:
           type: integer
+    DataplaneInbound:
+      type: object
+      required: [ kri, port, protocol ]
+      properties:
+        kri:
+          type: string
+        name:
+          type: string
+        port:
+          type: integer
+        protocol:
+          type: string
+    DataplaneOutbound:
+      type: object
+      required: [ kri, protocol ]
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+        address:
+          type: string
+        protocol:
+          type: string
+    DataplaneProxyRules:
+      type: object
+      required: [ rules ]
+      properties:
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/ProxyRule'
+    DataplaneInboundRules:
+      type: object
+      required: [ inbound, rules ]
+      properties:
+        inbound:
+          $ref: '#/components/schemas/DataplaneInbound'
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/InboundRule'
+    DataplaneOutboundRules:
+      type: object
+      required: [ outbound, rules ]
+      properties:
+        outbound:
+          $ref: '#/components/schemas/DataplaneOutbound'
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/ResourceRule'
     ProxyRule:
       description: a rule that affects the entire proxy
       type: object

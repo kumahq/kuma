@@ -9,6 +9,44 @@ const (
 	Mesh   ResourceTypeDescriptionScope = "Mesh"
 )
 
+// DataplaneInbound defines model for DataplaneInbound.
+type DataplaneInbound struct {
+	Kri      string  `json:"kri"`
+	Name     *string `json:"name,omitempty"`
+	Port     int     `json:"port"`
+	Protocol string  `json:"protocol"`
+}
+
+// DataplaneInboundRules defines model for DataplaneInboundRules.
+type DataplaneInboundRules struct {
+	Inbound DataplaneInbound `json:"inbound"`
+
+	// Rules TODO
+	Rules []InboundRule `json:"rules"`
+}
+
+// DataplaneOutbound defines model for DataplaneOutbound.
+type DataplaneOutbound struct {
+	Address  *string `json:"address,omitempty"`
+	Kri      string  `json:"kri"`
+	Port     *int    `json:"port,omitempty"`
+	Protocol string  `json:"protocol"`
+}
+
+// DataplaneOutboundRules defines model for DataplaneOutboundRules.
+type DataplaneOutboundRules struct {
+	Outbound DataplaneOutbound `json:"outbound"`
+
+	// Rules TODO
+	Rules []ResourceRule `json:"rules"`
+}
+
+// DataplaneProxyRules defines model for DataplaneProxyRules.
+type DataplaneProxyRules struct {
+	// Rules TODO
+	Rules []ProxyRule `json:"rules"`
+}
+
 // FromRule defines model for FromRule.
 type FromRule struct {
 	Inbound Inbound `json:"inbound"`

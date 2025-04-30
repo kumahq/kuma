@@ -177,6 +177,118 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_layout:
+    get:
+      operationId: get-dataplanes-layout
+      summary: TODO
+      description: TODO
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/DataplaneLayoutResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_proxy/_rules:
+    get:
+      operationId: get-dataplanes-layout
+      summary: TODO
+      description: TODO
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/ProxyRulesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_rules:
+    get:
+      operationId: get-dataplanes-layout
+      summary: TODO
+      description: TODO
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: TODO
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/InboundRulesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_rules:
+    get:
+      operationId: get-dataplanes-layout
+      summary: TODO
+      description: TODO
+      parameters:
+        - in: path
+          name: mesh
+          required: true
+          description: The mesh of the DPP to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: name
+          required: true
+          description: The name of the DPP within the mesh to get the diff for.
+          schema:
+            type: string
+        - in: path
+          name: kri
+          required: true
+          description: TODO
+          schema:
+            type: string
+      responses:
+        '200':
+          $ref: '#/components/responses/OutboundRulesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/Internal'
   /meshes/{mesh}/{policyType}/{policyName}/_resources/dataplanes:
     get:
       operationId: inspect-resources
@@ -3664,6 +3776,34 @@ components:
         name:
           type: string
           example: east
+    DataplaneLayout:
+      type: object
+      title: DataplaneLayout
+      description: TODO
+      required:
+        - kri
+        - name
+      properties:
+        kri:
+          type: string
+          example: TODO
+        name:
+          type: string
+        labels:
+          type: object
+          example:
+            k8s.kuma.io/namespace: kuma-system
+            kuma.io/display-name: mtp
+            kuma.io/mesh: default
+            kuma.io/origin: zone
+        inbounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneInbound'
+        outbounds:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataplaneOutbound'
     InvalidParameters:
       type: object
       title: Invalid Parameters
@@ -4944,6 +5084,71 @@ components:
             on.
         value:
           description: The value to be used within the operations.
+    DataplaneInbound:
+      type: object
+      required:
+        - kri
+        - port
+        - protocol
+      properties:
+        kri:
+          type: string
+        name:
+          type: string
+        port:
+          type: integer
+        protocol:
+          type: string
+    DataplaneOutbound:
+      type: object
+      required:
+        - kri
+        - protocol
+      properties:
+        kri:
+          type: string
+        port:
+          type: integer
+        address:
+          type: string
+        protocol:
+          type: string
+    DataplaneProxyRules:
+      type: object
+      required:
+        - rules
+      properties:
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/ProxyRule'
+    DataplaneInboundRules:
+      type: object
+      required:
+        - inbound
+        - rules
+      properties:
+        inbound:
+          $ref: '#/components/schemas/DataplaneInbound'
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/InboundRule'
+    DataplaneOutboundRules:
+      type: object
+      required:
+        - outbound
+        - rules
+      properties:
+        outbound:
+          $ref: '#/components/schemas/DataplaneOutbound'
+        rules:
+          type: array
+          description: TODO
+          items:
+            $ref: '#/components/schemas/ResourceRule'
     NotFoundError:
       allOf:
         - $ref: '#/components/schemas/Error'
@@ -16954,6 +17159,30 @@ components:
           examples:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
+    DataplaneLayoutResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneLayout'
+    ProxyRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneProxyRules'
+    InboundRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneInboundRules'
+    OutboundRulesResponse:
+      description: TODO
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DataplaneOutboundRules'
     BadRequest:
       description: Bad Request
       content:

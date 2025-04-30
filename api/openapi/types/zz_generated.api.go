@@ -33,6 +33,15 @@ type BaseStatus struct {
 	Total  int `json:"total"`
 }
 
+// DataplaneLayout TODO
+type DataplaneLayout struct {
+	Inbounds  *[]externalRef0.DataplaneInbound  `json:"inbounds,omitempty"`
+	Kri       string                            `json:"kri"`
+	Labels    *map[string]interface{}           `json:"labels,omitempty"`
+	Name      string                            `json:"name"`
+	Outbounds *[]externalRef0.DataplaneOutbound `json:"outbounds,omitempty"`
+}
+
 // DataplaneXDSConfig defines model for DataplaneXDSConfig.
 type DataplaneXDSConfig struct {
 	// Diff Contains a diff in a JSONPatch format between the XDS config returned in 'xds' and the current proxy XDS config.
@@ -199,11 +208,17 @@ type SchemasGlobalInsight struct {
 // BadRequest standard error
 type BadRequest = externalRef0.Error
 
+// DataplaneLayoutResponse TODO
+type DataplaneLayoutResponse = DataplaneLayout
+
 // GetDataplaneXDSConfigResponse defines model for GetDataplaneXDSConfigResponse.
 type GetDataplaneXDSConfigResponse = DataplaneXDSConfig
 
 // GlobalInsightResponse defines model for GlobalInsightResponse.
 type GlobalInsightResponse = GlobalInsight
+
+// InboundRulesResponse defines model for InboundRulesResponse.
+type InboundRulesResponse = externalRef0.DataplaneInboundRules
 
 // IndexResponse Some metadata about the service
 type IndexResponse = Index
@@ -219,6 +234,12 @@ type InspectRulesResponse = InspectRules
 
 // Internal standard error
 type Internal = externalRef0.Error
+
+// OutboundRulesResponse defines model for OutboundRulesResponse.
+type OutboundRulesResponse = externalRef0.DataplaneOutboundRules
+
+// ProxyRulesResponse defines model for ProxyRulesResponse.
+type ProxyRulesResponse = externalRef0.DataplaneProxyRules
 
 // ResourceTypeDescriptionListResponse A list of all resources install
 type ResourceTypeDescriptionListResponse = ResourceTypeDescriptionList
