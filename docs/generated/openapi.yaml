@@ -3791,11 +3791,6 @@ components:
           type: string
         labels:
           type: object
-          example:
-            k8s.kuma.io/namespace: kuma-system
-            kuma.io/display-name: mtp
-            kuma.io/mesh: default
-            kuma.io/origin: zone
         inbounds:
           type: array
           items:
