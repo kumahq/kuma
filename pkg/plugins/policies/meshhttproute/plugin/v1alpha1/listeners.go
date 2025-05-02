@@ -80,8 +80,8 @@ func generateFromService(
 	}
 
 	var outboundRouteName string
-	if svc.Outbound.Resource != nil {
-		outboundRouteName = svc.Outbound.Resource.String()
+	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
+		outboundRouteName = r.String()
 	}
 	var dpTags mesh_proto.MultiValueTagSet
 	if meshCtx.IsXKumaTagsUsed() {
@@ -161,8 +161,8 @@ func ComputeHTTPRouteConf(toRules rules.ToRules, svc meshroute_xds.DestinationSe
 		originByMatches = ruleHTTP.OriginByMatches
 	}
 	// check if there is configuration for real MeshService and prioritize it
-	if svc.Outbound.Resource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
+	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
+		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			conf = pointer.To(resourceConf.Conf[0].(api.PolicyDefault))
 			originByMatches = util_maps.MapValues(resourceConf.OriginByMatches, func(o common.Origin) core_model.ResourceMeta {
@@ -195,11 +195,10 @@ func prepareRoutes(toRules rules.ToRules, svc meshroute_xds.DestinationService, 
 	}
 
 	getRouteName := func(ms []api.Match) string {
-		if svc.Outbound.Resource != nil {
+		if _, ok := svc.Outbound.AssociatedServiceResource(); ok {
 			return kri.FromResourceMeta(getOrigin(ms), api.MeshHTTPRouteType, "").String()
-		} else {
-			return string(api.HashMatches(ms))
 		}
+		return string(api.HashMatches(ms))
 	}
 
 	routes := util_slices.FlatMap(apiRules, func(rule api.Rule) []api.Route {

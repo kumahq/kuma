@@ -4,7 +4,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
+	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/resolve"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
@@ -22,21 +22,33 @@ func computeConf(toRules core_xds.ToRules, svc meshroute_xds.DestinationService,
 	ruleTCP := toRules.Rules.Compute(subsetutils.MeshServiceElement(svc.ServiceName))
 	if ruleTCP != nil {
 		tcpConf = pointer.To(ruleTCP.Conf.(api.Rule))
-		if o, ok := ruleTCP.OriginByMatches[rules_common.EmptyMatches]; ok {
-			origin = o
-		}
+		origin = impactfulMeta(ruleTCP.Origin)
 	}
 	// check if there is configuration for real MeshService and prioritize it
-	if svc.Outbound.Resource != nil {
-		resourceConf := toRules.ResourceRules.Compute(*svc.Outbound.Resource, meshCtx.Resources)
+	if r, ok := svc.Outbound.AssociatedServiceResource(); ok {
+		resourceConf := toRules.ResourceRules.Compute(r, meshCtx.Resources)
 		if resourceConf != nil && len(resourceConf.Conf) != 0 {
 			tcpConf = pointer.To(resourceConf.Conf[0].(api.Rule))
-			if o, ok := resourceConf.OriginByMatches[rules_common.EmptyMatches]; ok {
-				origin = o.Resource
-			}
+			origin = impactfulOrigin(resourceConf.Origin)
 		}
 	}
 	return tcpConf, origin
+}
+
+// impactfulOrigin returns the origin policy that contributed the backendRefs
+func impactfulOrigin(os []common.Origin) core_model.ResourceMeta {
+	if len(os) == 0 {
+		return nil
+	}
+	return os[len(os)-1].Resource
+}
+
+// impactfulMeta returns the origin policy that contributed the backendRefs
+func impactfulMeta(ms []core_model.ResourceMeta) core_model.ResourceMeta {
+	if len(ms) == 0 {
+		return nil
+	}
+	return ms[len(ms)-1]
 }
 
 func getBackendRefs(
@@ -46,7 +58,7 @@ func getBackendRefs(
 	protocol core_mesh.Protocol,
 	meshCtx xds_context.MeshContext,
 ) []resolve.ResolvedBackendRef {
-	tcpConf, backendRefOrigin := computeConf(toRulesTCP, svc, meshCtx)
+	tcpConf, origin := computeConf(toRulesTCP, svc, meshCtx)
 
 	// If the outbounds protocol is http-like and there exists MeshHTTPRoute
 	// with rule targeting the same MeshService as MeshTCPRoute, it should take
@@ -66,10 +78,8 @@ func getBackendRefs(
 	var backendRefs []resolve.ResolvedBackendRef
 	if tcpConf != nil {
 		for _, br := range pointer.Deref(tcpConf.Default.BackendRefs) {
-			if backendRefOrigin != nil {
-				if resolved := resolve.BackendRefOrNil(backendRefOrigin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
-					backendRefs = append(backendRefs, *resolved)
-				}
+			if resolved := resolve.BackendRefOrNil(origin, br, meshCtx.ResolveResourceIdentifier); resolved != nil {
+				backendRefs = append(backendRefs, *resolved)
 			}
 		}
 	} else {

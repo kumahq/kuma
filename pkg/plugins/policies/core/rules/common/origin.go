@@ -4,7 +4,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 )
 
 type Origin struct {
@@ -14,8 +13,6 @@ type Origin struct {
 	// in `ResourceRule.Resource` and to-item.
 	RuleIndex int
 }
-
-var EmptyMatches common_api.MatchesHash = ""
 
 type keyType struct {
 	core_model.ResourceKey
@@ -69,14 +66,10 @@ func OriginByMatches[B BaseEntry, T interface {
 			}
 
 			switch conf := item.GetEntry().GetDefault().(type) {
-			case meshtcproute_api.Rule:
-				rv[EmptyMatches] = origin
 			case meshhttproute_api.PolicyDefault:
 				for _, rule := range conf.Rules {
 					rv[meshhttproute_api.HashMatches(rule.Matches)] = origin
 				}
-			default:
-				continue
 			}
 		}
 	}

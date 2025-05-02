@@ -34,7 +34,6 @@ import (
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/metrics"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
-	rules_common "github.com/kumahq/kuma/pkg/plugins/policies/core/rules/common"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/outbound"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules/subsetutils"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -190,12 +189,7 @@ var _ = Describe("MeshTCPRoute", func() {
 								Name: "route-2",
 							},
 						},
-						OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{
-							rules_common.EmptyMatches: &test_model.ResourceMeta{
-								Mesh: "default",
-								Name: "route-2",
-							},
-						},
+						OriginByMatches: map[common_api.MatchesHash]core_model.ResourceMeta{},
 					},
 				},
 				ResourceRules: map[kri.Identifier]outbound.ResourceRule{},
