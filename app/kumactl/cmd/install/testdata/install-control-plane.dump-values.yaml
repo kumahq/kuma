@@ -20,9 +20,13 @@ installCrdsOnUpgrade:
 # -- Whether to disable all helm hooks
 noHelmHooks: false
 
-# -- Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the listed namespaces.
+# -- Namespaces that are part of the Mesh. When specified, the control plane receives write permissions only for the allowed namespaces.
 # If not specified, the control plane has write permissions for all namespaces.
-enabledNamespaces: []
+namespaceAllowList: []
+
+# -- Determines whether ClusterRole, Role, ClusterRoleBinding, RoleBinding for Kuma should be created.
+# If set to true, the user must manually create these resources before installation.
+skipRBAC: false
 
 # -- Whether to restart control-plane by calculating a new checksum for the secret
 restartOnSecretChange: true
@@ -355,6 +359,9 @@ controlPlane:
       nameservers: []
       # -- A list of DNS search domains for hostname lookup in the Pod.
       searches: []
+  # -- Determines whether ClusterRole and ClusterRoleBinding for the control plane should be created.
+  # If set to true, the user must manually create these resources before deploying the control plane.
+  skipClusterRoleCreation: false
 
 cni:
   # -- Install Kuma with CNI instead of proxy init container
@@ -720,7 +727,7 @@ kubectl:
     # -- The kubectl image repository
     repository: bitnami/kubectl
     # -- The kubectl image tag
-    tag: "1.32.3@sha256:c49b008f8ac9973e2d23deff64db6b992b8bd8c76538d0e697d9318bbbf683e2"
+    tag: "1.33.0@sha256:0f6b5088710f1c6d2d41f5e19a15663b7fef07d89699247aaaad92975be7eed6"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:
