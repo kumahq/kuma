@@ -71,18 +71,12 @@ func sortRulesToHosts(
 		for _, rawRule := range rawRules.Rules {
 			conf := rawRule.Conf.(api.PolicyDefault)
 
-			backendRefOrigin := map[common_api.MatchesHash]model.ResourceMeta{}
-			for hash := range rawRule.BackendRefOriginIndex {
-				if origin, ok := rawRule.GetBackendRefOrigin(hash); ok {
-					backendRefOrigin[hash] = origin
-				}
-			}
 			rule := ToRouteRule{
 				Subset:           rawRule.Subset,
 				Rules:            conf.Rules,
 				Hostnames:        conf.Hostnames,
 				Origins:          rawRule.Origin,
-				BackendRefOrigin: backendRefOrigin,
+				BackendRefOrigin: rawRule.OriginByMatches,
 			}
 			hostnames := rule.Hostnames
 			if len(rule.Hostnames) == 0 {
@@ -239,7 +233,7 @@ func makeHttpRouteEntry(
 		var dest map[string]string
 		var ref *resolve.ResolvedBackendRef
 		if origin, ok := backendRefToOrigin[api.HashMatches(rule.Matches)]; ok {
-			ref = resolve.BackendRef(origin, b, resolver)
+			ref = resolve.BackendRefOrNil(origin, b, resolver)
 			if ref.ReferencesRealResource() {
 				service, _, _, ok := meshroute.GetServiceProtocolPortFromRef(meshCtx, ref.RealResourceBackendRef())
 				if ok {

@@ -579,7 +579,7 @@
                   "normalizePath": true,
                   "requestHeadersTimeout": "0s",
                   "routeConfig": {
-                    "name": "outbound:envoyconfig_test-server__kuma-3_msvc_80",
+                    "name": "kri_msvc_envoyconfig_kuma-3__test-server_80",
                     "validateClusters": false,
                     "virtualHosts": [
                       {

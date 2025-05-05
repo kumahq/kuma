@@ -1,5 +1,4 @@
 kri_extsvc_mesh-1_zone-uni__external_:
-  BackendRefOriginIndex: {}
   Conf:
   - http:
       backOff:
@@ -33,6 +32,7 @@ kri_extsvc_mesh-1_zone-uni__external_:
       NameExtensions: null
       Version: ""
     RuleIndex: 0
+  OriginByMatches: {}
   Resource:
     CreationTime: "0001-01-01T00:00:00Z"
     Labels:
@@ -46,7 +46,6 @@ kri_extsvc_mesh-1_zone-uni__external_:
     Version: ""
   ResourceSectionName: ""
 kri_m____mesh-1_:
-  BackendRefOriginIndex: {}
   Conf:
   - http:
       backOff:
@@ -67,6 +66,7 @@ kri_m____mesh-1_:
       NameExtensions: null
       Version: ""
     RuleIndex: 0
+  OriginByMatches: {}
   Resource:
     creationTime: "0001-01-01T00:00:00Z"
     modificationTime: "0001-01-01T00:00:00Z"

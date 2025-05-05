@@ -65,9 +65,9 @@ type DestinationService struct {
 }
 
 func (ds *DestinationService) DefaultBackendRef() *resolve.ResolvedBackendRef {
-	if ds.Outbound.Resource != nil {
+	if r, ok := ds.Outbound.AssociatedServiceResource(); ok {
 		return resolve.NewResolvedBackendRef(&resolve.RealResourceBackendRef{
-			Resource: ds.Outbound.Resource,
+			Resource: &r,
 			Weight:   100,
 		})
 	} else {

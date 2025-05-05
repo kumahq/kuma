@@ -22,29 +22,9 @@ type ResourceRule struct {
 	Conf                []interface{}
 	Origin              []common.Origin
 
-	// BackendRefOriginIndex is a mapping from the rule to the origin of the BackendRefs in the rule.
-	// Some policies have BackendRefs in their confs, and it's important to know what was the original policy
-	// that contributed the BackendRefs to the final conf. Rule (key) is represented as a hash from rule.Matches.
-	// Origin (value) is represented as an index in the Origin list. If policy doesn't have rules (i.e. MeshTCPRoute)
-	// then key is an empty string "".
-	BackendRefOriginIndex common.BackendRefOriginIndex
-}
-
-func (r *ResourceRule) GetBackendRefOrigin(hash common_api.MatchesHash) (core_model.ResourceMeta, bool) {
-	if r == nil {
-		return nil, false
-	}
-	if r.BackendRefOriginIndex == nil {
-		return nil, false
-	}
-	index, ok := r.BackendRefOriginIndex[hash]
-	if !ok {
-		return nil, false
-	}
-	if index >= len(r.Origin) {
-		return nil, false
-	}
-	return r.Origin[index].Resource, true
+	// OriginByMatches is an auxiliary structure for MeshHTTPRoute rules. It's a mapping between the rule (identified
+	// by the hash of rule's matches) and the origin of the MeshHTTPRoute policy that contributed the rule.
+	OriginByMatches map[common_api.MatchesHash]common.Origin
 }
 
 type ResourceRules map[kri.Identifier]ResourceRule
@@ -152,13 +132,12 @@ func buildRules[T interface {
 			if err != nil {
 				return nil, err
 			}
-			ruleOrigins, originIndex := common.Origins(relevant, true)
 			rules[uri] = ResourceRule{
-				Resource:              resource.GetMeta(),
-				ResourceSectionName:   uri.SectionName,
-				Conf:                  merged,
-				Origin:                ruleOrigins,
-				BackendRefOriginIndex: originIndex,
+				Resource:            resource.GetMeta(),
+				ResourceSectionName: uri.SectionName,
+				Conf:                merged,
+				Origin:              common.Origins(relevant, true),
+				OriginByMatches:     common.OriginByMatches(relevant),
 			}
 		}
 	}
