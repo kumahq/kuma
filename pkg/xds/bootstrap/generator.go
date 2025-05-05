@@ -22,6 +22,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -39,6 +40,7 @@ func NewDefaultBootstrapGenerator(
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
+	dynamicOutbounds bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -58,6 +60,7 @@ func NewDefaultBootstrapGenerator(
 		hdsEnabled:              hdsEnabled,
 		defaultAdminPort:        defaultAdminPort,
 		deltaXdsEnabled:         deltaXdsEnabled,
+		dynamicOutbounds:        dynamicOutbounds,
 	}, nil
 }
 
@@ -72,6 +75,7 @@ type bootstrapGenerator struct {
 	hdsEnabled              bool
 	defaultAdminPort        uint32
 	deltaXdsEnabled         bool
+	dynamicOutbounds        bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -140,6 +144,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		case mesh_proto.EnvoyConfiguration_GRPC:
 			params.XdsTransportProtocolVariant = types.GRPC
 		}
+	}
+
+	if b.dynamicOutbounds {
+		params.Features = append(params.Features, xds_types.FeatureDynamicOutbounds)
 	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {

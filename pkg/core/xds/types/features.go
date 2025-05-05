@@ -19,3 +19,5 @@ const FeatureTCPAccessLogViaNamedPipe string = "feature-tcp-accesslog-via-named-
 const FeatureEmbeddedDNS string = "feature-embedded-dns"
 
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
+
+const FeatureDynamicOutbounds string = "feature-dynamic-outbounds"

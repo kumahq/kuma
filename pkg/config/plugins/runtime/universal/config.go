@@ -30,6 +30,8 @@ type UniversalRuntimeConfig struct {
 	ZoneResourceCleanupAge config_types.Duration `json:"zoneResourceCleanupAge" envconfig:"kuma_runtime_universal_zone_resource_cleanup_age"`
 	// VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
 	VIPRefreshInterval config_types.Duration `json:"vipRefreshInterval" envconfig:"kuma_runtime_universal_vip_refresh_interval"`
+
+	DynamicOutbounds bool `json:"dynamicOutbounds" envconfig:"kuma_runtime_universal_dynamic_outbounds"`
 }
 
 func (u *UniversalRuntimeConfig) Validate() error {

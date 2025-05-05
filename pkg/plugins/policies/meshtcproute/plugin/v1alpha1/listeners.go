@@ -6,6 +6,7 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/core/xds/types"
 	"github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
 	meshroute_xds "github.com/kumahq/kuma/pkg/plugins/policies/core/xds/meshroute"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
@@ -96,15 +97,14 @@ func buildOutboundListener(
 		svc.Outbound.GetPort(),
 		core_xds.SocketAddressProtocolTCP,
 	)
+	configurers := []envoy_listeners.ListenerBuilderOpt{}
+	if !proxy.Metadata.HasFeature(types.FeatureDynamicOutbounds) {
+		configurers = append(configurers, envoy_listeners.TransparentProxying(proxy))
+	}
 
-	tproxy := envoy_listeners.TransparentProxying(proxy)
-
-	tagsMetadata := envoy_listeners.TagsMetadata(
+	configurers = append(configurers, envoy_listeners.TagsMetadata(
 		envoy_tags.Tags(svc.Outbound.TagsOrNil()).WithoutTags(mesh_proto.MeshTag),
-	)
+	))
 
-	return builder.Configure(
-		tproxy,
-		tagsMetadata,
-	).Configure(opts...).Build()
+	return builder.Configure(configurers...).Configure(opts...).Build()
 }

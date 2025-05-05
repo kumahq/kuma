@@ -22,6 +22,7 @@ func RegisterBootstrap(rt core_runtime.Runtime) error {
 		rt.Config().DpServer.Hds.Enabled,
 		rt.Config().GetEnvoyAdminPort(),
 		rt.Config().Experimental.DeltaXds,
+		rt.Config().Runtime.Universal.DynamicOutbounds,
 	)
 	if err != nil {
 		return err

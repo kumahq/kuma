@@ -1,3 +1,4 @@
 dataplaneCleanupAge: 72h0m0s
 zoneResourceCleanupAge: 72h0m0s
 vipRefreshInterval: 500ms
+dynamicOutbounds: false
