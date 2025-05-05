@@ -52,7 +52,10 @@ func (rr ResourceRules) Compute(uri kri.Identifier, reader kri.ResourceReader) *
 			return rr.Compute(kri.From(mesh, ""), reader)
 		}
 	case meshhttproute_api.MeshHTTPRouteType:
-		// todo(lobkovilya): handle MeshHTTPRoute
+		// find MeshHTTPRoute's Mesh and compute rules for it
+		if mesh := reader.Get(kri.Identifier{ResourceType: core_mesh.MeshType, Name: uri.Mesh}); mesh != nil {
+			return rr.Compute(kri.From(mesh, ""), reader)
+		}
 	}
 
 	return nil
@@ -173,6 +176,11 @@ func (rw *withResolvedResource[T]) isRelevant(other core_model.Resource, section
 			return false
 		}
 	case meshexternalservice_api.MeshExternalServiceType:
+		if other.Descriptor().Name != itemDescriptorName {
+			return false
+		}
+		return kri.From(rw.rs.Resource, "") == kri.From(other, "")
+	case meshhttproute_api.MeshHTTPRouteType:
 		if other.Descriptor().Name != itemDescriptorName {
 			return false
 		}
