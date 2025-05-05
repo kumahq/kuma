@@ -87,8 +87,6 @@ func (c *Config) Features() []string {
 	switch c.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
 	case "DELTA_GRPC":
 		base = append(base, xds_types.FeatureDeltaGRPC)
-	case "GRPC":
-		base = append(base, xds_types.FeatureGRPC)
 	}
 	return base
 }
@@ -374,10 +372,9 @@ func (d *DataplaneRuntime) Validate() error {
 	if d.EnvoyXdsTransportProtocolVariant != "" {
 		switch d.EnvoyXdsTransportProtocolVariant {
 		case "DELTA_GRPC":
-		case "GRPC":
 		default:
 			errs = multierr.Append(
-				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC", d.EnvoyXdsTransportProtocolVariant))
+				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be DELTA_GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
 		}
 	}
 	return errs

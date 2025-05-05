@@ -22,6 +22,4 @@ const FeatureEmbeddedDNS string = "feature-embedded-dns"
 // https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#xds-protocol-delta
 const FeatureDeltaGRPC string = "feature-delta-grpc"
 
-const FeatureGRPC string = "feature-grpc"
-
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"

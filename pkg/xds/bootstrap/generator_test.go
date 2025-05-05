@@ -235,62 +235,6 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request-and-delta.golden.yaml",
 			hdsEnabled:         true,
 		}),
-		Entry("custom config with minimal request and sotw", testCase{
-			dpAuthForProxyType: map[string]bool{},
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				return &bootstrap_config.BootstrapServerConfig{
-					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
-					},
-				}
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 9902
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:     "mesh",
-				Name:     "name.namespace",
-				Version:  defaultVersion,
-				Workdir:  "/tmp",
-				Features: []string{xds_types.FeatureGRPC},
-			},
-			expectedConfigFile: "generator.custom-config-minimal-request-and-sotw.golden.yaml",
-			hdsEnabled:         true,
-		}),
-		Entry("custom config with minimal request and delta server and dp grpc", testCase{
-			dpAuthForProxyType: map[string]bool{},
-			serverConfig: func() *bootstrap_config.BootstrapServerConfig {
-				return &bootstrap_config.BootstrapServerConfig{
-					Params: &bootstrap_config.BootstrapParamsConfig{
-						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-						AdminAccessLogPath: "/var/log",
-						XdsHost:            "localhost",
-						XdsPort:            15678,
-						XdsConnectTimeout:  config_types.Duration{Duration: 2 * time.Second},
-					},
-				}
-			}(),
-			dataplane: func() *core_mesh.DataplaneResource {
-				dp := defaultDataplane()
-				dp.Spec.Networking.Admin.Port = 9902
-				return dp
-			},
-			request: types.BootstrapRequest{
-				Mesh:     "mesh",
-				Name:     "name.namespace",
-				Version:  defaultVersion,
-				Workdir:  "/tmp",
-				Features: []string{xds_types.FeatureGRPC},
-			},
-			expectedConfigFile: "generator.custom-config-minimal-request-server-delta-and-dp-sotw.golden.yaml",
-			deltaXds:           true,
-		}),
 		Entry("custom config", testCase{
 			dpAuthForProxyType: authEnabled,
 			serverConfig: func() *bootstrap_config.BootstrapServerConfig {

@@ -130,9 +130,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
 		params.UseDeltaXds = true
 	}
-	if params.Features.HasFeature(xds_types.FeatureGRPC) {
-		params.UseDeltaXds = false
-	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
 		if adminPortFromResource != 0 {
