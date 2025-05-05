@@ -1,6 +1,5 @@
 ResourceRules:
   kri_extsvc_mesh-1___mes_:
-    BackendRefOriginIndex: {}
     Conf:
     - http:
         backOff:
@@ -24,6 +23,7 @@ ResourceRules:
         name: mr-3
         type: MeshRetry
       RuleIndex: 0
+    OriginByMatches: {}
     Resource:
       creationTime: "0001-01-01T00:00:00Z"
       mesh: mesh-1
@@ -32,8 +32,7 @@ ResourceRules:
       type: MeshExternalService
     ResourceSectionName: ""
 Rules:
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     http:
       numRetries: 3
   Origin:
@@ -42,4 +41,5 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mr-1
     type: MeshRetry
+  OriginByMatches: {}
   Subset: []

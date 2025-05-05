@@ -11,8 +11,7 @@ ToRules:
     127.0.0.1:8080:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /mesh
@@ -26,12 +25,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /servicesubset
@@ -53,12 +52,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /mesh
@@ -72,13 +71,13 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /mesh
@@ -92,12 +91,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /servicesubset
@@ -119,12 +118,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /mesh
@@ -138,4 +137,5 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: mesh-in-zone-1
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []

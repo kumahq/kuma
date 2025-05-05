@@ -14,7 +14,7 @@ import (
 )
 
 type OutboundRoute struct {
-	Hash                    common_api.MatchesHash
+	Name                    string
 	Match                   api.Match
 	Filters                 []api.Filter
 	Split                   []envoy_common.Split
@@ -42,7 +42,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 	for _, route := range c.Routes {
 		route := envoy_virtual_hosts.AddVirtualHostConfigurer(
 			&RoutesConfigurer{
-				Hash:                    route.Hash,
+				Name:                    route.Name,
 				Match:                   route.Match,
 				Filters:                 route.Filters,
 				Split:                   route.Split,
