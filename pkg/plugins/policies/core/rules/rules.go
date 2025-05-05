@@ -3,6 +3,7 @@ package rules
 import (
 	"encoding"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -25,7 +26,6 @@ import (
 	util_maps "github.com/kumahq/kuma/pkg/util/maps"
 	"github.com/kumahq/kuma/pkg/util/pointer"
 	util_slices "github.com/kumahq/kuma/pkg/util/slices"
-	"slices"
 )
 
 const RuleMatchesHashTag = "__rule-matches-hash__"

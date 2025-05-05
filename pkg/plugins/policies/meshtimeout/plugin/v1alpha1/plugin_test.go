@@ -15,6 +15,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/kri"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_types "github.com/kumahq/kuma/pkg/core/xds/types"
 	core_rules "github.com/kumahq/kuma/pkg/plugins/policies/core/rules"
@@ -29,6 +31,7 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/builders"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/test/resources/samples"
 	test_xds "github.com/kumahq/kuma/pkg/test/xds"
 	xds_builders "github.com/kumahq/kuma/pkg/test/xds/builders"
@@ -39,9 +42,6 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	meshservice_api "github.com/kumahq/kuma/pkg/core/resources/apis/meshservice/api/v1alpha1"
 )
 
 var _ = Describe("MeshTimeout", func() {
@@ -505,7 +505,7 @@ var _ = Describe("MeshTimeout", func() {
 			},
 			expectedListeners: []string{"outbound_listener_with_different_timeouts_per_route.yaml"},
 		}),
-		FEntry("timeouts per real MeshHTTPRoute", sidecarTestCase{
+		Entry("timeouts per real MeshHTTPRoute", sidecarTestCase{
 			resources: []core_xds.Resource{
 				{
 					Name:           "outbound",
