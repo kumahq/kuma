@@ -36,6 +36,7 @@ import (
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/observability"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/reachableservices"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/trafficlog"
+	"github.com/kumahq/kuma/test/e2e_env/kubernetes/transparentproxy"
 	"github.com/kumahq/kuma/test/e2e_env/kubernetes/virtualoutbound"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/envs/kubernetes"
@@ -95,4 +96,5 @@ var (
 	_ = Describe("Wait for Envoy", graceful.WaitForEnvoyReady, Ordered)
 	_ = Describe("MeshPassthrough", meshpassthrough.MeshPassthrough, Ordered)
 	_ = Describe("ApplicationProbeProxy", appprobeproxy.ApplicationProbeProxy, Ordered)
+	_ = Describe("Transparent Proxy - ConfigMap", transparentproxy.TransparentProxyConfigmap, Ordered)
 )
