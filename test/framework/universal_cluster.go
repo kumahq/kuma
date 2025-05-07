@@ -165,7 +165,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	var dockerVolumes []string
+	dockerVolumes := c.opts.dockerVolumes
 	if c.opts.yamlConfig != "" {
 		path, err := os.MkdirTemp("", "e2e-cp-cfg-*")
 		if err != nil {
@@ -200,6 +200,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 			DPConcurrency: 0,
 			EnableIPv6:    c.opts.isipv6,
 			Volumes:       dockerVolumes,
+			OtherOptions:  c.opts.dockerRunOptions,
 		})
 	if err != nil {
 		return err

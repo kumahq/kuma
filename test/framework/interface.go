@@ -59,6 +59,7 @@ type kumaDeploymentOptions struct {
 
 	// extra docker container options to attach when running on universal
 	dockerRunOptions []string
+	dockerVolumes    []string
 }
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
@@ -362,6 +363,12 @@ func WithCtlOpts(opts map[string]string) KumaDeploymentOption {
 func WithCPDockerRunOptions(options []string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
 		o.dockerRunOptions = options
+	})
+}
+
+func WithCPDockerVolumes(volumes ...string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.dockerVolumes = append(o.dockerVolumes, volumes...)
 	})
 }
 
