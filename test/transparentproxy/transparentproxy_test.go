@@ -94,7 +94,7 @@ type testCase struct {
 	image            string
 	postStart        [][]string
 	goldenFileSuffix string
-	additionalFlags  []string
+	params           Params
 }
 
 var _ = Describe("Transparent Proxy", func() {
@@ -110,6 +110,7 @@ var _ = Describe("Transparent Proxy", func() {
 			c, err := test_container.NewContainerSetup().
 				WithImage(tc.image).
 				WithKumactlBinary(Config.KumactlLinuxBin).
+				WithFiles(tc.params.Files).
 				WithPostStart(tc.postStart).
 				WithPrivileged(true).
 				Start(ctx)
@@ -121,7 +122,7 @@ var _ = Describe("Transparent Proxy", func() {
 			})
 
 			// When the transparent proxy is installed successfully
-			EnsureInstallSuccessful(ctx, c, tc.additionalFlags)
+			EnsureInstallSuccessful(ctx, c, tc.params)
 
 			// Then the golden files should match the expected output
 			EnsureGoldenFiles(ctx, c, tc)
@@ -142,6 +143,7 @@ var _ = Describe("Transparent Proxy", func() {
 			c, err := test_container.NewContainerSetup().
 				WithImage(tc.image).
 				WithKumactlBinary(Config.KumactlLinuxBin).
+				WithFiles(tc.params.Files).
 				WithPostStart(tc.postStart).
 				WithPrivileged(true).
 				Start(ctx)
@@ -159,7 +161,7 @@ var _ = Describe("Transparent Proxy", func() {
 			before := getIptablesSaveOutput(ctx, c)
 
 			// When the transparent proxy is installed successfully
-			EnsureInstallSuccessful(ctx, c, tc.additionalFlags)
+			EnsureInstallSuccessful(ctx, c, tc.params)
 
 			// When the transparent proxy is uninstalled successfully
 			EnsureUninstallSuccessful(ctx, c)
@@ -179,40 +181,21 @@ var _ = Describe("Transparent Proxy", func() {
 	)
 })
 
-// EnsureInstallSuccessful installs the transparent proxy in a test container
-// using the provided flags, and ensures the installation completes
-// successfully.
-//
-// This function performs the following steps:
-//   - Constructs the kumactl install command with the given flags.
-//   - Executes the command in the specified container context.
-//   - Asserts that no error occurred during execution.
-//   - If the command does not exit successfully (exit code != 0), it reads the
-//     command output and fails the test with an appropriate message.
-//
-// Args:
-//   - ctx (context.Context): The context for controlling the command execution.
-//   - c (testcontainers.Container): The test container where the command will
-//     be executed.
-//   - flags ([]string): Additional flags to pass to the kumactl install
-//     command.
-func EnsureInstallSuccessful(
-	ctx context.Context,
-	c testcontainers.Container,
-	flags []string,
-) {
+func EnsureInstallSuccessful(ctx context.Context, c testcontainers.Container, params Params) {
 	GinkgoHelper()
 
 	cmd := slices.Concat(
-		[]string{
-			"kumactl",
-			"install",
-			"transparent-proxy",
-			"--kuma-dp-user",
-			"kuma-dp",
-		},
-		flags,
+		[]string{"kumactl", "install", "transparent-proxy", "--kuma-dp-user", "kuma-dp"},
+		params.Flags,
 	)
+
+	if params.EchoStdin != "" {
+		scriptPath := "/install.sh"
+		script := []byte(fmt.Sprintf(`echo "%s" | %s`, params.EchoStdin, strings.Join(cmd, " ")))
+		cmd = []string{"sh", "-c", scriptPath}
+
+		Expect(c.CopyToContainer(ctx, script, scriptPath, 0o700)).To(Succeed())
+	}
 
 	exitCode, reader, err := c.Exec(ctx, cmd, exec.Multiplexed())
 	Expect(err).NotTo(HaveOccurred())
@@ -224,9 +207,6 @@ func EnsureInstallSuccessful(
 	}
 }
 
-// EnsureUninstallSuccessful runs the `kumactl uninstall transparent-proxy`
-// command in the specified container and checks if the uninstallation is
-// successful.
 func EnsureUninstallSuccessful(ctx context.Context, c testcontainers.Container) {
 	GinkgoHelper()
 
@@ -244,26 +224,7 @@ func EnsureUninstallSuccessful(ctx context.Context, c testcontainers.Container) 
 	}
 }
 
-// EnsureGoldenFiles validates the current iptables rules in a test container
-// against predefined golden files, ensuring the rules match the expected
-// configuration.
-//
-// This function performs the following steps:
-//   - Clones the list of IPv4 save commands and optionally includes IPv6 save
-//     commands if configured.
-//   - Iterates through each save command, executing it in the specified
-//     container context.
-//   - Constructs the golden file name based on the test case name, command, and
-//     suffix.
-//   - Reads the command output and compares it against the corresponding golden
-//     file.
-//   - If the command exits unsuccessfully, it checks if the error is due to the
-//     executable not being found and handles it accordingly.
-func EnsureGoldenFiles(
-	ctx context.Context,
-	c testcontainers.Container,
-	tc testCase,
-) {
+func EnsureGoldenFiles(ctx context.Context, c testcontainers.Container, tc testCase) {
 	GinkgoHelper()
 
 	saveCmds := slices.Clone(ipv4SaveCmds)
@@ -273,11 +234,7 @@ func EnsureGoldenFiles(
 	}
 
 	for _, cmd := range saveCmds {
-		golden := utils.BuildIptablesGoldenFileName(
-			tc.name,
-			cmd,
-			tc.goldenFileSuffix,
-		)
+		golden := utils.BuildIptablesGoldenFileName(tc.name, cmd, tc.goldenFileSuffix)
 
 		exitCode, reader, err := c.Exec(ctx, []string{cmd}, exec.Multiplexed())
 		Expect(err).NotTo(HaveOccurred())
@@ -287,30 +244,21 @@ func EnsureGoldenFiles(
 
 		if exitCode != 0 {
 			if !strings.Contains(buf.String(), "executable file not found") {
-				Fail(fmt.Sprintf(
-					"command ended with code %d: %s",
-					exitCode,
-					buf.String(),
-				))
+				Fail(fmt.Sprintf("command ended with code %d: %s", exitCode, buf.String()))
 			}
 
-			Expect("executable not found\n").
-				To(matchers.MatchGoldenEqual(golden...))
-
+			Expect("executable not found\n").To(matchers.MatchGoldenEqual(golden...))
 			continue
 		}
 
-		Expect(utils.CleanIptablesSaveOutput(buf.String())).
-			To(matchers.MatchGoldenEqual(golden...))
+		Expect(utils.CleanIptablesSaveOutput(buf.String())).To(matchers.MatchGoldenEqual(golden...))
 	}
 }
 
-// genEntriesForImages generates Ginkgo test entries for Transparent Proxy
-// (tproxy) installation scenarios across a set of Docker images.
 func genEntriesForImages(
 	images map[string]string,
-	entry func(description interface{}, args ...interface{}) TableEntry,
-	decorators ...interface{},
+	entry func(description any, args ...any) TableEntry,
+	decorators ...any,
 ) []TableEntry {
 	var entries []TableEntry
 
@@ -320,7 +268,7 @@ func genEntriesForImages(
 			genEntriesForImage(
 				name,
 				image,
-				Config.InstallFlagsToTest,
+				Config.InstallParamsToTest,
 				entry,
 				decorators...,
 			),
@@ -330,51 +278,12 @@ func genEntriesForImages(
 	return entries
 }
 
-// genEntriesForImage generates Ginkgo test entries for various scenarios
-// involving Transparent Proxy (tproxy) installation within a Docker image.
-//
-// Args:
-//   - name (string): The shortened name of the Docker image for easier
-//     reference.
-//   - image (string): The base Docker image name to use for testing.
-//   - additionalFlagsToTest (*FlagsMap): A map of optional flags to include
-//     during tproxy installation. Each key is a string suffix for the golden
-//     file, and each value is a slice of flags for a single test case (e.g.,
-//     {"--redirect-all-dns-traffic"}).
-//   - entry (func(description interface{}, args ...interface{}) TableEntry):
-//     A function used to create Ginkgo TableEntry objects. Use PEntry or XEntry
-//     for creating paused or excluded entries.
-//   - decorators (...interface{}): Optional decorators to apply to each
-//     TableEntry for additional customization or configuration.
-//
-// Returns:
-//   - []TableEntry: A slice of Ginkgo TableEntry objects, each representing a
-//     unique test case with the following configuration:
-//   - Image name: The Docker image name used for the test (may include
-//     additional flags).
-//   - testCase: A struct containing detailed test case parameters:
-//   - name: The shortened name of the Docker image.
-//   - image: The base Docker image name.
-//   - postStart: Commands to execute after starting the container (e.g.,
-//     adding a user, updating package lists, installing iptables).
-//   - additionalFlags (optional): Additional flags to pass during tproxy
-//     installation.
-//
-// This function generates entries for the following test variations:
-//   - Base installation on different Docker images (Ubuntu, Debian, Alpine,
-//     RHEL variants, Amazon Linux).
-//   - Installation with additional flags specified in `additionalFlagsToTest`.
-//
-// Note:
-//   - The function tailors commands (e.g., package managers, iptables binaries)
-//     based on the image being used to ensure compatibility with the package
-//     management system and other environment-specific requirements.
 func genEntriesForImage(
 	name string,
 	image string,
-	additionalFlagsToTest *FlagsMap,
-	entry func(description interface{}, args ...interface{}) TableEntry,
-	decorators ...interface{},
+	paramsMap *ParamsMap,
+	entry func(description any, args ...any) TableEntry,
+	decorators ...any,
 ) []TableEntry {
 	var postStart [][]string
 
@@ -398,62 +307,27 @@ func genEntriesForImage(
 		}
 	}
 
-	// buildArgs is a helper function that combines test case parameters with
-	// any additional decorators.
-	buildArgs := func(
-		goldenFileSuffix string,
-		flags []string,
-		decorators []interface{},
-	) []interface{} {
-		var args []interface{}
+	var entries []TableEntry
 
-		args = append(args, testCase{
-			name:             name,
-			image:            image,
-			postStart:        postStart,
-			goldenFileSuffix: goldenFileSuffix,
-			additionalFlags:  flags,
-		})
-		args = append(args, decorators...)
-
-		return args
-	}
-
-	entries := []TableEntry{
-		entry(
-			fmt.Sprintf("%s (%s)", name, image),
-			buildArgs("", nil, decorators)...,
-		),
-	}
-
-	for goldenFileSuffix, flags := range pointer.Deref(additionalFlagsToTest) {
-		func(goldenFileSuffix string, flags []string) {
-			entries = append(entries, entry(
-				fmt.Sprintf(
-					"%s (%s) with flags: %s",
-					name,
-					image,
-					strings.Join(flags, " "),
-				),
-				buildArgs(goldenFileSuffix, flags, decorators)...,
-			))
-		}(goldenFileSuffix, flags)
+	for goldenFileSuffix, params := range pointer.Deref(paramsMap) {
+		entries = append(entries, entry(
+			fmt.Sprintf("%s (%s) with flags: %s", name, image, strings.Join(params.Flags, " ")),
+			slices.Concat([]any{
+				testCase{
+					name:             name,
+					image:            image,
+					postStart:        postStart,
+					goldenFileSuffix: goldenFileSuffix,
+					params:           params,
+				},
+			}, decorators)...,
+		))
 	}
 
 	return entries
 }
 
-// getIptablesSaveOutput retrieves the output of iptables-save commands from a
-// given container.
-//
-// This function executes all the defined iptables-save commands inside the
-// provided container and collects their outputs. The outputs are cleaned and
-// returned in a map where the keys are the command names and the values are
-// their respective outputs.
-func getIptablesSaveOutput(
-	ctx context.Context,
-	container testcontainers.Container,
-) map[string]string {
+func getIptablesSaveOutput(ctx context.Context, container testcontainers.Container) map[string]string {
 	GinkgoHelper()
 
 	output := map[string]string{}
@@ -473,17 +347,7 @@ func getIptablesSaveOutput(
 	return output
 }
 
-// addCustomIptablesRules adds a set of custom iptables rules to a given
-// container.
-//
-// This function iterates over the predefined iptables commands and custom
-// iptables rules, attempting to add each rule using each iptables command.
-// If all attempts to add the rules using all iptables commands fail, it
-// returns an error detailing the failures.
-func addCustomIptablesRules(
-	ctx context.Context,
-	c testcontainers.Container,
-) error {
+func addCustomIptablesRules(ctx context.Context, c testcontainers.Container) error {
 	var errs []error
 
 	for _, iptables := range iptablesCmds {
@@ -495,10 +359,7 @@ func addCustomIptablesRules(
 				slices.Concat([]string{iptables}, rule),
 				exec.Multiplexed(),
 			); err != nil || exitCode != 0 {
-				cmdErrs = append(
-					cmdErrs,
-					errors.Wrapf(err, "exit code %d", exitCode),
-				)
+				cmdErrs = append(cmdErrs, errors.Wrapf(err, "exit code %d", exitCode))
 			}
 		}
 
@@ -508,10 +369,7 @@ func addCustomIptablesRules(
 	}
 
 	if len(errs) == len(iptablesCmds) {
-		return errors.Wrap(
-			std_errors.Join(errs...),
-			"all iptables commands used to add custom iptables rules failed",
-		)
+		return errors.Wrap(std_errors.Join(errs...), "all iptables commands used to add custom iptables rules failed")
 	}
 
 	return nil

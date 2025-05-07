@@ -268,18 +268,23 @@ resource-identifier = *(ALPHA / DIGIT / "-" / "." / "_" / "~" )
 
 As a delimiter we can use only characters that can't be present in resource identifier components – `name`, `mesh`, `namespace`, `zone`, `resourceType` and `sectionName`:
 
-* `name` and `zone`
+* `name`
   * contain no more than 253 characters
   * contain only lowercase alphanumeric characters, '-' or '.'
   * start with an alphanumeric character
   * end with an alphanumeric character
-* `mesh` and `namespace`
+* `namespace`
   * contain at most 63 characters
   * contain only lowercase alphanumeric characters or '-'
   * start with an alphanumeric character
   * end with an alphanumeric character
+* `mesh`, and `zone`
+  * contain at most 63 characters
+  * contain only lowercase alphanumeric characters or '-'
+  * start with an alphabetic character
+  * end with an alphanumeric character
 * `resourceType`
-  * only alphanumeric
+  * only alphabetic
 * `sectionName` (even though [ContainerPort's name](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#containerport-v1-core) is limited by 15 characters, [ServicePort's name](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.26/#serviceport-v1-core) can contain upto 63 character)
   * contain at most 63 characters
   * contain only lowercase alphanumeric characters or '-'

@@ -206,7 +206,7 @@ jobs:
     outputs:
       DIGESTS: ${{ steps.compute-digests.outputs.digests }}
     steps:
-      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4.2.1
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           pattern: "image_*.digest.json"
           path: ./digests
@@ -272,7 +272,7 @@ jobs:
       - name: Generate GitHub app token
         id: github-app-token
         if: ${{ github.ref_type == 'tag' }}
-        uses: actions/create-github-app-token@3ff1caaa28b64c9cc276ce0a02e2ff584f3900c5 # v2.0.2
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
           app-id: ${{ secrets.APP_ID }}
           private-key: ${{ secrets.APP_PRIVATE_KEY }}

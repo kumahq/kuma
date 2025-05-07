@@ -23,7 +23,7 @@ resources:
               prefixLen: 128
           normalizePath: true
           routeConfig:
-            name: default_example___extsvc_9090
+            name: kri_extsvc_default___example_
             validateClusters: false
             virtualHosts:
             - domains:
@@ -32,14 +32,14 @@ resources:
               routes:
               - match:
                   path: /v1
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   autoHostRewrite: true
                   cluster: default_example___extsvc_9090
                   timeout: 0s
               - match:
                   prefix: /v1/
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   autoHostRewrite: true
                   cluster: default_example___extsvc_9090

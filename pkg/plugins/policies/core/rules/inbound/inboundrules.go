@@ -110,10 +110,9 @@ func buildRules[T interface {
 		return nil, err
 	}
 
-	ruleOrigin, _ := common.Origins(list, true)
 	return []*Rule{{
 		Conf:   merged,
-		Origin: ruleOrigin,
+		Origin: common.Origins(list, true),
 	}}, nil
 }
 

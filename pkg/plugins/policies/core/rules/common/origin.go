@@ -4,7 +4,6 @@ import (
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	meshhttproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshhttproute/api/v1alpha1"
-	meshtcproute_api "github.com/kumahq/kuma/pkg/plugins/policies/meshtcproute/api/v1alpha1"
 )
 
 type Origin struct {
@@ -15,55 +14,65 @@ type Origin struct {
 	RuleIndex int
 }
 
-type BackendRefOriginIndex map[common_api.MatchesHash]int
+type keyType struct {
+	core_model.ResourceKey
+	ruleIndex int
+}
 
-var EmptyMatches common_api.MatchesHash = ""
-
-func (originIndex BackendRefOriginIndex) Update(conf interface{}, newIndex int) {
-	switch conf := conf.(type) {
-	case meshtcproute_api.Rule:
-		if conf.Default.BackendRefs != nil {
-			originIndex[EmptyMatches] = newIndex
-		}
-	case meshhttproute_api.PolicyDefault:
-		for _, rule := range conf.Rules {
-			if rule.Default.BackendRefs != nil {
-				hash := meshhttproute_api.HashMatches(rule.Matches)
-				originIndex[hash] = newIndex
-			}
-		}
-	default:
-		return
+func getKey(policyItem PolicyAttributes, withRuleIndex bool) keyType {
+	k := keyType{
+		ResourceKey: core_model.MetaToResourceKey(policyItem.GetResourceMeta()),
 	}
+	if withRuleIndex {
+		k.ruleIndex = policyItem.GetRuleIndex()
+	}
+	return k
 }
 
 func Origins[B BaseEntry, T interface {
 	PolicyAttributes
 	Entry[B]
-}](items []T, withRuleIndex bool) ([]Origin, BackendRefOriginIndex) {
+}](items []T, withRuleIndex bool) []Origin {
 	var rv []Origin
 
-	type keyType struct {
-		core_model.ResourceKey
-		ruleIndex int
-	}
-	key := func(policyItem T) keyType {
-		k := keyType{
-			ResourceKey: core_model.MetaToResourceKey(policyItem.GetResourceMeta()),
-		}
-		if withRuleIndex {
-			k.ruleIndex = policyItem.GetRuleIndex()
-		}
-		return k
-	}
 	set := map[keyType]struct{}{}
-	originIndex := BackendRefOriginIndex{}
 	for _, item := range items {
-		if _, ok := set[key(item)]; !ok {
-			originIndex.Update(item.GetEntry().GetDefault(), len(rv))
-			rv = append(rv, Origin{Resource: item.GetResourceMeta(), RuleIndex: item.GetRuleIndex()})
-			set[key(item)] = struct{}{}
+		if _, ok := set[getKey(item, withRuleIndex)]; !ok {
+			set[getKey(item, withRuleIndex)] = struct{}{}
+
+			rv = append(rv, Origin{
+				Resource:  item.GetResourceMeta(),
+				RuleIndex: item.GetRuleIndex(),
+			})
 		}
 	}
-	return rv, originIndex
+	return rv
+}
+
+func OriginByMatches[B BaseEntry, T interface {
+	PolicyAttributes
+	Entry[B]
+}](items []T) map[common_api.MatchesHash]Origin {
+	rv := map[common_api.MatchesHash]Origin{}
+
+	set := map[keyType]struct{}{}
+	for _, item := range items {
+		if _, ok := set[getKey(item, true)]; !ok {
+			set[getKey(item, true)] = struct{}{}
+
+			origin := Origin{
+				Resource:  item.GetResourceMeta(),
+				RuleIndex: item.GetRuleIndex(),
+			}
+
+			switch conf := item.GetEntry().GetDefault().(type) {
+			case meshhttproute_api.PolicyDefault:
+				for _, rule := range conf.Rules {
+					rv[meshhttproute_api.HashMatches(rule.Matches)] = origin
+				}
+			}
+		}
+	}
+
+	return rv
 }
