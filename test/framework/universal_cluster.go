@@ -133,6 +133,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	} else {
 		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaUniversalEnvVars)}, opt...)
 	}
+	c.opts = kumaDeploymentOptions{}
 	c.opts.apply(opt...)
 	if c.opts.installationMode != KumactlInstallationMode {
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
