@@ -279,9 +279,6 @@ var _ = Describe("bootstrapGenerator", func() {
     ],
     "admin": {
       "port": 1234
-    },
-    "envoy" : {
-      "xdsTransportProtocolVariant": "DELTA_GRPC"
     }
   }
 }`,

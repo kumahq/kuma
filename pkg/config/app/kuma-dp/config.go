@@ -372,9 +372,10 @@ func (d *DataplaneRuntime) Validate() error {
 	if d.EnvoyXdsTransportProtocolVariant != "" {
 		switch d.EnvoyXdsTransportProtocolVariant {
 		case "DELTA_GRPC":
+		case "GRPC":
 		default:
 			errs = multierr.Append(
-				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be DELTA_GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
+				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
 		}
 	}
 	return errs
