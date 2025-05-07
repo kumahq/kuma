@@ -35,7 +35,7 @@ type kumaDeploymentOptions struct {
 	helmChartPath               *string
 	helmChartVersion            string
 	helmOpts                    map[string]string
-	noHelmOpts                  []string
+	helmOptsExcluded            []string
 	env                         map[string]string
 	zoneIngress                 bool
 	zoneIngressEnvoyAdminTunnel bool
@@ -56,6 +56,9 @@ type kumaDeploymentOptions struct {
 	// Functions to apply to each mesh after the control plane
 	// is provisioned.
 	meshUpdateFuncs map[string][]func(*mesh_proto.Mesh) *mesh_proto.Mesh
+
+	// extra docker container options to attach when running on universal
+	dockerRunOptions []string
 }
 
 func (k *kumaDeploymentOptions) apply(opts ...KumaDeploymentOption) {
@@ -120,6 +123,7 @@ type appDeploymentOptions struct {
 
 	dockerVolumes       []string
 	dockerContainerName string
+	dockerRunOptions    []string
 }
 
 func (d *appDeploymentOptions) apply(opts ...AppDeploymentOption) {
@@ -256,13 +260,13 @@ func WithHelmOpt(name, value string) KumaDeploymentOption {
 
 func WithoutHelmOpt(name string) KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.noHelmOpts = append(o.noHelmOpts, name)
+		o.helmOptsExcluded = append(o.helmOptsExcluded, name)
 	})
 }
 
 func ClearNoHelmOpts() KumaDeploymentOption {
 	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
-		o.noHelmOpts = nil
+		o.helmOptsExcluded = nil
 	})
 }
 
@@ -352,6 +356,12 @@ func WithCtlOpts(opts map[string]string) KumaDeploymentOption {
 		for name, value := range opts {
 			o.ctlOpts[name] = value
 		}
+	})
+}
+
+func WithCPDockerRunOptions(options []string) KumaDeploymentOption {
+	return KumaOptionFunc(func(o *kumaDeploymentOptions) {
+		o.dockerRunOptions = options
 	})
 }
 
@@ -563,6 +573,12 @@ func WithDockerVolumes(volumes ...string) AppDeploymentOption {
 func WithDockerContainerName(name string) AppDeploymentOption {
 	return AppOptionFunc(func(o *appDeploymentOptions) {
 		o.dockerContainerName = name
+	})
+}
+
+func WithAppDockerRunOptions(options []string) AppDeploymentOption {
+	return AppOptionFunc(func(o *appDeploymentOptions) {
+		o.dockerRunOptions = options
 	})
 }
 

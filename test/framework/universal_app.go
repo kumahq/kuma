@@ -210,7 +210,7 @@ type UniversalApp struct {
 }
 
 type UniversalAppRunOptions struct {
-	Backend              DockerBackend
+	DockerBackend        DockerBackend
 	DPConcurrency        int
 	EnvironmentVariables []string
 	ContainerName        string
@@ -231,7 +231,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueId()),
 		concurrency:   runOptions.DPConcurrency,
 		clusterName:   clusterName,
-		dockerBackend: runOptions.Backend,
+		dockerBackend: runOptions.DockerBackend,
 	}
 	if runOptions.ContainerName != "" {
 		app.containerName = runOptions.ContainerName
@@ -265,9 +265,9 @@ func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode
 		Remove:               true,
 		Name:                 app.containerName,
 		Volumes:              runOptions.Volumes,
-		OtherOptions:         dockerExtraOptions,
 		Logger:               app.logger,
 		EnvironmentVariables: runOptions.EnvironmentVariables,
+		OtherOptions:         dockerExtraOptions,
 	})
 	if err != nil {
 		return nil, err

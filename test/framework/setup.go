@@ -647,7 +647,7 @@ func universalZoneProxyRelatedResource(
 			"",
 			appType,
 			UniversalAppRunOptions{
-				Backend:       uniCluster.GetDockerBackend(),
+				DockerBackend: uniCluster.GetDockerBackend(),
 				DPConcurrency: concurrency,
 				EnableIPv6:    Config.IPV6,
 			},

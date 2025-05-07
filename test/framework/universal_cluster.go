@@ -196,7 +196,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 
 	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP,
 		UniversalAppRunOptions{
-			Backend:       c.dockerBackend,
+			DockerBackend: c.dockerBackend,
 			DPConcurrency: 0,
 			EnableIPv6:    c.opts.isipv6,
 			Volumes:       dockerVolumes,
@@ -365,13 +365,14 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname),
 		UniversalAppRunOptions{
-			Backend:       c.dockerBackend,
+			DockerBackend: c.dockerBackend,
 			DPConcurrency: 0,
 			EnableIPv6:    opts.isipv6,
 			Verbose:       *opts.verbose,
 			Capabilities:  caps,
 			Volumes:       opts.dockerVolumes,
 			ContainerName: opts.dockerContainerName,
+			OtherOptions:  opts.dockerRunOptions,
 		})
 	if err != nil {
 		return err
