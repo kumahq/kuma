@@ -8,13 +8,17 @@ import (
 )
 
 var (
-	ErrorInvalidOffset = errors.New("invalid offset")
+	ErrInvalidOffset   = errors.New("invalid offset")
 	ErrIsAlreadyExists = errors.New("already exists")
 	ErrConflict        = errors.New("conflict")
 	ErrNotFound        = errors.New("not found")
 	ErrInvalid         = errors.New("invalid")
 	ErrBadRequest      = errors.New("bad request")
 )
+
+func IsInvalidOffset(err error) bool {
+	return err != nil && errors.Is(err, ErrInvalidOffset)
+}
 
 func ErrorResourceAlreadyExists(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("resource %w: type=%q name=%q mesh=%q", ErrIsAlreadyExists, rt, name, mesh)

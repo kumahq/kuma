@@ -65,7 +65,7 @@ func HandleError(ctx context.Context, response *restful.Response, err error, tit
 				Reason: violation.Message,
 			})
 		}
-	case err == store.ErrorInvalidOffset:
+	case store.IsInvalidOffset(err):
 		kumaErr = &types.Error{
 			Status: 400,
 			Title:  title,
