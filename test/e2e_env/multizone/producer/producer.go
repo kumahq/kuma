@@ -2,6 +2,7 @@ package producer
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo/v2"
@@ -15,7 +16,6 @@ import (
 	framework_client "github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/testserver"
 	"github.com/kumahq/kuma/test/framework/envs/multizone"
-	"time"
 )
 
 func ProducerPolicyFlow() {
