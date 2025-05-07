@@ -277,22 +277,22 @@ func applyToRealResources(
 	reader kri.ResourceReader,
 ) error {
 	for _, r := range rs {
+		switch r.ResourceOrigin.ResourceType {
+		case meshservice_api.MeshServiceType:
+		case meshexternalservice_api.MeshExternalServiceType:
+		case meshmultizoneservice_api.MeshMultiZoneServiceType:
+		default:
+			continue
+		}
+
+		var conf api.Conf
+		if rr := rules.Compute(*r.ResourceOrigin, reader); rr != nil {
+			conf = rr.Conf[0].(api.Conf)
+		}
+
 		switch envoyResource := r.Resource.(type) {
 		case *envoy_listener.Listener:
-			switch r.ResourceOrigin.ResourceType {
-			case meshservice_api.MeshServiceType:
-			case meshexternalservice_api.MeshExternalServiceType:
-			case meshmultizoneservice_api.MeshMultiZoneServiceType:
-			default:
-				continue
-			}
-
-			listenerConf := rules.Compute(*r.ResourceOrigin, reader)
-			if listenerConf == nil {
-				listenerConf = &outbound.ResourceRule{Conf: []interface{}{api.Conf{}}}
-			}
-
-			configurer := plugin_xds.ListenerConfigurer{Conf: listenerConf.Conf[0].(api.Conf), Protocol: r.Protocol}
+			configurer := plugin_xds.ListenerConfigurer{Conf: conf, Protocol: r.Protocol}
 			if err := configurer.ConfigureListener(envoyResource); err != nil {
 				return err
 			}
@@ -307,12 +307,7 @@ func applyToRealResources(
 			}
 
 		case *envoy_cluster.Cluster:
-			clusterConf := rules.Compute(*r.ResourceOrigin, reader)
-			if clusterConf == nil {
-				clusterConf = &outbound.ResourceRule{Conf: []interface{}{api.Conf{}}}
-			}
-
-			configurer := plugin_xds.ClusterConfigurerFromConf(clusterConf.Conf[0].(api.Conf), r.Protocol)
+			configurer := plugin_xds.ClusterConfigurerFromConf(conf, r.Protocol)
 			if err := configurer.Configure(envoyResource); err != nil {
 				return err
 			}
