@@ -194,7 +194,13 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 	_, _ = fmt.Fprintf(cmd, "%s\n", runCp)
 
-	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP,
+		UniversalAppRunOptions{
+			Backend:       c.dockerBackend,
+			DPConcurrency: 0,
+			EnableIPv6:    c.opts.isipv6,
+			Volumes:       dockerVolumes,
+		})
 	if err != nil {
 		return err
 	}
@@ -357,7 +363,16 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname),
+		UniversalAppRunOptions{
+			Backend:       c.dockerBackend,
+			DPConcurrency: 0,
+			EnableIPv6:    opts.isipv6,
+			Verbose:       *opts.verbose,
+			Capabilities:  caps,
+			Volumes:       opts.dockerVolumes,
+			ContainerName: opts.dockerContainerName,
+		})
 	if err != nil {
 		return err
 	}
