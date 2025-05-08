@@ -15,8 +15,8 @@
   "ignorePaths": [],
   "kubernetes": {
     "description": "Update image versions in Kubernetes manifests from 'kumactl install demo|observability'",
-    "fileMatch": [
-      "app/kumactl/data/install/k8s/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/app/kumactl/data/install/k8s/.+\\.ya?ml$/"
     ]
   },
   "packageRules": [
