@@ -7,7 +7,6 @@ source "${SCRIPT_DIR}/../common.sh"
 
 [ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
 [ -z "$GH_REPO" ] && GH_REPO="charts"
-CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
@@ -100,9 +99,9 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
-  CHART_TAR=$(find ${CHARTS_PACKAGE_PATH}/*.tgz -type f)
-  CHART_FILE=$(tar -tf ${CHART_TAR} | grep 'Chart.yaml')
-  CHART_VERSION=$(tar -zxOf ${CHART_TAR} ${CHART_FILE} | yq .version)
+  CHART_TAR=$(find "${CHARTS_PACKAGE_PATH}/*.tgz" -type f)
+  CHART_FILE=$(tar -tf "${CHART_TAR}" | grep 'Chart.yaml')
+  CHART_VERSION=$(tar -zxOf "${CHART_TAR}" "${CHART_FILE}" | yq .version)
 
   pushd ${GH_REPO}
 
