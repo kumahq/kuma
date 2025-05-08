@@ -87,7 +87,7 @@ func TransparentProxyConfigmap() {
 			)
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(stdout).To(ContainSubstring(`"transparentProxying": {}`))
+		Expect(stdout).ToNot(ContainSubstring(`"transparentProxying":`))
 	})
 
 	It("should be able to connect to test-server", func() {

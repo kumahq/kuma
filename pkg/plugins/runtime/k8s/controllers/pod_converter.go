@@ -174,6 +174,7 @@ func (p *PodConverter) dataplaneFor(
 	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
 
+	var tp mesh_proto.Dataplane_Networking_TransparentProxying
 	var tpConfigInAnnotation bool
 	var tpEnabledInAnnotation bool
 
@@ -187,18 +188,13 @@ func (p *PodConverter) dataplaneFor(
 		tpEnabledInAnnotation = ok && v
 	}
 
-	var reachableServices []string
-
 	if tpConfigInAnnotation || tpEnabledInAnnotation {
-		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{}
-
 		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
-			dataplane.Networking.TransparentProxying.DirectAccessServices = v
+			tp.DirectAccessServices = v
 		}
 
 		if v, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
-			dataplane.Networking.TransparentProxying.ReachableServices = v
-			reachableServices = v
+			tp.ReachableServices = v
 		}
 
 		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
@@ -206,7 +202,11 @@ func (p *PodConverter) dataplaneFor(
 			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
 				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 			}
-			var backendRefs []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef
+
+			if len(refs.Refs) > 0 {
+				tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			}
+
 			for _, ref := range refs.Refs {
 				backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
 					Kind:      ref.Kind,
@@ -217,10 +217,8 @@ func (p *PodConverter) dataplaneFor(
 				if ref.Port != nil {
 					backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
 				}
-				backendRefs = append(backendRefs, backendRef)
-			}
-			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{
-				Refs: backendRefs,
+
+				tp.ReachableBackends.Refs = append(tp.ReachableBackends.Refs, backendRef)
 			}
 		}
 	}
@@ -231,7 +229,7 @@ func (p *PodConverter) dataplaneFor(
 		} else if !ok {
 			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
 		} else {
-			dataplane.Networking.TransparentProxying.RedirectPortInbound = v
+			tp.RedirectPortInbound = v
 		}
 
 		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
@@ -239,7 +237,7 @@ func (p *PodConverter) dataplaneFor(
 		} else if !ok {
 			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
 		} else {
-			dataplane.Networking.TransparentProxying.RedirectPortOutbound = v
+			tp.RedirectPortOutbound = v
 		}
 
 		if v, _ := annotations.GetStringWithDefault(
@@ -248,13 +246,24 @@ func (p *PodConverter) dataplaneFor(
 		); v != "" {
 			switch v {
 			case metadata.IpFamilyModeDualStack:
-				dataplane.Networking.TransparentProxying.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
 			case metadata.IpFamilyModeIPv4:
-				dataplane.Networking.TransparentProxying.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
 			default:
 				return nil, errors.Errorf("invalid ip family mode '%s'", v)
 			}
 		}
+	}
+
+	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
+	// Only assign it if at least one relevant field has a non-zero or non-nil value.
+	if tp.DirectAccessServices != nil ||
+		tp.ReachableServices != nil ||
+		tp.ReachableBackends != nil ||
+		tp.RedirectPortInbound != 0 ||
+		tp.RedirectPortOutbound != 0 ||
+		tp.IpFamilyMode != 0 {
+		dataplane.Networking.TransparentProxying = &tp
 	}
 
 	dataplane.Networking.Address = pod.Status.PodIP
@@ -295,7 +304,7 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	if !p.KubeOutboundsAsVIPs {
-		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, reachableServices)
+		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
 		if err != nil {
 			return nil, err
 		}
