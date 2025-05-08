@@ -166,6 +166,9 @@ components:
           type: integer
         protocol:
           type: string
+        status:
+          type: string
+          enum: [ Ready, NotReady, Ignored ]
     DataplaneOutbound:
       type: object
       required: [ kri, protocol ]

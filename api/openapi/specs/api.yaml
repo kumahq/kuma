@@ -186,7 +186,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_proxy/_rules:
+  /meshes/{mesh}/dataplanes/{name}/_policy-conf:
     get:
       operationId: get-dataplanes-layout
       summary: TODO
@@ -211,7 +211,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_rules:
+  /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policy-conf:
     get:
       operationId: get-dataplanes-layout
       summary: TODO
@@ -242,7 +242,7 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/Internal'
-  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_rules:
+  /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policy-conf:
     get:
       operationId: get-dataplanes-layout
       summary: TODO
