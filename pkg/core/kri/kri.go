@@ -31,12 +31,16 @@ func (i Identifier) String() string {
 }
 
 func From(r core_model.Resource, sectionName string) Identifier {
+	return FromResourceMeta(r.GetMeta(), r.Descriptor().Name, sectionName)
+}
+
+func FromResourceMeta(rm core_model.ResourceMeta, resourceType core_model.ResourceType, sectionName string) Identifier {
 	return Identifier{
-		ResourceType: r.Descriptor().Name,
-		Mesh:         r.GetMeta().GetMesh(),
-		Zone:         r.GetMeta().GetLabels()[mesh_proto.ZoneTag],
-		Namespace:    r.GetMeta().GetLabels()[mesh_proto.KubeNamespaceTag],
-		Name:         core_model.GetDisplayName(r.GetMeta()),
+		ResourceType: resourceType,
+		Mesh:         rm.GetMesh(),
+		Zone:         rm.GetLabels()[mesh_proto.ZoneTag],
+		Namespace:    rm.GetLabels()[mesh_proto.KubeNamespaceTag],
+		Name:         core_model.GetDisplayName(rm),
 		SectionName:  sectionName,
 	}
 }

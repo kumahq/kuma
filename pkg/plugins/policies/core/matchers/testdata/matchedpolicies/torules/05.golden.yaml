@@ -1,7 +1,6 @@
 ResourceRules: {}
 Rules:
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     http:
       requestTimeout: 7s
   Origin:
@@ -15,4 +14,5 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: mtp-3
     type: MeshTimeout
+  OriginByMatches: {}
   Subset: []

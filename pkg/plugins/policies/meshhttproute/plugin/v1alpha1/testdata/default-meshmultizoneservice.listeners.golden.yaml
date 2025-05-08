@@ -23,7 +23,7 @@ resources:
               prefixLen: 128
           normalizePath: true
           routeConfig:
-            name: outbound:default_multi-backend___mzsvc_80
+            name: kri_mzsvc_default___multi-backend_80
             validateClusters: false
             virtualHosts:
             - domains:
