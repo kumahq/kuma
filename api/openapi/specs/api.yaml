@@ -164,8 +164,8 @@ paths:
   /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      summary: Get networking layout for this dataplane 
+      description: Returns detailed dataplane networking layout with most important information on dataplane and list of its inbounds and outbounds
       parameters:
         - in: path
           name: mesh
@@ -188,9 +188,9 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-proxy-policy-conf
+      summary: Get policies configuration for this dataplane
+      description: Returns proxy level policy configuration derived from combining all policies selecting this dataplane 
       parameters:
         - in: path
           name: mesh
@@ -213,9 +213,9 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-inbound-policy-conf
+      summary: Get policies configuration for this inbound
+      description: Returns inbound policy configuration derived from combining all policies selecting this dataplane
       parameters:
         - in: path
           name: mesh
@@ -244,9 +244,9 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-outbound-policy-conf
+      summary: Get policies configuration for this outbound
+      description: Returns outbound policy configuration derived from combining all policies selecting this dataplane
       parameters:
         - in: path
           name: mesh
@@ -671,16 +671,21 @@ components:
     DataplaneLayout:
       type: object
       title: DataplaneLayout
-      description: TODO
+      description: Dataplane networking layout. It contains information most important information about dataplane and lists of available inbounds and outbounds
       required: [ kri, name ]
       properties:
         kri:
           type: string
-          example: TODO
+          example: kri_msvc_mesh-1_us-east-2_kuma-demo_demo-app_http-port
         name:
           type: string
         labels:
           type: object
+          example:
+            "k8s.kuma.io/namespace": "kuma-demo"
+            "kuma.io/display-name": "demo-app"
+            "kuma.io/mesh": "default"
+            "kuma.io/origin": "zone"
         inbounds:
           type: array
           items:
@@ -764,25 +769,25 @@ components:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
     DataplaneLayoutResponse:
-      description: TODO
+      description: A response containing dataplane networking layout.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneLayout'
     ProxyRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected dataplane
       content:
         application/json:
           schema:
             $ref: './common/resource.yaml#/components/schemas/DataplaneProxyRules'
     InboundRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected inbound
       content:
         application/json:
           schema:
             $ref: './common/resource.yaml#/components/schemas/DataplaneInboundRules'
     OutboundRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected outbound
       content:
         application/json:
           schema:

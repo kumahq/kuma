@@ -32,7 +32,7 @@ type DataplaneInboundStatus string
 type DataplaneInboundRules struct {
 	Inbound DataplaneInbound `json:"inbound"`
 
-	// Rules TODO
+	// Rules The final computed configuration for the inbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 	Rules []InboundRule `json:"rules"`
 }
 
@@ -48,13 +48,13 @@ type DataplaneOutbound struct {
 type DataplaneOutboundRules struct {
 	Outbound DataplaneOutbound `json:"outbound"`
 
-	// Rules TODO
+	// Rules The final computed configuration for the outbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 	Rules []ResourceRule `json:"rules"`
 }
 
 // DataplaneProxyRules defines model for DataplaneProxyRules.
 type DataplaneProxyRules struct {
-	// Rules TODO
+	// Rules The final computed configuration for the dataplane, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
 	Rules []ProxyRule `json:"rules"`
 }
 

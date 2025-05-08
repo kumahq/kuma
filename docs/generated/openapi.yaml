@@ -180,8 +180,10 @@ paths:
   /meshes/{mesh}/dataplanes/{name}/_layout:
     get:
       operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      summary: Get networking layout for this dataplane
+      description: >-
+        Returns detailed dataplane networking layout with most important
+        information on dataplane and list of its inbounds and outbounds
       parameters:
         - in: path
           name: mesh
@@ -204,9 +206,11 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-proxy-policy-conf
+      summary: Get policies configuration for this dataplane
+      description: >-
+        Returns proxy level policy configuration derived from combining all
+        policies selecting this dataplane
       parameters:
         - in: path
           name: mesh
@@ -229,9 +233,11 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_inbounds/{kri}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-inbound-policy-conf
+      summary: Get policies configuration for this inbound
+      description: >-
+        Returns inbound policy configuration derived from combining all policies
+        selecting this dataplane
       parameters:
         - in: path
           name: mesh
@@ -260,9 +266,11 @@ paths:
           $ref: '#/components/responses/Internal'
   /meshes/{mesh}/dataplanes/{name}/_outbounds/{kri}/_policy-conf:
     get:
-      operationId: get-dataplanes-layout
-      summary: TODO
-      description: TODO
+      operationId: get-outbound-policy-conf
+      summary: Get policies configuration for this outbound
+      description: >-
+        Returns outbound policy configuration derived from combining all
+        policies selecting this dataplane
       parameters:
         - in: path
           name: mesh
@@ -3779,18 +3787,26 @@ components:
     DataplaneLayout:
       type: object
       title: DataplaneLayout
-      description: TODO
+      description: >-
+        Dataplane networking layout. It contains information most important
+        information about dataplane and lists of available inbounds and
+        outbounds
       required:
         - kri
         - name
       properties:
         kri:
           type: string
-          example: TODO
+          example: kri_msvc_mesh-1_us-east-2_kuma-demo_demo-app_http-port
         name:
           type: string
         labels:
           type: object
+          example:
+            k8s.kuma.io/namespace: kuma-demo
+            kuma.io/display-name: demo-app
+            kuma.io/mesh: default
+            kuma.io/origin: zone
         inbounds:
           type: array
           items:
@@ -5121,7 +5137,14 @@ components:
       properties:
         rules:
           type: array
-          description: TODO
+          description: >-
+            The final computed configuration for the dataplane, derived by
+            merging all policies whose 'targetRef' field matches the proxy. The
+            merging process follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/ProxyRule'
     DataplaneInboundRules:
@@ -5134,7 +5157,14 @@ components:
           $ref: '#/components/schemas/DataplaneInbound'
         rules:
           type: array
-          description: TODO
+          description: >-
+            The final computed configuration for the inbound, derived by merging
+            all policies whose 'targetRef' field matches the proxy. The merging
+            process follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/InboundRule'
     DataplaneOutboundRules:
@@ -5147,7 +5177,14 @@ components:
           $ref: '#/components/schemas/DataplaneOutbound'
         rules:
           type: array
-          description: TODO
+          description: >-
+            The final computed configuration for the outbound, derived by
+            merging all policies whose 'targetRef' field matches the proxy. The
+            merging process follows [RFC 7396 (JSON Merge
+            Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the
+            order of merging influenced by factors such as where the policy was
+            applied (e.g., custom namespace, system, or global control plane),
+            policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/ResourceRule'
     NotFoundError:
@@ -17161,25 +17198,25 @@ components:
             ResponseForHostnames:
               $ref: '#/components/examples/InspectHostnamesExample'
     DataplaneLayoutResponse:
-      description: TODO
+      description: A response containing dataplane networking layout.
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneLayout'
     ProxyRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected dataplane
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneProxyRules'
     InboundRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected inbound
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/DataplaneInboundRules'
     OutboundRulesResponse:
-      description: TODO
+      description: A response containing policies configuration for selected outbound
       content:
         application/json:
           schema:

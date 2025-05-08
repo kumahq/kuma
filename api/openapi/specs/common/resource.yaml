@@ -187,7 +187,7 @@ components:
       properties:
         rules:
           type: array
-          description: TODO
+          description: The final computed configuration for the dataplane, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/ProxyRule'
     DataplaneInboundRules:
@@ -198,7 +198,7 @@ components:
           $ref: '#/components/schemas/DataplaneInbound'
         rules:
           type: array
-          description: TODO
+          description: The final computed configuration for the inbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/InboundRule'
     DataplaneOutboundRules:
@@ -209,7 +209,7 @@ components:
           $ref: '#/components/schemas/DataplaneOutbound'
         rules:
           type: array
-          description: TODO
+          description: The final computed configuration for the outbound, derived by merging all policies whose 'targetRef' field matches the proxy. The merging process follows [RFC 7396 (JSON Merge Patch)](https://datatracker.ietf.org/doc/html/rfc7396), with the order of merging influenced by factors such as where the policy was applied (e.g., custom namespace, system, or global control plane), policy role, and targetRef specificity.
           items:
             $ref: '#/components/schemas/ResourceRule'
     ProxyRule:
