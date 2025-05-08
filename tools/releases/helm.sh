@@ -100,6 +100,10 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  CHART_TAR=$(find ${CHARTS_PACKAGE_PATH}/*.tgz -type f)
+  CHART_FILE=$(tar -tf ${CHART_TAR} | grep 'Chart.yaml')
+  CHART_VERSION=$(tar -zxOf ${CHART_TAR} ${CHART_FILE} | yq .version)
+
   pushd ${GH_REPO}
 
   # First upload the packaged charts to the release
@@ -120,7 +124,7 @@ function release {
   git config user.email "${GH_EMAIL}"
 
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm): publish charts"
+  git commit -m "ci(helm): publish chart version ${CHART_VERSION}"
   git push
 
   popd
