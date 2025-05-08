@@ -100,22 +100,21 @@ function release {
 
   git clone --single-branch --branch "${GH_PAGES_BRANCH}" "$GH_REPO_URL"
 
+  pushd ${GH_REPO}
+
   # First upload the packaged charts to the release
   cr upload \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --token "${GH_TOKEN}" \
-    --package-path "${CHARTS_PACKAGE_PATH}"
+    --package-path "../${CHARTS_PACKAGE_PATH}"
 
   # Then build and upload the index file to github pages
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
-    --charts-repo "${CHARTS_REPO_URL}" \
-    --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
-
-  pushd ${GH_REPO}
+    --package-path "../${CHARTS_PACKAGE_PATH}" \
+    --index-path "${CHARTS_INDEX_FILE}"
 
   git config user.name "${GH_USER}"
   git config user.email "${GH_EMAIL}"
