@@ -73,6 +73,12 @@ message KumaWsOptions {
   // AdminOnly whether this entity requires admin auth to access these
   // endpoints.
   bool admin_only = 4;
+  // Alias name is the alternative name of the policy for resource name usage in
+  // path.
+  string alias_name = 5;
+  // Alias plural is only to be set if the plural of the resource is irregular
+  // (not just adding a 's' at the end).
+  string alias_plural = 6;
 }
 
 message KumaPolicyOptions {

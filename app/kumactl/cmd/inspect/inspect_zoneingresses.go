@@ -17,9 +17,10 @@ import (
 
 func newInspectZoneIngressesCmd(pctx *cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "zone-ingresses",
-		Short: "Inspect Zone Ingresses",
-		Long:  `Inspect Zone Ingresses.`,
+		Use:     "zoneingresses",
+		Short:   "Inspect Zone Ingresses",
+		Long:    `Inspect Zone Ingresses.`,
+		Aliases: []string{"zone-ingresses"},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := pctx.CurrentZoneIngressOverviewClient()
 			if err != nil {
