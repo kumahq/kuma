@@ -31,7 +31,7 @@ func TransparentProxyConfigmap() {
 		cluster = NewK8sCluster(NewTestingT(), Kuma2, Silent)
 
 		Eventually(func() error {
-			return cluster.Install(Kuma(config_core.Standalone, slices.Concat(
+			return cluster.Install(Kuma(config_core.Zone, slices.Concat(
 				[]KumaDeploymentOption{
 					// Occasionally CP will lose a leader in the E2E test just because of this deadline,
 					// which does not make sense in such controlled environment (one k3d node, one instance of the CP).
