@@ -8,8 +8,6 @@ metadata:
     kuma.io/proxy-type: sidecar
     pod-template-hash: 74c9b794cf
 spec:
-  envoy:
-    xdsTransportProtocolVariant: GRPC
   networking:
     address: 10.244.0.8
     inbound:

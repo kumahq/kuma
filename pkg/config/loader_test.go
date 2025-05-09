@@ -956,7 +956,7 @@ meshService:
 				"KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE":                                             "1h",
 				"KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE":                                         "1h",
 				"KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL":                                              "10s",
-				"KUMA_RUNTIME_UNIVERSAL_DYNAMIC_OUTBOUNDS":                                                 "true",
+				"KUMA_RUNTIME_UNIVERSAL_DYNAMIC_LOOPBACK_OUTBOUNDS":                                        "true",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_TLS_MAX_VERSION":                                                             "TLSv1_3",

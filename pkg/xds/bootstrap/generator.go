@@ -86,6 +86,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err := b.validateRequest(request); err != nil {
 		return nil, kumaDpBootstrap, err
 	}
+	features := make(xds_types.Features, len(request.Features))
+	for _, feature := range request.Features {
+		features[feature] = true
+	}
 
 	proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 	params := configParameters{
@@ -116,13 +120,22 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		ReadinessPort:        request.ReadinessPort,
 		AppProbeProxyEnabled: request.AppProbeProxyEnabled,
 		ProxyType:            request.ProxyType,
-		Features:             request.Features,
+		Features:             features,
 		Resources:            request.Resources,
 		Workdir:              request.Workdir,
 		MetricsCertPath:      request.MetricsResources.CertPath,
 		MetricsKeyPath:       request.MetricsResources.KeyPath,
 		SystemCaPath:         request.SystemCaPath,
 		TransparentProxy:     request.TransparentProxy,
+		UseDeltaXds:          b.deltaXdsEnabled,
+	}
+
+	if b.dynamicLoopbackOutbounds {
+		params.Features[xds_types.FeatureDynamicLoopbackOutbounds] = true
+	}
+
+	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
+		params.UseDeltaXds = true
 	}
 
 	setAdminPort := func(adminPortFromResource uint32) {
@@ -131,23 +144,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		} else {
 			params.AdminPort = b.defaultAdminPort
 		}
-	}
-	setXdsTransportProtocolVariant := func(resourceMode mesh_proto.EnvoyConfiguration_XdsTransportProtocolVariant) {
-		switch resourceMode {
-		case mesh_proto.EnvoyConfiguration_DEFAULT:
-			params.XdsTransportProtocolVariant = types.GRPC
-			if b.deltaXdsEnabled {
-				params.XdsTransportProtocolVariant = types.DELTA_GRPC
-			}
-		case mesh_proto.EnvoyConfiguration_DELTA_GRPC:
-			params.XdsTransportProtocolVariant = types.DELTA_GRPC
-		case mesh_proto.EnvoyConfiguration_GRPC:
-			params.XdsTransportProtocolVariant = types.GRPC
-		}
-	}
-
-	if b.dynamicLoopbackOutbounds {
-		params.Features = append(params.Features, xds_types.FeatureDynamicLoopbackOutbounds)
 	}
 
 	switch mesh_proto.ProxyType(params.ProxyType) {
@@ -159,7 +155,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 		params.Service = "ingress"
 		setAdminPort(zoneIngress.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(zoneIngress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.EgressProxyType:
 		zoneEgress, err := b.zoneEgressFor(ctx, request, proxyId)
 		if err != nil {
@@ -167,7 +162,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = "egress"
 		setAdminPort(zoneEgress.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(zoneEgress.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 	case mesh_proto.DataplaneProxyType, "":
 		params.HdsEnabled = b.hdsEnabled
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
@@ -188,7 +182,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		params.Service = dataplane.Spec.GetIdentifyingService()
 		setAdminPort(dataplane.Spec.GetNetworking().GetAdmin().GetPort())
-		setXdsTransportProtocolVariant(dataplane.Spec.GetEnvoy().GetXdsTransportProtocolVariant())
 
 		err = b.getMetricsConfig(ctx, dataplane, &kumaDpBootstrap)
 		if err != nil {

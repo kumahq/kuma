@@ -1,7 +1,6 @@
 ResourceRules: {}
 Rules:
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 15s
@@ -17,12 +16,12 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: override
     type: MeshTimeout
+  OriginByMatches: {}
   Subset:
   - Key: kuma.io/service
     Not: false
     Value: foo
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 20s
@@ -38,12 +37,12 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: override
     type: MeshTimeout
+  OriginByMatches: {}
   Subset:
   - Key: kuma.io/service
     Not: false
     Value: bar
-- BackendRefOriginIndex: {}
-  Conf:
+- Conf:
     connectionTimeout: 2s
     http:
       requestTimeout: 10s
@@ -54,4 +53,5 @@ Rules:
     modificationTime: "0001-01-01T00:00:00Z"
     name: default
     type: MeshTimeout
+  OriginByMatches: {}
   Subset: []

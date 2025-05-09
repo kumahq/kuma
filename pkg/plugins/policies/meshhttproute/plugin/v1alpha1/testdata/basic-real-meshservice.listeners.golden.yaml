@@ -23,7 +23,7 @@ resources:
               prefixLen: 128
           normalizePath: true
           routeConfig:
-            name: outbound:default_backend___msvc_80
+            name: kri_msvc_default___backend_test-port
             validateClusters: false
             virtualHosts:
             - domains:
@@ -32,49 +32,49 @@ resources:
               routes:
               - match:
                   path: /v1
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   prefix: /v1/
-                name: bzv64o+joRk33jfDADgGv5ar4QyONO0NEVKnoBfJW/E=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend
                   timeout: 0s
               - match:
                   path: /v2
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v2/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   path: /v3
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   prefix: /v3/
-                name: BRLj9+uPP4C2xD2r8YkH/x30Vn34XWSc48Fj/pHZdTw=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: backend-c72efb5be46fae6b
                   timeout: 0s
               - match:
                   path: /v4
-                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s
               - match:
                   prefix: /v4/
-                name: UszzxTjarAB0Egv5zi/OpbBLkZsjGV5NpM2+96fwVa8=
+                name: kri_mhttpr_default___test-origin_
                 route:
                   cluster: default_backend___msvc_80
                   timeout: 0s

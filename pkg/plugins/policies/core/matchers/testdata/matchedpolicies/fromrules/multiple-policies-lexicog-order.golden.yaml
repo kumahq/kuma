@@ -2,8 +2,7 @@ InboundRules:
   1.1.1.1:8080: []
 Rules:
   1.1.1.1:8080:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       action: Deny
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -16,12 +15,12 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-a
       type: MeshTrafficPermission
+    OriginByMatches: {}
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-payment
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -29,12 +28,12 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-b
       type: MeshTrafficPermission
+    OriginByMatches: {}
     Subset:
     - Key: app.kubernetes.io/name
       Not: false
       Value: service-order
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       action: Allow
     Origin:
     - creationTime: "0001-01-01T00:00:00Z"
@@ -42,6 +41,7 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: rule-b
       type: MeshTrafficPermission
+    OriginByMatches: {}
     Subset:
     - Key: app.kubernetes.io/name
       Not: false

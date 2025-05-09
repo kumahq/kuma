@@ -1,8 +1,7 @@
 InboundRules: null
 Rules:
   :0:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       localityAwareness:
         disabled: true
     Origin:
@@ -16,6 +15,7 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mlbs-2
       type: MeshLoadBalancingStrategy
+    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: false
@@ -23,8 +23,7 @@ Rules:
     - Key: version
       Not: false
       Value: v2
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       localityAwareness:
         disabled: false
     Origin:
@@ -33,6 +32,7 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mlbs-1
       type: MeshLoadBalancingStrategy
+    OriginByMatches: {}
     Subset:
     - Key: kuma.io/service
       Not: false

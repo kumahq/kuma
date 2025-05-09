@@ -1,7 +1,6 @@
 FromRules:
   127.0.0.1:8080:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       backends:
       - file:
           path: /from-gateway
@@ -12,10 +11,10 @@ FromRules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
       type: MeshAccessLog
+    OriginByMatches: {}
     Subset: []
   127.0.0.1:8081:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       backends:
       - file:
           path: /from-gateway
@@ -26,10 +25,10 @@ FromRules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
       type: MeshAccessLog
+    OriginByMatches: {}
     Subset: []
   127.0.0.1:8082:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       backends:
       - file:
           path: /from-gateway
@@ -40,6 +39,7 @@ FromRules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: gateway
       type: MeshAccessLog
+    OriginByMatches: {}
     Subset: []
 InboundRules:
   127.0.0.1:8080:
@@ -89,8 +89,7 @@ ToRules:
     127.0.0.1:8080:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /gateway-listener
@@ -111,12 +110,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: gatewaylistener
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /servicesubset
@@ -137,12 +136,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: servicesubset
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /to-gateway
@@ -158,13 +157,13 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
   ByListenerAndHostname:
     127.0.0.1:8080:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /gateway-listener
@@ -185,12 +184,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: gatewaylistener
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8081:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /to-gateway
@@ -211,12 +210,12 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []
     127.0.0.1:8082:*:
       ResourceRules: {}
       Rules:
-      - BackendRefOriginIndex: {}
-        Conf:
+      - Conf:
           backends:
           - file:
               path: /to-gateway
@@ -232,4 +231,5 @@ ToRules:
           modificationTime: "0001-01-01T00:00:00Z"
           name: gateway
           type: MeshAccessLog
+        OriginByMatches: {}
         Subset: []

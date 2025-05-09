@@ -21,8 +21,7 @@ InboundRules:
       RuleIndex: 0
 Rules:
   :0:
-  - BackendRefOriginIndex: {}
-    Conf:
+  - Conf:
       connectionTimeout: 33s
       http:
         requestTimeout: 33s
@@ -37,4 +36,5 @@ Rules:
       modificationTime: "0001-01-01T00:00:00Z"
       name: mt-1
       type: MeshTimeout
+    OriginByMatches: {}
     Subset: []

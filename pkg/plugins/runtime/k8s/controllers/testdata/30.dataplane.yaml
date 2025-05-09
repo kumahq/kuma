@@ -8,8 +8,6 @@ metadata:
     kuma.io/proxy-type: sidecar
     version: "0.1"
 spec:
-  envoy:
-    xdsTransportProtocolVariant: DELTA_GRPC
   networking:
     address: 192.168.0.1
     inbound:

@@ -88,6 +88,10 @@ func (c *Config) Features() []string {
 		base = append(base, xds_types.FeatureDynamicLoopbackOutbounds)
 	}
 
+	switch c.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
+	case "DELTA_GRPC":
+		base = append(base, xds_types.FeatureDeltaGRPC)
+	}
 	return base
 }
 
@@ -251,6 +255,8 @@ type DataplaneRuntime struct {
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
 	// DynamicLoopbackOutbounds configure dataplane to bind to real loopback addresses
 	DynamicLoopbackOutbounds bool `json:"dynamicLoopbackOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_loopback_outbounds"`
+	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
+	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
 }
 
 type Metrics struct {
@@ -368,6 +374,15 @@ func (d *DataplaneRuntime) Validate() error {
 	var errs error
 	if d.BinaryPath == "" {
 		errs = multierr.Append(errs, errors.Errorf(".BinaryPath must be non-empty"))
+	}
+	if d.EnvoyXdsTransportProtocolVariant != "" {
+		switch d.EnvoyXdsTransportProtocolVariant {
+		case "DELTA_GRPC":
+		case "GRPC":
+		default:
+			errs = multierr.Append(
+				errs, errors.Errorf(".EnvoyXdsTransportProtocolVariant invalid value: %s . Must be one of: DELTA_GRPC or GRPC when defined", d.EnvoyXdsTransportProtocolVariant))
+		}
 	}
 	return errs
 }

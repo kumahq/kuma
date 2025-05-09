@@ -20,8 +20,6 @@ metadata:
     uid: pod-with-kuma-sidecar-and-ip-demo
   resourceVersion: "2"
 spec:
-  envoy:
-    xdsTransportProtocolVariant: GRPC
   networking:
     address: 192.168.0.1
     inbound:

@@ -1,0 +1,49 @@
+# MeshTimeout with targetRef to the real MeshService resource
+type: MeshHTTPRoute
+name: http-route-1
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshService
+        name: backend
+      rules:
+        - matches:
+            - path:
+                type: PathPrefix
+                value: /split-ninety-ten
+          default:
+            backendRefs:
+              - kind: MeshService
+                name: backend
+                weight: 90
+              - kind: MeshService
+                name: backend-v1
+                weight: 10
+---
+type: MeshTimeout
+name: matched-for-rules-mt-1
+mesh: mesh-1
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: http-route-1
+      default:
+        http:
+          requestTimeout: 19s
+---
+type: MeshService
+name: backend
+mesh: mesh-1
+spec:
+  selector:
+    dataplaneTags:
+      app: backend
+  ports:
+    - port: 80
+      targetPort: 80
+      appProtocol: http
+---
+type: Mesh
+name: mesh-1
