@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"strings"
-
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
@@ -323,7 +321,7 @@ func configureRoutes(
 ) error {
 	for _, vh := range rc.VirtualHosts {
 		for _, route := range vh.Routes {
-			if !strings.HasPrefix(route.Name, "kri_") {
+			if !kri.IsValid(route.Name) {
 				continue
 			}
 

@@ -77,3 +77,14 @@ func NoSectionName(id Identifier) Identifier {
 	idCopy.SectionName = ""
 	return idCopy
 }
+
+func IsValid(s string) bool {
+	parts := strings.Split(s, "_")
+	if len(parts) != 7 {
+		return false
+	}
+	if parts[0] != "kri" {
+		return false
+	}
+	return true
+}
