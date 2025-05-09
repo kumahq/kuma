@@ -84,6 +84,10 @@ func (c *Config) Features() []string {
 		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
 	}
 
+	if c.DataplaneRuntime.DynamicLoopbackOutbounds {
+		base = append(base, xds_types.FeatureDynamicLoopbackOutbounds)
+	}
+
 	switch c.DataplaneRuntime.EnvoyXdsTransportProtocolVariant {
 	case "DELTA_GRPC":
 		base = append(base, xds_types.FeatureDeltaGRPC)
@@ -249,6 +253,8 @@ type DataplaneRuntime struct {
 	// including redirect behavior, DNS capture, and IP family mode.
 	// This is used to determine how traffic redirection and interception is handled.
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
+	// DynamicLoopbackOutbounds configure dataplane to bind to real loopback addresses
+	DynamicLoopbackOutbounds bool `json:"dynamicLoopbackOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_loopback_outbounds"`
 	// EnvoyXdsTransportProtocolVariant configures the way Envoy receives updates from the control-plane.
 	EnvoyXdsTransportProtocolVariant string `json:"envoyXdsTransportProtocolVariant,omitempty" envconfig:"kuma_dataplane_runtime_envoy_xds_transport_protocol_variant"`
 }

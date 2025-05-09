@@ -40,6 +40,7 @@ func NewDefaultBootstrapGenerator(
 	hdsEnabled bool,
 	defaultAdminPort uint32,
 	deltaXdsEnabled bool,
+	dynamicLoopbackOutbounds bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -49,30 +50,32 @@ func NewDefaultBootstrapGenerator(
 		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", serverConfig.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
-		resManager:              resManager,
-		config:                  serverConfig,
-		proxyConfig:             proxyConfig,
-		xdsCertFile:             dpServerCertFile,
-		authEnabledForProxyType: authEnabledForProxyType,
-		enableReloadableTokens:  enableReloadableTokens,
-		hostsAndIps:             hostsAndIps,
-		hdsEnabled:              hdsEnabled,
-		defaultAdminPort:        defaultAdminPort,
-		deltaXdsEnabled:         deltaXdsEnabled,
+		resManager:               resManager,
+		config:                   serverConfig,
+		proxyConfig:              proxyConfig,
+		xdsCertFile:              dpServerCertFile,
+		authEnabledForProxyType:  authEnabledForProxyType,
+		enableReloadableTokens:   enableReloadableTokens,
+		hostsAndIps:              hostsAndIps,
+		hdsEnabled:               hdsEnabled,
+		defaultAdminPort:         defaultAdminPort,
+		deltaXdsEnabled:          deltaXdsEnabled,
+		dynamicLoopbackOutbounds: dynamicLoopbackOutbounds,
 	}, nil
 }
 
 type bootstrapGenerator struct {
-	resManager              core_manager.ResourceManager
-	config                  *bootstrap_config.BootstrapServerConfig
-	proxyConfig             xds_config.Proxy
-	authEnabledForProxyType map[string]bool
-	enableReloadableTokens  bool
-	xdsCertFile             string
-	hostsAndIps             SANSet
-	hdsEnabled              bool
-	defaultAdminPort        uint32
-	deltaXdsEnabled         bool
+	resManager               core_manager.ResourceManager
+	config                   *bootstrap_config.BootstrapServerConfig
+	proxyConfig              xds_config.Proxy
+	authEnabledForProxyType  map[string]bool
+	enableReloadableTokens   bool
+	xdsCertFile              string
+	hostsAndIps              SANSet
+	hdsEnabled               bool
+	defaultAdminPort         uint32
+	deltaXdsEnabled          bool
+	dynamicLoopbackOutbounds bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, KumaDpBootstrap, error) {
@@ -125,6 +128,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		SystemCaPath:         request.SystemCaPath,
 		TransparentProxy:     request.TransparentProxy,
 		UseDeltaXds:          b.deltaXdsEnabled,
+	}
+
+	if b.dynamicLoopbackOutbounds {
+		params.Features[xds_types.FeatureDynamicLoopbackOutbounds] = true
 	}
 
 	if params.Features.HasFeature(xds_types.FeatureDeltaGRPC) {
