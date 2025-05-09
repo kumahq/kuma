@@ -921,3 +921,52 @@ With migration, we can take advantage of producer/consumer policies. We can enfo
 - single entry in `Mesh*Route` policy `spec.to[]` section
 
 in producer/consumer policies, as no one is using them at the moment, and deprecate it in system policies.
+
+
+## Addendum
+
+### Role of the policy that references MeshHTTPRoute in spec.to[].targetRef
+
+Given MeshTimeout references MeshHTTPRoute with `name` and `namespace`, i.e.:
+
+```yaml
+kind: MeshTimeout
+metadata:
+  name: timeout-1
+  namespace: app-ns
+spec:
+  to:
+    - targetRef:
+        kind: MeshHTTPRoute
+        name: route-1
+        namespace: app-ns # can be omitted
+```
+
+How do we pick a policy role for `timeout-1`?
+
+The only thing that matters is: if `route-1` is a producer policy, 
+then `timeout-1` must also be a producer policy – otherwise, 
+`route-1` gets synced to other zones without the right configuration.
+
+There are two ways we can determine whether a policy that references a MeshHTTPRoute is a producer policy:
+
+1. The same principle we use for referencing Mesh*Service: if the policy is in the same namespace as the MeshHTTPRoute, it's considered a producer policy.
+2. A stricter approach: the policy is in the same namespace **and** the MeshHTTPRoute itself is a producer policy — only then is the policy considered a producer policy.
+
+#### Pros and Cons of Option 1
+
+* Good, because it's simple and consistent with existing behavior
+* Bad, because a policy referencing a consumer MeshHTTPRoute would still be considered a producer policy — harmless, but potentially confusing.
+
+#### Pros and Cons of Option 2
+
+* Good, because it's less surprising behavior
+* Bad, because requires resolving the referenced MeshHTTPRoute to determine the policy role. What if the route doesn’t exist? What if its role changes over time?  
+
+#### Decision outcome
+
+We chose Option 1. 
+The same kind of confusion can already happen when referencing Mesh*Service — see [this issue](https://github.com/kumahq/kuma/issues/11570).
+We just need to establish and document a clear rule of thumb: 
+when creating a consumer policy, 
+always prefer using `labels` over `name/namespace` when referencing the resource.
