@@ -10,10 +10,10 @@ import (
 	envoy_server_rest "github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
 	envoy_server_sotw "github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
@@ -168,9 +168,9 @@ func DefaultEgressReconciler(
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime, secrets secrets.Secrets) xds_callbacks.DataplaneStatusTracker {
 	return xds_callbacks.NewDataplaneStatusTracker(rt,
-		func(dataplaneType core_model.ResourceType, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
+		func(xdsMetadata *structpb.Struct, accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
 			return xds_callbacks.NewDataplaneInsightSink(
-				dataplaneType,
+				xdsMetadata,
 				accessor,
 				secrets,
 				func() *time.Ticker {
