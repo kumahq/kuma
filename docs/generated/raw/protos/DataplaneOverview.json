@@ -443,6 +443,10 @@
                     "$ref": "#/definitions/kuma.mesh.v1alpha1.DataplaneInsight.MTLS",
                     "additionalProperties": true,
                     "description": "Insights about mTLS for Dataplane."
+                },
+                "metadata": {
+                    "additionalProperties": true,
+                    "type": "object"
                 }
             },
             "additionalProperties": true,
