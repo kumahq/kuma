@@ -84,8 +84,8 @@ func (c *Config) Features() []string {
 		base = append(base, xds_types.FeatureTransparentProxyInDataplaneMetadata)
 	}
 
-	if c.DataplaneRuntime.LocalProxy {
-		base = append(base, xds_types.FeatureDynamicOutbounds)
+	if c.DataplaneRuntime.DynamicLoopbackOutbounds {
+		base = append(base, xds_types.FeatureDynamicLoopbackOutbounds)
 	}
 
 	return base
@@ -249,8 +249,8 @@ type DataplaneRuntime struct {
 	// including redirect behavior, DNS capture, and IP family mode.
 	// This is used to determine how traffic redirection and interception is handled.
 	TransparentProxy *tproxy_config.DataplaneConfig `json:"transparentProxy,omitempty" envconfig:"kuma_dataplane_runtime_transparent_proxy"`
-
-	LocalProxy bool `json:"localProxy,omitempty" envconfig:"kuma_dataplane_runtime_local_proxy"`
+	// DynamicLoopbackOutbounds configure dataplane to bind to real loopback addresses
+	DynamicLoopbackOutbounds bool `json:"dynamicLoopbackOutbounds,omitempty" envconfig:"kuma_dataplane_runtime_dynamic_loopback_outbounds"`
 }
 
 type Metrics struct {

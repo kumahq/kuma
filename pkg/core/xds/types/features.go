@@ -20,4 +20,5 @@ const FeatureEmbeddedDNS string = "feature-embedded-dns"
 
 const FeatureTransparentProxyInDataplaneMetadata string = "feature-transparent-proxy-in-dataplane-metadata"
 
-const FeatureDynamicOutbounds string = "feature-dynamic-outbounds"
+// FeatureDynamicLoopbackOutbounds indicates that the DP runs with outbound listeners bound to 127.0.0.0/8 range addresses
+const FeatureDynamicLoopbackOutbounds string = "feature-dynamic-loopback-outbounds"

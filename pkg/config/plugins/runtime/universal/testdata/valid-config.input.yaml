@@ -1,4 +1,4 @@
 dataplaneCleanupAge: 5h
 zoneResourceCleanupAge: 5h
 vipRefreshInterval: 5s
-dynamicOutbounds: true
+dynamicLoopbackOutbounds: true

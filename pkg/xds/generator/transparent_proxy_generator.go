@@ -32,12 +32,8 @@ type TransparentProxyGenerator struct{}
 func (tpg TransparentProxyGenerator) Generate(_ context.Context, _ *model.ResourceSet, xdsCtx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
-	if proxy.Metadata.HasFeature(xds_types.FeatureDynamicOutbounds) {
-		return resources, nil
-	}
-
 	tpCfg := proxy.GetTransparentProxy()
-	if !tpCfg.Redirect.Outbound.Enabled {
+	if !tpCfg.Redirect.Outbound.Enabled || proxy.Metadata.HasFeature(xds_types.FeatureDynamicLoopbackOutbounds){
 		return resources, nil
 	}
 

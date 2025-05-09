@@ -27,7 +27,7 @@ func (g DNSGenerator) Generate(ctx context.Context, rs *core_xds.ResourceSet, xd
 	if dnsPort == 0 {
 		return nil, nil
 	}
-	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
+	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil || proxy.Metadata.HasFeature(xds_types.FeatureDynamicLoopbackOutbounds){
 		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
 	ipV6Enabled := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().IpFamilyMode != mesh_proto.Dataplane_Networking_TransparentProxying_IPv4

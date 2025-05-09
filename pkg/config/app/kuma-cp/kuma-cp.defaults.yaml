@@ -411,6 +411,8 @@ runtime:
     zoneResourceCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_ZONE_RESOURCE_CLEANUP_AGE
     # VIPRefreshInterval defines how often all meshes' VIPs should be recomputed
     vipRefreshInterval: 500ms # ENV: KUMA_RUNTIME_UNIVERSAL_VIP_REFRESH_INTERVAL
+    # DynamicLoopbackOutbounds defines if dataplanes should bind outbounds to real loopback addresses
+    dynamicLoopbackOutbounds: false # ENV: KUMA_RUNTIME_UNIVERSAL_DYNAMIC_LOOPBACK_OUTBOUNDS
 # Default Kuma entities configuration
 defaults:
   # If true, it skips creating the default Mesh

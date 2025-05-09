@@ -238,7 +238,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.ZoneResourceCleanupAge.Duration).To(Equal(1 * time.Hour))
 			Expect(cfg.Runtime.Universal.VIPRefreshInterval.Duration).To(Equal(10 * time.Second))
-			Expect(cfg.Runtime.Universal.DynamicOutbounds).To(BeTrue())
+			Expect(cfg.Runtime.Universal.DynamicLoopbackOutbounds).To(BeTrue())
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -496,7 +496,7 @@ runtime:
     dataplaneCleanupAge: 1h
     zoneResourceCleanupAge: 1h
     vipRefreshInterval: 10s
-    dynamicOutbounds: true
+    dynamicLoopbackOutbounds: true
   kubernetes:
     serviceAccountName: custom-sa
     allowedUsers: ["allowed-usr-1", "allowed-usr-2"]

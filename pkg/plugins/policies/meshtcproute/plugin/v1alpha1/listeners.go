@@ -98,7 +98,7 @@ func buildOutboundListener(
 		core_xds.SocketAddressProtocolTCP,
 	)
 	configurers := []envoy_listeners.ListenerBuilderOpt{}
-	if !proxy.Metadata.HasFeature(types.FeatureDynamicOutbounds) {
+	if !proxy.Metadata.HasFeature(types.FeatureDynamicLoopbackOutbounds) {
 		configurers = append(configurers, envoy_listeners.TransparentProxying(proxy))
 	}
 
