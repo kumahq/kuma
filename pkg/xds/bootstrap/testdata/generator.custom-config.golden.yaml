@@ -76,9 +76,6 @@ node:
           ],
           "admin": {
             "port": 1234
-          },
-          "envoy" : {
-            "xdsTransportProtocolVariant": "DELTA_GRPC"
           }
         }
       }

@@ -4,18 +4,6 @@ components:
       properties:
         dataplane:
           properties:
-            envoy:
-              description: EnvoyConfiguration provides additional configuration for
-                the Envoy sidecar.
-              properties:
-                xdsTransportProtocolVariant:
-                  description: |-
-                    xDSTransportProtocol provides information about protocol used for
-                    configuration exchange between control-plane and Envoy sidecar.
-                  oneOf:
-                  - type: string
-                  - type: integer
-              type: object
             metrics:
               description: |-
                 Configuration for metrics that should be collected and exposed by the
