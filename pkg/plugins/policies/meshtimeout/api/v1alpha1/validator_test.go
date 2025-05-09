@@ -109,6 +109,31 @@ to:
     default:
       http:
         requestTimeout: 1s`),
+			Entry("example MeshHTTPRoute", `
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/service: web-frontend
+to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: http-route-1
+    default:
+      http:
+        requestTimeout: 1s`),
+			Entry("example MeshHTTPRoute with labels", `
+targetRef:
+  kind: MeshSubset
+  tags:
+    kuma.io/service: web-frontend
+to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      labels:
+        kuma.io/display-name: http-route-1
+    default:
+      http:
+        requestTimeout: 1s`),
 		)
 
 		type testCase struct {
@@ -257,6 +282,21 @@ to:
 violations:
   - field: spec.to[0].default.http
     message: at least one timeout in this section should be configured`,
+			}),
+			Entry("MeshHTTPRoute with sectionName in to", testCase{
+				inputYaml: `
+to:
+  - targetRef:
+      kind: MeshHTTPRoute
+      name: http-route-1
+      sectionName: some-section
+    default:
+      http:
+        requestTimeout: 1s`,
+				expected: `
+violations:
+  - field: spec.to[0].targetRef.sectionName
+    message: must not be set with kind MeshHTTPRoute`,
 			}),
 			Entry("top-level targetRef is referencing MeshHTTPRoute", testCase{
 				inputYaml: `
