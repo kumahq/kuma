@@ -133,6 +133,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	} else {
 		opt = append([]KumaDeploymentOption{WithEnvs(Config.KumaUniversalEnvVars)}, opt...)
 	}
+	c.opts = kumaDeploymentOptions{}
 	c.opts.apply(opt...)
 	if c.opts.installationMode != KumactlInstallationMode {
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, c.opts.installationMode)
@@ -165,7 +166,7 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 		env["KUMA_MULTIZONE_ZONE_KDS_TLS_SKIP_VERIFY"] = "true"
 	}
 
-	var dockerVolumes []string
+	dockerVolumes := c.opts.dockerVolumes
 	if c.opts.yamlConfig != "" {
 		path, err := os.MkdirTemp("", "e2e-cp-cfg-*")
 		if err != nil {
@@ -194,7 +195,14 @@ func (c *UniversalCluster) DeployKuma(mode core.CpMode, opt ...KumaDeploymentOpt
 	}
 	_, _ = fmt.Fprintf(cmd, "%s\n", runCp)
 
-	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, AppModeCP, "", AppModeCP, c.opts.isipv6, false, []string{}, dockerVolumes, "", 0)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, "", AppModeCP,
+		UniversalAppRunOptions{
+			DockerBackend: c.dockerBackend,
+			DPConcurrency: 0,
+			EnableIPv6:    c.opts.isipv6,
+			Volumes:       dockerVolumes,
+			OtherOptions:  c.opts.dockerRunOptions,
+		})
 	if err != nil {
 		return err
 	}
@@ -357,7 +365,17 @@ func (c *UniversalCluster) DeployApp(opt ...AppDeploymentOption) error {
 
 	Logf("IPV6 is %v", opts.isipv6)
 
-	app, err := NewUniversalApp(c.t, c.dockerBackend, c.name, opts.name, opts.mesh, AppMode(appname), opts.isipv6, *opts.verbose, caps, opts.dockerVolumes, opts.dockerContainerName, 0)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, opts.mesh, AppMode(appname),
+		UniversalAppRunOptions{
+			DockerBackend: c.dockerBackend,
+			DPConcurrency: 0,
+			EnableIPv6:    opts.isipv6,
+			Verbose:       *opts.verbose,
+			Capabilities:  caps,
+			Volumes:       opts.dockerVolumes,
+			ContainerName: opts.dockerContainerName,
+			OtherOptions:  opts.dockerRunOptions,
+		})
 	if err != nil {
 		return err
 	}

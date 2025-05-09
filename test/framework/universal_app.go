@@ -209,20 +209,32 @@ type UniversalApp struct {
 	dockerBackend       DockerBackend
 }
 
-func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterName, appName, mesh string, mode AppMode, isipv6, verbose bool, caps, volumes []string, containerName string, concurrency int) (*UniversalApp, error) {
+type UniversalAppRunOptions struct {
+	DockerBackend        DockerBackend
+	DPConcurrency        int
+	EnvironmentVariables []string
+	ContainerName        string
+	Volumes              []string
+	Capabilities         []string
+	EnableIPv6           bool
+	Verbose              bool
+	OtherOptions         []string
+}
+
+func NewUniversalApp(t testing.TestingT, clusterName, appName, mesh string, mode AppMode, runOptions UniversalAppRunOptions) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:             t,
 		ports:         map[string]string{},
-		verbose:       verbose,
+		verbose:       runOptions.Verbose,
 		mesh:          mesh,
 		appName:       appName,
 		containerName: fmt.Sprintf("%s_%s_%s", clusterName, appName, random.UniqueId()),
-		concurrency:   concurrency,
+		concurrency:   runOptions.DPConcurrency,
 		clusterName:   clusterName,
-		dockerBackend: dockerBackend,
+		dockerBackend: runOptions.DockerBackend,
 	}
-	if containerName != "" {
-		app.containerName = containerName
+	if runOptions.ContainerName != "" {
+		app.containerName = runOptions.ContainerName
 	}
 	app.allocatePublicPortsFor("22")
 	if mode == AppModeCP {
@@ -233,27 +245,29 @@ func NewUniversalApp(t testing.TestingT, dockerBackend DockerBackend, clusterNam
 		"--network", DockerNetworkName,
 	}
 	dockerExtraOptions = append(dockerExtraOptions, app.publishPortsForDocker()...)
-	if !isipv6 {
+	if !runOptions.EnableIPv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
 		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
 		dockerExtraOptions = append(dockerExtraOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
-	for _, c := range caps {
+	for _, c := range runOptions.Capabilities {
 		dockerExtraOptions = append(dockerExtraOptions, "--cap-add", c)
 	}
+	dockerExtraOptions = append(dockerExtraOptions, runOptions.OtherOptions...)
 	app.logger = logger.Discard
-	if verbose {
+	if runOptions.Verbose {
 		app.logger = logger.Default
 	}
 
 	container, err := app.dockerBackend.RunAndGetIDE(t, Config.GetUniversalImage(), &docker.RunOptions{
-		Detach:       true,
-		Remove:       true,
-		Name:         app.containerName,
-		Volumes:      volumes,
-		OtherOptions: dockerExtraOptions,
-		Logger:       app.logger,
+		Detach:               true,
+		Remove:               true,
+		Name:                 app.containerName,
+		Volumes:              runOptions.Volumes,
+		Logger:               app.logger,
+		EnvironmentVariables: runOptions.EnvironmentVariables,
+		OtherOptions:         dockerExtraOptions,
 	})
 	if err != nil {
 		return nil, err

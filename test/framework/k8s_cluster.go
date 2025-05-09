@@ -492,7 +492,7 @@ func (c *K8sCluster) genValues(mode string) map[string]string {
 		}
 	}
 
-	for _, value := range c.opts.noHelmOpts {
+	for _, value := range c.opts.helmOptsExcluded {
 		delete(values, value)
 	}
 
