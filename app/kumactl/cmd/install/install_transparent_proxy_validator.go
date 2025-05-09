@@ -7,16 +7,20 @@ import (
 	std_errors "errors"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_log "github.com/kumahq/kuma/pkg/log"
 	tproxy_config "github.com/kumahq/kuma/pkg/transparentproxy/config"
+	tproxy_dp "github.com/kumahq/kuma/pkg/transparentproxy/config/dataplane"
 	tproxy_consts "github.com/kumahq/kuma/pkg/transparentproxy/consts"
 	tproxy_validate "github.com/kumahq/kuma/pkg/transparentproxy/validate"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 )
 
 const defaultLogName = "transparentproxy.validator"
@@ -24,6 +28,8 @@ const defaultLogName = "transparentproxy.validator"
 func newInstallTransparentProxyValidator() *cobra.Command {
 	ipFamilyMode := tproxy_config.IPFamilyModeDualStack
 	serverPort := tproxy_validate.ServerPort
+
+	var tpCfgValues []string
 
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy-validator",
@@ -39,6 +45,22 @@ The result will be shown as text in stdout as well as the exit code.
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			logger := core.NewLoggerTo(os.Stdout, kuma_log.InfoLevel).WithName(defaultLogName)
+
+			var tpCfg *tproxy_dp.DataplaneConfig
+			if len(tpCfgValues) > 0 {
+				if runtime.GOOS != "linux" {
+					return errors.New("transparent proxy is supported only on Linux systems")
+				}
+
+				tpCfg = pointer.To(tproxy_dp.DefaultDataplaneConfig())
+				if err := config.NewLoader(tpCfg).WithValidation().Load(cmd.InOrStdin(), tpCfgValues...); err != nil {
+					return errors.Wrap(err, "failed to load transparent proxy configuration from provided input")
+				}
+
+				ipFamilyMode = tpCfg.IPFamilyMode
+				serverPort = uint16(tpCfg.Redirect.Inbound.Port)
+			}
+
 			hasLocalIPv6Addr, _ := tproxy_config.HasLocalIPv6()
 			validateOnlyIPv4 := ipFamilyMode == tproxy_config.IPFamilyModeIPv4
 
@@ -81,6 +103,16 @@ The result will be shown as text in stdout as well as the exit code.
 		"validation-server-port",
 		serverPort,
 		"port number for the validation server to listen on",
+	)
+
+	cmd.Flags().StringArrayVar(
+		&tpCfgValues,
+		"transparent-proxy-config",
+		tpCfgValues,
+		"Transparent proxy configuration. This flag can be repeated. Each value can be:\n"+
+			"- a comma-separated list of file paths\n"+
+			"- a dash '-' to read from STDIN\n"+
+			"Later values override earlier ones when merging.",
 	)
 
 	return cmd

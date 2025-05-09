@@ -170,83 +170,99 @@ func (p *PodConverter) dataplaneFor(
 	others []*mesh_k8s.Dataplane,
 	msMode mesh_proto.Mesh_MeshServices_Mode,
 ) (*mesh_proto.Dataplane, error) {
-	dataplane := &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{},
-	}
+	dataplane := &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{}}
 	annotations := metadata.Annotations(pod.Annotations)
 
-	enabled, exist, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation)
-	if err != nil {
-		return nil, err
+	var tp mesh_proto.Dataplane_Networking_TransparentProxying
+	var tpConfigInAnnotation bool
+	var tpEnabledInAnnotation bool
+
+	if v, ok := annotations.GetString(metadata.KumaTrafficTransparentProxyConfig); ok && v != "" {
+		tpConfigInAnnotation = true
 	}
-	var reachableServices []string
-	if exist && enabled {
-		inboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
-		if err != nil {
-			return nil, err
-		}
-		if !exist {
-			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
+
+	if v, ok, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation); err != nil {
+		return nil, err
+	} else {
+		tpEnabledInAnnotation = ok && v
+	}
+
+	if tpConfigInAnnotation || tpEnabledInAnnotation {
+		if v, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
+			tp.DirectAccessServices = v
 		}
 
-		tpEnabledIPMode, ipModeExists := annotations.GetStringWithDefault(metadata.IpFamilyModeDualStack,
-			metadata.KumaTransparentProxyingIPFamilyMode)
-		ipMode := mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-		if ipModeExists {
-			switch tpEnabledIPMode {
-			case metadata.IpFamilyModeDualStack:
-				ipMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
-			case metadata.IpFamilyModeIPv4:
-				ipMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
-			case metadata.IpFamilyModeIPv6:
-				fallthrough
-			default:
-				return nil, errors.Errorf("invalid ip family mode '%s'", ipMode)
-			}
+		if v, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
+			tp.ReachableServices = v
 		}
 
-		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
-		if err != nil {
-			return nil, err
-		}
-		if !exist {
-			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
-		}
-		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPortInbound:  inboundPort,
-			RedirectPortOutbound: outboundPort,
-			IpFamilyMode:         ipMode,
-		}
-
-		if directAccessServices, exist := annotations.GetList(metadata.KumaDirectAccess); exist {
-			dataplane.Networking.TransparentProxying.DirectAccessServices = directAccessServices
-		}
-		if reachableServicesValue, exist := annotations.GetList(metadata.KumaTransparentProxyingReachableServicesAnnotation); exist {
-			dataplane.Networking.TransparentProxying.ReachableServices = reachableServicesValue
-			reachableServices = reachableServicesValue
-		}
-		if reachableBackendsRef, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
-			refs := ReachableBackendRefs{}
-			err := yaml.Unmarshal([]byte(reachableBackendsRef), &refs)
-			if err != nil {
+		if v, exist := annotations.GetString(metadata.KumaReachableBackends); exist {
+			var refs ReachableBackendRefs
+			if err := yaml.Unmarshal([]byte(v), &refs); err != nil {
 				return nil, errors.Errorf("cannot parse, %s has invalid format", metadata.KumaReachableBackends)
 			}
-			backendRefs := []*mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{}
+
+			if len(refs.Refs) > 0 {
+				tp.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
+			}
+
 			for _, ref := range refs.Refs {
 				backendRef := &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackendRef{
-					Kind:   ref.Kind,
-					Labels: ref.Labels,
+					Kind:      ref.Kind,
+					Name:      pointer.Deref(ref.Name),
+					Namespace: pointer.Deref(ref.Namespace),
+					Labels:    ref.Labels,
 				}
 				if ref.Port != nil {
 					backendRef.Port = util_proto.UInt32(pointer.Deref(ref.Port))
 				}
-				backendRef.Name = pointer.Deref(ref.Name)
-				backendRef.Namespace = pointer.Deref(ref.Namespace)
-				backendRefs = append(backendRefs, backendRef)
+
+				tp.ReachableBackends.Refs = append(tp.ReachableBackends.Refs, backendRef)
 			}
-			dataplane.Networking.TransparentProxying.ReachableBackends = &mesh_proto.Dataplane_Networking_TransparentProxying_ReachableBackends{}
-			dataplane.Networking.TransparentProxying.ReachableBackends.Refs = backendRefs
 		}
+	}
+
+	if tpEnabledInAnnotation {
+		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
+		} else {
+			tp.RedirectPortInbound = v
+		}
+
+		if v, ok, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation); err != nil {
+			return nil, err
+		} else if !ok {
+			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
+		} else {
+			tp.RedirectPortOutbound = v
+		}
+
+		if v, _ := annotations.GetStringWithDefault(
+			metadata.IpFamilyModeDualStack,
+			metadata.KumaTransparentProxyingIPFamilyMode,
+		); v != "" {
+			switch v {
+			case metadata.IpFamilyModeDualStack:
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_DualStack
+			case metadata.IpFamilyModeIPv4:
+				tp.IpFamilyMode = mesh_proto.Dataplane_Networking_TransparentProxying_IPv4
+			default:
+				return nil, errors.Errorf("invalid ip family mode '%s'", v)
+			}
+		}
+	}
+
+	// Avoid setting an empty TransparentProxying object by checking if any fields are set.
+	// Only assign it if at least one relevant field has a non-zero or non-nil value.
+	if tp.DirectAccessServices != nil ||
+		tp.ReachableServices != nil ||
+		tp.ReachableBackends != nil ||
+		tp.RedirectPortInbound != 0 ||
+		tp.RedirectPortOutbound != 0 ||
+		tp.IpFamilyMode != 0 {
+		dataplane.Networking.TransparentProxying = &tp
 	}
 
 	dataplane.Networking.Address = pod.Status.PodIP
@@ -287,7 +303,7 @@ func (p *PodConverter) dataplaneFor(
 	}
 
 	if !p.KubeOutboundsAsVIPs {
-		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, reachableServices)
+		ofaces, err := p.OutboundInterfacesFor(ctx, pod, others, tp.ReachableServices)
 		if err != nil {
 			return nil, err
 		}

@@ -77,7 +77,7 @@ func (c *DataplaneConfig) withDNSPort(port uint32) *DataplaneConfig {
 }
 
 func (c *DataplaneConfig) Enabled() bool {
-	if c == nil || !c.Redirect.Inbound.Enabled || !c.Redirect.Outbound.Enabled {
+	if c == nil || !c.Redirect.Inbound.Enabled && !c.Redirect.Outbound.Enabled {
 		return false
 	}
 	return c.IPFamilyMode != tproxy_config.IPFamilyModeIPv4 || govalidator.IsIPv4(c.address)

@@ -37,11 +37,11 @@ func (p plugin) Apply(rs *core_xds.ResourceSet, ctx xds_context.Context, proxy *
 	if !ok {
 		return nil
 	}
-	if proxy.Dataplane.Spec.Networking.Gateway != nil && proxy.Dataplane.Spec.Networking.Gateway.Type == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
+	if proxy.Dataplane.Spec.GetNetworking().GetGateway().GetType() == v1alpha1.Dataplane_Networking_Gateway_BUILTIN {
 		policies.Warnings = append(policies.Warnings, "policy doesn't support builtin gateway")
 		return nil
 	}
-	if proxy.Dataplane != nil && proxy.Dataplane.Spec.Networking.TransparentProxying == nil {
+	if !proxy.GetTransparentProxy().Enabled() {
 		policies.Warnings = append(policies.Warnings, "policy doesn't support proxy running without transparent-proxy")
 		return nil
 	}

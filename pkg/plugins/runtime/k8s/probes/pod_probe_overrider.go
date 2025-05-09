@@ -201,7 +201,7 @@ func GetApplicationProbeProxyPort(
 		return 0, nil
 	case vpExist && !vpEnabled && !proxyPortExist:
 		return 0, nil
-	case proxyPort > 0:
+	case proxyPortExist:
 		return proxyPort, nil
 	default:
 		return defaultAppProbeProxyPort, nil
