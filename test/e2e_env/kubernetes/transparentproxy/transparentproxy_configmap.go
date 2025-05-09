@@ -6,8 +6,11 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds/types"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/util/pointer"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/client"
 	"github.com/kumahq/kuma/test/framework/deployments/democlient"
@@ -18,6 +21,7 @@ import (
 func TransparentProxyConfigmap() {
 	meshName := "transparentproxy-configmap"
 	namespace := "transparentproxy-configmap"
+	namespaceExternal := "transparentproxy-configmap-external"
 
 	var demoClientPod kube_core.Pod
 
@@ -26,6 +30,7 @@ func TransparentProxyConfigmap() {
 			Install(MTLSMeshKubernetes(meshName)).
 			Install(MeshTrafficPermissionAllowAllKubernetes(meshName)).
 			Install(NamespaceWithSidecarInjection(namespace)).
+			Install(Namespace(namespaceExternal)).
 			Install(Parallel(
 				democlient.Install(
 					democlient.WithMesh(meshName),
@@ -34,6 +39,9 @@ func TransparentProxyConfigmap() {
 				testserver.Install(
 					testserver.WithMesh(meshName),
 					testserver.WithNamespace(namespace),
+				),
+				testserver.Install(
+					testserver.WithNamespace(namespaceExternal),
 				),
 			)).
 			Setup(kubernetes.Cluster)).To(Succeed())
@@ -57,7 +65,8 @@ func TransparentProxyConfigmap() {
 
 	E2EAfterAll(func() {
 		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespace)).To(Succeed())
-		Expect(kubernetes.Cluster.DeleteKuma()).To(Succeed())
+		Expect(kubernetes.Cluster.TriggerDeleteNamespace(namespaceExternal)).To(Succeed())
+		Expect(kubernetes.Cluster.DeleteMesh(meshName)).To(Succeed())
 	})
 
 	It("should contain transparent proxy in configmap feature flag in the xds metadata", func() {
@@ -100,5 +109,53 @@ func TransparentProxyConfigmap() {
 			)
 			g.Expect(err).ToNot(HaveOccurred())
 		}, "30s", "1s").Should(Succeed())
+	})
+
+	It("should be able to use network from init container if we ignore ports for uid", func() {
+		tpConfigMapName := "tproxy-config-custom"
+
+		Expect(NewClusterSetup().
+			Install(ConfigMapTProxyKubernetes(
+				tpConfigMapName,
+				namespace,
+				`
+redirect:
+  outbound:
+    excludePortsForUIDs:
+    - tcp:80:1234
+    - udp:53:1234
+`,
+			)).
+			Install(testserver.Install(
+				testserver.WithName("another-test-server"),
+				testserver.WithMesh(meshName),
+				testserver.WithNamespace(namespace),
+				testserver.WithPodAnnotations(map[string]string{
+					metadata.KumaInitFirst:                            metadata.AnnotationTrue,
+					metadata.KumaTrafficTransparentProxyConfigMapName: tpConfigMapName,
+				}),
+				testserver.AddInitContainer(kube_core.Container{
+					Name:            "init-test-server",
+					Image:           Config.GetUniversalImage(),
+					ImagePullPolicy: "IfNotPresent",
+					Command:         []string{"curl"},
+					Args: []string{
+						"--verbose",
+						"--max-time", "3",
+						"--fail",
+						fmt.Sprintf("test-server.%s.svc.cluster.local:80", namespaceExternal),
+					},
+					Resources: kube_core.ResourceRequirements{
+						Limits: kube_core.ResourceList{
+							"cpu":    resource.MustParse("50m"),
+							"memory": resource.MustParse("64Mi"),
+						},
+					},
+					SecurityContext: &kube_core.SecurityContext{
+						RunAsUser: pointer.To(int64(1234)),
+					},
+				}),
+			)).
+			Setup(kubernetes.Cluster)).To(Succeed())
 	})
 }
