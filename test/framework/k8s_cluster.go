@@ -425,8 +425,6 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string) (string, error) {
 		args = append(args, "--set", fmt.Sprintf("%scontrolPlane.resources.requests.memory=%s", Config.HelmSubChartPrefix, c.opts.memory))
 	}
 
-	args = append(args, "--set", fmt.Sprintf("%stransparentProxy.configMap.enabled=true", Config.HelmSubChartPrefix))
-
 	return c.controlplane.InstallCP(args...)
 }
 
