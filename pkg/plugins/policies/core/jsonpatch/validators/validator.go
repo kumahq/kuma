@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	common_api "github.com/kumahq/kuma/api/common/v1alpha1"
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -123,12 +122,12 @@ func TopLevelTargetRefDeprecations(targetRef *common_api.TargetRef) []string {
 	if targetRef == nil {
 		return nil
 	}
-	if targetRef.Kind == common_api.MeshService {
-		return []string{
-			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with '%s' tag instead", common_api.MeshService, common_api.MeshSubset, mesh_proto.ServiceTag),
-		}
+	replacedByDataplane := map[common_api.TargetRefKind]struct{}{
+		common_api.MeshService:       {},
+		common_api.MeshServiceSubset: {},
+		common_api.MeshSubset:        {},
 	}
-	if targetRef.Kind == common_api.MeshSubset {
+	if _, ok := replacedByDataplane[targetRef.Kind]; ok {
 		return []string{
 			fmt.Sprintf("%s value for 'targetRef.kind' is deprecated, use %s with labels instead", common_api.MeshSubset, common_api.Dataplane),
 		}
